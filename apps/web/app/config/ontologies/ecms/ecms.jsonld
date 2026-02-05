@@ -1,0 +1,403 @@
+{
+  "@context": {
+    "@vocab": "https://platform-sandbox.dev/ontology/ecms#",
+    "@version": 1.1,
+    "@import": "https://platform-sandbox.dev/ontology/core#",
+    
+    "core": "https://platform-sandbox.dev/ontology/core#",
+    "ecms": "https://platform-sandbox.dev/ontology/ecms#",
+    "schema": "https://schema.org/",
+    "rdfs": "http://www.w3.org/2000/01/rdf-schema#",
+    "owl": "http://www.w3.org/2002/07/owl#",
+    
+    "label": "rdfs:label",
+    "comment": "rdfs:comment",
+    "subClassOf": { "@id": "rdfs:subClassOf", "@type": "@id" },
+    "extends": { "@id": "core:extends", "@type": "@id" },
+    
+    "icon": { "@id": "core:icon", "@type": "@id" },
+    "component": { "@id": "core:component", "@type": "@id" },
+    "projectionTypes": { "@id": "core:projectionTypes", "@container": "@list" },
+    "fields": { "@id": "core:fields", "@container": "@list" },
+    "options": { "@id": "core:options", "@container": "@list" },
+    "stages": { "@id": "ecms:stages", "@container": "@list" }
+  },
+  
+  "@id": "https://platform-sandbox.dev/ontology/ecms",
+  "@type": "owl:Ontology",
+  "label": "ECMS Vertical Ontology",
+  "comment": "Environmental Compliance Management System. Provides facility management, task scheduling, permit tracking, and compliance workflows.",
+  "owl:versionInfo": "1.0.0",
+  "owl:imports": { "@id": "https://platform-sandbox.dev/ontology/core" },
+  
+  "@graph": [
+    {
+      "@id": "ecms:Facility",
+      "@type": "rdfs:Class",
+      "label": "Facility",
+      "comment": "A physical facility or site in the compliance program.",
+      "icon": "lucide:factory",
+      "component": "ui:FacilityCard",
+      "projectionTypes": ["table", "grid", "map"],
+      "subClassOf": { "@id": "core:Workspace" },
+      "fields": [
+        { "@id": "core:field:name" },
+        { "@id": "core:field:slug" },
+        { "@id": "ecms:field:abbr" },
+        { "@id": "ecms:field:location" },
+        { "@id": "ecms:field:branches" },
+        { "@id": "ecms:field:active" }
+      ]
+    },
+    
+    {
+      "@id": "ecms:Task",
+      "@type": "rdfs:Class",
+      "label": "Task",
+      "comment": "A compliance task or requirement.",
+      "icon": "lucide:check-square",
+      "component": "ui:TaskCard",
+      "projectionTypes": ["table", "kanban", "calendar", "list", "gantt"],
+      "subClassOf": { "@id": "core:Record" },
+      "fields": [
+        { "@id": "core:field:title" },
+        { "@id": "core:field:description" },
+        { "@id": "ecms:field:taskStatus" },
+        { "@id": "ecms:field:priority" },
+        { "@id": "ecms:field:dueDate" },
+        { "@id": "ecms:field:assignee" },
+        { "@id": "ecms:field:category" },
+        { "@id": "ecms:field:inspectionType" },
+        { "@id": "ecms:field:branches" },
+        { "@id": "ecms:field:owner" },
+        { "@id": "ecms:field:completedAt" },
+        { "@id": "ecms:field:completedBy" },
+        { "@id": "ecms:field:parentFolders" },
+        { "@id": "ecms:field:needsCorrectiveAction" }
+      ]
+    },
+    
+    {
+      "@id": "ecms:TaskTemplate",
+      "@type": "rdfs:Class",
+      "label": "Task Template",
+      "comment": "A reusable blueprint for creating compliance tasks.",
+      "icon": "lucide:layout-template",
+      "component": "ui:TaskTemplateCard",
+      "projectionTypes": ["table", "list", "grid"],
+      "subClassOf": { "@id": "core:Record" },
+      "fields": [
+        { "@id": "core:field:title" },
+        { "@id": "core:field:description" },
+        { "@id": "ecms:field:category" },
+        { "@id": "ecms:field:inspectionType" },
+        { "@id": "ecms:field:defaultOwner" },
+        { "@id": "ecms:field:estimatedDuration" }
+      ]
+    },
+    
+    {
+      "@id": "ecms:TaskGenerator",
+      "@type": "rdfs:Class",
+      "label": "Scheduled Task",
+      "comment": "A recurring task schedule that generates individual task instances.",
+      "icon": "lucide:clock",
+      "component": "ui:TaskGeneratorCard",
+      "projectionTypes": ["table", "list", "calendar"],
+      "subClassOf": { "@id": "core:Record" },
+      "fields": [
+        { "@id": "core:field:title" },
+        { "@id": "ecms:field:template" },
+        { "@id": "ecms:field:schedule" },
+        { "@id": "ecms:field:nextDueDate" },
+        { "@id": "ecms:field:active" }
+      ]
+    },
+    
+    {
+      "@id": "ecms:ExternalTask",
+      "@type": "rdfs:Class",
+      "label": "Suggested Task",
+      "comment": "A task suggested from external sources like permit conditions or AI analysis.",
+      "icon": "lucide:lightbulb",
+      "component": "ui:ExternalTaskCard",
+      "projectionTypes": ["table", "list"],
+      "subClassOf": { "@id": "ecms:Task" },
+      "fields": [
+        { "@id": "ecms:field:externalType" },
+        { "@id": "ecms:field:sourceDocument" },
+        { "@id": "ecms:field:confidence" }
+      ]
+    },
+    
+    {
+      "@id": "ecms:Permit",
+      "@type": "rdfs:Class",
+      "label": "Permit",
+      "comment": "A regulatory permit document with conditions.",
+      "icon": "lucide:file-badge",
+      "component": "ui:PermitViewer",
+      "projectionTypes": ["table", "timeline", "list"],
+      "subClassOf": { "@id": "core:Document" },
+      "fields": [
+        { "@id": "core:field:title" },
+        { "@id": "ecms:field:permitNumber" },
+        { "@id": "ecms:field:issuedDate" },
+        { "@id": "ecms:field:expirationDate" },
+        { "@id": "ecms:field:permitStatus" },
+        { "@id": "ecms:field:conditions" },
+        { "@id": "ecms:field:branch" }
+      ]
+    },
+    
+    {
+      "@id": "ecms:PermitCondition",
+      "@type": "rdfs:Class",
+      "label": "Permit Condition",
+      "comment": "A specific condition or requirement from a permit.",
+      "icon": "lucide:list-checks",
+      "component": "ui:ConditionCard",
+      "projectionTypes": ["table", "list"],
+      "subClassOf": { "@id": "core:Record" },
+      "fields": [
+        { "@id": "ecms:field:conditionText" },
+        { "@id": "ecms:field:conditionType" },
+        { "@id": "ecms:field:frequency" },
+        { "@id": "ecms:field:permit" }
+      ]
+    },
+    
+    {
+      "@id": "ecms:Folder",
+      "@type": "rdfs:Class",
+      "label": "Folder",
+      "comment": "A hierarchical folder for organizing tasks and documents. ECMS-specific grouping mechanism.",
+      "icon": "lucide:folder",
+      "component": "ui:FolderCard",
+      "projectionTypes": ["table", "list", "tree"],
+      "subClassOf": { "@id": "core:Thing" },
+      "fields": [
+        { "@id": "core:field:name" },
+        { "@id": "ecms:field:parentFolder" },
+        { "@id": "ecms:field:order" }
+      ]
+    },
+    
+    {
+      "@id": "ecms:User",
+      "@type": "rdfs:Class",
+      "label": "User",
+      "comment": "A user in the ECMS system with facility and branch assignments.",
+      "icon": "lucide:user",
+      "component": "ui:UserCard",
+      "projectionTypes": ["table", "grid"],
+      "subClassOf": { "@id": "core:Member" },
+      "fields": [
+        { "@id": "core:field:name" },
+        { "@id": "core:field:email" },
+        { "@id": "ecms:field:jobTitle" },
+        { "@id": "ecms:field:branches" },
+        { "@id": "ecms:field:facilities" }
+      ]
+    },
+    
+    {
+      "@id": "ecms:field:taskStatus",
+      "@type": "core:Field",
+      "label": "Status",
+      "valueType": "select",
+      "icon": "lucide:circle-dot",
+      "component": "ui:StatusBadge",
+      "options": [
+        { "value": "not_started", "label": "Not Started", "color": "gray" },
+        { "value": "in_progress", "label": "In Progress", "color": "blue" },
+        { "value": "complete", "label": "Complete", "color": "green" },
+        { "value": "overdue", "label": "Overdue", "color": "red" },
+        { "value": "blocked", "label": "Blocked", "color": "amber" }
+      ]
+    },
+    
+    {
+      "@id": "ecms:field:priority",
+      "@type": "core:Field",
+      "label": "Priority",
+      "valueType": "select",
+      "icon": "lucide:signal",
+      "options": [
+        { "value": "low", "label": "Low", "color": "blue", "icon": "lucide:arrow-down" },
+        { "value": "medium", "label": "Medium", "color": "amber", "icon": "lucide:minus" },
+        { "value": "high", "label": "High", "color": "red", "icon": "lucide:arrow-up" }
+      ]
+    },
+    
+    {
+      "@id": "ecms:field:category",
+      "@type": "core:Field",
+      "label": "Category",
+      "valueType": "select",
+      "icon": "lucide:tag",
+      "options": [
+        { "value": "air", "label": "Air", "color": "sky" },
+        { "value": "water", "label": "Water", "color": "blue" },
+        { "value": "waste", "label": "Waste", "color": "amber" },
+        { "value": "emergency", "label": "Emergency Preparedness", "color": "red" },
+        { "value": "general", "label": "General", "color": "gray" }
+      ]
+    },
+    
+    {
+      "@id": "ecms:field:inspectionType",
+      "@type": "core:Field",
+      "label": "Inspection Type",
+      "valueType": "select",
+      "icon": "lucide:clipboard-check",
+      "options": [
+        { "value": "monitoring", "label": "Monitoring", "color": "blue" },
+        { "value": "inspection", "label": "Inspection", "color": "violet" },
+        { "value": "audit", "label": "Audit", "color": "amber" },
+        { "value": "drill", "label": "Emergency Drill", "color": "red" }
+      ]
+    },
+    
+    {
+      "@id": "ecms:field:branches",
+      "@type": "core:Field",
+      "label": "Branches",
+      "valueType": "multiselect",
+      "icon": "lucide:git-branch",
+      "options": [
+        { "value": "environmental", "label": "Environmental", "color": "emerald" },
+        { "value": "safety", "label": "Safety", "color": "amber" }
+      ]
+    },
+    
+    {
+      "@id": "ecms:field:schedule",
+      "@type": "core:Field",
+      "label": "Schedule",
+      "comment": "Recurrence pattern for scheduled tasks.",
+      "valueType": "select",
+      "icon": "lucide:repeat",
+      "options": [
+        { "value": "daily", "label": "Daily" },
+        { "value": "weekly", "label": "Weekly" },
+        { "value": "monthly", "label": "Monthly" },
+        { "value": "quarterly", "label": "Quarterly" },
+        { "value": "annual", "label": "Annual" }
+      ]
+    },
+    
+    {
+      "@id": "ecms:field:dueDate",
+      "@type": "core:Field",
+      "label": "Due Date",
+      "valueType": "date",
+      "icon": "lucide:calendar"
+    },
+    
+    {
+      "@id": "ecms:field:assignee",
+      "@type": "core:Field",
+      "label": "Assignee",
+      "valueType": "relation",
+      "icon": "lucide:user"
+    },
+    
+    {
+      "@id": "ecms:field:owner",
+      "@type": "core:Field",
+      "label": "Owner",
+      "valueType": "relation",
+      "icon": "lucide:user-check"
+    },
+    
+    {
+      "@id": "ecms:field:parentFolder",
+      "@type": "core:Field",
+      "label": "Parent Folder",
+      "valueType": "relation",
+      "icon": "lucide:folder"
+    },
+    
+    {
+      "@id": "ecms:field:parentFolders",
+      "@type": "core:Field",
+      "label": "Folders",
+      "valueType": "multirelation",
+      "icon": "lucide:folders"
+    },
+    
+    {
+      "@id": "ecms:field:externalType",
+      "@type": "core:Field",
+      "label": "Source Type",
+      "valueType": "select",
+      "icon": "lucide:external-link",
+      "options": [
+        { "value": "permitCondition", "label": "Permit Condition", "color": "violet" },
+        { "value": "permitRenewal", "label": "Permit Renewal", "color": "blue" },
+        { "value": "aiSuggestion", "label": "AI Suggestion", "color": "emerald" }
+      ]
+    },
+    
+    {
+      "@id": "ecms:field:permitStatus",
+      "@type": "core:Field",
+      "label": "Permit Status",
+      "valueType": "select",
+      "icon": "lucide:file-check",
+      "options": [
+        { "value": "draft", "label": "Draft", "color": "gray" },
+        { "value": "pending", "label": "Pending", "color": "amber" },
+        { "value": "active", "label": "Active", "color": "green" },
+        { "value": "expired", "label": "Expired", "color": "red" },
+        { "value": "revoked", "label": "Revoked", "color": "slate" }
+      ]
+    },
+    
+    {
+      "@id": "ecms:field:jobTitle",
+      "@type": "core:Field",
+      "label": "Job Title",
+      "valueType": "text",
+      "icon": "lucide:briefcase"
+    },
+    
+    {
+      "@id": "ecms:workflow:taskCompletion",
+      "@type": "core:Workflow",
+      "label": "Task Completion Workflow",
+      "comment": "Standard workflow for completing compliance tasks.",
+      "stages": [
+        { "id": "not_started", "label": "Not Started", "color": "gray" },
+        { "id": "in_progress", "label": "In Progress", "color": "blue" },
+        { "id": "review", "label": "Under Review", "color": "amber" },
+        { "id": "complete", "label": "Complete", "color": "green" }
+      ]
+    },
+    
+    {
+      "@id": "ecms:workflow:permitApproval",
+      "@type": "core:Workflow",
+      "label": "Permit Approval Workflow",
+      "comment": "Workflow for permit applications and renewals.",
+      "stages": [
+        { "id": "draft", "label": "Draft", "color": "gray" },
+        { "id": "submitted", "label": "Submitted", "color": "blue" },
+        { "id": "under_review", "label": "Under Review", "color": "amber" },
+        { "id": "approved", "label": "Approved", "color": "green" },
+        { "id": "rejected", "label": "Rejected", "color": "red" }
+      ]
+    },
+    
+    {
+      "@id": "ecms:terminology",
+      "@type": "core:TerminologyConfig",
+      "comment": "ECMS-specific terminology overrides.",
+      "grouping": "folder",
+      "context": ["org", "year", "facility"],
+      "entityNoun": "task",
+      "containerNoun": "folder"
+    }
+  ]
+}
