@@ -326,7 +326,7 @@ const searchKeywordsInput = computed({
                             <div class="flex items-center gap-2">
                               <div
                                 class="w-3 h-3 rounded-full"
-                                :class="routeDefinition.tint || 'bg-muted-foreground'" />
+                                :class="routeDefinition.tint === 'none' || !routeDefinition.tint ? 'bg-muted-foreground' : routeDefinition.tint" />
                               <span>{{ tintOptions.find((t) => t.value === routeDefinition.tint)?.label || 'None' }}</span>
                             </div>
                           </UiSelectValue>
@@ -334,7 +334,7 @@ const searchKeywordsInput = computed({
                         <UiSelectContent>
                           <UiSelectItem v-for="tint in tintOptions" :key="tint.value" :value="tint.value">
                             <div class="flex items-center gap-2">
-                              <div class="w-3 h-3 rounded-full" :class="tint.value || 'bg-muted-foreground'" />
+                              <div class="w-3 h-3 rounded-full" :class="tint.value === 'none' ? 'bg-muted-foreground' : tint.value" />
                               <span>{{ tint.label }}</span>
                             </div>
                           </UiSelectItem>
@@ -447,7 +447,7 @@ const searchKeywordsInput = computed({
                         <UiSelectValue placeholder="Any authenticated user" />
                       </UiSelectTrigger>
                       <UiSelectContent>
-                        <UiSelectItem value="">Any authenticated user</UiSelectItem>
+                        <UiSelectItem value="any">Any authenticated user</UiSelectItem>
                         <UiSelectItem v-for="role in roleOptions" :key="role.value" :value="role.value">
                           {{ role.label }}
                         </UiSelectItem>

@@ -347,7 +347,7 @@ export const useRouteBuilder = () => {
 
   // Color tint options
   const tintOptions = [
-    { value: '', label: 'None' },
+    { value: 'none', label: 'None' },
     { value: 'text-blue-400', label: 'Blue' },
     { value: 'text-purple-400', label: 'Purple' },
     { value: 'text-emerald-400', label: 'Emerald' },
@@ -493,13 +493,13 @@ export const useRouteBuilder = () => {
       routePath: route.path,
       label: route.label,
       icon: route.icon,
-      ...(route.tint && { tint: route.tint }),
+      ...(route.tint && route.tint !== 'none' && { tint: route.tint }),
       inRail: route.inRail,
       railPosition: route.railPosition,
       inCommandPalette: route.inCommandPalette,
       order: route.order,
       requiresAuth: route.requiresAuth,
-      ...(route.minRole && {
+      ...(route.minRole && route.minRole !== 'any' && {
         permissions: {
           minRole: route.minRole,
           permission: 'read',
@@ -524,7 +524,7 @@ export const useRouteBuilder = () => {
       path: route.path,
       label: route.label,
       icon: route.icon,
-      tint: route.tint,
+      tint: route.tint === 'none' ? undefined : route.tint,
       inRail: route.inRail,
       railPosition: route.railPosition,
       inCommandPalette: route.inCommandPalette,
