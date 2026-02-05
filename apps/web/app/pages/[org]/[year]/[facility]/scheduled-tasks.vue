@@ -496,7 +496,7 @@
       Annually: 365,
       'Semi-annually': 182,
     }
-    const interval = scheduleMap[task.schedule] || 30
+    const interval = task.schedule ? (scheduleMap[task.schedule] ?? 30) : 30
 
     for (let i = 0; i < 12; i++) {
       const occurrence = new Date(startDate)
