@@ -1,7 +1,8 @@
 <script setup lang="ts">
   import type { PageStat } from '~/components/layout/Page.vue'
   import { useBrowse } from '~/composables/useBrowse'
-  import { useGlobalDetailSheet } from '~/composables/useGlobalDetailSheet'
+  import PermitDialog from '~/components/dialogs/PermitDialog.vue'
+  import type { PermitData } from '~/components/dialogs/PermitDialog.vue'
 
   interface PermitApplication {
     id: string
@@ -24,7 +25,19 @@
     title: `Permit Applications | ${currentFacility.value?.name || 'Facility'}`,
   }))
 
-  const { open: openDetail } = useGlobalDetailSheet()
+  // Dialog state
+  const createPermitOpen = ref(false)
+  const viewPermitOpen = ref(false)
+  const viewingPermit = ref<PermitData | null>(null)
+
+  function openPermitCreate() {
+    createPermitOpen.value = true
+  }
+
+  function openPermitDetail(app: PermitApplication) {
+    viewingPermit.value = { ...app, description: '', notes: '' }
+    viewPermitOpen.value = true
+  }
 
   const selectedApps = ref<string[]>([])
 
@@ -220,26 +233,39 @@
 
   const viewMode = computed(() => browseState.viewMode.value)
 
-  // Listen for global detail sheet events
-  onMounted(() => {
-    window.addEventListener('global-detail-sheet:save', ((e: CustomEvent) => {
-      const { node, formData, mode } = e.detail
-      if (e.detail.entityType !== 'permit') return
+  function handleCreatePermit(data: PermitData) {
+    applications.value.push({
+      id: data.id || crypto.randomUUID(),
+      permitType: data.permitType,
+      applicationType: data.applicationType,
+      status: data.status,
+      submitted: data.submitted,
+      agency: data.agency,
+      deadline: data.deadline,
+    })
+    createPermitOpen.value = false
+  }
 
-      if (mode === 'create') {
-        applications.value.push({ ...formData, id: crypto.randomUUID() })
-      } else {
-        const index = applications.value.findIndex((a) => a.id === node.id)
-        if (index !== -1) applications.value[index] = { ...applications.value[index], ...formData }
+  function handleUpdatePermit(data: PermitData) {
+    const idx = applications.value.findIndex((a) => a.id === data.id)
+    if (idx !== -1) {
+      applications.value[idx] = {
+        ...applications.value[idx]!,
+        permitType: data.permitType,
+        applicationType: data.applicationType,
+        status: data.status,
+        submitted: data.submitted,
+        agency: data.agency,
+        deadline: data.deadline,
       }
-    }) as EventListener)
+    }
+    viewPermitOpen.value = false
+  }
 
-    window.addEventListener('global-detail-sheet:delete', ((e: CustomEvent) => {
-      const { node } = e.detail
-      if (e.detail.entityType !== 'permit') return
-      applications.value = applications.value.filter((a) => a.id !== node.id)
-    }) as EventListener)
-  })
+  function handleDeletePermit(data: PermitData) {
+    applications.value = applications.value.filter((a) => a.id !== data.id)
+    viewPermitOpen.value = false
+  }
 </script>
 
 <template>
@@ -260,7 +286,7 @@
     <!-- Page handles #search and #viewSwitcher via :browse prop -->
 
     <template #toolbarActions>
-      <UiButton @click="openDetail({}, { entityType: 'permit', mode: 'create' })">
+      <UiButton @click="openPermitCreate()">
         <Icon name="lucide:plus" class="mr-2 h-4 w-4" />
         New Application
       </UiButton>
@@ -290,7 +316,7 @@
             v-for="app in filteredApps"
             :key="app.id"
             class="cursor-pointer"
-            @click="openDetail(app, { entityType: 'permit' })">
+            @click="openPermitDetail(app)">
             <UiTableCell>
               <UiCheckbox
                 :checked="selectedApps.includes(app.id)"
@@ -326,7 +352,7 @@
         v-for="app in filteredApps"
         :key="app.id"
         class="flex items-center gap-4 rounded-lg border border-border bg-card p-4 hover:bg-accent/50 transition-colors cursor-pointer"
-        @click="openDetail(app, { entityType: 'permit' })">
+        @click="openPermitDetail(app)">
         <UiCheckbox
           :checked="selectedApps.includes(app.id)"
           @update:checked="
@@ -353,7 +379,7 @@
         v-for="app in filteredApps"
         :key="app.id"
         class="relative overflow-hidden hover:bg-accent/30 transition-colors cursor-pointer"
-        @click="openDetail(app, { entityType: 'permit' })">
+        @click="openPermitDetail(app)">
         <div class="absolute top-0 left-0 w-1 h-full" :class="(statusColors[app.status] || '').split(' ')[0]" />
         <UiCardHeader class="pb-2">
           <div class="flex items-start justify-between">
@@ -385,5 +411,22 @@
     <div class="text-sm text-muted-foreground mt-4 pt-4 border-t border-border pb-10">
       Showing {{ filteredApps.length }} applications
     </div>
+
+    <!-- Create Permit Dialog -->
+    <PermitDialog
+      v-model:open="createPermitOpen"
+      mode="create"
+      :permit="null"
+      @save="handleCreatePermit"
+      @close="createPermitOpen = false" />
+
+    <!-- View/Edit Permit Dialog -->
+    <PermitDialog
+      v-model:open="viewPermitOpen"
+      mode="edit"
+      :permit="viewingPermit"
+      @save="handleUpdatePermit"
+      @delete="handleDeletePermit"
+      @close="viewPermitOpen = false" />
   </Page>
 </template>
