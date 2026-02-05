@@ -7,8 +7,8 @@
   } from '~/composables/useGlobalDetailSheet'
   import { getSchemaForEntityType, getNodeTitle, extractNodeValue } from '~/lib/detailSchema'
   import { useEcmsData } from '~/composables/useEcmsData'
-  import UnifiedTaskDialog from './UnifiedTaskDialog.vue'
-  import type { TaskData } from './UnifiedTaskDialog.vue'
+  import UnifiedTaskDialog from '~/verticals/ecms/components/dialogs/UnifiedTaskDialog.vue'
+  import type { TaskData } from '~/verticals/ecms/components/dialogs/UnifiedTaskDialog.vue'
 
   const { state, close, setMode, setVariant, updateField } = useGlobalDetailSheetRefs()
   const ecmsData = useEcmsData().loadSeedData()

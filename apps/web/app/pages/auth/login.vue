@@ -22,7 +22,7 @@
     if (msg.toLowerCase().includes('origin is not allowed')) {
       $toast?.error('Sign-in can’t start yet (not your fault).', {
         description:
-          'Google OAuth is misconfigured for this URL. Add this site to the OAuth Client “Authorized JavaScript origins” (e.g. http://localhost:5151), then refresh and try again.',
+          'Google OAuth is misconfigured for this URL. Add this site to the OAuth Client “Authorized JavaScript origins” (e.g. http://localhost:4141), then refresh and try again.',
       })
       return
     }

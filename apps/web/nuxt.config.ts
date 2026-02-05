@@ -5,7 +5,7 @@ export default defineNuxtConfig({
   compatibilityDate: '2025-07-15',
   srcDir: 'app/',
   devtools: { enabled: true },
-  devServer: { port: 5151, host: '127.0.0.1' },
+  devServer: { port: 4141, host: '127.0.0.1' },
 
   components: [
     {

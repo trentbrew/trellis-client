@@ -7,8 +7,8 @@ echo "🧪 Testing Auth Bypass Feature"
 echo ""
 
 # Check if dev server is already running
-if curl -s http://localhost:5151 > /dev/null 2>&1; then
-  echo "✅ Dev server is already running on port 5151"
+if curl -s http://localhost:4141 > /dev/null 2>&1; then
+  echo "✅ Dev server is already running on port 4141"
 else
   echo "🚀 Starting dev server..."
   npm run dev > /dev/null 2>&1 &
@@ -17,7 +17,7 @@ else
   sleep 5
 
   # Check if server started successfully
-  if ! curl -s http://localhost:5151 > /dev/null 2>&1; then
+  if ! curl -s http://localhost:4141 > /dev/null 2>&1; then
     echo "❌ Failed to start dev server"
     kill $DEV_PID 2>/dev/null
     exit 1
@@ -29,13 +29,13 @@ echo ""
 echo "📋 Test URLs:"
 echo ""
 echo "1. Collections page (protected route):"
-echo "   http://localhost:5151/collections?testAuthBypass=true"
+echo "   http://localhost:4141/collections?testAuthBypass=true"
 echo ""
 echo "2. Home page:"
-echo "   http://localhost:5151/?testAuthBypass=true"
+echo "   http://localhost:4141/?testAuthBypass=true"
 echo ""
 echo "3. Any protected route:"
-echo "   http://localhost:5151/[route]?testAuthBypass=true"
+echo "   http://localhost:4141/[route]?testAuthBypass=true"
 echo ""
 echo "🔍 What to check:"
 echo "   - Page should load without redirecting to /auth/login"
@@ -47,11 +47,11 @@ echo ""
 
 # Try to open browser (works on macOS, Linux, Windows)
 if command -v open > /dev/null; then
-  open "http://localhost:5151/collections?testAuthBypass=true"
+  open "http://localhost:4141/collections?testAuthBypass=true"
 elif command -v xdg-open > /dev/null; then
-  xdg-open "http://localhost:5151/collections?testAuthBypass=true"
+  xdg-open "http://localhost:4141/collections?testAuthBypass=true"
 elif command -v start > /dev/null; then
-  start "http://localhost:5151/collections?testAuthBypass=true"
+  start "http://localhost:4141/collections?testAuthBypass=true"
 else
   echo "   Please open the URL manually in your browser"
 fi

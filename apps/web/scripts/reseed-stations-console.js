@@ -2,7 +2,7 @@
  * Browser Console Script to Clear and Re-seed Stations
  *
  * Instructions:
- * 1. Open http://localhost:5151/welcome in your browser
+ * 1. Open http://localhost:4141/welcome in your browser
  * 2. Open DevTools (F12) and go to Console
  * 3. Paste this script and press Enter
  */
