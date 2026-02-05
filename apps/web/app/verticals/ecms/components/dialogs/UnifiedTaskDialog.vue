@@ -911,7 +911,7 @@
                     class="inline-flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-medium transition-colors"
                     :class="
                       scheduleDescription.isOverdue
-                        ? 'bg-red-100 text-red-700 hover:bg-red-200'
+                        ? 'bg-destructive/15 text-destructive hover:bg-destructive/25'
                         : 'bg-primary/10 text-primary hover:bg-primary/20'
                     ">
                     <Icon

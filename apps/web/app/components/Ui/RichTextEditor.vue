@@ -224,7 +224,7 @@ onBeforeUnmount(() => {
     <!-- Editor Content -->
     <EditorContent
       :editor="editor"
-      class="prose prose-sm max-w-none px-3 py-2 text-sm"
+      class="prose prose-sm max-w-none px-3 py-2 text-sm text-foreground"
       :class="compact ? 'min-h-[60px]' : 'min-h-[100px]'" />
   </div>
 </template>
@@ -232,6 +232,15 @@ onBeforeUnmount(() => {
 <style scoped>
 :deep(.ProseMirror) {
   outline: none;
+  color: hsl(var(--foreground)) !important;
+}
+
+:deep(.ProseMirror p),
+:deep(.ProseMirror li),
+:deep(.ProseMirror h1),
+:deep(.ProseMirror h2),
+:deep(.ProseMirror h3) {
+  color: hsl(var(--foreground));
 }
 
 :deep(.ProseMirror p.is-editor-empty:first-child::before) {
