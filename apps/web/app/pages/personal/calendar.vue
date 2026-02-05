@@ -4,7 +4,7 @@
   import CalendarView from '~/components/views/CalendarView.vue'
   import CalendarItemDialog from '~/components/dialogs/CalendarItemDialog.vue'
   import type { CalendarItem, CalendarItemType, TaskItem, EventItem, PaymentItem, NoteItem } from '~/types/calendarItem'
-  import { createDefaultItem, CALENDAR_ITEM_TYPES } from '~/types/calendarItem'
+  import { CALENDAR_ITEM_TYPES } from '~/types/calendarItem'
 
   definePageMeta({
     layout: 'default',
@@ -343,8 +343,8 @@
 
   const { browseState, filteredItems } = useBrowse({
     items: sectionItems,
-    searchFields: browseConfig.value.searchFields,
-    defaultViewMode: defaultViewMode.value,
+    searchFields: browseConfig.value.searchFields as (keyof CalendarItem)[],
+    defaultViewMode: defaultViewMode.value as BrowseViewMode,
     sortOptions: browseConfig.value.sortOptions,
     filters: browseConfig.value.filters,
   })
@@ -357,7 +357,7 @@
     const allowed = allowedViewModes.value
     if (allowed.includes(browseState.viewMode.value)) return
     const next = allowed[0] || 'list'
-    browseState.setViewMode(next)
+    browseState.setViewMode(next as BrowseViewMode)
   }, { immediate: true })
 
   const viewModeIcons: Record<string, string> = {
@@ -460,7 +460,7 @@
     medium: 'text-amber-500',
     low: 'text-blue-500',
   }
-  const priorityIcons: Record<string, string> = {
+  const _priorityIcons: Record<string, string> = {
     critical: 'lucide:alert-octagon',
     high: 'lucide:arrow-up',
     medium: 'lucide:minus',
@@ -648,7 +648,7 @@
             type="button"
             class="flex h-8 items-center gap-2 rounded-md px-3 text-sm font-medium transition-colors"
             :class="viewMode === mode ? 'bg-foreground/10 text-foreground' : 'text-muted-foreground hover:bg-foreground/5 hover:text-foreground'"
-            @click="browseState.setViewMode(mode)">
+            @click="browseState.setViewMode(mode as BrowseViewMode)">
             <Icon :name="viewModeIcons[mode] || 'lucide:list'" class="h-4 w-4" />
             {{ mode.charAt(0).toUpperCase() + mode.slice(1) }}
           </button>
