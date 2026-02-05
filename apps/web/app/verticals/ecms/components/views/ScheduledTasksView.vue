@@ -1,14 +1,7 @@
 <script setup lang="ts">
   import { useBrowse, type BrowseViewMode } from '~/composables/useBrowse'
-  import UnifiedTaskDialog, {
-    type TaskData,
-    type Attachment,
-    type ActivityItem,
-  } from '~/components/dialogs/UnifiedTaskDialog.vue'
-  import type {
-    Frequency as TaskCreateFrequency,
-    Owner as TaskCreateOwner,
-  } from '~/components/dialogs/TaskCreateDialog.vue'
+  import CalendarItemDialog from '~/components/dialogs/CalendarItemDialog.vue'
+  import type { ActivityItem } from '~/components/dialogs/CalendarItemDialog.vue'
 
   const props = withDefaults(
     defineProps<{
@@ -19,7 +12,7 @@
     },
   )
 
-  type Frequency = TaskCreateFrequency
+  type Frequency = 'daily' | 'weekly' | 'biweekly' | 'monthly' | 'quarterly' | 'annually' | 'custom'
   type ScheduleCategory = 'Air Quality' | 'Water' | 'Hazmat' | 'Reporting' | 'General'
   type TrackedStatus = true | 'facility' | false
 
@@ -30,7 +23,7 @@
   const selectedTasks = ref<string[]>([])
 
   const owners = ['John Smith', 'Sarah Johnson', 'Mike Davis', 'Emily Brown', 'Operations Team', 'Environmental Team']
-  const dialogOwners = computed<TaskCreateOwner[]>(() =>
+  const dialogOwners = computed(() =>
     owners.map((name: string, idx: number) => ({ id: String(idx + 1), name })),
   )
 
@@ -69,7 +62,7 @@
     },
   ]
 
-  const dialogTemplates = computed(() =>
+  const _dialogTemplates = computed(() =>
     templates.map((t) => ({
       id: t.id,
       name: t.name,
@@ -84,7 +77,7 @@
     })),
   )
 
-  const detailTask = computed<TaskData | null>(() => {
+  const detailTask = computed<any | null>(() => {
     if (!viewingTask.value) return null
     return {
       id: viewingTask.value.id,
@@ -303,7 +296,7 @@
     }
   }
 
-  const viewingTaskAttachments = computed<Attachment[]>(() => [
+  const _viewingTaskAttachments = computed<any[]>(() => [
     { id: '1', name: 'Inspection_Checklist.pdf', type: 'pdf' },
     { id: '2', name: 'Air_Quality_Data.xlsx', type: 'spreadsheet' },
   ])
@@ -333,7 +326,7 @@
     },
   ])
 
-  const handleUpdateScheduleFromDialog = (formData: TaskData) => {
+  const handleUpdateScheduleFromDialog = (formData: any) => {
     if (!viewingTask.value) return
     const idx = scheduledTasks.value.findIndex((t) => t.id === viewingTask.value?.id)
     if (idx === -1) return
@@ -353,7 +346,7 @@
     editScheduleOpen.value = false
   }
 
-  const handleCreateFromDialog = (formData: TaskData) => {
+  const handleCreateFromDialog = (formData: any) => {
     scheduledTasks.value.unshift({
       id: `sched-${Math.random().toString(36).slice(2, 8)}`,
       title: formData.title.trim(),
@@ -521,42 +514,36 @@
     </div>
 
     <!-- View Schedule Dialog -->
-    <UnifiedTaskDialog
+    <CalendarItemDialog
       v-model:open="viewScheduleOpen"
-      :task="detailTask"
+      :item="detailTask"
       mode="edit"
-      task-type="scheduled"
       :can-navigate-prev="canNavigatePrev"
       :can-navigate-next="canNavigateNext"
-      :show-schedule-section="true"
-      :attachments="viewingTaskAttachments"
       :activity="viewingTaskActivity"
       @navigate-prev="navigateToPrevTask"
       @navigate-next="navigateToNextTask"
       @save="handleUpdateScheduleFromDialog"
       @close="viewScheduleOpen = false" />
 
-    <!-- Edit Schedule Overlay (opens on top of detail dialog) -->
-    <UnifiedTaskDialog
+    <!-- Edit Schedule Overlay -->
+    <CalendarItemDialog
       v-model:open="editScheduleOpen"
       mode="edit"
-      task-type="scheduled"
-      :task="detailTask"
-      :templates="dialogTemplates"
+      :item="detailTask"
       :owners="dialogOwners"
       :folders="folders"
       @save="handleUpdateScheduleFromDialog"
       @close="editScheduleOpen = false" />
 
     <!-- Create Schedule Dialog -->
-    <UnifiedTaskDialog
+    <CalendarItemDialog
       v-model:open="createScheduleOpen"
       mode="create"
-      :show-schedule-section="true"
-      :templates="dialogTemplates"
+      item-type="task"
       :owners="dialogOwners"
       :folders="folders"
-      :task="null"
+      :item="null"
       @save="handleCreateFromDialog"
       @close="createScheduleOpen = false" />
   </div>

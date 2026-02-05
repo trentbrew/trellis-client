@@ -1,8 +1,9 @@
 <script setup lang="ts">
   import type { PageStat } from '~/components/layout/Page.vue'
   import { useBrowse } from '~/composables/useBrowse'
-  import UnifiedTaskDialog from '~/verticals/ecms/components/dialogs/UnifiedTaskDialog.vue'
-  import type { TaskData } from '~/verticals/ecms/components/dialogs/UnifiedTaskDialog.vue'
+  import CalendarItemDialog from '~/components/dialogs/CalendarItemDialog.vue'
+  import type { CalendarItem } from '~/types/calendarItem'
+  import { createDefaultItem } from '~/types/calendarItem'
 
   definePageMeta({
     layout: 'default',
@@ -17,16 +18,17 @@
 
   // Task dialog state
   const viewTaskOpen = ref(false)
-  const viewingTask = ref<TaskData | null>(null)
+  const viewingTask = ref<CalendarItem | null>(null)
 
   function openTaskDetail(task: any) {
+    const item = createDefaultItem('task')
     viewingTask.value = {
+      ...item,
       id: task.id,
       title: task.title,
       description: task.reason || '',
-      status: 'pending',
-      priority: task.priority as 'low' | 'medium' | 'high',
-      dueDate: new Date().toISOString().split('T')[0]!,
+      priority: task.priority as 'low' | 'medium' | 'high' | 'critical',
+      startDate: new Date().toISOString().split('T')[0]!,
       category: task.category,
     }
     viewTaskOpen.value = true
@@ -191,13 +193,13 @@
 
   const viewMode = computed(() => 'grid')
 
-  function handleTaskSave(taskData: TaskData) {
-    const index = suggestedTasks.value.findIndex((t) => t.id === taskData.id)
+  function handleTaskSave(item: CalendarItem) {
+    const index = suggestedTasks.value.findIndex((t) => t.id === item.id)
     if (index !== -1) {
       suggestedTasks.value[index] = {
         ...suggestedTasks.value[index]!,
-        title: taskData.title,
-        priority: taskData.priority || suggestedTasks.value[index]!.priority,
+        title: item.title,
+        priority: item.priority || suggestedTasks.value[index]!.priority,
       }
     }
     viewTaskOpen.value = false
@@ -269,15 +271,11 @@
       <p class="mt-2 text-sm text-muted-foreground">No new suggestions at this time. Check back later.</p>
     </div>
     <!-- Task Detail Dialog -->
-    <UnifiedTaskDialog
+    <CalendarItemDialog
       v-model:open="viewTaskOpen"
       mode="edit"
-      task-type="suggested"
-      :task="viewingTask"
+      :item="viewingTask"
       @save="handleTaskSave"
-      @close="viewTaskOpen = false"
-      @create-task="(task) => { acceptTask(task.id); viewTaskOpen = false }"
-      @mark-not-applicable="(task) => { dismissTask(task.id); viewTaskOpen = false }"
-      @already-resolved="(task) => { dismissTask(task.id); viewTaskOpen = false }" />
+      @close="viewTaskOpen = false" />
   </Page>
 </template>
