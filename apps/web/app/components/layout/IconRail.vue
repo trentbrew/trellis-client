@@ -18,6 +18,9 @@
   // Branding Manager dialog state
   const brandingManagerOpen = ref(false)
 
+  // Ontology Marketplace dialog state
+  const ontologyMarketplaceOpen = ref(false)
+
   // Create new route (stub - will open route builder in future)
   const handleCreateRoute = () => {
     // TODO: Open route creation dialog
@@ -174,6 +177,24 @@
           </div>
         </UiTooltipContent>
       </UiTooltip>
+
+      <!-- Ontology Marketplace Button -->
+      <UiTooltip>
+        <UiTooltipTrigger as-child>
+          <button
+            type="button"
+            class="group text-amber-500/70 hover:bg-amber-500/10 hover:text-amber-500 flex h-10 w-10 items-center justify-center rounded-xl transition border border-dashed border-amber-500/30"
+            @click="ontologyMarketplaceOpen = true">
+            <Icon name="lucide:store" class="h-4 w-4" />
+          </button>
+        </UiTooltipTrigger>
+        <UiTooltipContent side="right">
+          <div class="flex items-center gap-2">
+            <span>Marketplace</span>
+            <span class="text-[10px] text-amber-500 bg-amber-500/10 px-1.5 py-0.5 rounded">Edit Mode</span>
+          </div>
+        </UiTooltipContent>
+      </UiTooltip>
     </div>
 
     <!-- Secondary items (Settings/Admin/Help) -->
@@ -233,5 +254,10 @@
       :open="brandingManagerOpen"
       @update:open="brandingManagerOpen = $event"
       @save="handleBrandingSave" />
+
+    <!-- Ontology Marketplace Dialog -->
+    <OntologyMarketplaceOntologyMarketplace
+      :open="ontologyMarketplaceOpen"
+      @update:open="ontologyMarketplaceOpen = $event" />
   </nav>
 </template>
