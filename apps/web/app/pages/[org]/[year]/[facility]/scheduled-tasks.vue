@@ -106,7 +106,7 @@
   const viewingTask = ref<Task | null>(null)
 
   // Persist dialog state to localStorage
-  const STORAGE_KEY = 'ecms-viewing-task'
+  const STORAGE_KEY = 'platform-sandbox-viewing-task'
 
   onMounted(() => {
     const stored = localStorage.getItem(STORAGE_KEY)

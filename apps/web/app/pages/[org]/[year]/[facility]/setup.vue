@@ -115,7 +115,7 @@
     facilityConfigClean.timeZone = facilityConfig.timeZone
   }
 
-  const rolePlaceholder = 'Managed in ECMS Admin'
+  const rolePlaceholder = 'Managed in Admin Console'
 </script>
 
 <template>
@@ -158,7 +158,7 @@
         </UiCard>
 
         <div class="rounded-lg border border-border bg-muted/10 p-4 space-y-2">
-          <p class="text-sm font-medium">Roles are managed in ECMS Admin.</p>
+          <p class="text-sm font-medium">Roles are managed in the Admin Console.</p>
           <p class="text-sm text-muted-foreground">
             Use the admin console to add people or update role assignments for this facility.
           </p>
@@ -210,7 +210,7 @@
           <UiCardContent class="p-6 space-y-2">
             <UiLabel class="font-semibold">External Integrations</UiLabel>
             <p class="text-sm text-muted-foreground">
-              Configure external systems to create tasks in ECMS automatically via API endpoints.
+              Configure external systems to create tasks automatically via API endpoints.
             </p>
             <UiButton variant="outline" disabled>
               <Icon name="lucide:plus" class="mr-2 h-4 w-4" />

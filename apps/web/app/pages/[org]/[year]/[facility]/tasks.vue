@@ -796,7 +796,7 @@
   const scheduledTasksRef = ref<InstanceType<typeof ScheduledTasksView> | null>(null)
 
   // Persist dialog state to localStorage
-  const STORAGE_KEY = 'ecms-viewing-facility-task'
+  const STORAGE_KEY = 'platform-sandbox-viewing-facility-task'
 
   onMounted(() => {
     const stored = localStorage.getItem(STORAGE_KEY)
