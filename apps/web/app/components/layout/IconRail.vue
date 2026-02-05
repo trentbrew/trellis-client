@@ -12,12 +12,11 @@
   const ontologyMarketplaceOpen = ref(false)
 
   // Notion-style: Instantly create blank page and navigate
-  const handleCreatePage = () => {
+  const handleCreatePage = async () => {
     const id = `page-${Date.now()}`
-    const path = `/pages/${id}`
-    // TODO: Register route in app-config.jsonld
+    // TODO: Register route in app-config.jsonld and persist
     ;(nuxtApp as any).$toast?.success('New page created!')
-    router.push(path)
+    await navigateTo(`/pages/${id}`)
   }
 
   // Handle dashboard save
@@ -34,60 +33,26 @@
 </script>
 
 <template>
-  <!-- Icon Rail: Edit mode dock for app configuration -->
+  <!-- Edit Mode Dock: App configuration tools (only visible in edit mode) -->
   <nav
     v-if="isInEditMode"
     class="border-accent/20 flex w-16 flex-col items-center gap-3 border-r bg-accent text-accent-foreground px-2 py-0 pb-2"
     aria-label="Edit mode dock">
-    <!-- Logo area -->
-    <div class="flex h-16 w-16 items-center justify-center shrink-0 border-b border-white/10">
-      <AppNavLink to="/" class="flex h-9 w-9 items-center justify-center text-sidebar-foreground">
-        <AppLogo :size="30" />
-      </AppNavLink>
+    <!-- Edit mode indicator -->
+    <div class="flex h-16 w-16 items-center justify-center shrink-0 border-b border-accent-foreground/10">
+      <div class="flex h-9 w-9 items-center justify-center rounded-lg bg-accent-foreground/10">
+        <Icon name="lucide:pencil" class="h-4 w-4 text-accent-foreground" />
+      </div>
     </div>
 
-    <!-- Primary nav items -->
-    <div class="flex flex-col gap-1">
-      <!-- Search (collapsed only) -->
-      <UiTooltip v-if="sidebarCollapse.isCollapsed.value">
-        <UiTooltipTrigger as-child>
-          <button
-            type="button"
-            class="group text-rail-foreground/70 hover:bg-white/10 hover:text-rail-foreground flex h-10 w-10 items-center justify-center rounded-xl transition"
-            @click="commandDialog.open()">
-            <Icon name="lucide:search" class="h-4 w-4" />
-          </button>
-        </UiTooltipTrigger>
-        <UiTooltipContent side="right">Search (⌘K)</UiTooltipContent>
-      </UiTooltip>
-
-      <UiTooltip v-for="item in primaryRailItems" :key="item.path">
-        <UiTooltipTrigger as-child>
-          <AppNavLink
-            :to="item.path"
-            class="group text-rail-foreground/70 hover:bg-white/10 hover:text-rail-foreground flex h-10 w-10 items-center justify-center rounded-xl transition"
-            :class="{
-              'bg-white/10 text-rail-foreground': routes.isRouteActive(item.path),
-            }"
-            :aria-label="item.label">
-            <Icon :name="item.icon" class="h-4 w-4" />
-          </AppNavLink>
-        </UiTooltipTrigger>
-        <UiTooltipContent side="right">{{ item.label }}</UiTooltipContent>
-      </UiTooltip>
-    </div>
-
-    <!-- Divider -->
-    <div class="w-8 border-t border-white/10" />
-
-    <!-- Edit Mode Builder Buttons -->
+    <!-- Builder Tools -->
     <div class="flex flex-col gap-1">
       <!-- Add Page Button (Notion-style instant creation) -->
       <UiTooltip>
         <UiTooltipTrigger as-child>
           <button
             type="button"
-            class="group text-accent-foreground/70 hover:bg-white/10 hover:text-accent-foreground flex h-10 w-10 items-center justify-center rounded-xl transition"
+            class="group text-accent-foreground/70 hover:bg-accent-foreground/10 hover:text-accent-foreground flex h-10 w-10 items-center justify-center rounded-xl transition"
             @click="handleCreatePage">
             <Icon name="lucide:plus" class="h-4 w-4" />
           </button>
@@ -100,7 +65,7 @@
         <UiTooltipTrigger as-child>
           <button
             type="button"
-            class="group text-accent-foreground/70 hover:bg-white/10 hover:text-accent-foreground flex h-10 w-10 items-center justify-center rounded-xl transition"
+            class="group text-accent-foreground/70 hover:bg-accent-foreground/10 hover:text-accent-foreground flex h-10 w-10 items-center justify-center rounded-xl transition"
             @click="dashboardBuilderOpen = true">
             <Icon name="lucide:layout-dashboard" class="h-4 w-4" />
           </button>
@@ -113,7 +78,7 @@
         <UiTooltipTrigger as-child>
           <button
             type="button"
-            class="group text-accent-foreground/70 hover:bg-white/10 hover:text-accent-foreground flex h-10 w-10 items-center justify-center rounded-xl transition"
+            class="group text-accent-foreground/70 hover:bg-accent-foreground/10 hover:text-accent-foreground flex h-10 w-10 items-center justify-center rounded-xl transition"
             @click="integrationManagerOpen = true">
             <Icon name="lucide:plug" class="h-4 w-4" />
           </button>
@@ -126,7 +91,7 @@
         <UiTooltipTrigger as-child>
           <button
             type="button"
-            class="group text-accent-foreground/70 hover:bg-white/10 hover:text-accent-foreground flex h-10 w-10 items-center justify-center rounded-xl transition"
+            class="group text-accent-foreground/70 hover:bg-accent-foreground/10 hover:text-accent-foreground flex h-10 w-10 items-center justify-center rounded-xl transition"
             @click="brandingManagerOpen = true">
             <Icon name="lucide:palette" class="h-4 w-4" />
           </button>
@@ -139,7 +104,7 @@
         <UiTooltipTrigger as-child>
           <button
             type="button"
-            class="group text-accent-foreground/70 hover:bg-white/10 hover:text-accent-foreground flex h-10 w-10 items-center justify-center rounded-xl transition"
+            class="group text-accent-foreground/70 hover:bg-accent-foreground/10 hover:text-accent-foreground flex h-10 w-10 items-center justify-center rounded-xl transition"
             @click="ontologyMarketplaceOpen = true">
             <Icon name="lucide:store" class="h-4 w-4" />
           </button>
@@ -148,68 +113,40 @@
       </UiTooltip>
     </div>
 
-    <!-- Secondary items (Settings/Admin/Help) -->
-    <div class="flex flex-col gap-1">
-      <UiTooltip v-for="item in secondaryRailItems" :key="item.path">
+    <!-- Spacer -->
+    <div class="flex-1" />
+
+    <!-- Settings shortcut -->
+    <div class="flex flex-col gap-1 pb-2">
+      <UiTooltip>
         <UiTooltipTrigger as-child>
           <AppNavLink
-            :to="item.path"
-            class="group text-rail-foreground/70 hover:bg-white/10 hover:text-rail-foreground flex h-10 w-10 items-center justify-center rounded-xl transition"
-            :class="{
-              'bg-white/10 text-rail-foreground': routes.isRouteActive(item.path),
-            }"
-            :aria-label="item.label">
-            <Icon :name="item.icon" class="h-4 w-4" />
+            to="/settings"
+            class="group text-accent-foreground/70 hover:bg-accent-foreground/10 hover:text-accent-foreground flex h-10 w-10 items-center justify-center rounded-xl transition">
+            <Icon name="lucide:settings" class="h-4 w-4" />
           </AppNavLink>
         </UiTooltipTrigger>
-        <UiTooltipContent side="right">{{ item.label }}</UiTooltipContent>
+        <UiTooltipContent side="right">Settings</UiTooltipContent>
       </UiTooltip>
     </div>
 
-    <!-- Bottom section: Sign in + Sidebar toggle -->
-    <div class="mt-auto flex flex-col gap-2 py-0">
-      <ClientOnly>
-        <!-- Sign in button for unauthenticated users -->
-        <UiTooltip v-if="!isAuthenticated">
-          <UiTooltipTrigger as-child>
-            <AppNavLink
-              to="/auth/login"
-              class="group text-rail-foreground/70 hover:bg-white/10 hover:text-rail-foreground flex h-10 w-10 items-center justify-center rounded-xl transition"
-              aria-label="Sign in">
-              <Icon name="lucide:log-in" class="h-5 w-5" />
-            </AppNavLink>
-          </UiTooltipTrigger>
-          <UiTooltipContent side="right">Sign in</UiTooltipContent>
-        </UiTooltip>
-      </ClientOnly>
-
-      <!-- User Avatar -->
-      <div class="pb-2">
-        <AppUserAvatar collapsed />
-      </div>
-    </div>
-
-    <!-- Dashboard Builder Dialog -->
+    <!-- Dialogs -->
     <DashboardBuilder
       :open="dashboardBuilderOpen"
       @update:open="dashboardBuilderOpen = $event"
       @save="handleDashboardSave" />
 
-    <!-- Integration Manager Dialog -->
     <IntegrationManager
       :open="integrationManagerOpen"
       @update:open="integrationManagerOpen = $event" />
 
-    <!-- Branding Manager Dialog -->
     <BrandingManager
       :open="brandingManagerOpen"
       @update:open="brandingManagerOpen = $event"
       @save="handleBrandingSave" />
 
-    <!-- Ontology Marketplace Dialog -->
     <OntologyMarketplace
       :open="ontologyMarketplaceOpen"
       @update:open="ontologyMarketplaceOpen = $event" />
-
-    </nav>
+  </nav>
 </template>
