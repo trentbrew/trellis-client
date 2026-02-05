@@ -1,0 +1,412 @@
+{
+  "@context": {
+    "@vocab": "https://platform-sandbox.dev/ontology/core#",
+    "@version": 1.1,
+    "schema": "https://schema.org/",
+    "rdf": "http://www.w3.org/1999/02/22-rdf-syntax-ns#",
+    "rdfs": "http://www.w3.org/2000/01/rdf-schema#",
+    "xsd": "http://www.w3.org/2001/XMLSchema#",
+    "owl": "http://www.w3.org/2002/07/owl#",
+    "shacl": "http://www.w3.org/ns/shacl#",
+    
+    "core": "https://platform-sandbox.dev/ontology/core#",
+    "ui": "https://platform-sandbox.dev/ontology/ui#",
+    "field": "https://platform-sandbox.dev/ontology/fields#",
+    
+    "label": "rdfs:label",
+    "comment": "rdfs:comment",
+    "subClassOf": { "@id": "rdfs:subClassOf", "@type": "@id" },
+    "extends": { "@id": "core:extends", "@type": "@id" },
+    
+    "icon": { "@id": "ui:icon", "@type": "@id" },
+    "component": { "@id": "ui:component", "@type": "@id" },
+    "projectionTypes": { "@id": "ui:projectionTypes", "@container": "@list" },
+    "fields": { "@id": "core:fields", "@container": "@list" },
+    "required": "core:required",
+    "indexed": "core:indexed",
+    "valueType": "core:valueType",
+    "options": { "@id": "core:options", "@container": "@list" }
+  },
+  
+  "@id": "https://platform-sandbox.dev/ontology/core",
+  "@type": "owl:Ontology",
+  "label": "Platform Sandbox Core Ontology",
+  "comment": "Base ontology for the Platform Sandbox scaffold. Defines core types, fields, and patterns that all verticals extend.",
+  "owl:versionInfo": "1.0.0",
+  
+  "@graph": [
+    {
+      "@id": "core:Ontology",
+      "@type": "rdfs:Class",
+      "label": "Ontology",
+      "comment": "A vertical ontology package that can be imported into the app configuration.",
+      "fields": [
+        { "@id": "field:name" },
+        { "@id": "field:version" },
+        { "@id": "field:description" },
+        { "@id": "field:imports" },
+        { "@id": "field:types" },
+        { "@id": "field:fields" },
+        { "@id": "field:workflows" },
+        { "@id": "field:components" },
+        { "@id": "field:terminology" }
+      ]
+    },
+    
+    {
+      "@id": "core:Thing",
+      "@type": "rdfs:Class",
+      "label": "Thing",
+      "comment": "The root type. All entities inherit from Thing.",
+      "icon": "lucide:box",
+      "component": "ui:GenericCard",
+      "projectionTypes": ["table", "list", "grid"],
+      "fields": [
+        { "@id": "field:id" },
+        { "@id": "field:createdAt" },
+        { "@id": "field:updatedAt" },
+        { "@id": "field:createdBy" },
+        { "@id": "field:tags" }
+      ]
+    },
+    
+    {
+      "@id": "core:Record",
+      "@type": "rdfs:Class",
+      "label": "Record",
+      "comment": "A generic data record in a collection. The base type for all user-created entities.",
+      "icon": "lucide:file",
+      "component": "ui:RecordCard",
+      "projectionTypes": ["table", "list", "grid", "kanban", "calendar"],
+      "subClassOf": { "@id": "core:Thing" },
+      "fields": [
+        { "@id": "field:title" },
+        { "@id": "field:description" },
+        { "@id": "field:status" },
+        { "@id": "field:tags" }
+      ]
+    },
+    
+    {
+      "@id": "core:Collection",
+      "@type": "rdfs:Class",
+      "label": "Collection",
+      "comment": "A container for records with a defined schema.",
+      "icon": "lucide:database",
+      "component": "ui:CollectionCard",
+      "projectionTypes": ["table", "list"],
+      "subClassOf": { "@id": "core:Thing" },
+      "fields": [
+        { "@id": "field:title" },
+        { "@id": "field:description" },
+        { "@id": "field:icon" },
+        { "@id": "field:schema" },
+        { "@id": "field:recordType" }
+      ]
+    },
+    
+    {
+      "@id": "core:Tag",
+      "@type": "rdfs:Class",
+      "label": "Tag",
+      "comment": "A flat, flexible grouping mechanism. The generic alternative to hierarchical folders.",
+      "icon": "lucide:tag",
+      "component": "ui:TagBadge",
+      "projectionTypes": ["list", "grid"],
+      "subClassOf": { "@id": "core:Thing" },
+      "fields": [
+        { "@id": "field:name" },
+        { "@id": "field:slug" },
+        { "@id": "field:color" },
+        { "@id": "field:icon" },
+        { "@id": "field:parentTag" }
+      ]
+    },
+    
+    {
+      "@id": "core:Workspace",
+      "@type": "rdfs:Class",
+      "label": "Workspace",
+      "comment": "A workspace (organization/tenant) containing apps and members.",
+      "icon": "lucide:building-2",
+      "component": "ui:WorkspaceCard",
+      "projectionTypes": ["table", "grid"],
+      "subClassOf": { "@id": "core:Thing" },
+      "fields": [
+        { "@id": "field:name" },
+        { "@id": "field:slug" },
+        { "@id": "field:avatar" },
+        { "@id": "field:plan" }
+      ]
+    },
+    
+    {
+      "@id": "core:App",
+      "@type": "rdfs:Class",
+      "label": "App",
+      "comment": "An application within a workspace. Contains collections and configuration.",
+      "icon": "lucide:layout-grid",
+      "component": "ui:AppCard",
+      "projectionTypes": ["table", "grid"],
+      "subClassOf": { "@id": "core:Thing" },
+      "fields": [
+        { "@id": "field:name" },
+        { "@id": "field:slug" },
+        { "@id": "field:icon" },
+        { "@id": "field:color" },
+        { "@id": "field:description" },
+        { "@id": "field:ontologies" }
+      ]
+    },
+    
+    {
+      "@id": "core:Member",
+      "@type": "rdfs:Class",
+      "label": "Member",
+      "comment": "A member of a workspace with assigned roles.",
+      "icon": "lucide:user",
+      "component": "ui:MemberCard",
+      "projectionTypes": ["table", "grid"],
+      "subClassOf": { "@id": "core:Thing" },
+      "fields": [
+        { "@id": "field:name" },
+        { "@id": "field:email" },
+        { "@id": "field:avatar" },
+        { "@id": "field:role" },
+        { "@id": "field:status" }
+      ]
+    },
+    
+    {
+      "@id": "core:Person",
+      "@type": "rdfs:Class",
+      "label": "Person",
+      "comment": "A human being.",
+      "icon": "lucide:user",
+      "component": "ui:PersonCard",
+      "projectionTypes": ["table", "grid"],
+      "subClassOf": { "@id": "core:Thing" }
+    },
+    
+    {
+      "@id": "core:Document",
+      "@type": "rdfs:Class",
+      "label": "Document",
+      "comment": "A document, file, or text artifact.",
+      "icon": "lucide:file-text",
+      "component": "ui:DocumentViewer",
+      "projectionTypes": ["table", "list"],
+      "subClassOf": { "@id": "core:Record" },
+      "fields": [
+        { "@id": "field:content" },
+        { "@id": "field:mimeType" },
+        { "@id": "field:fileUrl" }
+      ]
+    },
+    
+    {
+      "@id": "core:Event",
+      "@type": "rdfs:Class",
+      "label": "Event",
+      "comment": "A scheduled event or occurrence.",
+      "icon": "lucide:calendar",
+      "component": "ui:EventCard",
+      "projectionTypes": ["table", "calendar", "list", "timeline"],
+      "subClassOf": { "@id": "core:Record" },
+      "fields": [
+        { "@id": "field:startDate" },
+        { "@id": "field:endDate" },
+        { "@id": "field:location" },
+        { "@id": "field:allDay" }
+      ]
+    },
+    
+    {
+      "@id": "core:Workflow",
+      "@type": "rdfs:Class",
+      "label": "Workflow",
+      "comment": "An automated workflow or process definition.",
+      "icon": "lucide:git-branch",
+      "component": "ui:WorkflowCard",
+      "projectionTypes": ["table", "list"],
+      "subClassOf": { "@id": "core:Thing" },
+      "fields": [
+        { "@id": "field:name" },
+        { "@id": "field:trigger" },
+        { "@id": "field:steps" },
+        { "@id": "field:active" }
+      ]
+    },
+    
+    {
+      "@id": "field:id",
+      "@type": "core:Field",
+      "label": "ID",
+      "valueType": "string",
+      "required": true,
+      "indexed": true
+    },
+    {
+      "@id": "field:title",
+      "@type": "core:Field",
+      "label": "Title",
+      "valueType": "text",
+      "icon": "lucide:type",
+      "component": "ui:TextInput"
+    },
+    {
+      "@id": "field:name",
+      "@type": "core:Field",
+      "label": "Name",
+      "valueType": "text",
+      "icon": "lucide:type",
+      "component": "ui:TextInput"
+    },
+    {
+      "@id": "field:slug",
+      "@type": "core:Field",
+      "label": "Slug",
+      "valueType": "text",
+      "indexed": true,
+      "icon": "lucide:link"
+    },
+    {
+      "@id": "field:description",
+      "@type": "core:Field",
+      "label": "Description",
+      "valueType": "textarea",
+      "icon": "lucide:align-left",
+      "component": "ui:TextArea"
+    },
+    {
+      "@id": "field:status",
+      "@type": "core:Field",
+      "label": "Status",
+      "valueType": "select",
+      "icon": "lucide:circle-dot",
+      "component": "ui:StatusBadge",
+      "options": [
+        { "value": "draft", "label": "Draft", "color": "gray" },
+        { "value": "active", "label": "Active", "color": "green" },
+        { "value": "archived", "label": "Archived", "color": "slate" }
+      ]
+    },
+    {
+      "@id": "field:tags",
+      "@type": "core:Field",
+      "label": "Tags",
+      "comment": "Tags for grouping and filtering records.",
+      "valueType": "multiselect",
+      "icon": "lucide:tags",
+      "component": "ui:TagPicker"
+    },
+    {
+      "@id": "field:createdAt",
+      "@type": "core:Field",
+      "label": "Created At",
+      "valueType": "datetime",
+      "icon": "lucide:clock"
+    },
+    {
+      "@id": "field:updatedAt",
+      "@type": "core:Field",
+      "label": "Updated At",
+      "valueType": "datetime",
+      "icon": "lucide:clock"
+    },
+    {
+      "@id": "field:createdBy",
+      "@type": "core:Field",
+      "label": "Created By",
+      "valueType": "relation",
+      "icon": "lucide:user"
+    },
+    {
+      "@id": "field:startDate",
+      "@type": "core:Field",
+      "label": "Start Date",
+      "valueType": "datetime",
+      "icon": "lucide:calendar"
+    },
+    {
+      "@id": "field:endDate",
+      "@type": "core:Field",
+      "label": "End Date",
+      "valueType": "datetime",
+      "icon": "lucide:calendar-check"
+    },
+    {
+      "@id": "field:color",
+      "@type": "core:Field",
+      "label": "Color",
+      "valueType": "color",
+      "icon": "lucide:palette"
+    },
+    {
+      "@id": "field:icon",
+      "@type": "core:Field",
+      "label": "Icon",
+      "valueType": "icon",
+      "icon": "lucide:smile"
+    },
+    {
+      "@id": "field:email",
+      "@type": "core:Field",
+      "label": "Email",
+      "valueType": "email",
+      "icon": "lucide:mail"
+    },
+    {
+      "@id": "field:avatar",
+      "@type": "core:Field",
+      "label": "Avatar",
+      "valueType": "image",
+      "icon": "lucide:image"
+    },
+    {
+      "@id": "field:role",
+      "@type": "core:Field",
+      "label": "Role",
+      "valueType": "select",
+      "icon": "lucide:shield",
+      "options": [
+        { "value": "owner", "label": "Owner", "color": "purple" },
+        { "value": "admin", "label": "Admin", "color": "blue" },
+        { "value": "member", "label": "Member", "color": "green" },
+        { "value": "viewer", "label": "Viewer", "color": "gray" }
+      ]
+    },
+    {
+      "@id": "field:location",
+      "@type": "core:Field",
+      "label": "Location",
+      "valueType": "text",
+      "icon": "lucide:map-pin"
+    },
+    {
+      "@id": "field:content",
+      "@type": "core:Field",
+      "label": "Content",
+      "valueType": "richtext",
+      "icon": "lucide:file-text"
+    },
+    {
+      "@id": "field:ontologies",
+      "@type": "core:Field",
+      "label": "Ontologies",
+      "comment": "Imported vertical ontologies for this app.",
+      "valueType": "array",
+      "icon": "lucide:package"
+    },
+    
+    {
+      "@id": "core:terminology",
+      "@type": "core:TerminologyConfig",
+      "comment": "Default terminology for the generic scaffold.",
+      "grouping": "tag",
+      "context": ["workspace", "app"],
+      "entityNoun": "record",
+      "containerNoun": "collection"
+    }
+  ]
+}
