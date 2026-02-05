@@ -38,6 +38,10 @@
     collectionSchemaSheetOpen.value = open
   }
 
+  // Admin UI for schema builder
+  const { showBuilderUI } = useAdminUI()
+  const schemaBuilderOpen = ref(false)
+
   const isIconPickerOpen = ref(false)
   const activeProjection = ref<string>('')
   const contentContainer = ref<HTMLElement | null>(null)
@@ -1541,6 +1545,15 @@
         </div>
       </UiSheetContent>
     </UiSheet>
+
+    <!-- Schema Builder Dialog (Edit Mode) -->
+    <SchemaCollectionSchemaBuilder
+      v-if="schema && collection"
+      :open="schemaBuilderOpen"
+      :schema="schema"
+      :collection-title="collection.title"
+      @update:open="schemaBuilderOpen = $event"
+      @save="schema = $event; saveSchema()" />
 
     <!-- Reset Content Confirmation Dialog -->
     <UiAlertDialog :open="resetContentDialogOpen" @update:open="(v) => !v && cancelResetContent()">
