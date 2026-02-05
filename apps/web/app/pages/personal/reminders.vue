@@ -299,10 +299,11 @@
 
         <!-- Date -->
         <div class="text-right shrink-0">
-          <p :class="[
-            'text-sm font-medium',
-            item.taskStatus === 'overdue' ? 'text-red-500' : item.taskStatus === 'completed' ? 'text-muted-foreground' : 'text-foreground',
-          ]">
+          <p
+            :class="[
+              'text-sm font-medium',
+              item.taskStatus === 'overdue' ? 'text-red-500' : item.taskStatus === 'completed' ? 'text-muted-foreground' : 'text-foreground',
+            ]">
             {{ formatDate(item.startDate) }}
           </p>
           <p class="text-[10px] text-muted-foreground">{{ formatAbsoluteDate(item.startDate) }}</p>
