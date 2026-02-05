@@ -152,7 +152,7 @@
     <!-- Page handles #viewSwitcher and automatic filters/sort via :browse prop -->
 
     <template #toolbarActions>
-      <UiButton @click="openDetail(null, { entityType: 'event', mode: 'create' })">
+      <UiButton @click="openDetail({}, { entityType: 'event', mode: 'create' })">
         <Icon name="lucide:plus" class="mr-2 h-4 w-4" />
         Add Event
       </UiButton>

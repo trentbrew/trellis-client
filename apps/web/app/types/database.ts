@@ -85,6 +85,7 @@ export interface DatabaseField {
   config?: Record<string, any>
   required: boolean
   order: number
+  isDefault?: boolean
 
   // Formula field support
   formula?: string // Expression to evaluate (e.g., "categories.reduce((sum, c) => sum + c.budgeted, 0)")
