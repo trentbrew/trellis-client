@@ -12,7 +12,7 @@
   import { useFacilityEntities } from '~/composables/useFacilityEntities'
   import { buildViewModeOptionsFromType } from '~/lib/projections'
   import CalendarView from '~/components/views/CalendarView.vue'
-  import UnifiedTaskDialog from '~/components/dialogs/UnifiedTaskDialog.vue'
+  import CalendarItemDialog from '~/components/dialogs/CalendarItemDialog.vue'
   import FolderCreateDialog from '~/components/dialogs/FolderCreateDialog.vue'
   import ScheduledTasksView from '~/components/views/ScheduledTasksView.vue'
   import SuggestedTasksView from '~/components/views/SuggestedTasksView.vue'
@@ -1410,12 +1410,11 @@
         Showing {{ filteredTasks.length }} tasks
       </div>
 
-      <!-- Unified Task Dialog -->
-      <UnifiedTaskDialog
+      <!-- View/Edit Task Dialog -->
+      <CalendarItemDialog
         v-model:open="viewTaskOpen"
-        :task="viewingTask"
+        :item="viewingTask"
         mode="edit"
-        task-type="standard"
         :can-navigate-prev="canNavigatePrev"
         :can-navigate-next="canNavigateNext"
         :owners="taskOwners"
@@ -1426,12 +1425,13 @@
         @close="closeTaskDetail" />
 
       <!-- Create Task Dialog -->
-      <UnifiedTaskDialog
+      <CalendarItemDialog
         v-model:open="createTaskOpen"
         mode="create"
+        item-type="task"
         :owners="taskOwners"
         :folders="taskFolders"
-        :task="null"
+        :item="null"
         @save="handleCreateTask"
         @close="createTaskOpen = false" />
 

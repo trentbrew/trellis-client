@@ -12,10 +12,7 @@
   import { getRouteMeta } from '~/config/routes'
   import { useGraphDrivenPage } from '~/composables/useGraphDrivenPage'
   import CalendarView from '~/components/views/CalendarView.vue'
-  import UnifiedTaskDialog from '~/verticals/ecms/components/dialogs/UnifiedTaskDialog.vue'
-  import EventDialog from '~/components/dialogs/EventDialog.vue'
-  import PermitDialog from '~/components/dialogs/PermitDialog.vue'
-  import FolderDetailDialog from '~/components/dialogs/FolderDetailDialog.vue'
+  import CalendarItemDialog from '~/components/dialogs/CalendarItemDialog.vue'
 
   definePageMeta({
     layout: 'default',
@@ -322,38 +319,12 @@
       Showing {{ filteredItems.length }} of {{ items.length }} items
     </div>
 
-    <!-- Bespoke dialogs based on resolved entity type -->
-    <UnifiedTaskDialog
-      v-if="resolvedEntityType === 'task'"
+    <!-- Unified CalendarItem Dialog for all entity types -->
+    <CalendarItemDialog
       v-model:open="dialogOpen"
       :mode="dialogMode === 'create' ? 'create' : 'edit'"
-      :task="dialogItem"
-      @save="closeDetail"
-      @close="closeDetail" />
-
-    <EventDialog
-      v-else-if="resolvedEntityType === 'event'"
-      v-model:open="dialogOpen"
-      :mode="dialogMode === 'create' ? 'create' : 'edit'"
-      :event="dialogItem"
-      @save="closeDetail"
-      @delete="closeDetail"
-      @close="closeDetail" />
-
-    <PermitDialog
-      v-else-if="resolvedEntityType === 'permit'"
-      v-model:open="dialogOpen"
-      :mode="dialogMode === 'create' ? 'create' : 'edit'"
-      :permit="dialogItem"
-      @save="closeDetail"
-      @delete="closeDetail"
-      @close="closeDetail" />
-
-    <FolderDetailDialog
-      v-else-if="resolvedEntityType === 'folder'"
-      v-model:open="dialogOpen"
-      :mode="dialogMode === 'create' ? 'create' : 'edit'"
-      :folder="dialogItem"
+      :item-type="resolvedEntityType === 'event' ? 'event' : 'task'"
+      :item="dialogItem"
       @save="closeDetail"
       @delete="closeDetail"
       @close="closeDetail" />

@@ -1,8 +1,9 @@
 <script setup lang="ts">
   import type { PageStat } from '~/components/layout/Page.vue'
   import { useBrowse } from '~/composables/useBrowse'
-  import EventDialog from '~/components/dialogs/EventDialog.vue'
-  import type { EventData } from '~/components/dialogs/EventDialog.vue'
+  import CalendarItemDialog from '~/components/dialogs/CalendarItemDialog.vue'
+  import type { CalendarItem } from '~/types/calendarItem'
+  import { createDefaultItem } from '~/types/calendarItem'
 
   interface CalendarEvent {
     id: string
@@ -26,7 +27,7 @@
   // Dialog state
   const createEventOpen = ref(false)
   const viewEventOpen = ref(false)
-  const viewingEvent = ref<EventData | null>(null)
+  const viewingEvent = ref<CalendarItem | null>(null)
   const viewingEventIndex = computed(() => {
     if (!viewingEvent.value) return -1
     return events.value.findIndex((e) => e.id === viewingEvent.value?.id)
@@ -39,7 +40,14 @@
   }
 
   function openEventDetail(event: CalendarEvent) {
-    viewingEvent.value = { ...event, description: '', location: '' }
+    const item = createDefaultItem('event')
+    viewingEvent.value = {
+      ...item,
+      id: event.id,
+      title: event.title,
+      startDate: event.date,
+      category: event.category,
+    }
     viewEventOpen.value = true
   }
 
@@ -130,33 +138,32 @@
 
   const viewMode = computed(() => browseState.viewMode.value)
 
-  function handleCreateEvent(eventData: EventData) {
+  function handleCreateEvent(item: CalendarItem) {
     events.value.push({
-      id: eventData.id || crypto.randomUUID(),
-      title: eventData.title,
-      date: eventData.date,
-      type: eventData.type,
-      category: eventData.category,
+      id: item.id || crypto.randomUUID(),
+      title: item.title,
+      date: item.startDate,
+      type: item.category || 'event',
+      category: item.category || 'general',
     })
     createEventOpen.value = false
   }
 
-  function handleUpdateEvent(eventData: EventData) {
-    const idx = events.value.findIndex((e) => e.id === eventData.id)
+  function handleUpdateEvent(item: CalendarItem) {
+    const idx = events.value.findIndex((e) => e.id === item.id)
     if (idx !== -1) {
       events.value[idx] = {
         ...events.value[idx]!,
-        title: eventData.title,
-        date: eventData.date,
-        type: eventData.type,
-        category: eventData.category,
+        title: item.title,
+        date: item.startDate,
+        category: item.category || events.value[idx]!.category,
       }
     }
     viewEventOpen.value = false
   }
 
-  function handleDeleteEvent(eventData: EventData) {
-    events.value = events.value.filter((e) => e.id !== eventData.id)
+  function handleDeleteEvent(item: CalendarItem) {
+    events.value = events.value.filter((e) => e.id !== item.id)
     viewEventOpen.value = false
   }
 </script>
@@ -288,18 +295,19 @@
     </div>
 
     <!-- Create Event Dialog -->
-    <EventDialog
+    <CalendarItemDialog
       v-model:open="createEventOpen"
       mode="create"
-      :event="null"
+      item-type="event"
+      :item="null"
       @save="handleCreateEvent"
       @close="createEventOpen = false" />
 
     <!-- View/Edit Event Dialog -->
-    <EventDialog
+    <CalendarItemDialog
       v-model:open="viewEventOpen"
       mode="edit"
-      :event="viewingEvent"
+      :item="viewingEvent"
       :can-navigate-prev="canNavigatePrev"
       :can-navigate-next="canNavigateNext"
       @navigate-prev="navigatePrev"
