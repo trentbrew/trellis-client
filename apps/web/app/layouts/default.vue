@@ -2,6 +2,9 @@
   import { useAppNavigate } from '~/composables/useAppNavigate'
   import { getSidebarSection, getCleanPath } from '~/config/routes'
 
+  // Builder mode visual wrapper
+  const { isInEditMode } = useAdminUI()
+
   const commandDialog = useCommandDialog()
   const routes = useRoutes()
   const appNavigate = useAppNavigate()
@@ -140,8 +143,10 @@
 </script>
 
 <template>
-  <!-- Root: base layer -->
-  <div class="bg-background text-foreground flex h-dvh overflow-hidden">
+  <!-- Root: base layer - edit mode adds accent ring as "4D wrapper" -->
+  <div
+    class="bg-background text-foreground flex h-dvh overflow-hidden transition-shadow duration-300"
+    :class="{ 'ring-4 ring-accent ring-inset shadow-[inset_0_0_0_4px] shadow-accent': isInEditMode }">
     <!-- Command Dialog -->
     <UiCommandDialog
       :open="commandDialog.isOpen.value"
