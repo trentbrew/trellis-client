@@ -168,8 +168,9 @@ export function useSchemaBuilder(_collectionId?: Ref<string | undefined>) {
     }
 
     for (const type of availableFieldTypes.value) {
-      if (categories[type.category]) {
-        categories[type.category].push(type)
+      const category = categories[type.category]
+      if (category) {
+        category.push(type)
       }
     }
 
@@ -262,6 +263,7 @@ export function useSchemaBuilder(_collectionId?: Ref<string | undefined>) {
           type: 'table',
           filters: [],
           sorts: [],
+          isDefault: true,
         },
       ],
       createdAt: Date.now(),
