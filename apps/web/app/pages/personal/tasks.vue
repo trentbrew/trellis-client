@@ -1,6 +1,7 @@
 <script setup lang="ts">
-  import UnifiedTaskDialog from '~/verticals/ecms/components/dialogs/UnifiedTaskDialog.vue'
-  import type { TaskData } from '~/verticals/ecms/components/dialogs/UnifiedTaskDialog.vue'
+  import CalendarItemDialog from '~/components/dialogs/CalendarItemDialog.vue'
+  import type { CalendarItem } from '~/types/calendarItem'
+  import { createDefaultItem } from '~/types/calendarItem'
 
   definePageMeta({
     layout: 'default',
@@ -77,7 +78,7 @@
   // Dialog state
   const createTaskOpen = ref(false)
   const viewTaskOpen = ref(false)
-  const viewingTask = ref<TaskData | null>(null)
+  const viewingTask = ref<CalendarItem | null>(null)
   const dialogMode = ref<'create' | 'edit'>('create')
 
   const taskOwners = [{ id: 'you', name: 'You' }]
@@ -90,13 +91,13 @@
 
   function openTaskDetail(task: any) {
     dialogMode.value = 'edit'
+    const item = createDefaultItem('task')
     viewingTask.value = {
+      ...item,
       id: task.id,
       title: task.title,
-      description: '',
-      status: task.status === 'overdue' ? 'overdue' : task.status === 'due soon' ? 'due-soon' : 'on-track',
-      priority: task.priority as 'low' | 'medium' | 'high',
-      dueDate: task.dueDate,
+      startDate: task.dueDate,
+      priority: task.priority as 'low' | 'medium' | 'high' | 'critical',
       owner: 'you',
     }
     viewTaskOpen.value = true
@@ -124,43 +125,26 @@
     }
   }
 
-  function handleCreateTask(taskData: TaskData) {
-    const statusMap: Record<string, string> = {
-      'on-track': 'on track',
-      'due-soon': 'due soon',
-      overdue: 'overdue',
-      pending: 'on track',
-      'in-progress': 'on track',
-      completed: 'on track',
-    }
+  function handleCreateTask(item: CalendarItem) {
     tasks.value.unshift({
-      id: taskData.id || `p-${Math.random().toString(36).slice(2, 8)}`,
-      title: taskData.title,
-      status: statusMap[taskData.status] || 'on track',
+      id: item.id || `p-${Math.random().toString(36).slice(2, 8)}`,
+      title: item.title,
+      status: 'on track',
       assignee: 'You',
-      dueDate: taskData.dueDate || 'TBD',
-      priority: taskData.priority || 'medium' as string,
+      dueDate: item.startDate || 'TBD',
+      priority: item.priority || 'medium',
     })
     createTaskOpen.value = false
   }
 
-  function handleUpdateTask(taskData: TaskData) {
-    const idx = tasks.value.findIndex((t) => t.id === taskData.id)
+  function handleUpdateTask(item: CalendarItem) {
+    const idx = tasks.value.findIndex((t) => t.id === item.id)
     if (idx !== -1) {
-      const statusMap: Record<string, string> = {
-        'on-track': 'on track',
-        'due-soon': 'due soon',
-        overdue: 'overdue',
-        pending: 'on track',
-        'in-progress': 'on track',
-        completed: 'on track',
-      }
       tasks.value[idx] = {
         ...tasks.value[idx]!,
-        title: taskData.title,
-        status: statusMap[taskData.status] || tasks.value[idx]!.status,
-        dueDate: taskData.dueDate || tasks.value[idx]!.dueDate,
-        priority: (taskData.priority || tasks.value[idx]!.priority) as string,
+        title: item.title,
+        dueDate: item.startDate || tasks.value[idx]!.dueDate,
+        priority: item.priority || tasks.value[idx]!.priority,
       }
     }
     viewTaskOpen.value = false
@@ -270,20 +254,21 @@
       </div>
     </div>
 
-    <!-- Create Task Dialog (UnifiedTaskDialog) -->
-    <UnifiedTaskDialog
+    <!-- Create Task Dialog -->
+    <CalendarItemDialog
       v-model:open="createTaskOpen"
       mode="create"
-      :task="null"
+      item-type="task"
+      :item="null"
       :owners="taskOwners"
       @save="handleCreateTask"
       @close="createTaskOpen = false" />
 
-    <!-- View/Edit Task Dialog (UnifiedTaskDialog) -->
-    <UnifiedTaskDialog
+    <!-- View/Edit Task Dialog -->
+    <CalendarItemDialog
       v-model:open="viewTaskOpen"
       mode="edit"
-      :task="viewingTask"
+      :item="viewingTask"
       :can-navigate-prev="canNavigatePrev"
       :can-navigate-next="canNavigateNext"
       :owners="taskOwners"

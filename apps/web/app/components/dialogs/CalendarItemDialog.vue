@@ -83,7 +83,9 @@
   const isCreateMode = computed(() => mode.value === 'create')
   const isEditMode = computed(() => mode.value === 'edit')
 
-  const editableItem = reactive<CalendarItem>(createDefaultItem(props.itemType || 'task'))
+  // Use `any` because Vue's Reactive wrapper doesn't support discriminated-union narrowing in templates.
+  // Runtime type guards (isTask, isEvent, …) ensure correctness.
+  const editableItem: any = reactive(createDefaultItem(props.itemType || 'task'))
 
   watch(
     () => props.item,
@@ -222,7 +224,7 @@
     tagInput.value = ''
   }
   const removeTag = (t: string) => {
-    editableItem.tags = editableItem.tags.filter((x) => x !== t)
+    editableItem.tags = editableItem.tags.filter((x: string) => x !== t)
   }
 
   // People
@@ -260,7 +262,7 @@
   // Activity
   const displayActivity = computed(() => {
     if (props.activity.length > 0) return props.activity
-    return [{ id: '1', author: 'System', type: 'created' as const, date: editableItem.createdAt || 'Just now' }]
+    return [{ id: '1', author: 'System', type: 'created' as const, date: editableItem.createdAt || 'Just now', content: '' }]
   })
 
   // Attachment helpers
