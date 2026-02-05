@@ -117,7 +117,6 @@
   const tagsOpen = ref(false)
   const tagInput = ref('')
   const schedulePopoverOpen = ref(false)
-  const activeScheduleTab = ref<'reminder' | 'repeat'>('repeat')
   const ownerSearch = ref('')
   const folderSearch = ref('')
   const involvedSearch = ref('')
@@ -170,31 +169,10 @@
     { value: 'weekdays', label: 'Every Weekday', sub: '(Mon-Fri)' },
     { value: 'custom', label: 'Custom' },
   ]
-  const repeatCustom = reactive({ interval: 1, unit: 'Week' as 'Day' | 'Week' | 'Month' | 'Year', weekdays: [] as number[] })
-  const weekdayShort = ['S', 'M', 'T', 'W', 'T', 'F', 'S']
-
   const selectRepeat = (p: RepeatPreset) => {
     selectedRepeat.value = p
     editableItem.recurrence = p === 'none' ? undefined : p !== 'custom' ? ({ frequency: p } as RecurrenceRule) : editableItem.recurrence
   }
-  const clearRepeat = () => {
-    selectedRepeat.value = 'none'
-    editableItem.recurrence = undefined
-  }
-  const toggleWeekday = (d: number) => {
-    const i = repeatCustom.weekdays.indexOf(d)
-    i === -1 ? repeatCustom.weekdays.push(d) : repeatCustom.weekdays.splice(i, 1)
-  }
-  const getRepeatDisplayText = computed(() => {
-    if (selectedRepeat.value === 'none') return 'None'
-    if (selectedRepeat.value === 'custom') {
-      if (repeatCustom.unit === 'Week' && repeatCustom.weekdays.length) {
-        return `Weekly on ${repeatCustom.weekdays.map((d) => weekdayShort[d]).join(', ')}`
-      }
-      return `Every ${repeatCustom.interval} ${repeatCustom.unit.toLowerCase()}${repeatCustom.interval > 1 ? 's' : ''}`
-    }
-    return repeatPresets.find((r) => r.value === selectedRepeat.value)?.label || ''
-  })
 
   // Reminder
   type ReminderPreset = 'on-the-day' | '1-day-early' | '2-days-early' | '1-week-early' | 'custom'
@@ -250,7 +228,11 @@
   // People
   const toggleInvolvedUser = (uid: string) => {
     const i = editableItem.involved.indexOf(uid)
-    i === -1 ? editableItem.involved.push(uid) : editableItem.involved.splice(i, 1)
+    if (i === -1) {
+      editableItem.involved.push(uid)
+    } else {
+      editableItem.involved.splice(i, 1)
+    }
   }
 
   // Priority/Urgency override
@@ -1094,19 +1076,19 @@
               </UiButton>
             </div>
             <div class="space-y-3 pt-2 border-t border-border">
-              <div v-for="item in displayActivity" :key="item.id" class="flex gap-2">
+              <div v-for="activityItem in displayActivity" :key="activityItem.id" class="flex gap-2">
                 <div class="w-6 h-6 rounded-full bg-muted flex items-center justify-center shrink-0 mt-0.5">
-                  <Icon v-if="item.type === 'created'" name="lucide:plus" class="h-3 w-3 text-muted-foreground" />
-                  <Icon v-else-if="item.type === 'comment'" name="lucide:message-circle" class="h-3 w-3 text-muted-foreground" />
+                  <Icon v-if="activityItem.type === 'created'" name="lucide:plus" class="h-3 w-3 text-muted-foreground" />
+                  <Icon v-else-if="activityItem.type === 'comment'" name="lucide:message-circle" class="h-3 w-3 text-muted-foreground" />
                   <Icon v-else name="lucide:activity" class="h-3 w-3 text-muted-foreground" />
                 </div>
                 <div class="flex-1 min-w-0">
-                  <p v-if="item.content" class="text-xs">{{ item.content }}</p>
+                  <p v-if="activityItem.content" class="text-xs">{{ activityItem.content }}</p>
                   <div class="flex items-center gap-1 text-[10px] text-muted-foreground">
-                    <span class="font-medium">{{ item.author }}</span>
-                    <span v-if="item.type === 'created'">created this {{ currentType?.label?.toLowerCase() || 'item' }}</span>
-                    <span v-else-if="item.type === 'comment'">commented</span>
-                    <span class="ml-1">{{ item.date }}</span>
+                    <span class="font-medium">{{ activityItem.author }}</span>
+                    <span v-if="activityItem.type === 'created'">created this {{ currentType?.label?.toLowerCase() || 'item' }}</span>
+                    <span v-else-if="activityItem.type === 'comment'">commented</span>
+                    <span class="ml-1">{{ activityItem.date }}</span>
                   </div>
                 </div>
               </div>
