@@ -1,11 +1,10 @@
 <script setup lang="ts">
-  import { useGlobalDetailSheet } from '~/composables/useGlobalDetailSheet'
+  import UnifiedTaskDialog from '~/verticals/ecms/components/dialogs/UnifiedTaskDialog.vue'
+  import type { TaskData } from '~/verticals/ecms/components/dialogs/UnifiedTaskDialog.vue'
 
   definePageMeta({
     layout: 'default',
   })
-
-  const { open: openDetail } = useGlobalDetailSheet()
 
   const tasks = ref([
     {
@@ -75,51 +74,96 @@
 
   const viewMode = ref('list')
 
-  const priorityOptions = [
-    { value: 'high', label: 'High' },
-    { value: 'medium', label: 'Medium' },
-    { value: 'low', label: 'Low' },
-  ]
+  // Dialog state
+  const createTaskOpen = ref(false)
+  const viewTaskOpen = ref(false)
+  const viewingTask = ref<TaskData | null>(null)
+  const dialogMode = ref<'create' | 'edit'>('create')
 
-  const statusOptions = [
-    { value: 'overdue', label: 'Overdue' },
-    { value: 'due soon', label: 'Due Soon' },
-    { value: 'on track', label: 'On Track' },
-  ]
+  const taskOwners = [{ id: 'you', name: 'You' }]
 
-  const createForm = reactive({
-    title: '',
-    dueDate: '',
-    priority: 'medium',
-    status: 'on track',
-    assignee: 'You',
-    notes: '',
-  })
-
-  const isCreateValid = computed(() => createForm.title.trim().length > 0)
-
-  const resetCreateForm = () => {
-    createForm.title = ''
-    createForm.dueDate = ''
-    createForm.priority = 'medium'
-    createForm.status = 'on track'
-    createForm.assignee = 'You'
-    createForm.notes = ''
+  function openTaskCreate() {
+    dialogMode.value = 'create'
+    viewingTask.value = null
+    createTaskOpen.value = true
   }
 
-  const handleCreateTask = (close: () => void) => {
-    if (!isCreateValid.value) return
-    const id = `p-${Math.random().toString(36).slice(2, 8)}`
+  function openTaskDetail(task: any) {
+    dialogMode.value = 'edit'
+    viewingTask.value = {
+      id: task.id,
+      title: task.title,
+      description: '',
+      status: task.status === 'overdue' ? 'overdue' : task.status === 'due soon' ? 'due-soon' : 'on-track',
+      priority: task.priority as 'low' | 'medium' | 'high',
+      dueDate: task.dueDate,
+      owner: 'you',
+    }
+    viewTaskOpen.value = true
+  }
+
+  const viewingTaskIndex = computed(() => {
+    if (!viewingTask.value) return -1
+    return tasks.value.findIndex((t) => t.id === viewingTask.value?.id)
+  })
+
+  const canNavigatePrev = computed(() => viewingTaskIndex.value > 0)
+  const canNavigateNext = computed(() => viewingTaskIndex.value < tasks.value.length - 1)
+
+  function navigatePrev() {
+    if (canNavigatePrev.value) {
+      const task = tasks.value[viewingTaskIndex.value - 1]
+      if (task) openTaskDetail(task)
+    }
+  }
+
+  function navigateNext() {
+    if (canNavigateNext.value) {
+      const task = tasks.value[viewingTaskIndex.value + 1]
+      if (task) openTaskDetail(task)
+    }
+  }
+
+  function handleCreateTask(taskData: TaskData) {
+    const statusMap: Record<string, string> = {
+      'on-track': 'on track',
+      'due-soon': 'due soon',
+      overdue: 'overdue',
+      pending: 'on track',
+      'in-progress': 'on track',
+      completed: 'on track',
+    }
     tasks.value.unshift({
-      id,
-      title: createForm.title.trim(),
-      status: createForm.status,
-      assignee: createForm.assignee,
-      dueDate: createForm.dueDate || 'TBD',
-      priority: createForm.priority,
+      id: taskData.id || `p-${Math.random().toString(36).slice(2, 8)}`,
+      title: taskData.title,
+      status: statusMap[taskData.status] || 'on track',
+      assignee: 'You',
+      dueDate: taskData.dueDate || 'TBD',
+      priority: taskData.priority || 'medium',
     })
-    resetCreateForm()
-    close()
+    createTaskOpen.value = false
+  }
+
+  function handleUpdateTask(taskData: TaskData) {
+    const idx = tasks.value.findIndex((t) => t.id === taskData.id)
+    if (idx !== -1) {
+      const statusMap: Record<string, string> = {
+        'on-track': 'on track',
+        'due-soon': 'due soon',
+        overdue: 'overdue',
+        pending: 'on track',
+        'in-progress': 'on track',
+        completed: 'on track',
+      }
+      tasks.value[idx] = {
+        ...tasks.value[idx],
+        title: taskData.title,
+        status: statusMap[taskData.status] || tasks.value[idx]!.status,
+        dueDate: taskData.dueDate || tasks.value[idx]!.dueDate,
+        priority: taskData.priority || tasks.value[idx]!.priority,
+      }
+    }
+    viewTaskOpen.value = false
   }
 </script>
 
