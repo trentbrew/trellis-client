@@ -1,63 +1,66 @@
 <script setup lang="ts">
-import type { BrandConfig } from '~/composables/useBranding'
+  import type { BrandConfig } from '~/composables/useBranding'
 
-const _props = defineProps<{
-  open: boolean
-}>()
+  const _props = defineProps<{
+    open: boolean
+  }>()
 
-const emit = defineEmits<{
-  'update:open': [open: boolean]
-  save: [config: BrandConfig]
-}>()
+  const emit = defineEmits<{
+    'update:open': [open: boolean]
+    save: [config: BrandConfig]
+  }>()
 
-const { createDefaultBrandConfig, generateCssVariables, validateBrandConfig, toJsonLd } = useBranding()
+  const { createDefaultBrandConfig, generateCssVariables, validateBrandConfig, toJsonLd } = useBranding()
 
-// Local brand config for editing
-const brandConfig = ref<BrandConfig>(createDefaultBrandConfig())
-const showPreview = ref(false)
-const previewMode = ref<'light' | 'dark'>('light')
+  // Local brand config for editing
+  const brandConfig = ref<BrandConfig>(createDefaultBrandConfig())
+  const showPreview = ref(false)
+  const previewMode = ref<'light' | 'dark'>('light')
 
-// Handle config updates from editor
-const handleUpdate = (config: BrandConfig) => {
-  brandConfig.value = config
-}
-
-// Save brand config
-const handleSave = () => {
-  const { valid, errors } = validateBrandConfig(brandConfig.value)
-  if (!valid) {
-    console.error('Brand config validation failed:', errors)
-    return
+  // Handle config updates from editor
+  const handleUpdate = (config: BrandConfig) => {
+    brandConfig.value = config
   }
-  emit('save', brandConfig.value)
-  emit('update:open', false)
-}
 
-// Generate preview CSS
-const previewCss = computed(() => {
-  return generateCssVariables(brandConfig.value, previewMode.value)
-})
+  // Save brand config
+  const handleSave = () => {
+    const { valid, errors } = validateBrandConfig(brandConfig.value)
+    if (!valid) {
+      console.error('Brand config validation failed:', errors)
+      return
+    }
+    emit('save', brandConfig.value)
+    emit('update:open', false)
+  }
 
-// Export as JSON-LD
-const handleExport = () => {
-  const jsonLd = toJsonLd(brandConfig.value)
-  const blob = new Blob([JSON.stringify(jsonLd, null, 2)], { type: 'application/ld+json' })
-  const url = URL.createObjectURL(blob)
-  const a = document.createElement('a')
-  a.href = url
-  a.download = `${brandConfig.value.name.toLowerCase().replace(/\s+/g, '-')}-brand.jsonld`
-  a.click()
-  URL.revokeObjectURL(url)
-}
+  // Generate preview CSS
+  const previewCss = computed(() => {
+    return generateCssVariables(brandConfig.value, previewMode.value)
+  })
+
+  // Export as JSON-LD
+  const handleExport = () => {
+    const jsonLd = toJsonLd(brandConfig.value)
+    const blob = new Blob([JSON.stringify(jsonLd, null, 2)], { type: 'application/ld+json' })
+    const url = URL.createObjectURL(blob)
+    const a = document.createElement('a')
+    a.href = url
+    a.download = `${brandConfig.value.name.toLowerCase().replace(/\s+/g, '-')}-brand.jsonld`
+    a.click()
+    URL.revokeObjectURL(url)
+  }
 </script>
 
 <template>
   <UiDialog :open="open" @update:open="emit('update:open', $event)">
-    <UiDialogContent class="w-[90vw]! max-w-[1400px]! h-[90vh]! flex flex-col p-0!">
-      <!-- Header -->
-      <div class="flex items-center justify-between px-6 py-4 border-b shrink-0">
+    <!-- Builder dialog: accent ring identifies this as a builder-mode feature -->
+    <UiDialogContent class="w-[90vw]! max-w-[1400px]! h-[90vh]! flex flex-col p-0! ring-4 ring-accent">
+      <!-- Header with accent styling -->
+      <div class="flex items-center justify-between px-6 py-4 border-b border-accent/20 bg-accent/5 shrink-0">
         <div class="flex items-center gap-3">
-          <Icon name="lucide:palette" class="w-5 h-5 text-primary" />
+          <div class="p-1.5 rounded-md bg-accent/20">
+            <Icon name="lucide:palette" class="w-5 h-5 text-accent-foreground" />
+          </div>
           <div>
             <h2 class="text-lg font-semibold">Brand Settings</h2>
             <p class="text-sm text-muted-foreground">Customize your app's appearance</p>
@@ -110,9 +113,7 @@ const handleExport = () => {
           </div>
 
           <!-- Preview Content -->
-          <div
-            class="p-6"
-            :style="`${previewCss}; background: hsl(var(--background)); color: hsl(var(--foreground));`">
+          <div class="p-6" :style="`${previewCss}; background: hsl(var(--background)); color: hsl(var(--foreground));`">
             <!-- Header Preview -->
             <div class="mb-6 pb-4 border-b" style="border-color: hsl(var(--border))">
               <div class="flex items-center gap-3">
@@ -150,13 +151,19 @@ const handleExport = () => {
 
             <!-- Status Colors Preview -->
             <div class="grid grid-cols-3 gap-2 mb-4">
-              <div class="p-2 text-center rounded text-sm" style="background: hsl(var(--success)); color: hsl(var(--success-foreground))">
+              <div
+                class="p-2 text-center rounded text-sm"
+                style="background: hsl(var(--success)); color: hsl(var(--success-foreground))">
                 Success
               </div>
-              <div class="p-2 text-center rounded text-sm" style="background: hsl(var(--warning)); color: hsl(var(--warning-foreground))">
+              <div
+                class="p-2 text-center rounded text-sm"
+                style="background: hsl(var(--warning)); color: hsl(var(--warning-foreground))">
                 Warning
               </div>
-              <div class="p-2 text-center rounded text-sm" style="background: hsl(var(--destructive)); color: hsl(var(--destructive-foreground))">
+              <div
+                class="p-2 text-center rounded text-sm"
+                style="background: hsl(var(--destructive)); color: hsl(var(--destructive-foreground))">
                 Destructive
               </div>
             </div>
