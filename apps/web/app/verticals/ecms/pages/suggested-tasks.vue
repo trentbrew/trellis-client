@@ -1,7 +1,8 @@
 <script setup lang="ts">
   import type { PageStat } from '~/components/layout/Page.vue'
   import { useBrowse } from '~/composables/useBrowse'
-  import { useGlobalDetailSheet } from '~/composables/useGlobalDetailSheet'
+  import UnifiedTaskDialog from '~/verticals/ecms/components/dialogs/UnifiedTaskDialog.vue'
+  import type { TaskData } from '~/verticals/ecms/components/dialogs/UnifiedTaskDialog.vue'
 
   definePageMeta({
     layout: 'default',
@@ -14,7 +15,22 @@
     title: `Suggested Tasks | ${currentFacility.value?.name || 'Facility'}`,
   }))
 
-  const { open: openDetail } = useGlobalDetailSheet()
+  // Task dialog state
+  const viewTaskOpen = ref(false)
+  const viewingTask = ref<TaskData | null>(null)
+
+  function openTaskDetail(task: any) {
+    viewingTask.value = {
+      id: task.id,
+      title: task.title,
+      description: task.reason || '',
+      status: 'pending',
+      priority: task.priority as 'low' | 'medium' | 'high',
+      dueDate: new Date().toISOString().split('T')[0]!,
+      category: task.category,
+    }
+    viewTaskOpen.value = true
+  }
 
   const suggestedTasks = ref([
     {
@@ -175,26 +191,17 @@
 
   const viewMode = computed(() => 'grid')
 
-  // Listen for global detail sheet events
-  onMounted(() => {
-    window.addEventListener('global-detail-sheet:save', ((e: CustomEvent) => {
-      const { node, formData, mode } = e.detail
-      if (e.detail.entityType !== 'task') return
-
-      if (mode === 'create') {
-        suggestedTasks.value.push({ ...formData, id: crypto.randomUUID() })
-      } else {
-        const index = suggestedTasks.value.findIndex((t) => t.id === node.id)
-        if (index !== -1) suggestedTasks.value[index] = { ...suggestedTasks.value[index], ...formData }
+  function handleTaskSave(taskData: TaskData) {
+    const index = suggestedTasks.value.findIndex((t) => t.id === taskData.id)
+    if (index !== -1) {
+      suggestedTasks.value[index] = {
+        ...suggestedTasks.value[index]!,
+        title: taskData.title,
+        priority: taskData.priority || suggestedTasks.value[index]!.priority,
       }
-    }) as EventListener)
-
-    window.addEventListener('global-detail-sheet:delete', ((e: CustomEvent) => {
-      const { node } = e.detail
-      if (e.detail.entityType !== 'task') return
-      suggestedTasks.value = suggestedTasks.value.filter((t) => t.id !== node.id)
-    }) as EventListener)
-  })
+    }
+    viewTaskOpen.value = false
+  }
 </script>
 
 <template>
@@ -219,7 +226,7 @@
         v-for="task in filteredSuggestedTasks"
         :key="task.id"
         class="relative overflow-hidden cursor-pointer"
-        @click="openDetail(task, { entityType: 'task' })">
+        @click="openTaskDetail(task)">
         <div class="absolute top-0 left-0 w-1 h-full" :class="(priorityColors[task.priority] || '').split(' ')[0]" />
         <UiCardHeader class="pb-3">
           <div class="flex items-start gap-3">
@@ -261,5 +268,16 @@
       <h3 class="mt-4 text-lg font-medium">All caught up!</h3>
       <p class="mt-2 text-sm text-muted-foreground">No new suggestions at this time. Check back later.</p>
     </div>
+    <!-- Task Detail Dialog -->
+    <UnifiedTaskDialog
+      v-model:open="viewTaskOpen"
+      mode="edit"
+      task-type="suggested"
+      :task="viewingTask"
+      @save="handleTaskSave"
+      @close="viewTaskOpen = false"
+      @create-task="(task) => { acceptTask(task.id); viewTaskOpen = false }"
+      @mark-not-applicable="(task) => { dismissTask(task.id); viewTaskOpen = false }"
+      @already-resolved="(task) => { dismissTask(task.id); viewTaskOpen = false }" />
   </Page>
 </template>
