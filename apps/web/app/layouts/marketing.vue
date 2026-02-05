@@ -12,11 +12,11 @@
         </NuxtLink>
 
         <nav class="flex items-center gap-2">
-          <UiButton variant="ghost" as-child>
-            <NuxtLink to="/auth/login" :class="{ 'text-foreground': route.path === '/auth/login' }">Sign in</NuxtLink>
+          <UiButton variant="ghost" to="/auth/login" :class="{ 'text-foreground': route.path === '/auth/login' }">
+            Sign in
           </UiButton>
-          <UiButton as-child>
-            <NuxtLink to="/auth/signup" :class="{ 'text-foreground': route.path === '/auth/signup' }">Sign up</NuxtLink>
+          <UiButton to="/auth/signup" :class="{ 'text-foreground': route.path === '/auth/signup' }">
+            Sign up
           </UiButton>
         </nav>
       </UiContainer>
