@@ -1,0 +1,53 @@
+{
+  "name": "@toolkit/monorepo",
+  "private": true,
+  "packageManager": "pnpm@10.8.0",
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "dev:v1": "pnpm --filter @toolkit/ui dev",
+    "dev:v2": "pnpm --filter @toolkit/sandbox dev",
+    "build": "pnpm -r --if-present build",
+    "build:v1": "pnpm --filter @toolkit/ui build",
+    "build:v2": "pnpm --filter @toolkit/sandbox build",
+    "lint": "pnpm -r --if-present lint",
+    "lint:fix": "pnpm -r --if-present lint:fix",
+    "format": "pnpm -r --if-present format",
+    "test": "pnpm -r --if-present test",
+    "clean": "pnpm -r --if-present clean && rm -rf node_modules",
+    "typecheck": "pnpm -r --if-present typecheck",
+    "prepare": "husky"
+  },
+  "pnpm": {
+    "overrides": {
+      "@toolkit/ui>vite": "npm:rolldown-vite@latest"
+    },
+    "onlyBuiltDependencies": [
+      "better-sqlite3"
+    ]
+  },
+  "lint-staged": {
+    "*.{js,jsx,ts,tsx,vue,json,md,yml,yaml,css,scss}": [
+      "prettier --write"
+    ],
+    "*.{ts,tsx,vue}": [
+      "eslint --fix"
+    ]
+  },
+  "devDependencies": {
+    "@commitlint/cli": "^19.8.1",
+    "@commitlint/config-conventional": "^19.8.1",
+    "@types/node": "^20.12.2",
+    "better-sqlite3": "12.6.2",
+    "eslint": "^9.33.0",
+    "husky": "^9.1.7",
+    "lint-staged": "^16.2.7",
+    "prettier": "^3.6.2",
+    "turbo": "^2.8.1",
+    "typescript": "^5.9.2"
+  },
+  "dependencies": {
+    "@tailwindcss/typography": "^0.5.19"
+  }
+}

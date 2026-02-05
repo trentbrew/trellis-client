@@ -75,9 +75,10 @@ const connectedCount = computed(() => {
 
 <template>
   <UiDialog :open="open" @update:open="emit('update:open', $event)">
-    <UiDialogContent class="w-[90vw]! max-w-[1400px]! h-[90vh]! flex flex-col p-0!">
-      <!-- Header -->
-      <div class="flex items-center justify-between px-6 py-4 border-b shrink-0">
+    <!-- Builder dialog: accent ring identifies this as a builder-mode feature -->
+    <UiDialogContent class="w-[90vw]! max-w-[1400px]! h-[90vh]! flex flex-col p-0! ring-4 ring-accent">
+      <!-- Header with accent styling -->
+      <div class="flex items-center justify-between px-6 py-4 border-b border-accent/20 bg-accent/5 shrink-0">
         <div class="flex items-center gap-3">
           <Icon name="lucide:plug" class="w-5 h-5 text-primary" />
           <div>
