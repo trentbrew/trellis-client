@@ -1644,6 +1644,48 @@
                 "upcoming",
                 "deadlines"
               ]
+            },
+            {
+              "path": "/personal/notes",
+              "label": "My Notes",
+              "icon": "lucide:sticky-note",
+              "tint": "text-purple-300",
+              "permissions": {
+                "minRole": "guest",
+                "permission": "read"
+              },
+              "meta": {
+                "title": "My Notes",
+                "description": "Ideas, journal entries, and bookmarks.",
+                "subtitle": "Personal"
+              },
+              "searchKeywords": [
+                "notes",
+                "journal",
+                "ideas",
+                "bookmarks"
+              ]
+            },
+            {
+              "path": "/personal/reminders",
+              "label": "Reminders",
+              "icon": "lucide:bell",
+              "tint": "text-amber-300",
+              "permissions": {
+                "minRole": "guest",
+                "permission": "read"
+              },
+              "meta": {
+                "title": "Reminders",
+                "description": "Quick reminders and upcoming deadlines.",
+                "subtitle": "Personal"
+              },
+              "searchKeywords": [
+                "reminders",
+                "alerts",
+                "deadlines",
+                "due"
+              ]
             }
           ],
           "collapsible": false
@@ -1655,6 +1697,12 @@
         },
         {
           "@id": "route:personal-calendar"
+        },
+        {
+          "@id": "route:personal-notes"
+        },
+        {
+          "@id": "route:personal-reminders"
         }
       ]
     },
@@ -1703,6 +1751,54 @@
       "meta": {
         "title": "My Calendar",
         "description": "Calendar view of your upcoming tasks and deadlines.",
+        "subtitle": "Personal"
+      }
+    },
+    {
+      "@id": "route:personal-notes",
+      "@type": "app:Route",
+      "routePath": "/personal/notes",
+      "label": "My Notes",
+      "icon": "lucide:sticky-note",
+      "tint": "text-purple-300",
+      "order": 2,
+      "permissions": {
+        "minRole": "guest",
+        "permission": "read"
+      },
+      "searchKeywords": [
+        "notes",
+        "journal",
+        "ideas",
+        "bookmarks"
+      ],
+      "meta": {
+        "title": "My Notes",
+        "description": "Ideas, journal entries, and bookmarks.",
+        "subtitle": "Personal"
+      }
+    },
+    {
+      "@id": "route:personal-reminders",
+      "@type": "app:Route",
+      "routePath": "/personal/reminders",
+      "label": "Reminders",
+      "icon": "lucide:bell",
+      "tint": "text-amber-300",
+      "order": 3,
+      "permissions": {
+        "minRole": "guest",
+        "permission": "read"
+      },
+      "searchKeywords": [
+        "reminders",
+        "alerts",
+        "deadlines",
+        "due"
+      ],
+      "meta": {
+        "title": "Reminders",
+        "description": "Quick reminders and upcoming deadlines.",
         "subtitle": "Personal"
       }
     },
