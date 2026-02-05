@@ -11,14 +11,11 @@
   const ontologyMarketplaceOpen = ref(false)
 
   // Notion-style: Instantly create blank page and navigate
-  const handleCreatePage = () => {
+  const handleCreatePage = async () => {
     const id = `page-${Date.now()}`
-    // TODO: Register route in app-config.jsonld and persist
+    // TODO: Persist to app-config.jsonld
     ;(nuxtApp as any).$toast?.success('New page created!')
-    // Direct navigation to bypass dynamic route matching
-    if (import.meta.client) {
-      window.location.href = `/pages/${id}`
-    }
+    await navigateTo(`/pages/${id}`)
   }
 
   // Handle dashboard save
