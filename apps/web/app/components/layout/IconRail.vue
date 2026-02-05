@@ -7,7 +7,7 @@
   const nuxtApp = useNuxtApp()
 
   // Admin UI controls
-  const { showBuilderUI, canSeeAdminControls } = useAdminUI()
+  const { showBuilderUI } = useAdminUI()
 
   // Dashboard Builder dialog state
   const dashboardBuilderOpen = ref(false)
@@ -105,7 +105,7 @@
     <div class="w-8 border-t border-white/10" />
 
     <!-- Edit Mode Builder Buttons -->
-    <div v-if="showBuilderUI && canCreateRoutes" class="flex flex-col gap-1">
+    <div v-if="showBuilderUI" class="flex flex-col gap-1">
       <!-- Add Route Button -->
       <UiTooltip>
         <UiTooltipTrigger as-child>
