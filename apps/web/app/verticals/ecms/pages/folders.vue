@@ -1,6 +1,7 @@
 <script setup lang="ts">
   import type { PageStat } from '~/components/layout/Page.vue'
-  import { useGlobalDetailSheet } from '~/composables/useGlobalDetailSheet'
+  import FolderDetailDialog from '~/components/dialogs/FolderDetailDialog.vue'
+  import type { FolderData } from '~/components/dialogs/FolderDetailDialog.vue'
 
   interface Folder {
     id: string
@@ -26,7 +27,50 @@
     title: `Folders | ${currentFacility.value?.name || 'Facility'}`,
   }))
 
-  const { open: openDetail } = useGlobalDetailSheet()
+  // Dialog state
+  const createFolderOpen = ref(false)
+  const viewFolderOpen = ref(false)
+  const viewingFolder = ref<FolderData | null>(null)
+
+  function openFolderCreate() {
+    createFolderOpen.value = true
+  }
+
+  function openFolderDetail(folder: Folder) {
+    viewingFolder.value = { ...folder, description: '' }
+    viewFolderOpen.value = true
+  }
+
+  function handleCreateFolder(data: FolderData) {
+    const newFolder: Folder = {
+      id: data.id || crypto.randomUUID(),
+      name: data.name,
+      icon: data.icon || 'lucide:folder',
+      color: data.color || 'text-blue-500',
+      itemCount: 0,
+      lastModified: new Date().toISOString().slice(0, 10),
+    }
+    folders.value.push(newFolder)
+    createFolderOpen.value = false
+  }
+
+  function handleUpdateFolder(data: FolderData) {
+    const idx = folders.value.findIndex((f) => f.id === data.id)
+    if (idx !== -1) {
+      folders.value[idx] = {
+        ...folders.value[idx]!,
+        name: data.name,
+        icon: data.icon,
+        color: data.color,
+      }
+    }
+    viewFolderOpen.value = false
+  }
+
+  function handleDeleteFolder(data: FolderData) {
+    folders.value = folders.value.filter((f) => f.id !== data.id)
+    viewFolderOpen.value = false
+  }
 
   const folders = ref([
     {
@@ -272,60 +316,7 @@
       "linear-gradient(to bottom, rgba(30, 41, 59, 0.7), rgba(30, 41, 59, 0.8)), url('/assets/backgrounds/chemical-plant.png')",
   )
 
-  const iconOptions = [
-    { value: 'lucide:wind', label: 'Wind', icon: 'lucide:wind' },
-    { value: 'lucide:cloud-rain', label: 'Cloud Rain', icon: 'lucide:cloud-rain' },
-    { value: 'lucide:flask-conical', label: 'Flask', icon: 'lucide:flask-conical' },
-    { value: 'lucide:hard-hat', label: 'Hard Hat', icon: 'lucide:hard-hat' },
-    { value: 'lucide:file-badge', label: 'File Badge', icon: 'lucide:file-badge' },
-    { value: 'lucide:clipboard-check', label: 'Clipboard', icon: 'lucide:clipboard-check' },
-    { value: 'lucide:siren', label: 'Siren', icon: 'lucide:siren' },
-    { value: 'lucide:droplets', label: 'Droplets', icon: 'lucide:droplets' },
-    { value: 'lucide:volume-2', label: 'Volume', icon: 'lucide:volume-2' },
-    { value: 'lucide:alert-triangle', label: 'Alert', icon: 'lucide:alert-triangle' },
-    { value: 'lucide:beaker', label: 'Beaker', icon: 'lucide:beaker' },
-    { value: 'lucide:file-text', label: 'File Text', icon: 'lucide:file-text' },
-  ]
 
-  const colorOptions = [
-    { value: 'text-blue-500', label: 'Blue', color: 'bg-blue-500' },
-    { value: 'text-cyan-500', label: 'Cyan', color: 'bg-cyan-500' },
-    { value: 'text-amber-500', label: 'Amber', color: 'bg-amber-500' },
-    { value: 'text-emerald-500', label: 'Emerald', color: 'bg-emerald-500' },
-    { value: 'text-purple-500', label: 'Purple', color: 'bg-purple-500' },
-    { value: 'text-rose-500', label: 'Rose', color: 'bg-rose-500' },
-    { value: 'text-red-500', label: 'Red', color: 'bg-red-500' },
-    { value: 'text-indigo-500', label: 'Indigo', color: 'bg-indigo-500' },
-  ]
-
-  // Listen for global detail sheet events
-  onMounted(() => {
-    window.addEventListener('global-detail-sheet:save', ((e: CustomEvent) => {
-      const { node, formData, mode } = e.detail
-      if (e.detail.entityType !== 'folder') return
-
-      if (mode === 'create') {
-        const newFolder: Folder = {
-          id: crypto.randomUUID(),
-          name: formData.name || '',
-          icon: formData.icon || 'lucide:folder',
-          color: formData.color || 'text-blue-500',
-          itemCount: 0,
-          lastModified: new Date().toISOString().slice(0, 10),
-        }
-        folders.value.push(newFolder)
-      } else {
-        const index = folders.value.findIndex((f) => f.id === node.id)
-        if (index !== -1) folders.value[index] = { ...folders.value[index], ...formData }
-      }
-    }) as EventListener)
-
-    window.addEventListener('global-detail-sheet:delete', ((e: CustomEvent) => {
-      const { node } = e.detail
-      if (e.detail.entityType !== 'folder') return
-      folders.value = folders.value.filter((f) => f.id !== node.id)
-    }) as EventListener)
-  })
 </script>
 
 <template>
@@ -349,7 +340,7 @@
               <Icon name="lucide:folder-tree" class="h-4 w-4 text-muted-foreground" />
               Explorer
             </div>
-            <UiButton variant="ghost" size="xs" @click="openDetail({}, { entityType: 'folder', mode: 'create' })">
+            <UiButton variant="ghost" size="xs" @click="openFolderCreate()">
               <Icon name="lucide:folder-plus" class="h-4 w-4" />
             </UiButton>
           </div>
@@ -422,14 +413,14 @@
                     size="sm"
                     :disabled="!selectedFolder"
                     class="border-white/30 text-white hover:bg-white/10"
-                    @click="selectedFolder && openDetail(selectedFolder, { entityType: 'folder' })">
+                    @click="selectedFolder && openFolderDetail(selectedFolder)">
                     <Icon name="lucide:eye" class="mr-2 h-4 w-4" />
                     View Details
                   </UiButton>
                   <UiButton
                     size="sm"
                     class="bg-white/10 text-white hover:bg-white/20"
-                    @click="openDetail({}, { entityType: 'folder', mode: 'create' })">
+                    @click="openFolderCreate()">
                     <Icon name="lucide:folder-plus" class="mr-2 h-4 w-4" />
                     New Folder
                   </UiButton>
@@ -490,7 +481,7 @@
             <Icon name="lucide:folder-open" class="h-10 w-10 text-muted-foreground" />
             <h3 class="mt-4 text-lg font-semibold">Select a folder</h3>
             <p class="mt-2 text-sm text-muted-foreground">Choose a folder from the explorer to preview its contents.</p>
-            <UiButton class="mt-4" @click="openDetail({}, { entityType: 'folder', mode: 'create' })">
+            <UiButton class="mt-4" @click="openFolderCreate()">
               <Icon name="lucide:folder-plus" class="mr-2 h-4 w-4" />
               Create Folder
             </UiButton>
@@ -503,5 +494,22 @@
     <div class="text-xs text-muted-foreground mt-4 pt-4 border-t border-border pb-10">
       Showing all {{ folders.length }} folders
     </div>
+
+    <!-- Create Folder Dialog -->
+    <FolderDetailDialog
+      v-model:open="createFolderOpen"
+      mode="create"
+      :folder="null"
+      @save="handleCreateFolder"
+      @close="createFolderOpen = false" />
+
+    <!-- View/Edit Folder Dialog -->
+    <FolderDetailDialog
+      v-model:open="viewFolderOpen"
+      mode="edit"
+      :folder="viewingFolder"
+      @save="handleUpdateFolder"
+      @delete="handleDeleteFolder"
+      @close="viewFolderOpen = false" />
   </Page>
 </template>
