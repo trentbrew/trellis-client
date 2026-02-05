@@ -15,6 +15,9 @@
   // Integration Manager dialog state
   const integrationManagerOpen = ref(false)
 
+  // Branding Manager dialog state
+  const brandingManagerOpen = ref(false)
+
   // Create new route (stub - will open route builder in future)
   const handleCreateRoute = () => {
     // TODO: Open route creation dialog
@@ -26,6 +29,13 @@
     // TODO: Save dashboard to database
     ;(nuxtApp as any).$toast?.success(`Dashboard "${dashboard.title}" created!`)
     dashboardBuilderOpen.value = false
+  }
+
+  // Handle branding save
+  const handleBrandingSave = (_config: any) => {
+    // TODO: Save brand config to database
+    ;(nuxtApp as any).$toast?.success('Brand settings saved!')
+    brandingManagerOpen.value = false
   }
 
   const primaryRailItems = computed(() =>
@@ -146,6 +156,24 @@
           </div>
         </UiTooltipContent>
       </UiTooltip>
+
+      <!-- Branding Button -->
+      <UiTooltip>
+        <UiTooltipTrigger as-child>
+          <button
+            type="button"
+            class="group text-amber-500/70 hover:bg-amber-500/10 hover:text-amber-500 flex h-10 w-10 items-center justify-center rounded-xl transition border border-dashed border-amber-500/30"
+            @click="brandingManagerOpen = true">
+            <Icon name="lucide:palette" class="h-4 w-4" />
+          </button>
+        </UiTooltipTrigger>
+        <UiTooltipContent side="right">
+          <div class="flex items-center gap-2">
+            <span>Branding</span>
+            <span class="text-[10px] text-amber-500 bg-amber-500/10 px-1.5 py-0.5 rounded">Edit Mode</span>
+          </div>
+        </UiTooltipContent>
+      </UiTooltip>
     </div>
 
     <!-- Secondary items (Settings/Admin/Help) -->
@@ -199,5 +227,11 @@
     <IntegrationsIntegrationManager
       :open="integrationManagerOpen"
       @update:open="integrationManagerOpen = $event" />
+
+    <!-- Branding Manager Dialog -->
+    <BrandingBrandingManager
+      :open="brandingManagerOpen"
+      @update:open="brandingManagerOpen = $event"
+      @save="handleBrandingSave" />
   </nav>
 </template>
