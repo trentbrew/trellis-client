@@ -76,7 +76,7 @@ export function addDays(date: Date, days: number): Date {
 }
 
 export function toISO8601DateOnly(date: Date): ISO8601DateOnly {
-  return date.toISOString().split('T')[0];
+  return (date.toISOString().split('T')[0] ?? '1970-01-01') as ISO8601DateOnly;
 }
 
 export function getRandomDate(start: Date, end: Date): Date {
@@ -201,9 +201,17 @@ export interface CreateUserOptions {
 
 export function createUser(options: CreateUserOptions = {}) {
   const uid = options.uid || generateUID();
-  const firstName = options.firstName || SAMPLE_FIRST_NAMES[Math.floor(Math.random() * SAMPLE_FIRST_NAMES.length)];
-  const lastName = options.lastName || SAMPLE_LAST_NAMES[Math.floor(Math.random() * SAMPLE_LAST_NAMES.length)];
-  const email = `${firstName.toLowerCase()}.${lastName.toLowerCase()}@nucor.com`;
+  const firstName =
+    options.firstName ||
+    SAMPLE_FIRST_NAMES[Math.floor(Math.random() * SAMPLE_FIRST_NAMES.length)] ||
+    SAMPLE_FIRST_NAMES[0] ||
+    'Alex';
+  const lastName =
+    options.lastName ||
+    SAMPLE_LAST_NAMES[Math.floor(Math.random() * SAMPLE_LAST_NAMES.length)] ||
+    SAMPLE_LAST_NAMES[0] ||
+    'Smith';
+  const email = `${firstName.toLowerCase()}.${lastName.toLowerCase()}@platform-sandbox.local`;
 
   return {
     uid,
@@ -228,7 +236,11 @@ export interface CreateFacilityOptions {
 }
 
 export function createFacility(options: CreateFacilityOptions = {}) {
-  const sample = SAMPLE_FACILITY_NAMES[Math.floor(Math.random() * SAMPLE_FACILITY_NAMES.length)];
+  const fallbackSample = { name: 'Sample Facility', abbr: 'SMP', city: 'Sample City', state: 'ST' };
+  const sample =
+    SAMPLE_FACILITY_NAMES[Math.floor(Math.random() * SAMPLE_FACILITY_NAMES.length)] ||
+    SAMPLE_FACILITY_NAMES[0] ||
+    fallbackSample;
   const abbr = options.abbr || sample.abbr;
   const facilityID = generateFacilityID(abbr);
   const now = Date.now();
@@ -303,17 +315,33 @@ export function createTaskTemplate(options: CreateTaskTemplateOptions = {}) {
   const inspectionTypes = isEnvironmental ? ENVIRONMENTAL_INSPECTION_TYPES : SAFETY_INSPECTION_TYPES;
   const categories = isEnvironmental ? ENVIRONMENTAL_CATEGORIES : SAFETY_CATEGORIES;
 
+  const randomTitle =
+    options.title ||
+    titles[Math.floor(Math.random() * titles.length)] ||
+    titles[0] ||
+    'Task';
+  const randomInspectionType =
+    options.inspectionType ||
+    inspectionTypes[Math.floor(Math.random() * inspectionTypes.length)] ||
+    inspectionTypes[0] ||
+    ('Inspection' as InspectionType);
+  const randomCategory =
+    options.category ||
+    categories[Math.floor(Math.random() * categories.length)] ||
+    categories[0] ||
+    ('Air' as TaskCategory);
+
   return {
     taskTemplateID,
     standardTaskIds: [],
     branches,
-    title: options.title || titles[Math.floor(Math.random() * titles.length)],
+    title: randomTitle,
     description: 'Detailed task description goes here.',
     tracked: options.tracked ?? true,
     schedules: [],
     isFacilityScheduleChoiceAvailable: true,
-    inspectionType: options.inspectionType || inspectionTypes[Math.floor(Math.random() * inspectionTypes.length)],
-    category: options.category || categories[Math.floor(Math.random() * categories.length)],
+    inspectionType: randomInspectionType,
+    category: randomCategory,
     owner: {},
     involved: {},
     facilities: [],
@@ -349,11 +377,27 @@ export function createTaskGenerator(options: CreateTaskGeneratorOptions) {
   const inspectionTypes = isEnvironmental ? ENVIRONMENTAL_INSPECTION_TYPES : SAFETY_INSPECTION_TYPES;
   const categories = isEnvironmental ? ENVIRONMENTAL_CATEGORIES : SAFETY_CATEGORIES;
 
+  const randomTitle =
+    options.title ||
+    titles[Math.floor(Math.random() * titles.length)] ||
+    titles[0] ||
+    'Task Generator';
+  const randomInspectionType =
+    options.inspectionType ||
+    inspectionTypes[Math.floor(Math.random() * inspectionTypes.length)] ||
+    inspectionTypes[0] ||
+    ('Inspection' as InspectionType);
+  const randomCategory =
+    options.category ||
+    categories[Math.floor(Math.random() * categories.length)] ||
+    categories[0] ||
+    ('Air' as TaskCategory);
+
   return {
     taskGeneratorID,
     taskTemplateID: options.taskTemplateID || null,
     facilityID: options.facilityID,
-    title: options.title || titles[Math.floor(Math.random() * titles.length)],
+    title: randomTitle,
     description: 'Task generator description',
     tracked: options.tracked ?? true,
     schedule: {
@@ -373,8 +417,8 @@ export function createTaskGenerator(options: CreateTaskGeneratorOptions) {
       updatedAt: now,
       updatedBy: options.owner || generateUID(),
     },
-    inspectionType: options.inspectionType || inspectionTypes[Math.floor(Math.random() * inspectionTypes.length)],
-    category: options.category || categories[Math.floor(Math.random() * categories.length)],
+    inspectionType: randomInspectionType,
+    category: randomCategory,
     owner: options.owner || generateUID(),
     involved: [],
     parentFolderIDs: [],
@@ -509,12 +553,19 @@ export function generateTasksForFacility(options: GenerateTasksForFacilityOption
     const dueAt = getDaysFromNow(daysOffset);
     const completed = options.includeCompleted && Math.random() > 0.5;
 
+    const title = titles[Math.floor(Math.random() * titles.length)] || titles[0] || 'Task';
+    const inspectionType =
+      inspectionTypes[Math.floor(Math.random() * inspectionTypes.length)] ||
+      inspectionTypes[0] ||
+      ('Inspection' as InspectionType);
+    const category = categories[Math.floor(Math.random() * categories.length)] || categories[0] || ('Air' as TaskCategory);
+
     tasks.push(createTask({
       taskGeneratorID: generator.taskGeneratorID,
       facilityID: options.facilityID,
-      title: titles[Math.floor(Math.random() * titles.length)],
-      inspectionType: inspectionTypes[Math.floor(Math.random() * inspectionTypes.length)],
-      category: categories[Math.floor(Math.random() * categories.length)],
+      title,
+      inspectionType,
+      category,
       owner: options.owner,
       dueAt,
       completed,
