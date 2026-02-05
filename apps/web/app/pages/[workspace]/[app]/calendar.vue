@@ -1,7 +1,8 @@
 <script setup lang="ts">
   import type { PageStat } from '~/components/layout/Page.vue'
   import { useBrowse } from '~/composables/useBrowse'
-  import { useGlobalDetailSheet } from '~/composables/useGlobalDetailSheet'
+  import EventDialog from '~/components/dialogs/EventDialog.vue'
+  import type { EventData } from '~/components/dialogs/EventDialog.vue'
 
   interface CalendarEvent {
     id: string
@@ -22,7 +23,39 @@
     title: `Facility Calendar | ${currentFacility.value?.name || 'Facility'}`,
   }))
 
-  const { open: openDetail } = useGlobalDetailSheet()
+  // Dialog state
+  const createEventOpen = ref(false)
+  const viewEventOpen = ref(false)
+  const viewingEvent = ref<EventData | null>(null)
+  const viewingEventIndex = computed(() => {
+    if (!viewingEvent.value) return -1
+    return events.value.findIndex((e) => e.id === viewingEvent.value?.id)
+  })
+  const canNavigatePrev = computed(() => viewingEventIndex.value > 0)
+  const canNavigateNext = computed(() => viewingEventIndex.value < events.value.length - 1)
+
+  function openEventCreate() {
+    createEventOpen.value = true
+  }
+
+  function openEventDetail(event: CalendarEvent) {
+    viewingEvent.value = { ...event, description: '', location: '' }
+    viewEventOpen.value = true
+  }
+
+  function navigatePrev() {
+    if (canNavigatePrev.value) {
+      const ev = events.value[viewingEventIndex.value - 1]
+      if (ev) openEventDetail(ev)
+    }
+  }
+
+  function navigateNext() {
+    if (canNavigateNext.value) {
+      const ev = events.value[viewingEventIndex.value + 1]
+      if (ev) openEventDetail(ev)
+    }
+  }
 
   // Demo calendar events
   const events = ref([
@@ -97,34 +130,35 @@
 
   const viewMode = computed(() => browseState.viewMode.value)
 
-  // Listen for global detail sheet events
-  onMounted(() => {
-    const handleSave = (e: any) => {
-      const { node, formData, mode, entityType } = e.detail
-      if (entityType !== 'event') return
+  function handleCreateEvent(eventData: EventData) {
+    events.value.push({
+      id: eventData.id || crypto.randomUUID(),
+      title: eventData.title,
+      date: eventData.date,
+      type: eventData.type,
+      category: eventData.category,
+    })
+    createEventOpen.value = false
+  }
 
-      if (mode === 'create') {
-        events.value.push({ ...formData, id: crypto.randomUUID() })
-      } else {
-        const index = events.value.findIndex((ev: any) => ev.id === node.id)
-        if (index !== -1) events.value[index] = { ...events.value[index], ...formData }
+  function handleUpdateEvent(eventData: EventData) {
+    const idx = events.value.findIndex((e) => e.id === eventData.id)
+    if (idx !== -1) {
+      events.value[idx] = {
+        ...events.value[idx]!,
+        title: eventData.title,
+        date: eventData.date,
+        type: eventData.type,
+        category: eventData.category,
       }
     }
+    viewEventOpen.value = false
+  }
 
-    const handleDelete = (e: any) => {
-      const { node, entityType } = e.detail
-      if (entityType !== 'event') return
-      events.value = events.value.filter((ev: any) => ev.id !== node.id)
-    }
-
-    window.addEventListener('global-detail-sheet:save', handleSave)
-    window.addEventListener('global-detail-sheet:delete', handleDelete)
-
-    onUnmounted(() => {
-      window.removeEventListener('global-detail-sheet:save', handleSave)
-      window.removeEventListener('global-detail-sheet:delete', handleDelete)
-    })
-  })
+  function handleDeleteEvent(eventData: EventData) {
+    events.value = events.value.filter((e) => e.id !== eventData.id)
+    viewEventOpen.value = false
+  }
 </script>
 
 <template>
@@ -152,7 +186,7 @@
     <!-- Page handles #viewSwitcher and automatic filters/sort via :browse prop -->
 
     <template #toolbarActions>
-      <UiButton @click="openDetail({}, { entityType: 'event', mode: 'create' })">
+      <UiButton @click="openEventCreate()">
         <Icon name="lucide:plus" class="mr-2 h-4 w-4" />
         Add Event
       </UiButton>
@@ -185,7 +219,7 @@
               v-for="event in filteredEvents"
               :key="event.id"
               class="flex items-start gap-3 rounded-lg border border-border p-3 hover:bg-accent/50 cursor-pointer transition-colors"
-              @click="openDetail(event, { entityType: 'event' })">
+              @click="openEventDetail(event)">
               <div class="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-muted">
                 <span class="text-xs font-bold text-muted-foreground">{{ event.date.split('-')[2] }}</span>
               </div>
@@ -225,7 +259,7 @@
         v-for="event in filteredEvents"
         :key="event.id"
         class="flex items-center gap-4 rounded-lg border border-border bg-card p-4 hover:bg-accent/50 cursor-pointer transition-colors"
-        @click="openDetail(event, { entityType: 'event' })">
+        @click="openEventDetail(event)">
         <div class="flex h-12 w-12 shrink-0 flex-col items-center justify-center rounded-lg bg-muted">
           <span class="text-lg font-bold text-foreground">{{ event.date.split('-')[2] }}</span>
           <span class="text-xs text-muted-foreground">Feb</span>
@@ -252,5 +286,26 @@
     <div class="text-xs text-muted-foreground mt-4 pt-4 border-t border-border pb-10">
       Showing all {{ filteredEvents.length }} events
     </div>
+
+    <!-- Create Event Dialog -->
+    <EventDialog
+      v-model:open="createEventOpen"
+      mode="create"
+      :event="null"
+      @save="handleCreateEvent"
+      @close="createEventOpen = false" />
+
+    <!-- View/Edit Event Dialog -->
+    <EventDialog
+      v-model:open="viewEventOpen"
+      mode="edit"
+      :event="viewingEvent"
+      :can-navigate-prev="canNavigatePrev"
+      :can-navigate-next="canNavigateNext"
+      @navigate-prev="navigatePrev"
+      @navigate-next="navigateNext"
+      @save="handleUpdateEvent"
+      @delete="handleDeleteEvent"
+      @close="viewEventOpen = false" />
   </Page>
 </template>
