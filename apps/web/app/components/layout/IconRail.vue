@@ -1,6 +1,5 @@
 <script lang="ts" setup>
   const nuxtApp = useNuxtApp()
-  const router = useRouter()
 
   // Admin UI controls
   const { isInEditMode } = useAdminUI()
@@ -12,11 +11,14 @@
   const ontologyMarketplaceOpen = ref(false)
 
   // Notion-style: Instantly create blank page and navigate
-  const handleCreatePage = async () => {
+  const handleCreatePage = () => {
     const id = `page-${Date.now()}`
     // TODO: Register route in app-config.jsonld and persist
     ;(nuxtApp as any).$toast?.success('New page created!')
-    await navigateTo(`/pages/${id}`)
+    // Direct navigation to bypass dynamic route matching
+    if (import.meta.client) {
+      window.location.href = `/pages/${id}`
+    }
   }
 
   // Handle dashboard save
