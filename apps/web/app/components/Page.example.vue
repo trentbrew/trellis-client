@@ -45,7 +45,7 @@
     subtitle="Activity"
     subtitle-color="text-orange-300"
     title="Responses"
-    description="View all form responses."
+    description="View all responses."
     :metadata="['24 New', 'Pending']"
   >
     <div>Content</div>

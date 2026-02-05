@@ -101,7 +101,7 @@ test.describe('Navigation', () => {
     // Test Responses link
     await page.click('a:has-text("Responses")')
     await expect(page).toHaveURL('/activity/responses')
-    await expect(page.locator('h1')).toContainText('Form responses')
+    await expect(page.locator('h1')).toContainText('Responses')
   })
 
   test('logo navigation', async ({ page }) => {

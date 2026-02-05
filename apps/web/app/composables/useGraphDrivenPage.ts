@@ -64,7 +64,7 @@ export interface UseGraphDrivenPageReturn {
   stats: ComputedRef<PageStat[]>
 
   // Actions
-  openDetail: (item: any, options?: { mode?: 'view' | 'edit' | 'create' }) => void
+  openDetail: (_item: any, _options?: { mode?: 'view' | 'edit' | 'create' }) => void
   createItem: () => void
   refresh: () => Promise<void>
 }
