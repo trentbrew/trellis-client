@@ -9,7 +9,7 @@ const emit = defineEmits<{
   update: [config: BrandConfig]
 }>()
 
-const { applyPreset, themePresets } = useBranding()
+const { applyPreset } = useBranding()
 
 // Local state for editing
 const localConfig = ref<BrandConfig>({ ...props.config })
@@ -86,7 +86,7 @@ const colorGroups = computed(() => {
   const groups: Record<string, typeof colorKeys> = {}
   for (const color of colorKeys) {
     if (!groups[color.group]) groups[color.group] = []
-    groups[color.group].push(color)
+    groups[color.group]!.push(color)
   }
   return groups
 })
@@ -137,7 +137,7 @@ const tabs = [
 
             <div class="space-y-1.5">
               <label class="text-sm font-medium">Description</label>
-              <UiTextarea v-model="localConfig.description" placeholder="A brief description..." rows="3" @blur="emitUpdate" />
+              <UiTextarea v-model="localConfig.description" placeholder="A brief description..." :rows="3" @blur="emitUpdate" />
             </div>
           </div>
         </div>
@@ -330,7 +330,7 @@ const tabs = [
             <UiTextarea
               v-model="localConfig.customCss"
               placeholder=":root { /* custom styles */ }"
-              rows="10"
+              :rows="10"
               class="font-mono text-sm"
               @blur="emitUpdate" />
             <p class="text-xs text-muted-foreground">Add custom CSS that will be injected into the app.</p>
@@ -353,7 +353,7 @@ const tabs = [
               <UiTextarea
                 v-model="localConfig.metadata.description"
                 placeholder="A brief description for search engines..."
-                rows="2"
+                :rows="2"
                 @blur="emitUpdate" />
             </div>
 

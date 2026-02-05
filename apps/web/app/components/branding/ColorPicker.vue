@@ -13,7 +13,9 @@ const hslToHex = (hsl: string): string => {
   const parts = hsl.split(' ').map((p) => parseFloat(p))
   if (parts.length !== 3) return '#000000'
 
-  const [h, s, l] = parts
+  const h = parts[0] ?? 0
+  const s = parts[1] ?? 0
+  const l = parts[2] ?? 0
   const sNorm = s / 100
   const lNorm = l / 100
 
