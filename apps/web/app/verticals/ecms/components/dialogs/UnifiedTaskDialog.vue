@@ -898,6 +898,8 @@
     <UiDialogContent
       :hide-close="true"
       class="w-[min(1180px,calc(100vw-4rem))]! max-w-[min(1180px,calc(100vw-4rem))]! h-[min(750px,calc(100vh-4rem))] max-h-[min(750px,calc(100vh-4rem))] p-0 overflow-hidden rounded-xl border border-border bg-card shadow-2xl flex flex-col gap-0">
+      <UiDialogTitle class="sr-only">{{ mode === 'create' ? 'Create Task' : (localTask?.title || 'Task Details') }}</UiDialogTitle>
+      <UiDialogDescription class="sr-only">{{ mode === 'create' ? 'Create a new task' : 'View and edit task details' }}</UiDialogDescription>
       <!-- Full-Width Header: Title/Description with Date Badge -->
       <div class="shrink-0 border-b border-border">
         <div class="px-4 pt-4 pb-3">
