@@ -9,10 +9,20 @@
   // Admin UI controls
   const { showBuilderUI, canCreateRoutes } = useAdminUI()
 
+  // Dashboard Builder dialog state
+  const dashboardBuilderOpen = ref(false)
+
   // Create new route (stub - will open route builder in future)
   const handleCreateRoute = () => {
     // TODO: Open route creation dialog
     ;(nuxtApp as any).$toast?.info('Route builder coming soon! This will let you add new navigation items.')
+  }
+
+  // Handle dashboard save
+  const handleDashboardSave = (dashboard: any) => {
+    // TODO: Save dashboard to database
+    ;(nuxtApp as any).$toast?.success(`Dashboard "${dashboard.title}" created!`)
+    dashboardBuilderOpen.value = false
   }
 
   const primaryRailItems = computed(() =>
@@ -78,23 +88,44 @@
     <!-- Divider -->
     <div class="w-8 border-t border-white/10" />
 
-    <!-- Add Route Button (Owner only, Edit Mode) -->
-    <UiTooltip v-if="showBuilderUI && canCreateRoutes">
-      <UiTooltipTrigger as-child>
-        <button
-          type="button"
-          class="group text-amber-500/70 hover:bg-amber-500/10 hover:text-amber-500 flex h-10 w-10 items-center justify-center rounded-xl transition border border-dashed border-amber-500/30"
-          @click="handleCreateRoute">
-          <Icon name="lucide:plus" class="h-4 w-4" />
-        </button>
-      </UiTooltipTrigger>
-      <UiTooltipContent side="right">
-        <div class="flex items-center gap-2">
-          <span>Add Route</span>
-          <span class="text-[10px] text-amber-500 bg-amber-500/10 px-1.5 py-0.5 rounded">Edit Mode</span>
-        </div>
-      </UiTooltipContent>
-    </UiTooltip>
+    <!-- Edit Mode Builder Buttons -->
+    <div v-if="showBuilderUI && canCreateRoutes" class="flex flex-col gap-1">
+      <!-- Add Route Button -->
+      <UiTooltip>
+        <UiTooltipTrigger as-child>
+          <button
+            type="button"
+            class="group text-amber-500/70 hover:bg-amber-500/10 hover:text-amber-500 flex h-10 w-10 items-center justify-center rounded-xl transition border border-dashed border-amber-500/30"
+            @click="handleCreateRoute">
+            <Icon name="lucide:plus" class="h-4 w-4" />
+          </button>
+        </UiTooltipTrigger>
+        <UiTooltipContent side="right">
+          <div class="flex items-center gap-2">
+            <span>Add Route</span>
+            <span class="text-[10px] text-amber-500 bg-amber-500/10 px-1.5 py-0.5 rounded">Edit Mode</span>
+          </div>
+        </UiTooltipContent>
+      </UiTooltip>
+
+      <!-- Dashboard Builder Button -->
+      <UiTooltip>
+        <UiTooltipTrigger as-child>
+          <button
+            type="button"
+            class="group text-amber-500/70 hover:bg-amber-500/10 hover:text-amber-500 flex h-10 w-10 items-center justify-center rounded-xl transition border border-dashed border-amber-500/30"
+            @click="dashboardBuilderOpen = true">
+            <Icon name="lucide:layout-dashboard" class="h-4 w-4" />
+          </button>
+        </UiTooltipTrigger>
+        <UiTooltipContent side="right">
+          <div class="flex items-center gap-2">
+            <span>New Dashboard</span>
+            <span class="text-[10px] text-amber-500 bg-amber-500/10 px-1.5 py-0.5 rounded">Edit Mode</span>
+          </div>
+        </UiTooltipContent>
+      </UiTooltip>
+    </div>
 
     <!-- Secondary items (Settings/Admin/Help) -->
     <div class="flex flex-col gap-1">
@@ -136,5 +167,11 @@
         <AppUserAvatar collapsed />
       </div>
     </div>
+
+    <!-- Dashboard Builder Dialog -->
+    <DashboardBuilderDashboardBuilder
+      :open="dashboardBuilderOpen"
+      @update:open="dashboardBuilderOpen = $event"
+      @save="handleDashboardSave" />
   </nav>
 </template>
