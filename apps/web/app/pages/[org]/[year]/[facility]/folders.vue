@@ -346,7 +346,7 @@
               <Icon name="lucide:folder-tree" class="h-4 w-4 text-muted-foreground" />
               Explorer
             </div>
-            <UiButton variant="ghost" size="xs" @click="openDetail(null, { entityType: 'folder', mode: 'create' })">
+            <UiButton variant="ghost" size="xs" @click="openDetail({}, { entityType: 'folder', mode: 'create' })">
               <Icon name="lucide:folder-plus" class="h-4 w-4" />
             </UiButton>
           </div>
@@ -426,7 +426,7 @@
                   <UiButton
                     size="sm"
                     class="bg-white/10 text-white hover:bg-white/20"
-                    @click="openDetail(null, { entityType: 'folder', mode: 'create' })">
+                    @click="openDetail({}, { entityType: 'folder', mode: 'create' })">
                     <Icon name="lucide:folder-plus" class="mr-2 h-4 w-4" />
                     New Folder
                   </UiButton>
@@ -487,7 +487,7 @@
             <Icon name="lucide:folder-open" class="h-10 w-10 text-muted-foreground" />
             <h3 class="mt-4 text-lg font-semibold">Select a folder</h3>
             <p class="mt-2 text-sm text-muted-foreground">Choose a folder from the explorer to preview its contents.</p>
-            <UiButton class="mt-4" @click="openDetail(null, { entityType: 'folder', mode: 'create' })">
+            <UiButton class="mt-4" @click="openDetail({}, { entityType: 'folder', mode: 'create' })">
               <Icon name="lucide:folder-plus" class="mr-2 h-4 w-4" />
               Create Folder
             </UiButton>
