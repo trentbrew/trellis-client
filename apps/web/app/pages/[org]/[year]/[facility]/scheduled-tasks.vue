@@ -135,8 +135,8 @@
   const selectedTemplate = ref<string | null>(null)
   const templateSearchQuery = ref('')
   const involvedSearchQuery = ref('')
-  const activeTab = ref('details')
-  const templateComboboxOpen = ref(false)
+  const _activeTab = ref('details')
+  const _templateComboboxOpen = ref(false)
   const _newComment = ref('')
   const _replyingTo = ref<string | null>(null)
   const _replyText = ref('')
@@ -321,15 +321,15 @@
     { id: 'ST-005', name: 'SPCC Plan Review' },
   ])
 
-  const reminderTimingOptions = ['1 day before', '3 days before', '1 week before', '2 weeks before']
+  const _reminderTimingOptions = ['1 day before', '3 days before', '1 week before', '2 weeks before']
 
-  const reminderMethodOptions = [
+  const _reminderMethodOptions = [
     { value: 'email', label: 'Email', icon: 'lucide:mail' },
     { value: 'in-app', label: 'In-app notification', icon: 'lucide:bell' },
     { value: 'sms', label: 'SMS', icon: 'lucide:message-square' },
   ]
 
-  const trackingOptions: {
+  const _trackingOptions: {
     value: boolean
     label: string
     description: string
@@ -352,7 +352,7 @@
     },
   ]
 
-  const filteredTemplates = computed(() => {
+  const _filteredTemplates = computed(() => {
     if (!templateSearchQuery.value) return templates.value
     const query = templateSearchQuery.value.toLowerCase()
     return templates.value.filter(
@@ -363,13 +363,13 @@
     )
   })
 
-  const filteredOwners = computed(() => {
+  const _filteredOwners = computed(() => {
     if (!involvedSearchQuery.value) return owners.value
     const query = involvedSearchQuery.value.toLowerCase()
     return owners.value.filter((owner) => owner.name.toLowerCase().includes(query))
   })
 
-  const frequencyStyles: Record<Frequency, { bg: string; color: string }> = {
+  const _frequencyStyles: Record<Frequency, { bg: string; color: string }> = {
     daily: { bg: 'bg-rose-500/10', color: 'text-rose-500' },
     weekly: { bg: 'bg-blue-500/10', color: 'text-blue-500' },
     monthly: { bg: 'bg-emerald-500/10', color: 'text-emerald-500' },
@@ -382,11 +382,11 @@
     return scheduleForm.title.trim().length > 0 && scheduleForm.owner.trim().length > 0 && scheduleForm.nextDue
   })
 
-  const detailsTabHasMissingRequired = computed(() => {
+  const _detailsTabHasMissingRequired = computed(() => {
     return !scheduleForm.owner.trim()
   })
 
-  const sidebarHasMissingRequired = computed(() => {
+  const _sidebarHasMissingRequired = computed(() => {
     return !scheduleForm.nextDue
   })
 
@@ -506,7 +506,7 @@
     return occurrences
   }
 
-  const applyTemplate = (templateId: string) => {
+  const _applyTemplate = (templateId: string) => {
     const template = templates.value.find((item) => item.id === templateId)
     if (!template) return
     selectedTemplate.value = templateId
@@ -517,13 +517,13 @@
     scheduleForm.tracked = template.tracked
   }
 
-  const clearTemplate = () => {
+  const _clearTemplate = () => {
     selectedTemplate.value = null
     scheduleForm.title = ''
     scheduleForm.description = ''
   }
 
-  const toggleInvolved = (owner: string) => {
+  const _toggleInvolved = (owner: string) => {
     if (scheduleForm.involved.includes(owner)) {
       scheduleForm.involved = scheduleForm.involved.filter((person) => person !== owner)
       return
@@ -533,13 +533,13 @@
 
   const showInvolvedDropdown = ref(false)
 
-  const handleInvolvedBlur = () => {
+  const _handleInvolvedBlur = () => {
     setTimeout(() => {
       showInvolvedDropdown.value = false
     }, 150)
   }
 
-  const toggleArrayValue = (list: string[], value: string, checked: boolean) => {
+  const _toggleArrayValue = (list: string[], value: string, checked: boolean) => {
     if (checked && !list.includes(value)) {
       list.push(value)
       return
@@ -550,11 +550,11 @@
     }
   }
 
-  const addCustomField = () => {
+  const _addCustomField = () => {
     scheduleForm.customFields = [...scheduleForm.customFields, { key: '', value: '' }]
   }
 
-  const removeCustomField = (index: number) => {
+  const _removeCustomField = (index: number) => {
     scheduleForm.customFields = scheduleForm.customFields.filter((_, idx) => idx !== index)
   }
 
