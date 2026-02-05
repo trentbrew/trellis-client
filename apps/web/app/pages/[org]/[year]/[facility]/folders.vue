@@ -231,7 +231,7 @@
       ? folderEntitySamples.value
       : [{ type: 'Items', singular: 'Item', icon: 'lucide:file' }]
     return Array.from({ length: count }, (_, index) => {
-      const sample = samples[index % samples.length]
+      const sample = (samples[index % samples.length] ?? samples[0])!
       return {
         id: `${folder.id}-item-${index + 1}`,
         name: `${folder.name} ${sample.singular} ${index + 1}`,
