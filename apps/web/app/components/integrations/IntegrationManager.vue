@@ -75,7 +75,7 @@ const connectedCount = computed(() => {
 
 <template>
   <UiDialog :open="open" @update:open="emit('update:open', $event)">
-    <UiDialogContent class="max-w-4xl h-[80vh] flex flex-col p-0">
+    <UiDialogContent class="w-[90vw] max-w-[1400px] h-[90vh] flex flex-col p-0">
       <!-- Header -->
       <div class="flex items-center justify-between px-6 py-4 border-b shrink-0">
         <div class="flex items-center gap-3">
