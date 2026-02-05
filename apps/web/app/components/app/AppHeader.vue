@@ -149,7 +149,7 @@
 
 <template>
   <!-- App Header: Navigation shell (matches icon rail) -->
-  <header class="border-border bg-card/80 border-b flex h-16 shrink-0 items-center gap-0 p-0 overflow-hidden backdrop-blur">
+  <header class="border-rail-border bg-rail border-b flex h-16 shrink-0 items-center gap-0 p-0 overflow-hidden">
     <!-- Year/Facility Pickers + Breadcrumbs (white area) -->
     <nav class="flex flex-1 items-center gap-0.5 text-sm px-4">
       <!-- Sidebar Toggle -->
