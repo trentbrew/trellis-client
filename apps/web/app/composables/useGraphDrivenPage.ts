@@ -2,7 +2,7 @@ import type { PageStat } from '~/components/layout/Page.vue'
 import type { ViewModeOption } from '~/lib/projections'
 import { buildPageConfigFromRoute, buildPageConfigFromSlug, type DerivedPageConfig } from '~/lib/appConfig'
 import { buildViewModeOptions } from '~/lib/projections'
-import { useBrowse } from '~/composables/useBrowse'
+import { useBrowse, type BrowseState } from '~/composables/useBrowse'
 import { useFacilityEntities } from '~/composables/useFacilityEntities'
 import { useGlobalDetailSheet } from '~/composables/useGlobalDetailSheet'
 
@@ -56,7 +56,7 @@ export interface UseGraphDrivenPageReturn {
   error: Ref<string | null>
 
   // Browse state (search, filters, sorting, view mode)
-  browseState: ReturnType<typeof useBrowse>
+  browseState: BrowseState<any>
   viewMode: ComputedRef<string>
   viewModeOptions: ComputedRef<ViewModeOption[]>
 

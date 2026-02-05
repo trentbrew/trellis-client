@@ -165,7 +165,7 @@ This suggests users want to:
 
 - **Moving away from Adobe** → PDF.js integration
 - Focus on **UI/UX iteration**, not backend/data-model changes
-- Final destination is **Vue 3 + Vite** (tri repo)
+- Final destination is **Vue 3 + Vite** (platform repo)
 
 ---
 

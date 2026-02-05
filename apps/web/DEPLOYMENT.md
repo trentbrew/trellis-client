@@ -1,4 +1,4 @@
-# Deployment Guide - TRI Sandbox V2
+# Deployment Guide - Platform Sandbox V2
 
 ## Overview
 
