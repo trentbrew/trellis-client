@@ -201,7 +201,7 @@ const tabs = [
         <div v-for="(colors, group) in colorGroups" :key="group" class="space-y-3">
           <h4 class="text-sm font-medium text-muted-foreground">{{ group }}</h4>
           <div class="space-y-2">
-            <BrandingColorPicker
+            <ColorPicker
               v-for="color in colors"
               :key="color.key"
               :model-value="currentPalette[color.key]"

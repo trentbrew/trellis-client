@@ -137,7 +137,7 @@ const connectedCount = computed(() => {
               </div>
             </div>
 
-            <IntegrationsIntegrationConfigForm
+            <IntegrationConfigForm
               :integration="configuringIntegration"
               @save="handleSaveConfig"
               @cancel="handleCancelConfig"
@@ -157,7 +157,7 @@ const connectedCount = computed(() => {
             </div>
 
             <div v-else class="grid gap-4">
-              <IntegrationsIntegrationCard
+              <IntegrationCard
                 v-for="integration in currentCategoryIntegrations"
                 :key="integration.id"
                 :integration="integration"

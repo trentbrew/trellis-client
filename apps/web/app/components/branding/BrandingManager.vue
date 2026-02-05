@@ -84,7 +84,7 @@ const handleExport = () => {
       <div class="flex-1 flex overflow-hidden">
         <!-- Editor -->
         <div class="flex-1 overflow-hidden" :class="showPreview ? 'w-1/2' : 'w-full'">
-          <BrandingBrandingEditor :config="brandConfig" @update="handleUpdate" />
+          <BrandingEditor :config="brandConfig" @update="handleUpdate" />
         </div>
 
         <!-- Preview Panel -->

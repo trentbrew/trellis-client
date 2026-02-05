@@ -270,7 +270,7 @@ const installedCount = computed(() => installedPackages.value.length)
             </div>
 
             <div v-else class="grid gap-4">
-              <OntologyMarketplaceOntologyCard
+              <OntologyCard
                 v-for="pkg in currentPackages"
                 :key="pkg.id"
                 :pkg="pkg"
