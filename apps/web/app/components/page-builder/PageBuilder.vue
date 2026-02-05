@@ -164,7 +164,7 @@ const handleCancel = () => {
             </div>
 
             <div v-else class="space-y-2">
-              <PageBuilderBlockEditor
+              <BlockEditor
                 v-for="(block, index) in localPage.blocks"
                 :key="block.id"
                 :block="block"
@@ -200,7 +200,7 @@ const handleCancel = () => {
             </div>
 
             <div v-else class="space-y-4">
-              <PageBuilderBlockRenderer
+              <BlockRenderer
                 v-for="block in localPage.blocks"
                 :key="block.id"
                 :block="block"
@@ -233,7 +233,7 @@ const handleCancel = () => {
 
           <!-- Block Type Grid -->
           <div class="grid grid-cols-2 gap-2 max-h-80 overflow-y-auto py-2">
-            <PageBuilderBlockTypeCard
+            <BlockTypeCard
               v-for="blockType in currentCategoryBlocks"
               :key="blockType.type"
               :block-type="blockType"
