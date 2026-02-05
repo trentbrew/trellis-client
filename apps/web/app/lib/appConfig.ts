@@ -488,7 +488,7 @@ export const buildPageConfigFromRoute = (routePath: string): DerivedPageConfig |
     subtitle: route.meta?.subtitle,
     description: route.meta?.description,
     icon: route.icon,
-    iconClass: route.tint,
+    iconClass: undefined,
     entityTypeId,
     projectionTypes,
     pageVariant: route.pageVariant ?? 'browse',

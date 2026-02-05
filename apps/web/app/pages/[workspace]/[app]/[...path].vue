@@ -114,7 +114,7 @@
     :subtitle="pageConfig?.subtitle || routeMeta?.subtitle || currentFacility?.name"
     :description="pageConfig?.description || routeMeta?.description || 'Facility data.'"
     :icon="pageConfig?.icon || 'lucide:database'"
-    :icon-class="pageConfig?.iconClass || 'text-sky-300'"
+    :icon-class="pageConfig?.iconClass"
     search-placeholder="Search..."
     :stats="stats"
     :show-view-switcher="true"
@@ -266,7 +266,7 @@
       <div
         v-for="column in kanbanColumns"
         :key="column.id"
-        class="flex-shrink-0 w-72 rounded-lg border-t-4 bg-muted/30"
+        class="shrink-0 w-72 rounded-lg border-t-4 bg-muted/30"
         :class="column.color">
         <div class="p-3 border-b border-border">
           <div class="flex items-center justify-between">

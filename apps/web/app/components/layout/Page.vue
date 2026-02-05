@@ -1,18 +1,11 @@
 <script setup lang="ts">
   import AppEmptyState from '~/components/app/AppEmptyState.vue'
   import type { BrowseState, BrowseVariant, BrowseViewMode } from '~/composables/useBrowse'
-  import { useBackgroundImages } from '~/composables/useBackgroundImages'
 
   const NuxtLink = resolveComponent('NuxtLink')
   const pageShell = usePageShell()
-  useBackgroundImages()
   const slots = useSlots()
 
-  // Test with a simple computed property
-  const testImage = computed(() => {
-    console.log('Test image computed')
-    return "linear-gradient(to bottom, rgba(30, 41, 59, 0.7), rgba(30, 41, 59, 0.8)), url('/assets/backgrounds/chemical-plant.png')"
-  })
 
   interface PageTab {
     /** Tab label */
@@ -170,15 +163,15 @@
     /** Currently selected item ID in folders variant */
     selectedItemId?: string | null
     /** Callback when folder is selected */
-    onFolderSelect?: (path: string) => void
+    onFolderSelect?: (_path: string) => void
     /** Callback when item is selected */
-    onItemSelect?: (id: string | null) => void
+    onItemSelect?: (_id: string | null) => void
     /** Callback to add a new folder */
-    onAddFolder?: (parentPath: string) => void
+    onAddFolder?: (_parentPath: string) => void
     /** Callback to add a new item to a folder */
-    onAddItem?: (folderPath: string) => void
+    onAddItem?: (_folderPath: string) => void
     /** Callback to move an item between folders */
-    onMoveItem?: (itemId: string, targetFolderPath: string) => void
+    onMoveItem?: (_itemId: string, _targetFolderPath: string) => void
     /** Empty state text for folders preview */
     folderEmptyTitle?: string
     /** Empty state description for folders preview */
@@ -480,15 +473,6 @@
     })
   }
 
-  const { y: scrollY } = useWindowScroll()
-
-  const parallaxStyle = computed(() => {
-    // Subtle parallax effect: move background slower than content
-    const offset = scrollY.value * 0.2
-    return {
-      backgroundPosition: `center ${50 + offset * 0.1}%`,
-    }
-  })
 
   const isTabActive = (to: string): boolean => {
     if (to.startsWith('#')) {
@@ -691,17 +675,8 @@
       <div :class="[contentWrapperClass, transparent ? 'bg-transparent' : '']">
         <!-- Header Section (Non-sticky) -->
         <div v-if="showHeader || $slots.header" class="shrink-0 space-y-0 p-8 pb-0">
-          <div
-            class="px-6 py-6 relative rounded-lg text-white overflow-hidden"
-            :class="variantConfig.maxWidth"
-            :style="{
-              backgroundImage: testImage,
-              backgroundSize: 'cover',
-              backgroundRepeat: 'no-repeat',
-              backgroundAttachment: 'fixed',
-              ...parallaxStyle,
-            }">
-            <div class="relative z-10 flex items-stretch gap-6">
+          <div class="px-6 py-5 relative border-b border-border/60" :class="variantConfig.maxWidth">
+            <div class="relative flex items-stretch gap-6">
               <!-- Header Icon -->
               <div v-if="headerIcon || $slots.headerIcon" class="shrink-0">
                 <slot name="headerIcon">
@@ -717,19 +692,19 @@
                 <!-- Subtitle with optional back button and icon -->
                 <div v-if="subtitle || showBackButton || icon" class="inline-flex items-center gap-0.5 mb-0">
                   <BackButton v-if="showBackButton" />
-                  <Icon v-if="icon" :name="icon" :class="`${iconClass} text-white/60! mr-2`" />
-                  <p v-if="subtitle" class="text-xs uppercase tracking-wide text-white/80">
+                  <Icon v-if="icon" :name="icon" class="mr-2 h-4 w-4 text-muted-foreground/70" />
+                  <p v-if="subtitle" class="text-xs uppercase tracking-wide text-muted-foreground/80">
                     {{ subtitle }}
                   </p>
                 </div>
 
                 <!-- Title -->
-                <h1 v-if="title || $slots.title" class="text-white text-3xl font-semibold my-2">
+                <h1 v-if="title || $slots.title" class="text-foreground text-3xl font-semibold my-2">
                   <slot name="title">{{ title }}</slot>
                 </h1>
 
                 <!-- Description -->
-                <p v-if="description || $slots.description" class="max-w-2xl text-sm text-white/70">
+                <p v-if="description || $slots.description" class="max-w-2xl text-sm text-muted-foreground">
                   <slot name="description">{{ description }}</slot>
                 </p>
 
@@ -764,54 +739,54 @@
                   <div
                     v-for="stat in stats"
                     :key="stat.label"
-                    class="flex flex-col justify-between gap-1 rounded-lg border border-white/20 bg-white/10 backdrop-blur-sm px-5 py-3 h-[92px] min-w-36">
+                    class="flex flex-col justify-between gap-1 rounded-lg border border-border/60 bg-card/60 backdrop-blur-sm px-5 py-3 h-[92px] min-w-36">
                     <div
-                      class="flex items-center gap-1.5 text-[10px] font-medium text-white/60 uppercase tracking-wider">
-                      <Icon v-if="stat.icon" :name="stat.icon" :class="['size-3', stat.color || 'text-white/50']" />
+                      class="flex items-center gap-1.5 text-[10px] font-medium text-muted-foreground uppercase tracking-wider">
+                      <Icon v-if="stat.icon" :name="stat.icon" :class="['size-3', stat.color || 'text-muted-foreground/70']" />
                       {{ stat.label }}
                     </div>
                     <!-- Progress bar for health stat -->
                     <div v-if="stat.progress !== undefined" class="space-y-1">
                       <div class="flex items-baseline justify-between gap-2">
-                        <span class="text-xl font-bold text-white tracking-tight">{{ stat.value }}</span>
+                        <span class="text-xl font-bold text-foreground tracking-tight">{{ stat.value }}</span>
                         <span
                           v-if="stat.change"
                           :class="[
                             'text-[10px] font-semibold',
                             stat.trend === 'up'
-                              ? 'text-emerald-200'
+                              ? 'text-success'
                               : stat.trend === 'down'
-                                ? 'text-rose-200'
-                                : 'text-white/60',
+                                ? 'text-destructive'
+                                : 'text-muted-foreground',
                           ]">
                           {{ stat.trend === 'up' ? '↑' : stat.trend === 'down' ? '↓' : '' }} {{ stat.change }}
                         </span>
                       </div>
-                      <div class="h-1.5 w-full rounded-full bg-white/20 overflow-hidden">
+                      <div class="h-1.5 w-full rounded-full bg-muted/40 overflow-hidden">
                         <div
                           class="h-full rounded-full transition-all duration-500"
                           :class="[
                             stat.progress >= 80
-                              ? 'bg-emerald-400'
+                              ? 'bg-success'
                               : stat.progress >= 50
-                                ? 'bg-amber-400'
-                                : 'bg-rose-400',
+                                ? 'bg-warning'
+                                : 'bg-destructive',
                           ]"
                           :style="{ width: `${stat.progress}%` }" />
                       </div>
                     </div>
                     <!-- Standard stat without progress -->
                     <div v-else class="flex items-baseline gap-1.5">
-                      <span class="text-xl font-bold text-white tracking-tight">{{ stat.value }}</span>
+                      <span class="text-xl font-bold text-foreground tracking-tight">{{ stat.value }}</span>
                       <span
                         v-if="stat.change"
                         :class="[
                           'text-[10px] font-semibold',
                           stat.trend === 'up'
-                            ? 'text-emerald-200'
+                            ? 'text-success'
                             : stat.trend === 'down'
-                              ? 'text-rose-200'
-                              : 'text-white/60',
+                              ? 'text-destructive'
+                              : 'text-muted-foreground',
                         ]">
                         {{ stat.trend === 'up' ? '↑' : stat.trend === 'down' ? '↓' : '' }} {{ stat.change }}
                       </span>
@@ -827,7 +802,7 @@
         <div
           v-if="showTabs && (effectiveTabs?.length || $slots.tabs || $slots.actions)"
           ref="stickyRef"
-          class="sticky -top-[1px] z-50 transition-all duration-200 min-h-16 flex items-center justify-between"
+          class="sticky -top-px z-50 transition-all duration-200 min-h-16 flex items-center justify-between"
           :class="[
             isStuck ? 'bg-card/50 border-b border-border backdrop-blur-lg' : 'bg-transparent border-b-transparent',
             transparent ? 'bg-transparent backdrop-blur-none' : '',
@@ -844,7 +819,7 @@
                       :key="tab.to"
                       :to="tab.to.startsWith('#') ? undefined : tab.to"
                       :href="tab.to.startsWith('#') ? tab.to : undefined"
-                      class="flex items-center gap-2 px-3 py-3 text-sm font-medium rounded-none transition-colors border-b-3 -mb-[1px] cursor-pointer min-h-16"
+                      class="flex items-center gap-2 px-3 py-3 text-sm font-medium rounded-none transition-colors border-b-3 -mb-px cursor-pointer min-h-16"
                       :class="
                         isTabActive(tab.to)
                           ? 'text-foreground border-primary '
@@ -871,7 +846,7 @@
                       :disabled="action.disabled"
                       :loading="action.isLoading"
                       class="gap-2"
-                      :class="action.variant === 'default' ? '!bg-accent' : ''"
+                      :class="action.variant === 'default' ? 'bg-accent!' : ''"
                       @click="handleActionClick(action)">
                       <Icon v-if="action.icon" :name="action.icon" class="h-4 w-4" />
                       <span>{{ action.label }}</span>
@@ -887,7 +862,7 @@
         <div
           v-if="variantConfig.showToolbar"
           ref="stickyRef"
-          class="sticky -top-[1px] z-40 transition-all duration-200"
+          class="sticky -top-px z-40 transition-all duration-200"
           :class="[
             isStuck ? 'bg-card/50 border-b border-border backdrop-blur-lg' : 'bg-transparent border-b-transparent',
             transparent ? 'bg-transparent backdrop-blur-none' : '',
@@ -979,7 +954,9 @@
                       </UiButton>
                     </UiDropdownMenuTrigger>
                     <UiDropdownMenuContent align="end" class="w-48">
-                      <UiDropdownMenuRadioGroup :model-value="browse.sortBy.value" @update:model-value="browse.setSort">
+                      <UiDropdownMenuRadioGroup
+                        :model-value="browse.sortBy.value"
+                        @update:model-value="(value) => value != null && browse?.setSort(String(value))">
                         <UiDropdownMenuRadioItem
                           v-for="option in browse.sortOptions"
                           :key="option.value"

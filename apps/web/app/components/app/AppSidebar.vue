@@ -372,23 +372,6 @@
       }"
       @mousedown="startResize" />
 
-    <!-- Global Command Search area -->
-    <div class="h-16 flex items-center px-4 border-b border-sidebar-border/10 shrink-0">
-      <UiButton
-        variant="ghost"
-        size="sm"
-        class="w-full text-sidebar-foreground/50 hover:text-sidebar-foreground hover:bg-white/10 border-white/20 justify-between group px-3 pr-2 bg-white/0"
-        @click.prevent="useCommandDialog().open()">
-        <div class="flex items-center gap-2 w-full">
-          <Icon name="lucide:search" class="h-4 w-4 transition-transform group-hover:scale-110" />
-          <span class="text-xs font-medium opacity-70 group-hover:opacity-100 transition-opacity">
-            Find anything...
-          </span>
-        </div>
-        <UiKbd class="bg-white/5 border-sidebar-border/20 text-sidebar-foreground/40 text-[10px]">⌘K</UiKbd>
-      </UiButton>
-    </div>
-
     <!-- Builder Controls (Edit Mode) -->
     <div v-if="showBuilderUI && canCreatePages" class="px-4 py-2 border-b border-sidebar-border/10">
       <UiButton
@@ -430,11 +413,11 @@
                         class="ml-2 rounded-full px-2 py-0.5 text-[10px] font-semibold"
                         :class="[
                           getSectionBadgeInfo(section.items)?.variant === 'destructive'
-                            ? 'bg-rose-500/20 text-rose-400 border border-rose-500/20'
+                            ? 'bg-destructive/15 text-destructive border border-destructive/30'
                             : getSectionBadgeInfo(section.items)?.variant === 'warning'
-                              ? 'bg-amber-500/20 text-amber-400 border border-amber-500/20'
+                              ? 'bg-warning/15 text-warning border border-warning/30'
                               : getSectionBadgeInfo(section.items)?.variant === 'success'
-                                ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/20'
+                                ? 'bg-success/15 text-success border border-success/30'
                                 : 'bg-sidebar-accent text-sidebar-accent-foreground',
                         ]">
                         {{ getSectionBadgeInfo(section.items)?.count }}
@@ -636,11 +619,11 @@
                     class="ml-2 rounded-full px-2 py-0.5 text-[10px] font-semibold"
                     :class="[
                       getSectionBadgeInfo(pinnedItems)?.variant === 'destructive'
-                        ? 'bg-rose-500/20 text-rose-400 border border-rose-500/20'
+                        ? 'bg-destructive/15 text-destructive border border-destructive/30'
                         : getSectionBadgeInfo(pinnedItems)?.variant === 'warning'
-                          ? 'bg-amber-500/20 text-amber-400 border border-amber-500/20'
+                          ? 'bg-warning/15 text-warning border border-warning/30'
                           : getSectionBadgeInfo(pinnedItems)?.variant === 'success'
-                            ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/20'
+                            ? 'bg-success/15 text-success border border-success/30'
                             : 'bg-sidebar-accent text-sidebar-accent-foreground',
                     ]">
                     {{ getSectionBadgeInfo(pinnedItems)?.count }}
@@ -796,11 +779,11 @@
                     class="ml-2 rounded-full px-2 py-0.5 text-[10px] font-semibold"
                     :class="[
                       getSectionBadgeInfo(unpinnedItems)?.variant === 'destructive'
-                        ? 'bg-rose-500/20 text-rose-400 border border-rose-500/20'
+                        ? 'bg-destructive/15 text-destructive border border-destructive/30'
                         : getSectionBadgeInfo(unpinnedItems)?.variant === 'warning'
-                          ? 'bg-amber-500/20 text-amber-400 border border-amber-500/20'
+                          ? 'bg-warning/15 text-warning border border-warning/30'
                           : getSectionBadgeInfo(unpinnedItems)?.variant === 'success'
-                            ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/20'
+                            ? 'bg-success/15 text-success border border-success/30'
                             : 'bg-sidebar-accent text-sidebar-accent-foreground',
                     ]">
                     {{ getSectionBadgeInfo(unpinnedItems)?.count }}
@@ -1049,12 +1032,12 @@
                       class="ml-2 rounded-full px-2 py-0.5 text-[10px] font-semibold"
                       :class="[
                         getSectionBadgeInfo(systemUnpinnedItems)?.variant === 'destructive'
-                          ? 'bg-rose-500/20 text-rose-400 border border-rose-500/20'
-                          : getSectionBadgeInfo(systemUnpinnedItems)?.variant === 'warning'
-                            ? 'bg-amber-500/20 text-amber-400 border border-amber-500/20'
-                            : getSectionBadgeInfo(systemUnpinnedItems)?.variant === 'success'
-                              ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/20'
-                              : 'bg-sidebar-accent text-sidebar-accent-foreground',
+                        ? 'bg-destructive/15 text-destructive border border-destructive/30'
+                        : getSectionBadgeInfo(systemUnpinnedItems)?.variant === 'warning'
+                          ? 'bg-warning/15 text-warning border border-warning/30'
+                          : getSectionBadgeInfo(systemUnpinnedItems)?.variant === 'success'
+                            ? 'bg-success/15 text-success border border-success/30'
+                            : 'bg-sidebar-accent text-sidebar-accent-foreground',
                       ]">
                       {{ getSectionBadgeInfo(systemUnpinnedItems)?.count }}
                     </span>
@@ -1106,11 +1089,11 @@
                                       class="rounded-full px-2 py-0.5 text-[10px] font-semibold shrink-0"
                                       :class="[
                                         (routes.getRouteBadge(item) as any).variant === 'success'
-                                          ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/20'
+                                          ? 'bg-success/15 text-success border border-success/30'
                                           : (routes.getRouteBadge(item) as any).variant === 'warning'
-                                            ? 'bg-amber-500/20 text-amber-400 border border-amber-500/20'
+                                            ? 'bg-warning/15 text-warning border border-warning/30'
                                             : (routes.getRouteBadge(item) as any).variant === 'destructive'
-                                              ? 'bg-rose-500/20 text-rose-400 border border-rose-500/20'
+                                              ? 'bg-destructive/15 text-destructive border border-destructive/30'
                                               : (routes.getRouteBadge(item) as any).variant === 'accent'
                                                 ? 'bg-accent text-accent-foreground'
                                                 : 'bg-white/10 text-sidebar-foreground/70',
@@ -1169,12 +1152,12 @@
                       class="ml-2 rounded-full px-2 py-0.5 text-[10px] font-semibold"
                       :class="[
                         getSectionBadgeInfo(customUnpinnedItems)?.variant === 'destructive'
-                          ? 'bg-rose-500/20 text-rose-400 border border-rose-500/20'
-                          : getSectionBadgeInfo(customUnpinnedItems)?.variant === 'warning'
-                            ? 'bg-amber-500/20 text-amber-400 border border-amber-500/20'
-                            : getSectionBadgeInfo(customUnpinnedItems)?.variant === 'success'
-                              ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/20'
-                              : 'bg-sidebar-accent text-sidebar-accent-foreground',
+                        ? 'bg-destructive/15 text-destructive border border-destructive/30'
+                        : getSectionBadgeInfo(customUnpinnedItems)?.variant === 'warning'
+                          ? 'bg-warning/15 text-warning border border-warning/30'
+                          : getSectionBadgeInfo(customUnpinnedItems)?.variant === 'success'
+                            ? 'bg-success/15 text-success border border-success/30'
+                            : 'bg-sidebar-accent text-sidebar-accent-foreground',
                       ]">
                       {{ getSectionBadgeInfo(customUnpinnedItems)?.count }}
                     </span>

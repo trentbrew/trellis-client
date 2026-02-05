@@ -91,7 +91,7 @@ export default defineNuxtConfig({
     ],
   },
 
-  colorMode: { classSuffix: '', storageKey: 'platform-sandbox-color-mode', preference: 'light' },
+  colorMode: { classSuffix: '', storageKey: 'platform-sandbox-color-mode', preference: 'dark' },
 
   icon: {
     clientBundle: { scan: true, sizeLimitKb: 0 },

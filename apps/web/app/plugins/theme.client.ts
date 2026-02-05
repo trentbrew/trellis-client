@@ -9,6 +9,13 @@ export default defineNuxtPlugin(() => {
   const themeStore = useThemeStore()
   const colorMode = useColorMode()
 
+  if (import.meta.client) {
+    const storedPreference = localStorage.getItem('platform-sandbox-color-mode')
+    if (!storedPreference) {
+      colorMode.preference = 'dark'
+    }
+  }
+
   // Initialize theme from localStorage
   themeStore.initTheme()
 

@@ -3,6 +3,7 @@
 
   const routes = useRoutes()
   const route = useRoute()
+  const commandDialog = useCommandDialog()
   const pinnedItems = usePinnedItems()
   const sidebarCollapse = useSidebarCollapse()
   const { currentApp, updateCollection: updateCollectionData, getCollectionBySlug } = useInstantData()
@@ -148,7 +149,7 @@
 
 <template>
   <!-- App Header: Navigation shell (matches icon rail) -->
-  <header class="border-border bg-card/50 border-b flex h-16 shrink-0 items-center gap-0 p-0 overflow-hidden">
+  <header class="border-border bg-card/80 border-b flex h-16 shrink-0 items-center gap-0 p-0 overflow-hidden backdrop-blur">
     <!-- Year/Facility Pickers + Breadcrumbs (white area) -->
     <nav class="flex flex-1 items-center gap-0.5 text-sm px-4">
       <!-- Sidebar Toggle -->
@@ -250,6 +251,17 @@
         </UiSheetContent>
       </UiSheet>
 
+      <!-- Global Search -->
+      <UiButton
+        variant="ghost"
+        size="sm"
+        class="text-muted-foreground hover:text-foreground border-border/40 hover:bg-muted/40 gap-2 px-3"
+        @click="commandDialog.open()">
+        <Icon name="lucide:search" class="h-4 w-4" />
+        <span class="text-xs font-semibold">Search...</span>
+        <UiKbd class="bg-muted/40 border-border/50 text-muted-foreground text-[10px]">⌘K</UiKbd>
+      </UiButton>
+
       <!-- Notifications Button -->
       <UiDropdownMenu>
         <UiDropdownMenuTrigger as-child>
@@ -266,11 +278,11 @@
               class="absolute -top-1 -right-1 flex h-4.5 w-4.5 items-center justify-center rounded-full text-[10px] font-bold ring-2 ring-card"
               :class="[
                 notificationBadgeVariant === 'destructive'
-                  ? 'bg-rose-500 text-white'
+                  ? 'bg-destructive text-destructive-foreground'
                   : notificationBadgeVariant === 'warning'
-                    ? 'bg-amber-500 text-black'
+                    ? 'bg-warning text-warning-foreground'
                     : notificationBadgeVariant === 'success'
-                      ? 'bg-emerald-500 text-white'
+                      ? 'bg-success text-success-foreground'
                       : 'bg-primary text-primary-foreground',
               ]">
               {{ unreadCount }}
@@ -302,12 +314,12 @@
                 :class="[
                   notification.unread
                     ? notification.variant === 'destructive'
-                      ? 'bg-rose-500/[0.06] hover:bg-rose-500/[0.08]'
+                      ? 'bg-destructive/6 hover:bg-destructive/8'
                       : notification.variant === 'warning'
-                        ? 'bg-amber-500/[0.06] hover:bg-amber-500/[0.08]'
+                        ? 'bg-warning/6 hover:bg-warning/8'
                         : notification.variant === 'success'
-                          ? 'bg-emerald-500/[0.06] hover:bg-emerald-500/[0.08]'
-                          : 'bg-primary/[0.06] hover:bg-primary/[0.08]'
+                          ? 'bg-success/6 hover:bg-success/8'
+                          : 'bg-primary/6 hover:bg-primary/8'
                     : 'bg-transparent hover:bg-muted/30',
                 ]"
                 @click="handleNotificationClick(notification)">
@@ -317,11 +329,11 @@
                   class="absolute left-0 top-2 bottom-2 w-1 rounded-r-full transition-all duration-300 group-hover:w-1.5"
                   :class="[
                     notification.variant === 'destructive'
-                      ? 'bg-rose-500'
+                      ? 'bg-destructive'
                       : notification.variant === 'warning'
-                        ? 'bg-amber-500'
+                        ? 'bg-warning'
                         : notification.variant === 'success'
-                          ? 'bg-emerald-500'
+                          ? 'bg-success'
                           : 'bg-primary',
                   ]"></div>
 
@@ -330,11 +342,11 @@
                   class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl shadow-sm ring-1 transition-all duration-300 group-hover:scale-110 group-hover:rotate-3"
                   :class="[
                     notification.variant === 'destructive'
-                      ? 'bg-rose-500/20 text-rose-500 ring-rose-500/30 shadow-rose-500/10'
+                      ? 'bg-destructive/20 text-destructive ring-destructive/30 shadow-destructive/10'
                       : notification.variant === 'warning'
-                        ? 'bg-amber-500/20 text-amber-500 ring-amber-500/30 shadow-amber-500/10'
+                        ? 'bg-warning/20 text-warning ring-warning/30 shadow-warning/10'
                         : notification.variant === 'success'
-                          ? 'bg-emerald-500/20 text-emerald-500 ring-emerald-500/30 shadow-emerald-500/10'
+                          ? 'bg-success/20 text-success ring-success/30 shadow-success/10'
                           : 'bg-primary/20 text-primary ring-primary/30 shadow-primary/10',
                   ]">
                   <Icon :name="notification.icon" class="h-5 w-5" />
@@ -363,11 +375,11 @@
                         class="rounded-md px-1.5 py-0.5 text-[9px] font-black uppercase tracking-[0.1em] shadow-xs ring-1"
                         :class="[
                           notification.variant === 'destructive'
-                            ? 'bg-rose-500/15 text-rose-600 ring-rose-500/20'
+                            ? 'bg-destructive/15 text-destructive ring-destructive/30'
                             : notification.variant === 'warning'
-                              ? 'bg-amber-500/15 text-amber-600 ring-amber-500/20'
+                              ? 'bg-warning/15 text-warning ring-warning/30'
                               : notification.variant === 'success'
-                                ? 'bg-emerald-500/15 text-emerald-600 ring-emerald-500/20'
+                                ? 'bg-success/15 text-success ring-success/30'
                                 : 'bg-muted text-muted-foreground ring-border/50',
                         ]">
                         {{ notification.variant === 'default' ? 'system' : notification.variant }}

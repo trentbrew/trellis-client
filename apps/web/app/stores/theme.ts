@@ -179,7 +179,9 @@ export const useThemeStore = defineStore('theme', {
       const configDefaultPreset = getDefaultThemePresetId()
 
       const savedPresetId = localStorage.getItem('theme-preset-id')
-      const savedMode = (localStorage.getItem('theme-mode') || 'light') as 'light' | 'dark'
+      const storedColorMode = localStorage.getItem('platform-sandbox-color-mode')
+      const storedThemeMode = localStorage.getItem('theme-mode')
+      const savedMode = (storedColorMode || storedThemeMode || 'dark') as 'light' | 'dark'
 
       if (savedPresetId && this.allPresets[savedPresetId]) {
         this.setPreset(savedPresetId, savedMode)
