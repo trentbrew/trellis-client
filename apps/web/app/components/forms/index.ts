@@ -1,4 +1,5 @@
 export { default as IconPicker } from './IconPicker.vue'
+export { default as AppPicker } from './AppPicker.vue'
 export { default as OrganizationPicker } from './OrganizationPicker.vue'
 export { default as ContextSwitcher } from './ContextSwitcher.vue'
 /** @deprecated Use ContextSwitcher instead */
