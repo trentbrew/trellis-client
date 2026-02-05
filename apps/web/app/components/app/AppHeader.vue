@@ -7,7 +7,7 @@
   const pinnedItems = usePinnedItems()
   const sidebarCollapse = useSidebarCollapse()
   const { currentApp, updateCollection: updateCollectionData, getCollectionBySlug } = useInstantData()
-  const { userRole } = useUserRole()
+  const { userRole: _userRole } = useUserRole()
   const isResizing = useState<boolean>('isSidebarResizing', () => false)
 
   // Reactive collection based on current route
@@ -171,10 +171,10 @@
 
       <!-- Organization Picker -->
       <ClientOnly>
-        <OrganizationPicker v-if="userRole !== 'facility_manager' && userRole !== 'guest'" />
+        <OrganizationPicker />
       </ClientOnly>
 
-      <span v-if="userRole !== 'facility_manager' && userRole !== 'guest'" class="text-muted-foreground/30 mx-1">
+      <span class="text-muted-foreground/30 mx-1">
         /
       </span>
 
@@ -255,7 +255,7 @@
       <UiButton
         variant="ghost"
         size="sm"
-        class="text-muted-foreground hover:text-foreground border-border/40 hover:bg-muted/40 gap-2 px-3"
+        class="text-muted-foreground hover:text-foreground border border-border/40 hover:bg-muted/40 bg-card gap-2 px-4 min-w-[200px]"
         @click="commandDialog.open()">
         <Icon name="lucide:search" class="h-4 w-4" />
         <span class="text-xs font-semibold">Search...</span>
