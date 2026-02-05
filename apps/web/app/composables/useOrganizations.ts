@@ -8,6 +8,7 @@
 
 export interface Organization {
   id: string
+  ownerId?: string // User ID of workspace owner
   name: string
   slug: string
   logoUrl?: string
