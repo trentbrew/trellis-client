@@ -187,7 +187,7 @@ const getGridColClass = (size: DashboardWidget['size']) => {
                 <Icon name="lucide:trash-2" class="w-3.5 h-3.5" />
               </UiButton>
             </div>
-            <DashboardBuilderWidgetEditor :widget="selectedWidget" @update="updateWidget" @delete="deleteWidget(selectedWidget.id)" />
+            <WidgetEditor :widget="selectedWidget" @update="updateWidget" @delete="deleteWidget(selectedWidget.id)" />
           </div>
         </div>
 
@@ -225,7 +225,7 @@ const getGridColClass = (size: DashboardWidget['size']) => {
                   gridColumn: `span ${getWidgetSpan(widget.size)} / span ${getWidgetSpan(widget.size)}`,
                 }"
                 @click="selectedWidgetId = widget.id">
-                <DashboardBuilderWidgetRenderer :widget="widget" />
+                <WidgetRenderer :widget="widget" />
               </div>
             </div>
           </div>
@@ -255,7 +255,7 @@ const getGridColClass = (size: DashboardWidget['size']) => {
 
           <!-- Widget Type Grid -->
           <div class="grid grid-cols-2 gap-2 max-h-80 overflow-y-auto py-2">
-            <DashboardBuilderWidgetTypeCard
+            <WidgetTypeCard
               v-for="widgetType in currentCategoryWidgets"
               :key="widgetType.type"
               :widget-type="widgetType"

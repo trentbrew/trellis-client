@@ -239,24 +239,24 @@
     </div>
 
     <!-- Dashboard Builder Dialog -->
-    <DashboardBuilderDashboardBuilder
+    <DashboardBuilder
       :open="dashboardBuilderOpen"
       @update:open="dashboardBuilderOpen = $event"
       @save="handleDashboardSave" />
 
     <!-- Integration Manager Dialog -->
-    <IntegrationsIntegrationManager
+    <IntegrationManager
       :open="integrationManagerOpen"
       @update:open="integrationManagerOpen = $event" />
 
     <!-- Branding Manager Dialog -->
-    <BrandingBrandingManager
+    <BrandingManager
       :open="brandingManagerOpen"
       @update:open="brandingManagerOpen = $event"
       @save="handleBrandingSave" />
 
     <!-- Ontology Marketplace Dialog -->
-    <OntologyMarketplaceOntologyMarketplace
+    <OntologyMarketplace
       :open="ontologyMarketplaceOpen"
       @update:open="ontologyMarketplaceOpen = $event" />
   </nav>
