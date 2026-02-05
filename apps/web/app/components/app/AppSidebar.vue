@@ -11,6 +11,9 @@
   const nuxtApp = useNuxtApp()
   const route = useRoute()
 
+  // Admin UI controls
+  const { showBuilderUI, canCreatePages } = useAdminUI()
+
   const sidebarSectionKey = computed(() => routes.currentSectionLabel.value)
 
   const isTypesSection = computed(() => routes.currentSidebarSection.value?.path === '/types')

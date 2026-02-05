@@ -6,6 +6,7 @@
   const { user, signOut } = useInstantAuth()
   const { $instantDb } = useNuxtApp()
   const { roleConfig } = useUserRole()
+  const { isInEditMode, toggleEditMode, canToggleEditMode } = useAdminUI()
   const isAuthenticated = computed(() => !!user.value)
 
   const demoUsers = computed(() => $instantDb?.demoUsers || {})
@@ -114,6 +115,22 @@
             Profile settings
           </AppNavLink>
         </UiDropdownMenuItem>
+
+        <!-- Edit Mode Toggle (admin+ only) -->
+        <template v-if="canToggleEditMode">
+          <UiDropdownMenuSeparator />
+          <UiDropdownMenuItem class="flex items-center justify-between" @click="toggleEditMode">
+            <div class="flex items-center gap-2">
+              <Icon :name="isInEditMode ? 'lucide:pencil-off' : 'lucide:pencil'" class="h-4 w-4" />
+              <span>{{ isInEditMode ? 'Exit Edit Mode' : 'Enter Edit Mode' }}</span>
+            </div>
+            <div
+              v-if="isInEditMode"
+              class="h-2 w-2 rounded-full bg-amber-500 animate-pulse"
+              title="Edit mode active" />
+          </UiDropdownMenuItem>
+        </template>
+
         <UiDropdownMenuSeparator />
         <UiDropdownMenuLabel class="text-muted-foreground/75 text-xs flex items-center gap-1.5">
           <Icon name="lucide:users" class="h-3 w-3" />
