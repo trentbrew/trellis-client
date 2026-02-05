@@ -1345,10 +1345,21 @@
               </div>
             </div>
 
-            <div class="text-center">
+            <div class="text-center space-y-2">
               <UiButton variant="outline" @click="setCollectionSchemaSheetOpen(true)">
                 <Icon name="lucide:settings-2" class="mr-2 h-4 w-4" />
                 Create custom schema
+              </UiButton>
+
+              <!-- Schema Builder (Edit Mode) -->
+              <UiButton
+                v-if="showBuilderUI"
+                variant="outline"
+                class="border-amber-500/30 text-amber-600 hover:bg-amber-500/10"
+                @click="schemaBuilderOpen = true">
+                <Icon name="lucide:wand-2" class="mr-2 h-4 w-4" />
+                Schema Builder
+                <span class="ml-2 text-[10px] bg-amber-500/10 px-1.5 py-0.5 rounded">Edit Mode</span>
               </UiButton>
             </div>
           </div>
