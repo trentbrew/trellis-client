@@ -44,7 +44,7 @@
     <div class="flex h-16 w-16 items-center justify-center shrink-0 border-b" :class="isInEditMode ? 'border-accent-foreground/10' : 'border-rail-border/50'">
       <AppNavLink
         to="/"
-        class="flex h-9 w-9 items-center justify-center rounded-lg transition"
+        class="flex h-9 w-9 items-center justify-center rounded-lg transition bg-transparent hover:bg-transparent"
         :class="isInEditMode ? 'bg-accent-foreground/10 hover:bg-accent-foreground/20' : 'bg-rail-foreground/10 hover:bg-rail-foreground/20'">
         <img src="https://trentbrew.pockethost.io/api/files/swvnum16u65or8w/75p6fv4xnwa3mq7/a_g_ciBq3Onk8f.svg?token=" alt="Logo" class="h-5 w-5" />
       </AppNavLink>
