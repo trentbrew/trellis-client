@@ -1,77 +1,44 @@
 <script lang="ts" setup>
-  const commandDialog = useCommandDialog()
-  const routes = useRoutes()
-  const { user } = useInstantAuth()
-  const isAuthenticated = computed(() => !!user.value)
-  const sidebarCollapse = useSidebarCollapse()
   const nuxtApp = useNuxtApp()
+  const router = useRouter()
 
   // Admin UI controls
-  const { showBuilderUI } = useAdminUI()
+  const { isInEditMode } = useAdminUI()
 
-  // Dashboard Builder dialog state
+  // Dialog states
   const dashboardBuilderOpen = ref(false)
-
-  // Integration Manager dialog state
   const integrationManagerOpen = ref(false)
-
-  // Branding Manager dialog state
   const brandingManagerOpen = ref(false)
-
-  // Ontology Marketplace dialog state
   const ontologyMarketplaceOpen = ref(false)
 
-  // Route Builder dialog state
-  const routeBuilderOpen = ref(false)
-
-  // Open route builder
-  const handleCreateRoute = () => {
-    routeBuilderOpen.value = true
-  }
-
-  // Handle route save
-  const handleRouteSave = (route: any) => {
-    // TODO: Save route to app-config.jsonld
-    ;(nuxtApp as any).$toast?.success(`Route "${route.label}" created! Refresh to see it in navigation.`)
-    routeBuilderOpen.value = false
+  // Notion-style: Instantly create blank page and navigate
+  const handleCreatePage = () => {
+    const id = `page-${Date.now()}`
+    const path = `/pages/${id}`
+    // TODO: Register route in app-config.jsonld
+    ;(nuxtApp as any).$toast?.success('New page created!')
+    router.push(path)
   }
 
   // Handle dashboard save
   const handleDashboardSave = (dashboard: any) => {
-    // TODO: Save dashboard to database
     ;(nuxtApp as any).$toast?.success(`Dashboard "${dashboard.title}" created!`)
     dashboardBuilderOpen.value = false
   }
 
   // Handle branding save
   const handleBrandingSave = (_config: any) => {
-    // TODO: Save brand config to database
     ;(nuxtApp as any).$toast?.success('Brand settings saved!')
     brandingManagerOpen.value = false
   }
-
-  const primaryRailItems = computed(() =>
-    (routes.primaryRailRoutes.value || []).filter((r) => {
-      if (!r?.path) return false
-      if (r.requiresAuth === false) return true
-      return isAuthenticated.value
-    }),
-  )
-
-  const secondaryRailItems = computed(() =>
-    (routes.secondaryRailRoutes.value || []).filter((r) => {
-      if (!r?.path) return false
-      if (r.requiresAuth === false) return true
-      return isAuthenticated.value
-    }),
-  )
 </script>
 
 <template>
-  <!-- Icon Rail: Navigation shell (matches app header) -->
+  <!-- Icon Rail: Edit mode dock for app configuration -->
   <nav
-    class="border-rail-border flex w-16 flex-col items-center gap-3 border-r bg-rail text-rail-foreground px-2 py-0 pb-2"
-    aria-label="Icon rail">
+    v-if="isInEditMode"
+    class="border-accent/20 flex w-16 flex-col items-center gap-3 border-r bg-accent text-accent-foreground px-2 py-0 pb-2"
+    aria-label="Edit mode dock">
     <!-- Logo area -->
     <div class="flex h-16 w-16 items-center justify-center shrink-0 border-b border-white/10">
       <AppNavLink to="/" class="flex h-9 w-9 items-center justify-center text-sidebar-foreground">
@@ -114,23 +81,18 @@
     <div class="w-8 border-t border-white/10" />
 
     <!-- Edit Mode Builder Buttons -->
-    <div v-if="showBuilderUI" class="flex flex-col gap-1">
-      <!-- Add Route Button -->
+    <div class="flex flex-col gap-1">
+      <!-- Add Page Button (Notion-style instant creation) -->
       <UiTooltip>
         <UiTooltipTrigger as-child>
           <button
             type="button"
-            class="group text-amber-500/70 hover:bg-amber-500/10 hover:text-amber-500 flex h-10 w-10 items-center justify-center rounded-xl transition border border-dashed border-amber-500/30"
-            @click="handleCreateRoute">
+            class="group text-accent-foreground/70 hover:bg-white/10 hover:text-accent-foreground flex h-10 w-10 items-center justify-center rounded-xl transition"
+            @click="handleCreatePage">
             <Icon name="lucide:plus" class="h-4 w-4" />
           </button>
         </UiTooltipTrigger>
-        <UiTooltipContent side="right">
-          <div class="flex items-center gap-2">
-            <span>Add Route</span>
-            <span class="text-[10px] text-amber-500 bg-amber-500/10 px-1.5 py-0.5 rounded">Edit Mode</span>
-          </div>
-        </UiTooltipContent>
+        <UiTooltipContent side="right">New Page</UiTooltipContent>
       </UiTooltip>
 
       <!-- Dashboard Builder Button -->
@@ -138,17 +100,12 @@
         <UiTooltipTrigger as-child>
           <button
             type="button"
-            class="group text-amber-500/70 hover:bg-amber-500/10 hover:text-amber-500 flex h-10 w-10 items-center justify-center rounded-xl transition border border-dashed border-amber-500/30"
+            class="group text-accent-foreground/70 hover:bg-white/10 hover:text-accent-foreground flex h-10 w-10 items-center justify-center rounded-xl transition"
             @click="dashboardBuilderOpen = true">
             <Icon name="lucide:layout-dashboard" class="h-4 w-4" />
           </button>
         </UiTooltipTrigger>
-        <UiTooltipContent side="right">
-          <div class="flex items-center gap-2">
-            <span>New Dashboard</span>
-            <span class="text-[10px] text-amber-500 bg-amber-500/10 px-1.5 py-0.5 rounded">Edit Mode</span>
-          </div>
-        </UiTooltipContent>
+        <UiTooltipContent side="right">Dashboard</UiTooltipContent>
       </UiTooltip>
 
       <!-- Integrations Button -->
@@ -156,17 +113,12 @@
         <UiTooltipTrigger as-child>
           <button
             type="button"
-            class="group text-amber-500/70 hover:bg-amber-500/10 hover:text-amber-500 flex h-10 w-10 items-center justify-center rounded-xl transition border border-dashed border-amber-500/30"
+            class="group text-accent-foreground/70 hover:bg-white/10 hover:text-accent-foreground flex h-10 w-10 items-center justify-center rounded-xl transition"
             @click="integrationManagerOpen = true">
             <Icon name="lucide:plug" class="h-4 w-4" />
           </button>
         </UiTooltipTrigger>
-        <UiTooltipContent side="right">
-          <div class="flex items-center gap-2">
-            <span>Integrations</span>
-            <span class="text-[10px] text-amber-500 bg-amber-500/10 px-1.5 py-0.5 rounded">Edit Mode</span>
-          </div>
-        </UiTooltipContent>
+        <UiTooltipContent side="right">Integrations</UiTooltipContent>
       </UiTooltip>
 
       <!-- Branding Button -->
@@ -174,17 +126,12 @@
         <UiTooltipTrigger as-child>
           <button
             type="button"
-            class="group text-amber-500/70 hover:bg-amber-500/10 hover:text-amber-500 flex h-10 w-10 items-center justify-center rounded-xl transition border border-dashed border-amber-500/30"
+            class="group text-accent-foreground/70 hover:bg-white/10 hover:text-accent-foreground flex h-10 w-10 items-center justify-center rounded-xl transition"
             @click="brandingManagerOpen = true">
             <Icon name="lucide:palette" class="h-4 w-4" />
           </button>
         </UiTooltipTrigger>
-        <UiTooltipContent side="right">
-          <div class="flex items-center gap-2">
-            <span>Branding</span>
-            <span class="text-[10px] text-amber-500 bg-amber-500/10 px-1.5 py-0.5 rounded">Edit Mode</span>
-          </div>
-        </UiTooltipContent>
+        <UiTooltipContent side="right">Branding</UiTooltipContent>
       </UiTooltip>
 
       <!-- Ontology Marketplace Button -->
@@ -192,17 +139,12 @@
         <UiTooltipTrigger as-child>
           <button
             type="button"
-            class="group text-amber-500/70 hover:bg-amber-500/10 hover:text-amber-500 flex h-10 w-10 items-center justify-center rounded-xl transition border border-dashed border-amber-500/30"
+            class="group text-accent-foreground/70 hover:bg-white/10 hover:text-accent-foreground flex h-10 w-10 items-center justify-center rounded-xl transition"
             @click="ontologyMarketplaceOpen = true">
             <Icon name="lucide:store" class="h-4 w-4" />
           </button>
         </UiTooltipTrigger>
-        <UiTooltipContent side="right">
-          <div class="flex items-center gap-2">
-            <span>Marketplace</span>
-            <span class="text-[10px] text-amber-500 bg-amber-500/10 px-1.5 py-0.5 rounded">Edit Mode</span>
-          </div>
-        </UiTooltipContent>
+        <UiTooltipContent side="right">Marketplace</UiTooltipContent>
       </UiTooltip>
     </div>
 
@@ -269,10 +211,5 @@
       :open="ontologyMarketplaceOpen"
       @update:open="ontologyMarketplaceOpen = $event" />
 
-    <!-- Route Builder Dialog -->
-    <RouteBuilder
-      :open="routeBuilderOpen"
-      @update:open="routeBuilderOpen = $event"
-      @save="handleRouteSave" />
-  </nav>
+    </nav>
 </template>
