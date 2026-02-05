@@ -16,7 +16,7 @@ export function useInstantAuth() {
   if (import.meta.client && !hasSubscribed.value) {
     hasSubscribed.value = true
 
-    db.subscribeAuth((auth) => {
+    db.subscribeAuth((auth: any) => {
       isLoading.value = false
 
       if ('error' in auth && auth.error) {

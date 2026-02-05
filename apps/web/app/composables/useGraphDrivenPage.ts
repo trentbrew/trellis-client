@@ -2,9 +2,10 @@ import type { PageStat } from '~/components/layout/Page.vue'
 import type { ViewModeOption } from '~/lib/projections'
 import { buildPageConfigFromRoute, buildPageConfigFromSlug, type DerivedPageConfig } from '~/lib/appConfig'
 import { buildViewModeOptions } from '~/lib/projections'
-import { useBrowse, type BrowseState } from '~/composables/useBrowse'
+import { useBrowse, type BrowseState, type BrowseViewMode } from '~/composables/useBrowse'
 import { useFacilityEntities } from '~/composables/useFacilityEntities'
 import { useGlobalDetailSheet } from '~/composables/useGlobalDetailSheet'
+import type { EntityDetailVariant } from '~/composables/useGlobalDetailSheet'
 
 /**
  * Route path to entity type slug mapping
@@ -206,12 +207,26 @@ export function useGraphDrivenPage(options: UseGraphDrivenPageOptions): UseGraph
     const schema = pageConfig.value?.schema
     if (!schema) {
       return [
-        { value: 'table', label: 'Table', icon: 'lucide:table', enabled: true },
-        { value: 'list', label: 'List', icon: 'lucide:list', enabled: true },
+        { mode: 'table', label: 'Table', icon: 'lucide:table' },
+        { mode: 'list', label: 'List', icon: 'lucide:list' },
       ]
     }
 
-    const allowedModes = pageConfig.value?.projectionTypes || ['table', 'list', 'grid', 'kanban', 'calendar']
+    const rawAllowedModes = pageConfig.value?.projectionTypes || ['table', 'list', 'grid', 'kanban', 'calendar']
+    const allowedModes = (rawAllowedModes as string[]).filter((m): m is BrowseViewMode => {
+      return (
+        m === 'grid' ||
+        m === 'list' ||
+        m === 'table' ||
+        m === 'calendar' ||
+        m === 'kanban' ||
+        m === 'timeline' ||
+        m === 'month' ||
+        m === 'week' ||
+        m === 'agenda'
+      )
+    })
+
     return buildViewModeOptions(schema, allowedModes, { includeDisabled: false })
   })
 
@@ -255,17 +270,28 @@ export function useGraphDrivenPage(options: UseGraphDrivenPageOptions): UseGraph
   const { open: openDetailSheet } = useGlobalDetailSheet()
 
   const openDetail = (item: any, opts?: { mode?: 'view' | 'edit' | 'create' }) => {
+    const candidate = entityType.value || 'task'
+    const allowed: EntityDetailVariant[] = ['task', 'event', 'payment', 'deadline', 'reminder', 'permit', 'folder', 'document', 'default']
+    const detailEntityType: EntityDetailVariant = allowed.includes(candidate as EntityDetailVariant)
+      ? (candidate as EntityDetailVariant)
+      : 'default'
+
     openDetailSheet(item, {
-      entityType: entityType.value || 'item',
+      entityType: detailEntityType,
       mode: opts?.mode || 'view',
     })
   }
 
   const createItem = () => {
+    const candidate = entityType.value || 'task'
+    const allowed: EntityDetailVariant[] = ['task', 'event', 'payment', 'deadline', 'reminder', 'permit', 'folder', 'document', 'default']
+    const detailEntityType: EntityDetailVariant = allowed.includes(candidate as EntityDetailVariant)
+      ? (candidate as EntityDetailVariant)
+      : 'default'
     openDetailSheet(
       {},
       {
-        entityType: entityType.value || 'item',
+        entityType: detailEntityType,
         mode: 'create',
       },
     )
@@ -283,7 +309,7 @@ export function useGraphDrivenPage(options: UseGraphDrivenPageOptions): UseGraph
     loading: loading as unknown as Ref<boolean>,
     error: error as unknown as Ref<string | null>,
     browseState,
-    viewMode,
+    viewMode: computed(() => viewMode.value),
     viewModeOptions,
     stats,
     openDetail,

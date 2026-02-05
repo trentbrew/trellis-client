@@ -19,12 +19,17 @@
     }
   >()
 
+  const dataCompleted = computed(() => {
+    const v = timelineData?.model?.value
+    return typeof v === 'number' && props.step <= v ? true : undefined
+  })
+
   const forwarded = useForwardProps(reactiveOmit(props, ['class', 'step']))
 </script>
 
 <template>
   <Primitive
-    :data-completed="step <= timelineData?.model?.value || undefined"
+    :data-completed="dataCompleted"
     :data-step="step"
     data-slot="timeline-item"
     aria-hidden="true"

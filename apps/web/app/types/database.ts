@@ -117,7 +117,26 @@ export interface DatabaseRecord {
   id: string
   collectionId: string
   fields: Record<string, any>
+  tags?: string[] // Tag IDs for grouping/filtering
   createdBy: string
+  createdAt: number
+  updatedAt: number
+}
+
+/**
+ * Tag - Generic grouping mechanism (alternative to hierarchical folders)
+ * Tags are flat, flexible, and can be applied to any entity type.
+ */
+export interface Tag {
+  id: string
+  appId: string
+  name: string
+  slug: string
+  color?: string // Tailwind color class or hex
+  icon?: string // Lucide icon name
+  description?: string
+  parentId?: string // Optional: for hierarchical tag trees
+  order: number
   createdAt: number
   updatedAt: number
 }

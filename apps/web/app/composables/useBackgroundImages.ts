@@ -90,12 +90,12 @@ export function useBackgroundImages() {
     // Find matching route mapping
     for (const [routePattern, mapping] of Object.entries(routeMappings)) {
       if (currentPath.startsWith(routePattern)) {
-        return backgroundMappings[mapping]
+        return backgroundMappings[mapping] ?? backgroundMappings.default!
       }
     }
 
     // Return default if no match found
-    return backgroundMappings.default
+    return backgroundMappings.default!
   }
 
   /**

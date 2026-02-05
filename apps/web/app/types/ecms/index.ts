@@ -1,17 +1,5 @@
 /**
- * ECMS Types Index
- * Central export for all ECMS type definitions
+ * @deprecated Import from '~/verticals/ecms/types' instead
+ * This re-export is maintained for backward compatibility
  */
-
-// Common types
-export * from './common';
-
-// Core entity types
-export * from './facilities';
-export * from './roles';
-export * from './tasks';
-export * from './customFields';
-export * from './externalTasks';
-export * from './files';
-export * from './notifications';
-export * from './auditLog';
+export * from '~/verticals/ecms/types'

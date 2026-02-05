@@ -293,26 +293,49 @@ export const ROUTE_PATHS = {
     tasks: '/personal/tasks',
     calendar: '/personal/calendar',
   },
-  facility: {
-    root: '/facility',
-    tasks: '/facility/tasks',
-    calendar: '/facility/calendar',
-    schedule: '/facility/scheduled-tasks',
-    suggested: '/facility/suggested-tasks',
-    folders: '/facility/folders',
-    permitIndexing: '/facility/permit-indexing',
-    permitApplication: '/facility/permit-applications',
-    reviews: '/facility/file-review',
-    templates: '/facility/templates',
-    setupOverview: '/facility/setup',
+  app: {
+    root: '/app',
+    tasks: '/app/tasks',
+    calendar: '/app/calendar',
+    schedule: '/app/scheduled-tasks',
+    suggested: '/app/suggested-tasks',
+    folders: '/app/folders',
+    permitIndexing: '/app/permit-indexing',
+    permitApplication: '/app/permit-applications',
+    reviews: '/app/file-review',
+    templates: '/app/templates',
+    setupOverview: '/app/setup',
     reports: {
-      root: '/facility/reports',
-      inspection: '/facility/reports/inspection',
-      kpi: '/facility/reports/kpi',
-      regulatory: '/facility/reports/regulatory',
-      summary: '/facility/reports/summary',
-      top11: '/facility/reports/top11',
-      selfAssessments: '/facility/reports/self-assessments',
+      root: '/app/reports',
+      inspection: '/app/reports/inspection',
+      kpi: '/app/reports/kpi',
+      regulatory: '/app/reports/regulatory',
+      summary: '/app/reports/summary',
+      top11: '/app/reports/top11',
+      selfAssessments: '/app/reports/self-assessments',
+    },
+  },
+  /** @deprecated Use ROUTE_PATHS.app instead */
+  facility: {
+    root: '/app',
+    tasks: '/app/tasks',
+    calendar: '/app/calendar',
+    schedule: '/app/scheduled-tasks',
+    suggested: '/app/suggested-tasks',
+    folders: '/app/folders',
+    permitIndexing: '/app/permit-indexing',
+    permitApplication: '/app/permit-applications',
+    reviews: '/app/file-review',
+    templates: '/app/templates',
+    setupOverview: '/app/setup',
+    reports: {
+      root: '/app/reports',
+      inspection: '/app/reports/inspection',
+      kpi: '/app/reports/kpi',
+      regulatory: '/app/reports/regulatory',
+      summary: '/app/reports/summary',
+      top11: '/app/reports/top11',
+      selfAssessments: '/app/reports/self-assessments',
     },
   },
   neu: '/neu',
@@ -471,78 +494,82 @@ function findRouteByPath(routes: RouteConfig[], targetPath: string): RouteConfig
 }
 
 /**
- * Helper to strip org/year/facility prefix from a path
- * Paths can be in format /[org]/[year]/[facility]/path
+ * Helper to strip workspace/app prefix from a path
+ * Paths can be in format /[workspace]/[app]/path
  */
-const MIN_YEAR = 2015
-const MAX_YEAR_OFFSET = 1
 
 interface ParsedPath {
-  org: string | null
-  year: number | null
-  facility: string | null
+  workspace: string | null
+  app: string | null
   cleanPath: string
+  /** @deprecated Use workspace instead */
+  org: string | null
+  /** @deprecated Removed - no longer used */
+  year: null
+  /** @deprecated Use app instead */
+  facility: string | null
 }
 
 export function buildNavPath(
   cleanPath: string,
-  org: string | null,
-  year: number | null,
-  facility: string | null,
+  workspace: string | null,
+  app: string | null,
 ): string {
-  if (org && year && facility && cleanPath.startsWith('/facility')) {
-    const subPath = cleanPath.replace(/^\/facility/, '')
-    return `/${org}/${year}/${facility}${subPath}`
+  if (workspace && app && cleanPath.startsWith('/app')) {
+    const subPath = cleanPath.replace(/^\/app/, '')
+    return `/${workspace}/${app}${subPath}`
   }
   return cleanPath
 }
 
 export function parseFullPath(path: string): ParsedPath {
-  const currentYear = new Date().getFullYear()
-  const maxYear = currentYear + MAX_YEAR_OFFSET
   const segments = path.split('/').filter(Boolean)
 
-  // Check for [org]/[year]/[facility]/... pattern
-  if (segments.length >= 3) {
-    const possibleYear = parseInt(segments[1] ?? '', 10)
-    if (!isNaN(possibleYear) && possibleYear >= MIN_YEAR && possibleYear <= maxYear) {
-      // It's a facility route: /[org]/[year]/[facility]/path...
-      // Map it back to /facility/path...
-      const cleanPath = segments.length > 3 ? '/facility/' + segments.slice(3).join('/') : '/facility'
-      return {
-        org: segments[0] ?? null,
-        year: possibleYear,
-        facility: segments[2] ?? null,
-        cleanPath,
-      }
+  // Check for [workspace]/[app]/... pattern (2+ segments where first is not a known top-level route)
+  const knownTopLevelRoutes = ['docs', 'settings', 'admin', 'auth', 'collections', 'workflows', 'help', 'personal', 'welcome', 'onboarding', 'notifications', 'permits', 'types', 'apptool', 'playground', 'components', 'embed', 'archive', 'members', 'learn']
+
+  if (segments.length >= 2 && segments[0] && !knownTopLevelRoutes.includes(segments[0])) {
+    // It's a workspace/app route: /[workspace]/[app]/path...
+    // Map it back to /app/path...
+    const workspace = segments[0]
+    const app = segments[1] ?? null
+    const cleanPath = segments.length > 2 ? '/app/' + segments.slice(2).join('/') : '/app'
+    return {
+      workspace,
+      app,
+      cleanPath,
+      // Deprecated aliases for backward compatibility
+      org: workspace,
+      year: null,
+      facility: app,
     }
   }
 
-  return { org: null, year: null, facility: null, cleanPath: path }
+  return { workspace: null, app: null, cleanPath: path, org: null, year: null, facility: null }
 }
 
 /**
  * Get the logical (clean) path from a full URL path.
- * Strip org/year/facility segments if present.
+ * Strip workspace/app segments if present.
  */
 export function getCleanPath(path: string): string {
   return parseFullPath(path).cleanPath
 }
 
-// Keep for backward compatibility
-export function stripYearFromPath(path: string): { year: number | null; cleanPath: string } {
+/** @deprecated Year is no longer used in route structure */
+export function stripYearFromPath(path: string): { year: null; cleanPath: string } {
   const parsed = parseFullPath(path)
-  return { year: parsed.year, cleanPath: parsed.cleanPath }
+  return { year: null, cleanPath: parsed.cleanPath }
 }
 
 /**
  * Get breadcrumbs for a given path
- * Builds breadcrumbs dynamically from path segments after org/year/facility
- * Handles paths: /[org]/[year]/[facility]/path
+ * Builds breadcrumbs dynamically from path segments after workspace/app
+ * Handles paths: /[workspace]/[app]/path
  */
 export function getBreadcrumbs(path: string): Array<{ label: string; path?: string }> {
   const breadcrumbs: Array<{ label: string; path?: string }> = []
-  const { org, year, facility, cleanPath } = parseFullPath(path)
+  const { workspace, app, cleanPath } = parseFullPath(path)
 
   // Split the clean path into segments
   const segments = cleanPath.split('/').filter(Boolean)
@@ -554,16 +581,16 @@ export function getBreadcrumbs(path: string): Array<{ label: string; path?: stri
     // Build the logical route path for lookup
     const segmentPath = '/' + segments.slice(0, i + 1).join('/')
 
-    // Skip the generic '/facility' root breadcrumb if we're in a facility context
-    // as it's redundant with the facility switcher
-    if (segmentPath === '/facility' && org && year && facility) continue
+    // Skip the generic '/app' root breadcrumb if we're in an app context
+    // as it's redundant with the app switcher
+    if (segmentPath === '/app' && workspace && app) continue
 
     // Find the route config for this path segment
     const route = findRouteByPath(routeConfig, segmentPath)
 
     if (route) {
       const isLastSegment = i === segments.length - 1
-      const navPath = buildNavPath(segmentPath, org, year, facility)
+      const navPath = buildNavPath(segmentPath, workspace, app)
 
       breadcrumbs.push({
         label: route.label,
@@ -577,7 +604,7 @@ export function getBreadcrumbs(path: string): Array<{ label: string; path?: stri
 
 /**
  * Get route metadata for a given path
- * Handles paths: /[org]/[year]/[facility]/path
+ * Handles paths: /[workspace]/[app]/path
  */
 export function getRouteMeta(path: string): RouteConfig['meta'] | null {
   const { cleanPath } = parseFullPath(path)

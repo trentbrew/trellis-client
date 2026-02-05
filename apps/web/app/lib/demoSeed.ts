@@ -1,7 +1,7 @@
 import type { DatabaseRecord, DatabaseSchema, Workflow, CustomType } from '~/types/database'
 import { createDefaultProjections } from '~/lib/projections'
 import { createCollectionGraph, serializeTrellisDocument } from '~/lib/trellis'
-import { normalizeDatabaseSchema } from '~/lib/normalizeDatabaseSchema'
+import { normalizeDatabaseSchema, createDefaultDatabaseSchema } from '~/lib/normalizeDatabaseSchema'
 
 type SeedAppDef = {
   slug: string
@@ -47,7 +47,10 @@ type SeedCollectionDefV2 = {
   title: string
   icon: string
   order: number
-  schema: Omit<DatabaseSchema, 'id' | 'collectionId' | 'createdAt' | 'updatedAt'>
+  schema: {
+    fields: DatabaseSchema['fields']
+    views?: DatabaseSchema['views']
+  }
   records: SeedRecordDefV2[]
   /** Graph edges for relationships between records */
   edges?: SeedEdgeDefV2[]
@@ -1207,7 +1210,7 @@ export async function ensureDemoSeedV2(params: EnsureDemoSeedV2Params) {
         id: '',
         collectionId,
         fields: colDef.schema.fields,
-        views: colDef.schema.views,
+        views: colDef.schema.views ?? createDefaultDatabaseSchema(collectionId).views,
         createdAt: Date.now(),
         updatedAt: Date.now(),
       }
@@ -1980,7 +1983,7 @@ export async function ensureDemoSeedV1(params: EnsureDemoSeedParams) {
         id: '',
         collectionId,
         fields: colDef.schema.fields,
-        views: colDef.schema.views,
+        views: colDef.schema.views ?? createDefaultDatabaseSchema(collectionId).views,
         createdAt: Date.now(),
         updatedAt: Date.now(),
       }

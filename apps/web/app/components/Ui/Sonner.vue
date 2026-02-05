@@ -1,10 +1,14 @@
+<script setup lang="ts">
+  const colorMode = useColorMode()
+</script>
+
 <template>
   <Toaster
     class="toaster group"
     :visible-toasts="5"
     close-button
     :duration="7000"
-    :theme="$colorMode.value == 'dark' ? 'dark' : 'light'"
+    :theme="colorMode.value === 'dark' ? 'dark' : 'light'"
     :style="{
       '--normal-bg': 'var(--popover)',
       '--normal-text': 'var(--popover-foreground)',

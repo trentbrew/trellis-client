@@ -57,7 +57,7 @@
         :multiple="multiple"
         :class="[hasIcon && 'pl-9']"
         :accept="accept"
-        @change="(e) => { handleChange(e); emits('change', (e.target as HTMLInputElement).files) }"
+        @change="(e: Event) => { handleChange(e); emits('change', (e.target as HTMLInputElement).files) }"
         @blur="(e: FocusEvent) => { handleBlur(e); emits('blur', e) }"
       />
     </div>

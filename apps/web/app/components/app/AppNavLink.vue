@@ -8,31 +8,30 @@
   }>()
 
   const appNavigate = useAppNavigate()
-  const { selectedYear } = useYear()
-  const { currentOrganization } = useOrganizations()
-  const { currentFacility } = useFacilities()
+  const { workspace, app } = useContext()
+  const { currentOrganization: currentWorkspace } = useOrganizations()
+  const { currentFacility: currentApp } = useFacilities()
 
-  // Build full path with [org]/[year]/[facility] prefix for facility routes
+  // Build full path with [workspace]/[app] prefix for app routes
   const resolvedPath = computed(() => {
     const path = props.to
 
-    // Skip if path already has org prefix or is not a facility path
-    if (!path.startsWith('/facility') || path.includes('/[')) {
+    // Skip if path already has workspace prefix or is not an app path
+    if (!path.startsWith('/app') && !path.startsWith('/facility') || path.includes('/[')) {
       return path
     }
 
     // Check if we have the required context
-    const orgSlug = currentOrganization.value?.slug
-    const facilitySlug = currentFacility.value?.slug
-    const year = selectedYear.value
+    const workspaceSlug = currentWorkspace.value?.slug || workspace.value
+    const appSlug = currentApp.value?.slug || app.value
 
-    if (!orgSlug || !facilitySlug) {
+    if (!workspaceSlug || !appSlug) {
       return path
     }
 
-    // Transform /facility/tasks -> /[org]/[year]/[facility]/tasks
-    const facilityPath = path.replace(/^\/facility/, '')
-    return `/${orgSlug}/${year}/${facilitySlug}${facilityPath}`
+    // Transform /app/tasks -> /[workspace]/[app]/tasks
+    const appPath = path.replace(/^\/app/, '').replace(/^\/facility/, '')
+    return `/${workspaceSlug}/${appSlug}${appPath}`
   })
 
   const onClick = async (e: MouseEvent) => {

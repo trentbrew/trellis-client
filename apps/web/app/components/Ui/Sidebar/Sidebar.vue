@@ -1,6 +1,7 @@
 <script lang="ts">
   import { VisuallyHidden } from 'reka-ui'
   import type { HTMLAttributes } from 'vue'
+  import { SIDEBAR_WIDTH_MOBILE } from '~/utils/sidebar'
 
   export const sideBarStyles = tv({
     slots: {

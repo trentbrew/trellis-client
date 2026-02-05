@@ -169,7 +169,7 @@ export function useInstantData() {
     if (!subscriptionsStarted.value) {
       subscriptionsStarted.value = true
 
-      db.subscribeQuery({ organizations: {} }, (result) => {
+      db.subscribeQuery({ organizations: {} }, (result: any) => {
         if (result.error) {
           orgsError.value = result.error
           orgsLoading.value = false
@@ -205,7 +205,7 @@ export function useInstantData() {
                 },
               },
             },
-            (result) => {
+            (result: any) => {
               if (result.data) {
                 applications.value = ((result.data as any).applications || []) as Application[]
               }
@@ -242,7 +242,7 @@ export function useInstantData() {
                 },
               },
             },
-            (result) => {
+            (result: any) => {
               if (result.data) {
                 const items = (((result.data as any).collections || []) as Collection[]).slice()
                 collections.value = items.sort((a, b) => (a.order || 0) - (b.order || 0))
@@ -305,7 +305,7 @@ export function useInstantData() {
                 },
               },
             },
-            (result) => {
+            (result: any) => {
               const raw = (result.data as any)?.settings?.[0]?.value
               const items = Array.isArray(raw) ? (raw as CustomType[]) : []
               customTypes.value = items
@@ -343,7 +343,7 @@ export function useInstantData() {
                 },
               },
             },
-            (result) => {
+            (result: any) => {
               const raw = (result.data as any)?.settings?.[0]?.value
               const items = Array.isArray(raw) ? (raw as Workflow[]) : []
               workflows.value = items
@@ -774,13 +774,17 @@ export function useInstantData() {
     const idx = items.findIndex((t) => t.id === id)
     if (idx === -1) return
 
-    items[idx] = {
-      ...items[idx],
+    const prev = items[idx]!
+    const next: CustomType = {
+      ...prev,
       ...patch,
       id,
       appId,
+      name: typeof patch.name === 'string' && patch.name ? patch.name : prev.name,
+      createdAt: prev.createdAt,
       updatedAt: Date.now(),
     }
+    items[idx] = next
 
     await upsertAppSetting(appId, 'customTypes', items)
   }
@@ -826,13 +830,17 @@ export function useInstantData() {
     const idx = items.findIndex((w) => w.id === id)
     if (idx === -1) return
 
-    items[idx] = {
-      ...items[idx],
+    const prev = items[idx]!
+    const next: Workflow = {
+      ...prev,
       ...patch,
       id,
       appId,
+      name: typeof patch.name === 'string' && patch.name ? patch.name : prev.name,
+      createdAt: prev.createdAt,
       updatedAt: Date.now(),
     }
+    items[idx] = next
 
     await upsertAppSetting(appId, 'workflows', items)
   }
