@@ -1325,7 +1325,7 @@
     </UiAlertDialog>
 
     <!-- Page Builder Dialog -->
-    <PageBuilderPageBuilder
+    <PageBuilder
       :open="pageBuilderOpen"
       @update:open="pageBuilderOpen = $event"
       @save="handlePageSave" />

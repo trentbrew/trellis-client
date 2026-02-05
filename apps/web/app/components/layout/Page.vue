@@ -420,7 +420,7 @@
   const highlightedSection = ref('')
 
   // Get all hash-based tabs
-  const hashTabs = computed(() => effectiveTabs.value?.filter((tab) => tab.to.startsWith('#')) || [])
+  const hashTabs = computed(() => effectiveTabs.value?.filter((tab) => tab.to?.startsWith('#')) || [])
 
   // Initialize hash from URL and set up Intersection Observer
   onMounted(() => {
@@ -814,18 +814,18 @@
                 <slot name="tabs">
                   <div v-if="effectiveTabs?.length" class="flex items-center gap-1">
                     <component
-                      :is="tab.to.startsWith('#') ? 'a' : NuxtLink"
+                      :is="tab.to?.startsWith('#') ? 'a' : NuxtLink"
                       v-for="tab in effectiveTabs"
                       :key="tab.to"
-                      :to="tab.to.startsWith('#') ? undefined : tab.to"
-                      :href="tab.to.startsWith('#') ? tab.to : undefined"
+                      :to="tab.to?.startsWith('#') ? undefined : tab.to"
+                      :href="tab.to?.startsWith('#') ? tab.to : undefined"
                       class="flex items-center gap-2 px-3 py-3 text-sm font-medium rounded-none transition-colors border-b-3 -mb-px cursor-pointer min-h-16"
                       :class="
                         isTabActive(tab.to)
                           ? 'text-foreground border-primary '
                           : 'text-muted-foreground border-transparent hover:text-foreground hover:bg-foreground/5'
                       "
-                      @click="tab.to.startsWith('#') && handleHashClick(tab.to)">
+                      @click="tab.to?.startsWith('#') && handleHashClick(tab.to)">
                       <Icon v-if="tab.icon" :name="tab.icon" class="h-4 w-4" />
                       {{ tab.label }}
                     </component>
