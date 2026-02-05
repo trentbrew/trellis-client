@@ -7,7 +7,7 @@
   const nuxtApp = useNuxtApp()
 
   // Admin UI controls
-  const { showBuilderUI, canCreateRoutes } = useAdminUI()
+  const { showBuilderUI, canSeeAdminControls } = useAdminUI()
 
   // Dashboard Builder dialog state
   const dashboardBuilderOpen = ref(false)
