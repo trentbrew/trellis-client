@@ -1,10 +1,7 @@
 <script setup lang="ts">
   import { useBrowse, type BrowseViewMode } from '~/composables/useBrowse'
-  import UnifiedTaskDialog, {
-    type TaskData,
-    type Attachment,
-    type ActivityItem,
-  } from '~/components/dialogs/UnifiedTaskDialog.vue'
+  import CalendarItemDialog from '~/components/dialogs/CalendarItemDialog.vue'
+  import type { ActivityItem } from '~/components/dialogs/CalendarItemDialog.vue'
 
   const props = withDefaults(
     defineProps<{
@@ -235,11 +232,11 @@
     emissions: 'lucide:wind',
   }
 
-  function acceptTask(taskId: string) {
+  function _acceptTask(taskId: string) {
     suggestedTasks.value = suggestedTasks.value.filter((t) => t.id !== taskId)
   }
 
-  function dismissTask(taskId: string) {
+  function _dismissTask(taskId: string) {
     suggestedTasks.value = suggestedTasks.value.filter((t) => t.id !== taskId)
   }
 
@@ -347,7 +344,7 @@
     if (canNavigateNext.value) viewingTask.value = suggestedTasks.value[viewingTaskIndex.value + 1] ?? null
   }
 
-  const viewingTaskAttachments = computed<Attachment[]>(() => [])
+  const _viewingTaskAttachments = computed<any[]>(() => [])
   const viewingTaskActivity = computed<ActivityItem[]>(() => [
     { id: '1', type: 'created', author: 'AI Assistant', date: 'Just now', content: viewingTask.value?.reason },
   ])
@@ -371,7 +368,7 @@
     editTaskOpen.value = false
   }
 
-  const detailTask = computed<TaskData | null>(() => {
+  const detailTask = computed<any | null>(() => {
     if (!viewingTask.value) return null
     return {
       id: viewingTask.value.id,
@@ -531,37 +528,16 @@
     </div>
 
     <!-- View Task Dialog -->
-    <UnifiedTaskDialog
+    <CalendarItemDialog
       v-model:open="viewDialogOpen"
-      :task="detailTask"
+      :item="detailTask"
       mode="edit"
-      task-type="suggested"
       :can-navigate-prev="canNavigatePrev"
       :can-navigate-next="canNavigateNext"
-      :attachments="viewingTaskAttachments"
       :activity="viewingTaskActivity"
       @navigate-prev="navigateToPrevTask"
       @navigate-next="navigateToNextTask"
-      @mark-not-applicable="() => dismissTask(viewingTask?.id || '')"
-      @already-resolved="() => dismissTask(viewingTask?.id || '')"
-      @already-have-task="() => dismissTask(viewingTask?.id || '')"
-      @create-task="() => acceptTask(viewingTask?.id || '')"
-      @close="viewDialogOpen = false">
-      <!-- Suggestion Reason Content -->
-      <template #content>
-        <div v-if="viewingTask" class="space-y-4">
-          <div class="rounded-lg bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 p-4">
-            <div class="flex items-start gap-3">
-              <Icon name="lucide:sparkles" class="h-5 w-5 text-amber-500 shrink-0 mt-0.5" />
-              <div>
-                <p class="text-sm font-medium text-amber-800 dark:text-amber-200">Why this is suggested</p>
-                <p class="text-sm text-amber-700 dark:text-amber-300 mt-1">{{ viewingTask.reason }}</p>
-              </div>
-            </div>
-          </div>
-        </div>
-      </template>
-    </UnifiedTaskDialog>
+      @close="viewDialogOpen = false" />
 
     <TaskCreateDialog
       v-model:open="editTaskOpen"

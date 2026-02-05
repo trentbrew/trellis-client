@@ -3,7 +3,8 @@
   import { useBrowse, type BrowseViewMode } from '~/composables/useBrowse'
   import type { TemplateFormData } from '~/components/dialogs/TemplateEditDialog.vue'
   import type { Branch, InspectionType, TaskCategory, TrackedStatus } from '~/types/ecms/common'
-  import UnifiedTaskDialog, { type TaskData } from '~/components/dialogs/UnifiedTaskDialog.vue'
+  import CalendarItemDialog from '~/components/dialogs/CalendarItemDialog.vue'
+  import type { CalendarItem } from '~/types/calendarItem'
 
   const props = withDefaults(
     defineProps<{
@@ -516,18 +517,17 @@
       </UiDialogContent>
     </UiDialog>
 
-    <!-- View Template Dialog (using UnifiedTaskDialog) -->
-    <UnifiedTaskDialog
+    <!-- View Template Dialog -->
+    <CalendarItemDialog
       v-model:open="viewDialogOpen"
-      :task="detailTaskData"
+      :item="detailTaskData"
       mode="edit"
-      task-type="template"
       :can-navigate-prev="canNavigatePrev"
       :can-navigate-next="canNavigateNext"
       @navigate-prev="navigateToPrevTask"
       @navigate-next="navigateToNextTask"
       @save="
-        (data) =>
+        (data: CalendarItem) =>
           handleSaveTemplate({
             name: data.title || '',
             description: data.description || '',
@@ -535,38 +535,7 @@
             status: 'Active',
           })
       "
-      @close="viewDialogOpen = false">
-      <!-- Template Info Content -->
-      <template #content>
-        <div v-if="viewingTask" class="space-y-4">
-          <div class="rounded-lg bg-muted/50 border border-border p-4">
-            <div class="flex items-start gap-3">
-              <Icon name="lucide:layout-template" class="h-5 w-5 text-muted-foreground shrink-0 mt-0.5" />
-              <div>
-                <p class="text-sm font-medium">Reusable Task Template</p>
-                <p class="text-sm text-muted-foreground mt-1">
-                  This template has been used {{ viewingTask.usageCount }} times.
-                  <template v-if="viewingTask.lastUsed">Last used on {{ viewingTask.lastUsed }}.</template>
-                  <template v-else>Never used yet.</template>
-                </p>
-              </div>
-            </div>
-          </div>
-          <UiButton
-            class="w-full"
-            @click="
-              () => {
-                if (!viewingTask) return
-                useTemplate()
-                viewDialogOpen = false
-              }
-            ">
-            <Icon name="lucide:play" class="mr-2 h-4 w-4" />
-            Use This Template
-          </UiButton>
-        </div>
-      </template>
-    </UnifiedTaskDialog>
+      @close="viewDialogOpen = false" />
 
     <!-- Edit Template Overlay (opens on top of detail dialog) -->
     <TemplateEditDialog
