@@ -51,10 +51,10 @@
             <Icon name="lucide:building-2" class="text-muted-foreground/60 h-4 w-4 shrink-0" />
             <span
               v-if="currentOrganization"
-              class="text-foreground text-sm font-medium truncate leading-none min-w-fit">
+              class="text-foreground text-xs font-medium truncate leading-none min-w-fit">
               {{ currentOrganization.name }}
             </span>
-            <span v-else class="text-muted-foreground text-sm leading-none">Select Org</span>
+            <span v-else class="text-muted-foreground text-xs leading-none">Select Org</span>
 
             <span
               v-if="
@@ -66,7 +66,6 @@
             </span>
           </div>
           <Icon
-            v-if="canSwitchOrganization"
             name="lucide:chevrons-up-down"
             class="text-muted-foreground/75 h-3.5 w-3.5 shrink-0 group-hover:text-muted-foreground/60 transition-colors ml-0.5" />
         </button>
@@ -100,6 +99,11 @@
             No organizations found
           </div>
         </div>
+        <UiDropdownMenuSeparator />
+        <UiDropdownMenuItem class="gap-2">
+          <Icon name="lucide:plus" class="h-4 w-4" />
+          <span>New Organization</span>
+        </UiDropdownMenuItem>
       </UiDropdownMenuContent>
     </UiDropdownMenu>
   </div>

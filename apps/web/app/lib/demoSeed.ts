@@ -131,6 +131,13 @@ const getDemoSpecV2 = (): {
 
   const apps: SeedAppDef[] = [
     {
+      slug: 'personal',
+      name: 'Personal',
+      icon: 'lucide:user',
+      color: 'bg-blue-500',
+      description: 'Personal tasks, calendar, and day-to-day items',
+    },
+    {
       slug: 'life',
       name: 'Life',
       icon: 'lucide:sun',
@@ -1073,6 +1080,7 @@ const getDemoSpecV2 = (): {
   }
 
   const workflowsByAppSlug: Record<string, Workflow[]> = {
+    personal: [],
     life: [],
     work: [],
     'game-dev-project': [],
