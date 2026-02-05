@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import type { PageBlock } from '~/composables/usePageBuilder'
 
-const props = defineProps<{
+const _props = defineProps<{
   block: PageBlock
   editMode?: boolean
 }>()
@@ -10,14 +10,15 @@ const emit = defineEmits<{
   edit: [block: PageBlock]
 }>()
 
+const defaultCalloutStyle = { bg: 'bg-blue-50 dark:bg-blue-950/30', border: 'border-blue-200 dark:border-blue-800', icon: 'lucide:info' }
 const calloutStyles: Record<string, { bg: string; border: string; icon: string }> = {
-  info: { bg: 'bg-blue-50 dark:bg-blue-950/30', border: 'border-blue-200 dark:border-blue-800', icon: 'lucide:info' },
+  info: defaultCalloutStyle,
   warning: { bg: 'bg-amber-50 dark:bg-amber-950/30', border: 'border-amber-200 dark:border-amber-800', icon: 'lucide:alert-triangle' },
   success: { bg: 'bg-green-50 dark:bg-green-950/30', border: 'border-green-200 dark:border-green-800', icon: 'lucide:check-circle' },
   error: { bg: 'bg-red-50 dark:bg-red-950/30', border: 'border-red-200 dark:border-red-800', icon: 'lucide:x-circle' },
 }
 
-const getCalloutStyle = (type: string) => calloutStyles[type] || calloutStyles.info
+const getCalloutStyle = (type: string) => calloutStyles[type] ?? defaultCalloutStyle
 </script>
 
 <template>
