@@ -332,6 +332,13 @@
       navigateTo(`/collections/${slug}`)
     }
   }
+
+  // Create new page (stub - will open page builder in future)
+  const handleCreatePage = () => {
+    // TODO: Open page builder dialog
+    // For now, show a toast indicating the feature is coming
+    ;(nuxtApp as any).$toast?.info('Page builder coming soon! This will let you create custom pages.')
+  }
 </script>
 
 <template>
@@ -371,6 +378,19 @@
           </span>
         </div>
         <UiKbd class="bg-white/5 border-sidebar-border/20 text-sidebar-foreground/40 text-[10px]">⌘K</UiKbd>
+      </UiButton>
+    </div>
+
+    <!-- Builder Controls (Edit Mode) -->
+    <div v-if="showBuilderUI && canCreatePages" class="px-4 py-2 border-b border-sidebar-border/10">
+      <UiButton
+        variant="ghost"
+        size="sm"
+        class="w-full text-sidebar-foreground/70 hover:text-sidebar-foreground hover:bg-amber-500/10 border border-dashed border-amber-500/30 justify-start gap-2 px-3"
+        @click="handleCreatePage">
+        <Icon name="lucide:plus" class="h-4 w-4 text-amber-500" />
+        <span class="text-xs font-medium">New Page</span>
+        <span class="ml-auto text-[10px] text-amber-500/70 bg-amber-500/10 px-1.5 py-0.5 rounded">Edit Mode</span>
       </UiButton>
     </div>
 

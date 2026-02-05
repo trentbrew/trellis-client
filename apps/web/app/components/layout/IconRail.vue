@@ -4,6 +4,16 @@
   const { user } = useInstantAuth()
   const isAuthenticated = computed(() => !!user.value)
   const sidebarCollapse = useSidebarCollapse()
+  const nuxtApp = useNuxtApp()
+
+  // Admin UI controls
+  const { showBuilderUI, canCreateRoutes } = useAdminUI()
+
+  // Create new route (stub - will open route builder in future)
+  const handleCreateRoute = () => {
+    // TODO: Open route creation dialog
+    ;(nuxtApp as any).$toast?.info('Route builder coming soon! This will let you add new navigation items.')
+  }
 
   const primaryRailItems = computed(() =>
     (routes.primaryRailRoutes.value || []).filter((r) => {
