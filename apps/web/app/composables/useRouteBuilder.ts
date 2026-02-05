@@ -42,8 +42,8 @@ export interface RouteDefinition {
   order: number
   /** Requires authentication */
   requiresAuth: boolean
-  /** Minimum role required */
-  minRole?: UserRole
+  /** Minimum role required (or 'any' for any authenticated user) */
+  minRole?: UserRole | 'any'
   /** Page metadata */
   meta: {
     title: string
@@ -530,9 +530,9 @@ export const useRouteBuilder = () => {
       inCommandPalette: route.inCommandPalette,
       order: route.order,
       requiresAuth: route.requiresAuth,
-      permissions: route.minRole
+      permissions: route.minRole && route.minRole !== 'any'
         ? {
-            minRole: route.minRole,
+            minRole: route.minRole as UserRole,
             permission: 'read',
           }
         : undefined,
