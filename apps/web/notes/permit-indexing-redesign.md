@@ -45,7 +45,7 @@ ResponseDocument // Individual question responses
 StandardDocument // Standard definitions, dependencies, program grouping
 QuestionDocument // Question prompts, types, guidance
 AnswerDocument // Answer options with branching logic
-TaskDocument // ECMS tasks triggered by responses
+TaskDocument // Tasks triggered by responses
 ```
 
 ### 1.4 Current UI Analysis (from Screenshots)
