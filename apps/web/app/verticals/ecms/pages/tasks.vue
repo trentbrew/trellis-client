@@ -789,9 +789,6 @@
     'General',
   ])
 
-  // Global detail sheet for create/edit
-  const globalDetailSheet = useGlobalDetailSheet()
-
   // Refs for section-specific views
   const scheduledTasksRef = ref<InstanceType<typeof ScheduledTasksView> | null>(null)
 
@@ -826,23 +823,18 @@
     if (mode === 'create') {
       if (activeSection.value === 'scheduled' && scheduledTasksRef.value) {
         scheduledTasksRef.value.createScheduleOpen = true
-      } else if (activeSection.value === 'suggested') {
-        globalDetailSheet.open({}, { mode: 'create', entityType: 'task', variant: 'fullscreen' })
       } else if (activeSection.value === 'templates') {
         createTaskOpen.value = true
       } else if (activeSection.value === 'folders') {
         createFolderOpen.value = true
       } else {
-        globalDetailSheet.open({}, { mode: 'create', entityType: 'task' })
+        // Use UnifiedTaskDialog for all task creation (including suggested)
+        createTaskOpen.value = true
       }
     } else {
-      if (activeSection.value === 'scheduled' && scheduledTasksRef.value) {
-        // Handle scheduled task viewing
-        viewingTask.value = task
-        viewTaskOpen.value = true
-      } else {
-        globalDetailSheet.open(task, { mode: 'edit', entityType: 'task' })
-      }
+      // Use UnifiedTaskDialog for all task viewing/editing
+      viewingTask.value = task
+      viewTaskOpen.value = true
     }
   }
 

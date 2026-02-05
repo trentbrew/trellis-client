@@ -139,7 +139,7 @@
       status: statusMap[taskData.status] || 'on track',
       assignee: 'You',
       dueDate: taskData.dueDate || 'TBD',
-      priority: taskData.priority || 'medium',
+      priority: taskData.priority || 'medium' as string,
     })
     createTaskOpen.value = false
   }
@@ -156,11 +156,11 @@
         completed: 'on track',
       }
       tasks.value[idx] = {
-        ...tasks.value[idx],
+        ...tasks.value[idx]!,
         title: taskData.title,
         status: statusMap[taskData.status] || tasks.value[idx]!.status,
         dueDate: taskData.dueDate || tasks.value[idx]!.dueDate,
-        priority: taskData.priority || tasks.value[idx]!.priority,
+        priority: (taskData.priority || tasks.value[idx]!.priority) as string,
       }
     }
     viewTaskOpen.value = false
@@ -179,6 +179,7 @@
     :primary-action="{
       label: 'New Task',
       icon: 'lucide:plus',
+      type: 'click',
       onClick: openTaskCreate,
       variant: 'outline',
     }">
