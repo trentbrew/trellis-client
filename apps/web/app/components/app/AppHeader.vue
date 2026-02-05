@@ -151,7 +151,7 @@
   <!-- App Header: Navigation shell (matches icon rail) -->
   <header class="border-rail-border bg-rail border-b flex h-16 shrink-0 items-center gap-0 p-0 overflow-hidden">
     <!-- Year/Facility Pickers + Breadcrumbs (white area) -->
-    <nav class="flex flex-1 items-center gap-0.5 text-sm px-4">
+    <nav class="flex flex-1 items-center gap-0.5 text-xs px-4">
       <!-- Sidebar Toggle -->
       <UiTooltip>
         <UiTooltipTrigger as-child>
@@ -183,12 +183,6 @@
         <AppPicker />
       </ClientOnly>
 
-      <span class="text-muted-foreground/50 mx-2">/</span>
-
-      <!-- Facility Switcher -->
-      <ClientOnly>
-        <FacilitySwitcher />
-      </ClientOnly>
       <!-- Path breadcrumbs -->
       <template v-for="(item, i) in routes.breadcrumbs.value" :key="i">
         <template v-if="item?.label">
