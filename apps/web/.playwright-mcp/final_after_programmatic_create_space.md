@@ -1,0 +1,195 @@
+### Page state
+
+- Page URL: http://localhost:3000/forms/feed
+- Page Title: Live counter | Markform
+- Page Snapshot:
+
+```yaml
+- generic:
+    - generic:
+        - generic:
+            - generic:
+                - alert: Live counter | Markform
+            - generic:
+                - banner:
+                    - generic:
+                        - link:
+                            - /url: /
+                            - img
+                    - generic:
+                        - button:
+                            - generic: P
+                            - generic: Personal
+                            - img
+                    - generic: /
+                    - generic:
+                        - button:
+                            - generic: AP
+                            - generic: Select App
+                            - img
+                    - navigation:
+                        - generic: /
+                        - link:
+                            - /url: /forms
+                            - text: Forms
+                        - generic: /
+                        - generic: Home
+                    - generic:
+                        - button:
+                            - img
+                            - generic: Search...
+                            - generic:
+                                - generic:
+                                    - generic: ⌘
+                                    - text: K
+                - generic:
+                    - navigation:
+                        - generic:
+                            - link:
+                                - /url: /forms
+                                - img
+                            - link:
+                                - /url: /activity
+                                - img
+                            - link:
+                                - /url: /layouts
+                                - img
+                            - link:
+                                - /url: /tokens
+                                - img
+                        - button:
+                            - img
+                        - generic:
+                            - generic:
+                                - link:
+                                    - /url: /settings
+                                    - img
+                    - complementary:
+                        - generic:
+                            - generic:
+                                - button:
+                                    - img
+                                    - generic: Forms
+                                - list:
+                                    - listitem:
+                                        - generic:
+                                            - link:
+                                                - /url: /forms/feed
+                                                - img
+                                                - generic: Home
+                                            - button:
+                                                - img
+                                    - listitem:
+                                        - generic:
+                                            - link:
+                                                - /url: /forms/new
+                                                - img
+                                                - generic: Create form
+                                            - button:
+                                                - img
+                                    - listitem:
+                                        - generic:
+                                            - link:
+                                                - /url: /forms/builder
+                                                - img
+                                                - generic: Builder
+                                            - button:
+                                                - img
+                                    - listitem:
+                                        - generic:
+                                            - link:
+                                                - /url: /forms/library
+                                                - img
+                                                - generic: Templates
+                                            - button:
+                                                - img
+                        - generic:
+                            - paragraph: Quick tip
+                            - paragraph: Press Shift + Option + D to open Nuxt DevTools and inspect routes, data, and assets.
+                    - main:
+                        - generic:
+                            - generic:
+                                - generic:
+                                    - generic:
+                                        - generic:
+                                            - generic:
+                                                - generic:
+                                                    - paragraph: Forms
+                                                - button:
+                                                    - img
+                                            - heading [level=1]: Live counter
+                                            - paragraph: A simple counter application built with Nuxt & UI Thing. A great starting point for your next project!
+                                    - generic:
+                                        - generic:
+                                            - generic:
+                                                - generic:
+                                                    - heading [level=3]: Counter
+                                                    - generic: A simple counter component w/ Pinia
+                                                - generic:
+                                                    - button:
+                                                        - img
+                                                        - generic: Decrement Button
+                                                    - heading [level=1]: '0'
+                                                    - button:
+                                                        - img
+                                                        - generic: Increment Button
+                                                - generic:
+                                                    - button:
+                                                        - img
+    - generic:
+        - img
+    - generic:
+        - generic:
+            - button [disabled]
+            - button
+            - button
+    - generic [ref=e145]:
+        - button [ref=e234] [cursor=pointer]:
+            - img [ref=e147]
+        - generic [ref=e235]:
+            - generic [ref=e222]: '117'
+            - generic [ref=e151]: ms
+        - button [ref=e236] [cursor=pointer]:
+            - img [ref=e154]
+    - button:
+        - img
+    - dialog "Create New Space" [ref=e238]:
+        - generic [ref=e239]:
+            - heading "Create New Space" [level=2] [ref=e240]
+            - paragraph [ref=e241]: Add a new space to your application rail.
+        - generic [ref=e242]:
+            - generic [ref=e243]:
+                - text: Title
+                - textbox "Title" [active] [ref=e244]:
+                    - /placeholder: My Space
+            - generic [ref=e245]:
+                - text: Slug (URL path)
+                - textbox "Slug (URL path)" [ref=e246]:
+                    - /placeholder: my-space
+                - paragraph [ref=e247]: Lowercase letters, numbers, and hyphens only
+            - generic [ref=e248]:
+                - text: Icon
+                - generic [ref=e249]:
+                    - button [ref=e250] [cursor=pointer]:
+                        - img [ref=e251]
+                    - button [ref=e253] [cursor=pointer]:
+                        - img [ref=e254]
+                    - button [ref=e259] [cursor=pointer]:
+                        - img [ref=e260]
+                    - button [ref=e264] [cursor=pointer]:
+                        - img [ref=e265]
+                    - button [ref=e269] [cursor=pointer]:
+                        - img [ref=e270]
+                    - button [ref=e272] [cursor=pointer]:
+                        - img [ref=e273]
+                    - button [ref=e277] [cursor=pointer]:
+                        - img [ref=e278]
+                    - button [ref=e282] [cursor=pointer]:
+                        - img [ref=e283]
+            - generic [ref=e287]:
+                - button "Cancel" [ref=e288] [cursor=pointer]
+                - button "Create Space" [ref=e289] [cursor=pointer]
+        - button "Close" [ref=e290] [cursor=pointer]:
+            - img
+            - generic [ref=e291]: Close
+```

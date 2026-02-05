@@ -1,0 +1,7 @@
+export { default as BoardView } from './BoardView.vue'
+export { default as CalendarView } from './CalendarView.vue'
+export { default as FoldersView } from './FoldersView.vue'
+export { default as ScheduledTasksView } from './ScheduledTasksView.vue'
+export { default as StandardTasksView } from './StandardTasksView.vue'
+export { default as SuggestedTasksView } from './SuggestedTasksView.vue'
+export { default as TableView } from './TableView.vue'

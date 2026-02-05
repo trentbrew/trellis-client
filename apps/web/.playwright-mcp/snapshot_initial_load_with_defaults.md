@@ -1,0 +1,140 @@
+### Page state
+
+- Page URL: http://localhost:3000/forms/feed
+- Page Title: Live counter | Markform
+- Page Snapshot:
+
+```yaml
+- generic [active] [ref=e1]:
+    - generic [ref=e3]:
+        - alert [ref=e4]: Live counter | Markform
+        - generic [ref=e5]:
+            - banner [ref=e6]:
+                - link [ref=e8] [cursor=pointer]:
+                    - /url: /
+                    - img [ref=e9]
+                - button "T Toolkit" [ref=e19] [cursor=pointer]:
+                    - generic [ref=e20]: T
+                    - generic [ref=e21]: Toolkit
+                    - img [ref=e22]
+                - generic [ref=e24]: /
+                - button "AP Select App" [ref=e26] [cursor=pointer]:
+                    - generic [ref=e27]: AP
+                    - generic [ref=e28]: Select App
+                    - img [ref=e29]
+                - navigation [ref=e31]:
+                    - generic [ref=e32]: /
+                    - link "Forms" [ref=e33] [cursor=pointer]:
+                        - /url: /forms
+                    - generic [ref=e34]: /
+                    - generic [ref=e35]: Home
+                - button "Search... ⌘ K" [ref=e37] [cursor=pointer]:
+                    - img [ref=e38]
+                    - generic [ref=e42]: Search...
+                    - generic [ref=e43]:
+                        - generic:
+                            - generic: ⌘
+                            - text: K
+            - generic [ref=e44]:
+                - navigation "Icon rail" [ref=e45]:
+                    - generic [ref=e46]:
+                        - link "Forms" [ref=e47] [cursor=pointer]:
+                            - /url: /forms
+                            - img [ref=e48]
+                        - link "Activity" [ref=e52] [cursor=pointer]:
+                            - /url: /activity
+                            - img [ref=e53]
+                        - link "Layouts" [ref=e55] [cursor=pointer]:
+                            - /url: /layouts
+                            - img [ref=e56]
+                        - link "Design tokens" [ref=e62] [cursor=pointer]:
+                            - /url: /tokens
+                            - img [ref=e63]
+                    - button "Create new space" [ref=e68] [cursor=pointer]:
+                        - img [ref=e69]
+                    - link "Settings" [ref=e73] [cursor=pointer]:
+                        - /url: /settings
+                        - img [ref=e74]
+                - complementary "Sidebar" [ref=e78]:
+                    - generic [ref=e80]:
+                        - button "Forms" [ref=e81] [cursor=pointer]:
+                            - img [ref=e82]
+                            - generic [ref=e84]: Forms
+                        - list [ref=e85]:
+                            - listitem [ref=e86]:
+                                - generic [ref=e87]:
+                                    - link "Home" [ref=e88] [cursor=pointer]:
+                                        - /url: /forms/feed
+                                        - img [ref=e89]
+                                        - generic [ref=e93]: Home
+                                    - button "Pin" [ref=e94] [cursor=pointer]:
+                                        - img [ref=e95]
+                            - listitem [ref=e97]:
+                                - generic [ref=e98]:
+                                    - link "Create form" [ref=e99] [cursor=pointer]:
+                                        - /url: /forms/new
+                                        - img [ref=e100]
+                                        - generic [ref=e104]: Create form
+                                    - button "Pin" [ref=e105] [cursor=pointer]:
+                                        - img [ref=e106]
+                            - listitem [ref=e108]:
+                                - generic [ref=e109]:
+                                    - link "Builder" [ref=e110] [cursor=pointer]:
+                                        - /url: /forms/builder
+                                        - img [ref=e111]
+                                        - generic [ref=e116]: Builder
+                                    - button "Pin" [ref=e117] [cursor=pointer]:
+                                        - img [ref=e118]
+                            - listitem [ref=e120]:
+                                - generic [ref=e121]:
+                                    - link "Templates" [ref=e122] [cursor=pointer]:
+                                        - /url: /forms/library
+                                        - img [ref=e123]
+                                        - generic [ref=e129]: Templates
+                                    - button "Pin" [ref=e130] [cursor=pointer]:
+                                        - img [ref=e131]
+                    - generic [ref=e133]:
+                        - paragraph [ref=e134]: Quick tip
+                        - paragraph [ref=e135]: Press Shift + Option + D to open Nuxt DevTools and inspect routes, data, and assets.
+                - main "Main content" [ref=e136]:
+                    - generic [ref=e139]:
+                        - generic [ref=e141]:
+                            - generic [ref=e142]:
+                                - paragraph [ref=e144]: Forms
+                                - button [ref=e145] [cursor=pointer]:
+                                    - img [ref=e146]
+                            - heading "Live counter" [level=1] [ref=e148]
+                            - paragraph [ref=e149]: A simple counter application built with Nuxt & UI Thing. A great starting point for your next project!
+                        - generic [ref=e152]:
+                            - generic [ref=e153]:
+                                - heading "Counter" [level=3] [ref=e154]
+                                - generic [ref=e155]: A simple counter component w/ Pinia
+                            - generic [ref=e156]:
+                                - button "Decrement Button" [ref=e157] [cursor=pointer]:
+                                    - img
+                                    - generic [ref=e158]: Decrement Button
+                                - heading "0" [level=1] [ref=e159]
+                                - button "Increment Button" [ref=e160] [cursor=pointer]:
+                                    - img
+                                    - generic [ref=e161]: Increment Button
+                            - button [ref=e163] [cursor=pointer]:
+                                - img
+    - generic:
+        - img
+    - generic:
+        - generic:
+            - generic:
+                - button "Go to parent" [disabled]
+                - button "Open in editor"
+                - button "Close"
+    - generic [ref=e164]:
+        - button "Toggle Nuxt DevTools" [ref=e165] [cursor=pointer]:
+            - img [ref=e166]
+        - generic "Page load time" [ref=e169]:
+            - generic [ref=e170]: '256'
+            - generic [ref=e171]: ms
+        - button "Toggle Component Inspector" [ref=e173] [cursor=pointer]:
+            - img [ref=e174]
+    - button [ref=e178] [cursor=pointer]:
+        - img [ref=e179]
+```

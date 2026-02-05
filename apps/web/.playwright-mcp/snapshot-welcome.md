@@ -1,0 +1,98 @@
+### New console messages
+- [LOG] [auth.global] fast path (cached) @ http://localhost:4444/_nuxt/middleware/auth.global.ts:30
+
+### Page state
+- Page URL: http://localhost:4444/collections?org=default-workspace&app=life
+- Page Title: Pages | Trellis
+- Page Snapshot:
+```yaml
+- generic [active] [ref=e1]:
+  - generic [ref=e3]:
+    - alert [ref=e4]: Pages | Trellis
+    - region "Notifications alt+T":
+      - list
+    - generic [ref=e124]:
+      - banner [ref=e125]:
+        - link [ref=e127] [cursor=pointer]:
+          - /url: /
+          - img [ref=e128]
+        - button "Collapse sidebar Search... ⌘ K" [ref=e137] [cursor=pointer]:
+          - button "Collapse sidebar" [ref=e138]:
+            - img
+          - img
+          - generic [ref=e139]: Search...
+          - generic [ref=e140]:
+            - generic:
+              - generic: ⌘
+              - text: K
+        - button "Personal" [ref=e143] [cursor=pointer]:
+          - generic [ref=e144]: Personal
+          - img [ref=e145]
+        - generic [ref=e147]: /
+        - button "Connector Hub" [ref=e149] [cursor=pointer]:
+          - generic [ref=e150]: Connector Hub
+          - img [ref=e151]
+        - navigation [ref=e153]:
+          - generic [ref=e154]: /
+          - generic [ref=e155]: Pages
+      - generic [ref=e156]:
+        - navigation "Icon rail" [ref=e157]:
+          - generic [ref=e158]:
+            - link "Docs" [ref=e159] [cursor=pointer]:
+              - /url: /welcome
+              - img [ref=e160]
+            - link "Pages" [ref=e162] [cursor=pointer]:
+              - /url: /collections
+              - img [ref=e163]
+          - generic [ref=e168]:
+            - generic [ref=e169]:
+              - link "Learn Trellis" [ref=e170] [cursor=pointer]:
+                - /url: /learn
+                - img [ref=e171]
+              - link "Settings" [ref=e175] [cursor=pointer]:
+                - /url: /settings
+                - img [ref=e176]
+            - button "User menu" [ref=e180] [cursor=pointer]:
+              - img "tbrew212@gmail.com" [ref=e181]
+        - complementary "Sidebar" [ref=e182]:
+          - button "New collection" [ref=e187] [cursor=pointer]:
+            - img
+            - text: New collection
+        - main "Main content" [ref=e188]:
+          - generic [ref=e191]:
+            - generic [ref=e193]:
+              - generic [ref=e194]:
+                - img [ref=e195]
+                - paragraph [ref=e200]: Workspace
+              - heading "Pages" [level=1] [ref=e201]
+              - paragraph [ref=e202]: Create and manage databases
+            - generic [ref=e205]:
+              - img [ref=e206]
+              - heading "No Pages Yet" [level=3] [ref=e210]
+              - paragraph [ref=e211]: Create your first database to start tracking anything.
+              - generic [ref=e212]:
+                - button "New database" [ref=e213] [cursor=pointer]:
+                  - img
+                  - text: New database
+                - button "Import" [ref=e214] [cursor=pointer]:
+                  - img
+                  - text: Import
+  - button [ref=e106] [cursor=pointer]:
+    - img [ref=e107]
+  - generic:
+    - img
+  - generic:
+    - generic:
+      - generic:
+        - button "Go to parent" [disabled]
+        - button "Open in editor"
+        - button "Close"
+  - generic [ref=e110]:
+    - button "Toggle Nuxt DevTools" [ref=e111] [cursor=pointer]:
+      - img [ref=e112]
+    - generic "Page load time" [ref=e115]:
+      - generic [ref=e116]: "209"
+      - generic [ref=e117]: ms
+    - button "Toggle Component Inspector" [ref=e119] [cursor=pointer]:
+      - img [ref=e120]
+```

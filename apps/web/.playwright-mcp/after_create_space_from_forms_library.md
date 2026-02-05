@@ -1,0 +1,141 @@
+### Page state
+
+- Page URL: http://localhost:3000/settings/project
+- Page Title: Project settings | Markform
+- Page Snapshot:
+
+```yaml
+- generic [ref=e1]:
+    - generic [ref=e3]:
+        - alert [ref=e148]: Project settings | Markform
+        - generic [ref=e4]:
+            - banner [ref=e5]:
+                - link [ref=e7] [cursor=pointer]:
+                    - /url: /
+                    - img [ref=e8]
+                - button "P Personal" [ref=e149] [cursor=pointer]:
+                    - generic [ref=e19]: P
+                    - generic [ref=e20]: Personal
+                    - img [ref=e21]
+                - generic [ref=e23]: /
+                - button "AP Select App" [ref=e25] [cursor=pointer]:
+                    - generic [ref=e26]: AP
+                    - generic [ref=e27]: Select App
+                    - img [ref=e28]
+                - navigation [ref=e30]:
+                    - generic [ref=e31]: /
+                    - link "Settings" [ref=e150] [cursor=pointer]:
+                        - /url: /settings
+                    - generic [ref=e151]: /
+                    - generic [ref=e152]: Project
+                - button "Search... ⌘ K" [ref=e36] [cursor=pointer]:
+                    - img [ref=e37]
+                    - generic [ref=e41]: Search...
+                    - generic [ref=e42]:
+                        - generic:
+                            - generic: ⌘
+                            - text: K
+            - generic [ref=e43]:
+                - navigation "Icon rail" [ref=e44]:
+                    - generic [ref=e45]:
+                        - link "Forms" [ref=e46] [cursor=pointer]:
+                            - /url: /forms
+                            - img [ref=e47]
+                        - link "Activity" [ref=e51] [cursor=pointer]:
+                            - /url: /activity
+                            - img [ref=e52]
+                        - link "Layouts" [ref=e54] [cursor=pointer]:
+                            - /url: /layouts
+                            - img [ref=e55]
+                        - link "Design tokens" [ref=e61] [cursor=pointer]:
+                            - /url: /tokens
+                            - img [ref=e62]
+                    - button "Create new space" [ref=e67] [cursor=pointer]:
+                        - img [ref=e68]
+                    - link "Settings" [active] [ref=e72] [cursor=pointer]:
+                        - /url: /settings
+                        - img [ref=e73]
+                - complementary "Sidebar" [ref=e77]:
+                    - generic [ref=e154]:
+                        - button "Settings" [ref=e155] [cursor=pointer]:
+                            - img [ref=e156]
+                            - generic [ref=e158]: Settings
+                        - list [ref=e159]:
+                            - listitem [ref=e160]:
+                                - generic [ref=e161]:
+                                    - link "Project" [ref=e162] [cursor=pointer]:
+                                        - /url: /settings/project
+                                        - img [ref=e163]
+                                        - generic [ref=e165]: Project
+                                    - button "Pin" [ref=e166] [cursor=pointer]:
+                                        - img [ref=e167]
+                            - listitem [ref=e169]:
+                                - generic [ref=e170]:
+                                    - link "Notifications" [ref=e171] [cursor=pointer]:
+                                        - /url: /settings/notifications
+                                        - img [ref=e172]
+                                        - generic [ref=e174]: Notifications
+                                    - button "Pin" [ref=e175] [cursor=pointer]:
+                                        - img [ref=e176]
+                            - listitem [ref=e178]:
+                                - generic [ref=e179]:
+                                    - link "Profile" [ref=e180] [cursor=pointer]:
+                                        - /url: /settings/profile
+                                        - img [ref=e181]
+                                        - generic [ref=e185]: Profile
+                                    - button "Pin" [ref=e186] [cursor=pointer]:
+                                        - img [ref=e187]
+                            - listitem [ref=e189]:
+                                - generic [ref=e190]:
+                                    - link "Appearance" [ref=e191] [cursor=pointer]:
+                                        - /url: /settings/appearance
+                                        - img [ref=e192]
+                                        - generic [ref=e199]: Appearance
+                                    - button "Pin" [ref=e200] [cursor=pointer]:
+                                        - img [ref=e201]
+                            - listitem [ref=e203]:
+                                - generic [ref=e204]:
+                                    - link "Theme" [ref=e205] [cursor=pointer]:
+                                        - /url: /settings/theme
+                                        - img [ref=e206]
+                                        - generic [ref=e208]: Theme
+                                    - button "Pin" [ref=e209] [cursor=pointer]:
+                                        - img [ref=e210]
+                    - generic [ref=e116]:
+                        - paragraph [ref=e117]: Quick tip
+                        - paragraph [ref=e118]: Press Shift + Option + D to open Nuxt DevTools and inspect routes, data, and assets.
+                - main "Main content" [ref=e119]:
+                    - generic [ref=e214]:
+                        - generic [ref=e216]:
+                            - generic [ref=e217]:
+                                - paragraph [ref=e219]: Settings
+                                - button [ref=e220] [cursor=pointer]:
+                                    - img [ref=e221]
+                            - heading "Project settings" [level=1] [ref=e223]
+                            - paragraph [ref=e224]: Customize your experience with toggles and preferences.
+                        - generic [ref=e229]:
+                            - generic [ref=e230]:
+                                - img [ref=e232]
+                                - generic [ref=e234]:
+                                    - paragraph [ref=e235]: Notifications
+                                    - paragraph [ref=e236]: Route the bell icon to your notifier preferences.
+                            - generic [ref=e237]: Pending
+    - generic:
+        - img
+    - generic:
+        - generic:
+            - generic:
+                - button "Go to parent" [disabled]
+                - button "Open in editor"
+                - button "Close"
+    - generic [ref=e238]:
+        - button "Toggle Nuxt DevTools" [ref=e239] [cursor=pointer]:
+            - img [ref=e240]
+        - generic "Page load time" [ref=e243]:
+            - generic [ref=e244]: '29'
+            - generic [ref=e245]: ms
+        - button "Toggle Component Inspector" [ref=e247] [cursor=pointer]:
+            - img [ref=e248]
+    - button [ref=e252] [cursor=pointer]:
+        - img [ref=e253]
+```

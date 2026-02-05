@@ -1,0 +1,154 @@
+### New console messages
+
+- [LOG] ✨ %cNuxt DevTools %c Press Shift + Option + D to open DevTools color: black; border-radius: 3p...
+- [INFO] <Suspense> is an experimental feature and its API will likely change. @ http://localhost:3000...
+- [WARNING] [Vue Router warn]: No match found for location with path "/" @ http://localhost:3000/\_nuxt...
+- [WARNING] [Vue Router warn]: No match found for location with path "/" @ http://localhost:3000/\_nuxt...
+- [WARNING] [Vue warn]: Hydration class mismatch on JSHandle@node
+  - rendered on server: class="@con...
+- [ERROR] Hydration completed but contains mismatches. @ http://localhost:3000/\_nuxt/@fs/Users/trentbr...
+- [WARNING] [Vue warn]: Hydration class mismatch on JSHandle@node
+  - rendered on server: class="grou...
+- [WARNING] [Vue warn]: Hydration class mismatch on JSHandle@node
+  - rendered on server: class="grou...
+
+### Page state
+
+- Page URL: http://localhost:3000/forms/feed
+- Page Title: Live counter | Markform
+- Page Snapshot:
+
+```yaml
+- generic [active] [ref=e1]:
+    - generic [ref=e3]:
+        - alert [ref=e145]: Live counter | Markform
+        - generic [ref=e4]:
+            - banner [ref=e5]:
+                - link [ref=e7] [cursor=pointer]:
+                    - /url: /
+                    - img [ref=e8]
+                - button "P Personal" [ref=e146] [cursor=pointer]:
+                    - generic [ref=e19]: P
+                    - generic [ref=e20]: Personal
+                    - img [ref=e21]
+                - generic [ref=e23]: /
+                - button "AP Select App" [ref=e25] [cursor=pointer]:
+                    - generic [ref=e26]: AP
+                    - generic [ref=e27]: Select App
+                    - img [ref=e28]
+                - navigation [ref=e30]:
+                    - generic [ref=e31]: /
+                    - link "Forms" [ref=e32] [cursor=pointer]:
+                        - /url: /forms
+                    - generic [ref=e33]: /
+                    - generic [ref=e34]: Home
+                - button "Search... ⌘ K" [ref=e36] [cursor=pointer]:
+                    - img [ref=e37]
+                    - generic [ref=e41]: Search...
+                    - generic [ref=e42]:
+                        - generic:
+                            - generic: ⌘
+                            - text: K
+            - generic [ref=e43]:
+                - navigation "Icon rail" [ref=e44]:
+                    - generic [ref=e45]:
+                        - link "Forms" [ref=e46] [cursor=pointer]:
+                            - /url: /forms
+                            - img [ref=e47]
+                        - link "Activity" [ref=e51] [cursor=pointer]:
+                            - /url: /activity
+                            - img [ref=e52]
+                        - link "Layouts" [ref=e54] [cursor=pointer]:
+                            - /url: /layouts
+                            - img [ref=e55]
+                        - link "Design tokens" [ref=e61] [cursor=pointer]:
+                            - /url: /tokens
+                            - img [ref=e62]
+                    - button "Create new space" [ref=e67] [cursor=pointer]:
+                        - img [ref=e68]
+                    - link "Settings" [ref=e72] [cursor=pointer]:
+                        - /url: /settings
+                        - img [ref=e73]
+                - complementary "Sidebar" [ref=e77]:
+                    - generic [ref=e148]:
+                        - button "Forms" [ref=e149] [cursor=pointer]:
+                            - img [ref=e150]
+                            - generic [ref=e152]: Forms
+                        - list [ref=e153]:
+                            - listitem [ref=e154]:
+                                - generic [ref=e155]:
+                                    - link "Home" [ref=e156] [cursor=pointer]:
+                                        - /url: /forms/feed
+                                        - img [ref=e157]
+                                        - generic [ref=e161]: Home
+                                    - button "Pin" [ref=e162] [cursor=pointer]:
+                                        - img [ref=e163]
+                            - listitem [ref=e165]:
+                                - generic [ref=e166]:
+                                    - link "Create form" [ref=e167] [cursor=pointer]:
+                                        - /url: /forms/new
+                                        - img [ref=e168]
+                                        - generic [ref=e172]: Create form
+                                    - button "Pin" [ref=e173] [cursor=pointer]:
+                                        - img [ref=e174]
+                            - listitem [ref=e176]:
+                                - generic [ref=e177]:
+                                    - link "Builder" [ref=e178] [cursor=pointer]:
+                                        - /url: /forms/builder
+                                        - img [ref=e179]
+                                        - generic [ref=e184]: Builder
+                                    - button "Pin" [ref=e185] [cursor=pointer]:
+                                        - img [ref=e186]
+                            - listitem [ref=e188]:
+                                - generic [ref=e189]:
+                                    - link "Templates" [ref=e190] [cursor=pointer]:
+                                        - /url: /forms/library
+                                        - img [ref=e191]
+                                        - generic [ref=e197]: Templates
+                                    - button "Pin" [ref=e198] [cursor=pointer]:
+                                        - img [ref=e199]
+                    - generic [ref=e116]:
+                        - paragraph [ref=e117]: Quick tip
+                        - paragraph [ref=e118]: Press Shift + Option + D to open Nuxt DevTools and inspect routes, data, and assets.
+                - main "Main content" [ref=e119]:
+                    - generic [ref=e122]:
+                        - generic [ref=e124]:
+                            - generic [ref=e125]:
+                                - paragraph [ref=e127]: Forms
+                                - button [ref=e201] [cursor=pointer]:
+                                    - img [ref=e202]
+                            - heading "Live counter" [level=1] [ref=e129]
+                            - paragraph [ref=e130]: A simple counter application built with Nuxt & UI Thing. A great starting point for your next project!
+                        - generic [ref=e133]:
+                            - generic [ref=e134]:
+                                - heading "Counter" [level=3] [ref=e135]
+                                - generic [ref=e136]: A simple counter component w/ Pinia
+                            - generic [ref=e137]:
+                                - button "Decrement Button" [ref=e138] [cursor=pointer]:
+                                    - img
+                                    - generic [ref=e139]: Decrement Button
+                                - heading "0" [level=1] [ref=e140]
+                                - button "Increment Button" [ref=e141] [cursor=pointer]:
+                                    - img
+                                    - generic [ref=e142]: Increment Button
+                            - button [ref=e144] [cursor=pointer]:
+                                - img
+    - generic:
+        - img
+    - generic:
+        - generic:
+            - generic:
+                - button "Go to parent" [disabled]
+                - button "Open in editor"
+                - button "Close"
+    - generic [ref=e204]:
+        - button "Toggle Nuxt DevTools" [ref=e205] [cursor=pointer]:
+            - img [ref=e206]
+        - generic "Page load time" [ref=e209]:
+            - generic [ref=e210]: '112'
+            - generic [ref=e211]: ms
+        - button "Toggle Component Inspector" [ref=e213] [cursor=pointer]:
+            - img [ref=e214]
+    - button [ref=e218] [cursor=pointer]:
+        - img [ref=e219]
+```

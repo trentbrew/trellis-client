@@ -1,0 +1,51 @@
+# Nuxt dev/build outputs
+.local
+.output
+.data
+.nuxt
+.nitro
+.cache
+dist
+
+# Vercel build output
+.vercel/
+
+# Node dependencies
+node_modules
+
+# Logs
+logs
+*.log
+
+# Misc
+.DS_Store
+.fleet
+.idea
+
+# Backup files
+*.backup
+*.bak
+
+# Local env files
+.env
+.env.*
+!.env.example
+
+# Script outputs
+scripts/_downloads/
+playwright-report/
+test-results/
+
+# Legacy proxy (no longer needed)
+cablecast-proxy/
+
+# Local only
+.tql/
+.gemini/
+.backups/
+.code-hq/
+.archive/
+.husky/
+.nuxt/
+.vscode/
+.windsurf/

@@ -1,0 +1,36 @@
+# Default recipe
+default:
+    @just --list
+
+# Run the dev server on port 5151 (kills any existing process on that port first)
+run interval="60":
+    -lsof -ti:5151 | xargs kill -9 2>/dev/null || true
+    @echo "🚀 Starting v2 dev server with auto-commit ({{interval}}s)..."
+    pnpm dev & ../../.scripts/auto-commit.sh {{interval}}
+
+# Validate deployment (lint, tests, route validation, build)
+validate:
+    pnpm lint
+    pnpm test
+    pnpm validate:routes
+    pnpm build
+
+# Build the app for production
+build:
+    pnpm build
+
+# Deploy to Firebase Hosting (toolkit-ui-v2)
+deploy: build
+    firebase deploy --only hosting:v2
+
+# Deploy without rebuilding (use existing .output)
+deploy-only:
+    firebase deploy --only hosting:v2
+
+# Preview deployment (creates a preview channel)
+preview: build
+    firebase hosting:channel:deploy preview --only v2
+
+# Show Firebase hosting targets
+targets:
+    firebase target:apply hosting v2 toolkit-ui-v2

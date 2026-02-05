@@ -1,0 +1,20 @@
+<script lang="ts" setup>
+  import type { PrimitiveProps } from 'reka-ui'
+  import type { HTMLAttributes } from 'vue'
+
+  const props = defineProps<
+    PrimitiveProps & {
+      /** Custom class(es) to add to the element */
+      class?: HTMLAttributes['class']
+    }
+  >()
+  const forwarded = reactiveOmit(props, 'class')
+
+  const styles = tv({ base: 'mx-2' })
+</script>
+
+<template>
+  <Primitive v-bind="forwarded" :class="styles({ class: props.class })">
+    <slot />
+  </Primitive>
+</template>

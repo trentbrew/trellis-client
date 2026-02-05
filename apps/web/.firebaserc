@@ -1,0 +1,14 @@
+{
+  "projects": {
+    "default": "toolkit-playground-ceecf"
+  },
+  "targets": {
+    "toolkit-playground-ceecf": {
+      "hosting": {
+        "v2": [
+          "toolkit-ui-v2"
+        ]
+      }
+    }
+  }
+}

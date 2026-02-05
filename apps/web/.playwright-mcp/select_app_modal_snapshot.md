@@ -1,0 +1,183 @@
+### Open tabs
+
+- 0: (current) [Authentication | Markform] (http://localhost:3000/layouts/templates/auth)
+- 1: [2-Step Verification To help keep your account safe, Google wants to make sure it’s really you trying to sign in] (https://accounts.google.com/v3/signin/challenge/dp?TL=AHE1sGVS6ifOaEzutXw_W7lokKJ-gyLz963hIQPCFUrxWI_fLHxBaeK7_9Crh9kS&app_domain=http%3A%2F%2Flocalhost%3A3000&as=%2BazCHvNG6mB39zsbz6PQIiDfDC3tx9Q4gVekq1ehFJI&checkConnection=youtube%3A491&checkedDomains=youtube&cid=8&client_id=1092966607840-d1hm0ccc2cnpbtpjgv95hkvvjegggmpv.apps.googleusercontent.com&continue=https%3A%2F%2Faccounts.google.com%2Fsignin%2Foauth%2Fconsent%3Fauthuser%3Dunknown%26part%3DAJi8hAM0gPlja6gg4e9lsBmp0CwqHDd40jbtuDdgkt3GYLL1-fi67zy9nvyfKfaMLvdw_pKa8LUpPLivX9IXZ80_0g3FC4Dp4uZK0CiV4tAWDfvNJvO25MY5wWEnuwqZspaDxY3wqSg8LF58RImh-0gisrxEZAMydHJiOliy0jYdpTm56qUK9pHRcwuZD-Ga3dqAlzqs25FGvdajZ0nIaW0cA661JZxUxPr-UyYqlbiuR93llGN7MQ1UrJ7PhZrQ2vj9zrQ6cwjX6z3HqJ29ebvdRsIDBlCDcQ5Skzis-aLhH13HsBhaSZQr_7OWbjcOsz9n56K42VOc4UhHoy7ji2CDzW-xsvxXfLwURxNHo8y3JwTiPbSotMQgf-3qP6oIbtDupqlQOLytka7PquNo13CRUs5pOz6Ka1uHG8oXsjXmhhU5WnCSn9YsS77qYlO0nj9L9Ixqv2qIkl6cBPptjHPeOfGNHNFOmhUoTSU-52BRlrH1fmucoYA%26flowName%3DGeneralOAuthFlow%26as%3D%252BazCHvNG6mB39zsbz6PQIiDfDC3tx9Q4gVekq1ehFJI%26client_id%3D1092966607840-d1hm0ccc2cnpbtpjgv95hkvvjegggmpv.apps.googleusercontent.com%26requestPath%3D%252Fsignin%252Foauth%252Fconsent%23&display=popup&dsh=%2BazCHvNG6mB39zsbz6PQIiDfDC3tx9Q4gVekq1ehFJI&flowName=GeneralOAuthFlow&gsiwebsdk=gis_attributes&nonce=13451ca0-9bc8-472d-9ac1-bbb0b049cd37&o2v=1&opparams=%253Fgis_params%253DChVodHRwOi8vbG9jYWxob3N0OjMwMDASDWdpc190cmFuc2Zvcm0YByorK2F6Q0h2Tkc2bUIzOXpzYno2UFFJaURmREMzdHg5UTRnVmVrcTFlaEZKSTJJMTA5Mjk2NjYwNzg0MC1kMWhtMGNjYzJjbnBidHBqZ3Y5NWhrdnZqZWdnZ21wdi5hcHBzLmdvb2dsZXVzZXJjb250ZW50LmNvbTgBQkAwMDAwZTQ0OTYxYmJkYmFkOWZlMTdjOGNlNDUxMWVjOGVjZWM3Y2QwZTAyZmIyNTkyNDc4YzAzZGU0ZjcxYWFh%2526response_mode%253Dform_post&origin=http%3A%2F%2Flocalhost%3A3000&prompt=select_account&pstMsg=1&rart=ANgoxcdu0_y_JZyO8aSrxQl2AL0-_VIoybuei9uC27O1TOk7ARdbrIyynzf6fBdRBvrCzPM-A_sHekASLR8LJy33y5xqx3n3v1cZyziGpHxs7HKu_4KHHu8&redirect_uri=gis_transform&response_type=id_token&scope=openid%20email%20profile&service=lso)
+
+### Page state
+
+- Page URL: http://localhost:3000/layouts/templates/auth
+- Page Title: Authentication | Markform
+- Page Snapshot:
+
+```yaml
+- generic:
+    - generic:
+        - generic:
+            - generic:
+                - alert: Authentication | Markform
+            - generic:
+                - banner:
+                    - generic:
+                        - link:
+                            - /url: /
+                            - img
+                    - generic:
+                        - button:
+                            - generic: P
+                            - generic: Personal
+                            - img
+                    - generic: /
+                    - generic:
+                        - button [expanded]:
+                            - generic: AP
+                            - generic: Select App
+                            - img
+                    - navigation:
+                        - generic: /
+                        - link:
+                            - /url: /layouts
+                            - text: Layouts
+                        - generic: /
+                        - link:
+                            - /url: /layouts/templates
+                            - text: Templates
+                        - generic: /
+                        - generic: Authentication
+                    - generic:
+                        - button:
+                            - img
+                            - generic: Search...
+                            - generic:
+                                - generic:
+                                    - generic: ⌘
+                                    - text: K
+                - generic:
+                    - navigation:
+                        - generic:
+                            - link:
+                                - /url: /forms
+                                - img
+                            - link:
+                                - /url: /activity
+                                - img
+                            - link:
+                                - /url: /layouts
+                                - img
+                            - link:
+                                - /url: /tokens
+                                - img
+                        - button:
+                            - img
+                        - generic:
+                            - generic:
+                                - link:
+                                    - /url: /settings
+                                    - img
+                    - complementary:
+                        - generic:
+                            - generic:
+                                - button:
+                                    - img
+                                    - generic: Layouts
+                                - list:
+                                    - listitem:
+                                        - generic:
+                                            - link:
+                                                - /url: /layouts/templates
+                                                - img
+                                                - generic: Templates
+                                            - button:
+                                                - img
+                                    - listitem:
+                                        - generic:
+                                            - link:
+                                                - /url: /layouts/playground
+                                                - img
+                                                - generic: Playground
+                                            - button:
+                                                - img
+                                    - listitem:
+                                        - generic:
+                                            - link:
+                                                - /url: /layouts/shells
+                                                - img
+                                                - generic: Shells
+                                            - button:
+                                                - img
+                                    - listitem:
+                                        - generic:
+                                            - link:
+                                                - /url: /layouts/sections
+                                                - img
+                                                - generic: Sections
+                                            - button:
+                                                - img
+                                    - listitem:
+                                        - generic:
+                                            - link:
+                                                - /url: /layouts/flow
+                                                - img
+                                                - generic: Flow Editor
+                                            - button:
+                                                - img
+                        - generic:
+                            - paragraph: Quick tip
+                            - paragraph: Press Shift + Option + D to open Nuxt DevTools and inspect routes, data, and assets.
+                    - main:
+                        - generic:
+                            - generic:
+                                - generic:
+                                    - generic:
+                                        - generic:
+                                            - generic:
+                                                - generic:
+                                                    - button:
+                                                        - img
+                                                    - paragraph: Auth
+                                                - button:
+                                                    - img
+                                            - heading [level=1]: Authentication
+                                            - paragraph: Login, signup, and password reset forms.
+                                    - generic:
+                                        - generic:
+                                            - generic:
+                                                - heading [level=3]: Sign in with Google
+                                                - paragraph: Use your Google account to access the app
+                                            - generic:
+                                                - generic:
+                                                    - generic:
+                                                        - generic:
+                                                            - generic:
+                                                                - button:
+                                                                    - generic:
+                                                                        - generic:
+                                                                            - img
+                                                                        - generic: Sign in with Google
+                                                - paragraph:
+                                                    - text: By continuing, you agree to our
+                                                    - button: Terms of Service
+                                                    - text: and
+                                                    - button: Privacy Policy
+    - generic:
+        - img
+    - generic:
+        - generic:
+            - button [disabled]
+            - button
+            - button
+    - generic [ref=e191]:
+        - button [ref=e209] [cursor=pointer]:
+            - img [ref=e193]
+        - generic [ref=e210]:
+            - generic [ref=e197]: '29'
+            - generic [ref=e198]: ms
+        - button [ref=e211] [cursor=pointer]:
+            - img [ref=e201]
+    - button:
+        - img
+    - menu "AP Select App" [active] [ref=e212]:
+        - generic [ref=e213]: Applications
+        - separator [ref=e214]
+        - separator [ref=e215]
+        - menuitem "Create application" [ref=e216]
+```

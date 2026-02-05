@@ -1,0 +1,123 @@
+### New console messages
+
+- [ERROR] [GSI_LOGGER]: The given origin is not allowed for the given client ID. @ https://ssl.gstatic...
+
+### Page state
+
+- Page URL: http://localhost:3000/layouts/templates/auth
+- Page Title: 500 - Internal Server Error | Markform
+- Page Snapshot:
+
+```yaml
+- generic [active] [ref=e1]:
+    - generic [ref=e3]:
+        - alert [ref=e4]: Authentication | Markform
+        - generic [ref=e5]:
+            - banner [ref=e6]:
+                - link [ref=e8] [cursor=pointer]:
+                    - /url: /
+                    - img [ref=e9]
+                - button "P Personal" [ref=e19] [cursor=pointer]:
+                    - generic [ref=e20]: P
+                    - generic [ref=e21]: Personal
+                    - img [ref=e22]
+                - generic [ref=e24]: /
+                - button "AP Select App" [ref=e26] [cursor=pointer]:
+                    - generic [ref=e27]: AP
+                    - generic [ref=e28]: Select App
+                    - img [ref=e29]
+                - navigation [ref=e31]:
+                    - generic [ref=e32]: /
+                    - link "Layouts" [ref=e33] [cursor=pointer]:
+                        - /url: /forms
+                    - generic [ref=e34]: /
+                    - link "Templates" [ref=e35] [cursor=pointer]:
+                        - /url: /layouts/templates
+                    - generic [ref=e36]: /
+                    - generic [ref=e37]: Authentication
+                - button "Search... ⌘ K" [ref=e39] [cursor=pointer]:
+                    - img [ref=e40]
+                    - generic [ref=e44]: Search...
+                    - generic [ref=e45]:
+                        - generic:
+                            - generic: ⌘
+                            - text: K
+            - generic [ref=e46]:
+                - navigation "Icon rail" [ref=e47]:
+                    - generic [ref=e48]:
+                        - link "Forms" [ref=e49] [cursor=pointer]:
+                            - /url: /forms
+                            - img [ref=e50]
+                        - link "Activity" [ref=e54] [cursor=pointer]:
+                            - /url: /activity
+                            - img [ref=e55]
+                        - link "Layouts" [ref=e57] [cursor=pointer]:
+                            - /url: /layouts
+                            - img [ref=e58]
+                        - link "Design tokens" [ref=e64] [cursor=pointer]:
+                            - /url: /tokens
+                            - img [ref=e65]
+                    - button "Create new space" [ref=e70] [cursor=pointer]:
+                        - img [ref=e71]
+                    - link "Settings" [ref=e75] [cursor=pointer]:
+                        - /url: /settings
+                        - img [ref=e76]
+                - complementary "Sidebar" [ref=e80]:
+                    - generic [ref=e81]:
+                        - paragraph [ref=e82]: Quick tip
+                        - paragraph [ref=e83]: Press Shift + Option + D to open Nuxt DevTools and inspect routes, data, and assets.
+                - main "Main content":
+                    - generic:
+                        - generic:
+                            - generic:
+                                - generic:
+                                    - generic:
+                                        - generic:
+                                            - generic:
+                                                - button "Go back":
+                                                    - img
+                                                - paragraph: Auth
+                                            - button:
+                                                - img
+                                        - heading "Authentication" [level=1]
+                                        - paragraph: Login, signup, and password reset forms.
+                                - generic:
+                                    - generic:
+                                        - generic:
+                                            - heading "Sign in with Google" [level=3]
+                                            - paragraph: Use your Google account to access the app
+                                        - generic:
+                                            - generic:
+                                                - generic:
+                                                    - generic:
+                                                        - generic:
+                                                            - button "Sign in with Google. Opens in new tab":
+                                                                - generic:
+                                                                    - generic:
+                                                                        - img
+                                                                    - generic: Sign in with Google
+                                                        - iframe
+                                            - paragraph:
+                                                - text: By continuing, you agree to our
+                                                - button "Terms of Service"
+                                                - text: and
+                                                - button "Privacy Policy"
+    - generic:
+        - img
+    - generic:
+        - generic:
+            - generic:
+                - button "Go to parent" [disabled]
+                - button "Open in editor"
+                - button "Close"
+    - generic [ref=e84]:
+        - button "Toggle Nuxt DevTools" [ref=e85] [cursor=pointer]:
+            - img [ref=e86]
+        - generic "Page load time" [ref=e89]:
+            - generic [ref=e90]: '167'
+            - generic [ref=e91]: ms
+        - button "Toggle Component Inspector" [ref=e93] [cursor=pointer]:
+            - img [ref=e94]
+    - button [ref=e98] [cursor=pointer]:
+        - img [ref=e99]
+```

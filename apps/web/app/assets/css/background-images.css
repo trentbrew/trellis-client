@@ -1,0 +1,103 @@
+/* Background image utilities for header sections */
+
+/* Base header background styles */
+.header-background {
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+  position: relative;
+}
+
+/* Overlay utilities for text readability */
+.header-overlay::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: linear-gradient(to bottom, rgba(30, 58, 138, 0.7), rgba(30, 58, 138, 0.8));
+  border-radius: inherit;
+  z-index: 0;
+}
+
+/* Ensure content stays above overlay */
+.header-background > * {
+  position: relative;
+  z-index: 1;
+}
+
+/* Specific background image classes */
+.bg-header-industrial {
+  background-image:
+    linear-gradient(to bottom, rgba(30, 58, 138, 0.7), rgba(30, 58, 138, 0.8)),
+    url('/assets/backgrounds/industrial-facility.png');
+}
+
+.bg-header-power {
+  background-image:
+    linear-gradient(to bottom, rgba(30, 41, 59, 0.6), rgba(30, 41, 59, 0.7)), url('/assets/backgrounds/power-plant.png');
+}
+
+.bg-header-chemical {
+  background-image:
+    linear-gradient(to bottom, rgba(30, 41, 59, 0.7), rgba(30, 41, 59, 0.8)),
+    url('/assets/backgrounds/chemical-plant.png');
+}
+
+.bg-header-mining {
+  background-image:
+    linear-gradient(to bottom, rgba(30, 58, 138, 0.6), rgba(30, 58, 138, 0.7)), url('/assets/backgrounds/mining.png');
+}
+
+.bg-header-crane {
+  background-image:
+    linear-gradient(to bottom, rgba(30, 41, 59, 0.6), rgba(30, 41, 59, 0.7)),
+    url('/assets/backgrounds/crane-signal.png');
+}
+
+.bg-header-factory {
+  background-image:
+    linear-gradient(to bottom, rgba(30, 58, 138, 0.6), rgba(30, 58, 138, 0.7)),
+    url('/assets/backgrounds/factory-by-river.png');
+}
+
+.bg-header-copper {
+  background-image:
+    linear-gradient(to bottom, rgba(30, 41, 59, 0.6), rgba(30, 41, 59, 0.7)),
+    url('/assets/backgrounds/copper-smelter.png');
+}
+
+.bg-header-bridge {
+  background-image:
+    linear-gradient(to bottom, rgba(30, 58, 138, 0.6), rgba(30, 58, 138, 0.7)), url('/assets/backgrounds/bridge.png');
+}
+
+/* Text color utilities for background images */
+.text-on-bg {
+  color: rgb(255 255 255);
+}
+
+.text-on-bg-muted {
+  color: rgb(255 255 255 / 0.7);
+}
+
+.text-on-bg-subtle {
+  color: rgb(255 255 255 / 0.6);
+}
+
+/* Card backgrounds for use on header backgrounds */
+.card-on-bg {
+  background-color: rgb(255 255 255 / 0.1);
+  backdrop-filter: blur(12px);
+  border-color: rgb(255 255 255 / 0.2);
+}
+
+.card-on-bg-hover:hover {
+  background-color: rgb(255 255 255 / 0.15);
+}
+
+/* Animation for smooth transitions */
+.header-background-transition {
+  transition: background-image 0.3s ease-in-out;
+}

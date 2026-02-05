@@ -1,0 +1,23 @@
+<script lang="ts" setup>
+  import { reactiveOmit } from '@vueuse/core'
+  import { Primitive, useForwardProps } from 'reka-ui'
+  import type { PrimitiveProps } from 'reka-ui'
+  import type { HTMLAttributes } from 'vue'
+
+  const styles = tv({
+    base: 'text-sm text-muted-foreground',
+  })
+  const props = defineProps<
+    PrimitiveProps & {
+      class?: HTMLAttributes['class']
+    }
+  >()
+
+  const forwarded = useForwardProps(reactiveOmit(props, ['class']))
+</script>
+
+<template>
+  <Primitive data-slot="timeline-content" v-bind="forwarded" :class="styles({ class: props.class })">
+    <slot />
+  </Primitive>
+</template>

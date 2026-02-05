@@ -1,0 +1,174 @@
+### New console messages
+
+- [WARNING] %cssr:warn%c [Vue Router warn]: No match found for location with path "/"
+  backgroun...
+- [LOG] ✨ %cNuxt DevTools %c Press Shift + Option + D to open DevTools color: black; border-radius: 3p...
+- [INFO] <Suspense> is an experimental feature and its API will likely change. @ http://localhost:3000...
+- [WARNING] [Vue Router warn]: No match found for location with path "/" @ http://localhost:3000/\_nuxt...
+- [WARNING] [Vue Router warn]: No match found for location with path "/" @ http://localhost:3000/\_nuxt...
+- [WARNING] [Vue Router warn]: No match found for location with path "/" @ http://localhost:3000/\_nuxt...
+- [WARNING] [Vue Router warn]: No match found for location with path "/" @ http://localhost:3000/\_nuxt...
+- [ERROR] Failed to load resource: the server responded with a status of 403 () @ https://accounts.goo...
+- [ERROR] [GSI_LOGGER]: The given origin is not allowed for the given client ID. @ https://ssl.gstatic...
+
+### Open tabs
+
+- 0: (current) [Authentication | Markform] (http://localhost:3000/layouts/templates/auth)
+- 1: [Welcome] (https://accounts.google.com/v3/signin/challenge/selection?TL=AHE1sGVS6ifOaEzutXw_W7lokKJ-gyLz963hIQPCFUrxWI_fLHxBaeK7_9Crh9kS&app_domain=http%3A%2F%2Flocalhost%3A3000&as=%2BazCHvNG6mB39zsbz6PQIiDfDC3tx9Q4gVekq1ehFJI&checkConnection=youtube%3A491&checkedDomains=youtube&client_id=1092966607840-d1hm0ccc2cnpbtpjgv95hkvvjegggmpv.apps.googleusercontent.com&continue=https%3A%2F%2Faccounts.google.com%2Fsignin%2Foauth%2Fconsent%3Fauthuser%3Dunknown%26part%3DAJi8hAM0gPlja6gg4e9lsBmp0CwqHDd40jbtuDdgkt3GYLL1-fi67zy9nvyfKfaMLvdw_pKa8LUpPLivX9IXZ80_0g3FC4Dp4uZK0CiV4tAWDfvNJvO25MY5wWEnuwqZspaDxY3wqSg8LF58RImh-0gisrxEZAMydHJiOliy0jYdpTm56qUK9pHRcwuZD-Ga3dqAlzqs25FGvdajZ0nIaW0cA661JZxUxPr-UyYqlbiuR93llGN7MQ1UrJ7PhZrQ2vj9zrQ6cwjX6z3HqJ29ebvdRsIDBlCDcQ5Skzis-aLhH13HsBhaSZQr_7OWbjcOsz9n56K42VOc4UhHoy7ji2CDzW-xsvxXfLwURxNHo8y3JwTiPbSotMQgf-3qP6oIbtDupqlQOLytka7PquNo13CRUs5pOz6Ka1uHG8oXsjXmhhU5WnCSn9YsS77qYlO0nj9L9Ixqv2qIkl6cBPptjHPeOfGNHNFOmhUoTSU-52BRlrH1fmucoYA%26flowName%3DGeneralOAuthFlow%26as%3D%252BazCHvNG6mB39zsbz6PQIiDfDC3tx9Q4gVekq1ehFJI%26client_id%3D1092966607840-d1hm0ccc2cnpbtpjgv95hkvvjegggmpv.apps.googleusercontent.com%26requestPath%3D%252Fsignin%252Foauth%252Fconsent%23&display=popup&dsh=%2BazCHvNG6mB39zsbz6PQIiDfDC3tx9Q4gVekq1ehFJI&flowName=GeneralOAuthFlow&gsiwebsdk=gis_attributes&lid=1&nonce=13451ca0-9bc8-472d-9ac1-bbb0b049cd37&o2v=1&opparams=%253Fgis_params%253DChVodHRwOi8vbG9jYWxob3N0OjMwMDASDWdpc190cmFuc2Zvcm0YByorK2F6Q0h2Tkc2bUIzOXpzYno2UFFJaURmREMzdHg5UTRnVmVrcTFlaEZKSTJJMTA5Mjk2NjYwNzg0MC1kMWhtMGNjYzJjbnBidHBqZ3Y5NWhrdnZqZWdnZ21wdi5hcHBzLmdvb2dsZXVzZXJjb250ZW50LmNvbTgBQkAwMDAwZTQ0OTYxYmJkYmFkOWZlMTdjOGNlNDUxMWVjOGVjZWM3Y2QwZTAyZmIyNTkyNDc4YzAzZGU0ZjcxYWFh%2526response_mode%253Dform_post&origin=http%3A%2F%2Flocalhost%3A3000&prompt=select_account&pstMsg=1&rart=ANgoxcdu0_y_JZyO8aSrxQl2AL0-_VIoybuei9uC27O1TOk7ARdbrIyynzf6fBdRBvrCzPM-A_sHekASLR8LJy33y5xqx3n3v1cZyziGpHxs7HKu_4KHHu8&redirect_uri=gis_transform&response_type=id_token&scope=openid%20email%20profile&service=lso)
+
+### Page state
+
+- Page URL: http://localhost:3000/layouts/templates/auth
+- Page Title: Authentication | Markform
+- Page Snapshot:
+
+```yaml
+- generic [ref=e1]:
+    - generic [ref=e3]:
+        - alert [ref=e4]: Authentication | Markform
+        - generic [ref=e5]:
+            - banner [ref=e6]:
+                - link [ref=e8] [cursor=pointer]:
+                    - /url: /
+                    - img [ref=e9]
+                - button "P Personal" [ref=e19] [cursor=pointer]:
+                    - generic [ref=e20]: P
+                    - generic [ref=e21]: Personal
+                    - img [ref=e22]
+                - generic [ref=e24]: /
+                - button "AP Select App" [ref=e26] [cursor=pointer]:
+                    - generic [ref=e27]: AP
+                    - generic [ref=e28]: Select App
+                    - img [ref=e29]
+                - navigation [ref=e31]:
+                    - generic [ref=e32]: /
+                    - link "Layouts" [ref=e33] [cursor=pointer]:
+                        - /url: /layouts
+                    - generic [ref=e34]: /
+                    - link "Templates" [ref=e35] [cursor=pointer]:
+                        - /url: /layouts/templates
+                    - generic [ref=e36]: /
+                    - generic [ref=e37]: Authentication
+                - button "Search... ⌘ K" [ref=e39] [cursor=pointer]:
+                    - img [ref=e40]
+                    - generic [ref=e44]: Search...
+                    - generic [ref=e45]:
+                        - generic:
+                            - generic: ⌘
+                            - text: K
+            - generic [ref=e46]:
+                - navigation "Icon rail" [ref=e47]:
+                    - generic [ref=e48]:
+                        - link "Forms" [ref=e49] [cursor=pointer]:
+                            - /url: /forms
+                            - img [ref=e50]
+                        - link "Activity" [ref=e54] [cursor=pointer]:
+                            - /url: /activity
+                            - img [ref=e55]
+                        - link "Layouts" [ref=e57] [cursor=pointer]:
+                            - /url: /layouts
+                            - img [ref=e58]
+                        - link "Design tokens" [ref=e64] [cursor=pointer]:
+                            - /url: /tokens
+                            - img [ref=e65]
+                    - button "Create new space" [ref=e70] [cursor=pointer]:
+                        - img [ref=e71]
+                    - link "Settings" [ref=e75] [cursor=pointer]:
+                        - /url: /settings
+                        - img [ref=e76]
+                - complementary "Sidebar" [ref=e80]:
+                    - generic [ref=e82]:
+                        - button "Layouts" [ref=e83] [cursor=pointer]:
+                            - img [ref=e84]
+                            - generic [ref=e86]: Layouts
+                        - list [ref=e87]:
+                            - listitem [ref=e88]:
+                                - generic [ref=e89]:
+                                    - link "Templates" [ref=e90] [cursor=pointer]:
+                                        - /url: /layouts/templates
+                                        - img [ref=e91]
+                                        - generic [ref=e97]: Templates
+                                    - button "Pin" [ref=e98] [cursor=pointer]:
+                                        - img [ref=e99]
+                            - listitem [ref=e101]:
+                                - generic [ref=e102]:
+                                    - link "Playground" [ref=e103] [cursor=pointer]:
+                                        - /url: /layouts/playground
+                                        - img [ref=e104]
+                                        - generic [ref=e109]: Playground
+                                    - button "Pin" [ref=e110] [cursor=pointer]:
+                                        - img [ref=e111]
+                            - listitem [ref=e113]:
+                                - generic [ref=e114]:
+                                    - link "Shells" [ref=e115] [cursor=pointer]:
+                                        - /url: /layouts/shells
+                                        - img [ref=e116]
+                                        - generic [ref=e120]: Shells
+                                    - button "Pin" [ref=e121] [cursor=pointer]:
+                                        - img [ref=e122]
+                            - listitem [ref=e124]:
+                                - generic [ref=e125]:
+                                    - link "Sections" [ref=e126] [cursor=pointer]:
+                                        - /url: /layouts/sections
+                                        - img [ref=e127]
+                                        - generic [ref=e130]: Sections
+                                    - button "Pin" [ref=e131] [cursor=pointer]:
+                                        - img [ref=e132]
+                            - listitem [ref=e134]:
+                                - generic [ref=e135]:
+                                    - link "Flow Editor" [ref=e136] [cursor=pointer]:
+                                        - /url: /layouts/flow
+                                        - img [ref=e137]
+                                        - generic [ref=e142]: Flow Editor
+                                    - button "Pin" [ref=e143] [cursor=pointer]:
+                                        - img [ref=e144]
+                    - generic [ref=e146]:
+                        - paragraph [ref=e147]: Quick tip
+                        - paragraph [ref=e148]: Press Shift + Option + D to open Nuxt DevTools and inspect routes, data, and assets.
+                - main "Main content" [ref=e149]:
+                    - generic [ref=e152]:
+                        - generic [ref=e154]:
+                            - generic [ref=e155]:
+                                - generic [ref=e156]:
+                                    - button "Go back" [ref=e157] [cursor=pointer]:
+                                        - img [ref=e158]
+                                    - paragraph [ref=e160]: Auth
+                                - button [ref=e161] [cursor=pointer]:
+                                    - img [ref=e162]
+                            - heading "Authentication" [level=1] [ref=e164]
+                            - paragraph [ref=e165]: Login, signup, and password reset forms.
+                        - generic [ref=e167]:
+                            - generic [ref=e168]:
+                                - heading "Sign in with Google" [level=3] [ref=e169]
+                                - paragraph [ref=e170]: Use your Google account to access the app
+                            - generic [ref=e171]:
+                                - generic [ref=e174]:
+                                    - button "Sign in with Google. Opens in new tab" [active] [ref=e176] [cursor=pointer]:
+                                        - generic [ref=e178]:
+                                            - img [ref=e180]
+                                            - generic [ref=e187]: Sign in with Google
+                                    - iframe
+                                - paragraph [ref=e188]:
+                                    - text: By continuing, you agree to our
+                                    - button "Terms of Service" [ref=e189] [cursor=pointer]
+                                    - text: and
+                                    - button "Privacy Policy" [ref=e190] [cursor=pointer]
+    - generic:
+        - img
+    - generic:
+        - generic:
+            - generic:
+                - button "Go to parent" [disabled]
+                - button "Open in editor"
+                - button "Close"
+    - generic [ref=e191]:
+        - button "Toggle Nuxt DevTools" [ref=e192] [cursor=pointer]:
+            - img [ref=e193]
+        - generic "Page load time" [ref=e196]:
+            - generic [ref=e197]: '29'
+            - generic [ref=e198]: ms
+        - button "Toggle Component Inspector" [ref=e200] [cursor=pointer]:
+            - img [ref=e201]
+    - button [ref=e205] [cursor=pointer]:
+        - img [ref=e206]
+```
