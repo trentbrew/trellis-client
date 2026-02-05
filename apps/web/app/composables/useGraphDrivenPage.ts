@@ -4,8 +4,6 @@ import { buildPageConfigFromRoute, buildPageConfigFromSlug, type DerivedPageConf
 import { buildViewModeOptions } from '~/lib/projections'
 import { useBrowse, type BrowseState, type BrowseViewMode } from '~/composables/useBrowse'
 import { useFacilityEntities } from '~/composables/useFacilityEntities'
-import { useGlobalDetailSheet } from '~/composables/useGlobalDetailSheet'
-import type { EntityDetailVariant } from '~/composables/useGlobalDetailSheet'
 
 /**
  * Route path to entity type slug mapping
@@ -266,35 +264,32 @@ export function useGraphDrivenPage(options: UseGraphDrivenPageOptions): UseGraph
     return baseStats
   })
 
-  // Detail sheet integration
-  const { open: openDetailSheet } = useGlobalDetailSheet()
+  // Bespoke dialog state (replaces globalDetailSheet)
+  const dialogOpen = ref(false)
+  const dialogMode = ref<'view' | 'edit' | 'create'>('view')
+  const dialogItem = ref<any>(null)
+
+  const resolvedEntityType = computed(() => {
+    const candidate = entityType.value || 'task'
+    const allowed = ['task', 'event', 'payment', 'deadline', 'reminder', 'permit', 'folder', 'document', 'default']
+    return allowed.includes(candidate) ? candidate : 'default'
+  })
 
   const openDetail = (item: any, opts?: { mode?: 'view' | 'edit' | 'create' }) => {
-    const candidate = entityType.value || 'task'
-    const allowed: EntityDetailVariant[] = ['task', 'event', 'payment', 'deadline', 'reminder', 'permit', 'folder', 'document', 'default']
-    const detailEntityType: EntityDetailVariant = allowed.includes(candidate as EntityDetailVariant)
-      ? (candidate as EntityDetailVariant)
-      : 'default'
-
-    openDetailSheet(item, {
-      entityType: detailEntityType,
-      mode: opts?.mode || 'view',
-    })
+    dialogItem.value = item
+    dialogMode.value = opts?.mode || 'edit'
+    dialogOpen.value = true
   }
 
   const createItem = () => {
-    const candidate = entityType.value || 'task'
-    const allowed: EntityDetailVariant[] = ['task', 'event', 'payment', 'deadline', 'reminder', 'permit', 'folder', 'document', 'default']
-    const detailEntityType: EntityDetailVariant = allowed.includes(candidate as EntityDetailVariant)
-      ? (candidate as EntityDetailVariant)
-      : 'default'
-    openDetailSheet(
-      {},
-      {
-        entityType: detailEntityType,
-        mode: 'create',
-      },
-    )
+    dialogItem.value = null
+    dialogMode.value = 'create'
+    dialogOpen.value = true
+  }
+
+  const closeDetail = () => {
+    dialogOpen.value = false
+    dialogItem.value = null
   }
 
   const refresh = async () => {
@@ -314,6 +309,11 @@ export function useGraphDrivenPage(options: UseGraphDrivenPageOptions): UseGraph
     stats,
     openDetail,
     createItem,
+    closeDetail,
+    dialogOpen,
+    dialogMode,
+    dialogItem,
+    resolvedEntityType,
     refresh,
   }
 }

@@ -12,6 +12,10 @@
   import { getRouteMeta } from '~/config/routes'
   import { useGraphDrivenPage } from '~/composables/useGraphDrivenPage'
   import CalendarView from '~/components/views/CalendarView.vue'
+  import UnifiedTaskDialog from '~/verticals/ecms/components/dialogs/UnifiedTaskDialog.vue'
+  import EventDialog from '~/components/dialogs/EventDialog.vue'
+  import PermitDialog from '~/components/dialogs/PermitDialog.vue'
+  import FolderDetailDialog from '~/components/dialogs/FolderDetailDialog.vue'
 
   definePageMeta({
     layout: 'default',
