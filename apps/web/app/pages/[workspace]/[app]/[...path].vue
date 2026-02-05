@@ -53,6 +53,11 @@
     stats,
     openDetail,
     createItem,
+    closeDetail,
+    dialogOpen,
+    dialogMode,
+    dialogItem,
+    resolvedEntityType,
   } = useGraphDrivenPage({
     routePath: logicalPath.value,
     facilityId: currentFacility.value?.id,
@@ -316,6 +321,42 @@
     <div class="text-xs text-muted-foreground mt-4 pt-4 border-t border-border pb-10">
       Showing {{ filteredItems.length }} of {{ items.length }} items
     </div>
+
+    <!-- Bespoke dialogs based on resolved entity type -->
+    <UnifiedTaskDialog
+      v-if="resolvedEntityType === 'task'"
+      v-model:open="dialogOpen"
+      :mode="dialogMode === 'create' ? 'create' : 'edit'"
+      :task="dialogItem"
+      @save="closeDetail"
+      @close="closeDetail" />
+
+    <EventDialog
+      v-else-if="resolvedEntityType === 'event'"
+      v-model:open="dialogOpen"
+      :mode="dialogMode === 'create' ? 'create' : 'edit'"
+      :event="dialogItem"
+      @save="closeDetail"
+      @delete="closeDetail"
+      @close="closeDetail" />
+
+    <PermitDialog
+      v-else-if="resolvedEntityType === 'permit'"
+      v-model:open="dialogOpen"
+      :mode="dialogMode === 'create' ? 'create' : 'edit'"
+      :permit="dialogItem"
+      @save="closeDetail"
+      @delete="closeDetail"
+      @close="closeDetail" />
+
+    <FolderDetailDialog
+      v-else-if="resolvedEntityType === 'folder'"
+      v-model:open="dialogOpen"
+      :mode="dialogMode === 'create' ? 'create' : 'edit'"
+      :folder="dialogItem"
+      @save="closeDetail"
+      @delete="closeDetail"
+      @close="closeDetail" />
   </Page>
 
   <!-- Fallback: Route not configured in graph -->

@@ -65,7 +65,14 @@ export interface UseGraphDrivenPageReturn {
   // Actions
   openDetail: (_item: any, _options?: { mode?: 'view' | 'edit' | 'create' }) => void
   createItem: () => void
+  closeDetail: () => void
   refresh: () => Promise<void>
+
+  // Dialog state
+  dialogOpen: Ref<boolean>
+  dialogMode: Ref<'view' | 'edit' | 'create'>
+  dialogItem: Ref<any>
+  resolvedEntityType: ComputedRef<string>
 }
 
 /**
