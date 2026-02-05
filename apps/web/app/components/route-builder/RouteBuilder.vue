@@ -113,6 +113,13 @@ const jsonLdPreview = computed(() => {
   return JSON.stringify(toJsonLd(routeDefinition.value), null, 2)
 })
 
+// Copy to clipboard
+const copyJsonLd = () => {
+  if (import.meta.client) {
+    navigator.clipboard.writeText(jsonLdPreview.value)
+  }
+}
+
 // Search keywords input as comma-separated string
 const searchKeywordsInput = computed({
   get: () => routeDefinition.value.searchKeywords.join(', '),
@@ -556,7 +563,7 @@ const searchKeywordsInput = computed({
           <div class="w-96 border-l bg-muted/20 p-4 overflow-y-auto shrink-0">
             <div class="flex items-center justify-between mb-3">
               <h3 class="text-sm font-medium">JSON-LD Output</h3>
-              <UiButton variant="ghost" size="sm" @click="window.navigator.clipboard.writeText(jsonLdPreview)">
+              <UiButton variant="ghost" size="sm" @click="copyJsonLd">
                 <Icon name="lucide:copy" class="w-3.5 h-3.5 mr-1.5" />
                 Copy
               </UiButton>

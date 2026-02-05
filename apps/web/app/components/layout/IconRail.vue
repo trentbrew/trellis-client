@@ -21,10 +21,19 @@
   // Ontology Marketplace dialog state
   const ontologyMarketplaceOpen = ref(false)
 
-  // Create new route (stub - will open route builder in future)
+  // Route Builder dialog state
+  const routeBuilderOpen = ref(false)
+
+  // Open route builder
   const handleCreateRoute = () => {
-    // TODO: Open route creation dialog
-    ;(nuxtApp as any).$toast?.info('Route builder coming soon! This will let you add new navigation items.')
+    routeBuilderOpen.value = true
+  }
+
+  // Handle route save
+  const handleRouteSave = (route: any) => {
+    // TODO: Save route to app-config.jsonld
+    ;(nuxtApp as any).$toast?.success(`Route "${route.label}" created! Refresh to see it in navigation.`)
+    routeBuilderOpen.value = false
   }
 
   // Handle dashboard save
@@ -259,5 +268,11 @@
     <OntologyMarketplace
       :open="ontologyMarketplaceOpen"
       @update:open="ontologyMarketplaceOpen = $event" />
+
+    <!-- Route Builder Dialog -->
+    <RouteBuilder
+      :open="routeBuilderOpen"
+      @update:open="routeBuilderOpen = $event"
+      @save="handleRouteSave" />
   </nav>
 </template>
