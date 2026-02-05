@@ -178,9 +178,9 @@
         /
       </span>
 
-      <!-- Year Picker -->
+      <!-- App Picker -->
       <ClientOnly>
-        <YearPicker />
+        <AppPicker />
       </ClientOnly>
 
       <span class="text-muted-foreground/50 mx-2">/</span>
