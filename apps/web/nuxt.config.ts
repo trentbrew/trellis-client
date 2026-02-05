@@ -1,11 +1,28 @@
 import tailwindcss from '@tailwindcss/vite'
+import fs from 'node:fs'
+import path from 'node:path'
+
+// Function to extract port from JSON-LD graph
+const getPortFromGraph = () => {
+  try {
+    const configPath = path.resolve(__dirname, 'app/config/app-config.jsonld')
+    const configRaw = fs.readFileSync(configPath, 'utf8')
+    const config = JSON.parse(configRaw)
+    const appNode = config['@graph']?.find((n: any) => n['@type'] === 'app:Application')
+    return appNode?.devPort || 4141
+  } catch {
+    return 4141
+  }
+}
+
+const DEV_PORT = getPortFromGraph()
 
 // https://nuxt.com/docs/api/configuration/nuxt-config
 export default defineNuxtConfig({
   compatibilityDate: '2025-07-15',
   srcDir: 'app/',
   devtools: { enabled: true },
-  devServer: { port: 4141, host: '127.0.0.1' },
+  devServer: { port: DEV_PORT, host: '127.0.0.1' },
 
   components: [
     {

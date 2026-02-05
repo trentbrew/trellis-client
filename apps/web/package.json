@@ -11,7 +11,7 @@
   "scripts": {
     "build": "nuxt build",
     "clean": "rm -rf .nuxt dist node_modules package-lock.json && pnpm install",
-    "dev": "nuxt dev --port 4141",
+    "dev": "nuxt dev",
     "preinstall": "node -e \"const ua=process.env.npm_config_user_agent||''; if(!ua.includes('pnpm')){console.error('This repo uses pnpm. Run: corepack enable && pnpm install'); process.exit(1)}\"",
     "format": "prettier --write .",
     "generate": "nuxt generate",

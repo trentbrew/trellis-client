@@ -86,6 +86,7 @@
       "title": "Compliance Operations Platform",
       "description": "Operational compliance tracking for teams and facilities.",
       "version": "2.0.0",
+      "devPort": 4141,
       "defaultTheme": {
         "@id": "theme:platform-brand"
       },

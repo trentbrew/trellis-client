@@ -208,6 +208,11 @@ export const buildRouteConfigFromNode = (node: AppConfigNode): RouteConfig => {
   }
 }
 
+export const getDevPort = (): number => {
+  const appNode = getAppConfigNodesByType('app:Application')[0]
+  return typeof appNode?.devPort === 'number' ? appNode.devPort : 4141
+}
+
 export const getRouteNodes = (): AppConfigNode[] => getAppConfigNodesByType('app:Route')
 
 export const buildRouteConfigTree = (): RouteConfig[] => {

@@ -1,10 +1,13 @@
 <script lang="ts" setup>
+  import { getDevPort } from '~/lib/appConfig'
+
   definePageMeta({
     layout: 'auth',
   })
 
   const db = useInstantDb()
   const config = useRuntimeConfig()
+  const devPort = getDevPort()
 
   const { $toast } = useNuxtApp()
 
@@ -21,8 +24,7 @@
 
     if (msg.toLowerCase().includes('origin is not allowed')) {
       $toast?.error('Sign-up can’t start yet (not your fault).', {
-        description:
-          'Google OAuth is misconfigured for this URL. Add this site to the OAuth Client “Authorized JavaScript origins” (e.g. http://localhost:4141), then refresh and try again.',
+        description: `Google OAuth is misconfigured for this URL. Add this site to the OAuth Client “Authorized JavaScript origins” (e.g. http://localhost:${devPort}), then refresh and try again.`,
       })
       return
     }

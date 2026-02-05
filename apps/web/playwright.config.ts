@@ -1,4 +1,21 @@
 import { defineConfig, devices } from '@playwright/test'
+import fs from 'node:fs'
+import path from 'node:path'
+
+// Function to extract port from JSON-LD graph
+const getPortFromGraph = () => {
+  try {
+    const configPath = path.resolve(__dirname, 'app/config/app-config.jsonld')
+    const configRaw = fs.readFileSync(configPath, 'utf8')
+    const config = JSON.parse(configRaw)
+    const appNode = config['@graph']?.find((n: any) => n['@type'] === 'app:Application')
+    return appNode?.devPort || 4141
+  } catch {
+    return 4141
+  }
+}
+
+const DEV_PORT = getPortFromGraph()
 
 /**
  * @see https://playwright.dev/docs/test-configuration
@@ -18,7 +35,7 @@ export default defineConfig({
   /* Shared settings for all the projects below. See https://playwright.dev/docs/api/class-testoptions. */
   use: {
     /* Base URL to use in actions like `await page.goto('/')`. */
-    baseURL: 'http://localhost:4141',
+    baseURL: `http://localhost:${DEV_PORT}`,
 
     /* Collect trace when retrying the failed test. See https://playwright.dev/docs/trace-viewer */
     trace: 'on-first-retry',
@@ -45,7 +62,7 @@ export default defineConfig({
   /* Run your local dev server before starting the tests */
   webServer: {
     command: 'pnpm dev',
-    url: 'http://localhost:4141',
+    url: `http://localhost:${DEV_PORT}`,
     reuseExistingServer: !process.env.CI,
   },
 })
