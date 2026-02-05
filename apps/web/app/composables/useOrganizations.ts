@@ -17,30 +17,16 @@ export interface Organization {
 }
 
 const STORAGE_KEY = 'platform-sandbox-current-organization'
-const DEFAULT_ORGANIZATION_SLUG = 'northwind'
+const DEFAULT_ORGANIZATION_SLUG = 'turtle-labs'
 
-// Demo organizations for Platform Sandbox
+// Organizations
 const DEMO_ORGANIZATIONS: Organization[] = [
   {
-    id: 'org_northwind',
-    name: 'Northwind Holdings',
-    slug: 'northwind',
-    description: 'Multi-site operations and compliance management.',
-    facilities: ['facility_auburn', 'facility_bellingham', 'facility_chandler', 'facility_houston'],
-  },
-  {
-    id: 'org_apex',
-    name: 'Apex Manufacturing',
-    slug: 'apex-manufacturing',
-    description: 'Manufacturing programs across regional facilities.',
-    facilities: ['facility_charlotte', 'facility_berkeley'],
-  },
-  {
-    id: 'org_lumen',
-    name: 'Lumen Industries',
-    slug: 'lumen-industries',
-    description: 'Processing and distribution operations.',
-    facilities: ['facility_denver'],
+    id: 'org_turtle_labs',
+    name: 'Turtle Labs LLC',
+    slug: 'turtle-labs',
+    description: 'Design & development studio.',
+    facilities: [],
   },
 ]
 
