@@ -46,7 +46,7 @@
         to="/"
         class="flex h-9 w-9 items-center justify-center rounded-lg transition"
         :class="isInEditMode ? 'bg-accent-foreground/10 hover:bg-accent-foreground/20' : 'bg-rail-foreground/10 hover:bg-rail-foreground/20'">
-        <Icon name="lucide:layout-grid" class="h-4 w-4" />
+        <img src="https://trentbrew.pockethost.io/api/files/swvnum16u65or8w/75p6fv4xnwa3mq7/a_g_ciBq3Onk8f.svg?token=" alt="Logo" class="h-5 w-5" />
       </AppNavLink>
     </div>
 

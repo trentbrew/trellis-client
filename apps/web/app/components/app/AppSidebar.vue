@@ -403,7 +403,7 @@
                   <button
                     v-if="section.collapsible !== false"
                     type="button"
-                    class="text-sidebar-foreground hover:text-sidebar-foreground flex w-full items-center justify-start text-xs tracking-wide uppercase transition-colors px-3"
+                    class="text-muted-foreground hover:text-sidebar-foreground flex w-full items-center justify-start text-xs tracking-wide uppercase transition-colors px-3"
                     @click="collapsed.toggleSection(section.key)">
                     <div class="flex items-center">
                       <Icon v-if="section.icon" :name="section.icon" class="mr-2 h-4 w-4 opacity-70" />
@@ -441,7 +441,7 @@
                   <div v-else class="flex items-center justify-between mb-3 px-3">
                     <div class="flex items-center">
                       <Icon v-if="section.icon" :name="section.icon" class="mr-2 h-4 w-4 opacity-70" />
-                      <span class="text-primary-foreground text-xs tracking-wide uppercase font-medium">
+                      <span class="text-muted-foreground text-xs tracking-wide uppercase font-medium">
                         {{ section.label }}
                       </span>
                     </div>
@@ -607,7 +607,7 @@
               <div v-else-if="pinnedItems.length > 0" class="mb-6">
                 <button
                   type="button"
-                  class="text-sidebar-foreground hover:text-sidebar-foreground flex w-full items-center justify-start text-xs tracking-wide uppercase transition-colors"
+                  class="text-muted-foreground hover:text-sidebar-foreground flex w-full items-center justify-start text-xs tracking-wide uppercase transition-colors"
                   @click="collapsed.toggleSection('pinned')">
                   <Icon
                     name="lucide:chevron-down"
@@ -767,7 +767,7 @@
               <div v-if="!dynamicSidebarSections && !isTypesSection && unpinnedItems.length > 0">
                 <button
                   type="button"
-                  class="text-sidebar-foreground/50 hover:text-sidebar-foreground flex w-full items-center justify-start text-xs tracking-wide uppercase transition-colors"
+                  class="text-muted-foreground hover:text-sidebar-foreground flex w-full items-center justify-start text-xs tracking-wide uppercase transition-colors"
                   @click="collapsed.toggleSection(routes.currentSectionLabel.value)">
                   <Icon
                     name="lucide:chevron-down"
@@ -920,7 +920,7 @@
                 <div>
                   <button
                     type="button"
-                    class="text-sidebar-foreground/50 hover:text-sidebar-foreground flex w-full items-center justify-start text-xs tracking-wide uppercase transition-colors"
+                    class="text-muted-foreground hover:text-sidebar-foreground flex w-full items-center justify-start text-xs tracking-wide uppercase transition-colors"
                     @click="collapsed.toggleSection('types:diagram')">
                     <Icon
                       name="lucide:chevron-down"
@@ -1020,7 +1020,7 @@
 
                   <button
                     type="button"
-                    class="text-sidebar-foreground/50 hover:text-sidebar-foreground flex w-full items-center justify-start text-xs tracking-wide uppercase transition-colors"
+                    class="text-muted-foreground hover:text-sidebar-foreground flex w-full items-center justify-start text-xs tracking-wide uppercase transition-colors"
                     @click="collapsed.toggleSection('types:system')">
                     <Icon
                       name="lucide:chevron-down"
@@ -1140,7 +1140,7 @@
                 <div v-if="customUnpinnedItems.length > 0" class="mt-6">
                   <button
                     type="button"
-                    class="text-sidebar-foreground/50 hover:text-sidebar-foreground flex w-full items-center justify-start text-xs tracking-wide uppercase transition-colors"
+                    class="text-muted-foreground hover:text-sidebar-foreground flex w-full items-center justify-start text-xs tracking-wide uppercase transition-colors"
                     @click="collapsed.toggleSection('types:custom')">
                     <Icon
                       name="lucide:chevron-down"
@@ -1267,7 +1267,7 @@
             <template v-if="routes.currentSectionLinks.value.length > 0">
               <button
                 type="button"
-                class="text-sidebar-foreground/70 hover:text-sidebar-foreground flex w-full items-center justify-start text-xs tracking-wide uppercase transition-colors">
+                class="text-muted-foreground hover:text-sidebar-foreground flex w-full items-center justify-start text-xs tracking-wide uppercase transition-colors">
                 <Icon name="lucide:chevron-down" class="mx-2 h-3.5 w-3.5" />
                 <span class="font-medium">{{ routes.currentSectionLabel.value }}</span>
               </button>
