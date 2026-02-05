@@ -7,8 +7,8 @@
   } from '~/composables/useGlobalDetailSheet'
   import { getSchemaForEntityType, getNodeTitle, extractNodeValue } from '~/lib/detailSchema'
   import { useEcmsData } from '~/composables/useEcmsData'
-  import UnifiedTaskDialog from '~/verticals/ecms/components/dialogs/UnifiedTaskDialog.vue'
-  import type { TaskData } from '~/verticals/ecms/components/dialogs/UnifiedTaskDialog.vue'
+  import CalendarItemDialog from '~/components/dialogs/CalendarItemDialog.vue'
+  import type { CalendarItem } from '~/types/calendarItem'
 
   const { state, close, setMode, setVariant, updateField } = useGlobalDetailSheetRefs()
   const ecmsData = useEcmsData().loadSeedData()
@@ -27,7 +27,7 @@
     return data
   })
 
-  const templates = computed(() => {
+  const _templates = computed(() => {
     return (ecmsData?.taskTemplates || []).map((t: any) => ({
       id: t.taskTemplateID,
       name: t.title,
@@ -158,8 +158,8 @@
     close()
   }
 
-  // Handle task save from UnifiedTaskDialog
-  async function handleTaskSave(task: TaskData) {
+  // Handle task save from CalendarItemDialog
+  async function handleTaskSave(task: CalendarItem) {
     const event = new CustomEvent('global-detail-sheet:save', {
       detail: {
         node: state.value.currentNode,
@@ -844,17 +844,15 @@
       </Teleport>
     </template>
 
-    <!-- Unified Task Dialog for task entities -->
-    <UnifiedTaskDialog
+    <!-- CalendarItem Dialog for task entities -->
+    <CalendarItemDialog
       v-if="state.entityType === 'task'"
       :open="state.isOpen"
       :mode="state.mode === 'create' ? 'create' : 'edit'"
-      task-type="standard"
-      :task="state.currentNode as TaskData"
+      :item="state.currentNode as any"
       :owners="owners"
       :folders="folders"
-      :templates="templates"
-      @update:open="(val) => !val && close()"
+      @update:open="(val: boolean) => !val && close()"
       @close="close"
       @save="handleTaskSave" />
   </div>
