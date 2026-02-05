@@ -37,11 +37,10 @@
 <template>
   <!-- Navigation Rail: Always visible with primary navigation routes -->
   <nav
-    class="flex w-16 flex-col items-center border-r px-2 py-0 pb-2"
-    :class="isInEditMode ? 'bg-accent text-accent-foreground border-accent/20' : 'bg-rail text-rail-foreground border-rail-border'"
+    class="flex w-16 flex-col items-center border-r px-2 py-0 pb-2 bg-sidebar/60"
     aria-label="Navigation rail">
     <!-- Logo / Home -->
-    <div class="flex h-16 w-16 items-center justify-center shrink-0 border-b" :class="isInEditMode ? 'border-accent-foreground/10' : 'border-rail-border/50'">
+    <div class="flex h-16 w-16 items-center justify-center shrink-0 border-b">
       <AppNavLink
         to="/"
         class="flex h-9 w-9 items-center justify-center rounded-lg transition bg-transparent hover:bg-transparent"
