@@ -1,7 +1,3 @@
-export { default as DialogWrapper } from './DialogWrapper.vue'
-export { default as TaskCreateDialog } from './TaskCreateDialog.vue'
-export { default as TaskDetailDialog } from './TaskDetailDialog.vue'
-export { default as UnifiedTaskDialog } from './UnifiedTaskDialog.vue'
 export { default as CollectionCreateDialog } from './CollectionCreateDialog.vue'
 export { default as CollectionImportDialog } from './CollectionImportDialog.vue'
 export { default as EntityDetailSheet } from './EntityDetailSheet.vue'
