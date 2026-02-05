@@ -39,7 +39,7 @@
     viewDialogOpen.value = true
   }
 
-  const detailTaskData = computed<TaskData | null>(() => {
+  const detailTaskData = computed<any | null>(() => {
     if (!viewingTask.value) return null
     return {
       id: viewingTask.value.id,

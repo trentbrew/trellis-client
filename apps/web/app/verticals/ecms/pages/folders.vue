@@ -1,7 +1,8 @@
 <script setup lang="ts">
   import type { PageStat } from '~/components/layout/Page.vue'
-  import FolderDetailDialog from '~/components/dialogs/FolderDetailDialog.vue'
-  import type { FolderData } from '~/components/dialogs/FolderDetailDialog.vue'
+  import CalendarItemDialog from '~/components/dialogs/CalendarItemDialog.vue'
+  import type { CalendarItem } from '~/types/calendarItem'
+  import { createDefaultItem } from '~/types/calendarItem'
 
   interface Folder {
     id: string
@@ -30,23 +31,30 @@
   // Dialog state
   const createFolderOpen = ref(false)
   const viewFolderOpen = ref(false)
-  const viewingFolder = ref<FolderData | null>(null)
+  const viewingFolder = ref<CalendarItem | null>(null)
 
   function openFolderCreate() {
     createFolderOpen.value = true
   }
 
   function openFolderDetail(folder: Folder) {
-    viewingFolder.value = { ...folder, description: '' }
+    const item = createDefaultItem('note')
+    viewingFolder.value = {
+      ...item,
+      id: folder.id,
+      title: folder.name,
+      description: '',
+      category: 'general',
+    }
     viewFolderOpen.value = true
   }
 
-  function handleCreateFolder(data: FolderData) {
+  function handleCreateFolder(item: CalendarItem) {
     const newFolder: Folder = {
-      id: data.id || crypto.randomUUID(),
-      name: data.name,
-      icon: data.icon || 'lucide:folder',
-      color: data.color || 'text-blue-500',
+      id: item.id || crypto.randomUUID(),
+      name: item.title,
+      icon: 'lucide:folder',
+      color: 'text-blue-500',
       itemCount: 0,
       lastModified: new Date().toISOString().slice(0, 10),
     }
@@ -54,21 +62,19 @@
     createFolderOpen.value = false
   }
 
-  function handleUpdateFolder(data: FolderData) {
-    const idx = folders.value.findIndex((f) => f.id === data.id)
+  function handleUpdateFolder(item: CalendarItem) {
+    const idx = folders.value.findIndex((f) => f.id === item.id)
     if (idx !== -1) {
       folders.value[idx] = {
         ...folders.value[idx]!,
-        name: data.name,
-        icon: data.icon,
-        color: data.color,
+        name: item.title,
       }
     }
     viewFolderOpen.value = false
   }
 
-  function handleDeleteFolder(data: FolderData) {
-    folders.value = folders.value.filter((f) => f.id !== data.id)
+  function handleDeleteFolder(item: CalendarItem) {
+    folders.value = folders.value.filter((f) => f.id !== item.id)
     viewFolderOpen.value = false
   }
 
@@ -496,18 +502,19 @@
     </div>
 
     <!-- Create Folder Dialog -->
-    <FolderDetailDialog
+    <CalendarItemDialog
       v-model:open="createFolderOpen"
       mode="create"
-      :folder="null"
+      item-type="note"
+      :item="null"
       @save="handleCreateFolder"
       @close="createFolderOpen = false" />
 
     <!-- View/Edit Folder Dialog -->
-    <FolderDetailDialog
+    <CalendarItemDialog
       v-model:open="viewFolderOpen"
       mode="edit"
-      :folder="viewingFolder"
+      :item="viewingFolder"
       @save="handleUpdateFolder"
       @delete="handleDeleteFolder"
       @close="viewFolderOpen = false" />

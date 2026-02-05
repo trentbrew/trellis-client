@@ -1,8 +1,9 @@
 <script setup lang="ts">
   import type { PageStat } from '~/components/layout/Page.vue'
   import { useBrowse } from '~/composables/useBrowse'
-  import PermitDialog from '~/components/dialogs/PermitDialog.vue'
-  import type { PermitData } from '~/components/dialogs/PermitDialog.vue'
+  import CalendarItemDialog from '~/components/dialogs/CalendarItemDialog.vue'
+  import type { CalendarItem } from '~/types/calendarItem'
+  import { createDefaultItem } from '~/types/calendarItem'
 
   interface PermitApplication {
     id: string
@@ -28,14 +29,22 @@
   // Dialog state
   const createPermitOpen = ref(false)
   const viewPermitOpen = ref(false)
-  const viewingPermit = ref<PermitData | null>(null)
+  const viewingPermit = ref<CalendarItem | null>(null)
 
   function openPermitCreate() {
     createPermitOpen.value = true
   }
 
   function openPermitDetail(app: PermitApplication) {
-    viewingPermit.value = { ...app, description: '', notes: '' }
+    const item = createDefaultItem('task')
+    viewingPermit.value = {
+      ...item,
+      id: app.id,
+      title: app.permitType,
+      description: `${app.applicationType} — Agency: ${app.agency}`,
+      startDate: app.deadline,
+      category: 'deadline',
+    }
     viewPermitOpen.value = true
   }
 
@@ -233,37 +242,32 @@
 
   const viewMode = computed(() => browseState.viewMode.value)
 
-  function handleCreatePermit(data: PermitData) {
+  function handleCreatePermit(item: CalendarItem) {
     applications.value.push({
-      id: data.id || crypto.randomUUID(),
-      permitType: data.permitType,
-      applicationType: data.applicationType,
-      status: data.status,
-      submitted: data.submitted,
-      agency: data.agency,
-      deadline: data.deadline,
+      id: item.id || crypto.randomUUID(),
+      permitType: item.title,
+      applicationType: 'New',
+      status: 'draft',
+      submitted: null,
+      agency: '',
+      deadline: item.startDate,
     })
     createPermitOpen.value = false
   }
 
-  function handleUpdatePermit(data: PermitData) {
-    const idx = applications.value.findIndex((a) => a.id === data.id)
+  function handleUpdatePermit(item: CalendarItem) {
+    const idx = applications.value.findIndex((a) => a.id === item.id)
     if (idx !== -1) {
       applications.value[idx] = {
         ...applications.value[idx]!,
-        permitType: data.permitType,
-        applicationType: data.applicationType,
-        status: data.status,
-        submitted: data.submitted,
-        agency: data.agency,
-        deadline: data.deadline,
+        permitType: item.title,
       }
     }
     viewPermitOpen.value = false
   }
 
-  function handleDeletePermit(data: PermitData) {
-    applications.value = applications.value.filter((a) => a.id !== data.id)
+  function handleDeletePermit(item: CalendarItem) {
+    applications.value = applications.value.filter((a) => a.id !== item.id)
     viewPermitOpen.value = false
   }
 </script>
@@ -413,18 +417,19 @@
     </div>
 
     <!-- Create Permit Dialog -->
-    <PermitDialog
+    <CalendarItemDialog
       v-model:open="createPermitOpen"
       mode="create"
-      :permit="null"
+      item-type="task"
+      :item="null"
       @save="handleCreatePermit"
       @close="createPermitOpen = false" />
 
     <!-- View/Edit Permit Dialog -->
-    <PermitDialog
+    <CalendarItemDialog
       v-model:open="viewPermitOpen"
       mode="edit"
-      :permit="viewingPermit"
+      :item="viewingPermit"
       @save="handleUpdatePermit"
       @delete="handleDeletePermit"
       @close="viewPermitOpen = false" />
