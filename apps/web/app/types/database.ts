@@ -29,6 +29,7 @@ export interface Application {
   icon: string
   color: string
   description?: string
+  ontologies?: string[] // Imported vertical ontologies (e.g., ['ecms', 'crm'])
   createdAt: number
   updatedAt: number
 }
