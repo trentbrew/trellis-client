@@ -19,7 +19,8 @@ const categoryColors: Record<string, { bg: string; border: string; text: string 
   widget: { bg: 'bg-pink-500/10', border: 'border-pink-500/30', text: 'text-pink-600' },
 }
 
-const colors = computed(() => categoryColors[props.blockType.category] || categoryColors.content)
+const defaultColors = { bg: 'bg-blue-500/10', border: 'border-blue-500/30', text: 'text-blue-600' }
+const colors = computed(() => categoryColors[props.blockType.category] ?? defaultColors)
 </script>
 
 <template>
