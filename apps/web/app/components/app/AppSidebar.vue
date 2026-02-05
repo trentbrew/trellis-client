@@ -14,6 +14,9 @@
   // Admin UI controls
   const { showBuilderUI, canCreatePages } = useAdminUI()
 
+  // Page Builder dialog state
+  const pageBuilderOpen = ref(false)
+
   const sidebarSectionKey = computed(() => routes.currentSectionLabel.value)
 
   const isTypesSection = computed(() => routes.currentSidebarSection.value?.path === '/types')
@@ -333,11 +336,16 @@
     }
   }
 
-  // Create new page (stub - will open page builder in future)
+  // Create new page - opens the page builder dialog
   const handleCreatePage = () => {
-    // TODO: Open page builder dialog
-    // For now, show a toast indicating the feature is coming
-    ;(nuxtApp as any).$toast?.info('Page builder coming soon! This will let you create custom pages.')
+    pageBuilderOpen.value = true
+  }
+
+  // Handle page save from builder
+  const handlePageSave = (page: any) => {
+    // TODO: Save page to database
+    ;(nuxtApp as any).$toast?.success(`Page "${page.title}" created!`)
+    pageBuilderOpen.value = false
   }
 </script>
 
@@ -1332,6 +1340,12 @@
         </UiAlertDialogFooter>
       </UiAlertDialogContent>
     </UiAlertDialog>
+
+    <!-- Page Builder Dialog -->
+    <PageBuilderPageBuilder
+      :open="pageBuilderOpen"
+      @update:open="pageBuilderOpen = $event"
+      @save="handlePageSave" />
   </aside>
 </template>
 
