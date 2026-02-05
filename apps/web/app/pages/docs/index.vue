@@ -9,9 +9,22 @@
 
   const categories = computed(() => {
     if (!navigation.value) return []
+    const getNavigationMeta = (item: any) => {
+      const nav = item?.navigation
+      return nav && typeof nav === 'object' ? nav : null
+    }
+
     return navigation.value
       .filter((item) => item.path?.split('/').length === 3) // Only top-level categories
-      .sort((a, b) => (a.navigation?.order ?? 99) - (b.navigation?.order ?? 99))
+      .map((item) => {
+        const meta = getNavigationMeta(item)
+        return {
+          ...item,
+          order: meta?.order ?? 99,
+          icon: meta?.icon,
+        }
+      })
+      .sort((a, b) => (a.order ?? 99) - (b.order ?? 99))
   })
 </script>
 

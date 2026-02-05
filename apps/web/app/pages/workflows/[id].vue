@@ -48,10 +48,10 @@
       <div class="space-y-6 p-6">
         <div class="space-y-2">
           <div class="flex items-center gap-2">
-            <Icon :name="workflow.icon || 'lucide:workflow'" class="h-5 w-5" />
-            <h2 class="text-lg font-semibold">{{ workflow.name }}</h2>
+            <Icon :name="workflow?.icon || 'lucide:workflow'" class="h-5 w-5" />
+            <h2 class="text-lg font-semibold">{{ workflow?.name }}</h2>
           </div>
-          <p v-if="workflow.description" class="text-muted-foreground text-sm">{{ workflow.description }}</p>
+          <p v-if="workflow?.description" class="text-muted-foreground text-sm">{{ workflow?.description }}</p>
         </div>
 
         <div class="border rounded p-4 text-center text-muted-foreground">

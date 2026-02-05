@@ -260,7 +260,7 @@
     <!-- Page handles #search and #viewSwitcher via :browse prop -->
 
     <template #toolbarActions>
-      <UiButton @click="openDetail(null, { entityType: 'permit', mode: 'create' })">
+      <UiButton @click="openDetail({}, { entityType: 'permit', mode: 'create' })">
         <Icon name="lucide:plus" class="mr-2 h-4 w-4" />
         New Application
       </UiButton>

@@ -50,6 +50,8 @@
       to: '/analytics',
     },
   ])
+
+  const go = (to: string) => navigateTo(to)
 </script>
 
 <template>
@@ -169,7 +171,7 @@
                     variant="outline"
                     size="sm"
                     class="h-9 px-5 text-[11px] font-black uppercase tracking-[0.15em] bg-background border-border/50 hover:border-primary hover:bg-primary/5 hover:text-primary transition-all duration-500 group-hover:translate-x-0 translate-x-2 opacity-0 group-hover:opacity-100 shadow-xl shadow-primary/5"
-                    @click="navigateTo(n.to)">
+                    @click="go(n.to)">
                     View Report
                     <Icon
                       name="lucide:arrow-right"

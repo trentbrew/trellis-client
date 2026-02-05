@@ -1,6 +1,7 @@
 <script setup lang="ts">
   const { $colorMode: colorMode } = useNuxtApp()
   const { animationsEnabled, setAnimationsEnabled } = useAnimationSettings()
+  const go = (to: string) => navigateTo(to)
 
   const isDark = computed({
     get: () => colorMode.value === 'dark',
@@ -144,7 +145,7 @@
           </ClientOnly>
           <ClientOnly>
             <div class="mt-4">
-              <UiButton variant="outline" size="sm" @click="navigateTo('/settings/theme')">
+              <UiButton variant="outline" size="sm" @click="go('/settings/theme')">
                 <Icon name="lucide:palette" class="mr-2 size-4" />
                 Manage Themes
               </UiButton>

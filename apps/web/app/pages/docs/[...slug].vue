@@ -24,7 +24,7 @@
         tableOfContents.value = Array.from(headings).map((heading) => ({
           id: heading.id || '',
           text: heading.textContent || '',
-          level: parseInt(heading.tagName[1]),
+          level: parseInt(heading.tagName.substring(1), 10),
         }))
       }
     })
