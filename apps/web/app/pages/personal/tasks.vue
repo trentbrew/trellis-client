@@ -179,111 +179,9 @@
     :primary-action="{
       label: 'New Task',
       icon: 'lucide:plus',
-      type: 'dialog',
-      dialogId: 'create-task',
+      onClick: openTaskCreate,
       variant: 'outline',
     }">
-    <template #dialog-create-task="{ close }">
-      <UiDialogContent class="max-w-3xl p-0 overflow-hidden rounded-xl border border-border bg-card shadow-lg">
-        <UiDialogHeader class="border-b border-border bg-muted/30 px-6 py-5">
-          <div class="flex items-center justify-between gap-4">
-            <div class="flex items-center gap-3">
-              <div class="flex h-10 w-10 items-center justify-center rounded-xl bg-emerald-500/10 text-emerald-600">
-                <Icon name="lucide:clipboard-list" class="h-5 w-5" />
-              </div>
-              <div>
-                <UiDialogTitle class="text-lg">Create a personal task</UiDialogTitle>
-                <UiDialogDescription class="text-sm">
-                  Capture a quick reminder or follow-up assigned to you.
-                </UiDialogDescription>
-              </div>
-            </div>
-            <UiBadge variant="outline" class="text-[11px] font-semibold uppercase tracking-[0.2em]">Personal</UiBadge>
-          </div>
-        </UiDialogHeader>
-        <div class="grid gap-6 px-6 py-6 md:grid-cols-[minmax(0,1.1fr)_minmax(0,0.9fr)]">
-          <div class="space-y-6">
-            <div class="rounded-xl border border-border/60 bg-background p-4 shadow-sm">
-              <div class="flex items-center justify-between">
-                <p class="text-[11px] font-semibold uppercase tracking-[0.2em] text-muted-foreground">Details</p>
-                <UiBadge variant="outline" class="text-[11px]">Draft</UiBadge>
-              </div>
-              <div class="mt-4 space-y-4">
-                <div class="space-y-2">
-                  <UiLabel for="task-title">Task title</UiLabel>
-                  <UiInput id="task-title" v-model="createForm.title" placeholder="Follow up on inspection notes" />
-                </div>
-                <div class="space-y-2">
-                  <UiLabel for="task-notes">Notes</UiLabel>
-                  <UiTextarea
-                    id="task-notes"
-                    v-model="createForm.notes"
-                    :rows="4"
-                    placeholder="Add context, links, or reminders" />
-                </div>
-              </div>
-            </div>
-          </div>
-          <div class="space-y-6">
-            <div class="rounded-xl border border-border/60 bg-background p-4 shadow-sm">
-              <p class="text-[11px] font-semibold uppercase tracking-[0.2em] text-muted-foreground">Schedule</p>
-              <div class="mt-4 space-y-4">
-                <div class="space-y-2">
-                  <UiLabel for="task-due">Due date</UiLabel>
-                  <UiInput id="task-due" v-model="createForm.dueDate" type="date" />
-                </div>
-                <div class="space-y-2">
-                  <UiLabel>Status</UiLabel>
-                  <UiSelect v-model="createForm.status">
-                    <UiSelectTrigger>
-                      <UiSelectValue placeholder="Select status" />
-                    </UiSelectTrigger>
-                    <UiSelectContent>
-                      <UiSelectItem v-for="option in statusOptions" :key="option.value" :value="option.value">
-                        {{ option.label }}
-                      </UiSelectItem>
-                    </UiSelectContent>
-                  </UiSelect>
-                </div>
-                <div class="space-y-2">
-                  <UiLabel>Priority</UiLabel>
-                  <UiSelect v-model="createForm.priority">
-                    <UiSelectTrigger>
-                      <UiSelectValue placeholder="Select priority" />
-                    </UiSelectTrigger>
-                    <UiSelectContent>
-                      <UiSelectItem v-for="option in priorityOptions" :key="option.value" :value="option.value">
-                        {{ option.label }}
-                      </UiSelectItem>
-                    </UiSelectContent>
-                  </UiSelect>
-                </div>
-              </div>
-            </div>
-            <div class="rounded-xl border border-border/60 bg-background p-4 shadow-sm">
-              <p class="text-[11px] font-semibold uppercase tracking-[0.2em] text-muted-foreground">Assignment</p>
-              <div class="mt-4 space-y-4">
-                <div class="space-y-2">
-                  <UiLabel for="task-assignee">Assignee</UiLabel>
-                  <UiInput id="task-assignee" v-model="createForm.assignee" placeholder="You" />
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-        <UiDialogFooter class="border-t border-border bg-muted/20 px-6 py-4">
-          <UiButton
-            variant="outline"
-            @click="() => {
-              resetCreateForm()
-              close()
-            }">
-            Cancel
-          </UiButton>
-          <UiButton :disabled="!isCreateValid" @click="handleCreateTask(close)">Create Task</UiButton>
-        </UiDialogFooter>
-      </UiDialogContent>
-    </template>
     <template #viewSwitcher>
       <div class="flex items-center gap-2">
         <button
@@ -309,7 +207,7 @@
         v-for="task in tasks"
         :key="task.id"
         class="flex items-center justify-between rounded-lg border border-border px-4 py-3 hover:bg-accent/50 transition-colors cursor-pointer"
-        @click="openDetail(task, { entityType: 'task' })">
+        @click="openTaskDetail(task)">
         <div class="space-y-1">
           <div class="flex items-center gap-2">
             <Icon
@@ -350,7 +248,7 @@
             v-for="task in column.tasks"
             :key="task.id"
             class="rounded-lg border border-border bg-card p-3 hover:bg-accent/30 transition-colors cursor-pointer"
-            @click="openDetail(task, { entityType: 'task' })">
+            @click="openTaskDetail(task)">
             <div class="flex items-start gap-2 mb-2">
               <Icon
                 :name="priorityIcons[task.priority] || 'lucide:circle'"
@@ -370,5 +268,27 @@
         </div>
       </div>
     </div>
+
+    <!-- Create Task Dialog (UnifiedTaskDialog) -->
+    <UnifiedTaskDialog
+      v-model:open="createTaskOpen"
+      mode="create"
+      :task="null"
+      :owners="taskOwners"
+      @save="handleCreateTask"
+      @close="createTaskOpen = false" />
+
+    <!-- View/Edit Task Dialog (UnifiedTaskDialog) -->
+    <UnifiedTaskDialog
+      v-model:open="viewTaskOpen"
+      mode="edit"
+      :task="viewingTask"
+      :can-navigate-prev="canNavigatePrev"
+      :can-navigate-next="canNavigateNext"
+      :owners="taskOwners"
+      @navigate-prev="navigatePrev"
+      @navigate-next="navigateNext"
+      @save="handleUpdateTask"
+      @close="viewTaskOpen = false" />
   </Page>
 </template>
