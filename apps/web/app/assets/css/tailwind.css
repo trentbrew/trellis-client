@@ -291,10 +291,10 @@
   }
   html {
     @apply antialiased;
+    background: black;
   }
   body {
-    /* @apply bg-background text-foreground; */
-    background: red;
+    @apply bg-background text-foreground;
     letter-spacing: var(--tracking-normal);
   }
   ::-webkit-scrollbar {

@@ -661,7 +661,7 @@
 </script>
 
 <template>
-  <div class="flex h-full w-full bg-muted">
+  <div class="flex h-full w-full bg-transparent">
     <!-- Left Sidebar (optional) -->
     <aside
       v-if="leftSidebar && $slots.sidebar"
