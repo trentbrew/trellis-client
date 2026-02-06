@@ -54,7 +54,7 @@
   <UiDialog :open="open" @update:open="emit('update:open', $event)">
     <UiDialogContent
       :hide-close="true"
-      class="w-[min(1100px,calc(100vw-4rem))]! max-w-[min(1100px,calc(100vw-4rem))]! h-[min(720px,calc(100vh-4rem))] max-h-[min(720px,calc(100vh-4rem))] p-0! gap-0! overflow-hidden rounded-xl border border-border bg-card shadow-2xl flex! flex-col">
+      class="w-[min(1265px,calc(100vw-4rem))]! max-w-[min(1265px,calc(100vw-4rem))]! h-[min(828px,calc(100vh-4rem))] max-h-[min(828px,calc(100vh-4rem))] p-0! gap-0! overflow-hidden rounded-xl border border-border bg-card shadow-2xl flex! flex-col">
       <UiDialogTitle class="sr-only">
         {{ dialogTitle || title || 'Item' }}
       </UiDialogTitle>
