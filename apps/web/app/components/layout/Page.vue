@@ -670,7 +670,7 @@
     </aside>
 
     <!-- Main Page Content -->
-    <div :class="finalContainerClass" class="flex-1 min-w-0">
+    <div :class="finalContainerClass" class="flex-1 min-w-0 min-h-[calc(100vh-4rem)] bg-red-500">
       <!-- Main content uses base background (darkest layer) -->
       <div :class="[contentWrapperClass, transparent ? 'bg-transparent' : '']">
         <!-- Header Section (Non-sticky) -->
