@@ -122,7 +122,7 @@
   <UiDialog :open="open" @update:open="emit('update:open', $event)">
     <UiDialogContent
       :hide-close="true"
-      :style="`width:${dialogW}px !important; max-width:${dialogW}px !important; height:${dialogH}px !important; max-height:${dialogH}px !important;`"
+      :style="`position:fixed !important; top:50% !important; left:50% !important; translate:-50% -50% !important; width:${dialogW}px !important; max-width:${dialogW}px !important; height:${dialogH}px !important; max-height:${dialogH}px !important;`"
       :class="[isResizing ? 'select-none' : '']"
       class="p-0! gap-0! overflow-hidden rounded-xl border border-border bg-card shadow-2xl flex! flex-col relative"
       @pointer-down-outside="(e: Event) => { if (isResizing) e.preventDefault() }"
