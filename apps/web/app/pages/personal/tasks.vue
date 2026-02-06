@@ -1,38 +1,31 @@
 <script setup lang="ts">
   import CalendarItemDialog from '~/components/dialogs/CalendarItemDialog.vue'
-  import type { CalendarItem } from '~/types/calendarItem'
+  import type { CalendarItem, TaskItem } from '~/types/calendarItem'
   import { createDefaultItem } from '~/types/calendarItem'
 
   definePageMeta({
     layout: 'default',
   })
 
-  const tasks = ref([
-    {
-      id: 'p-1',
-      title: 'Review facility inspection notes',
-      status: 'due soon',
+  // ---------------------------------------------------------------------------
+  // Live data from instant-local
+  // ---------------------------------------------------------------------------
+
+  const { items: allItems, create: createItem, update: updateItem, remove: _removeItem } = useCalendarItems()
+
+  const taskItems = computed(() => allItems.value.filter((i): i is TaskItem => i.type === 'task'))
+
+  // Derive a simplified task list for the existing template
+  const tasks = computed(() =>
+    taskItems.value.map((t) => ({
+      id: t.id,
+      title: t.title,
+      status: t.taskStatus === 'in-progress' ? 'due soon' : t.taskStatus === 'pending' ? 'on track' : t.taskStatus,
       assignee: 'You',
-      dueDate: '2025-01-28',
-      priority: 'medium',
-    },
-    {
-      id: 'p-2',
-      title: 'Submit weekly compliance update',
-      status: 'on track',
-      assignee: 'You',
-      dueDate: '2025-02-05',
-      priority: 'low',
-    },
-    {
-      id: 'p-3',
-      title: 'Confirm permit renewal schedule',
-      status: 'overdue',
-      assignee: 'You',
-      dueDate: '2025-01-15',
-      priority: 'high',
-    },
-  ])
+      dueDate: t.startDate,
+      priority: t.priority,
+    })),
+  )
 
   const statusStyles: Record<string, string> = {
     overdue: 'bg-rose-100 text-rose-700 dark:bg-rose-900/30 dark:text-rose-400',
@@ -125,28 +118,13 @@
     }
   }
 
-  function handleCreateTask(item: CalendarItem) {
-    tasks.value.unshift({
-      id: item.id || `p-${Math.random().toString(36).slice(2, 8)}`,
-      title: item.title,
-      status: 'on track',
-      assignee: 'You',
-      dueDate: item.startDate || 'TBD',
-      priority: item.priority || 'medium',
-    })
+  async function handleCreateTask(item: CalendarItem) {
+    await createItem({ ...item, type: 'task' } as TaskItem)
     createTaskOpen.value = false
   }
 
-  function handleUpdateTask(item: CalendarItem) {
-    const idx = tasks.value.findIndex((t) => t.id === item.id)
-    if (idx !== -1) {
-      tasks.value[idx] = {
-        ...tasks.value[idx]!,
-        title: item.title,
-        dueDate: item.startDate || tasks.value[idx]!.dueDate,
-        priority: item.priority || tasks.value[idx]!.priority,
-      }
-    }
+  async function handleUpdateTask(item: CalendarItem) {
+    await updateItem(item)
     viewTaskOpen.value = false
   }
 </script>
