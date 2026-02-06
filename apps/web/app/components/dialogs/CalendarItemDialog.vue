@@ -1138,3 +1138,50 @@
     </UiDialogContent>
   </UiDialog>
 </template>
+
+<style scoped>
+/* VCalendar dark mode text contrast */
+:deep(.vc-container) {
+  --vc-text-lg: hsl(var(--foreground));
+  --vc-text-sm: hsl(var(--foreground));
+  --vc-text-xs: hsl(var(--foreground));
+  font-size: 0.75rem;
+}
+
+:deep(.vc-title),
+:deep(.vc-weekday),
+:deep(.vc-day-content),
+:deep(.vc-nav-title),
+:deep(.vc-nav-item) {
+  color: hsl(var(--foreground));
+}
+
+:deep(.vc-arrow) {
+  color: hsl(var(--muted-foreground));
+}
+
+:deep(.vc-arrow:hover) {
+  color: hsl(var(--foreground));
+  background: hsl(var(--muted));
+}
+
+:deep(.vc-day-content:hover) {
+  background: hsl(var(--muted));
+}
+
+:deep(.vc-highlight-content-solid) {
+  color: hsl(var(--primary-foreground));
+}
+
+:deep(.vc-weekday) {
+  color: hsl(var(--muted-foreground));
+  font-weight: 500;
+}
+
+/* Responsive: compact calendar on smaller dialogs */
+@media (max-width: 768px) {
+  :deep(.vc-container) {
+    font-size: 0.65rem;
+  }
+}
+</style>
