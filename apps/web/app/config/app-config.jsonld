@@ -1694,6 +1694,9 @@
       ],
       "children": [
         {
+          "@id": "route:personal-today"
+        },
+        {
           "@id": "route:personal-tasks"
         },
         {
@@ -1701,17 +1704,39 @@
         },
         {
           "@id": "route:personal-notes"
-        },
-        {
-          "@id": "route:personal-reminders"
         }
       ]
+    },
+    {
+      "@id": "route:personal-today",
+      "@type": "app:Route",
+      "routePath": "/personal/today",
+      "label": "Today",
+      "icon": "lucide:sun",
+      "tint": "text-amber-300",
+      "order": -1,
+      "permissions": {
+        "minRole": "guest",
+        "permission": "read"
+      },
+      "searchKeywords": [
+        "today",
+        "daily",
+        "digest",
+        "due",
+        "reminders"
+      ],
+      "meta": {
+        "title": "Today",
+        "description": "Your daily digest — tasks, events, and reminders.",
+        "subtitle": "Personal"
+      }
     },
     {
       "@id": "route:personal-tasks",
       "@type": "app:Route",
       "routePath": "/personal/tasks",
-      "label": "My Tasks",
+      "label": "Tasks",
       "icon": "lucide:check-square",
       "tint": "text-emerald-300",
       "order": 0,
@@ -1720,14 +1745,14 @@
         "permission": "read"
       },
       "searchKeywords": [
-        "my tasks",
+        "tasks",
         "assigned",
         "todo",
         "work"
       ],
       "meta": {
-        "title": "My Tasks",
-        "description": "Tasks assigned to you across all facilities.",
+        "title": "Tasks",
+        "description": "All your tasks and to-dos.",
         "subtitle": "Personal"
       }
     },
@@ -1735,7 +1760,7 @@
       "@id": "route:personal-calendar",
       "@type": "app:Route",
       "routePath": "/personal/calendar",
-      "label": "My Calendar",
+      "label": "Calendar",
       "icon": "lucide:calendar",
       "tint": "text-blue-300",
       "order": 1,
@@ -1750,7 +1775,7 @@
         "deadlines"
       ],
       "meta": {
-        "title": "My Calendar",
+        "title": "Calendar",
         "description": "Calendar view of your upcoming tasks and deadlines.",
         "subtitle": "Personal"
       }
@@ -1759,7 +1784,7 @@
       "@id": "route:personal-notes",
       "@type": "app:Route",
       "routePath": "/personal/notes",
-      "label": "My Notes",
+      "label": "Notes",
       "icon": "lucide:sticky-note",
       "tint": "text-purple-300",
       "order": 2,
@@ -1774,32 +1799,8 @@
         "bookmarks"
       ],
       "meta": {
-        "title": "My Notes",
+        "title": "Notes",
         "description": "Ideas, journal entries, and bookmarks.",
-        "subtitle": "Personal"
-      }
-    },
-    {
-      "@id": "route:personal-reminders",
-      "@type": "app:Route",
-      "routePath": "/personal/reminders",
-      "label": "Reminders",
-      "icon": "lucide:bell",
-      "tint": "text-amber-300",
-      "order": 3,
-      "permissions": {
-        "minRole": "guest",
-        "permission": "read"
-      },
-      "searchKeywords": [
-        "reminders",
-        "alerts",
-        "deadlines",
-        "due"
-      ],
-      "meta": {
-        "title": "Reminders",
-        "description": "Quick reminders and upcoming deadlines.",
         "subtitle": "Personal"
       }
     },

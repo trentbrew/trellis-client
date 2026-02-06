@@ -290,10 +290,10 @@ export const routeConfig: RouteConfig[] = [...buildRouteConfigTree(), ...staticR
 export const ROUTE_PATHS = {
   personal: {
     root: '/personal',
+    today: '/personal/today',
     tasks: '/personal/tasks',
     calendar: '/personal/calendar',
     notes: '/personal/notes',
-    reminders: '/personal/reminders',
   },
   app: {
     root: '/app',
