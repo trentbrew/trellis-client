@@ -1,5 +1,4 @@
 import type { RouteConfig } from '../config/routes'
-import type { ThemePreset, ThemePresets } from '../types/theme'
 import type { DatabaseField, DatabaseSchema } from '../types/database'
 import appConfigRaw from '../config/app-config.jsonld?raw'
 
@@ -239,44 +238,6 @@ export const buildRouteConfigTree = (): RouteConfig[] => {
     .slice()
     .sort((a, b) => Number(a.order ?? 999) - Number(b.order ?? 999))
     .map(buildRouteConfigFromNode)
-}
-
-const normalizeThemePresetId = (id: string): string => {
-  return id.startsWith('theme:') ? id.slice('theme:'.length) : id
-}
-
-export const getDefaultThemePresetId = (): string | null => {
-  const appNode = getAppConfigNodesByType('app:Application')[0]
-  if (!appNode) return null
-
-  const themeRef = resolveIdRef(appNode.defaultTheme)
-  if (!themeRef) return null
-
-  return normalizeThemePresetId(themeRef)
-}
-
-export const getThemePresetsFromConfig = (): ThemePresets => {
-  const presets: ThemePresets = {}
-
-  getAppConfigNodesByType('ui:Theme').forEach((node) => {
-    const id = typeof node['@id'] === 'string' ? node['@id'] : ''
-    if (!id) return
-
-    const styles = node.styles
-    if (!styles || typeof styles !== 'object') return
-
-    const preset: ThemePreset = {
-      label: typeof node.label === 'string' ? node.label : id,
-      styles: {
-        light: typeof styles.light === 'object' && styles.light ? styles.light : {},
-        dark: typeof styles.dark === 'object' && styles.dark ? styles.dark : {},
-      },
-    }
-
-    presets[normalizeThemePresetId(id)] = preset
-  })
-
-  return presets
 }
 
 /**
