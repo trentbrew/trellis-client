@@ -11,6 +11,7 @@
 
 import { createLocalInstantDB } from '~/lib/instant-local'
 import schema from '~~/instant.schema'
+import { getPersonalSeedItems } from '~/lib/personalSeedData'
 
 export default defineNuxtPlugin(() => {
   const db = createLocalInstantDB({
@@ -59,6 +60,22 @@ export default defineNuxtPlugin(() => {
           status: 'active',
         }),
       ])
+    }
+
+    // ── Seed personal calendar items ────────────────────────────────
+    const calItems = db._store.getAll('calendarItems')
+    if (calItems.length === 0) {
+      const seedItems = getPersonalSeedItems()
+      const chunks = seedItems.map((item) => {
+        const { id: itemId, ...fields } = item
+        return db.tx.calendarItems[itemId].create({
+          ...fields,
+          ownerId: 'user-demo-admin',
+          createdAt: Date.now(),
+          updatedAt: Date.now(),
+        })
+      })
+      void db.transact(chunks)
     }
   }
 
