@@ -1604,8 +1604,30 @@
           "icon": "lucide:user",
           "items": [
             {
+              "path": "/personal/today",
+              "label": "Today",
+              "icon": "lucide:sun",
+              "tint": "text-amber-300",
+              "permissions": {
+                "minRole": "guest",
+                "permission": "read"
+              },
+              "meta": {
+                "title": "Today",
+                "description": "Your daily digest — tasks, events, and reminders.",
+                "subtitle": "Personal"
+              },
+              "searchKeywords": [
+                "today",
+                "daily",
+                "digest",
+                "due",
+                "reminders"
+              ]
+            },
+            {
               "path": "/personal/tasks",
-              "label": "My Tasks",
+              "label": "Tasks",
               "icon": "lucide:check-square",
               "tint": "text-emerald-300",
               "permissions": {
@@ -1613,12 +1635,12 @@
                 "permission": "read"
               },
               "meta": {
-                "title": "My Tasks",
-                "description": "Tasks assigned to you across all facilities.",
+                "title": "Tasks",
+                "description": "All your tasks and to-dos.",
                 "subtitle": "Personal"
               },
               "searchKeywords": [
-                "my tasks",
+                "tasks",
                 "assigned",
                 "todo",
                 "work"
@@ -1626,7 +1648,7 @@
             },
             {
               "path": "/personal/calendar",
-              "label": "My Calendar",
+              "label": "Calendar",
               "icon": "lucide:calendar",
               "tint": "text-blue-300",
               "permissions": {
@@ -1634,7 +1656,7 @@
                 "permission": "read"
               },
               "meta": {
-                "title": "My Calendar",
+                "title": "Calendar",
                 "description": "Calendar view of your upcoming tasks and deadlines.",
                 "subtitle": "Personal"
               },
@@ -1647,7 +1669,7 @@
             },
             {
               "path": "/personal/notes",
-              "label": "My Notes",
+              "label": "Notes",
               "icon": "lucide:sticky-note",
               "tint": "text-purple-300",
               "permissions": {
@@ -1655,7 +1677,7 @@
                 "permission": "read"
               },
               "meta": {
-                "title": "My Notes",
+                "title": "Notes",
                 "description": "Ideas, journal entries, and bookmarks.",
                 "subtitle": "Personal"
               },
@@ -1664,27 +1686,6 @@
                 "journal",
                 "ideas",
                 "bookmarks"
-              ]
-            },
-            {
-              "path": "/personal/reminders",
-              "label": "Reminders",
-              "icon": "lucide:bell",
-              "tint": "text-amber-300",
-              "permissions": {
-                "minRole": "guest",
-                "permission": "read"
-              },
-              "meta": {
-                "title": "Reminders",
-                "description": "Quick reminders and upcoming deadlines.",
-                "subtitle": "Personal"
-              },
-              "searchKeywords": [
-                "reminders",
-                "alerts",
-                "deadlines",
-                "due"
               ]
             }
           ],
