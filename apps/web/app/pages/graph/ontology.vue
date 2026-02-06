@@ -76,7 +76,7 @@
                   {{ Object.keys(ont.attributes).length }} attributes
                 </span>
               </summary>
-              <div class="px-4 pb-3 ml-7">
+              <div class="px-4 pb-3">
                 <pre class="text-[11px] font-mono text-muted-foreground bg-muted/50 rounded-md p-3 overflow-x-auto max-h-[400px] overflow-y-auto">{{ JSON.stringify(ont.schema, null, 2) }}</pre>
               </div>
             </details>
