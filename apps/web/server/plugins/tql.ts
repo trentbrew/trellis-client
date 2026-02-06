@@ -27,6 +27,29 @@ export function useTqlKernel(): TrellisKernel {
   return _kernel
 }
 
+// Mutation log ring buffer
+export interface MutationLogEntry {
+  timestamp: string
+  action: string
+  entityId?: string
+  type?: string
+  data?: Record<string, any>
+}
+
+const MAX_LOG_ENTRIES = 200
+const _mutationLog: MutationLogEntry[] = []
+
+export function pushMutationLog(entry: Omit<MutationLogEntry, 'timestamp'>) {
+  _mutationLog.push({ ...entry, timestamp: new Date().toISOString() })
+  if (_mutationLog.length > MAX_LOG_ENTRIES) {
+    _mutationLog.splice(0, _mutationLog.length - MAX_LOG_ENTRIES)
+  }
+}
+
+export function getMutationLog(): MutationLogEntry[] {
+  return _mutationLog
+}
+
 export default defineNitroPlugin(async (nitro) => {
   const dataDir = resolve(process.cwd(), '.data')
   if (!existsSync(dataDir)) {
