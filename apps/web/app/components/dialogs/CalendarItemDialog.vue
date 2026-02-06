@@ -120,7 +120,6 @@
   const folderOpen = ref(false)
   const priorityOpen = ref(false)
   const urgencyOpen = ref(false)
-  const tagsOpen = ref(false)
   const tagInput = ref('')
   const schedulePopoverOpen = ref(false)
   const ownerSearch = ref('')
@@ -853,7 +852,7 @@
             </template>
 
             <template v-if="isTrip(editableItem)">
-              <div class="grid grid-cols-2 gap-4">
+              <div class="p-4 grid grid-cols-2 gap-4">
                 <div class="space-y-1.5">
                   <p class="text-xs font-medium text-muted-foreground uppercase tracking-wide">Origin</p>
                   <UiInput v-if="!isViewMode" v-model="editableItem.origin" placeholder="Departure city" class="text-sm" />
@@ -865,7 +864,7 @@
                   <p v-else class="text-sm">{{ editableItem.destination || '—' }}</p>
                 </div>
               </div>
-              <div class="grid grid-cols-2 gap-4">
+              <div class="p-4 grid grid-cols-2 gap-4">
                 <div class="space-y-1.5">
                   <p class="text-xs font-medium text-muted-foreground uppercase tracking-wide">Transportation</p>
                   <UiPopover v-model:open="transportOpen">
@@ -913,7 +912,7 @@
                   </UiPopover>
                 </div>
               </div>
-              <div class="grid grid-cols-2 gap-4">
+              <div class="p-4 grid grid-cols-2 gap-4">
                 <div class="space-y-1.5">
                   <p class="text-xs font-medium text-muted-foreground uppercase tracking-wide">Budget</p>
                   <UiInput v-if="!isViewMode" v-model.number="editableItem.budget" type="number" placeholder="0.00" class="text-sm" />
@@ -928,7 +927,7 @@
             </template>
 
             <template v-if="isPayment(editableItem)">
-              <div class="grid grid-cols-2 gap-4">
+              <div class="p-4 grid grid-cols-2 gap-4">
                 <div class="space-y-1.5">
                   <p class="text-xs font-medium text-muted-foreground uppercase tracking-wide">Amount</p>
                   <UiInput v-if="!isViewMode" v-model.number="editableItem.amount" type="number" placeholder="0.00" class="text-sm" />
@@ -959,7 +958,7 @@
                   </UiPopover>
                 </div>
               </div>
-              <div class="grid grid-cols-2 gap-4">
+              <div class="p-4 grid grid-cols-2 gap-4">
                 <div class="space-y-1.5">
                   <p class="text-xs font-medium text-muted-foreground uppercase tracking-wide">Payee</p>
                   <UiInput v-if="!isViewMode" v-model="editableItem.payee" placeholder="Who to pay" class="text-sm" />
@@ -971,7 +970,7 @@
                   <p v-else class="text-sm">{{ editableItem.invoiceNumber || '—' }}</p>
                 </div>
               </div>
-              <div class="flex items-center gap-3">
+              <div class="p-4 flex items-center gap-3">
                 <button
                   v-if="!isViewMode"
                   class="inline-flex items-center gap-1.5 px-2 py-1 rounded-lg text-xs transition-colors"
@@ -987,12 +986,12 @@
             </template>
 
             <template v-if="isNote(editableItem)">
-              <div class="flex-1 flex flex-col min-h-0">
+              <div class="p-4 flex-1 flex flex-col min-h-0">
                 <p class="text-xs font-medium text-muted-foreground uppercase tracking-wide mb-1.5">Content</p>
                 <UiRichTextEditor v-if="!isViewMode" v-model="editableItem.content" placeholder="Write your note..." class="flex-1" />
                 <div v-else class="text-sm text-foreground whitespace-pre-wrap min-h-[120px] rounded-md border border-border bg-muted/10 p-3" v-html="editableItem.content || 'Empty note.'" />
               </div>
-              <div class="flex items-center gap-3">
+              <div class="p-4 flex items-center gap-3">
                 <button
                   v-if="!isViewMode"
                   class="inline-flex items-center gap-1.5 px-2 py-1 rounded-lg text-xs transition-colors"
@@ -1007,7 +1006,32 @@
               </div>
             </template>
 
-            <div v-if="editableItem.attachments.length || !isViewMode" class="space-y-1.5">
+            <!-- Tags Section -->
+            <div v-if="editableItem.tags.length || !isViewMode" class="p-4 space-y-1.5">
+              <p class="text-xs font-medium text-muted-foreground uppercase tracking-wide">Tags</p>
+              <div class="flex flex-wrap items-center gap-1.5">
+                <span
+                  v-for="tag in editableItem.tags"
+                  :key="tag"
+                  class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-primary/10 text-primary text-xs">
+                  {{ tag }}
+                  <button v-if="!isViewMode" class="hover:text-destructive" @click="removeTag(tag)">
+                    <Icon name="lucide:x" class="h-2.5 w-2.5" />
+                  </button>
+                </span>
+                <div v-if="!isViewMode" class="inline-flex items-center gap-1">
+                  <input
+                    v-model="tagInput"
+                    type="text"
+                    placeholder="Add tag..."
+                    class="bg-transparent text-xs outline-none w-24 placeholder:text-muted-foreground/50"
+                    @keydown.enter.prevent="addTag" />
+                </div>
+              </div>
+            </div>
+
+            <!-- Attachments -->
+            <div v-if="editableItem.attachments.length || !isViewMode" class="p-4 space-y-1.5">
               <div class="flex items-center justify-between">
                 <p class="text-xs font-medium text-muted-foreground uppercase tracking-wide">Attachments</p>
                 <button v-if="!isViewMode" class="text-xs text-muted-foreground hover:text-foreground flex items-center gap-1" @click="fileUploadOpen = true">
@@ -1028,7 +1052,8 @@
               <p v-else class="text-xs text-muted-foreground italic">No attachments</p>
             </div>
 
-            <div v-if="!isNote(editableItem)" class="space-y-1.5">
+            <!-- Notes -->
+            <div v-if="!isNote(editableItem)" class="p-4 space-y-1.5">
               <p class="text-xs font-medium text-muted-foreground uppercase tracking-wide">Notes</p>
               <UiRichTextEditor v-if="!isViewMode" v-model="editableItem.notes" placeholder="Additional notes..." compact />
               <p v-else class="text-sm text-foreground whitespace-pre-wrap">{{ editableItem.notes || '—' }}</p>
