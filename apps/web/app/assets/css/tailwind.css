@@ -290,8 +290,7 @@
     scrollbar-color: var(--border) transparent;
   }
   html {
-    @apply antialiased;
-    background: black;
+    @apply antialiased bg-background text-foreground;
   }
   body {
     @apply bg-background text-foreground;
