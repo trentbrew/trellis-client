@@ -245,7 +245,7 @@
     <CalendarItemDialog
       v-model:open="viewOpen"
       mode="edit"
-      :item="viewingItem ?? undefined"
+      :item="viewingItem"
       :can-navigate-prev="canPrev"
       :can-navigate-next="canNext"
       @update="handleUpdate"

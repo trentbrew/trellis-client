@@ -51,7 +51,7 @@
       open: boolean
       mode?: 'view' | 'create' | 'edit'
       itemType?: CalendarItemType
-      item: CalendarItem | null
+      item?: CalendarItem | null
       canNavigatePrev?: boolean
       canNavigateNext?: boolean
       activity?: ActivityItem[]
@@ -61,6 +61,7 @@
     {
       mode: 'edit',
       itemType: 'task',
+      item: null,
       canNavigatePrev: false,
       canNavigateNext: false,
       activity: () => [],
