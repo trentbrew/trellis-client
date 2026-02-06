@@ -12,7 +12,7 @@
  *   GET  /api/graph/health      — Health check
  */
 
-import { useTqlKernel } from '../../plugins/tql'
+import { useTqlKernel, getMutationLog, pushMutationLog } from '../../plugins/tql'
 
 /** Reconstruct a node object from EAV facts, properly handling multi-value attributes */
 function factsToNode(entityId: string, facts: Array<{ e: string; a: string; v: unknown }>): Record<string, any> {
@@ -123,6 +123,11 @@ export default defineEventHandler(async (event) => {
     }
   }
 
+  // ─── GET /api/graph/log ─────────────────────────────────────────
+  if (method === 'GET' && route === 'log') {
+    return { entries: getMutationLog().slice().reverse() }
+  }
+
   // ─── POST /api/graph/nodes (batch) ──────────────────────────────────
   if (method === 'POST' && route === 'nodes') {
     const body = await readBody(event)
@@ -196,6 +201,7 @@ export default defineEventHandler(async (event) => {
             throw createError({ statusCode: 400, message: 'createNode requires "entityId" and "type"' })
           }
           await kernel.createNode(entityId, data || {}, type)
+          pushMutationLog({ action: 'createNode', entityId, type, data })
           return { ok: true, entityId }
         }
 
@@ -204,6 +210,7 @@ export default defineEventHandler(async (event) => {
             throw createError({ statusCode: 400, message: 'updateNode requires "entityId" and "type"' })
           }
           await kernel.updateNode(entityId, data || {}, type)
+          pushMutationLog({ action: 'updateNode', entityId, type, data })
           return { ok: true, entityId }
         }
 
@@ -212,6 +219,7 @@ export default defineEventHandler(async (event) => {
             throw createError({ statusCode: 400, message: 'deleteNode requires "entityId"' })
           }
           await kernel.deleteNode(entityId)
+          pushMutationLog({ action: 'deleteNode', entityId })
           return { ok: true, entityId }
         }
 
@@ -220,6 +228,7 @@ export default defineEventHandler(async (event) => {
             throw createError({ statusCode: 400, message: 'link requires "e1", "relation", and "e2"' })
           }
           await kernel.link(e1, relation, e2)
+          pushMutationLog({ action: 'link', entityId: `${e1} -> ${e2}`, data: { relation } })
           return { ok: true, e1, relation, e2 }
         }
 
