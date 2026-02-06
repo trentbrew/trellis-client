@@ -429,6 +429,11 @@
             :placeholder="`${currentType?.label || 'Item'} name...`"
             class="w-full text-xl font-semibold bg-transparent border border-transparent outline-none placeholder:text-muted-foreground/50 focus:ring-0 hover:border-border hover:bg-muted/20 focus:border-border focus:bg-muted/20 rounded-md px-2 py-0 -mx-1 transition-all" />
           <h2 v-else class="text-xl font-semibold px-1">{{ editableItem.title }}</h2>
+          <div class="mt-1 px-1">
+            <UiRichTextEditor v-if="!isViewMode" v-model="editableItem.description" placeholder="Add a description..." seamless />
+            <p v-else-if="editableItem.description" class="text-sm text-muted-foreground" v-html="editableItem.description" />
+            <p v-else class="text-sm text-muted-foreground/50 italic">No description</p>
+          </div>
         </div>
       </div>
 
@@ -782,12 +787,6 @@
 
         <div class="flex-1 flex flex-col min-w-0 overflow-y-auto" :class="isEditMode ? 'border-r border-border' : ''">
           <div class="p-4 space-y-5">
-            <div class="space-y-1.5">
-              <p class="text-xs font-medium text-muted-foreground uppercase tracking-wide">Description</p>
-              <UiRichTextEditor v-if="!isViewMode" v-model="editableItem.description" placeholder="Add a description..." compact />
-              <p v-else class="text-sm text-foreground whitespace-pre-wrap">{{ editableItem.description || 'No description.' }}</p>
-            </div>
-
             <template v-if="isTask(editableItem)">
               <div class="space-y-1.5">
                 <p class="text-xs font-medium text-muted-foreground uppercase tracking-wide">Task Status</p>

@@ -13,7 +13,7 @@
   const route = useRoute()
   const router = useRouter()
 
-  useHead({ title: 'My Calendar | Personal' })
+  useHead({ title: 'Calendar | Personal' })
 
   // ---------------------------------------------------------------------------
   // Section navigation (query-param driven, like ECMS tasks)

@@ -4,7 +4,7 @@
   })
 
   onMounted(() => {
-    navigateTo('/personal/tasks')
+    navigateTo('/personal/today')
   })
 </script>
 

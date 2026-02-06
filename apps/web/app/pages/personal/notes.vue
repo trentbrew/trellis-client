@@ -5,7 +5,7 @@
   import type { CalendarItem, NoteItem } from '~/types/calendarItem'
 
   definePageMeta({ layout: 'default' })
-  useHead({ title: 'My Notes | Personal' })
+  useHead({ title: 'Notes | Personal' })
 
   // ---------------------------------------------------------------------------
   // Seed data
@@ -186,7 +186,7 @@
 <template>
   <Page
     variant="browse"
-    title="My Notes"
+    title="Notes"
     subtitle="Personal"
     description="Ideas, journal entries, and bookmarks."
     icon="lucide:sticky-note"
