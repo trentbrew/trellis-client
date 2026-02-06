@@ -78,6 +78,9 @@
   const startResize = (edge: Edge, e: PointerEvent) => {
     e.preventDefault()
     e.stopPropagation()
+
+    const el = e.currentTarget as HTMLElement
+    el.setPointerCapture(e.pointerId)
     isResizing.value = true
 
     const startX = e.clientX
@@ -85,27 +88,33 @@
     const startW = dialogW.value
     const startH = dialogH.value
 
+    // Set body cursor so it persists even when pointer leaves the handle
+    const cursorMap: Record<Edge, string> = {
+      n: 'ns-resize', s: 'ns-resize', e: 'ew-resize', w: 'ew-resize',
+      ne: 'nesw-resize', sw: 'nesw-resize', nw: 'nwse-resize', se: 'nwse-resize',
+    }
+    document.body.style.cursor = cursorMap[edge]
+
     const onMove = (ev: PointerEvent) => {
       const dx = ev.clientX - startX
       const dy = ev.clientY - startY
 
-      // Horizontal: e/w edges grow or shrink by 2× delta (dialog is centered)
       if (edge.includes('e')) dialogW.value = clampW(startW + dx * 2)
       if (edge.includes('w')) dialogW.value = clampW(startW - dx * 2)
-
-      // Vertical: n/s edges
       if (edge.includes('s')) dialogH.value = clampH(startH + dy * 2)
       if (edge.includes('n')) dialogH.value = clampH(startH - dy * 2)
     }
 
     const onUp = () => {
       isResizing.value = false
-      window.removeEventListener('pointermove', onMove)
-      window.removeEventListener('pointerup', onUp)
+      document.body.style.cursor = ''
+      el.releasePointerCapture(e.pointerId)
+      el.removeEventListener('pointermove', onMove)
+      el.removeEventListener('pointerup', onUp)
     }
 
-    window.addEventListener('pointermove', onMove)
-    window.addEventListener('pointerup', onUp)
+    el.addEventListener('pointermove', onMove)
+    el.addEventListener('pointerup', onUp)
   }
 </script>
 
@@ -115,7 +124,9 @@
       :hide-close="true"
       :style="{ width: `${dialogW}px`, maxWidth: `${dialogW}px`, height: `${dialogH}px`, maxHeight: `${dialogH}px` }"
       :class="[isResizing ? 'select-none' : '']"
-      class="p-0! gap-0! overflow-hidden rounded-xl border border-border bg-card shadow-2xl flex! flex-col relative">
+      class="p-0! gap-0! overflow-hidden rounded-xl border border-border bg-card shadow-2xl flex! flex-col relative"
+      @pointer-down-outside="(e: Event) => { if (isResizing) e.preventDefault() }"
+      @interact-outside="(e: Event) => { if (isResizing) e.preventDefault() }">
 
       <!-- Resize handles -->
       <div class="absolute inset-x-2 top-0 h-1 cursor-ns-resize z-50" @pointerdown="startResize('n', $event)" />
