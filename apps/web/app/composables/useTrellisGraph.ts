@@ -41,11 +41,10 @@ type MutatePayload =
 
 const API_BASE = '/api/graph'
 
-async function graphFetch<T>(path: string, opts?: { method?: string; body?: string }): Promise<T> {
+async function graphFetch<T>(path: string, opts?: { method?: string; body?: Record<string, any> }): Promise<T> {
   const res = await $fetch<T>(`${API_BASE}/${path}`, {
     method: (opts?.method as any) || 'GET',
     body: opts?.body,
-    headers: { 'Content-Type': 'application/json' },
   })
   return res as T
 }
@@ -75,7 +74,7 @@ export function useTrellisGraph() {
         error.value = null
         const result = await graphFetch<GraphQueryResult>('query', {
           method: 'POST',
-          body: JSON.stringify({ query: eqlsValue.value }),
+          body: { query: eqlsValue.value },
         })
         data.value = result.data
       } catch (err: any) {
@@ -98,7 +97,7 @@ export function useTrellisGraph() {
   async function queryOnce(eqls: string): Promise<GraphQueryResult> {
     return graphFetch<GraphQueryResult>('query', {
       method: 'POST',
-      body: JSON.stringify({ query: eqls }),
+      body: { query: eqls },
     })
   }
 
@@ -118,7 +117,7 @@ export function useTrellisGraph() {
         error.value = null
         const result = await graphFetch<GraphQueryResult>('query', {
           method: 'POST',
-          body: JSON.stringify({ projection: idValue.value }),
+          body: { projection: idValue.value },
         })
         data.value = result.data
       } catch (err: any) {
@@ -147,7 +146,7 @@ export function useTrellisGraph() {
   async function fetchNodes(ids: string[]): Promise<Record<string, any>[]> {
     const result = await graphFetch<{ nodes: Record<string, any>[] }>('nodes', {
       method: 'POST',
-      body: JSON.stringify({ ids }),
+      body: { ids },
     })
     return result.nodes
   }
@@ -159,7 +158,7 @@ export function useTrellisGraph() {
   async function mutate(payload: MutatePayload): Promise<{ ok: boolean }> {
     const result = await graphFetch<{ ok: boolean }>('mutate', {
       method: 'POST',
-      body: JSON.stringify(payload),
+      body: payload as Record<string, any>,
     })
     // Bump version to trigger reactive re-fetch in all watchers
     _graphVersion.value++
