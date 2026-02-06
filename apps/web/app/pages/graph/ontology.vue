@@ -52,12 +52,10 @@
     title="Ontology Viewer"
     subtitle="Developer"
     description="Schema definitions, named projections, and attribute catalog."
-    icon="lucide:blocks">
-    <div v-if="loading" class="flex items-center justify-center py-20">
-      <Icon name="lucide:loader-2" class="h-6 w-6 animate-spin text-muted-foreground" />
-    </div>
-
-    <div v-else class="space-y-6">
+    icon="lucide:blocks"
+    :is-loading="loading"
+    count-label="schemas">
+    <div class="space-y-6">
       <!-- Ontologies -->
       <UiCard>
         <UiCardContent class="p-0">
