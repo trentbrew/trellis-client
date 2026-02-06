@@ -50,6 +50,7 @@
     "@tiptap/extension-placeholder": "3.14.0",
     "@tiptap/starter-kit": "3.14.0",
     "@tiptap/vue-3": "3.14.0",
+    "@toolkit/tql": "workspace:*",
     "@toolkit/types": "workspace:*",
     "@toolkit/utils": "workspace:*",
     "@vee-validate/nuxt": "4.15.1",
