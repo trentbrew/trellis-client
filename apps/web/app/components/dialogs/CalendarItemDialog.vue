@@ -31,6 +31,9 @@
   } from '~/types/calendarItem'
   import { useCalendarItemFormulas } from '~/composables/useCalendarItemFormulas'
 
+  const colorMode = useColorMode()
+  const isDark = computed(() => colorMode.value === 'dark')
+
   export interface ActivityItem {
     id: string
     author: string
@@ -86,6 +89,7 @@
   // Use `any` because Vue's Reactive wrapper doesn't support discriminated-union narrowing in templates.
   // Runtime type guards (isTask, isEvent, …) ensure correctness.
   const editableItem: any = reactive(createDefaultItem(props.itemType || 'task'))
+  const isNoteType = computed(() => editableItem.type === 'note')
 
   watch(
     () => props.item,
@@ -728,14 +732,14 @@
 
       <!-- Content Area -->
       <div class="flex-1 flex min-h-0 overflow-hidden">
-        <aside v-if="isCreateMode" class="w-60 shrink-0 border-r border-border overflow-y-auto">
+        <aside v-if="isCreateMode && !isNoteType" class="w-60 shrink-0 border-r border-border overflow-y-auto hidden md:block">
           <div class="p-3 space-y-3">
             <p class="text-xs font-medium text-muted-foreground uppercase tracking-wide">Schedule</p>
             <div class="rounded-md border border-border bg-card p-1">
               <ClientOnly>
                 <VCalendar
                   v-model="editableItem.startDate"
-                  :is-dark="false"
+                  :is-dark="isDark"
                   borderless
                   transparent
                   expanded
@@ -780,7 +784,7 @@
           <div class="p-4 space-y-5">
             <div class="space-y-1.5">
               <p class="text-xs font-medium text-muted-foreground uppercase tracking-wide">Description</p>
-              <UiTextarea v-if="!isViewMode" v-model="editableItem.description" placeholder="Add a description..." :rows="3" class="text-sm" />
+              <UiRichTextEditor v-if="!isViewMode" v-model="editableItem.description" placeholder="Add a description..." compact />
               <p v-else class="text-sm text-foreground whitespace-pre-wrap">{{ editableItem.description || 'No description.' }}</p>
             </div>
 
@@ -1017,12 +1021,10 @@
             </template>
 
             <template v-if="isNote(editableItem)">
-              <div class="space-y-1.5">
-                <p class="text-xs font-medium text-muted-foreground uppercase tracking-wide">Content</p>
-                <UiTextarea v-if="!isViewMode" v-model="editableItem.content" placeholder="Write your note..." :rows="8" class="text-sm" />
-                <div v-else class="text-sm text-foreground whitespace-pre-wrap min-h-[120px] rounded-md border border-border bg-muted/10 p-3">
-                  {{ editableItem.content || 'Empty note.' }}
-                </div>
+              <div class="flex-1 flex flex-col min-h-0">
+                <p class="text-xs font-medium text-muted-foreground uppercase tracking-wide mb-1.5">Content</p>
+                <UiRichTextEditor v-if="!isViewMode" v-model="editableItem.content" placeholder="Write your note..." class="flex-1" />
+                <div v-else class="text-sm text-foreground whitespace-pre-wrap min-h-[120px] rounded-md border border-border bg-muted/10 p-3" v-html="editableItem.content || 'Empty note.'" />
               </div>
               <div class="flex items-center gap-3">
                 <button
@@ -1062,7 +1064,7 @@
 
             <div v-if="!isNote(editableItem)" class="space-y-1.5">
               <p class="text-xs font-medium text-muted-foreground uppercase tracking-wide">Notes</p>
-              <UiTextarea v-if="!isViewMode" v-model="editableItem.notes" placeholder="Additional notes..." :rows="2" class="text-sm" />
+              <UiRichTextEditor v-if="!isViewMode" v-model="editableItem.notes" placeholder="Additional notes..." compact />
               <p v-else class="text-sm text-foreground whitespace-pre-wrap">{{ editableItem.notes || '—' }}</p>
             </div>
           </div>
