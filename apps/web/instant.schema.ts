@@ -337,6 +337,64 @@ const _schema = i.schema({
       notificationLogItemID: i.string().optional(),
     }),
 
+    // ========================================================================
+    // Personal Calendar Items (polymorphic: task, event, payment, note, trip)
+    // ========================================================================
+
+    calendarItems: i.entity({
+      ownerId: i.string().indexed(),
+      type: i.string().indexed(), // task | event | trip | payment | note
+      title: i.string(),
+      description: i.string().optional(),
+      startDate: i.string().indexed(), // YYYY-MM-DD
+      endDate: i.string().optional(),
+      allDay: i.boolean(),
+      startTime: i.string().optional(), // HH:mm
+      endTime: i.string().optional(),
+      priority: i.string().indexed(), // critical | high | medium | low
+      urgency: i.string().optional(), // urgent | not-urgent
+      priorityOverride: i.boolean().optional(),
+      urgencyOverride: i.boolean().optional(),
+      category: i.string().indexed().optional(),
+      tags: i.json().optional(), // string[]
+      owner: i.string().optional(),
+      involved: i.json().optional(), // string[]
+      folder: i.string().optional(),
+      notes: i.string().optional(),
+      attachments: i.json().optional(), // Attachment[]
+      reminders: i.json().optional(), // Reminder[]
+      recurrence: i.json().optional(), // RecurrenceRule
+      // Task-specific
+      taskStatus: i.string().indexed().optional(), // pending | in-progress | completed | overdue …
+      checklist: i.json().optional(), // ChecklistItem[]
+      // Event-specific
+      location: i.string().optional(),
+      attendees: i.json().optional(), // Attendee[]
+      conferenceLink: i.string().optional(),
+      eventType: i.string().optional(), // meeting | appointment | training …
+      // Payment-specific
+      amount: i.number().optional(),
+      currency: i.string().optional(),
+      payee: i.string().optional(),
+      paymentMethod: i.string().optional(),
+      recurring: i.boolean().optional(),
+      paymentStatus: i.string().optional(),
+      // Note-specific
+      content: i.string().optional(),
+      pinned: i.boolean().optional(),
+      linkedItems: i.json().optional(), // string[]
+      // Trip-specific
+      origin: i.string().optional(),
+      destination: i.string().optional(),
+      transportation: i.string().optional(),
+      budget: i.number().optional(),
+      confirmationNumber: i.string().optional(),
+      tripStatus: i.string().optional(),
+      // Timestamps
+      createdAt: i.number().optional(),
+      updatedAt: i.number().optional(),
+    }),
+
     applications: i.entity({
       ownerId: i.string().indexed(),
       orgId: i.string().indexed(),
