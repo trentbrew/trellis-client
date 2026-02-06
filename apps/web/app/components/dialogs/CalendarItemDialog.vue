@@ -753,9 +753,9 @@
         </aside>
 
         <div class="flex-1 flex flex-col min-w-0 overflow-y-auto" :class="isEditMode ? 'border-r border-border' : ''">
-          <div class="p-4 space-y-5">
+          <div class="divide-y divide-border">
             <template v-if="isTask(editableItem)">
-              <div class="space-y-1.5">
+              <div class="p-4 space-y-1.5">
                 <p class="text-xs font-medium text-muted-foreground uppercase tracking-wide">Task Status</p>
                 <UiPopover v-model:open="taskStatusOpen">
                   <UiPopoverTrigger as-child>
@@ -779,7 +779,7 @@
                   </UiPopoverContent>
                 </UiPopover>
               </div>
-              <div v-if="editableItem.checklist?.length || !isViewMode" class="space-y-1.5">
+              <div v-if="editableItem.checklist?.length || !isViewMode" class="p-4 space-y-1.5">
                 <p class="text-xs font-medium text-muted-foreground uppercase tracking-wide">Checklist</p>
                 <div class="space-y-1">
                   <div v-for="(ci, idx) in editableItem.checklist" :key="ci.id" class="flex items-center gap-2">
@@ -813,7 +813,7 @@
             </template>
 
             <template v-if="isEvent(editableItem)">
-              <div class="space-y-1.5">
+              <div class="p-4 space-y-1.5">
                 <p class="text-xs font-medium text-muted-foreground uppercase tracking-wide">Event Type</p>
                 <UiPopover v-model:open="eventTypeOpen">
                   <UiPopoverTrigger as-child>
@@ -837,12 +837,12 @@
                   </UiPopoverContent>
                 </UiPopover>
               </div>
-              <div class="space-y-1.5">
+              <div class="p-4 space-y-1.5">
                 <p class="text-xs font-medium text-muted-foreground uppercase tracking-wide">Location</p>
                 <UiInput v-if="!isViewMode" v-model="editableItem.location" placeholder="e.g. Conference Room A" class="text-sm" />
                 <p v-else class="text-sm">{{ editableItem.location || '—' }}</p>
               </div>
-              <div class="space-y-1.5">
+              <div class="p-4 space-y-1.5">
                 <p class="text-xs font-medium text-muted-foreground uppercase tracking-wide">Conference Link</p>
                 <UiInput v-if="!isViewMode" v-model="editableItem.conferenceLink" placeholder="https://..." class="text-sm" />
                 <a v-else-if="editableItem.conferenceLink" :href="editableItem.conferenceLink" target="_blank" class="text-sm text-primary underline">
