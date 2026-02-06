@@ -17,7 +17,7 @@
       description: string
       mode?: 'view' | 'create' | 'edit'
       typeBadge?: { icon: string; label: string }
-      scheduleBadge?: { text: string; statusText: string; isOverdue: boolean; isRecurring: boolean }
+      titlePlaceholder?: string
       canNavigatePrev?: boolean
       canNavigateNext?: boolean
       /** sr-only dialog title override */
@@ -91,7 +91,7 @@
             v-if="!isViewMode"
             :value="title"
             type="text"
-            placeholder="Item name..."
+            :placeholder="titlePlaceholder || 'Item name...'"
             class="w-full text-xl font-semibold bg-transparent border border-transparent outline-none placeholder:text-muted-foreground/50 focus:ring-0 hover:border-border hover:bg-muted/20 focus:border-border focus:bg-muted/20 rounded-md px-2 py-0 -mx-1 transition-all"
             @input="emit('update:title', ($event.target as HTMLInputElement).value)" />
           <h2 v-else class="text-xl font-semibold px-1">{{ title }}</h2>
