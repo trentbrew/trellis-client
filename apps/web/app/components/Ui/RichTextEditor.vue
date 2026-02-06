@@ -1,5 +1,6 @@
 <script lang="ts" setup>
 import StarterKit from '@tiptap/starter-kit'
+import Placeholder from '@tiptap/extension-placeholder'
 import { EditorContent, useEditor } from '@tiptap/vue-3'
 
 const props = defineProps<{
@@ -7,20 +8,30 @@ const props = defineProps<{
   placeholder?: string
   minHeight?: string
   compact?: boolean
+  seamless?: boolean
 }>()
 
 const emit = defineEmits<{
   'update:modelValue': [value: string]
 }>()
 
+const editorClass = props.seamless
+  ? 'min-h-[24px] focus:outline-none prose-sm prose-p:my-0.5 prose-headings:my-1 prose-ul:my-0.5 prose-li:my-0'
+  : props.compact
+    ? 'min-h-[60px] focus:outline-none prose-sm prose-p:my-1 prose-headings:my-2 prose-ul:my-1 prose-li:my-0.5'
+    : 'min-h-[100px] focus:outline-none prose-sm prose-p:my-2 prose-headings:my-3 prose-ul:my-2 prose-li:my-1'
+
 const editor = useEditor({
-  extensions: [StarterKit],
+  extensions: [
+    StarterKit,
+    Placeholder.configure({
+      placeholder: props.placeholder || '',
+    }),
+  ],
   content: props.modelValue || '',
   editorProps: {
     attributes: {
-      class: props.compact
-        ? 'min-h-[60px] focus:outline-none prose-sm prose-p:my-1 prose-headings:my-2 prose-ul:my-1 prose-li:my-0.5'
-        : 'min-h-[100px] focus:outline-none prose-sm prose-p:my-2 prose-headings:my-3 prose-ul:my-2 prose-li:my-1',
+      class: editorClass,
     },
   },
   onUpdate: ({ editor: e }) => {
@@ -43,9 +54,9 @@ onBeforeUnmount(() => {
 </script>
 
 <template>
-  <div v-if="editor" class="rounded-md border bg-card overflow-hidden">
+  <div v-if="editor" :class="seamless ? 'overflow-hidden' : 'rounded-md border bg-card overflow-hidden'">
     <!-- Compact Toolbar -->
-    <div class="flex flex-wrap items-center gap-1 border-b bg-muted/30 px-1.5 py-1">
+    <div v-if="!seamless" class="flex flex-wrap items-center gap-1 border-b bg-muted/30 px-1.5 py-1">
       <!-- Text Formatting -->
       <div class="flex items-center">
         <UiTooltip>
@@ -224,8 +235,11 @@ onBeforeUnmount(() => {
     <!-- Editor Content -->
     <EditorContent
       :editor="editor"
-      class="prose prose-sm max-w-none px-3 py-2 text-sm text-foreground"
-      :class="compact ? 'min-h-[60px]' : 'min-h-[100px]'" />
+      class="prose prose-sm max-w-none text-sm text-foreground"
+      :class="[
+        seamless ? 'px-0 py-0' : 'px-3 py-2',
+        seamless ? 'min-h-[24px]' : compact ? 'min-h-[60px]' : 'min-h-[100px]',
+      ]" />
   </div>
 </template>
 
