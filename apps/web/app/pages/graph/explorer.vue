@@ -15,7 +15,7 @@
   const selectedEntity = ref<GraphEntity | null>(null)
   const entityTypes = ref<string[]>([])
 
-  const browseState = useBrowse<GraphEntity>({
+  const { browseState } = useBrowse<GraphEntity>({
     items: entities,
     searchFields: ['@id', 'title', '@type'],
     defaultViewMode: 'list',
@@ -23,18 +23,6 @@
       { value: 'title', label: 'Title' },
       { value: '@type', label: 'Type' },
       { value: '@id', label: 'ID' },
-    ],
-    filters: [
-      {
-        id: 'type',
-        label: 'Type',
-        icon: 'lucide:tag',
-        options: computed(() => [
-          { value: 'all', label: 'All types' },
-          ...entityTypes.value.map((t) => ({ value: t, label: t })),
-        ]).value,
-        fn: (item, value) => item['@type'] === value,
-      },
     ],
   })
 

@@ -79,120 +79,106 @@
 </script>
 
 <template>
-  <Page
-    variant="settings"
-    title="Query Console"
-    subtitle="Developer"
-    description="Execute EQL-S queries against the TQL graph engine."
-    icon="lucide:terminal">
-    <div class="space-y-4">
-      <!-- Query Input -->
-      <UiCard>
-        <UiCardContent class="p-4 space-y-3">
-          <div class="flex items-center justify-between">
-            <h3 class="text-sm font-semibold">EQL-S Query</h3>
-            <div class="flex items-center gap-2">
-              <select
-                class="h-8 rounded-md border border-input bg-background px-2 text-xs ring-offset-background focus:outline-none focus:ring-2 focus:ring-ring"
-                @change="(e: Event) => { const v = (e.target as HTMLSelectElement).value; if (v) { queryText = v; (e.target as HTMLSelectElement).selectedIndex = 0 } }">
-                <option value="">Presets...</option>
-                <option v-for="p in presets" :key="p.label" :value="p.query">{{ p.label }}</option>
-              </select>
-            </div>
-          </div>
-          <textarea
-            v-model="queryText"
-            rows="3"
-            class="w-full rounded-md border border-input bg-background px-3 py-2 text-sm font-mono ring-offset-background placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring resize-y"
-            placeholder="FIND calendaritem AS ?e"
-            @keydown.meta.enter="executeQuery"
-            @keydown.ctrl.enter="executeQuery" />
-          <div class="flex items-center justify-between">
-            <p class="text-[10px] text-muted-foreground">Press <kbd class="rounded border px-1 py-0.5 text-[10px]">Cmd+Enter</kbd> to run</p>
-            <UiButton size="sm" :disabled="isRunning || !queryText.trim()" @click="executeQuery">
-              <Icon v-if="isRunning" name="lucide:loader-2" class="mr-1.5 size-3.5 animate-spin" />
-              <Icon v-else name="lucide:play" class="mr-1.5 size-3.5" />
-              {{ isRunning ? 'Running...' : 'Execute' }}
-            </UiButton>
-          </div>
-        </UiCardContent>
-      </UiCard>
-
-      <!-- Named Projections -->
-      <UiCard v-if="projectionsList.length > 0">
-        <UiCardContent class="p-4">
-          <h3 class="text-sm font-semibold mb-2">Named Projections</h3>
-          <div class="flex flex-wrap gap-2">
+  <Page variant="canvas" fill-height>
+    <div class="flex h-full flex-col">
+      <!-- Compact Toolbar -->
+      <div class="shrink-0 flex items-center justify-between border-b border-border bg-card px-4 py-2">
+        <div class="flex items-center gap-3">
+          <Icon name="lucide:terminal" class="size-4 text-muted-foreground" />
+          <h1 class="text-sm font-semibold">Query Console</h1>
+          <span class="text-xs text-muted-foreground">EQL-S</span>
+        </div>
+        <div class="flex items-center gap-2">
+          <!-- Named Projections -->
+          <template v-if="projectionsList.length > 0">
             <UiButton
               v-for="proj in projectionsList"
               :key="proj.id"
-              variant="outline"
+              variant="ghost"
               size="sm"
               :disabled="isRunning"
+              class="text-xs"
               @click="executeProjection(proj)">
               <Icon name="lucide:zap" class="mr-1 size-3" />
               {{ proj.name }}
             </UiButton>
-          </div>
-        </UiCardContent>
-      </UiCard>
+          </template>
+          <div class="w-px h-5 bg-border" />
+          <select
+            class="h-7 rounded-md border border-input bg-background px-2 text-xs ring-offset-background focus:outline-none focus:ring-1 focus:ring-ring"
+            @change="(e: Event) => { const v = (e.target as HTMLSelectElement).value; if (v) { queryText = v; (e.target as HTMLSelectElement).selectedIndex = 0 } }">
+            <option value="">Presets...</option>
+            <option v-for="p in presets" :key="p.label" :value="p.query">{{ p.label }}</option>
+          </select>
+          <UiButton size="sm" :disabled="isRunning || !queryText.trim()" @click="executeQuery">
+            <Icon v-if="isRunning" name="lucide:loader-2" class="mr-1.5 size-3.5 animate-spin" />
+            <Icon v-else name="lucide:play" class="mr-1.5 size-3.5" />
+            {{ isRunning ? 'Running...' : 'Execute' }}
+          </UiButton>
+        </div>
+      </div>
+
+      <!-- Query Input -->
+      <div class="shrink-0 border-b border-border">
+        <textarea
+          v-model="queryText"
+          rows="3"
+          class="w-full bg-muted/30 px-4 py-3 text-sm font-mono placeholder:text-muted-foreground focus:outline-none resize-y"
+          placeholder="FIND calendaritem AS ?e"
+          @keydown.meta.enter="executeQuery"
+          @keydown.ctrl.enter="executeQuery" />
+        <div class="flex items-center justify-between px-4 py-1.5 bg-muted/10 text-[10px] text-muted-foreground">
+          <span>Press <kbd class="rounded border px-1 py-0.5">Cmd+Enter</kbd> to run</span>
+          <span v-if="meta">{{ results.length }} rows · {{ meta.executionTime?.toFixed(2) ?? '—' }}ms</span>
+        </div>
+      </div>
 
       <!-- Error -->
-      <UiCard v-if="error" class="border-destructive">
-        <UiCardContent class="p-4">
-          <div class="flex items-start gap-2">
-            <Icon name="lucide:alert-circle" class="size-4 text-destructive mt-0.5 shrink-0" />
-            <div>
-              <p class="text-sm font-medium text-destructive">Query Error</p>
-              <p class="text-sm text-muted-foreground font-mono mt-1">{{ error }}</p>
-            </div>
-          </div>
-        </UiCardContent>
-      </UiCard>
+      <div v-if="error" class="shrink-0 flex items-start gap-2 border-b border-destructive/30 bg-destructive/5 px-4 py-3">
+        <Icon name="lucide:alert-circle" class="size-4 text-destructive mt-0.5 shrink-0" />
+        <div>
+          <p class="text-sm font-medium text-destructive">Query Error</p>
+          <p class="text-sm text-muted-foreground font-mono mt-1">{{ error }}</p>
+        </div>
+      </div>
 
       <!-- Results -->
-      <UiCard v-if="results.length > 0 || meta">
-        <UiCardContent class="p-0">
-          <!-- Meta bar -->
-          <div v-if="meta" class="border-b border-border px-4 py-2 flex items-center gap-4 text-[10px] text-muted-foreground font-mono">
-            <span>{{ results.length }} rows</span>
-            <span v-if="meta.executionTime">{{ meta.executionTime.toFixed(2) }}ms</span>
-            <span v-if="meta.plan" class="truncate">{{ meta.plan }}</span>
-          </div>
+      <div class="flex-1 min-h-0 overflow-auto">
+        <table v-if="results.length > 0" class="w-full text-sm">
+          <thead class="sticky top-0 bg-card z-10">
+            <tr class="border-b border-border">
+              <th v-for="col in resultColumns" :key="col" class="px-4 py-2 text-left text-xs font-medium text-muted-foreground whitespace-nowrap">
+                {{ col }}
+              </th>
+            </tr>
+          </thead>
+          <tbody class="divide-y divide-border">
+            <tr v-for="(row, i) in results" :key="i" class="hover:bg-muted/50">
+              <td v-for="col in resultColumns" :key="col" class="px-4 py-2 font-mono text-xs whitespace-nowrap">
+                {{ row[col] ?? '' }}
+              </td>
+            </tr>
+          </tbody>
+        </table>
 
-          <!-- Data table -->
-          <div class="overflow-x-auto">
-            <table class="w-full text-sm">
-              <thead>
-                <tr class="border-b border-border">
-                  <th v-for="col in resultColumns" :key="col" class="px-4 py-2 text-left text-xs font-medium text-muted-foreground">
-                    {{ col }}
-                  </th>
-                </tr>
-              </thead>
-              <tbody class="divide-y divide-border">
-                <tr v-for="(row, i) in results" :key="i" class="hover:bg-muted/50">
-                  <td v-for="col in resultColumns" :key="col" class="px-4 py-2 font-mono text-xs">
-                    {{ row[col] ?? '' }}
-                  </td>
-                </tr>
-              </tbody>
-            </table>
-          </div>
+        <!-- Empty state when no results and no error -->
+        <div v-else-if="!error && !isRunning" class="flex flex-col items-center justify-center h-full text-muted-foreground">
+          <Icon name="lucide:terminal" class="size-10 mb-3 opacity-30" />
+          <p class="text-sm">Run a query to see results</p>
+        </div>
+      </div>
 
-          <!-- Trace -->
-          <div v-if="meta?.trace && (meta.trace as any[]).length > 0" class="border-t border-border px-4 py-3">
-            <details>
-              <summary class="text-xs font-medium text-muted-foreground cursor-pointer">Execution Trace ({{ (meta.trace as any[]).length }} steps)</summary>
-              <div class="mt-2 space-y-1">
-                <div v-for="(step, i) in (meta.trace as any[])" :key="i" class="text-[10px] font-mono text-muted-foreground">
-                  {{ step.goal }} — {{ step.bindingsCount }} bindings ({{ step.durationMs?.toFixed(2) }}ms)
-                </div>
-              </div>
-            </details>
+      <!-- Trace Footer -->
+      <div v-if="meta?.trace && (meta.trace as any[]).length > 0" class="shrink-0 border-t border-border bg-muted/20 px-4 py-2">
+        <details>
+          <summary class="text-xs font-medium text-muted-foreground cursor-pointer">Execution Trace ({{ (meta.trace as any[]).length }} steps)</summary>
+          <div class="mt-2 space-y-1">
+            <div v-for="(step, i) in (meta.trace as any[])" :key="i" class="text-[10px] font-mono text-muted-foreground">
+              {{ step.goal }} — {{ step.bindingsCount }} bindings ({{ step.durationMs?.toFixed(2) }}ms)
+            </div>
           </div>
-        </UiCardContent>
-      </UiCard>
+        </details>
+      </div>
     </div>
   </Page>
 </template>
