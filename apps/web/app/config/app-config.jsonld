@@ -3302,6 +3302,157 @@
       }
     },
     {
+      "@id": "route:graph",
+      "@type": "app:Route",
+      "routePath": "/graph",
+      "label": "Graph",
+      "icon": "lucide:network",
+      "tint": "text-cyan-300",
+      "inRail": true,
+      "railPosition": "secondary",
+      "order": 8,
+      "requiresAuth": false,
+      "permissions": {
+        "minRole": "guest"
+      },
+      "meta": {
+        "title": "Graph",
+        "description": "TQL graph engine dashboard, explorer, and developer tools.",
+        "subtitle": "Developer"
+      },
+      "sidebarSections": [
+        {
+          "label": "OVERVIEW",
+          "key": "graph-overview",
+          "icon": "lucide:layout-dashboard",
+          "items": [
+            {
+              "path": "/graph/dashboard",
+              "label": "Dashboard",
+              "icon": "lucide:gauge",
+              "tint": "text-cyan-300"
+            }
+          ],
+          "collapsible": false,
+          "order": 0
+        },
+        {
+          "label": "TOOLS",
+          "key": "graph-tools",
+          "icon": "lucide:wrench",
+          "items": [
+            {
+              "path": "/graph/explorer",
+              "label": "Explorer",
+              "icon": "lucide:search",
+              "tint": "text-emerald-300"
+            },
+            {
+              "path": "/graph/query",
+              "label": "Query Console",
+              "icon": "lucide:terminal",
+              "tint": "text-violet-300"
+            },
+            {
+              "path": "/graph/ontology",
+              "label": "Ontology",
+              "icon": "lucide:blocks",
+              "tint": "text-amber-300"
+            }
+          ],
+          "collapsible": false,
+          "order": 1
+        },
+        {
+          "label": "SYSTEM",
+          "key": "graph-system",
+          "icon": "lucide:activity",
+          "items": [
+            {
+              "path": "/graph/activity",
+              "label": "Activity Log",
+              "icon": "lucide:scroll-text",
+              "tint": "text-gray-400"
+            }
+          ],
+          "collapsible": false,
+          "order": 2
+        }
+      ],
+      "children": [
+        { "@id": "route:graph-dashboard" },
+        { "@id": "route:graph-explorer" },
+        { "@id": "route:graph-query" },
+        { "@id": "route:graph-ontology" },
+        { "@id": "route:graph-activity" }
+      ]
+    },
+    {
+      "@id": "route:graph-dashboard",
+      "@type": "app:Route",
+      "routePath": "/graph/dashboard",
+      "label": "Dashboard",
+      "icon": "lucide:gauge",
+      "tint": "text-cyan-300",
+      "order": 0,
+      "meta": {
+        "title": "Graph Dashboard",
+        "description": "Health status, entity counts, and ontology summary."
+      }
+    },
+    {
+      "@id": "route:graph-explorer",
+      "@type": "app:Route",
+      "routePath": "/graph/explorer",
+      "label": "Explorer",
+      "icon": "lucide:search",
+      "tint": "text-emerald-300",
+      "order": 1,
+      "meta": {
+        "title": "Entity Explorer",
+        "description": "Browse, search, and inspect graph entities."
+      }
+    },
+    {
+      "@id": "route:graph-query",
+      "@type": "app:Route",
+      "routePath": "/graph/query",
+      "label": "Query Console",
+      "icon": "lucide:terminal",
+      "tint": "text-violet-300",
+      "order": 2,
+      "meta": {
+        "title": "Query Console",
+        "description": "Execute EQL-S queries and view results."
+      }
+    },
+    {
+      "@id": "route:graph-ontology",
+      "@type": "app:Route",
+      "routePath": "/graph/ontology",
+      "label": "Ontology",
+      "icon": "lucide:blocks",
+      "tint": "text-amber-300",
+      "order": 3,
+      "meta": {
+        "title": "Ontology Viewer",
+        "description": "Schema definitions, projections, and attribute catalog."
+      }
+    },
+    {
+      "@id": "route:graph-activity",
+      "@type": "app:Route",
+      "routePath": "/graph/activity",
+      "label": "Activity Log",
+      "icon": "lucide:scroll-text",
+      "tint": "text-gray-400",
+      "order": 4,
+      "meta": {
+        "title": "Activity Log",
+        "description": "Recent graph mutations and system events."
+      }
+    },
+    {
       "@id": "route:help",
       "@type": "app:Route",
       "routePath": "/help",

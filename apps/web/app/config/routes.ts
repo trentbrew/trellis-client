@@ -341,6 +341,14 @@ export const ROUTE_PATHS = {
       selfAssessments: '/app/reports/self-assessments',
     },
   },
+  graph: {
+    root: '/graph',
+    dashboard: '/graph/dashboard',
+    explorer: '/graph/explorer',
+    query: '/graph/query',
+    ontology: '/graph/ontology',
+    activity: '/graph/activity',
+  },
   neu: '/neu',
   admin: {
     root: '/admin',
