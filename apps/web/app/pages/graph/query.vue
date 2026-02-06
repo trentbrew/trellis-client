@@ -6,7 +6,7 @@
   const meta = ref<{ executionTime?: number; plan?: string; trace?: unknown[] } | null>(null)
   const error = ref<string | null>(null)
   const isRunning = ref(false)
-  const projectionsList = ref<string[]>([])
+  const projectionsList = ref<{ id: string; name: string; query: string }[]>([])
 
   const presets = [
     { label: 'All entities', query: 'FIND calendaritem AS ?e' },
@@ -34,17 +34,17 @@
     }
   }
 
-  const executeProjection = async (projId: string) => {
+  const executeProjection = async (proj: { id: string; name: string; query: string }) => {
     isRunning.value = true
     error.value = null
     meta.value = null
     results.value = []
-    queryText.value = `-- projection: ${projId}`
+    queryText.value = proj.query || `-- projection: ${proj.name}`
 
     try {
       const result = await $fetch<{ data: Record<string, unknown>[]; meta?: any }>('/api/graph/query', {
         method: 'POST',
-        body: { projection: projId },
+        body: { projection: proj.id },
       })
       results.value = result.data
       meta.value = result.meta || null
@@ -66,8 +66,12 @@
 
   onMounted(async () => {
     try {
-      const data = await $fetch<{ projections: string[] }>('/api/graph/projections')
-      projectionsList.value = data.projections || []
+      const data = await $fetch<{ projections: any[] }>('/api/graph/projections')
+      projectionsList.value = (data.projections || []).map((p: any) => ({
+        id: p['@id'] || String(p),
+        name: p.name || p['@id'] || String(p),
+        query: p.query || '',
+      }))
     } catch {
       // ignore
     }
@@ -121,13 +125,13 @@
           <div class="flex flex-wrap gap-2">
             <UiButton
               v-for="proj in projectionsList"
-              :key="proj"
+              :key="proj.id"
               variant="outline"
               size="sm"
               :disabled="isRunning"
               @click="executeProjection(proj)">
               <Icon name="lucide:zap" class="mr-1 size-3" />
-              {{ proj }}
+              {{ proj.name }}
             </UiButton>
           </div>
         </UiCardContent>
