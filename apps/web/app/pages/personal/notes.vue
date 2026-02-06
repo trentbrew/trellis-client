@@ -8,75 +8,12 @@
   useHead({ title: 'Notes | Personal' })
 
   // ---------------------------------------------------------------------------
-  // Seed data
+  // Live data from instant-local
   // ---------------------------------------------------------------------------
 
-  const today = new Date()
-  const fmt = (d: Date) => d.toISOString().split('T')[0]!
-  const daysFromNow = (n: number) => { const d = new Date(today); d.setDate(d.getDate() + n); return fmt(d) }
+  const { items: allItems, create: createItem, update: updateItem, remove: removeItem } = useCalendarItems()
 
-  const items = ref<NoteItem[]>([
-    {
-      id: 'note-1', type: 'note', title: 'Project ideas brainstorm',
-      description: 'Collection of side-project concepts to explore this quarter.',
-      startDate: daysFromNow(-5), allDay: true,
-      priority: 'low', urgency: 'not-urgent', priorityOverride: false, urgencyOverride: false,
-      category: 'personal', tags: ['ideas', 'projects'], owner: 'you', involved: [],
-      attachments: [], reminders: [],
-      content: '1. CLI tool for graph visualization\n2. Recipe tracker PWA\n3. Open-source calendar widget\n4. Markdown-based habit tracker',
-      pinned: true, linkedItems: [],
-    },
-    {
-      id: 'note-2', type: 'note', title: 'Meeting notes — roadmap planning',
-      description: 'Key takeaways from the Q1 planning session.',
-      startDate: daysFromNow(-1), allDay: true,
-      priority: 'medium', urgency: 'not-urgent', priorityOverride: false, urgencyOverride: false,
-      category: 'work', tags: ['meeting-notes', 'planning'], owner: 'you', involved: ['alex', 'maya'],
-      attachments: [], reminders: [],
-      content: '- Ship v2 by end of March\n- Hire 1 more frontend engineer\n- Migrate auth to new provider\n- Deprecate legacy API by April',
-      pinned: false, linkedItems: [],
-    },
-    {
-      id: 'note-3', type: 'note', title: 'Gratitude journal — week 5',
-      description: 'Weekly reflection.',
-      startDate: daysFromNow(0), allDay: true,
-      priority: 'low', urgency: 'not-urgent', priorityOverride: false, urgencyOverride: false,
-      category: 'personal', tags: ['journal', 'gratitude'], owner: 'you', involved: [],
-      attachments: [], reminders: [],
-      content: 'Grateful for: good health, a productive week, a long walk in the park.',
-      pinned: false, linkedItems: [],
-    },
-    {
-      id: 'note-4', type: 'note', title: 'Book recommendations',
-      description: 'Books suggested by friends and colleagues.',
-      startDate: daysFromNow(-10), allDay: true,
-      priority: 'low', urgency: 'not-urgent', priorityOverride: false, urgencyOverride: false,
-      category: 'personal', tags: ['reading', 'books'], owner: 'you', involved: [],
-      attachments: [], reminders: [],
-      content: '- "The Pragmatic Programmer" — recommended by Alex\n- "Atomic Habits" — re-read\n- "Staff Engineer" — Will Larson\n- "Designing Data-Intensive Applications" — currently reading',
-      pinned: true, linkedItems: [],
-    },
-    {
-      id: 'note-5', type: 'note', title: 'Design tokens research',
-      description: 'Notes on design token strategies for the component library.',
-      startDate: daysFromNow(-3), allDay: true,
-      priority: 'medium', urgency: 'not-urgent', priorityOverride: false, urgencyOverride: false,
-      category: 'work', tags: ['design-systems', 'research'], owner: 'you', involved: ['eli'],
-      attachments: [], reminders: [],
-      content: '- W3C Design Tokens spec (draft)\n- Style Dictionary vs Theo\n- Figma Variables API integration\n- Token naming: category.property.variant.state',
-      pinned: false, linkedItems: [],
-    },
-    {
-      id: 'note-6', type: 'note', title: 'Vacation packing list — spring trip',
-      description: 'Essentials for the Asheville trip.',
-      startDate: daysFromNow(-7), allDay: true,
-      priority: 'low', urgency: 'not-urgent', priorityOverride: false, urgencyOverride: false,
-      category: 'personal', tags: ['travel', 'lists'], owner: 'you', involved: [],
-      attachments: [], reminders: [],
-      content: '- Hiking boots\n- Rain jacket\n- Camera + spare battery\n- Trail snacks\n- Journal & pen',
-      pinned: false, linkedItems: [],
-    },
-  ])
+  const items = computed(() => allItems.value.filter((i): i is NoteItem => i.type === 'note'))
 
   // ---------------------------------------------------------------------------
   // Browse
@@ -166,19 +103,18 @@
   function navPrev() { if (canPrev.value) viewingItem.value = filteredItems.value[viewingIndex.value - 1] as CalendarItem }
   function navNext() { if (canNext.value) viewingItem.value = filteredItems.value[viewingIndex.value + 1] as CalendarItem }
 
-  function handleCreate(item: CalendarItem) {
-    items.value.unshift({ ...item, id: item.id || `note-${Date.now()}` } as NoteItem)
+  async function handleCreate(item: CalendarItem) {
+    await createItem({ ...item, type: 'note' } as NoteItem)
     createOpen.value = false
   }
 
-  function handleUpdate(item: CalendarItem) {
-    const idx = items.value.findIndex((i) => i.id === item.id)
-    if (idx !== -1) items.value[idx] = { ...item } as NoteItem
+  async function handleUpdate(item: CalendarItem) {
+    await updateItem(item)
     viewOpen.value = false
   }
 
-  function handleDelete(item: CalendarItem) {
-    items.value = items.value.filter((i) => i.id !== item.id)
+  async function handleDelete(item: CalendarItem) {
+    await removeItem(item.id)
     viewOpen.value = false
   }
 </script>
