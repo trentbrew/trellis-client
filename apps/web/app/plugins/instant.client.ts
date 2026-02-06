@@ -1,238 +1,74 @@
 /**
- * Test bypass mode - only enabled in dev/test environments
- * When enabled, returns a mock InstantDB instance that bypasses auth
+ * InstantDB plugin — local-first adapter.
+ *
+ * Uses `instant-local` to provide the same API surface as @instantdb/core
+ * with in-memory storage persisted to localStorage. When ready to migrate
+ * to the real InstantDB cloud, replace `createLocalInstantDB()` with
+ * `init({ appId, schema })` from `@instantdb/core`.
+ *
+ * See apps/web/app/lib/instant-local/index.ts for the adapter source.
  */
-const isTestBypassEnabled = () => {
-  if (process.env.VITEST) return true
-  if (process.env.ENABLE_TEST_AUTH_BYPASS === 'true') return true
 
-  // In production, never allow bypass.
-  if (process.env.NODE_ENV === 'production') return false
-
-  if (import.meta.client && typeof window !== 'undefined') {
-    const params = new URLSearchParams(window.location.search)
-    if (params.get('testAuthBypass') === 'true') return true
-  }
-  return false
-}
+import { createLocalInstantDB } from '~/lib/instant-local'
+import schema from '~~/instant.schema'
 
 export default defineNuxtPlugin(() => {
-  const storageKey = 'platform-sandbox:mockInstantAuthUser'
+  const db = createLocalInstantDB({
+    storageKey: 'platform-sandbox',
+    schema,
+    verbose: false,
+  })
 
-  const createEntityProxy = () => {
-    return new Proxy(
-      {},
-      {
-        get() {
-          return {
-            create: () => ({ __mock: true }),
-            update: () => ({ __mock: true }),
-            delete: () => ({ __mock: true }),
-            link: () => ({ __mock: true }),
-            unlink: () => ({ __mock: true }),
-          }
-        },
-      },
-    )
-  }
+  // ── Seed minimum data on first boot ─────────────────────────────────
+  // This ensures ECMS pages have the facility / membership data they
+  // expect, matching the old hardcoded mock. Data is persisted to
+  // localStorage so this only runs once.
 
-  const tx = new Proxy(
-    {},
-    {
-      get() {
-        return createEntityProxy()
-      },
-    },
-  )
+  if (import.meta.client) {
+    const FACILITY_ID = 'platform-sandbox-facility-1'
+    const MEMBER_ID = 'member-1'
 
-  const demoUsers = {
-    superadmin: {
-      id: 'user-superadmin',
-      email: 'superadmin@platform-sandbox.local',
-      name: 'Super Admin',
-      avatar: null,
-      role: 'super_admin' as const,
-    },
-    admin: {
-      id: 'user-admin',
-      email: 'admin@platform-sandbox.local',
-      name: 'Admin User',
-      avatar: null,
-      role: 'admin' as const,
-    },
-    manager: {
-      id: 'user-manager',
-      email: 'manager@platform-sandbox.local',
-      name: 'Facility Manager',
-      avatar: null,
-      role: 'facility_manager' as const,
-    },
-    guest: {
-      id: 'user-guest',
-      email: 'guest@platform-sandbox.local',
-      name: 'Guest User',
-      avatar: null,
-      role: 'guest' as const,
-    },
-  }
+    const facilities = db._store.getAll('facilities')
+    if (facilities.length === 0) {
+      void db.transact([
+        db.tx.facilities[FACILITY_ID].create({
+          facilityID: FACILITY_ID,
+          facility: 'Auburn',
+          abbr: 'AUB',
+          group: 'northwind',
+          active: true,
+          slug: 'auburn',
+          organizationId: 'org_northwind',
+          city: 'Auburn',
+          state: 'WA',
+        }),
+      ])
+    }
 
-  const defaultUser = demoUsers.admin
-
-  const loadUser = () => {
-    if (!import.meta.client) return defaultUser
-    try {
-      const raw = localStorage.getItem(storageKey)
-      if (!raw) return defaultUser
-      const parsed = JSON.parse(raw)
-      return parsed && typeof parsed === 'object' ? parsed : defaultUser
-    } catch {
-      return defaultUser
+    const members = db._store.getAll('facilityMembers')
+    if (members.length === 0) {
+      const user = db.demoUsers.admin
+      void db.transact([
+        db.tx.facilityMembers[MEMBER_ID].create({
+          facilityId: FACILITY_ID,
+          organizationId: 'org_northwind',
+          userId: user.id,
+          email: user.email,
+          name: user.name,
+          role: user.role,
+          status: 'active',
+        }),
+      ])
     }
   }
 
-  let currentUser: any = loadUser()
-
-  // eslint-disable-next-line no-unused-vars
-  const authSubscribers = new Set<(payload: { user: any }) => void>()
-  const emitAuth = () => {
-    authSubscribers.forEach((cb) => {
-      try {
-        cb({ user: currentUser })
-      } catch {
-        return
-      }
-    })
-  }
-
-  const mockFacilities = [
-    {
-      id: 'platform-sandbox-facility-1',
-      organizationId: 'org_northwind',
-      name: 'Auburn',
-      slug: 'auburn',
-      location: { city: 'Auburn', state: 'WA' },
-    },
-  ]
-
-  const queryOnce = async (query: any) => {
-    const data: any = {}
-    const keys = query && typeof query === 'object' ? Object.keys(query) : []
-
-    keys.forEach((k) => {
-      if (k === 'facilities') {
-        data.facilities = mockFacilities
-        return
-      }
-      if (k === 'facilityMembers') {
-        data.facilityMembers = [
-          {
-            id: 'member-1',
-            facilityId: mockFacilities[0]!.id,
-            organizationId: 'org_northwind',
-            userId: currentUser?.id || defaultUser.id,
-            role: currentUser?.role || defaultUser.role,
-            status: 'active',
-          },
-        ]
-        return
-      }
-
-      // Default empty arrays for collection-like entities
-      data[k] = []
-    })
-
-    return { data }
-  }
-
-  const subscribeQuery = (query: any, callback: any) => {
-    void queryOnce(query)
-      .then((resp) => {
-        callback?.({ data: resp.data })
-      })
-      .catch((error) => {
-        callback?.({ error })
-      })
-    return () => {}
-  }
-
-  const subscribeAuth = (callback: any) => {
-    if (typeof callback === 'function') {
-      authSubscribers.add(callback)
-      callback({ user: currentUser })
-    }
-    return () => {
-      if (typeof callback === 'function') authSubscribers.delete(callback)
-    }
-  }
-
-  const signOut = async () => {
-    currentUser = null
-    if (import.meta.client) {
-      try {
-        localStorage.removeItem(storageKey)
-      } catch {
-        return
-      }
-    }
-    emitAuth()
-  }
-
-  const signInWithIdToken = async (args: any) => {
-    void args
-    currentUser = {
-      ...defaultUser,
-      id: 'demo-user-' + (typeof crypto !== 'undefined' && 'randomUUID' in crypto ? crypto.randomUUID() : Date.now()),
-    }
-    if (import.meta.client) {
-      try {
-        localStorage.setItem(storageKey, JSON.stringify(currentUser))
-      } catch {
-        return
-      }
-    }
-    emitAuth()
-  }
-
-  const switchUser = (userKey: keyof typeof demoUsers) => {
-    const newUser = demoUsers[userKey]
-    if (!newUser) return
-    currentUser = { ...newUser }
-    if (import.meta.client) {
-      try {
-        localStorage.setItem(storageKey, JSON.stringify(currentUser))
-      } catch {
-        return
-      }
-    }
-    emitAuth()
-    // Reload to refresh all state
-    if (import.meta.client) {
-      window.location.reload()
-    }
-  }
-
-  const instantDb = {
-    subscribeQuery,
-    subscribeAuth,
-    queryOnce,
-    transact: async () => {},
-    tx,
-    auth: {
-      signOut,
-      signInWithIdToken,
-    },
-    getAuth: async () => currentUser,
-    demoUsers,
-    switchUser,
-  } as any
-
-  if (import.meta.dev && isTestBypassEnabled()) {
-    console.warn('⚠️ TEST BYPASS ENABLED - using mock InstantDB')
+  if (import.meta.dev) {
+    console.info('✓ instant-local adapter active (localStorage-backed)')
   }
 
   return {
     provide: {
-      instantDb,
+      instantDb: db,
     },
   }
 })
