@@ -352,7 +352,7 @@
 <template>
   <!-- Sidebar: Content frame (matches page header) -->
   <aside
-    class="border-sidebar-border bg-card/50 text-sidebar-foreground hidden flex-col border-r px-0 pb-0 lg:flex relative"
+    class="border-sidebar-border bg-background text-sidebar-foreground hidden flex-col border-r px-0 pb-0 lg:flex relative"
     :style="{
       width: sidebarCollapse.isCollapsed.value ? '0px' : `${sidebarWidth}px`,
       transition: transitionsDisabled ? 'none' : 'width 0.3s ease',
