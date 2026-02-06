@@ -1,0 +1,517 @@
+{
+  "@context": "https://schema.org",
+  "@graph": [
+    {
+      "@id": "note:1770339705487",
+      "@type": "Note",
+      "title": "Sidebar Organization — Phase 1 Complete",
+      "content": "Implemented Phase 1 of sidebar reorg per UX proposal (Option B flat). Changes: (1) Dropped 'My' prefix from Tasks, Calendar, Notes. (2) Replaced Reminders with Today as first sidebar item. (3) Created /personal/today page — smart daily digest with overdue, schedule, due today, upcoming, recent notes, completed sections. (4) Updated /personal/index.vue redirect to /personal/today. (5) Updated routes.ts ROUTE_PATHS. (6) All routes verified with zero console errors. Files: app-config.jsonld, routes.ts, pages/personal/today.vue, pages/personal/index.vue, pages/personal/tasks.vue, pages/personal/calendar.vue, pages/personal/notes.vue.",
+      "type": "decision",
+      "tags": [
+        "sidebar",
+        "ux",
+        "phase-1",
+        "done"
+      ],
+      "createdAt": "2026-02-06T01:01:45.487Z",
+      "updatedAt": "2026-02-06T01:01:45.487Z"
+    },
+    {
+      "@id": "note:1770339712230",
+      "@type": "Note",
+      "title": "CalendarItemDialogShell Refactor",
+      "content": "Extracted the dialog chrome (header, navigation, title/description editing, properties row, footer) from CalendarItemDialog.vue into a reusable CalendarItemDialogShell.vue component. CalendarItemDialog now passes content via named slots: #header-badges, #properties, default slot (content area), #footer-left, #footer-right. This enables other dialogs (e.g. UnifiedTaskDialog) to reuse the same shell. Files: CalendarItemDialog.vue, CalendarItemDialogShell.vue.",
+      "type": "decision",
+      "tags": [
+        "refactor",
+        "dialog",
+        "architecture"
+      ],
+      "createdAt": "2026-02-06T01:01:52.230Z",
+      "updatedAt": "2026-02-06T01:01:52.230Z"
+    },
+    {
+      "@id": "task:1770339717421",
+      "@type": "Task",
+      "title": "Create /personal/today page",
+      "status": "done",
+      "priority": "high",
+      "timeSessions": [],
+      "tags": [
+        "sidebar",
+        "phase-1",
+        "personal"
+      ],
+      "createdAt": "2026-02-06T01:01:57.421Z",
+      "updatedAt": "2026-02-06T01:01:57.421Z"
+    },
+    {
+      "@id": "task:1770339726928",
+      "@type": "Task",
+      "title": "Rename sidebar items — drop My prefix",
+      "status": "done",
+      "priority": "high",
+      "timeSessions": [],
+      "tags": [
+        "sidebar",
+        "phase-1",
+        "config"
+      ],
+      "createdAt": "2026-02-06T01:02:06.928Z",
+      "updatedAt": "2026-02-06T01:02:06.928Z"
+    },
+    {
+      "@id": "task:1770339730697",
+      "@type": "Task",
+      "title": "Replace Reminders with Today in sidebar config",
+      "status": "done",
+      "priority": "high",
+      "timeSessions": [],
+      "tags": [
+        "sidebar",
+        "phase-1",
+        "config"
+      ],
+      "createdAt": "2026-02-06T01:02:10.697Z",
+      "updatedAt": "2026-02-06T01:02:10.697Z"
+    },
+    {
+      "@id": "task:1770339734223",
+      "@type": "Task",
+      "title": "Create /personal/notes page",
+      "status": "done",
+      "priority": "medium",
+      "timeSessions": [],
+      "tags": [
+        "sidebar",
+        "phase-1",
+        "personal"
+      ],
+      "createdAt": "2026-02-06T01:02:14.223Z",
+      "updatedAt": "2026-02-06T01:02:14.223Z"
+    },
+    {
+      "@id": "task:1770339740153",
+      "@type": "Task",
+      "title": "Extract CalendarItemDialogShell component",
+      "status": "done",
+      "priority": "medium",
+      "timeSessions": [],
+      "tags": [
+        "refactor",
+        "dialog",
+        "architecture"
+      ],
+      "createdAt": "2026-02-06T01:02:20.153Z",
+      "updatedAt": "2026-02-06T01:02:20.153Z"
+    },
+    {
+      "@id": "task:1770339744478",
+      "@type": "Task",
+      "title": "Sidebar Phase 2 — Split into HOME + LIBRARY sections",
+      "status": "todo",
+      "priority": "medium",
+      "timeSessions": [],
+      "tags": [
+        "sidebar",
+        "phase-2",
+        "config",
+        "ux"
+      ],
+      "createdAt": "2026-02-06T01:02:24.478Z",
+      "updatedAt": "2026-02-06T01:02:24.478Z"
+    },
+    {
+      "@id": "task:1770339749570",
+      "@type": "Task",
+      "title": "Create /personal/inbox page — quick capture/triage",
+      "status": "done",
+      "priority": "medium",
+      "timeSessions": [],
+      "tags": [
+        "sidebar",
+        "phase-2",
+        "personal",
+        "feature"
+      ],
+      "createdAt": "2026-02-06T01:02:29.570Z",
+      "updatedAt": "2026-02-06T01:02:29.570Z"
+    },
+    {
+      "@id": "task:1770339753602",
+      "@type": "Task",
+      "title": "Wire Today page to live data (replace seed data)",
+      "status": "done",
+      "priority": "high",
+      "timeSessions": [],
+      "tags": [
+        "personal",
+        "today",
+        "data",
+        "integration"
+      ],
+      "createdAt": "2026-02-06T01:02:33.602Z",
+      "updatedAt": "2026-02-06T01:02:33.602Z"
+    },
+    {
+      "@id": "task:1770339759664",
+      "@type": "Task",
+      "title": "Wire Tasks page to live data (replace seed data)",
+      "status": "done",
+      "priority": "high",
+      "timeSessions": [],
+      "tags": [
+        "personal",
+        "tasks",
+        "data",
+        "integration"
+      ],
+      "createdAt": "2026-02-06T01:02:39.664Z",
+      "updatedAt": "2026-02-06T01:02:39.664Z"
+    },
+    {
+      "@id": "task:1770339762785",
+      "@type": "Task",
+      "title": "Wire Calendar page to live data (replace seed data)",
+      "status": "done",
+      "priority": "high",
+      "timeSessions": [],
+      "tags": [
+        "personal",
+        "calendar",
+        "data",
+        "integration"
+      ],
+      "createdAt": "2026-02-06T01:02:42.785Z",
+      "updatedAt": "2026-02-06T01:02:42.785Z"
+    },
+    {
+      "@id": "task:1770339766445",
+      "@type": "Task",
+      "title": "Wire Notes page to live data (replace seed data)",
+      "status": "done",
+      "priority": "high",
+      "timeSessions": [],
+      "tags": [
+        "personal",
+        "notes",
+        "data",
+        "integration"
+      ],
+      "createdAt": "2026-02-06T01:02:46.445Z",
+      "updatedAt": "2026-02-06T01:02:46.445Z"
+    },
+    {
+      "@id": "task:1770339774196",
+      "@type": "Task",
+      "title": "Deprecate /personal/reminders page",
+      "status": "done",
+      "priority": "low",
+      "timeSessions": [],
+      "tags": [
+        "sidebar",
+        "cleanup",
+        "personal"
+      ],
+      "createdAt": "2026-02-06T01:02:54.196Z",
+      "updatedAt": "2026-02-06T01:02:54.196Z"
+    },
+    {
+      "@id": "task:1770339777909",
+      "@type": "Task",
+      "title": "CalendarItemDialog — verify shell refactor renders correctly",
+      "status": "todo",
+      "priority": "high",
+      "timeSessions": [],
+      "tags": [
+        "dialog",
+        "refactor",
+        "verification"
+      ],
+      "createdAt": "2026-02-06T01:02:57.909Z",
+      "updatedAt": "2026-02-06T01:02:57.909Z"
+    },
+    {
+      "@id": "task:1770339781951",
+      "@type": "Task",
+      "title": "Create /personal/documents page",
+      "status": "todo",
+      "priority": "low",
+      "timeSessions": [],
+      "tags": [
+        "sidebar",
+        "phase-2",
+        "personal",
+        "feature"
+      ],
+      "createdAt": "2026-02-06T01:03:01.951Z",
+      "updatedAt": "2026-02-06T01:03:01.951Z"
+    },
+    {
+      "@id": "task:1770339785964",
+      "@type": "Task",
+      "title": "Migrate UnifiedTaskDialog to use CalendarItemDialogShell",
+      "status": "todo",
+      "priority": "medium",
+      "timeSessions": [],
+      "tags": [
+        "dialog",
+        "refactor",
+        "ecms"
+      ],
+      "createdAt": "2026-02-06T01:03:05.964Z",
+      "updatedAt": "2026-02-06T01:03:05.964Z"
+    },
+    {
+      "@id": "task:1770340310716",
+      "@type": "Task",
+      "title": "Define DashboardWidget type system (types/dashboard.ts)",
+      "status": "todo",
+      "priority": "high",
+      "timeSessions": [],
+      "tags": [
+        "widget-dashboard",
+        "phase-1"
+      ],
+      "createdAt": "2026-02-06T01:11:50.716Z",
+      "updatedAt": "2026-02-06T01:11:50.716Z"
+    },
+    {
+      "@id": "task:1770340320572",
+      "@type": "Task",
+      "title": "Build useWidgetRegistry composable",
+      "status": "todo",
+      "priority": "high",
+      "timeSessions": [],
+      "tags": [
+        "widget-dashboard",
+        "phase-1"
+      ],
+      "createdAt": "2026-02-06T01:12:00.572Z",
+      "updatedAt": "2026-02-06T01:12:00.572Z"
+    },
+    {
+      "@id": "task:1770340328432",
+      "@type": "Task",
+      "title": "Build DashboardGrid.vue layout engine (CSS Grid + drag/resize)",
+      "status": "todo",
+      "priority": "high",
+      "timeSessions": [],
+      "tags": [
+        "widget-dashboard",
+        "phase-1"
+      ],
+      "createdAt": "2026-02-06T01:12:08.432Z",
+      "updatedAt": "2026-02-06T01:12:08.432Z"
+    },
+    {
+      "@id": "task:1770340332753",
+      "@type": "Task",
+      "title": "Build DashboardWidgetWrapper.vue (standard chrome, drag handle, menu)",
+      "status": "todo",
+      "priority": "high",
+      "timeSessions": [],
+      "tags": [
+        "widget-dashboard",
+        "phase-1"
+      ],
+      "createdAt": "2026-02-06T01:12:12.753Z",
+      "updatedAt": "2026-02-06T01:12:12.753Z"
+    },
+    {
+      "@id": "task:1770340337670",
+      "@type": "Task",
+      "title": "Build core widget components: StatWidget, ListWidget, CalendarWidget, NotesWidget",
+      "status": "todo",
+      "priority": "medium",
+      "timeSessions": [],
+      "tags": [
+        "widget-dashboard",
+        "phase-2"
+      ],
+      "createdAt": "2026-02-06T01:12:17.670Z",
+      "updatedAt": "2026-02-06T01:12:17.670Z"
+    },
+    {
+      "@id": "task:1770340341553",
+      "@type": "Task",
+      "title": "Build useWidgetData composable (InstantDB data binding)",
+      "status": "todo",
+      "priority": "high",
+      "timeSessions": [],
+      "tags": [
+        "widget-dashboard",
+        "phase-3"
+      ],
+      "createdAt": "2026-02-06T01:12:21.553Z",
+      "updatedAt": "2026-02-06T01:12:21.553Z"
+    },
+    {
+      "@id": "task:1770340345503",
+      "@type": "Task",
+      "title": "Build useDashboardLayout composable (persist layout to InstantDB settings)",
+      "status": "todo",
+      "priority": "high",
+      "timeSessions": [],
+      "tags": [
+        "widget-dashboard",
+        "phase-4"
+      ],
+      "createdAt": "2026-02-06T01:12:25.503Z",
+      "updatedAt": "2026-02-06T01:12:25.503Z"
+    },
+    {
+      "@id": "task:1770340349442",
+      "@type": "Task",
+      "title": "Build WidgetPicker.vue (add widget palette/popover)",
+      "status": "todo",
+      "priority": "medium",
+      "timeSessions": [],
+      "tags": [
+        "widget-dashboard",
+        "phase-4"
+      ],
+      "createdAt": "2026-02-06T01:12:29.442Z",
+      "updatedAt": "2026-02-06T01:12:29.442Z"
+    },
+    {
+      "@id": "task:1770340354433",
+      "@type": "Task",
+      "title": "Create DashboardPage.vue with edit mode toggle and default Today preset",
+      "status": "todo",
+      "priority": "medium",
+      "timeSessions": [],
+      "tags": [
+        "widget-dashboard",
+        "phase-4"
+      ],
+      "createdAt": "2026-02-06T01:12:34.433Z",
+      "updatedAt": "2026-02-06T01:12:34.433Z"
+    },
+    {
+      "@id": "task:1770340359232",
+      "@type": "Task",
+      "title": "Build ChartWidget + EmbedWidget (advanced widgets)",
+      "status": "todo",
+      "priority": "low",
+      "timeSessions": [],
+      "tags": [
+        "widget-dashboard",
+        "phase-5"
+      ],
+      "createdAt": "2026-02-06T01:12:39.232Z",
+      "updatedAt": "2026-02-06T01:12:39.232Z"
+    },
+    {
+      "@id": "task:1770343800001",
+      "@type": "Task",
+      "title": "Build instant-local adapter — in-memory reactive store (store.ts)",
+      "status": "done",
+      "priority": "high",
+      "timeSessions": [],
+      "tags": ["instant-local", "adapter", "data", "infrastructure"],
+      "createdAt": "2026-02-06T02:30:00.001Z",
+      "updatedAt": "2026-02-06T02:30:00.001Z"
+    },
+    {
+      "@id": "task:1770343800002",
+      "@type": "Task",
+      "title": "Build instant-local adapter — InstaQL query engine (query.ts)",
+      "status": "done",
+      "priority": "high",
+      "timeSessions": [],
+      "tags": ["instant-local", "adapter", "data", "infrastructure"],
+      "createdAt": "2026-02-06T02:30:00.002Z",
+      "updatedAt": "2026-02-06T02:30:00.002Z"
+    },
+    {
+      "@id": "task:1770343800003",
+      "@type": "Task",
+      "title": "Build instant-local adapter — tx proxy + transaction processor (tx.ts)",
+      "status": "done",
+      "priority": "high",
+      "timeSessions": [],
+      "tags": ["instant-local", "adapter", "data", "infrastructure"],
+      "createdAt": "2026-02-06T02:30:00.003Z",
+      "updatedAt": "2026-02-06T02:30:00.003Z"
+    },
+    {
+      "@id": "task:1770343800004",
+      "@type": "Task",
+      "title": "Build instant-local adapter — createLocalInstantDB() factory (index.ts)",
+      "status": "done",
+      "priority": "high",
+      "timeSessions": [],
+      "tags": ["instant-local", "adapter", "data", "infrastructure"],
+      "createdAt": "2026-02-06T02:30:00.004Z",
+      "updatedAt": "2026-02-06T02:30:00.004Z"
+    },
+    {
+      "@id": "task:1770343800005",
+      "@type": "Task",
+      "title": "Replace mock instant.client.ts plugin with instant-local adapter",
+      "status": "done",
+      "priority": "high",
+      "timeSessions": [],
+      "tags": ["instant-local", "adapter", "plugin", "infrastructure"],
+      "createdAt": "2026-02-06T02:30:00.005Z",
+      "updatedAt": "2026-02-06T02:30:00.005Z"
+    },
+    {
+      "@id": "task:1770343800006",
+      "@type": "Task",
+      "title": "Verify instant-local adapter — zero regressions across all pages",
+      "status": "done",
+      "priority": "high",
+      "timeSessions": [],
+      "tags": ["instant-local", "adapter", "verification"],
+      "createdAt": "2026-02-06T02:30:00.006Z",
+      "updatedAt": "2026-02-06T02:30:00.006Z"
+    },
+    {
+      "@id": "task:1770343800007",
+      "@type": "Task",
+      "title": "Document instant-local adapter (README + inline JSDoc)",
+      "status": "done",
+      "priority": "high",
+      "timeSessions": [],
+      "tags": ["instant-local", "adapter", "documentation"],
+      "createdAt": "2026-02-06T02:30:00.007Z",
+      "updatedAt": "2026-02-06T02:30:00.007Z"
+    },
+    {
+      "@id": "task:1770343800008",
+      "@type": "Task",
+      "title": "Migrate from instant-local to real InstantDB cloud",
+      "status": "todo",
+      "priority": "medium",
+      "timeSessions": [],
+      "tags": ["instant-local", "instantdb", "migration", "future"],
+      "createdAt": "2026-02-06T02:30:00.008Z",
+      "updatedAt": "2026-02-06T02:30:00.008Z"
+    },
+    {
+      "@id": "note:1770343800100",
+      "@type": "Note",
+      "title": "instant-local Adapter — Architecture Decision",
+      "content": "Built a local-first InstantDB adapter at app/lib/instant-local/ that provides the same API surface as @instantdb/core with in-memory storage persisted to localStorage. Four files: store.ts (Map-based entity store + links + subscriptions + localStorage persistence), query.ts (InstaQL query engine: where, $in, $ne, $gt/$lt, $like, $isNull, and/or, order, limit/offset, nested associations), tx.ts (Proxy-based tx builder matching db.tx.NS[id].action(data) + processTransactions for create/update/merge/delete/link/unlink), index.ts (createLocalInstantDB factory exposing subscribeQuery, queryOnce, transact, subscribeAuth, auth, id). Plugin at instant.client.ts seeds minimum ECMS data (facilities + facilityMembers). Migration path: swap createLocalInstantDB() with init({appId, schema}) from @instantdb/core, delete instant-local/ dir, zero consumer code changes. Verified on /personal/today, /personal/tasks, /personal/calendar, /personal/notes, /onboarding with 0 console errors.",
+      "type": "decision",
+      "tags": ["instant-local", "adapter", "architecture", "local-first"],
+      "createdAt": "2026-02-06T02:30:00.100Z",
+      "updatedAt": "2026-02-06T02:30:00.100Z"
+    },
+    {
+      "@id": "note:1770340368732",
+      "@type": "Note",
+      "title": "Widget Dashboard Architecture Decision",
+      "content": "Customizable full-width grid dashboard replacing hardcoded Today page. Widgets are resizable, reorderable, draggable, hideable. Each widget binds to an InstantDB data source. Grid engine: CSS Grid + @vueuse/core (or vue-grid-layout). Layout persistence: InstantDB settings table. 5 phases: Foundation > Core Widgets > Data Binding > Dashboard Page > Polish. USER handling CalendarItem DB persistence in parallel.",
+      "type": "decision",
+      "tags": [
+        "widget-dashboard",
+        "architecture"
+      ],
+      "createdAt": "2026-02-06T01:12:48.732Z",
+      "updatedAt": "2026-02-06T01:12:48.732Z"
+    }
+  ]
+}
