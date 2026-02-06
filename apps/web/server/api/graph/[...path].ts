@@ -79,11 +79,22 @@ export default defineEventHandler(async (event) => {
       throw createError({ statusCode: 404, message: `Entity not found: ${entityId}` })
     }
 
-    // Reconstruct node from facts
+    // Reconstruct node from facts — collect multi-value attributes into arrays
     const node: Record<string, any> = { '@id': entityId }
+    const attrCounts: Record<string, number> = {}
+    // First pass: count how many facts exist per attribute
+    for (const fact of facts) {
+      attrCounts[fact.a] = (attrCounts[fact.a] || 0) + 1
+    }
+    // Second pass: build node — single-value attrs as scalars, multi-value as arrays
     for (const fact of facts) {
       if (fact.a === 'type') {
         node['@type'] = fact.v
+      } else if (attrCounts[fact.a]! > 1) {
+        if (!Array.isArray(node[fact.a])) {
+          node[fact.a] = []
+        }
+        node[fact.a].push(fact.v)
       } else {
         node[fact.a] = fact.v
       }
