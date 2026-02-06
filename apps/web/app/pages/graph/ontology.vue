@@ -1,6 +1,6 @@
 <script setup lang="ts">
   const ontologies = ref<Record<string, any>>({})
-  const projections = ref<string[]>([])
+  const projections = ref<{ id: string; name: string; query: string; type: string }[]>([])
   const catalog = ref<Record<string, any>>({})
   const loading = ref(true)
 
@@ -9,11 +9,16 @@
     try {
       const [ontData, projData, catData] = await Promise.all([
         $fetch<{ ontologies: Record<string, any> }>('/api/graph/ontologies'),
-        $fetch<{ projections: string[] }>('/api/graph/projections'),
+        $fetch<{ projections: any[] }>('/api/graph/projections'),
         $fetch<{ catalog: Record<string, any> }>('/api/graph/catalog'),
       ])
       ontologies.value = ontData.ontologies || {}
-      projections.value = projData.projections || []
+      projections.value = (projData.projections || []).map((p: any) => ({
+        id: p['@id'] || String(p),
+        name: p.name || p['@id'] || String(p),
+        query: p.query || '',
+        type: p.type || '',
+      }))
       catalog.value = catData.catalog || {}
     } catch (err) {
       console.error('[graph/ontology] fetch error:', err)
@@ -92,10 +97,13 @@
             No projections registered
           </div>
           <div v-else class="divide-y divide-border">
-            <div v-for="proj in projections" :key="proj" class="flex items-center gap-3 px-4 py-2.5">
+            <div v-for="proj in projections" :key="proj.id" class="flex items-center gap-3 px-4 py-2.5">
               <Icon name="lucide:terminal" class="size-4 text-violet-500" />
-              <span class="text-sm font-mono">{{ proj }}</span>
-              <NuxtLink :to="`/graph/query`" class="ml-auto text-[10px] text-muted-foreground hover:text-foreground transition-colors">
+              <div class="flex-1 min-w-0">
+                <span class="text-sm font-medium">{{ proj.name }}</span>
+                <p v-if="proj.query" class="font-mono text-[10px] text-muted-foreground truncate">{{ proj.query }}</p>
+              </div>
+              <NuxtLink to="/graph/query" class="text-[10px] text-muted-foreground hover:text-foreground transition-colors shrink-0">
                 Run →
               </NuxtLink>
             </div>
