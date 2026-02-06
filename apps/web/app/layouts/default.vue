@@ -145,8 +145,7 @@
 <template>
   <!-- Root: base layer - edit mode adds accent ring as "4D wrapper" -->
   <div
-    class="bg-background text-foreground flex h-dvh overflow-hidden transition-shadow duration-300"
-    :class="{ 'ring-4 ring-accent ring-inset shadow-[inset_0_0_0_4px] shadow-accent': isInEditMode }">
+    class="bg-background text-foreground flex h-dvh overflow-hidden transition-shadow duration-300 ">
     <!-- Command Dialog -->
     <UiCommandDialog
       :open="commandDialog.isOpen.value"
