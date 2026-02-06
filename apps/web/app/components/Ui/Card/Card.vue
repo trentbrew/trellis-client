@@ -24,7 +24,7 @@
   )
 
   const styles = tv({
-    base: 'flex flex-col gap-6 rounded-xl border bg-card py-0 text-card-foreground shadow-sm',
+    base: 'flex flex-col gap-6 rounded-xl border bg-card py-6 text-card-foreground shadow-sm',
   })
 </script>
 
