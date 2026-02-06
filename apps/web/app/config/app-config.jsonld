@@ -1768,6 +1768,31 @@
       }
     },
     {
+      "@id": "route:personal-inbox",
+      "@type": "app:Route",
+      "routePath": "/personal/inbox",
+      "label": "Inbox",
+      "icon": "lucide:inbox",
+      "tint": "text-sky-300",
+      "order": -1,
+      "permissions": {
+        "minRole": "guest",
+        "permission": "read"
+      },
+      "searchKeywords": [
+        "inbox",
+        "capture",
+        "quick",
+        "triage",
+        "new"
+      ],
+      "meta": {
+        "title": "Inbox",
+        "description": "Quick capture and triage — items land here before being organized.",
+        "subtitle": "Personal"
+      }
+    },
+    {
       "@id": "route:personal-tasks",
       "@type": "app:Route",
       "routePath": "/personal/tasks",
