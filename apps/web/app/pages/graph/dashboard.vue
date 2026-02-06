@@ -7,6 +7,31 @@
   const projections = ref<{ name: string; query: string; type: string }[]>([])
   const loading = ref(true)
 
+  const healthStats = computed(() => {
+    if (!health.value) return []
+    const h = health.value
+    return [
+      {
+        label: 'Status',
+        value: h.status === 'ok' ? 'Ok' : h.status || '—',
+        icon: h.status === 'ok' ? 'lucide:check-circle' : 'lucide:alert-circle',
+        color: h.status === 'ok' ? 'text-emerald-500' : 'text-destructive',
+      },
+      {
+        label: 'Facts',
+        value: h.factCount?.toLocaleString() ?? '0',
+        icon: 'lucide:database',
+        color: 'text-cyan-500',
+      },
+      {
+        label: 'Links',
+        value: h.linkCount?.toLocaleString() ?? '0',
+        icon: 'lucide:link',
+        color: 'text-violet-500',
+      },
+    ]
+  })
+
   const fetchDashboard = async () => {
     loading.value = true
     try {
@@ -54,57 +79,11 @@
     title="Graph Dashboard"
     subtitle="Developer"
     description="TQL graph engine health, entity counts, and ontology summary."
-    icon="lucide:gauge">
-    <div v-if="loading" class="flex items-center justify-center py-20">
-      <Icon name="lucide:loader-2" class="h-6 w-6 animate-spin text-muted-foreground" />
-    </div>
-
-    <div v-else class="space-y-6">
-      <!-- Health -->
-      <div class="grid grid-cols-1 gap-4 sm:grid-cols-3">
-        <UiCard>
-          <UiCardContent class="p-4">
-            <div class="flex items-center gap-3">
-              <div class="flex size-10 items-center justify-center rounded-lg" :class="health?.status === 'ok' ? 'bg-emerald-500/10' : 'bg-destructive/10'">
-                <Icon :name="health?.status === 'ok' ? 'lucide:check-circle' : 'lucide:alert-circle'" class="size-5" :class="health?.status === 'ok' ? 'text-emerald-500' : 'text-destructive'" />
-              </div>
-              <div>
-                <p class="text-sm font-medium text-muted-foreground">Status</p>
-                <p class="text-2xl font-bold capitalize">{{ health?.status || '—' }}</p>
-              </div>
-            </div>
-          </UiCardContent>
-        </UiCard>
-
-        <UiCard>
-          <UiCardContent class="p-4">
-            <div class="flex items-center gap-3">
-              <div class="bg-cyan-500/10 flex size-10 items-center justify-center rounded-lg">
-                <Icon name="lucide:database" class="size-5 text-cyan-500" />
-              </div>
-              <div>
-                <p class="text-sm font-medium text-muted-foreground">Facts</p>
-                <p class="text-2xl font-bold">{{ health?.factCount?.toLocaleString() || '0' }}</p>
-              </div>
-            </div>
-          </UiCardContent>
-        </UiCard>
-
-        <UiCard>
-          <UiCardContent class="p-4">
-            <div class="flex items-center gap-3">
-              <div class="bg-violet-500/10 flex size-10 items-center justify-center rounded-lg">
-                <Icon name="lucide:link" class="size-5 text-violet-500" />
-              </div>
-              <div>
-                <p class="text-sm font-medium text-muted-foreground">Links</p>
-                <p class="text-2xl font-bold">{{ health?.linkCount?.toLocaleString() || '0' }}</p>
-              </div>
-            </div>
-          </UiCardContent>
-        </UiCard>
-      </div>
-
+    icon="lucide:gauge"
+    :stats="healthStats"
+    :is-loading="loading"
+    count-label="data">
+    <div class="space-y-6">
       <!-- Entity Breakdown -->
       <UiCard>
         <UiCardContent class="p-0">
