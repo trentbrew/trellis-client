@@ -48,13 +48,84 @@
     emit('update:open', false)
     emit('close')
   }
+
+  // ── Resize logic ──────────────────────────────────────────────────────
+  const MIN_W = 640
+  const MIN_H = 480
+  const MAX_W = computed(() => window.innerWidth - 64)
+  const MAX_H = computed(() => window.innerHeight - 64)
+  const DEFAULT_W = 1265
+  const DEFAULT_H = 828
+
+  const dialogW = ref(DEFAULT_W)
+  const dialogH = ref(DEFAULT_H)
+
+  // Reset to default when dialog opens
+  watch(() => props.open, (val) => {
+    if (val) {
+      dialogW.value = Math.min(DEFAULT_W, MAX_W.value)
+      dialogH.value = Math.min(DEFAULT_H, MAX_H.value)
+    }
+  })
+
+  const clampW = (v: number) => Math.max(MIN_W, Math.min(v, MAX_W.value))
+  const clampH = (v: number) => Math.max(MIN_H, Math.min(v, MAX_H.value))
+
+  type Edge = 'n' | 's' | 'e' | 'w' | 'ne' | 'nw' | 'se' | 'sw'
+
+  const isResizing = ref(false)
+
+  const startResize = (edge: Edge, e: PointerEvent) => {
+    e.preventDefault()
+    e.stopPropagation()
+    isResizing.value = true
+
+    const startX = e.clientX
+    const startY = e.clientY
+    const startW = dialogW.value
+    const startH = dialogH.value
+
+    const onMove = (ev: PointerEvent) => {
+      const dx = ev.clientX - startX
+      const dy = ev.clientY - startY
+
+      // Horizontal: e/w edges grow or shrink by 2× delta (dialog is centered)
+      if (edge.includes('e')) dialogW.value = clampW(startW + dx * 2)
+      if (edge.includes('w')) dialogW.value = clampW(startW - dx * 2)
+
+      // Vertical: n/s edges
+      if (edge.includes('s')) dialogH.value = clampH(startH + dy * 2)
+      if (edge.includes('n')) dialogH.value = clampH(startH - dy * 2)
+    }
+
+    const onUp = () => {
+      isResizing.value = false
+      window.removeEventListener('pointermove', onMove)
+      window.removeEventListener('pointerup', onUp)
+    }
+
+    window.addEventListener('pointermove', onMove)
+    window.addEventListener('pointerup', onUp)
+  }
 </script>
 
 <template>
   <UiDialog :open="open" @update:open="emit('update:open', $event)">
     <UiDialogContent
       :hide-close="true"
-      class="w-[min(1265px,calc(100vw-4rem))]! max-w-[min(1265px,calc(100vw-4rem))]! h-[min(828px,calc(100vh-4rem))] max-h-[min(828px,calc(100vh-4rem))] p-0! gap-0! overflow-hidden rounded-xl border border-border bg-card shadow-2xl flex! flex-col">
+      :style="{ width: `${dialogW}px`, maxWidth: `${dialogW}px`, height: `${dialogH}px`, maxHeight: `${dialogH}px` }"
+      :class="[isResizing ? 'select-none' : '']"
+      class="p-0! gap-0! overflow-hidden rounded-xl border border-border bg-card shadow-2xl flex! flex-col relative">
+
+      <!-- Resize handles -->
+      <div class="absolute inset-x-2 top-0 h-1 cursor-ns-resize z-50" @pointerdown="startResize('n', $event)" />
+      <div class="absolute inset-x-2 bottom-0 h-1 cursor-ns-resize z-50" @pointerdown="startResize('s', $event)" />
+      <div class="absolute inset-y-2 left-0 w-1 cursor-ew-resize z-50" @pointerdown="startResize('w', $event)" />
+      <div class="absolute inset-y-2 right-0 w-1 cursor-ew-resize z-50" @pointerdown="startResize('e', $event)" />
+      <div class="absolute top-0 left-0 w-3 h-3 cursor-nwse-resize z-50" @pointerdown="startResize('nw', $event)" />
+      <div class="absolute top-0 right-0 w-3 h-3 cursor-nesw-resize z-50" @pointerdown="startResize('ne', $event)" />
+      <div class="absolute bottom-0 left-0 w-3 h-3 cursor-nesw-resize z-50" @pointerdown="startResize('sw', $event)" />
+      <div class="absolute bottom-0 right-0 w-3 h-3 cursor-nwse-resize z-50" @pointerdown="startResize('se', $event)" />
       <UiDialogTitle class="sr-only">
         {{ dialogTitle || title || 'Item' }}
       </UiDialogTitle>
