@@ -1599,9 +1599,9 @@
           "order": -1
         },
         {
-          "label": "PERSONAL",
-          "key": "personal",
-          "icon": "lucide:user",
+          "label": "HOME",
+          "key": "personal-home",
+          "icon": "lucide:home",
           "items": [
             {
               "path": "/personal/today",
@@ -1625,6 +1625,37 @@
                 "reminders"
               ]
             },
+            {
+              "path": "/personal/inbox",
+              "label": "Inbox",
+              "icon": "lucide:inbox",
+              "tint": "text-sky-300",
+              "permissions": {
+                "minRole": "guest",
+                "permission": "read"
+              },
+              "meta": {
+                "title": "Inbox",
+                "description": "Quick capture and triage — items land here before being organized.",
+                "subtitle": "Personal"
+              },
+              "searchKeywords": [
+                "inbox",
+                "capture",
+                "quick",
+                "triage",
+                "new"
+              ]
+            }
+          ],
+          "collapsible": false,
+          "order": 0
+        },
+        {
+          "label": "LIBRARY",
+          "key": "personal-library",
+          "icon": "lucide:library",
+          "items": [
             {
               "path": "/personal/tasks",
               "label": "Tasks",
@@ -1689,12 +1720,16 @@
               ]
             }
           ],
-          "collapsible": false
+          "collapsible": false,
+          "order": 1
         }
       ],
       "children": [
         {
           "@id": "route:personal-today"
+        },
+        {
+          "@id": "route:personal-inbox"
         },
         {
           "@id": "route:personal-tasks"
