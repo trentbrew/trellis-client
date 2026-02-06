@@ -7,6 +7,21 @@
   useHead({ title: 'Today | Personal' })
 
   // ---------------------------------------------------------------------------
+  // Live data from instant-local
+  // ---------------------------------------------------------------------------
+
+  const { items: allItems, create, update, remove } = useCalendarItems()
+
+  const tasks = computed(() => allItems.value.filter((i): i is TaskItem => i.type === 'task'))
+  const events = computed(() => allItems.value.filter((i): i is EventItem => i.type === 'event'))
+  const recentNotes = computed(() =>
+    allItems.value
+      .filter((i): i is NoteItem => i.type === 'note')
+      .sort((a, b) => b.startDate.localeCompare(a.startDate))
+      .slice(0, 4),
+  )
+
+  // ---------------------------------------------------------------------------
   // Date helpers
   // ---------------------------------------------------------------------------
 
@@ -20,139 +35,6 @@
     d.setDate(d.getDate() + n)
     return fmt(d)
   }
-
-  // ---------------------------------------------------------------------------
-  // Seed data — aggregated from tasks, events, reminders, notes
-  // ---------------------------------------------------------------------------
-
-  const tasks = ref<TaskItem[]>([
-    {
-      id: 'today-t1', type: 'task', title: 'Finish quarterly review slides',
-      description: 'Prepare the slide deck for Q1 review with stakeholders.',
-      startDate: daysFromNow(-2), allDay: true,
-      priority: 'high', urgency: 'urgent', priorityOverride: false, urgencyOverride: false,
-      category: 'work', tags: ['presentation'], owner: 'you', involved: [],
-      attachments: [], reminders: [], taskStatus: 'in-progress', checklist: [
-        { id: 'cl-1', label: 'Draft outline', completed: true, order: 0 },
-        { id: 'cl-2', label: 'Add financial charts', completed: false, order: 1 },
-      ],
-    },
-    {
-      id: 'today-t2', type: 'task', title: 'Call dentist to confirm appointment',
-      description: 'Confirm the cleaning scheduled for next week.',
-      startDate: daysFromNow(0), allDay: true,
-      priority: 'medium', urgency: 'urgent', priorityOverride: false, urgencyOverride: false,
-      category: 'health', tags: ['appointment'], owner: 'you', involved: [],
-      attachments: [], reminders: [{ id: 'r1', timing: '1-hour-before', method: 'push' }],
-      taskStatus: 'pending', checklist: [],
-    },
-    {
-      id: 'today-t3', type: 'task', title: 'Submit expense report',
-      description: 'January expenses — receipts already uploaded.',
-      startDate: daysFromNow(1), allDay: true,
-      priority: 'high', urgency: 'urgent', priorityOverride: false, urgencyOverride: false,
-      category: 'work', tags: ['finance'], owner: 'you', involved: [],
-      attachments: [], reminders: [{ id: 'r2', timing: '1-day-before', method: 'push' }],
-      taskStatus: 'pending', checklist: [],
-    },
-    {
-      id: 'today-t4', type: 'task', title: 'Read chapter 5 — Replication',
-      description: 'Continue "Designing Data-Intensive Applications".',
-      startDate: daysFromNow(0), allDay: true,
-      priority: 'low', urgency: 'not-urgent', priorityOverride: false, urgencyOverride: false,
-      category: 'personal', tags: ['reading'], owner: 'you', involved: [],
-      attachments: [], reminders: [], taskStatus: 'in-progress', checklist: [],
-    },
-    {
-      id: 'today-t5', type: 'task', title: 'Water the plants',
-      startDate: daysFromNow(0), allDay: true,
-      priority: 'low', urgency: 'not-urgent', priorityOverride: false, urgencyOverride: false,
-      category: 'personal', tags: ['home'], owner: 'you', involved: [],
-      attachments: [], reminders: [{ id: 'r3', timing: '1-day-before', method: 'push' }],
-      recurrence: { frequency: 'weekly', weekdays: [1, 4] },
-      taskStatus: 'completed', checklist: [],
-    },
-    {
-      id: 'today-t6', type: 'task', title: 'Back up laptop',
-      description: 'Full Time Machine backup — last one was 3 weeks ago.',
-      startDate: daysFromNow(-1), allDay: true,
-      priority: 'medium', urgency: 'urgent', priorityOverride: false, urgencyOverride: true,
-      category: 'personal', tags: ['tech'], owner: 'you', involved: [],
-      attachments: [], reminders: [],
-      taskStatus: 'overdue', checklist: [],
-    },
-    {
-      id: 'today-t7', type: 'task', title: 'Pick up dry cleaning',
-      startDate: daysFromNow(2), allDay: true,
-      priority: 'low', urgency: 'not-urgent', priorityOverride: false, urgencyOverride: false,
-      category: 'personal', tags: ['errands'], owner: 'you', involved: [],
-      attachments: [], reminders: [{ id: 'r4', timing: '15-min-before', method: 'push' }],
-      taskStatus: 'pending', checklist: [],
-    },
-    {
-      id: 'today-t8', type: 'task', title: 'Send birthday card to Sam',
-      description: 'Birthday is on the 15th — mail by the 12th.',
-      startDate: daysFromNow(7), allDay: true,
-      priority: 'medium', urgency: 'not-urgent', priorityOverride: false, urgencyOverride: false,
-      category: 'personal', tags: ['birthday'], owner: 'you', involved: [],
-      attachments: [], reminders: [{ id: 'r5', timing: '2-days-before', method: 'push' }],
-      taskStatus: 'pending', checklist: [],
-    },
-  ])
-
-  const events = ref<EventItem[]>([
-    {
-      id: 'today-e1', type: 'event', title: 'Team standup',
-      description: 'Daily sync with the product team.',
-      startDate: daysFromNow(0), allDay: false, startTime: '09:30', endTime: '09:45',
-      priority: 'medium', urgency: 'not-urgent', priorityOverride: false, urgencyOverride: false,
-      category: 'meeting', tags: ['recurring'], owner: 'you', involved: ['alex', 'jordan'],
-      attachments: [], reminders: [], eventType: 'meeting',
-      recurrence: { frequency: 'weekdays' },
-    },
-    {
-      id: 'today-e2', type: 'event', title: 'Design review — new dashboard',
-      description: 'Present wireframes and get feedback.',
-      startDate: daysFromNow(0), allDay: false, startTime: '14:00', endTime: '15:00',
-      priority: 'high', urgency: 'urgent', priorityOverride: false, urgencyOverride: false,
-      category: 'meeting', tags: ['design'], owner: 'you', involved: ['maya'],
-      attachments: [], reminders: [{ id: 'r6', timing: '15-min-before', method: 'push' }],
-      eventType: 'meeting',
-    },
-    {
-      id: 'today-e3', type: 'event', title: 'Dentist appointment',
-      description: 'Cleaning & checkup at Bright Smiles.',
-      startDate: daysFromNow(3), allDay: false, startTime: '14:00', endTime: '15:00',
-      priority: 'medium', urgency: 'not-urgent', priorityOverride: false, urgencyOverride: false,
-      category: 'appointment', tags: ['health'], owner: 'you', involved: [],
-      location: '123 Main St, Suite 200',
-      attachments: [], reminders: [{ id: 'r7', timing: '1-day-before', method: 'push' }],
-      eventType: 'appointment',
-    },
-  ])
-
-  const recentNotes = ref<NoteItem[]>([
-    {
-      id: 'today-n1', type: 'note', title: 'Gratitude journal — week 5',
-      description: 'Weekly reflection.',
-      startDate: daysFromNow(0), allDay: true,
-      priority: 'low', urgency: 'not-urgent', priorityOverride: false, urgencyOverride: false,
-      category: 'personal', tags: ['journal', 'gratitude'], owner: 'you', involved: [],
-      attachments: [], reminders: [],
-      content: 'Grateful for: good health, a productive week, a long walk in the park.',
-      pinned: false, linkedItems: [],
-    },
-    {
-      id: 'today-n2', type: 'note', title: 'Meeting notes — roadmap planning',
-      description: 'Key takeaways from the Q1 planning session.',
-      startDate: daysFromNow(-1), allDay: true,
-      priority: 'medium', urgency: 'not-urgent', priorityOverride: false, urgencyOverride: false,
-      category: 'work', tags: ['meeting-notes'], owner: 'you', involved: ['alex', 'maya'],
-      attachments: [], reminders: [],
-      content: '- Ship v2 by end of March\n- Hire 1 more frontend engineer\n- Migrate auth to new provider',
-      pinned: false, linkedItems: [],
-    },
-  ])
 
   // ---------------------------------------------------------------------------
   // Computed sections
@@ -285,41 +167,22 @@
 
   function toggleComplete(item: TaskItem, e: Event) {
     e.stopPropagation()
-    const idx = tasks.value.findIndex((i) => i.id === item.id)
-    if (idx !== -1) {
-      tasks.value[idx] = { ...tasks.value[idx]!, taskStatus: item.taskStatus === 'completed' ? 'pending' : 'completed' }
-    }
+    const newStatus = item.taskStatus === 'completed' ? 'pending' : 'completed'
+    void update({ ...item, taskStatus: newStatus })
   }
 
-  function handleCreate(item: CalendarItem) {
-    if (item.type === 'task') {
-      tasks.value.unshift({ ...item, id: item.id || `today-t-${Date.now()}` } as TaskItem)
-    } else if (item.type === 'event') {
-      events.value.unshift({ ...item, id: item.id || `today-e-${Date.now()}` } as EventItem)
-    } else if (item.type === 'note') {
-      recentNotes.value.unshift({ ...item, id: item.id || `today-n-${Date.now()}` } as NoteItem)
-    }
+  async function handleCreate(item: CalendarItem) {
+    await create(item)
     createOpen.value = false
   }
 
-  function handleUpdate(item: CalendarItem) {
-    if (item.type === 'task') {
-      const idx = tasks.value.findIndex((t) => t.id === item.id)
-      if (idx !== -1) tasks.value[idx] = { ...item } as TaskItem
-    } else if (item.type === 'event') {
-      const idx = events.value.findIndex((e) => e.id === item.id)
-      if (idx !== -1) events.value[idx] = { ...item } as EventItem
-    } else if (item.type === 'note') {
-      const idx = recentNotes.value.findIndex((n) => n.id === item.id)
-      if (idx !== -1) recentNotes.value[idx] = { ...item } as NoteItem
-    }
+  async function handleUpdate(item: CalendarItem) {
+    await update(item)
     viewOpen.value = false
   }
 
-  function handleDelete(item: CalendarItem) {
-    tasks.value = tasks.value.filter((t) => t.id !== item.id)
-    events.value = events.value.filter((e) => e.id !== item.id)
-    recentNotes.value = recentNotes.value.filter((n) => n.id !== item.id)
+  async function handleDelete(item: CalendarItem) {
+    await remove(item.id)
     viewOpen.value = false
   }
 </script>
