@@ -33,6 +33,7 @@
 
   const colorMode = useColorMode()
   const isDark = computed(() => colorMode.value === 'dark')
+  const { user: currentUser } = useInstantAuth()
 
   export interface ActivityItem {
     id: string
@@ -99,7 +100,7 @@
         Object.assign(editableItem, { ...defaults, ...newItem })
       } else if (isCreateMode.value) {
         const defaults = createDefaultItem(props.itemType || 'task')
-        Object.assign(editableItem, { ...defaults, id: `${props.itemType || 'task'}-${Date.now()}` })
+        Object.assign(editableItem, { ...defaults, id: `${props.itemType || 'task'}-${Date.now()}`, owner: currentUser.value?.id || undefined })
       }
     },
     { immediate: true, deep: true },
@@ -139,9 +140,17 @@
   const isInvolvedUnset = computed(() => !editableItem.involved?.length)
 
   const filteredOwners = computed(() => {
-    if (!ownerSearch.value) return owners.value
-    const s = ownerSearch.value.toLowerCase()
-    return owners.value.filter((o) => o.name.toLowerCase().includes(s))
+    let list = owners.value
+    if (ownerSearch.value) {
+      const s = ownerSearch.value.toLowerCase()
+      list = list.filter((o) => o.name.toLowerCase().includes(s))
+    }
+    // Sort current user first
+    if (currentUser.value?.id) {
+      const uid = currentUser.value.id
+      list = [...list].sort((a, b) => (a.id === uid ? -1 : b.id === uid ? 1 : 0))
+    }
+    return list
   })
 
   const filteredFolders = computed(() => {
