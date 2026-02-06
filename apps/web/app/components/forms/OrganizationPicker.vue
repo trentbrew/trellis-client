@@ -86,7 +86,7 @@
             :key="org.id"
             class="gap-3 rounded"
             @click="handleSelect(org.id)">
-            <Icon name="lucide:building-2" class="text-muted-foreground h-4 w-4 shrink-0" />
+            <Icon name="lucide:boxes" class="text-muted-foreground h-4 w-4 shrink-0" />
             <div class="flex-1 min-w-0">
               <div class="font-medium truncate">{{ org.name }}</div>
               <div v-if="org.description" class="text-xs text-muted-foreground truncate">
