@@ -41,15 +41,13 @@ type MutatePayload =
 
 const API_BASE = '/api/graph'
 
-async function graphFetch<T>(path: string, opts?: RequestInit): Promise<T> {
+async function graphFetch<T>(path: string, opts?: { method?: string; body?: string }): Promise<T> {
   const res = await $fetch<T>(`${API_BASE}/${path}`, {
-    ...opts,
-    headers: {
-      'Content-Type': 'application/json',
-      ...opts?.headers,
-    },
+    method: (opts?.method as any) || 'GET',
+    body: opts?.body,
+    headers: { 'Content-Type': 'application/json' },
   })
-  return res
+  return res as T
 }
 
 // Version counter — bumped on every mutation so reactive queries re-fetch
@@ -144,6 +142,17 @@ export function useTrellisGraph() {
   }
 
   /**
+   * Batch fetch multiple nodes by entity IDs (single request).
+   */
+  async function fetchNodes(ids: string[]): Promise<Record<string, any>[]> {
+    const result = await graphFetch<{ nodes: Record<string, any>[] }>('nodes', {
+      method: 'POST',
+      body: JSON.stringify({ ids }),
+    })
+    return result.nodes
+  }
+
+  /**
    * Execute a mutation (create/update/delete/link).
    * Bumps the graph version so all reactive queries re-fetch.
    */
@@ -169,6 +178,7 @@ export function useTrellisGraph() {
     queryOnce,
     projection,
     fetchNode,
+    fetchNodes,
     mutate,
     health,
     /** Expose for advanced use — manually bump to force all queries to re-fetch */
