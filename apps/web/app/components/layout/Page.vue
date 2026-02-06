@@ -670,11 +670,11 @@
     </aside>
 
     <!-- Main Page Content -->
-    <div :class="finalContainerClass" class="flex-1 min-w-0 min-h-[calc(100vh-4rem)] bg-red-500">
+    <div :class="finalContainerClass" class="flex-1 min-w-0 min-h-[calc(100vh-4rem)] h-full bg-transparent">
       <!-- Main content uses base background (darkest layer) -->
       <div :class="[contentWrapperClass, transparent ? 'bg-transparent' : '']">
         <!-- Header Section (Non-sticky) -->
-        <div v-if="showHeader || $slots.header" class="shrink-0 space-y-0 p-8 pb-0">
+        <div v-if="showHeader || $slots.header" class="shrink-0 space-y-0 p-8 pb-0 h-full">
           <div class="px-6 py-5 relative border-b border-border/60" :class="variantConfig.maxWidth">
             <div class="relative flex items-stretch gap-6">
               <!-- Header Icon -->
