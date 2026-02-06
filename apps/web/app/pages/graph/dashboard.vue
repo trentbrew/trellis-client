@@ -4,7 +4,7 @@
   const health = ref<{ status: string; factCount: number; linkCount: number } | null>(null)
   const entityBreakdown = ref<{ type: string; count: number }[]>([])
   const ontologies = ref<Record<string, any>>({})
-  const projections = ref<string[]>([])
+  const projections = ref<{ name: string; query: string; type: string }[]>([])
   const loading = ref(true)
 
   const fetchDashboard = async () => {
@@ -13,23 +13,31 @@
       const [healthData, ontData, projData] = await Promise.all([
         graph.health(),
         $fetch<{ ontologies: Record<string, any> }>('/api/graph/ontologies'),
-        $fetch<{ projections: string[] }>('/api/graph/projections'),
+        $fetch<{ projections: any[] }>('/api/graph/projections'),
       ])
 
       health.value = healthData
       ontologies.value = ontData.ontologies || {}
-      projections.value = projData.projections || []
+      projections.value = (projData.projections || []).map((p: any) => ({
+        name: p.name || p['@id'] || String(p),
+        query: p.query || '',
+        type: p.type || '',
+      }))
 
-      // Get entity type breakdown
-      const result = await graph.queryOnce('FIND ?type AS ?t')
-      const typeCounts = new Map<string, number>()
-      for (const row of result.data) {
-        const t = String((row as any)['?t'] || 'unknown')
-        typeCounts.set(t, (typeCounts.get(t) || 0) + 1)
+      // Get entity type breakdown by fetching all entities and counting types
+      const result = await graph.queryOnce('FIND calendaritem AS ?e')
+      const ids = result.data.map((row) => String((row as any)['?e']))
+      if (ids.length > 0) {
+        const nodes = await graph.fetchNodes(ids)
+        const typeCounts = new Map<string, number>()
+        for (const node of nodes) {
+          const t = String(node['@type'] || node.type || 'unknown')
+          typeCounts.set(t, (typeCounts.get(t) || 0) + 1)
+        }
+        entityBreakdown.value = Array.from(typeCounts.entries())
+          .map(([type, count]) => ({ type, count }))
+          .sort((a, b) => b.count - a.count)
       }
-      entityBreakdown.value = Array.from(typeCounts.entries())
-        .map(([type, count]) => ({ type, count }))
-        .sort((a, b) => b.count - a.count)
     } catch (err) {
       console.error('[graph/dashboard] fetch error:', err)
     } finally {
@@ -145,9 +153,9 @@
             </div>
             <div v-if="projections.length === 0" class="text-sm text-muted-foreground">None registered</div>
             <div v-else class="space-y-1">
-              <div v-for="proj in projections" :key="proj" class="flex items-center gap-2 text-sm">
+              <div v-for="proj in projections" :key="proj.name" class="flex items-center gap-2 text-sm">
                 <Icon name="lucide:terminal" class="size-3.5 text-violet-500" />
-                <span class="font-mono text-xs">{{ proj }}</span>
+                <span class="font-mono text-xs">{{ proj.name }}</span>
               </div>
             </div>
           </UiCardContent>
