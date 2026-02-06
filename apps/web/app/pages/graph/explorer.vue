@@ -133,7 +133,7 @@
         </div>
 
         <!-- Detail Panel -->
-        <div v-if="selectedEntity" class="w-[400px] flex-shrink-0">
+        <div v-if="selectedEntity" class="w-[400px] shrink-0">
           <UiCard>
             <UiCardContent class="p-0">
               <div class="border-b border-border px-4 py-3 flex items-center justify-between">
