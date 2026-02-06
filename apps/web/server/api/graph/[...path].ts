@@ -12,9 +12,13 @@
  *   GET  /api/graph/health      — Health check
  */
 
+import { useTqlKernel } from '../../plugins/tql'
+
 export default defineEventHandler(async (event) => {
-  const kernel = event.context.nitroApp?.tql
-  if (!kernel) {
+  let kernel
+  try {
+    kernel = useTqlKernel()
+  } catch {
     throw createError({ statusCode: 503, message: 'TQL kernel not initialized' })
   }
 
