@@ -293,7 +293,8 @@
     @apply antialiased;
   }
   body {
-    @apply bg-background text-foreground;
+    /* @apply bg-background text-foreground; */
+    background: red;
     letter-spacing: var(--tracking-normal);
   }
   ::-webkit-scrollbar {
