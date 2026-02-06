@@ -154,7 +154,7 @@
 <template>
   <Page
     variant="browse"
-    title="My Tasks"
+    title="Tasks"
     subtitle="Personal"
     description="Tasks assigned to you across all facilities."
     icon="lucide:check-square"
