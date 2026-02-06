@@ -334,7 +334,7 @@
   <UiDialog :open="open" @update:open="emit('update:open', $event)">
     <UiDialogContent
       :hide-close="true"
-      class="w-[min(1100px,calc(100vw-4rem))]! max-w-[min(1100px,calc(100vw-4rem))]! h-[min(720px,calc(100vh-4rem))] max-h-[min(720px,calc(100vh-4rem))] p-0 overflow-hidden rounded-xl border border-border bg-card shadow-2xl flex flex-col gap-0">
+      class="w-[min(1100px,calc(100vw-4rem))]! max-w-[min(1100px,calc(100vw-4rem))]! h-[min(720px,calc(100vh-4rem))] max-h-[min(720px,calc(100vh-4rem))] p-0! gap-0! overflow-hidden rounded-xl border border-border bg-card shadow-2xl flex! flex-col">
       <UiDialogTitle class="sr-only">
         {{ isCreateMode ? `New ${currentType?.label || 'Item'}` : editableItem.title || currentType?.label || 'Item' }}
       </UiDialogTitle>
@@ -438,9 +438,8 @@
       </div>
 
       <!-- Properties Row -->
-      <div class="sticky top-0 z-10 bg-card px-4 py-2.5 border-b border-border space-y-1.5">
-        <p class="text-xs font-medium text-muted-foreground uppercase tracking-wide">Properties</p>
-        <div class="flex flex-wrap items-center gap-1.5 text-xs">
+      <div class="sticky top-0 z-10 bg-card px-4 py-2.5 border-b border-border">
+        <div class="flex items-center gap-1.5 text-xs overflow-x-auto scrollbar-none whitespace-nowrap">
           <UiPopover v-if="isCreateMode" v-model:open="typeOpen">
             <UiPopoverTrigger as-child>
               <button class="inline-flex items-center gap-1.5 px-2 py-1 rounded-lg bg-muted/50 hover:bg-muted transition-colors">
@@ -700,38 +699,6 @@
             </UiPopoverContent>
           </UiPopover>
 
-          <UiPopover v-model:open="tagsOpen">
-            <UiPopoverTrigger as-child>
-              <button class="inline-flex items-center gap-1.5 px-2 py-1 rounded-lg bg-muted/50 hover:bg-muted transition-colors">
-                <Icon name="lucide:hash" class="h-3.5 w-3.5" />
-                <span>{{ editableItem.tags.length ? `Tags (${editableItem.tags.length})` : 'Tags' }}</span>
-              </button>
-            </UiPopoverTrigger>
-            <UiPopoverContent align="start" class="w-56 p-2 space-y-2">
-              <div v-if="editableItem.tags.length" class="flex flex-wrap gap-1">
-                <span
-                  v-for="tag in editableItem.tags"
-                  :key="tag"
-                  class="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-md bg-primary/10 text-primary text-[10px]">
-                  {{ tag }}
-                  <button v-if="!isViewMode" class="hover:text-destructive" @click="removeTag(tag)">
-                    <Icon name="lucide:x" class="h-2.5 w-2.5" />
-                  </button>
-                </span>
-              </div>
-              <div v-if="!isViewMode" class="flex items-center gap-1.5">
-                <input
-                  v-model="tagInput"
-                  type="text"
-                  placeholder="Add tag..."
-                  class="flex-1 bg-transparent text-xs outline-none border border-border rounded-md px-2 py-1 placeholder:text-muted-foreground/60"
-                  @keydown.enter.prevent="addTag" />
-                <UiButton size="sm" variant="ghost" class="h-7 px-2 text-xs" :disabled="!tagInput.trim()" @click="addTag">
-                  Add
-                </UiButton>
-              </div>
-            </UiPopoverContent>
-          </UiPopover>
         </div>
       </div>
 
