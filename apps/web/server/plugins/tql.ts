@@ -15,7 +15,7 @@ import { mkdirSync, existsSync } from 'node:fs'
 import { TrellisKernel } from '@toolkit/tql'
 import { BetterSqliteBackend } from '@toolkit/tql/persist/better-sqlite'
 import { createWorkspaceConfig } from '../utils/tql-ontologies'
-import { getPersonalSeedItems } from './tql-seed'
+import { getPersonalSeedItems } from '../utils/tql-seed'
 
 // Module-level singleton — accessible from API routes via useTqlKernel()
 let _kernel: TrellisKernel | null = null
