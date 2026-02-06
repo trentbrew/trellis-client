@@ -14,6 +14,28 @@
 
 import { useTqlKernel } from '../../plugins/tql'
 
+/** Reconstruct a node object from EAV facts, properly handling multi-value attributes */
+function factsToNode(entityId: string, facts: Array<{ e: string; a: string; v: unknown }>): Record<string, any> {
+  const node: Record<string, any> = { '@id': entityId }
+  const attrCounts: Record<string, number> = {}
+  for (const fact of facts) {
+    attrCounts[fact.a] = (attrCounts[fact.a] || 0) + 1
+  }
+  for (const fact of facts) {
+    if (fact.a === 'type') {
+      node['@type'] = fact.v
+    } else if (attrCounts[fact.a]! > 1) {
+      if (!Array.isArray(node[fact.a])) {
+        node[fact.a] = []
+      }
+      node[fact.a].push(fact.v)
+    } else {
+      node[fact.a] = fact.v
+    }
+  }
+  return node
+}
+
 export default defineEventHandler(async (event) => {
   let kernel
   try {
@@ -79,26 +101,7 @@ export default defineEventHandler(async (event) => {
       throw createError({ statusCode: 404, message: `Entity not found: ${entityId}` })
     }
 
-    // Reconstruct node from facts — collect multi-value attributes into arrays
-    const node: Record<string, any> = { '@id': entityId }
-    const attrCounts: Record<string, number> = {}
-    // First pass: count how many facts exist per attribute
-    for (const fact of facts) {
-      attrCounts[fact.a] = (attrCounts[fact.a] || 0) + 1
-    }
-    // Second pass: build node — single-value attrs as scalars, multi-value as arrays
-    for (const fact of facts) {
-      if (fact.a === 'type') {
-        node['@type'] = fact.v
-      } else if (attrCounts[fact.a]! > 1) {
-        if (!Array.isArray(node[fact.a])) {
-          node[fact.a] = []
-        }
-        node[fact.a].push(fact.v)
-      } else {
-        node[fact.a] = fact.v
-      }
-    }
+    const node = factsToNode(entityId, facts)
 
     // Get linked entities
     const links = store.getAllLinks()
@@ -118,6 +121,28 @@ export default defineEventHandler(async (event) => {
       node,
       links: { outgoing, incoming },
     }
+  }
+
+  // ─── POST /api/graph/nodes (batch) ──────────────────────────────────
+  if (method === 'POST' && route === 'nodes') {
+    const body = await readBody(event)
+    const { ids } = body || {}
+
+    if (!Array.isArray(ids) || ids.length === 0) {
+      throw createError({ statusCode: 400, message: 'Request body must include "ids" (string[])' })
+    }
+
+    const store = kernel.getStore()
+    const nodes: Record<string, any>[] = []
+
+    for (const entityId of ids) {
+      const facts = store.getFactsByEntity(entityId)
+      if (facts.length > 0) {
+        nodes.push(factsToNode(entityId, facts))
+      }
+    }
+
+    return { nodes }
   }
 
   // ─── POST /api/graph/query ──────────────────────────────────────────

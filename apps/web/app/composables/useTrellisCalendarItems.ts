@@ -12,7 +12,7 @@ import type { CalendarItem, CalendarItemType } from '~/types/calendarItem'
  * - `remove(id)`   — delete an item via graph API
  */
 export function useTrellisCalendarItems() {
-  const { query, mutate, fetchNode } = useTrellisGraph()
+  const { query, mutate, fetchNodes } = useTrellisGraph()
 
   const items = ref<CalendarItem[]>([])
   const loading = ref(true)
@@ -22,7 +22,7 @@ export function useTrellisCalendarItems() {
     'FIND calendaritem AS ?e',
   )
 
-  // When entity IDs change, hydrate full nodes
+  // When entity IDs change, batch-hydrate full nodes (single request)
   watch(
     entityIds,
     async (ids) => {
@@ -33,29 +33,24 @@ export function useTrellisCalendarItems() {
       }
 
       try {
-        const nodes = await Promise.all(
-          ids.map(async (row) => {
-            const entityId = (row as any)['?e'] as string
-            const result = await fetchNode(entityId)
-            // Reconstruct CalendarItem shape from EAV node
-            const node = result.node
-            const id = entityId.replace('calendaritem:', '')
-            const { '@id': _ld_id, '@type': _ld_type, ...rest } = node
-            return {
-              id,
-              ...rest,
-              // Ensure type field comes from the @type or the type attribute
-              type: node['@type'] || node.type,
-              // Ensure arrays are arrays (EAV may flatten single-element arrays)
-              tags: normalizeArray(node.tags),
-              involved: normalizeArray(node.involved),
-              reminders: normalizeArray(node.reminders),
-              checklist: normalizeArray(node.checklist),
-              attachments: normalizeArray(node.attachments),
-            } as unknown as CalendarItem
-          }),
-        )
-        items.value = nodes
+        const entityIdList = ids.map((row) => (row as any)['?e'] as string)
+        const rawNodes = await fetchNodes(entityIdList)
+
+        items.value = rawNodes.map((node) => {
+          const entityId = node['@id'] as string
+          const id = entityId.replace('calendaritem:', '')
+          const { '@id': _ld_id, '@type': _ld_type, ...rest } = node
+          return {
+            id,
+            ...rest,
+            type: node['@type'] || node.type,
+            tags: normalizeArray(node.tags),
+            involved: normalizeArray(node.involved),
+            reminders: normalizeArray(node.reminders),
+            checklist: normalizeArray(node.checklist),
+            attachments: normalizeArray(node.attachments),
+          } as unknown as CalendarItem
+        })
       } catch (err) {
         console.error('[useTrellisCalendarItems] hydration error:', err)
       } finally {
