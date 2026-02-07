@@ -79,6 +79,29 @@ const calendarItemOntology: SchemaDefinition = {
 }
 
 // ============================================================================
+// Comment — activity/comment entries linked to any entity
+// ============================================================================
+
+const commentOntology: SchemaDefinition = {
+  '@id': 'trellis:schema/comment',
+  '@type': 'trellis:Schema',
+  version: '1.0.0',
+  fields: [
+    { name: 'entityId', valueType: 'rich_text', required: true },
+    { name: 'entityType', valueType: 'select', required: true, selectOptions: ['calendarItem', 'task', 'note', 'event', 'payment', 'trip'] },
+    { name: 'authorId', valueType: 'rich_text', required: true },
+    { name: 'authorName', valueType: 'rich_text', required: true },
+    { name: 'authorAvatar', valueType: 'rich_text' },
+    { name: 'content', valueType: 'rich_text', required: true },
+    { name: 'type', valueType: 'select', required: true, selectOptions: ['comment', 'status_change', 'attachment', 'created'] },
+    { name: 'metadata', valueType: 'rich_text' },
+    { name: 'createdAt', valueType: 'number' },
+    { name: 'updatedAt', valueType: 'number' },
+    { name: 'deletedAt', valueType: 'number' },
+  ],
+}
+
+// ============================================================================
 // Workspace Configuration — the .trellis format
 // ============================================================================
 
@@ -89,6 +112,7 @@ export function createWorkspaceConfig(): WorkspaceConfig {
       description: 'Single graph, many projections — all app data as a graph.',
       ontologies: {
         'trellis:schema/calendaritem': calendarItemOntology,
+        'trellis:schema/comment': commentOntology,
       },
       projections: {
         'trellis:projection/all-tasks': {
@@ -124,4 +148,4 @@ export function createWorkspaceConfig(): WorkspaceConfig {
   }
 }
 
-export { calendarItemOntology }
+export { calendarItemOntology, commentOntology }
