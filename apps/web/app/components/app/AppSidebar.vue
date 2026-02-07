@@ -132,7 +132,7 @@
   let resizeTimeout: NodeJS.Timeout | null = null
 
   watch(isResizing, (val) => {
-    console.log('AppHeader: isResizing changed to', val)
+    // console.log('AppHeader: isResizing changed to', val)
     if (!val) {
       // When resizing ends, keep transitions disabled for 1000ms
       transitionsDisabled.value = true
@@ -152,7 +152,7 @@
   })
 
   const startResize = (e: MouseEvent) => {
-    console.log('Sidebar resize started')
+    // console.log('Sidebar resize started')
     isResizing.value = true
     if (import.meta.client) {
       document.body.classList.add('is-resizing')
