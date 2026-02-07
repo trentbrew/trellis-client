@@ -7,54 +7,28 @@
  * Each type shares a common base (CalendarItemBase) and extends
  * with type-specific properties via discriminated union on `type`.
  *
- * @deprecated Shared primitives (Priority, Urgency, Reminder, RecurrenceRule,
- * Attachment, ChecklistItem, Attendee, FormulaField, TaskStatus, TripStatus,
- * PaymentStatus, TransportMode) are now canonically defined in `~/types/entity`.
- * CalendarItem and CalendarItemBase remain here for backward compatibility with
- * existing consumers. New code should import from `~/types/entity` and use the
- * Entity class system (EntityBase + class mixins) instead.
+ * @deprecated This file is a backward-compatibility shim. The canonical
+ * type system is now `~/types/entity` which provides the two-axis Entity
+ * Class architecture (temporal / document / actor / container classes with
+ * type-specific panels). New code should import from `~/types/entity` and
+ * use the Entity class system (EntityBase + class mixins) instead.
+ * See also: `~/config/entityRegistry` for type → class → UI config mapping.
  */
 
-// Re-export shared primitives from canonical source
-export type {
-  Priority,
-  Urgency,
-  TaskStatus,
-  TripStatus,
-  PaymentStatus,
-  TransportMode,
-  Reminder,
-  RecurrenceRule,
-  Attachment,
-  ChecklistItem,
-  Attendee,
-  FormulaField,
-} from '~/types/entity'
-
-// Re-import for local use in interfaces below
-import type {
-  Priority,
-  Urgency,
-  TaskStatus,
-  TripStatus,
-  PaymentStatus,
-  TransportMode,
-  Reminder,
-  RecurrenceRule,
-  Attachment,
-  ChecklistItem,
-  Attendee,
-  FormulaField,
-} from '~/types/entity'
-
 // ============================================================================
-// Enums & Primitives (CalendarItem-specific)
+// Enums & Primitives
 // ============================================================================
 
 export type CalendarItemType = 'task' | 'event' | 'trip' | 'payment' | 'note'
 
-/** @deprecated Use EventSubtype from ~/types/entity instead */
+export type Priority = 'critical' | 'high' | 'medium' | 'low'
+export type Urgency = 'urgent' | 'not-urgent'
+
+export type TaskStatus = 'pending' | 'in-progress' | 'on-track' | 'due-soon' | 'overdue' | 'completed'
 export type EventType = 'meeting' | 'appointment' | 'training' | 'deadline' | 'social' | 'other'
+export type TripStatus = 'planning' | 'booked' | 'in-progress' | 'completed' | 'cancelled'
+export type PaymentStatus = 'pending' | 'paid' | 'overdue' | 'cancelled'
+export type TransportMode = 'flight' | 'drive' | 'train' | 'bus' | 'other'
 
 export const CALENDAR_ITEM_TYPES: { value: CalendarItemType; label: string; icon: string }[] = [
   { value: 'task', label: 'Task', icon: 'lucide:check-square' },
