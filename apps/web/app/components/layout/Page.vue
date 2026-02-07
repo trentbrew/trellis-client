@@ -659,7 +659,7 @@
 </script>
 
 <template>
-  <div class="flex h-full w-full bg-transparent">
+  <div class="flex h-full w-full bg-background">
     <!-- Left Sidebar (optional) -->
     <aside
       v-if="leftSidebar && $slots.sidebar"
@@ -668,12 +668,12 @@
     </aside>
 
     <!-- Main Page Content -->
-    <div :class="finalContainerClass" class="flex-1 min-w-0 h-full bg-transparent">
+    <div :class="finalContainerClass" class="flex-1 min-w-0 h-full bg-card/40">
       <!-- Main content uses base background (darkest layer) -->
       <div :class="[contentWrapperClass, transparent ? 'bg-transparent' : '']">
         <!-- Header Section (Non-sticky) -->
-        <div v-if="showHeader || $slots.header" class="shrink-0 space-y-0 p-8 pb-0 h-full">
-          <div class="px-6 py-5 relative border-b border-border/60" :class="variantConfig.maxWidth">
+        <div v-if="showHeader || $slots.header" class="shrink-0 space-y-0 p-8 pb-0">
+          <div class="px-3 py-5 relative border-b border-border/60" :class="variantConfig.maxWidth">
             <div class="relative flex items-stretch gap-6">
               <!-- Header Icon -->
               <div v-if="headerIcon || $slots.headerIcon" class="shrink-0">

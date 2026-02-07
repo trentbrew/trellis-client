@@ -63,7 +63,7 @@ export function createLocalInstantDB(options: LocalInstantDBOptions = {}) {
       email: 'admin@platform-sandbox.local',
       name: 'Admin User',
       avatar: null,
-      role: 'admin' as const,
+      role: 'corporate_admin' as const,
     },
     manager: {
       id: 'user-manager',
@@ -116,6 +116,11 @@ export function createLocalInstantDB(options: LocalInstantDBOptions = {}) {
     } catch {
       /* storage unavailable */
     }
+  }
+
+  if (currentUser?.id === demoUsers.admin.id && currentUser?.role !== demoUsers.admin.role) {
+    currentUser = { ...currentUser, role: demoUsers.admin.role }
+    persistAuth()
   }
 
   // ── Query helpers ───────────────────────────────────────────────────

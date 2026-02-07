@@ -431,4 +431,5 @@ body.is-resizing * {
     box-shadow: 0 0 0 3px var(--primary) !important;
     transform: scale(1.02) !important;
   }
+
 }

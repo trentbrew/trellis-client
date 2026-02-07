@@ -101,7 +101,7 @@
         Object.assign(editableItem, { ...defaults, ...newItem })
       } else if (isCreateMode.value) {
         const defaults = createDefaultItem(props.itemType || 'task')
-        Object.assign(editableItem, { ...defaults, id: `${props.itemType || 'task'}-${Date.now()}`, owner: currentUser.value?.id || undefined })
+        Object.assign(editableItem, { ...defaults })
       }
     },
     { immediate: true, deep: true },
@@ -109,7 +109,9 @@
 
   watch(
     () => [editableItem.startDate, editableItem.category, editableItem.type],
-    () => applyFormulas(editableItem),
+    () => {
+      if (!isCreateMode.value) applyFormulas(editableItem)
+    },
     { deep: true },
   )
 
@@ -171,12 +173,13 @@
   const currentUrgency = computed(() => URGENCY_OPTIONS.find((u) => u.value === editableItem.urgency))
   const currentCategory = computed(() => CATEGORY_OPTIONS.find((c) => c.value === editableItem.category))
 
-  const isFormValid = computed(() => !!editableItem.title?.trim() && !!editableItem.startDate)
+  const isFormValid = computed(() => !!editableItem.title?.trim())
 
   // Recurrence
   type RepeatPreset = 'daily' | 'weekly' | 'monthly' | 'yearly' | 'weekdays' | 'custom' | 'none'
   const selectedRepeat = ref<RepeatPreset>('none')
   const repeatPresets: { value: RepeatPreset; label: string; sub?: string }[] = [
+    { value: 'none', label: 'None' },
     { value: 'daily', label: 'Daily' },
     { value: 'weekly', label: 'Weekly' },
     { value: 'monthly', label: 'Monthly' },
@@ -190,9 +193,10 @@
   }
 
   // Reminder
-  type ReminderPreset = 'on-the-day' | '1-day-early' | '2-days-early' | '1-week-early' | 'custom'
-  const selectedReminder = ref<ReminderPreset>('on-the-day')
+  type ReminderPreset = 'none' | 'on-the-day' | '1-day-early' | '2-days-early' | '1-week-early' | 'custom'
+  const selectedReminder = ref<ReminderPreset>('none')
   const reminderPresets: { value: ReminderPreset; label: string; time?: string }[] = [
+    { value: 'none', label: 'None' },
     { value: 'on-the-day', label: 'On the day', time: '09:00' },
     { value: '1-day-early', label: '1 day early', time: '09:00' },
     { value: '2-days-early', label: '2 days early', time: '09:00' },
@@ -201,8 +205,91 @@
   ]
   const reminderCustom = reactive({ daysInAdvance: 1, time: '09:00' })
 
+  const repeatOpen = ref(false)
+  const reminderOpen = ref(false)
+
+  const calendarModel: any = computed({
+    get: () => (editableItem.startDate ? editableItem.startDate : undefined),
+    set: (v) => {
+      editableItem.startDate = v || ''
+    },
+  })
+
+  watch(
+    () => props.item,
+    (newItem) => {
+      if (newItem) {
+        selectedRepeat.value = (editableItem.recurrence?.frequency || 'none') as any
+        selectedReminder.value = 'none'
+      } else if (isCreateMode.value) {
+        selectedRepeat.value = 'none'
+        selectedReminder.value = 'none'
+      }
+      repeatOpen.value = false
+      reminderOpen.value = false
+    },
+    { immediate: true },
+  )
+
+  const initBlankCreateItem = () => {
+    const defaults = createDefaultItem(props.itemType || 'task')
+    Object.assign(editableItem, {
+      ...defaults,
+      id: '',
+      title: '',
+      description: '',
+      startDate: '',
+      endDate: undefined,
+      allDay: false,
+      startTime: undefined,
+      endTime: undefined,
+      priority: undefined,
+      urgency: undefined,
+      priorityOverride: false,
+      urgencyOverride: false,
+      category: '',
+      reminders: [],
+      recurrence: undefined,
+      owner: undefined,
+      involved: [],
+      tags: [],
+      folder: undefined,
+    })
+
+    selectedRepeat.value = 'none'
+    selectedReminder.value = 'none'
+    repeatOpen.value = false
+    reminderOpen.value = false
+    schedulePopoverOpen.value = false
+  }
+
+  watch(
+    () => props.open,
+    (isOpen) => {
+      if (isOpen && isCreateMode.value && !props.item) initBlankCreateItem()
+    },
+  )
+
+  watch(
+    () => schedulePopoverOpen.value,
+    (isOpen) => {
+      if (isOpen) {
+        repeatOpen.value = false
+        reminderOpen.value = false
+      }
+    },
+  )
+
   // Schedule display
   const scheduleDescription = computed(() => {
+    if (!editableItem.startDate) {
+      return {
+        scheduleText: 'Unscheduled',
+        statusText: '',
+        isOverdue: false,
+        isRecurring: false,
+      }
+    }
     const start = new Date(editableItem.startDate)
     const now = new Date()
     const diffDays = Math.ceil((start.getTime() - now.getTime()) / 86_400_000)
@@ -306,7 +393,15 @@
     emit('close')
   }
   const handleSave = () => {
-    applyFormulas(editableItem)
+    if (!editableItem.startDate) {
+      editableItem.startDate = new Date().toISOString().split('T')[0]
+    }
+
+    // Ensure required fields are set without auto-populating the create form UI.
+    if (!editableItem.priority) editableItem.priority = 'medium'
+    if (!editableItem.urgency) editableItem.urgency = 'not-urgent'
+
+    if (!isCreateMode.value) applyFormulas(editableItem)
     emit('save', { ...editableItem } as CalendarItem)
     closeDialog()
   }
@@ -328,6 +423,15 @@
       description: editableItem.description,
       startDate: editableItem.startDate,
       endDate: editableItem.endDate,
+      allDay: editableItem.allDay,
+      startTime: editableItem.startTime,
+      endTime: editableItem.endTime,
+      priority: editableItem.priority,
+      urgency: editableItem.urgency,
+      priorityOverride: editableItem.priorityOverride,
+      urgencyOverride: editableItem.urgencyOverride,
+      reminders: Array.isArray(editableItem.reminders) ? [...editableItem.reminders] : [],
+      recurrence: editableItem.recurrence,
       tags: [...editableItem.tags],
       category: editableItem.category,
       owner: editableItem.owner,
@@ -372,45 +476,62 @@
         </UiPopoverTrigger>
         <UiPopoverContent align="start" class="w-72 p-3 space-y-3 max-h-[70vh] overflow-y-auto">
           <p class="text-xs font-medium text-muted-foreground uppercase tracking-wide">Schedule</p>
-          <div class="space-y-1">
-            <p class="text-[10px] font-medium text-muted-foreground uppercase tracking-wide">Repeat</p>
+          <div class="space-y-0.5">
             <button
-              v-for="preset in repeatPresets"
-              :key="preset.value"
               type="button"
-              class="w-full flex items-center justify-between px-2 py-1.5 rounded-md text-[10px] hover:bg-muted/50 transition-colors"
-              :class="selectedRepeat === preset.value ? 'bg-muted/50' : ''"
-              @click="selectRepeat(preset.value)">
-              <div class="flex items-center gap-1.5">
-                <span>{{ preset.label }}</span>
-                <span v-if="preset.sub" class="text-muted-foreground">{{ preset.sub }}</span>
-              </div>
-              <Icon v-if="selectedRepeat === preset.value" name="lucide:check" class="h-3 w-3 text-primary" />
+              class="w-full flex items-center justify-between text-[10px] font-medium text-muted-foreground uppercase tracking-wide py-1 hover:text-foreground transition-colors"
+              @click="repeatOpen = !repeatOpen">
+              <span>Repeat</span>
+              <Icon :name="repeatOpen ? 'lucide:chevron-up' : 'lucide:chevron-down'" class="h-3 w-3" />
             </button>
+            <div v-if="repeatOpen" class="space-y-0.5">
+              <button
+                v-for="preset in repeatPresets"
+                :key="preset.value"
+                type="button"
+                class="w-full flex items-center justify-between px-2 py-1.5 rounded-md text-[10px] hover:bg-muted/50 transition-colors"
+                :class="selectedRepeat === preset.value ? 'bg-muted/50' : ''"
+                @click="selectRepeat(preset.value)">
+                <div class="flex items-center gap-1.5">
+                  <span>{{ preset.label }}</span>
+                  <span v-if="preset.sub" class="text-muted-foreground">{{ preset.sub }}</span>
+                </div>
+                <Icon v-if="selectedRepeat === preset.value" name="lucide:check" class="h-3 w-3 text-primary" />
+              </button>
+            </div>
           </div>
-          <div class="space-y-1 pt-2 border-t border-border">
-            <p class="text-[10px] font-medium text-muted-foreground uppercase tracking-wide">Reminder</p>
+
+          <div class="space-y-0.5 pt-2 border-t border-border">
             <button
-              v-for="preset in reminderPresets"
-              :key="preset.value"
               type="button"
-              class="w-full flex items-center justify-between px-2 py-1.5 rounded-md text-[10px] hover:bg-muted/50 transition-colors"
-              :class="selectedReminder === preset.value ? 'bg-muted/50' : ''"
-              @click="selectedReminder = preset.value">
-              <span>{{ preset.label }}</span>
-              <div class="flex items-center gap-1.5">
-                <span v-if="preset.time && preset.value !== 'custom'" class="text-muted-foreground">({{ preset.time }})</span>
-                <Icon v-if="selectedReminder === preset.value" name="lucide:check" class="h-3 w-3 text-primary" />
-              </div>
+              class="w-full flex items-center justify-between text-[10px] font-medium text-muted-foreground uppercase tracking-wide py-1 hover:text-foreground transition-colors"
+              @click="reminderOpen = !reminderOpen">
+              <span>Reminder</span>
+              <Icon :name="reminderOpen ? 'lucide:chevron-up' : 'lucide:chevron-down'" class="h-3 w-3" />
             </button>
-            <div v-if="selectedReminder === 'custom'" class="space-y-2 rounded-md border border-border/60 bg-muted/10 p-2">
-              <div class="flex items-center gap-2">
-                <span class="text-[10px] text-muted-foreground shrink-0">Days early</span>
-                <UiInput v-model.number="reminderCustom.daysInAdvance" type="number" min="1" class="w-12 h-6 text-[10px] text-center bg-muted/30" />
-              </div>
-              <div class="flex items-center gap-2">
-                <span class="text-[10px] text-muted-foreground shrink-0">At</span>
-                <UiInput v-model="reminderCustom.time" type="time" class="flex-1 h-6 text-[10px] bg-muted/30" />
+            <div v-if="reminderOpen" class="space-y-0.5">
+              <button
+                v-for="preset in reminderPresets"
+                :key="preset.value"
+                type="button"
+                class="w-full flex items-center justify-between px-2 py-1.5 rounded-md text-[10px] hover:bg-muted/50 transition-colors"
+                :class="selectedReminder === preset.value ? 'bg-muted/50' : ''"
+                @click="selectedReminder = preset.value">
+                <span>{{ preset.label }}</span>
+                <div class="flex items-center gap-1.5">
+                  <span v-if="preset.time && preset.value !== 'custom'" class="text-muted-foreground">({{ preset.time }})</span>
+                  <Icon v-if="selectedReminder === preset.value" name="lucide:check" class="h-3 w-3 text-primary" />
+                </div>
+              </button>
+              <div v-if="selectedReminder === 'custom'" class="space-y-2 rounded-md border border-border/60 bg-muted/10 p-2">
+                <div class="flex items-center gap-2">
+                  <span class="text-[10px] text-muted-foreground shrink-0">Days early</span>
+                  <UiInput v-model.number="reminderCustom.daysInAdvance" type="number" min="1" class="w-12 h-6 text-[10px] text-center bg-muted/30" />
+                </div>
+                <div class="flex items-center gap-2">
+                  <span class="text-[10px] text-muted-foreground shrink-0">At</span>
+                  <UiInput v-model="reminderCustom.time" type="time" class="flex-1 h-6 text-[10px] bg-muted/30" />
+                </div>
               </div>
             </div>
           </div>
@@ -482,7 +603,7 @@
           <button class="inline-flex items-center gap-1.5 px-2 py-1 rounded-lg transition-colors" :class="currentPriority?.color || 'bg-muted/50 hover:bg-muted'">
             <Icon :name="currentPriority?.icon || 'lucide:minus'" class="h-3.5 w-3.5" />
             <span>{{ currentPriority?.label || 'Priority' }}</span>
-            <span v-if="!editableItem.priorityOverride" class="text-[9px] opacity-60">(auto)</span>
+            <span v-if="editableItem.priority && !editableItem.priorityOverride" class="text-[9px] opacity-60">(auto)</span>
           </button>
         </UiPopoverTrigger>
         <UiPopoverContent align="start" class="w-44 p-1">
@@ -510,7 +631,7 @@
           <button class="inline-flex items-center gap-1.5 px-2 py-1 rounded-lg transition-colors" :class="currentUrgency?.color || 'bg-muted/50 hover:bg-muted'">
             <Icon :name="currentUrgency?.icon || 'lucide:clock'" class="h-3.5 w-3.5" />
             <span>{{ currentUrgency?.label || 'Urgency' }}</span>
-            <span v-if="!editableItem.urgencyOverride" class="text-[9px] opacity-60">(auto)</span>
+            <span v-if="editableItem.urgency && !editableItem.urgencyOverride" class="text-[9px] opacity-60">(auto)</span>
           </button>
         </UiPopoverTrigger>
         <UiPopoverContent align="start" class="w-44 p-1">
@@ -687,7 +808,7 @@
         <div class="rounded-md border border-border bg-card p-1">
           <ClientOnly>
             <VCalendar
-              v-model="editableItem.startDate"
+              v-model="calendarModel"
               :is-dark="isDark"
               borderless
               transparent
@@ -696,9 +817,15 @@
               class="text-xs [&_.vc-header]:!px-2" />
           </ClientOnly>
         </div>
-        <div class="space-y-1.5">
-          <p class="text-[10px] font-medium text-muted-foreground uppercase tracking-wide">Repeat</p>
-          <div class="space-y-0.5">
+        <div class="space-y-0.5">
+          <button
+            type="button"
+            class="w-full flex items-center justify-between text-[10px] font-medium text-muted-foreground uppercase tracking-wide py-1 hover:text-foreground transition-colors"
+            @click="repeatOpen = !repeatOpen">
+            <span>Repeat</span>
+            <Icon :name="repeatOpen ? 'lucide:chevron-up' : 'lucide:chevron-down'" class="h-3 w-3" />
+          </button>
+          <div v-if="repeatOpen" class="space-y-0.5">
             <button
               v-for="preset in repeatPresets"
               :key="preset.value"
@@ -711,9 +838,15 @@
             </button>
           </div>
         </div>
-        <div class="space-y-1.5">
-          <p class="text-[10px] font-medium text-muted-foreground uppercase tracking-wide">Reminder</p>
-          <div class="space-y-0.5">
+        <div class="space-y-0.5">
+          <button
+            type="button"
+            class="w-full flex items-center justify-between text-[10px] font-medium text-muted-foreground uppercase tracking-wide py-1 hover:text-foreground transition-colors"
+            @click="reminderOpen = !reminderOpen">
+            <span>Reminder</span>
+            <Icon :name="reminderOpen ? 'lucide:chevron-up' : 'lucide:chevron-down'" class="h-3 w-3" />
+          </button>
+          <div v-if="reminderOpen" class="space-y-0.5">
             <button
               v-for="preset in reminderPresets"
               :key="preset.value"

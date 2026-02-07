@@ -74,7 +74,8 @@ export function useTrellisCalendarItems() {
   async function create(
     item: Partial<CalendarItem> & { type: CalendarItemType; title: string },
   ) {
-    const itemId = item.id || crypto.randomUUID()
+    // Always generate a fresh UUID — dialog may reuse stale IDs across creates
+    const itemId = crypto.randomUUID()
     const { id: _id, ...data } = item
     const now = Date.now()
 
