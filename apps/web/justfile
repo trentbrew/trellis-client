@@ -6,11 +6,11 @@ default:
 port := `jq -r '.["@graph"][] | select(.["@type"] == "app:Application") | .devPort // 4141' app/config/app-config.jsonld`
 
 # Run the dev server on canonical port (kills any existing process on that port first)
-run interval="60":
+run:
     @just clear
     -lsof -ti:{{port}} | xargs kill -9 2>/dev/null || true
-    @echo "🚀 Starting v2 dev server on port {{port}} with auto-commit ({{interval}}s)..."
-    pnpm dev & ../../.scripts/auto-commit.sh {{interval}}
+    @echo "🚀 Starting v2 dev server on port {{port}}..."
+    pnpm dev
 
 # Validate deployment (lint, tests, route validation, build)
 validate:
