@@ -24,11 +24,14 @@
       dialogTitle?: string
       /** sr-only dialog description override */
       dialogDescription?: string
+      /** Whether the activity sidebar is currently visible */
+      activityOpen?: boolean
     }>(),
     {
       mode: 'edit',
       canNavigatePrev: false,
       canNavigateNext: false,
+      activityOpen: false,
     },
   )
 
@@ -36,6 +39,7 @@
     'update:open': [value: boolean]
     'update:title': [value: string]
     'update:description': [value: string]
+    'update:activityOpen': [value: boolean]
     close: []
     navigatePrev: []
     navigateNext: []
@@ -200,6 +204,21 @@
       <!-- Content Area -->
       <div class="flex-1 flex min-h-0 overflow-hidden">
         <slot />
+
+        <!-- Activity Sidebar (toggled) -->
+        <Transition
+          enter-active-class="transition-all duration-200 ease-out"
+          leave-active-class="transition-all duration-200 ease-in"
+          enter-from-class="w-0 opacity-0"
+          enter-to-class="w-64 opacity-100"
+          leave-from-class="w-64 opacity-100"
+          leave-to-class="w-0 opacity-0">
+          <aside
+            v-if="activityOpen && $slots.activity"
+            class="w-64 shrink-0 overflow-y-auto overflow-x-hidden bg-muted/5 border-l border-border">
+            <slot name="activity" />
+          </aside>
+        </Transition>
       </div>
 
       <!-- Footer -->
@@ -208,6 +227,17 @@
           <slot name="footer-left" />
         </div>
         <div class="flex items-center gap-2">
+          <!-- Activity toggle button -->
+          <UiButton
+            v-if="$slots.activity && mode !== 'create'"
+            variant="ghost"
+            size="sm"
+            class="gap-1.5 text-xs"
+            :class="activityOpen ? 'text-primary' : 'text-muted-foreground'"
+            @click="emit('update:activityOpen', !activityOpen)">
+            <Icon name="lucide:message-square" class="h-3.5 w-3.5" />
+            Activity
+          </UiButton>
           <slot name="footer-right" />
         </div>
       </div>
