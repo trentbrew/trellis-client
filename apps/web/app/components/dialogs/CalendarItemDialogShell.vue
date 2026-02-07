@@ -24,14 +24,11 @@
       dialogTitle?: string
       /** sr-only dialog description override */
       dialogDescription?: string
-      /** Whether the activity sidebar is currently visible */
-      activityOpen?: boolean
     }>(),
     {
       mode: 'edit',
       canNavigatePrev: false,
       canNavigateNext: false,
-      activityOpen: false,
     },
   )
 
@@ -39,7 +36,6 @@
     'update:open': [value: boolean]
     'update:title': [value: string]
     'update:description': [value: string]
-    'update:activityOpen': [value: boolean]
     close: []
     navigatePrev: []
     navigateNext: []
@@ -65,12 +61,15 @@
   const dialogH = ref(DEFAULT_H)
 
   // Reset to default when dialog opens
-  watch(() => props.open, (val) => {
-    if (val) {
-      dialogW.value = Math.min(DEFAULT_W, MAX_W.value)
-      dialogH.value = Math.min(DEFAULT_H, MAX_H.value)
-    }
-  })
+  watch(
+    () => props.open,
+    (val) => {
+      if (val) {
+        dialogW.value = Math.min(DEFAULT_W, MAX_W.value)
+        dialogH.value = Math.min(DEFAULT_H, MAX_H.value)
+      }
+    },
+  )
 
   const clampW = (v: number) => Math.max(MIN_W, Math.min(v, MAX_W.value))
   const clampH = (v: number) => Math.max(MIN_H, Math.min(v, MAX_H.value))
@@ -94,8 +93,14 @@
 
     // Set body cursor so it persists even when pointer leaves the handle
     const cursorMap: Record<Edge, string> = {
-      n: 'ns-resize', s: 'ns-resize', e: 'ew-resize', w: 'ew-resize',
-      ne: 'nesw-resize', sw: 'nesw-resize', nw: 'nwse-resize', se: 'nwse-resize',
+      n: 'ns-resize',
+      s: 'ns-resize',
+      e: 'ew-resize',
+      w: 'ew-resize',
+      ne: 'nesw-resize',
+      sw: 'nesw-resize',
+      nw: 'nwse-resize',
+      se: 'nwse-resize',
     }
     document.body.style.cursor = cursorMap[edge]
 
@@ -129,9 +134,16 @@
       :style="`position:fixed !important; top:50% !important; left:50% !important; translate:-50% -50% !important; width:${dialogW}px !important; max-width:${dialogW}px !important; height:${dialogH}px !important; max-height:${dialogH}px !important;`"
       :class="[isResizing ? 'select-none duration-0 transition-none' : '']"
       class="p-0! gap-0! overflow-hidden rounded-xl border border-border bg-card shadow-2xl flex! flex-col relative"
-      @pointer-down-outside="(e: Event) => { if (isResizing) e.preventDefault() }"
-      @interact-outside="(e: Event) => { if (isResizing) e.preventDefault() }">
-
+      @pointer-down-outside="
+        (e: Event) => {
+          if (isResizing) e.preventDefault()
+        }
+      "
+      @interact-outside="
+        (e: Event) => {
+          if (isResizing) e.preventDefault()
+        }
+      ">
       <!-- Resize handles -->
       <div class="absolute inset-x-2 top-0 h-1 cursor-ns-resize z-50" @pointerdown="startResize('n', $event)" />
       <div class="absolute inset-x-2 bottom-0 h-1 cursor-ns-resize z-50" @pointerdown="startResize('s', $event)" />
@@ -153,7 +165,9 @@
         <div class="px-4 pt-4 pb-3">
           <div class="flex items-center justify-between gap-3 mb-3">
             <div class="flex items-center gap-2 min-w-0">
-              <span v-if="typeBadge" class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-medium bg-primary/10 text-primary">
+              <span
+                v-if="typeBadge"
+                class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-medium bg-primary/10 text-primary">
                 <Icon :name="typeBadge.icon" class="h-3 w-3" />
                 {{ typeBadge.label }}
               </span>
@@ -161,10 +175,20 @@
             </div>
             <div class="flex items-center gap-1 shrink-0">
               <template v-if="!isCreateMode">
-                <UiButton variant="ghost" size="icon" class="h-7 w-7" :disabled="!canNavigatePrev" @click="emit('navigatePrev')">
+                <UiButton
+                  variant="ghost"
+                  size="icon"
+                  class="h-7 w-7"
+                  :disabled="!canNavigatePrev"
+                  @click="emit('navigatePrev')">
                   <Icon name="lucide:chevron-up" class="h-4 w-4" />
                 </UiButton>
-                <UiButton variant="ghost" size="icon" class="h-7 w-7" :disabled="!canNavigateNext" @click="emit('navigateNext')">
+                <UiButton
+                  variant="ghost"
+                  size="icon"
+                  class="h-7 w-7"
+                  :disabled="!canNavigateNext"
+                  @click="emit('navigateNext')">
                   <Icon name="lucide:chevron-down" class="h-4 w-4" />
                 </UiButton>
               </template>
@@ -182,7 +206,13 @@
             @input="emit('update:title', ($event.target as HTMLInputElement).value)" />
           <h2 v-else class="text-xl font-semibold px-1">{{ title }}</h2>
           <div class="mt-1 px-1">
-            <UiRichTextEditor v-if="!isViewMode" :model-value="description" placeholder="Add a description..." seamless @update:model-value="emit('update:description', $event)" />
+            <UiRichTextEditor
+              v-if="!isViewMode"
+              :model-value="description"
+              placeholder="Add a description..."
+              seamless
+              @update:model-value="emit('update:description', $event)"
+              class="opacity-50" />
             <p v-else-if="description" class="text-sm text-muted-foreground" v-html="description" />
             <p v-else class="text-sm text-muted-foreground/50 italic">No description</p>
           </div>
@@ -193,32 +223,18 @@
       <div v-if="$slots.properties" class="sticky top-0 z-10 bg-card px-4 py-2.5 border-b border-border">
         <div class="flex items-center gap-1.5 text-xs overflow-x-auto scrollbar-none whitespace-nowrap">
           <slot name="properties" />
+          <slot name="properties-tags" />
         </div>
       </div>
 
-      <!-- Tags Row (below properties, above content) -->
-      <div v-if="$slots.tags" class="bg-card px-4 py-2 border-b border-border">
-        <slot name="tags" />
+      <!-- Comments (Notion-style, below properties) -->
+      <div v-if="$slots.comments" class="shrink-0 border-b border-border">
+        <slot name="comments" />
       </div>
 
       <!-- Content Area -->
       <div class="flex-1 flex min-h-0 overflow-hidden">
         <slot />
-
-        <!-- Activity Sidebar (toggled) -->
-        <Transition
-          enter-active-class="transition-all duration-200 ease-out"
-          leave-active-class="transition-all duration-200 ease-in"
-          enter-from-class="w-0 opacity-0"
-          enter-to-class="w-64 opacity-100"
-          leave-from-class="w-64 opacity-100"
-          leave-to-class="w-0 opacity-0">
-          <aside
-            v-if="activityOpen && $slots.activity"
-            class="w-64 shrink-0 overflow-y-auto overflow-x-hidden bg-muted/5 border-l border-border">
-            <slot name="activity" />
-          </aside>
-        </Transition>
       </div>
 
       <!-- Footer -->
@@ -227,17 +243,6 @@
           <slot name="footer-left" />
         </div>
         <div class="flex items-center gap-2">
-          <!-- Activity toggle button -->
-          <UiButton
-            v-if="$slots.activity && mode !== 'create'"
-            variant="ghost"
-            size="sm"
-            class="gap-1.5 text-xs"
-            :class="activityOpen ? 'text-primary' : 'text-muted-foreground'"
-            @click="emit('update:activityOpen', !activityOpen)">
-            <Icon name="lucide:message-square" class="h-3.5 w-3.5" />
-            Activity
-          </UiButton>
           <slot name="footer-right" />
         </div>
       </div>

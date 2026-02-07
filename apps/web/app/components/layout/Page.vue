@@ -60,6 +60,7 @@
    * - 'station': Station overview with tabs only (no header), content handles its own layout
    * - 'filesystem': Full-height split layout for tree + viewer style pages
    * - 'folders': Split-view with folder tree navigation (left) and content preview (right)
+   * - 'calendar': Fullscreen calendar layout (no header/tabs/toolbar/search)
    */
   type PageVariant =
     | 'default'
@@ -71,6 +72,7 @@
     | 'station'
     | 'filesystem'
     | 'folders'
+    | 'calendar'
 
   interface PageProps {
     /** Page layout variant */
@@ -263,6 +265,8 @@
         return { showHeader: false, showTabs: false, contentPadding: 'p-0', maxWidth: '', showToolbar: false }
       case 'folders':
         return { showHeader: true, showTabs: false, contentPadding: 'p-0', maxWidth: '', showToolbar: false }
+      case 'calendar':
+        return { showHeader: false, showTabs: false, contentPadding: 'p-0', maxWidth: '', showToolbar: false }
       case 'station':
         return { showHeader: false, showTabs: true, contentPadding: 'p-0', maxWidth: '', showToolbar: false }
       default:
@@ -272,7 +276,10 @@
 
   const isFilesystem = computed(() => props.variant === 'filesystem')
   const isFolders = computed(() => props.variant === 'folders')
-  const effectiveFillHeight = computed(() => props.fillHeight || isFilesystem.value || isFolders.value)
+  const isCalendar = computed(() => props.variant === 'calendar')
+  const effectiveFillHeight = computed(
+    () => props.fillHeight || isFilesystem.value || isFolders.value || isCalendar.value,
+  )
 
   // Resolved display states (props override variant defaults)
   const effectiveSearchPlaceholder = computed(() => {
@@ -380,7 +387,7 @@
     const padding = variantConfig.value.contentPadding
     const maxWidth = variantConfig.value.maxWidth
     const fillClass = effectiveFillHeight.value ? 'min-h-0' : ''
-    const growthClass = isFilesystem.value ? 'flex-1' : ''
+    const growthClass = effectiveFillHeight.value ? 'flex-1' : ''
     return `${base} ${padding} ${maxWidth} ${fillClass} ${growthClass}`.trim()
   })
 
@@ -670,7 +677,7 @@
     <!-- Main Page Content -->
     <div :class="finalContainerClass" class="flex-1 min-w-0 h-full bg-card/0">
       <!-- Main content uses base background (darkest layer) -->
-      <div :class="[contentWrapperClass, transparent ? 'bg-transparent' : '']">
+      <div class="h-full" :class="[contentWrapperClass, transparent ? 'bg-transparent' : '']">
         <!-- Header Section (Non-sticky) -->
         <div v-if="showHeader || $slots.header" class="shrink-0 space-y-0 p-8 pb-0">
           <div class="px-3 py-5 relative border-b border-border/60" :class="variantConfig.maxWidth">
@@ -737,7 +744,7 @@
                   <div
                     v-for="stat in stats"
                     :key="stat.label"
-                    class="flex flex-col justify-between gap-1 rounded-lg border border-border/60 bg-card/60 backdrop-blur-sm px-5 py-3 h-[92px] min-w-36">
+                    class="flex flex-col justify-between gap-1 rounded-lg border border-border/60 bg-card/10 backdrop-blur-sm px-5 py-3 h-[92px] min-w-36">
                     <div
                       class="flex items-center gap-1.5 text-[10px] font-medium text-muted-foreground uppercase tracking-wider">
                       <Icon
@@ -801,7 +808,7 @@
           ref="stickyRef"
           class="sticky -top-px z-50 transition-all duration-200 min-h-16 flex items-center justify-between"
           :class="[
-            isStuck ? 'bg-card/50 border-b border-border backdrop-blur-lg' : 'bg-transparent border-b-transparent',
+            isStuck ? 'bg-card/25 border-b border-border backdrop-blur-lg' : 'bg-transparent border-b-transparent',
             transparent ? 'bg-transparent backdrop-blur-none' : '',
           ]">
           <div class="px-0 w-full">
@@ -859,9 +866,11 @@
         <div
           v-if="variantConfig.showToolbar"
           ref="stickyRef"
-          class="sticky -top-px z-40 transition-all duration-200"
+          class="sticky -top-px z-40 transition-all duration-0"
           :class="[
-            isStuck ? 'bg-card/50 border-b border-border backdrop-blur-lg' : 'bg-transparent border-b-transparent',
+            isStuck
+              ? 'bg-background/60 border-b border-border backdrop-blur-lg'
+              : 'bg-transparent border-b-transparent',
             transparent ? 'bg-transparent backdrop-blur-none' : '',
           ]">
           <div class="mx-8 py-4">
@@ -869,7 +878,7 @@
               <!-- View Mode Switcher -->
               <div
                 v-if="showViewSwitcher"
-                class="flex items-center rounded-lg border border-border bg-card p-0.5 shrink-0">
+                class="flex items-center rounded-lg border border-border bg-card/25 p-0.5 shrink-0">
                 <slot name="viewSwitcher">
                   <button
                     v-for="option in effectiveViewModeOptions"
@@ -903,12 +912,12 @@
                     v-model="searchQuery"
                     type="text"
                     :placeholder="effectiveSearchPlaceholder"
-                    class="w-full rounded-lg border border-border bg-card py-2 pl-10 pr-4 text-sm placeholder:text-muted-foreground focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary" />
+                    class="w-full rounded-lg border border-border bg-card/0 py-2 pl-10 pr-4 text-sm placeholder:text-muted-foreground focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary" />
                   <input
                     v-else
                     type="text"
                     :placeholder="effectiveSearchPlaceholder"
-                    class="w-full rounded-lg border border-border bg-card py-2 pl-10 pr-4 text-sm placeholder:text-muted-foreground focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary" />
+                    class="w-full rounded-lg border border-border bg-card/0 py-2 pl-10 pr-4 text-sm placeholder:text-muted-foreground focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary" />
                 </slot>
               </div>
 
@@ -918,7 +927,7 @@
                   <template v-if="browse?.filters">
                     <UiDropdownMenu v-for="filter in browse.filters" :key="filter.id">
                       <UiDropdownMenuTrigger as-child>
-                        <UiButton variant="outline" size="sm" class="gap-2 bg-card">
+                        <UiButton variant="outline" size="sm" class="gap-2 bg-card/0">
                           <Icon v-if="filter.icon" :name="filter.icon" class="h-4 w-4" />
                           <span>{{ filter.label }}</span>
                           <Icon name="lucide:chevron-down" class="h-3 w-3 opacity-50" />

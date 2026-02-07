@@ -2,7 +2,9 @@ import type { ThemePresets } from '~/types/theme'
 
 /**
  * Built-in theme presets.
- * "graphite" is the default and matches the CSS variables in tailwind.css.
+ * "graphite" is the default and MUST stay in sync with the CSS variables
+ * in app/assets/css/tailwind.css (:root + .dark). If you change a value
+ * here, update it there too (and vice-versa).
  * Add additional presets here — they will appear in Settings → Theme.
  */
 export const defaultPresets: ThemePresets = {
@@ -55,7 +57,7 @@ export const defaultPresets: ThemePresets = {
       dark: {
         background: 'oklch(0.14 0.004 308.1928)',
         foreground: 'oklch(0.88 0 0)',
-        card: 'oklch(0.28 0.004 308.1928)',
+        card: 'oklch(0.18 0.004 308.1928)',
         'card-foreground': 'oklch(0.88 0 0)',
         popover: 'oklch(0.2 0.004 308.1928)',
         'popover-foreground': 'oklch(0.88 0 0)',
