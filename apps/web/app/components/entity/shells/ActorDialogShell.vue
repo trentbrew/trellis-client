@@ -1,13 +1,13 @@
 <script lang="ts" setup>
   /**
-   * DocumentDialogShell — Dialog chrome for document-class entities.
+   * ActorDialogShell — Dialog chrome for actor-class entities.
    *
-   * Optimized for content-heavy entities (note, page, file, template, form).
+   * Optimized for people/org entities (person, organization, contact, team, department).
    * Differences from TemporalDialogShell:
-   *  - No schedule/date badges in the header
-   *  - Wider content area (no mini-calendar sidebar by default)
-   *  - Optional metadata sidebar on the right instead of left
-   *  - Content area gets more vertical space
+   *  - Avatar/photo slot in the header
+   *  - Contact info properties row
+   *  - Relationship/membership section
+   *  - Narrower default width (profile-card feel)
    */
 
   const props = withDefaults(
@@ -22,6 +22,7 @@
       canNavigateNext?: boolean
       dialogTitle?: string
       dialogDescription?: string
+      avatar?: string
     }>(),
     {
       mode: 'edit',
@@ -49,11 +50,11 @@
 
   // ── Resize logic ──────────────────────────────────────────────────────
   const MIN_W = 480
-  const MIN_H = 400
+  const MIN_H = 420
   const MAX_W = computed(() => window.innerWidth - 64)
   const MAX_H = computed(() => window.innerHeight - 64)
-  const DEFAULT_W = 860
-  const DEFAULT_H = 720
+  const DEFAULT_W = 720
+  const DEFAULT_H = 640
 
   const dialogW = ref(DEFAULT_W)
   const dialogH = ref(DEFAULT_H)
@@ -104,7 +105,6 @@
     el.addEventListener('pointermove', onMove)
     el.addEventListener('pointerup', onUp)
   }
-
 </script>
 
 <template>
@@ -127,19 +127,28 @@
       <div class="absolute bottom-0 left-0 w-3 h-3 cursor-nesw-resize z-50" @pointerdown="startResize('sw', $event)" />
       <div class="absolute bottom-0 right-0 w-3 h-3 cursor-nwse-resize z-50" @pointerdown="startResize('se', $event)" />
 
-      <UiDialogTitle class="sr-only">{{ dialogTitle || title || 'Document' }}</UiDialogTitle>
-      <UiDialogDescription class="sr-only">{{ dialogDescription || 'Document details.' }}</UiDialogDescription>
+      <UiDialogTitle class="sr-only">{{ dialogTitle || title || 'Person' }}</UiDialogTitle>
+      <UiDialogDescription class="sr-only">{{ dialogDescription || 'Actor details.' }}</UiDialogDescription>
 
-      <!-- Header -->
+      <!-- Header — profile-oriented with avatar -->
       <div class="shrink-0 border-b border-border">
         <div class="px-4 pt-4 pb-3">
           <div class="flex items-center justify-between gap-3 mb-3">
-            <div class="flex items-center gap-2 min-w-0">
-              <span v-if="typeBadge" class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-medium bg-primary/10 text-primary">
-                <Icon :name="typeBadge.icon" class="h-3 w-3" />
-                {{ typeBadge.label }}
-              </span>
-              <slot name="header-badges" />
+            <div class="flex items-center gap-3 min-w-0">
+              <!-- Avatar -->
+              <slot name="avatar">
+                <div class="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
+                  <img v-if="avatar" :src="avatar" :alt="title" class="h-10 w-10 rounded-full object-cover" />
+                  <Icon v-else name="lucide:user" class="h-5 w-5 text-primary" />
+                </div>
+              </slot>
+              <div class="min-w-0">
+                <span v-if="typeBadge" class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-medium bg-primary/10 text-primary mb-1">
+                  <Icon :name="typeBadge.icon" class="h-3 w-3" />
+                  {{ typeBadge.label }}
+                </span>
+                <slot name="header-badges" />
+              </div>
             </div>
             <div class="flex items-center gap-1 shrink-0">
               <template v-if="!isCreateMode">
@@ -159,26 +168,26 @@
             v-if="!isViewMode"
             :value="title"
             type="text"
-            :placeholder="titlePlaceholder || 'Document name...'"
+            :placeholder="titlePlaceholder || 'Name...'"
             class="w-full text-xl font-semibold bg-transparent border border-transparent outline-none placeholder:text-muted-foreground/50 focus:ring-0 hover:border-border hover:bg-muted/20 focus:border-border focus:bg-muted/20 rounded-md px-2 py-0 -mx-1 transition-all"
             @input="emit('update:title', ($event.target as HTMLInputElement).value)" />
           <h2 v-else class="text-xl font-semibold px-1">{{ title }}</h2>
           <div class="mt-1 px-1">
-            <UiRichTextEditor v-if="!isViewMode" :model-value="description" placeholder="Add a description..." seamless @update:model-value="emit('update:description', $event)" />
+            <UiRichTextEditor v-if="!isViewMode" :model-value="description" placeholder="Role, title, or bio..." seamless @update:model-value="emit('update:description', $event)" />
             <p v-else-if="description" class="text-sm text-muted-foreground" v-html="description" />
             <p v-else class="text-sm text-muted-foreground/50 italic">No description</p>
           </div>
         </div>
       </div>
 
-      <!-- Properties Row (optional — documents may have fewer properties) -->
+      <!-- Properties Row -->
       <div v-if="$slots.properties" class="sticky top-0 z-10 bg-card px-4 py-2.5 border-b border-border">
         <div class="flex items-center gap-1.5 text-xs overflow-x-auto scrollbar-none whitespace-nowrap">
           <slot name="properties" />
         </div>
       </div>
 
-      <!-- Content Area — full-width, content-focused -->
+      <!-- Content Area -->
       <div class="flex-1 flex min-h-0 overflow-hidden">
         <slot />
       </div>
