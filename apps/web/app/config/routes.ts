@@ -295,6 +295,9 @@ export const ROUTE_PATHS = {
     tasks: '/personal/tasks',
     calendar: '/personal/calendar',
     notes: '/personal/notes',
+    projects: '/personal/projects',
+    people: '/personal/people',
+    files: '/personal/files',
   },
   app: {
     root: '/app',
