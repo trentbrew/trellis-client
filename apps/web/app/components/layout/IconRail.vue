@@ -36,8 +36,8 @@
               :class="[
                 routes.isRouteActive(route.path)
                   ? isInEditMode
-                    ? 'bg-accent-foreground/20 text-accent-foreground'
-                    : 'bg-rail-foreground/15 text-rail-foreground'
+                    ? 'bg-accent-foreground/10 text-accent-foreground/80'
+                    : 'bg-rail-foreground/10 text-rail-foreground/80'
                   : isInEditMode
                     ? 'text-accent-foreground/70 hover:bg-accent-foreground/10 hover:text-accent-foreground'
                     : 'text-rail-foreground/70 hover:bg-rail-foreground/10 hover:text-rail-foreground',
@@ -64,8 +64,8 @@
               :class="[
                 routes.isRouteActive(route.path)
                   ? isInEditMode
-                    ? 'bg-accent-foreground/20 text-accent-foreground'
-                    : 'bg-rail-foreground/15 text-rail-foreground'
+                    ? 'bg-accent-foreground/10 text-accent-foreground/80'
+                    : 'bg-rail-foreground/10 text-rail-foreground/80'
                   : isInEditMode
                     ? 'text-accent-foreground/70 hover:bg-accent-foreground/10 hover:text-accent-foreground'
                     : 'text-rail-foreground/70 hover:bg-rail-foreground/10 hover:text-rail-foreground',
