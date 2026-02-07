@@ -338,6 +338,24 @@ const _schema = i.schema({
     }),
 
     // ========================================================================
+    // Comments (activity feed for any entity)
+    // ========================================================================
+
+    comments: i.entity({
+      entityId: i.string().indexed(), // ID of the parent entity (calendarItem, task, etc.)
+      entityType: i.string().indexed(), // 'calendarItem' | 'task' | etc.
+      authorId: i.string().indexed(),
+      authorName: i.string(),
+      authorAvatar: i.string().optional(),
+      content: i.string(),
+      type: i.string().indexed(), // 'comment' | 'status_change' | 'attachment' | 'created'
+      metadata: i.json().optional(), // type-specific data (e.g. old/new status, filename)
+      createdAt: i.number().indexed(),
+      updatedAt: i.number().optional(),
+      deletedAt: i.number().optional(),
+    }),
+
+    // ========================================================================
     // Personal Calendar Items (polymorphic: task, event, payment, note, trip)
     // ========================================================================
 
@@ -763,6 +781,23 @@ const _schema = i.schema({
         on: 'notifications',
         has: 'one',
         label: 'task',
+      },
+    },
+
+    // ========================================================================
+    // Comments Links
+    // ========================================================================
+
+    calendarItemComments: {
+      forward: {
+        on: 'calendarItems',
+        has: 'many',
+        label: 'comments',
+      },
+      reverse: {
+        on: 'comments',
+        has: 'one',
+        label: 'calendarItem',
       },
     },
   },
