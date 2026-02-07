@@ -36,7 +36,7 @@ function getEntityTypeFromRoute(routePath: string): string | null {
 
   // Try to extract from path segment (e.g., /facility/browse/tasks → task)
   const match = routePath.match(/\/browse\/([^/]+)/)
-  if (match) {
+  if (match?.[1]) {
     const slug = match[1]
     // Convert plural to singular: tasks → task
     return slug.endsWith('s') ? slug.slice(0, -1) : slug
@@ -125,7 +125,7 @@ export function useGraphDrivenPage(options: UseGraphDrivenPageOptions): UseGraph
     const typeId = pageConfig.value?.entityTypeId
     if (typeId) {
       const match = typeId.match(/type:(\w+)/)
-      if (match) return match[1].toLowerCase()
+      if (match?.[1]) return match[1].toLowerCase()
     }
 
     return null
@@ -180,6 +180,9 @@ export function useGraphDrivenPage(options: UseGraphDrivenPageOptions): UseGraph
     loadEntityData()
   })
 
+  // Registry-based type set for lookups
+  const registeredTypes = new Set<string>(getAllEntityTypeIds())
+
   // Resolve search fields from registry when available
   const registrySearchFields = computed(() => {
     const t = entityType.value as EntityType
@@ -193,7 +196,7 @@ export function useGraphDrivenPage(options: UseGraphDrivenPageOptions): UseGraph
   const { browseState, filteredItems, viewMode } = useBrowse({
     items,
     searchFields: registrySearchFields.value as any,
-    defaultViewMode,
+    defaultViewMode: defaultViewMode as BrowseViewMode,
     sortOptions: [
       { value: 'title', label: 'Title' },
       { value: 'dueDate', label: 'Due Date' },
@@ -302,8 +305,6 @@ export function useGraphDrivenPage(options: UseGraphDrivenPageOptions): UseGraph
   const dialogItem = ref<any>(null)
 
   // Resolve entity type against the registry (replaces hardcoded allowlist)
-  const registeredTypes = new Set<string>(getAllEntityTypeIds())
-
   const resolvedEntityType = computed(() => {
     const candidate = entityType.value || 'task'
     return registeredTypes.has(candidate) ? candidate : 'default'
