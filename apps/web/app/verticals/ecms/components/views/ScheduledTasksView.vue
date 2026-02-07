@@ -300,30 +300,6 @@
     { id: '2', name: 'Air_Quality_Data.xlsx', type: 'spreadsheet' },
   ])
 
-  const viewingTaskActivity = computed<ActivityItem[]>(() => [
-    {
-      id: '1',
-      type: 'comment',
-      author: 'Sarah Wilson',
-      avatar: 'https://i.pravatar.cc/150?img=5',
-      content: 'Completed the initial inspection. All readings within normal parameters. Uploaded the data file.',
-      date: '2 hours ago',
-    },
-    {
-      id: '2',
-      type: 'attachment',
-      author: 'Sarah Wilson',
-      filename: 'Air_Quality_Data.xlsx',
-      date: 'Jan 10',
-    },
-    {
-      id: '3',
-      type: 'status_change',
-      author: 'Mike Johnson',
-      status: 'active',
-      date: 'Jan 5',
-    },
-  ])
 
   const handleUpdateScheduleFromDialog = (formData: any) => {
     if (!viewingTask.value) return
@@ -519,7 +495,6 @@
       mode="edit"
       :can-navigate-prev="canNavigatePrev"
       :can-navigate-next="canNavigateNext"
-      :activity="viewingTaskActivity"
       @navigate-prev="navigateToPrevTask"
       @navigate-next="navigateToNextTask"
       @save="handleUpdateScheduleFromDialog"
