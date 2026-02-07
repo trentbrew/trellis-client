@@ -74,6 +74,44 @@ export default defineNuxtPlugin(async () => {
       }
     }
 
+    // ── Seed default organization + application ─────────────────────
+    // Matches the demo org in useOrganizations.ts so the InstantDB data
+    // layer (useInstantData) has a valid org/app for scoping collections.
+    const ORG_ID = 'org_turtle_labs'
+    const APP_ID = 'app_turtle_labs_workspace'
+
+    const existingOrgs = db._store.getAll('organizations')
+    if (!existingOrgs.find((o: any) => o.id === ORG_ID)) {
+      const now = Date.now()
+      await db.transact([
+        db.tx.organizations[ORG_ID].create({
+          name: 'Turtle Labs LLC',
+          slug: 'turtle-labs',
+          description: 'Design & development studio.',
+          status: 'active',
+          createdAt: now,
+          updatedAt: now,
+        }),
+      ])
+    }
+
+    const existingApps = db._store.getAll('applications')
+    if (!existingApps.find((a: any) => a.id === APP_ID)) {
+      const now = Date.now()
+      await db.transact([
+        db.tx.applications[APP_ID].create({
+          ownerId: 'user-demo-admin',
+          orgId: ORG_ID,
+          name: 'Workspace',
+          slug: 'workspace',
+          icon: 'lucide:layout-grid',
+          color: '#6366f1',
+          createdAt: now,
+          updatedAt: now,
+        }),
+      ])
+    }
+
     // ── Seed personal calendar items ────────────────────────────────
     const calItems = db._store.getAll('calendarItems')
     if (calItems.length === 0) {

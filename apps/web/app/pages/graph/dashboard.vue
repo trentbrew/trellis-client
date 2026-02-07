@@ -7,6 +7,13 @@
   const projections = ref<{ name: string; query: string; type: string }[]>([])
   const loading = ref(true)
 
+  const navLinks = [
+    { to: '/graph/explorer', icon: 'lucide:search', label: 'Explorer' },
+    { to: '/graph/query', icon: 'lucide:terminal', label: 'Query Console' },
+    { to: '/graph/ontology', icon: 'lucide:blocks', label: 'Ontology' },
+    { to: '/graph/activity', icon: 'lucide:scroll-text', label: 'Activity Log' },
+  ]
+
   const healthStats = computed(() => {
     if (!health.value) return []
     const h = health.value
@@ -83,7 +90,19 @@
     :stats="healthStats"
     :is-loading="loading"
     count-label="data">
-    <div class="space-y-6">
+    <div class="space-y-4">
+      <!-- Navigation -->
+      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 w-full">
+        <NuxtLink
+          v-for="link in navLinks"
+          :key="link.to"
+          :to="link.to"
+          class="flex items-center justify-center gap-2 py-6 px-4 rounded-lg border border-border bg-card hover:bg-accent hover:border-primary/50 transition-all group">
+          <Icon :name="link.icon" class="size-4 text-muted-foreground group-hover:text-primary transition-colors" />
+          <span class="text-sm font-medium">{{ link.label }}</span>
+          <Icon name="lucide:arrow-up-right" class="size-3.5 text-muted-foreground group-hover:text-primary transition-colors" />
+        </NuxtLink>
+      </div>
       <!-- Entity Breakdown -->
       <UiCard>
         <UiCardContent class="p-0">
@@ -141,33 +160,6 @@
         </UiCard>
       </div>
 
-      <!-- Navigation -->
-      <div class="flex flex-wrap gap-2">
-        <UiButton variant="outline" size="sm" as-child>
-          <NuxtLink to="/graph/explorer">
-            <Icon name="lucide:search" class="mr-1.5 size-3.5" />
-            Explorer
-          </NuxtLink>
-        </UiButton>
-        <UiButton variant="outline" size="sm" as-child>
-          <NuxtLink to="/graph/query">
-            <Icon name="lucide:terminal" class="mr-1.5 size-3.5" />
-            Query Console
-          </NuxtLink>
-        </UiButton>
-        <UiButton variant="outline" size="sm" as-child>
-          <NuxtLink to="/graph/ontology">
-            <Icon name="lucide:blocks" class="mr-1.5 size-3.5" />
-            Ontology
-          </NuxtLink>
-        </UiButton>
-        <UiButton variant="outline" size="sm" as-child>
-          <NuxtLink to="/graph/activity">
-            <Icon name="lucide:scroll-text" class="mr-1.5 size-3.5" />
-            Activity Log
-          </NuxtLink>
-        </UiButton>
-      </div>
     </div>
   </Page>
 </template>

@@ -1,6 +1,8 @@
 <script setup lang="ts">
   import AppEmptyState from '~/components/app/AppEmptyState.vue'
+  import FilterBuilder from '~/components/layout/FilterBuilder.vue'
   import type { BrowseState, BrowseVariant, BrowseViewMode } from '~/composables/useBrowse'
+  import type { AdvancedFilterState } from '~/composables/useAdvancedFilters'
 
   const NuxtLink = resolveComponent('NuxtLink')
   const pageShell = usePageShell()
@@ -135,6 +137,8 @@
     transparent?: boolean
     /** Browse state from useBrowse (enables automatic toolbar controls) */
     browse?: BrowseState
+    /** Advanced filter state from useAdvancedFilters */
+    advancedFilters?: AdvancedFilterState
     /** Loading state for browse/list pages */
     isLoading?: boolean
     /** Error message for browse/list pages */
@@ -924,7 +928,39 @@
               <!-- Filters -->
               <div class="flex items-center gap-2 shrink-0">
                 <slot name="filters">
-                  <template v-if="browse?.filters">
+                  <!-- Advanced Filters (Notion-style) -->
+                  <UiPopover v-if="advancedFilters">
+                    <UiPopoverTrigger as-child>
+                      <UiButton
+                        variant="outline"
+                        size="sm"
+                        class="gap-1.5 bg-card max-w-[480px]"
+                        :class="advancedFilters.hasActiveFilters.value ? 'border-primary/50 text-primary' : ''">
+                        <Icon name="lucide:filter" class="h-4 w-4 shrink-0" />
+                        <template v-if="advancedFilters.hasActiveFilters.value">
+                          <span
+                            v-for="(pill, pIdx) in advancedFilters.activeFilterSummary.value.slice(0, 3)"
+                            :key="pIdx"
+                            class="inline-flex items-center gap-1 rounded-sm bg-primary/10 px-1.5 py-0.5 text-[11px] font-medium leading-none whitespace-nowrap">
+                            <span class="text-primary/70">{{ pill.fieldLabel }}</span>
+                            <span v-if="pill.displayValue" class="text-primary">{{ pill.displayValue }}</span>
+                          </span>
+                          <span
+                            v-if="advancedFilters.activeFilterSummary.value.length > 3"
+                            class="text-[11px] text-primary/60 whitespace-nowrap">
+                            +{{ advancedFilters.activeFilterSummary.value.length - 3 }}
+                          </span>
+                        </template>
+                        <span v-else>Filter</span>
+                      </UiButton>
+                    </UiPopoverTrigger>
+                    <UiPopoverContent align="start" :side-offset="8" class="w-auto p-3">
+                      <FilterBuilder :filters="advancedFilters" />
+                    </UiPopoverContent>
+                  </UiPopover>
+
+                  <!-- Simple dropdown filters (only shown when no advanced filters) -->
+                  <template v-if="browse?.filters?.length && !advancedFilters">
                     <UiDropdownMenu v-for="filter in browse.filters" :key="filter.id">
                       <UiDropdownMenuTrigger as-child>
                         <UiButton variant="outline" size="sm" class="gap-2 bg-card/0">

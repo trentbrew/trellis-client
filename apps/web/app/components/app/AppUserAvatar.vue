@@ -17,9 +17,9 @@
   const currentUserRole = computed(() => (user.value as any)?.role || 'admin')
 
   const roleIcons: Record<string, string> = {
-    super_admin: 'lucide:shield',
+    superadmin: 'lucide:shield',
     admin: 'lucide:shield-check',
-    facility_manager: 'lucide:factory',
+    member: 'lucide:user',
     guest: 'lucide:eye',
   }
 

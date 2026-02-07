@@ -225,9 +225,9 @@ const docsSidebarSections = Object.entries(docCategories).map(([key, cat]) => ({
 
 /**
  * User roles for permission checking
- * Hierarchy: guest < developer < facility_manager < admin < corporate_admin < super_admin
+ * Hierarchy: guest < member < admin < superadmin
  */
-export type UserRole = 'guest' | 'developer' | 'facility_manager' | 'admin' | 'corporate_admin' | 'super_admin'
+export type UserRole = 'guest' | 'member' | 'admin' | 'superadmin'
 
 /**
  * Permission levels for routes

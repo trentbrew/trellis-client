@@ -35,6 +35,7 @@
     'request-add-date-field': []
     'task-click': [event: CalendarEvent]
     'cell-click': [date: Date]
+    'create-request': [date: Date, typeLabel: string]
   }>()
 
   // Calendar view mode state
@@ -92,14 +93,27 @@
 
   // Day popover state
   const activeDayPopover = ref<Date | null>(null)
+  const activeDayPopoverFilter = ref<string | null>(null)
   const isDayPopoverOpen = (date: Date): boolean =>
     !!(activeDayPopover.value && isSameDay(activeDayPopover.value, date))
-  const openDayPopover = (date: Date) => {
+  const openDayPopover = (date: Date, typeFilter?: string) => {
     activeDayPopover.value = date
+    activeDayPopoverFilter.value = typeFilter ?? null
   }
   const closeDayPopover = () => {
     activeDayPopover.value = null
+    activeDayPopoverFilter.value = null
   }
+
+  // Add menu state ('+' button in cells)
+  const addMenuDate = ref<Date | null>(null)
+  const isAddMenuOpen = (date: Date): boolean =>
+    !!(addMenuDate.value && isSameDay(addMenuDate.value, date))
+
+  // Temporal types for the add menu
+  const temporalTypeOptions = computed(() =>
+    Object.entries(typeColorMap).map(([key, val]) => ({ typeLabel: key, ...val }))
+  )
 
   // Open event - emit to parent for UnifiedTaskDialog, fallback to global sheet
   const openEventDetail = (event: CalendarEvent) => {
@@ -478,7 +492,7 @@
     return d < today.value
   }
 
-  const handleEmptyCellClick = (date: Date) => {
+  const _handleEmptyCellClick = (date: Date) => {
     if (getEventsForDay(date).length === 0) {
       emit('cell-click', date)
     }
@@ -1265,41 +1279,67 @@
                     v-for="(day, idx) in monthDays"
                     :key="idx"
                     :class="[
-                      'p-2 border-b border-r border-border/30 relative group cursor-pointer',
+                      'p-2 border-b border-r border-border/30 relative group',
                       'last:border-r-0 nth-[7n]:border-r-0',
                       !day.isCurrentMonth ? 'bg-muted/20' : '',
                       day.isToday ? 'bg-primary/5 ring-2 ring-inset ring-primary/30' : '',
                     ]"
-                    @click="handleEmptyCellClick(day.date)">
-                    <div
-                      :class="[
-                        'text-sm font-medium mb-1',
-                        day.isToday
-                          ? 'w-7 h-7 rounded-full bg-primary text-primary-foreground flex items-center justify-center'
-                          : day.isCurrentMonth
-                            ? 'text-foreground'
-                            : 'text-muted-foreground/50',
-                      ]">
-                      {{ day.date.getDate() }}
+                    >
+                    <!-- Day header: number + hover add button -->
+                    <div class="flex items-center justify-between mb-1">
+                      <div
+                        :class="[
+                          day.isToday
+                            ? 'w-6 h-6 rounded-full bg-primary text-primary-foreground flex items-center justify-center text-[11px] font-semibold'
+                            : day.isCurrentMonth
+                              ? 'text-[11px] text-muted-foreground font-medium'
+                              : 'text-[11px] text-muted-foreground/30',
+                        ]">
+                        {{ day.date.getDate() }}
+                      </div>
+                      <!-- Hover '+' button with type picker -->
+                      <UiPopover
+                        v-if="day.isCurrentMonth"
+                        :open="isAddMenuOpen(day.date)"
+                        @update:open="(open: boolean) => { addMenuDate = open ? day.date : null }">
+                        <UiPopoverTrigger as-child>
+                          <button
+                            class="h-5 w-5 rounded flex items-center justify-center opacity-0 group-hover:opacity-100 hover:bg-muted transition-all text-muted-foreground hover:text-foreground"
+                            @click.stop="() => { addMenuDate = day.date }">
+                            <Icon name="lucide:plus" class="h-3 w-3" />
+                          </button>
+                        </UiPopoverTrigger>
+                        <UiPopoverContent align="end" side="bottom" class="w-44 p-1">
+                          <button
+                            v-for="t in temporalTypeOptions"
+                            :key="t.typeLabel"
+                            class="w-full flex items-center gap-2 px-2 py-1.5 rounded-md text-xs hover:bg-muted/50 transition-colors"
+                            @click="() => { addMenuDate = null; emit('create-request', day.date, t.typeLabel) }">
+                            <Icon :name="t.icon" :class="['h-3.5 w-3.5', t.text]" />
+                            <span>{{ t.typeLabel }}</span>
+                          </button>
+                        </UiPopoverContent>
+                      </UiPopover>
                     </div>
                     <!-- Type-grouped item stacks -->
                     <div
                       v-if="getTypeGroupsForDay(day.date).length > 0"
-                      :class="['space-y-1', isDayInPast(day.date) ? 'opacity-50' : '']">
+                      :class="['space-y-0.5', isDayInPast(day.date) ? 'opacity-50' : '']">
                       <UiPopover
                         :open="isDayPopoverOpen(day.date)"
-                        @update:open="(open) => (open ? openDayPopover(day.date) : closeDayPopover())">
+                        @update:open="(open: boolean) => { if (open && !isDayPopoverOpen(day.date)) openDayPopover(day.date); else if (!open) closeDayPopover() }">
                         <UiPopoverTrigger as-child>
-                          <button class="w-full text-left space-y-0.5" @click.stop="openDayPopover(day.date)">
-                            <div
+                          <div class="w-full text-left space-y-0.5">
+                            <button
                               v-for="group in getTypeGroupsForDay(day.date)"
                               :key="group.typeLabel"
                               :class="[
-                                'flex items-center gap-1 px-1.5 py-1 rounded-md text-[11px] font-medium transition-all duration-150',
+                                'w-full flex items-center gap-1 px-1.5 py-0.5 rounded-md text-[11px] font-medium transition-all duration-150',
                                 'hover:ring-1 hover:ring-primary/30',
                                 group.style.bg,
                                 group.style.text,
-                              ]">
+                              ]"
+                              @click.stop="openDayPopover(day.date, group.typeLabel)">
                               <Icon :name="group.style.icon" class="h-3 w-3 shrink-0" />
                               <span class="truncate">
                                 {{ group.items.length }} {{ group.style.label
@@ -1310,19 +1350,53 @@
                                 class="ml-auto shrink-0 inline-flex items-center justify-center w-4 h-4 rounded-full bg-red-500 text-white text-[9px] font-bold leading-none">
                                 {{ group.urgentCount }}
                               </span>
-                            </div>
-                          </button>
+                            </button>
+                          </div>
                         </UiPopoverTrigger>
                         <UiPopoverContent align="start" class="w-72 p-0 max-h-80 overflow-hidden">
+                          <!-- Header with filter tabs -->
                           <div class="px-3 py-2 border-b border-border bg-muted/30">
                             <p class="text-xs font-semibold">{{ formatDate(day.date) }}</p>
                             <p class="text-[10px] text-muted-foreground">
                               {{ getEventsForDay(day.date).length }}
                               {{ getEventsForDay(day.date).length === 1 ? 'item' : 'items' }}
                             </p>
+                            <!-- Type filter tabs (only if more than one group) -->
+                            <div
+                              v-if="getTypeGroupsForDay(day.date).length > 1"
+                              class="flex items-center gap-1 mt-2 flex-wrap">
+                              <button
+                                :class="[
+                                  'px-1.5 py-0.5 rounded text-[10px] font-medium transition-colors',
+                                  !activeDayPopoverFilter
+                                    ? 'bg-foreground/10 text-foreground'
+                                    : 'text-muted-foreground hover:text-foreground hover:bg-muted/50',
+                                ]"
+                                @click.stop="activeDayPopoverFilter = null">
+                                All
+                              </button>
+                              <button
+                                v-for="group in getTypeGroupsForDay(day.date)"
+                                :key="group.typeLabel"
+                                :class="[
+                                  'px-1.5 py-0.5 rounded text-[10px] font-medium transition-colors inline-flex items-center gap-1',
+                                  activeDayPopoverFilter === group.typeLabel
+                                    ? `${group.style.bg} ${group.style.text}`
+                                    : 'text-muted-foreground hover:text-foreground hover:bg-muted/50',
+                                ]"
+                                @click.stop="activeDayPopoverFilter = group.typeLabel">
+                                <Icon :name="group.style.icon" class="h-2.5 w-2.5" />
+                                {{ group.items.length }}
+                              </button>
+                            </div>
                           </div>
+                          <!-- Filtered items -->
                           <div class="overflow-y-auto max-h-64 p-1">
-                            <template v-for="group in getTypeGroupsForDay(day.date)" :key="group.typeLabel">
+                            <template
+                              v-for="group in getTypeGroupsForDay(day.date).filter(
+                                (g) => !activeDayPopoverFilter || g.typeLabel === activeDayPopoverFilter,
+                              )"
+                              :key="group.typeLabel">
                               <div class="px-2 pt-2 pb-1 flex items-center gap-1.5">
                                 <Icon :name="group.style.icon" :class="['h-3 w-3', group.style.text]" />
                                 <span :class="['text-[10px] font-semibold uppercase tracking-wide', group.style.text]">

@@ -33,6 +33,15 @@
     { id: 'notes', label: 'Notes', icon: 'lucide:sticky-note', itemType: 'note' },
   ]
 
+  // Color map for sidebar filter buttons (matches CalendarView typeColorMap)
+  const sectionColors: Record<Section, { activeBg: string; activeText: string; activeBadge: string; iconColor: string }> = {
+    all: { activeBg: 'bg-primary/10', activeText: 'text-primary', activeBadge: 'bg-primary/15 text-primary', iconColor: '' },
+    tasks: { activeBg: 'bg-blue-100 dark:bg-blue-900/30', activeText: 'text-blue-700 dark:text-blue-300', activeBadge: 'bg-blue-100 dark:bg-blue-900/40 text-blue-700 dark:text-blue-300', iconColor: 'text-blue-600 dark:text-blue-400' },
+    events: { activeBg: 'bg-purple-100 dark:bg-purple-900/30', activeText: 'text-purple-700 dark:text-purple-300', activeBadge: 'bg-purple-100 dark:bg-purple-900/40 text-purple-700 dark:text-purple-300', iconColor: 'text-purple-600 dark:text-purple-400' },
+    payments: { activeBg: 'bg-emerald-100 dark:bg-emerald-900/30', activeText: 'text-emerald-700 dark:text-emerald-300', activeBadge: 'bg-emerald-100 dark:bg-emerald-900/40 text-emerald-700 dark:text-emerald-300', iconColor: 'text-emerald-600 dark:text-emerald-400' },
+    notes: { activeBg: 'bg-yellow-100 dark:bg-yellow-900/30', activeText: 'text-yellow-700 dark:text-yellow-300', activeBadge: 'bg-yellow-100 dark:bg-yellow-900/40 text-yellow-700 dark:text-yellow-300', iconColor: 'text-yellow-600 dark:text-yellow-400' },
+  }
+
   const activeSection = computed<Section>({
     get: () => (route.query.section as Section) || 'all',
     set: (v) => router.push({ query: { ...route.query, section: v } }),
@@ -123,6 +132,11 @@
     openCreate(undefined, date)
   }
 
+  function handleCreateRequest(date: Date, typeLabel: string) {
+    const typeLower = typeLabel.toLowerCase() as CalendarItemType
+    openCreate(typeLower, date)
+  }
+
   function openDetail(item: CalendarItem) {
     viewingItem.value = item
     viewDialogOpen.value = true
@@ -173,7 +187,8 @@
       :schema="calendarSchema"
       fullscreen
       @task-click="handleCalendarItemClick"
-      @cell-click="handleCellClick">
+      @cell-click="handleCellClick"
+      @create-request="handleCreateRequest">
       <!-- Type filter buttons under the mini calendar -->
       <template #sidebar-filters>
         <h4 class="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-2">Filter</h4>
@@ -185,16 +200,23 @@
             :class="[
               'flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-xs font-medium transition-colors text-left',
               activeSection === sec.id
-                ? 'bg-primary/10 text-primary'
+                ? `${sectionColors[sec.id].activeBg} ${sectionColors[sec.id].activeText}`
                 : 'text-muted-foreground hover:bg-muted hover:text-foreground',
             ]"
             @click="activeSection = sec.id">
-            <Icon :name="sec.icon" class="h-3.5 w-3.5 shrink-0" />
+            <Icon
+              :name="sec.icon"
+              :class="[
+                'h-3.5 w-3.5 shrink-0',
+                activeSection !== sec.id && sectionColors[sec.id].iconColor ? sectionColors[sec.id].iconColor : '',
+              ]" />
             <span class="flex-1">{{ sec.label }}</span>
             <span
               :class="[
                 'text-[10px] tabular-nums px-1.5 py-0.5 rounded-full min-w-[20px] text-center',
-                activeSection === sec.id ? 'bg-primary/15 text-primary' : 'bg-muted text-muted-foreground',
+                activeSection === sec.id
+                  ? sectionColors[sec.id].activeBadge
+                  : 'bg-muted text-muted-foreground',
               ]">
               {{ sectionCount(sec.id) }}
             </span>

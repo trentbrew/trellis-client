@@ -1,0 +1,80 @@
+{
+  "hooks": {
+    "pre_read_code": [
+      {
+        "command": "bun run hooks/log.ts",
+        "show_output": true
+      },
+      {
+        "command": "bun run hooks/tql-ingest.ts",
+        "show_output": true
+      }
+    ],
+    "pre_write_code": [
+      {
+        "command": "bun run hooks/tql-guard.ts",
+        "show_output": true
+      }
+    ],
+    "post_write_code": [
+      {
+        "command": "bun run hooks/audit.ts",
+        "show_output": true
+      },
+      {
+        "command": "bun run hooks/tql-ingest.ts",
+        "show_output": true
+      }
+    ],
+    "pre_run_command": [
+      {
+        "command": "bun run hooks/tql-guard.ts",
+        "show_output": true
+      },
+      {
+        "command": "bun run hooks/block-dangerous.ts",
+        "show_output": true
+      },
+      {
+        "command": "bun run hooks/tql-ingest.ts",
+        "show_output": true
+      }
+    ],
+    "post_cascade_response": [
+      {
+        "command": "bun run hooks/archive-response.ts",
+        "show_output": true
+      },
+      {
+        "command": "bun run hooks/tql-ingest.ts",
+        "show_output": true
+      },
+      {
+        "command": "bun run hooks/tql-eval.ts",
+        "show_output": true
+      }
+    ],
+    "post_run_command": [
+      {
+        "command": "bun run hooks/tql-ingest.ts",
+        "show_output": true
+      },
+      {
+        "command": "bun run hooks/tql-eval.ts",
+        "show_output": true
+      }
+    ],
+    "pre_user_prompt": [
+      {
+        "command": "bun run hooks/tql-ingest.ts",
+        "show_output": true
+      }
+    ],
+    "post_user_prompt": [
+      {
+        "command": "bun run hooks/tql-ingest.ts",
+        "show_output": true
+      }
+    ]
+  }
+}

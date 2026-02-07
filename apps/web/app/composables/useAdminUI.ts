@@ -73,7 +73,7 @@ export function useAdminUI() {
   // Minimum role checks
   const isAdmin = computed(() => hasMinimumRole(userRole.value, 'admin'))
 
-  const isSuperAdmin = computed(() => hasMinimumRole(userRole.value, 'super_admin'))
+  const isSuperAdmin = computed(() => hasMinimumRole(userRole.value, 'superadmin'))
 
   // Specific capability flags for self-building features
   const canCreateCollections = computed(() => {
