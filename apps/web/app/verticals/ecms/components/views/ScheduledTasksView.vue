@@ -1,7 +1,6 @@
 <script setup lang="ts">
   import { useBrowse, type BrowseViewMode } from '~/composables/useBrowse'
   import CalendarItemDialog from '~/components/dialogs/CalendarItemDialog.vue'
-  import type { ActivityItem } from '~/components/dialogs/CalendarItemDialog.vue'
 
   const props = withDefaults(
     defineProps<{

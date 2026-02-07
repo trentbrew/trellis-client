@@ -1357,9 +1357,9 @@
     height: 1rem;
     width: 0.875rem;
     transform: translateY(-1rem);
-    border-left: 2px solid var(--sidebar-border);
-    border-bottom: 2px solid var(--sidebar-border);
-    border-bottom-left-radius: 0.64rem;
+    border-left: 1px solid var(--sidebar-border);
+    border-bottom: 1px solid var(--sidebar-border);
+    border-bottom-left-radius: 0.33rem;
     border-color: var(--sidebar-border);
   }
 

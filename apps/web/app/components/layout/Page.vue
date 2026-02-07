@@ -668,7 +668,7 @@
     </aside>
 
     <!-- Main Page Content -->
-    <div :class="finalContainerClass" class="flex-1 min-w-0 h-full bg-card/40">
+    <div :class="finalContainerClass" class="flex-1 min-w-0 h-full bg-card/0">
       <!-- Main content uses base background (darkest layer) -->
       <div :class="[contentWrapperClass, transparent ? 'bg-transparent' : '']">
         <!-- Header Section (Non-sticky) -->
