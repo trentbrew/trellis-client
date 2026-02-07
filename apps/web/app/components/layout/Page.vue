@@ -6,7 +6,6 @@
   const pageShell = usePageShell()
   const slots = useSlots()
 
-
   interface PageTab {
     /** Tab label */
     label: string
@@ -473,7 +472,6 @@
     })
   }
 
-
   const isTabActive = (to: string): boolean => {
     if (to.startsWith('#')) {
       if (!activeHash.value && hashTabs.value[0]?.to === to) return true
@@ -670,7 +668,7 @@
     </aside>
 
     <!-- Main Page Content -->
-    <div :class="finalContainerClass" class="flex-1 min-w-0 min-h-[calc(100vh-4rem)] h-full bg-transparent">
+    <div :class="finalContainerClass" class="flex-1 min-w-0 h-full bg-transparent">
       <!-- Main content uses base background (darkest layer) -->
       <div :class="[contentWrapperClass, transparent ? 'bg-transparent' : '']">
         <!-- Header Section (Non-sticky) -->
@@ -742,7 +740,10 @@
                     class="flex flex-col justify-between gap-1 rounded-lg border border-border/60 bg-card/60 backdrop-blur-sm px-5 py-3 h-[92px] min-w-36">
                     <div
                       class="flex items-center gap-1.5 text-[10px] font-medium text-muted-foreground uppercase tracking-wider">
-                      <Icon v-if="stat.icon" :name="stat.icon" :class="['size-3', stat.color || 'text-muted-foreground/70']" />
+                      <Icon
+                        v-if="stat.icon"
+                        :name="stat.icon"
+                        :class="['size-3', stat.color || 'text-muted-foreground/70']" />
                       {{ stat.label }}
                     </div>
                     <!-- Progress bar for health stat -->
@@ -766,11 +767,7 @@
                         <div
                           class="h-full rounded-full transition-all duration-500"
                           :class="[
-                            stat.progress >= 80
-                              ? 'bg-success'
-                              : stat.progress >= 50
-                                ? 'bg-warning'
-                                : 'bg-destructive',
+                            stat.progress >= 80 ? 'bg-success' : stat.progress >= 50 ? 'bg-warning' : 'bg-destructive',
                           ]"
                           :style="{ width: `${stat.progress}%` }" />
                       </div>
