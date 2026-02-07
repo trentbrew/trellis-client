@@ -4,29 +4,14 @@
     CalendarItemType,
     Priority,
     Urgency,
-    TaskStatus,
-    EventType,
-    TripStatus,
-    PaymentStatus,
-    TransportMode,
-    Attachment,
     RecurrenceRule,
   } from '~/types/calendarItem'
   import {
     CALENDAR_ITEM_TYPES,
     PRIORITY_OPTIONS,
     URGENCY_OPTIONS,
-    TASK_STATUS_OPTIONS,
-    EVENT_TYPE_OPTIONS,
-    TRIP_STATUS_OPTIONS,
-    PAYMENT_STATUS_OPTIONS,
-    TRANSPORT_OPTIONS,
     CATEGORY_OPTIONS,
     createDefaultItem,
-    isTask,
-    isEvent,
-    isTrip,
-    isPayment,
     isNote,
   } from '~/types/calendarItem'
   import { useCalendarItemFormulas } from '~/composables/useCalendarItemFormulas'
@@ -124,17 +109,10 @@
   const folderOpen = ref(false)
   const priorityOpen = ref(false)
   const urgencyOpen = ref(false)
-  const tagInput = ref('')
   const schedulePopoverOpen = ref(false)
   const ownerSearch = ref('')
   const folderSearch = ref('')
   const involvedSearch = ref('')
-  const taskStatusOpen = ref(false)
-  const eventTypeOpen = ref(false)
-  const tripStatusOpen = ref(false)
-  const transportOpen = ref(false)
-  const paymentStatusOpen = ref(false)
-  const fileUploadOpen = ref(false)
 
   const owners = computed(() => props.owners ?? [])
   const folders = computed(() => props.folders ?? [])
@@ -317,15 +295,6 @@
     return { scheduleText, statusText, isOverdue: diffDays < 0, isRecurring: repeat !== 'none' && !!repeat }
   })
 
-  // Tags
-  const addTag = () => {
-    const t = tagInput.value.trim()
-    if (t && !editableItem.tags.includes(t)) editableItem.tags.push(t)
-    tagInput.value = ''
-  }
-  const removeTag = (t: string) => {
-    editableItem.tags = editableItem.tags.filter((x: string) => x !== t)
-  }
 
   // People
   const toggleInvolvedUser = (uid: string) => {
@@ -365,27 +334,6 @@
     return [{ id: '1', author: 'System', type: 'created' as const, date: editableItem.createdAt || 'Just now', content: '' }]
   })
 
-  // Attachment helpers
-  const getAttachmentIcon = (type: Attachment['type']) => {
-    const m: Record<Attachment['type'], string> = {
-      pdf: 'lucide:file-text',
-      spreadsheet: 'lucide:file-spreadsheet',
-      image: 'lucide:image',
-      document: 'lucide:file',
-      other: 'lucide:file',
-    }
-    return m[type] || 'lucide:file'
-  }
-  const getAttachmentColor = (type: Attachment['type']) => {
-    const m: Record<Attachment['type'], string> = {
-      pdf: 'text-rose-600 bg-rose-500/10',
-      spreadsheet: 'text-green-600 bg-green-500/10',
-      image: 'text-violet-600 bg-violet-500/10',
-      document: 'text-blue-600 bg-blue-500/10',
-      other: 'text-gray-600 bg-gray-500/10',
-    }
-    return m[type] || 'text-gray-600 bg-gray-500/10'
-  }
 
   // Actions
   const closeDialog = () => {
@@ -868,10 +816,10 @@
         <EntityContentPanel :model-value="editableItem" :mode="mode" />
 
         <!-- Tags Section -->
-        <EntityTagsSection v-model="editableItem.tags" :readonly="isViewMode" />
+        <TagsSection v-model="editableItem.tags" :readonly="isViewMode" />
 
         <!-- Attachments -->
-        <EntityAttachmentsSection v-model="editableItem.attachments" :readonly="isViewMode" />
+        <AttachmentsSection v-model="editableItem.attachments" :readonly="isViewMode" />
 
         <!-- Notes -->
         <div v-if="!isNote(editableItem)" class="p-4 space-y-1.5">
