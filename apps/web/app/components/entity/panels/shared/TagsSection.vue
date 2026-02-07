@@ -25,7 +25,10 @@
   }
 
   const removeTag = (t: string) => {
-    emit('update:modelValue', tags.value.filter((x) => x !== t))
+    emit(
+      'update:modelValue',
+      tags.value.filter((x) => x !== t),
+    )
   }
 </script>
 
@@ -58,7 +61,7 @@
       <span
         v-for="tag in tags"
         :key="tag"
-        class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-primary/10 text-primary text-xs">
+        class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-foreground/10 text-foreground text-xs">
         {{ tag }}
         <button v-if="!readonly" class="hover:text-destructive" @click="removeTag(tag)">
           <Icon name="lucide:x" class="h-2.5 w-2.5" />

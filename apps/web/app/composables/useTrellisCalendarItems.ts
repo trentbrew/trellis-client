@@ -18,9 +18,7 @@ export function useTrellisCalendarItems() {
   const loading = ref(true)
 
   // Query all calendar items from the graph
-  const { data: entityIds, loading: queryLoading } = query(
-    'FIND calendaritem AS ?e',
-  )
+  const { data: entityIds, loading: queryLoading } = query('FIND calendaritem AS ?e')
 
   // When entity IDs change, batch-hydrate full nodes (single request)
   watch(
@@ -49,6 +47,7 @@ export function useTrellisCalendarItems() {
             reminders: normalizeArray(node.reminders),
             checklist: normalizeArray(node.checklist),
             attachments: normalizeArray(node.attachments),
+            references: normalizeArray(node.references),
           } as unknown as CalendarItem
         })
       } catch (err) {
@@ -71,9 +70,7 @@ export function useTrellisCalendarItems() {
   }
 
   // CRUD operations
-  async function create(
-    item: Partial<CalendarItem> & { type: CalendarItemType; title: string },
-  ) {
+  async function create(item: Partial<CalendarItem> & { type: CalendarItemType; title: string }) {
     // Always generate a fresh UUID — dialog may reuse stale IDs across creates
     const itemId = crypto.randomUUID()
     const { id: _id, ...data } = item

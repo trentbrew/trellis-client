@@ -1,60 +1,89 @@
 <script lang="ts" setup>
-import StarterKit from '@tiptap/starter-kit'
-import Placeholder from '@tiptap/extension-placeholder'
-import { EditorContent, useEditor } from '@tiptap/vue-3'
+  import StarterKit from '@tiptap/starter-kit'
+  import Placeholder from '@tiptap/extension-placeholder'
+  import { EditorContent, useEditor } from '@tiptap/vue-3'
+  import { createMentionExtension } from '~/lib/mention-extension'
+  import { useEntitySearch } from '~/composables/useEntitySearch'
+  import type { EntitySearchItem } from '~/composables/useEntitySearch'
 
-const props = defineProps<{
-  modelValue?: string
-  placeholder?: string
-  minHeight?: string
-  compact?: boolean
-  seamless?: boolean
-}>()
+  const props = defineProps<{
+    modelValue?: string
+    placeholder?: string
+    minHeight?: string
+    compact?: boolean
+    seamless?: boolean
+    fillHeight?: boolean
+    mentions?: boolean
+  }>()
 
-const emit = defineEmits<{
-  'update:modelValue': [value: string]
-}>()
+  const emit = defineEmits<{
+    'update:modelValue': [value: string]
+    'mention-click': [attrs: { id: string; label: string; entityType: string }]
+  }>()
 
-const editorClass = props.seamless
-  ? 'min-h-[24px] focus:outline-none prose-sm prose-p:my-0.5 prose-headings:my-1 prose-ul:my-0.5 prose-li:my-0'
-  : props.compact
-    ? 'min-h-[60px] focus:outline-none prose-sm prose-p:my-1 prose-headings:my-2 prose-ul:my-1 prose-li:my-0.5'
-    : 'min-h-[100px] focus:outline-none prose-sm prose-p:my-2 prose-headings:my-3 prose-ul:my-2 prose-li:my-1'
+  const editorClass = props.seamless
+    ? 'min-h-[24px] focus:outline-none prose-sm prose-p:my-0.5 prose-headings:my-1 prose-ul:my-0.5 prose-li:my-0'
+    : props.compact
+      ? 'min-h-[60px] focus:outline-none prose-sm prose-p:my-1 prose-headings:my-2 prose-ul:my-1 prose-li:my-0.5'
+      : 'min-h-[100px] focus:outline-none prose-sm prose-p:my-2 prose-headings:my-3 prose-ul:my-2 prose-li:my-1'
 
-const editor = useEditor({
-  extensions: [
-    StarterKit,
-    Placeholder.configure({
-      placeholder: props.placeholder || '',
-    }),
-  ],
-  content: props.modelValue || '',
-  editorProps: {
-    attributes: {
-      class: editorClass,
-    },
-  },
-  onUpdate: ({ editor: e }) => {
-    emit('update:modelValue', e.getHTML())
-  },
-})
+  // Build entity search for mentions
+  const entitySearch = props.mentions ? useEntitySearch() : null
 
-watch(
-  () => props.modelValue,
-  (val) => {
-    if (editor.value && val !== editor.value.getHTML()) {
-      editor.value.commands.setContent(val || '')
+  const buildExtensions = () => {
+    const exts = [
+      StarterKit,
+      Placeholder.configure({
+        placeholder: props.placeholder || '',
+      }),
+    ]
+    if (props.mentions && entitySearch) {
+      exts.push(
+        createMentionExtension({
+          getItems(query: string) {
+            entitySearch.search.value = query
+            return entitySearch.filteredItems.value as EntitySearchItem[]
+          },
+        }) as any,
+      )
     }
+    return exts
   }
-)
 
-onBeforeUnmount(() => {
-  editor.value?.destroy()
-})
+  const editor = useEditor({
+    extensions: buildExtensions(),
+    content: props.modelValue || '',
+    editorProps: {
+      attributes: {
+        class: editorClass,
+      },
+    },
+    onUpdate: ({ editor: e }) => {
+      emit('update:modelValue', e.getHTML())
+    },
+  })
+
+  watch(
+    () => props.modelValue,
+    (val) => {
+      if (editor.value && val !== editor.value.getHTML()) {
+        editor.value.commands.setContent(val || '')
+      }
+    },
+  )
+
+  onBeforeUnmount(() => {
+    editor.value?.destroy()
+  })
 </script>
 
 <template>
-  <div v-if="editor" :class="seamless ? 'overflow-hidden' : 'rounded-md border bg-card overflow-hidden'">
+  <div
+    v-if="editor"
+    :class="[
+      seamless ? 'overflow-hidden' : 'rounded-none border-none bg-card overflow-hidden',
+      fillHeight ? 'flex flex-col min-h-0' : '',
+    ]">
     <!-- Compact Toolbar -->
     <div v-if="!seamless" class="flex flex-wrap items-center gap-1 border-b bg-muted/30 px-1.5 py-1">
       <!-- Text Formatting -->
@@ -239,80 +268,111 @@ onBeforeUnmount(() => {
       :class="[
         seamless ? 'px-0 py-0' : 'px-3 py-2',
         seamless ? 'min-h-[24px]' : compact ? 'min-h-[60px]' : 'min-h-[100px]',
+        fillHeight ? 'flex-1 min-h-0 overflow-y-auto' : '',
       ]" />
   </div>
 </template>
 
 <style scoped>
-:deep(.ProseMirror) {
-  outline: none;
-  color: hsl(var(--foreground)) !important;
-}
+  :deep(.ProseMirror) {
+    outline: none;
+    color: hsl(var(--foreground)) !important;
+  }
 
-:deep(.ProseMirror p),
-:deep(.ProseMirror li),
-:deep(.ProseMirror h1),
-:deep(.ProseMirror h2),
-:deep(.ProseMirror h3) {
-  color: hsl(var(--foreground));
-}
+  :deep(.tiptap) {
+    height: 100%;
+  }
 
-:deep(.ProseMirror p.is-editor-empty:first-child::before) {
-  color: hsl(var(--muted-foreground));
-  content: attr(data-placeholder);
-  float: left;
-  height: 0;
-  pointer-events: none;
-}
+  :deep(.ProseMirror p),
+  :deep(.ProseMirror li),
+  :deep(.ProseMirror h1),
+  :deep(.ProseMirror h2),
+  :deep(.ProseMirror h3) {
+    color: hsl(var(--foreground));
+  }
 
-:deep(.ProseMirror pre) {
-  background: hsl(var(--muted));
-  border-radius: 0.375rem;
-  color: hsl(var(--foreground));
-  font-family: 'JetBrainsMono', monospace;
-  font-size: 0.8rem;
-  padding: 0.5rem 0.75rem;
-}
+  :deep(.ProseMirror p.is-editor-empty:first-child::before) {
+    color: hsl(var(--muted-foreground));
+    content: attr(data-placeholder);
+    float: left;
+    height: 0;
+    pointer-events: none;
+  }
 
-:deep(.ProseMirror code) {
-  background: hsl(var(--muted));
-  border-radius: 0.25rem;
-  color: hsl(var(--foreground));
-  font-size: 0.85em;
-  padding: 0.15em 0.3em;
-}
+  :deep(.ProseMirror pre) {
+    background: hsl(var(--muted));
+    border-radius: 0.375rem;
+    color: hsl(var(--foreground));
+    font-family: 'JetBrainsMono', monospace;
+    font-size: 0.8rem;
+    padding: 0.5rem 0.75rem;
+  }
 
-:deep(.ProseMirror pre code) {
-  background: none;
-  color: inherit;
-  font-size: inherit;
-  padding: 0;
-}
+  :deep(.ProseMirror code) {
+    background: hsl(var(--muted));
+    border-radius: 0.25rem;
+    color: hsl(var(--foreground));
+    font-size: 0.85em;
+    padding: 0.15em 0.3em;
+  }
 
-:deep(.ProseMirror blockquote) {
-  border-left: 2px solid hsl(var(--border));
-  padding-left: 0.75rem;
-  color: hsl(var(--muted-foreground));
-  margin: 0.5rem 0;
-}
+  :deep(.ProseMirror pre code) {
+    background: none;
+    color: inherit;
+    font-size: inherit;
+    padding: 0;
+  }
 
-:deep(.ProseMirror ul),
-:deep(.ProseMirror ol) {
-  padding-left: 1.25rem;
-}
+  :deep(.ProseMirror blockquote) {
+    border-left: 2px solid hsl(var(--border));
+    padding-left: 0.75rem;
+    color: hsl(var(--muted-foreground));
+    margin: 0.5rem 0;
+  }
 
-:deep(.ProseMirror h1) {
-  font-size: 1.25rem;
-  font-weight: 600;
-}
+  :deep(.ProseMirror ul),
+  :deep(.ProseMirror ol) {
+    padding-left: 1.25rem;
+  }
 
-:deep(.ProseMirror h2) {
-  font-size: 1.1rem;
-  font-weight: 600;
-}
+  :deep(.ProseMirror h1) {
+    font-size: 1.25rem;
+    font-weight: 600;
+  }
 
-:deep(.ProseMirror h3) {
-  font-size: 1rem;
-  font-weight: 600;
-}
+  :deep(.ProseMirror h2) {
+    font-size: 1.1rem;
+    font-weight: 600;
+  }
+
+  :deep(.ProseMirror h3) {
+    font-size: 1rem;
+    font-weight: 600;
+  }
+
+  /* Mention chip — inline styled pill */
+  :deep(.mention-chip) {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.2em;
+    background: hsl(var(--primary) / 0.12);
+    color: hsl(var(--primary));
+    border-radius: 0.375rem;
+    padding: 0.1em 0.4em;
+    font-size: 0.85em;
+    font-weight: 500;
+    line-height: 1.4;
+    cursor: pointer;
+    text-decoration: none;
+    transition: background 150ms;
+    white-space: nowrap;
+  }
+
+  :deep(.mention-chip:hover) {
+    background: hsl(var(--primary) / 0.2);
+  }
+
+  :deep(.mention-chip::before) {
+    content: '';
+  }
 </style>

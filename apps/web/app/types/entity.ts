@@ -41,29 +41,13 @@ export type TemporalEntityType =
   | 'deadline'
   | 'milestone'
 
-export type DocumentEntityType =
-  | 'note'
-  | 'file'
-  | 'page'
-  | 'template'
+export type DocumentEntityType = 'note' | 'file' | 'page' | 'template'
 
-export type ActorEntityType =
-  | 'person'
-  | 'contact'
-  | 'organization'
-  | 'vendor'
+export type ActorEntityType = 'person' | 'contact' | 'organization' | 'vendor'
 
-export type ContainerEntityType =
-  | 'project'
-  | 'folder'
-  | 'collection'
-  | 'goal'
+export type ContainerEntityType = 'project' | 'folder' | 'collection' | 'goal'
 
-export type EntityType =
-  | TemporalEntityType
-  | DocumentEntityType
-  | ActorEntityType
-  | ContainerEntityType
+export type EntityType = TemporalEntityType | DocumentEntityType | ActorEntityType | ContainerEntityType
 
 // ============================================================================
 // EntityBase — shared by ALL entities regardless of class
@@ -78,6 +62,7 @@ export interface EntityBase {
   owner?: string
   involved: string[]
   category?: string
+  references: Reference[]
   createdAt?: string
   updatedAt?: string
 }
@@ -88,12 +73,12 @@ export interface EntityBase {
 
 /** Properties meaningful for things that occupy time */
 export interface TemporalMixin {
-  startDate: string          // YYYY-MM-DD
-  endDate?: string           // YYYY-MM-DD (multi-day)
+  startDate: string // YYYY-MM-DD
+  endDate?: string // YYYY-MM-DD (multi-day)
   allDay: boolean
-  startTime?: string         // HH:mm (when not all-day)
-  endTime?: string           // HH:mm (when not all-day)
-  duration?: number          // minutes (alternative to endTime)
+  startTime?: string // HH:mm (when not all-day)
+  endTime?: string // HH:mm (when not all-day)
+  duration?: number // minutes (alternative to endTime)
   priority: Priority
   urgency: Urgency
   priorityOverride: boolean
@@ -104,9 +89,10 @@ export interface TemporalMixin {
 
 /** Properties meaningful for things with a content body */
 export interface DocumentMixin {
-  content?: string           // rich text body
+  content?: string // rich text body
   pinned: boolean
-  linkedItems?: string[]     // IDs of related entities
+  /** @deprecated Use `EntityBase.references` instead. */
+  linkedItems?: string[] // IDs of related entities
   wordCount?: number
 }
 
@@ -116,13 +102,13 @@ export interface ActorMixin {
   phone?: string
   avatar?: string
   role?: string
-  relationships: string[]    // entity IDs
+  relationships: string[] // entity IDs
 }
 
 /** Properties meaningful for things that group other entities */
 export interface ContainerMixin {
-  children: string[]         // entity IDs
-  progress?: number          // 0–1
+  children: string[] // entity IDs
+  progress?: number // 0–1
   status: ContainerStatus
   parentId?: string
 }
@@ -160,10 +146,40 @@ export interface RecurrenceRule {
   occurrences?: number
 }
 
+// ── Reference System ─────────────────────────────────────────────────────
+
+export type FileType = 'pdf' | 'spreadsheet' | 'image' | 'document' | 'other'
+
+export interface FileReference {
+  kind: 'file'
+  id: string
+  name: string
+  fileType: FileType
+  url?: string
+  size?: number
+}
+
+export interface EntityReference {
+  kind: 'entity'
+  id: string // unique reference record ID
+  entityId: string // target entity's ID
+  entityType: EntityType // target entity's type
+  title: string // denormalized snapshot for display
+  direction: 'outgoing' | 'incoming'
+}
+
+export type Reference = FileReference | EntityReference
+
+export const isFileReference = (ref: Reference): ref is FileReference => ref.kind === 'file'
+export const isEntityReference = (ref: Reference): ref is EntityReference => ref.kind === 'entity'
+
+/**
+ * @deprecated Use `FileReference` instead. Kept for backward compatibility.
+ */
 export interface Attachment {
   id: string
   name: string
-  type: 'pdf' | 'spreadsheet' | 'image' | 'document' | 'other'
+  type: FileType
   url?: string
   size?: number
 }
@@ -256,7 +272,7 @@ export interface ReminderItem extends EntityBase, TemporalMixin {
 
 export interface DeadlineItem extends EntityBase, TemporalMixin {
   type: 'deadline'
-  sourceEntity?: string     // ID of the entity this deadline belongs to
+  sourceEntity?: string // ID of the entity this deadline belongs to
   sourceType?: EntityType
   isMet: boolean
 }
@@ -289,7 +305,7 @@ export interface PageItem extends EntityBase, DocumentMixin {
 
 export interface TemplateItem extends EntityBase, DocumentMixin {
   type: 'template'
-  templateFor: EntityType   // what entity type this is a template for
+  templateFor: EntityType // what entity type this is a template for
   fields?: FormulaField[]
 }
 
@@ -363,48 +379,42 @@ export type TemporalEntity =
   | DeadlineItem
   | MilestoneItem
 
-export type DocumentEntity =
-  | NoteItem
-  | FileItem
-  | PageItem
-  | TemplateItem
+export type DocumentEntity = NoteItem | FileItem | PageItem | TemplateItem
 
-export type ActorEntity =
-  | PersonItem
-  | ContactItem
-  | OrganizationItem
-  | VendorItem
+export type ActorEntity = PersonItem | ContactItem | OrganizationItem | VendorItem
 
-export type ContainerEntity =
-  | ProjectItem
-  | FolderItem
-  | CollectionItem
-  | GoalItem
+export type ContainerEntity = ProjectItem | FolderItem | CollectionItem | GoalItem
 
 /** Any entity in the system */
-export type Entity =
-  | TemporalEntity
-  | DocumentEntity
-  | ActorEntity
-  | ContainerEntity
+export type Entity = TemporalEntity | DocumentEntity | ActorEntity | ContainerEntity
 
 // ============================================================================
 // Class → Union mapping (useful for generic components)
 // ============================================================================
 
-export type EntityOfClass<C extends EntityClass> =
-  C extends 'temporal'  ? TemporalEntity :
-  C extends 'document'  ? DocumentEntity :
-  C extends 'actor'     ? ActorEntity :
-  C extends 'container' ? ContainerEntity :
-  never
+export type EntityOfClass<C extends EntityClass> = C extends 'temporal'
+  ? TemporalEntity
+  : C extends 'document'
+    ? DocumentEntity
+    : C extends 'actor'
+      ? ActorEntity
+      : C extends 'container'
+        ? ContainerEntity
+        : never
 
 // ============================================================================
 // Type Guards
 // ============================================================================
 
 const TEMPORAL_TYPES: Set<string> = new Set<TemporalEntityType>([
-  'task', 'event', 'trip', 'payment', 'appointment', 'reminder', 'deadline', 'milestone',
+  'task',
+  'event',
+  'trip',
+  'payment',
+  'appointment',
+  'reminder',
+  'deadline',
+  'milestone',
 ])
 const DOCUMENT_TYPES: Set<string> = new Set<DocumentEntityType>(['note', 'file', 'page', 'template'])
 const ACTOR_TYPES: Set<string> = new Set<ActorEntityType>(['person', 'contact', 'organization', 'vendor'])
@@ -418,17 +428,13 @@ export const getEntityClass = (type: EntityType): EntityClass => {
   return 'temporal' // fallback
 }
 
-export const isTemporal = (entity: Entity): entity is TemporalEntity =>
-  TEMPORAL_TYPES.has(entity.type)
+export const isTemporal = (entity: Entity): entity is TemporalEntity => TEMPORAL_TYPES.has(entity.type)
 
-export const isDocument = (entity: Entity): entity is DocumentEntity =>
-  DOCUMENT_TYPES.has(entity.type)
+export const isDocument = (entity: Entity): entity is DocumentEntity => DOCUMENT_TYPES.has(entity.type)
 
-export const isActor = (entity: Entity): entity is ActorEntity =>
-  ACTOR_TYPES.has(entity.type)
+export const isActor = (entity: Entity): entity is ActorEntity => ACTOR_TYPES.has(entity.type)
 
-export const isContainer = (entity: Entity): entity is ContainerEntity =>
-  CONTAINER_TYPES.has(entity.type)
+export const isContainer = (entity: Entity): entity is ContainerEntity => CONTAINER_TYPES.has(entity.type)
 
 // Fine-grained type guards
 export const isTask = (entity: Entity): entity is TaskItem => entity.type === 'task'
@@ -471,12 +477,12 @@ export type PropertyFieldId =
 
 /** Layout groups for the properties row */
 export type PropertyFieldGroup =
-  | 'identity'       // type switcher
-  | 'scheduling'     // dates, times, allDay
-  | 'triage'         // priority, urgency, status
+  | 'identity' // type switcher
+  | 'scheduling' // dates, times, allDay
+  | 'triage' // priority, urgency, status
   | 'classification' // category, folder
-  | 'people'         // owner, involved
-  | 'annotation'     // pin, tags — user-level metadata, not intrinsic
+  | 'people' // owner, involved
+  | 'annotation' // pin, tags — user-level metadata, not intrinsic
 
 /** Display style for the field in the properties row */
 export type PropertyFieldDisplay = 'pill' | 'toggle' | 'inline-input' | 'popover'
@@ -506,9 +512,9 @@ export interface PropertyFieldConfig {
 
 /** What dialog panels a type uses */
 export interface EntityPanelConfig {
-  properties: string         // component name for the properties row
-  content: string            // component name for the main content area
-  footerActions: string[]    // action IDs: 'complete', 'markPaid', 'archive', etc.
+  properties: string // component name for the properties row
+  content: string // component name for the main content area
+  footerActions: string[] // action IDs: 'complete', 'markPaid', 'archive', etc.
 }
 
 /** Full config for how a type behaves in the UI */
@@ -518,9 +524,9 @@ export interface EntityTypeConfig {
   label: string
   labelPlural: string
   icon: string
-  color: string              // Tailwind color token (e.g. 'blue', 'emerald')
+  color: string // Tailwind color token (e.g. 'blue', 'emerald')
   projections: ProjectionType[]
-  dialogShell: EntityClass   // which shell to use (matches class by default)
+  dialogShell: EntityClass // which shell to use (matches class by default)
   panels: EntityPanelConfig
   propertyFields: PropertyFieldConfig[]
   defaultSortField: string
@@ -533,5 +539,5 @@ export interface EntityClassConfig {
   label: string
   icon: string
   baseProjections: ProjectionType[]
-  dialogShell: string        // component name
+  dialogShell: string // component name
 }

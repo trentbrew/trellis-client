@@ -144,16 +144,13 @@
 
 <template>
   <!-- Root: base layer - edit mode adds accent ring as "4D wrapper" -->
-  <div
-    class="bg-background text-foreground flex h-dvh overflow-hidden transition-shadow duration-300"
-  >
+  <div class="bg-background text-foreground flex h-dvh overflow-hidden transition-shadow duration-300">
     <!-- Command Dialog -->
     <UiCommandDialog
       :open="commandDialog.isOpen.value"
       title="Command Palette"
       description="Search for pages and navigate quickly"
-      @update:open="(val) => (commandDialog.isOpen.value = val)"
-    >
+      @update:open="(val) => (commandDialog.isOpen.value = val)">
       <UiCommandInput placeholder="Search pages..." />
       <UiCommandList>
         <UiCommandEmpty>No results found.</UiCommandEmpty>
@@ -163,8 +160,7 @@
               <UiCommandItem
                 v-if="routeItem?.path"
                 :value="`${group.label} ${routeItem.label}`"
-                @select="() => navigateTo(routeItem.path)"
-              >
+                @select="() => navigateTo(routeItem.path)">
                 <Icon :name="routeItem.icon || 'lucide:circle'" class="h-4 w-4" />
                 <span>{{ routeItem.label }}</span>
                 <span class="sr-only">{{ group.label }} {{ routeItem.searchKeywords?.join(' ') }}</span>
@@ -183,16 +179,11 @@
 
     <div class="flex flex-1 flex-col min-w-0 overflow-hidden">
       <AppHeader />
-      <Transition
-        name="page"
-        mode="out-in"
-        appear
-      >
+      <Transition name="page" mode="out-in" appear>
         <main
           ref="pageEl"
           class="page-transition-wrapper bg-transparent flex-1 overflow-y-auto p-0 relative"
-          aria-label="Main content"
-        >
+          aria-label="Main content">
           <slot />
         </main>
       </Transition>
@@ -204,18 +195,18 @@
 </template>
 
 <style scoped>
-.page-enter-active,
-.page-leave-active {
-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-}
+  .page-enter-active,
+  .page-leave-active {
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  }
 
-.page-enter-from {
-  opacity: 0;
-  transform: translateX(20px);
-}
+  .page-enter-from {
+    opacity: 0;
+    transform: translateX(20px);
+  }
 
-.page-leave-to {
-  opacity: 0;
-  transform: translateX(-20px);
-}
+  .page-leave-to {
+    opacity: 0;
+    transform: translateX(-20px);
+  }
 </style>

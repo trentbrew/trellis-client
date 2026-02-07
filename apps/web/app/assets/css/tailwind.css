@@ -157,45 +157,47 @@
   --gradient-rust: oklch(55.695% 0.19944 34.155);
 }
 
+/* NOTE: These :root and .dark defaults must stay in sync with the "graphite"
+   preset in /theme-presets.ts. If you change a value here, update it there too. */
 :root {
-  --background: oklch(1.0000 0 0);
+  --background: oklch(1 0 0);
   --foreground: oklch(0.2101 0.0318 264.6645);
-  --card: oklch(1.0000 0 0);
+  --card: oklch(1 0 0);
   --card-foreground: oklch(0.2101 0.0318 264.6645);
-  --popover: oklch(1.0000 0 0);
+  --popover: oklch(1 0 0);
   --popover-foreground: oklch(0.2101 0.0318 264.6645);
-  --primary: oklch(0.6716 0.1368 48.5130);
-  --primary-foreground: oklch(1.0000 0 0);
-  --secondary: oklch(0.5360 0.0398 196.0280);
-  --secondary-foreground: oklch(1.0000 0 0);
-  --muted: oklch(0.9670 0.0029 264.5419);
-  --muted-foreground: oklch(0.5510 0.0234 264.3637);
+  --primary: oklch(0.6716 0.1368 48.513);
+  --primary-foreground: oklch(1 0 0);
+  --secondary: oklch(0.536 0.0398 196.028);
+  --secondary-foreground: oklch(1 0 0);
+  --muted: oklch(0.967 0.0029 264.5419);
+  --muted-foreground: oklch(0.551 0.0234 264.3637);
   --accent: oklch(0.9491 0 0);
   --accent-foreground: oklch(0.2101 0.0318 264.6645);
   --destructive: oklch(0.6368 0.2078 25.3313);
   --destructive-foreground: oklch(0.9851 0 0);
   --success: oklch(0.7214 0.1337 149.98);
-  --success-foreground: oklch(0.1500 0.02 149.98);
+  --success-foreground: oklch(0.15 0.02 149.98);
   --warning: oklch(0.8292 0.1487 84.63);
   --warning-foreground: oklch(0.2101 0.0318 264.6645);
   --border: oklch(0.9276 0.0058 264.5313);
   --input: oklch(0.9276 0.0058 264.5313);
-  --ring: oklch(0.6716 0.1368 48.5130);
-  --chart-1: oklch(0.5940 0.0443 196.0233);
+  --ring: oklch(0.6716 0.1368 48.513);
+  --chart-1: oklch(0.594 0.0443 196.0233);
   --chart-2: oklch(0.7214 0.1337 49.9802);
   --chart-3: oklch(0.8721 0.0864 68.5474);
   --chart-4: oklch(0.6268 0 0);
-  --chart-5: oklch(0.6830 0 0);
-  --sidebar: oklch(0.9670 0.0029 264.5419);
+  --chart-5: oklch(0.683 0 0);
+  --sidebar: oklch(0.967 0.0029 264.5419);
   --sidebar-foreground: oklch(0.2101 0.0318 264.6645);
-  --sidebar-primary: oklch(0.6716 0.1368 48.5130);
-  --sidebar-primary-foreground: oklch(1.0000 0 0);
-  --sidebar-accent: oklch(1.0000 0 0);
+  --sidebar-primary: oklch(0.6716 0.1368 48.513);
+  --sidebar-primary-foreground: oklch(1 0 0);
+  --sidebar-accent: oklch(1 0 0);
   --sidebar-accent-foreground: oklch(0.2101 0.0318 264.6645);
   --sidebar-border: oklch(0.9276 0.0058 264.5313);
-  --sidebar-ring: oklch(0.6716 0.1368 48.5130);
+  --sidebar-ring: oklch(0.6716 0.1368 48.513);
   --sidebar-input: oklch(0.9276 0.0058 264.5313);
-  --rail: oklch(0.9670 0.0029 264.5419);
+  --rail: oklch(0.967 0.0029 264.5419);
   --rail-foreground: oklch(0.2101 0.0318 264.6645);
   --rail-border: oklch(0.9276 0.0058 264.5313);
   --font-sans: Geist Mono, ui-monospace, monospace;
@@ -223,13 +225,13 @@
 .dark {
   --background: oklch(0.14 0.004 308.1928);
   --foreground: oklch(0.88 0 0);
-  --card: oklch(0.28 0.004 308.1928);
+  --card: oklch(0.18 0.004 308.1928);
   --card-foreground: oklch(0.88 0 0);
   --popover: oklch(0.2 0.004 308.1928);
   --popover-foreground: oklch(0.88 0 0);
   --primary: oklch(0.7214 0.1337 49.9802);
   --primary-foreground: oklch(0.1797 0.0043 308.1928);
-  --secondary: oklch(0.5940 0.0443 196.0233);
+  --secondary: oklch(0.594 0.0443 196.0233);
   --secondary-foreground: oklch(0.1797 0.0043 308.1928);
   --muted: oklch(0.24 0.004 308.1928);
   --muted-foreground: oklch(0.68 0 0);
@@ -244,11 +246,11 @@
   --border: oklch(0.28 0.004 308.1928);
   --input: oklch(0.28 0.004 308.1928);
   --ring: oklch(0.7214 0.1337 49.9802);
-  --chart-1: oklch(0.5940 0.0443 196.0233);
+  --chart-1: oklch(0.594 0.0443 196.0233);
   --chart-2: oklch(0.7214 0.1337 49.9802);
   --chart-3: oklch(0.8721 0.0864 68.5474);
   --chart-4: oklch(0.6268 0 0);
-  --chart-5: oklch(0.6830 0 0);
+  --chart-5: oklch(0.683 0 0);
   --sidebar: oklch(0.22 0.004 308.1928);
   --sidebar-foreground: oklch(0.88 0 0);
   --sidebar-primary: oklch(0.7214 0.1337 49.9802);
@@ -431,5 +433,4 @@ body.is-resizing * {
     box-shadow: 0 0 0 3px var(--primary) !important;
     transform: scale(1.02) !important;
   }
-
 }

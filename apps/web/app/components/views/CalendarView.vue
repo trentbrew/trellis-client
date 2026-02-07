@@ -19,18 +19,22 @@
     status?: string
     assignee?: string
     priority?: string
+    urgency?: string
   }
 
   const props = defineProps<{
     collectionId: string
     modelValue?: string
     schema?: DatabaseSchema | null
+    /** When true, removes border and rounding for fullscreen use */
+    fullscreen?: boolean
   }>()
 
   const emit = defineEmits<{
     'update:modelValue': [value: string]
     'request-add-date-field': []
     'task-click': [event: CalendarEvent]
+    'cell-click': [date: Date]
   }>()
 
   // Calendar view mode state
@@ -41,13 +45,47 @@
   const transitionDirection = ref<'left' | 'right'>('right')
 
   const viewModeOptions: Array<{ value: CalendarViewMode; label: string; icon: string }> = [
-    { value: 'day', label: 'Day', icon: 'lucide:calendar-days' },
+    { value: 'day', label: 'Today', icon: 'lucide:calendar-days' },
     { value: 'week', label: 'Week', icon: 'lucide:calendar-range' },
     { value: 'month', label: 'Month', icon: 'lucide:calendar' },
     { value: 'year', label: 'Year', icon: 'lucide:calendar-check' },
   ]
 
   const rootEl = ref<HTMLElement | null>(null)
+
+  // ── Resizable sidebar ───────────────────────────────────────────────
+  const SIDEBAR_MIN = 260
+  const SIDEBAR_MAX = 420
+  const SIDEBAR_DEFAULT = 320
+  const sidebarWidth = ref(SIDEBAR_DEFAULT)
+  const isSidebarResizing = ref(false)
+
+  const startSidebarResize = (e: PointerEvent) => {
+    e.preventDefault()
+    const el = e.currentTarget as HTMLElement
+    el.setPointerCapture(e.pointerId)
+    isSidebarResizing.value = true
+    const startX = e.clientX
+    const startW = sidebarWidth.value
+    document.body.style.cursor = 'ew-resize'
+    document.body.style.userSelect = 'none'
+
+    const onMove = (ev: PointerEvent) => {
+      const delta = ev.clientX - startX
+      sidebarWidth.value = Math.max(SIDEBAR_MIN, Math.min(startW + delta, SIDEBAR_MAX))
+    }
+    const onUp = () => {
+      isSidebarResizing.value = false
+      document.body.style.cursor = ''
+      document.body.style.userSelect = ''
+      el.removeEventListener('pointermove', onMove)
+      el.removeEventListener('pointerup', onUp)
+      el.removeEventListener('pointercancel', onUp)
+    }
+    el.addEventListener('pointermove', onMove)
+    el.addEventListener('pointerup', onUp)
+    el.addEventListener('pointercancel', onUp)
+  }
 
   // Global detail sheet for opening event details (fallback, kept for potential future use)
   const _globalDetailSheet = useGlobalDetailSheet()
@@ -316,13 +354,135 @@
     return [{ date }]
   }
 
-  const palette: Array<{ dot: string; badge: string }> = [
+  const _palette: Array<{ dot: string; badge: string }> = [
     { dot: '#3b82f6', badge: 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300' },
     { dot: '#10b981', badge: 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300' },
     { dot: '#f59e0b', badge: 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-300' },
     { dot: '#f43f5e', badge: 'bg-rose-100 text-rose-700 dark:bg-rose-900/30 dark:text-rose-300' },
     { dot: '#8b5cf6', badge: 'bg-violet-100 text-violet-700 dark:bg-violet-900/30 dark:text-violet-300' },
   ]
+
+  // ── Type-aware color & icon maps ──────────────────────────────────────
+  // Maps entity type labels (as they arrive from @type in the JSON-LD graph)
+  // to Tailwind color classes and Lucide icon names.
+  const typeColorMap: Record<string, { bg: string; text: string; dot: string; icon: string; label: string }> = {
+    Task: {
+      bg: 'bg-blue-100 dark:bg-blue-900/30',
+      text: 'text-blue-700 dark:text-blue-300',
+      dot: '#3b82f6',
+      icon: 'lucide:check-square',
+      label: 'task',
+    },
+    Event: {
+      bg: 'bg-purple-100 dark:bg-purple-900/30',
+      text: 'text-purple-700 dark:text-purple-300',
+      dot: '#8b5cf6',
+      icon: 'lucide:calendar',
+      label: 'event',
+    },
+    Trip: {
+      bg: 'bg-cyan-100 dark:bg-cyan-900/30',
+      text: 'text-cyan-700 dark:text-cyan-300',
+      dot: '#06b6d4',
+      icon: 'lucide:plane',
+      label: 'trip',
+    },
+    Payment: {
+      bg: 'bg-emerald-100 dark:bg-emerald-900/30',
+      text: 'text-emerald-700 dark:text-emerald-300',
+      dot: '#10b981',
+      icon: 'lucide:credit-card',
+      label: 'payment',
+    },
+    Appointment: {
+      bg: 'bg-rose-100 dark:bg-rose-900/30',
+      text: 'text-rose-700 dark:text-rose-300',
+      dot: '#f43f5e',
+      icon: 'lucide:stethoscope',
+      label: 'appointment',
+    },
+    Reminder: {
+      bg: 'bg-amber-100 dark:bg-amber-900/30',
+      text: 'text-amber-700 dark:text-amber-300',
+      dot: '#f59e0b',
+      icon: 'lucide:bell',
+      label: 'reminder',
+    },
+    Deadline: {
+      bg: 'bg-red-100 dark:bg-red-900/30',
+      text: 'text-red-700 dark:text-red-300',
+      dot: '#ef4444',
+      icon: 'lucide:alarm-clock',
+      label: 'deadline',
+    },
+    Milestone: {
+      bg: 'bg-orange-100 dark:bg-orange-900/30',
+      text: 'text-orange-700 dark:text-orange-300',
+      dot: '#f97316',
+      icon: 'lucide:flag',
+      label: 'milestone',
+    },
+    Note: {
+      bg: 'bg-yellow-100 dark:bg-yellow-900/30',
+      text: 'text-yellow-700 dark:text-yellow-300',
+      dot: '#eab308',
+      icon: 'lucide:sticky-note',
+      label: 'note',
+    },
+  }
+
+  const defaultTypeColor = {
+    bg: 'bg-muted',
+    text: 'text-muted-foreground',
+    dot: '#6b7280',
+    icon: 'lucide:circle',
+    label: 'item',
+  }
+
+  const getTypeStyle = (typeLabel?: string) => {
+    if (!typeLabel) return defaultTypeColor
+    return typeColorMap[typeLabel] || defaultTypeColor
+  }
+
+  interface TypeGroup {
+    typeLabel: string
+    style: typeof defaultTypeColor
+    items: CalendarEvent[]
+    urgentCount: number
+  }
+
+  const getTypeGroupsForDay = (date: Date): TypeGroup[] => {
+    const dayEvents = getEventsForDay(date)
+    if (!dayEvents.length) return []
+    const grouped = new Map<string, CalendarEvent[]>()
+    for (const ev of dayEvents) {
+      const key = ev.typeLabel || 'Item'
+      if (!grouped.has(key)) grouped.set(key, [])
+      grouped.get(key)!.push(ev)
+    }
+    const result: TypeGroup[] = []
+    for (const [typeLabel, items] of grouped) {
+      const style = getTypeStyle(typeLabel)
+      const urgentCount = items.filter((i) => {
+        const u = i.urgency?.toLowerCase()
+        const p = i.priority?.toLowerCase()
+        return u === 'urgent' || u === 'high' || p === 'urgent' || p === 'high'
+      }).length
+      result.push({ typeLabel, style, items, urgentCount })
+    }
+    return result
+  }
+
+  const isDayInPast = (date: Date): boolean => {
+    const d = new Date(date.getFullYear(), date.getMonth(), date.getDate())
+    return d < today.value
+  }
+
+  const handleEmptyCellClick = (date: Date) => {
+    if (getEventsForDay(date).length === 0) {
+      emit('cell-click', date)
+    }
+  }
 
   // Use ontology utilities for display configuration
   const getNodeStringValue = (node: any, keys: string[]): string | undefined => {
@@ -350,29 +510,28 @@
       const status = getNodeStringValue(node, [...fieldKeyAliases.status])
       const assignee = getNodeStringValue(node, [...fieldKeyAliases.assignee])
       const priority = getNodeStringValue(node, [...fieldKeyAliases.priority])
+      const urgency = getNodeStringValue(node, ['user:urgency', 'urgency', 'trellis:urgency'])
 
       // Get badge class from ontology utility
       const badgeClass = getStatusBadgeClass(status)
 
+      // Use type-aware color for dot
+      const nodeType = getNodeType(node) || undefined
+      const typeStyle = getTypeStyle(nodeType)
+
       values.forEach((val, valueIndex) => {
-        const paletteEntry: { dot: string; badge: string } = palette[
-          (out.length + nodeIndex + valueIndex) % palette.length
-        ] ??
-          palette[0] ?? {
-            dot: '#3b82f6',
-            badge: 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300',
-          }
         out.push({
           id: `${getNodeId(node) || 'record'}-${nodeIndex}-${valueIndex}`,
           title: nodeTitle(node),
           date: val.date,
           range: val.range,
-          typeLabel: getNodeType(node) || undefined,
+          typeLabel: nodeType,
           badgeClass,
-          dotColor: paletteEntry.dot,
+          dotColor: typeStyle.dot,
           status: status || 'on-track',
           assignee,
           priority: priority?.toLowerCase(),
+          urgency: urgency?.toLowerCase(),
         })
       })
     })
@@ -555,7 +714,7 @@
     const prevMonthLastDay = new Date(year, month, 0).getDate()
     for (let i = startPadding - 1; i >= 0; i--) {
       const date = new Date(year, month - 1, prevMonthLastDay - i)
-      const dayEvents = events.value.filter((e) => isSameDay(e.date, date))
+      const dayEvents = events.value.filter((e) => isDateInEventRange(date, e))
       days.push({
         day: prevMonthLastDay - i,
         isCurrentMonth: false,
@@ -568,7 +727,7 @@
     // Current month
     for (let i = 1; i <= lastDay.getDate(); i++) {
       const date = new Date(year, month, i)
-      const dayEvents = events.value.filter((e) => isSameDay(e.date, date))
+      const dayEvents = events.value.filter((e) => isDateInEventRange(date, e))
       days.push({
         day: i,
         isCurrentMonth: true,
@@ -582,7 +741,7 @@
     const remaining = 42 - days.length
     for (let i = 1; i <= remaining; i++) {
       const date = new Date(year, month + 1, i)
-      const dayEvents = events.value.filter((e) => isSameDay(e.date, date))
+      const dayEvents = events.value.filter((e) => isDateInEventRange(date, e))
       days.push({
         day: i,
         isCurrentMonth: false,
@@ -624,7 +783,17 @@
   const isSameDay = (a: Date, b: Date) =>
     a.getFullYear() === b.getFullYear() && a.getMonth() === b.getMonth() && a.getDate() === b.getDate()
 
-  const getEventsForDay = (date: Date) => events.value.filter((event) => isSameDay(event.date, date))
+  const isDateInEventRange = (date: Date, event: CalendarEvent): boolean => {
+    if (event.range) {
+      const d = new Date(date.getFullYear(), date.getMonth(), date.getDate())
+      const s = new Date(event.range.start.getFullYear(), event.range.start.getMonth(), event.range.start.getDate())
+      const e = new Date(event.range.end.getFullYear(), event.range.end.getMonth(), event.range.end.getDate())
+      return d >= s && d <= e
+    }
+    return isSameDay(event.date, date)
+  }
+
+  const getEventsForDay = (date: Date) => events.value.filter((event) => isDateInEventRange(date, event))
 
   // Auto-navigate to first event date if events exist and we haven't navigated yet
   watch(
@@ -699,7 +868,12 @@
 </script>
 
 <template>
-  <div ref="rootEl" class="min-h-full w-full flex flex-col bg-card/90 rounded-lg border">
+  <div
+    ref="rootEl"
+    :class="[
+      'min-h-full w-full h-full flex-1 bg-transparent flex flex-col',
+      fullscreen ? 'h-full' : 'rounded-lg border',
+    ]">
     <UiAlert
       v-if="parseError"
       variant="destructive"
@@ -708,9 +882,9 @@
       icon="lucide:triangle-alert"
       class="m-4" />
 
-    <div v-else class="flex flex-col min-h-full">
+    <div v-else class="flex flex-col h-full">
       <!-- Calendar Header -->
-      <div class="shrink-0 px-6 py-4 border-b border-border/50 bg-card/30">
+      <div class="shrink-0 px-6 py-4 border-b border-border/50 bg-card/0">
         <div class="flex flex-wrap items-center justify-between gap-4">
           <!-- Left: Navigation -->
           <div class="flex items-center gap-3">
@@ -736,7 +910,7 @@
                 :class="[
                   'px-3 py-1.5 text-xs font-medium rounded-md transition-all duration-200',
                   calendarViewMode === option.value
-                    ? 'bg-background shadow-sm text-foreground'
+                    ? 'bg-foreground/10 shadow-sm text-foreground'
                     : 'text-muted-foreground hover:text-foreground hover:bg-background/50',
                 ]"
                 @click="calendarViewMode = option.value">
@@ -744,20 +918,8 @@
               </button>
             </div>
 
-            <!-- Date Field Selector -->
-            <UiSelect
-              v-if="dateFields.length"
-              :model-value="selectedDateFieldId"
-              @update:model-value="(v) => (selectedDateFieldId = String(v ?? ''))">
-              <UiSelectTrigger size="sm" class="h-8 w-[180px]">
-                <UiSelectValue placeholder="Date field" />
-              </UiSelectTrigger>
-              <UiSelectContent>
-                <UiSelectItem v-for="field in dateFields" :key="field.id" :value="field.id">
-                  {{ field.name }}
-                </UiSelectItem>
-              </UiSelectContent>
-            </UiSelect>
+            <!-- Header Actions Slot -->
+            <slot name="header-actions" />
           </div>
         </div>
       </div>
@@ -782,9 +944,11 @@
       </div>
 
       <!-- Calendar Content with Mini Sidebar -->
-      <div v-else class="flex-1 flex">
+      <div v-else class="flex-1 flex min-h-0">
         <!-- Mini Calendar Sidebar -->
-        <div class="shrink-0 w-72 border-r border-border/50 hidden lg:flex lg:flex-col h-full">
+        <div
+          class="shrink-0 border-r border-border/50 hidden lg:flex lg:flex-col h-full relative"
+          :style="{ width: sidebarWidth + 'px' }">
           <!-- Mini Calendar Section -->
           <div class="shrink-0 p-4 pb-0">
             <!-- Mini Calendar Header -->
@@ -851,8 +1015,15 @@
             </div>
           </div>
 
+          <!-- Sidebar Filters Slot (e.g., type filters) -->
+          <div v-if="$slots['sidebar-filters']" class="shrink-0 px-4 pt-4 border-t border-border/50 my-4">
+            <slot name="sidebar-filters" />
+          </div>
+
           <!-- Upcoming Events Section - Accordion by Status -->
-          <div class="flex-1 flex flex-col min-h-0 p-4 pt-4 border-t border-border/50 mt-4">
+          <div
+            class="flex-1 flex flex-col min-h-0 p-4 pt-4 border-t border-border/50"
+            :class="$slots['sidebar-filters'] ? 'mt-0' : 'mt-4'">
             <h4 class="shrink-0 text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-3">
               Attention Required
             </h4>
@@ -968,10 +1139,15 @@
               </div>
             </div>
           </div>
+
+          <!-- Sidebar Resize Handle -->
+          <div
+            class="absolute top-0 right-0 w-1.5 h-full cursor-ew-resize z-10 hover:bg-primary/20 active:bg-primary/30 transition-colors"
+            @pointerdown="startSidebarResize" />
         </div>
 
         <!-- Main Calendar Area -->
-        <div class="flex-1">
+        <div class="flex-1 min-w-0 h-full overflow-hidden">
           <Transition :name="transitionDirection === 'right' ? 'slide-left' : 'slide-right'" mode="out-in">
             <!-- Day View -->
             <div v-if="calendarViewMode === 'day'" :key="`day-${currentDate.toISOString()}`" class="flex flex-col">
@@ -1089,11 +1265,12 @@
                     v-for="(day, idx) in monthDays"
                     :key="idx"
                     :class="[
-                      'p-2 border-b border-r border-border/30 relative group',
+                      'p-2 border-b border-r border-border/30 relative group cursor-pointer',
                       'last:border-r-0 nth-[7n]:border-r-0',
                       !day.isCurrentMonth ? 'bg-muted/20' : '',
                       day.isToday ? 'bg-primary/5 ring-2 ring-inset ring-primary/30' : '',
-                    ]">
+                    ]"
+                    @click="handleEmptyCellClick(day.date)">
                     <div
                       :class="[
                         'text-sm font-medium mb-1',
@@ -1105,65 +1282,85 @@
                       ]">
                       {{ day.date.getDate() }}
                     </div>
-                    <!-- Task Count Badge with Popover -->
-                    <UiPopover
-                      v-if="getEventsForDay(day.date).length > 0"
-                      :open="isDayPopoverOpen(day.date)"
-                      @update:open="(open) => (open ? openDayPopover(day.date) : closeDayPopover())">
-                      <UiPopoverTrigger as-child>
-                        <button
-                          :class="[
-                            'w-full text-left px-2 py-1.5 rounded-md text-xs font-medium transition-all duration-150',
-                            'hover:ring-1 hover:ring-primary/30',
-                            getEventsForDay(day.date).some((e) => e.status?.toLowerCase() === 'overdue')
-                              ? 'bg-rose-100 text-rose-700 dark:bg-rose-900/30 dark:text-rose-300'
-                              : getEventsForDay(day.date).some(
-                                    (e) =>
-                                      e.status?.toLowerCase() === 'due soon' || e.status?.toLowerCase() === 'due-soon',
-                                  )
-                                ? 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-300'
-                                : 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300',
-                          ]"
-                          @click.stop="openDayPopover(day.date)">
-                          {{ getEventsForDay(day.date).length }}
-                          {{ getEventsForDay(day.date).length === 1 ? 'task' : 'tasks' }}
-                        </button>
-                      </UiPopoverTrigger>
-                      <UiPopoverContent align="start" class="w-72 p-0 max-h-80 overflow-hidden">
-                        <div class="px-3 py-2 border-b border-border bg-muted/30">
-                          <p class="text-xs font-semibold">{{ formatDate(day.date) }}</p>
-                          <p class="text-[10px] text-muted-foreground">
-                            {{ getEventsForDay(day.date).length }}
-                            {{ getEventsForDay(day.date).length === 1 ? 'task' : 'tasks' }}
-                          </p>
-                        </div>
-                        <div class="overflow-y-auto max-h-64 p-1">
-                          <button
-                            v-for="event in getEventsForDay(day.date)"
-                            :key="event.id"
-                            class="w-full text-left px-2.5 py-2 rounded-md hover:bg-muted/50 transition-colors flex items-start gap-2.5 group/item"
-                            @click="openEventDetail(event)">
-                            <div :class="['w-1.5 h-1.5 rounded-full mt-1.5 shrink-0', getStatusColor(event)]" />
-                            <div class="flex-1 min-w-0">
-                              <p class="text-xs font-medium truncate group-hover/item:text-primary transition-colors">
-                                {{ event.title }}
-                              </p>
-                              <div class="flex items-center gap-2 mt-0.5">
-                                <span :class="['text-[10px] px-1.5 py-0.5 rounded font-medium', event.badgeClass]">
-                                  {{ event.status?.replace('-', ' ') || 'on track' }}
-                                </span>
-                                <span v-if="event.assignee" class="text-[10px] text-muted-foreground truncate">
-                                  {{ event.assignee }}
-                                </span>
-                              </div>
+                    <!-- Type-grouped item stacks -->
+                    <div
+                      v-if="getTypeGroupsForDay(day.date).length > 0"
+                      :class="['space-y-1', isDayInPast(day.date) ? 'opacity-50' : '']">
+                      <UiPopover
+                        :open="isDayPopoverOpen(day.date)"
+                        @update:open="(open) => (open ? openDayPopover(day.date) : closeDayPopover())">
+                        <UiPopoverTrigger as-child>
+                          <button class="w-full text-left space-y-0.5" @click.stop="openDayPopover(day.date)">
+                            <div
+                              v-for="group in getTypeGroupsForDay(day.date)"
+                              :key="group.typeLabel"
+                              :class="[
+                                'flex items-center gap-1 px-1.5 py-1 rounded-md text-[11px] font-medium transition-all duration-150',
+                                'hover:ring-1 hover:ring-primary/30',
+                                group.style.bg,
+                                group.style.text,
+                              ]">
+                              <Icon :name="group.style.icon" class="h-3 w-3 shrink-0" />
+                              <span class="truncate">
+                                {{ group.items.length }} {{ group.style.label
+                                }}{{ group.items.length !== 1 ? 's' : '' }}
+                              </span>
+                              <span
+                                v-if="group.urgentCount > 0"
+                                class="ml-auto shrink-0 inline-flex items-center justify-center w-4 h-4 rounded-full bg-red-500 text-white text-[9px] font-bold leading-none">
+                                {{ group.urgentCount }}
+                              </span>
                             </div>
-                            <Icon
-                              name="lucide:chevron-right"
-                              class="h-3.5 w-3.5 text-muted-foreground/50 group-hover/item:text-primary shrink-0 mt-0.5 transition-colors" />
                           </button>
-                        </div>
-                      </UiPopoverContent>
-                    </UiPopover>
+                        </UiPopoverTrigger>
+                        <UiPopoverContent align="start" class="w-72 p-0 max-h-80 overflow-hidden">
+                          <div class="px-3 py-2 border-b border-border bg-muted/30">
+                            <p class="text-xs font-semibold">{{ formatDate(day.date) }}</p>
+                            <p class="text-[10px] text-muted-foreground">
+                              {{ getEventsForDay(day.date).length }}
+                              {{ getEventsForDay(day.date).length === 1 ? 'item' : 'items' }}
+                            </p>
+                          </div>
+                          <div class="overflow-y-auto max-h-64 p-1">
+                            <template v-for="group in getTypeGroupsForDay(day.date)" :key="group.typeLabel">
+                              <div class="px-2 pt-2 pb-1 flex items-center gap-1.5">
+                                <Icon :name="group.style.icon" :class="['h-3 w-3', group.style.text]" />
+                                <span :class="['text-[10px] font-semibold uppercase tracking-wide', group.style.text]">
+                                  {{ group.typeLabel }}{{ group.items.length > 1 ? 's' : '' }}
+                                </span>
+                                <span class="text-[10px] text-muted-foreground">({{ group.items.length }})</span>
+                              </div>
+                              <button
+                                v-for="event in group.items"
+                                :key="event.id"
+                                class="w-full text-left px-2.5 py-2 rounded-md hover:bg-muted/50 transition-colors flex items-start gap-2.5 group/item"
+                                @click="openEventDetail(event)">
+                                <div
+                                  :style="{ backgroundColor: group.style.dot }"
+                                  class="w-1.5 h-1.5 rounded-full mt-1.5 shrink-0" />
+                                <div class="flex-1 min-w-0">
+                                  <p
+                                    class="text-xs font-medium truncate group-hover/item:text-primary transition-colors">
+                                    {{ event.title }}
+                                  </p>
+                                  <div class="flex items-center gap-2 mt-0.5">
+                                    <span :class="['text-[10px] px-1.5 py-0.5 rounded font-medium', event.badgeClass]">
+                                      {{ event.status?.replace('-', ' ') || 'on track' }}
+                                    </span>
+                                    <span v-if="event.assignee" class="text-[10px] text-muted-foreground truncate">
+                                      {{ event.assignee }}
+                                    </span>
+                                  </div>
+                                </div>
+                                <Icon
+                                  name="lucide:chevron-right"
+                                  class="h-3.5 w-3.5 text-muted-foreground/50 group-hover/item:text-primary shrink-0 mt-0.5 transition-colors" />
+                              </button>
+                            </template>
+                          </div>
+                        </UiPopoverContent>
+                      </UiPopover>
+                    </div>
                   </div>
                 </div>
               </div>
@@ -1171,7 +1368,7 @@
 
             <!-- Year View -->
             <div v-else-if="calendarViewMode === 'year'" :key="`year-${currentYear}`" class="h-full overflow-auto">
-              <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 p-6">
+              <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 p-6 h-full">
                 <div
                   v-for="month in yearMonths"
                   :key="month.month"
@@ -1193,7 +1390,7 @@
                   </div>
 
                   <!-- Mini Calendar Grid -->
-                  <div class="grid grid-cols-7 gap-px text-center">
+                  <div class="grid grid-cols-7 gap-px text-center h-full pb-4">
                     <!-- Weekday headers -->
                     <div
                       v-for="day in ['S', 'M', 'T', 'W', 'T', 'F', 'S']"
