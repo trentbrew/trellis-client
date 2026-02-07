@@ -96,8 +96,8 @@
     { deep: true },
   )
 
-  // Activity sidebar toggle (hidden by default)
-  const activityOpen = ref(false)
+  // Activity sidebar: auto-show for existing items, hidden for new unsaved items
+  const activityOpen = ref(!isCreateMode.value)
 
   // Comments composable — wired to current item's ID
   const currentEntityId = computed(() => editableItem.id || undefined)

@@ -69,6 +69,14 @@ export function useTrellisGraph() {
     const eqlsValue = isRef(eqls) ? eqls : ref(eqls)
 
     const fetchData = async () => {
+      // Skip fetch for empty queries — avoids 400 errors from the API
+      if (!eqlsValue.value || !eqlsValue.value.trim()) {
+        data.value = []
+        loading.value = false
+        error.value = null
+        return
+      }
+
       try {
         loading.value = true
         error.value = null
