@@ -5,7 +5,7 @@
   const { roleConfig, userRole } = useUserRole()
   const { selectedYear } = useYear()
 
-  const canSwitchOrganization = computed(() => userRole.value === 'super_admin')
+  const canSwitchOrganization = computed(() => userRole.value === 'superadmin')
   const { facilities } = useFacilities()
   const route = useRoute()
   const router = useRouter()
@@ -57,9 +57,7 @@
             <span v-else class="text-muted-foreground text-xs leading-none">Select Org</span>
 
             <span
-              v-if="
-                roleConfig && (userRole === 'admin' || userRole === 'super_admin' || userRole === 'corporate_admin')
-              "
+              v-if="roleConfig && (userRole === 'admin' || userRole === 'superadmin')"
               class="font-black uppercase text-[9px] tracking-[0.05em] flex items-center bg-primary/10 border border-primary/20 py-0.5 px-2 rounded-full text-primary shadow-none shrink-0 ml-1">
               <Icon :name="roleConfig.icon" class="h-3 w-3 mr-1.5 opacity-80" />
               {{ roleConfig.label }}

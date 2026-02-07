@@ -192,6 +192,7 @@
                   <Icon name="lucide:chevron-down" class="h-4 w-4" />
                 </UiButton>
               </template>
+              <div v-if="!isCreateMode" class="h-5 w-px bg-border mx-0.5" />
               <UiButton variant="ghost" size="icon" class="h-7 w-7" @click="closeDialog">
                 <Icon name="lucide:x" class="h-4 w-4" />
               </UiButton>

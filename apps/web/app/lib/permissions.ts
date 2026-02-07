@@ -9,12 +9,7 @@ import type { UserRole, PermissionLevel, RolePermissions, RoutePermissions } fro
  * Maps each role to their permission levels
  */
 export const ROLE_PERMISSIONS: Record<UserRole, RolePermissions> = {
-  super_admin: {
-    read: true,
-    write: true,
-    admin: true,
-  },
-  corporate_admin: {
+  superadmin: {
     read: true,
     write: true,
     admin: true,
@@ -24,12 +19,7 @@ export const ROLE_PERMISSIONS: Record<UserRole, RolePermissions> = {
     write: true,
     admin: true,
   },
-  facility_manager: {
-    read: true,
-    write: true,
-    admin: false,
-  },
-  developer: {
+  member: {
     read: true,
     write: true,
     admin: false,
@@ -47,11 +37,9 @@ export const ROLE_PERMISSIONS: Record<UserRole, RolePermissions> = {
  */
 export const ROLE_HIERARCHY: UserRole[] = [
   'guest',
-  'developer',
-  'facility_manager',
+  'member',
   'admin',
-  'corporate_admin',
-  'super_admin',
+  'superadmin',
 ]
 
 /**
@@ -208,12 +196,10 @@ export function canPerformAction(
  */
 export function getPermissionDescription(role: UserRole): string {
   const descriptions: Record<UserRole, string> = {
-    super_admin: 'Full system access across all organizations',
-    corporate_admin: 'Can manage corporate settings and multi-facility operations',
-    admin: 'Full access to manage facility, members, and compliance tasks',
-    facility_manager: 'Can manage facility compliance work and schedules',
-    developer: 'Can create, edit, and manage compliance tasks and data',
-    guest: 'Can view facility information (read-only access)',
+    superadmin: 'Full system access across all workspaces',
+    admin: 'Can manage workspace settings, members, and content',
+    member: 'Can create, edit, and manage content',
+    guest: 'Read-only access to shared content',
   }
   return descriptions[role]
 }

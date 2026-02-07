@@ -65,7 +65,7 @@ export interface Reminder {
 }
 
 export interface RecurrenceRule {
-  frequency: 'daily' | 'weekly' | 'monthly' | 'yearly' | 'weekdays' | 'custom'
+  frequency: 'daily' | 'weekly' | 'monthly' | 'quarterly' | 'yearly' | 'weekdays' | 'custom'
   interval?: number // e.g. every 2 weeks
   weekdays?: number[] // 0=Sun, 1=Mon, etc.
   endDate?: string // YYYY-MM-DD
@@ -92,6 +92,8 @@ export interface ChecklistItem {
   label: string
   completed: boolean
   order: number
+  parentId?: string | null
+  collapsed?: boolean
 }
 
 export interface Attendee {
@@ -257,7 +259,11 @@ export const createDefaultTask = (): TaskItem => ({
   ...createDefaultBase(),
   type: 'task',
   taskStatus: 'pending',
-  checklist: [],
+  checklist: [
+    { id: `cl-${Date.now()}-a`, label: '', completed: false, order: 0, parentId: null, collapsed: false },
+    { id: `cl-${Date.now()}-b`, label: '', completed: false, order: 1, parentId: null, collapsed: false },
+    { id: `cl-${Date.now()}-c`, label: '', completed: false, order: 2, parentId: null, collapsed: false },
+  ],
 })
 
 export const createDefaultEvent = (): EventItem => ({

@@ -42,3 +42,15 @@ playwright-report/
 
 # Generated
 **/src/generated/
+# HQ (TQL)
+.tql/store.db
+.tql/store.db-shm
+.tql/store.db-wal
+.tql/snapshot.json
+.tql/inbox.json
+.tql/client/dist/
+.tql/client-vue/node_modules/
+.tql/client-vue/dist/
+logs/cascade-responses.log
+logs/hook-activity.log
+cascade-archive/

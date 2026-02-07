@@ -503,10 +503,10 @@
                               <AppNavLink
                                 v-if="item?.path"
                                 :to="item.path"
-                                class="text-sidebar-foreground/70 hover:bg-white/10 hover:text-sidebar-foreground flex items-center gap-3 rounded-lg px-3 py-2 transition ml-8"
+                                class="text-sidebar-foreground hover:bg-foreground/5 hover:text-sidebar-foreground flex items-center gap-3 rounded-lg px-3 py-2 transition ml-8"
                                 :class="[
                                   {
-                                    'bg-white/6 text-sidebar-foreground': routes.isRouteExactlyActive(item.path),
+                                    'bg-foreground/5 text-sidebar-foreground': routes.isRouteExactlyActive(item.path),
                                   },
                                   isCollectionItem(item.path) ? 'pr-16' : 'pr-8',
                                 ]">

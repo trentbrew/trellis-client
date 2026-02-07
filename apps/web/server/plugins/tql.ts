@@ -103,5 +103,5 @@ export default defineNitroPlugin(async (nitro) => {
     console.log('[tql] Kernel closed')
   })
 
-  console.log('[tql] TrellisKernel ready')
+  console.log('[tql] TrellisKernel ready (v2 — expanded seed)')
 })

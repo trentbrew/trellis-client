@@ -427,7 +427,7 @@ export function useInstantData() {
         }
 
         const orgMismatch = !!(currentOrg.value && currentApp.value && currentApp.value.orgId !== currentOrg.value.id)
-        if ((currentOrg.value && currentApp.value && !orgMismatch) || apps.length === 0) return
+        if (currentOrg.value && currentApp.value && !orgMismatch) return
 
         const picked = pickOrgAndApp({
           orgs,
@@ -442,6 +442,41 @@ export function useInstantData() {
 
       watch([organizations, applications], reconcileOrgAndApp, { immediate: true })
       watch(() => [route?.query?.org, route?.query?.app], reconcileOrgAndApp, { immediate: true })
+
+      // Auto-create a default app when an org exists but has no apps.
+      // This avoids the "No active app" error without removing the appId-based data layer.
+      const isAutoCreatingApp = useState<boolean>('instantData:isAutoCreatingApp', () => false)
+      watch(
+        [currentOrg, applications, appsLoading, user],
+        async ([org, apps, loading, authUser]) => {
+          if (!org || loading || isAutoCreatingApp.value || !authUser?.id) return
+          const orgApps = (apps || []).filter((a) => a.orgId === org.id)
+          if (orgApps.length > 0) return
+
+          isAutoCreatingApp.value = true
+          try {
+            const id = crypto.randomUUID()
+            const now = Date.now()
+            await db.transact([
+              tx.applications[id].update({
+                ownerId: authUser.id,
+                orgId: org.id,
+                name: 'Workspace',
+                slug: 'workspace',
+                icon: 'lucide:layout-grid',
+                color: '#6366f1',
+                createdAt: now,
+                updatedAt: now,
+              }),
+            ])
+          } catch (e) {
+            console.error('Failed to auto-create default app:', e)
+          } finally {
+            isAutoCreatingApp.value = false
+          }
+        },
+        { immediate: true },
+      )
 
       watch(
         currentOrg,

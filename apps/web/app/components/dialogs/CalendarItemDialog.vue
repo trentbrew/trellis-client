@@ -2,6 +2,7 @@
   import type {
     CalendarItem,
     CalendarItemType,
+    TaskStatus,
     Priority,
     Urgency,
     RecurrenceRule,
@@ -13,8 +14,8 @@
     URGENCY_OPTIONS,
     CATEGORY_OPTIONS,
     EVENT_TYPE_OPTIONS,
+    TASK_STATUS_OPTIONS,
     createDefaultItem,
-    isNote,
   } from '~/types/calendarItem'
   import { useCalendarItemFormulas } from '~/composables/useCalendarItemFormulas'
   import { typeHasField } from '~/config/entityRegistry'
@@ -118,6 +119,7 @@
   const priorityOpen = ref(false)
   const urgencyOpen = ref(false)
   const schedulePopoverOpen = ref(false)
+  const taskStatusOpen = ref(false)
   const eventTypeOpen = ref(false)
   const ownerSearch = ref('')
   const folderSearch = ref('')
@@ -166,13 +168,14 @@
   const isFormValid = computed(() => !!editableItem.title?.trim())
 
   // Recurrence
-  type RepeatPreset = 'daily' | 'weekly' | 'monthly' | 'yearly' | 'weekdays' | 'custom' | 'none'
+  type RepeatPreset = 'daily' | 'weekly' | 'monthly' | 'quarterly' | 'yearly' | 'weekdays' | 'custom' | 'none'
   const selectedRepeat = ref<RepeatPreset>('none')
   const repeatPresets: { value: RepeatPreset; label: string; sub?: string }[] = [
     { value: 'none', label: 'None' },
     { value: 'daily', label: 'Daily' },
     { value: 'weekly', label: 'Weekly' },
     { value: 'monthly', label: 'Monthly' },
+    { value: 'quarterly', label: 'Quarterly' },
     { value: 'yearly', label: 'Yearly' },
     { value: 'weekdays', label: 'Every Weekday', sub: '(Mon-Fri)' },
     { value: 'custom', label: 'Custom' },
@@ -319,6 +322,127 @@
   // Picker mode based on allDay
   const pickerMode = computed(() => (editableItem.allDay ? 'date' : 'dateTime'))
 
+  // ── Mini calendar attributes (today, past dimming, repeat dots, multi-day range) ──
+  const datePickerAttributes = computed(() => {
+    const attrs: any[] = []
+    const now = new Date()
+    const todayDate = new Date(now.getFullYear(), now.getMonth(), now.getDate())
+
+    // 1. Today indicator
+    attrs.push({
+      key: 'today',
+      dates: [todayDate],
+      dot: { color: 'blue' },
+    })
+
+    // 2. Past days dimming
+    const yesterday = new Date(todayDate)
+    yesterday.setDate(yesterday.getDate() - 1)
+    attrs.push({
+      key: 'past-days',
+      dates: { end: yesterday },
+      content: { style: { opacity: 0.4 } },
+    })
+
+    // 3. Multi-day range highlight (start → end)
+    const start = editableItem.startDate ? new Date(editableItem.startDate) : null
+    const end = editableItem.endDate ? new Date(editableItem.endDate) : null
+    if (start && end && start.getTime() !== end.getTime()) {
+      attrs.push({
+        key: 'multi-day-range',
+        dates: { start, end },
+        highlight: {
+          start: { fillMode: 'solid', color: 'orange' },
+          base: { fillMode: 'light', color: 'orange' },
+          end: { fillMode: 'solid', color: 'orange' },
+        },
+      })
+    }
+
+    // 4. Recurrence dots
+    const recurrence = editableItem.recurrence
+    if (recurrence && start) {
+      const repeatDates: Date[] = []
+      const startD = new Date(start.getFullYear(), start.getMonth(), start.getDate())
+      // Generate dots for a 90-day window from start
+      const windowEnd = new Date(startD)
+      windowEnd.setDate(windowEnd.getDate() + 90)
+
+      const freq = recurrence.frequency
+      if (freq === 'daily') {
+        const cursor = new Date(startD)
+        const interval = recurrence.interval || 1
+        while (cursor <= windowEnd) {
+          repeatDates.push(new Date(cursor))
+          cursor.setDate(cursor.getDate() + interval)
+        }
+      } else if (freq === 'weekly') {
+        const interval = recurrence.interval || 1
+        const weekdays = recurrence.weekdays?.length ? recurrence.weekdays : [startD.getDay()]
+        const cursor = new Date(startD)
+        // Align to start of week (Sunday)
+        cursor.setDate(cursor.getDate() - cursor.getDay())
+        while (cursor <= windowEnd) {
+          for (const wd of weekdays) {
+            const d = new Date(cursor)
+            d.setDate(d.getDate() + wd)
+            if (d >= startD && d <= windowEnd) repeatDates.push(d)
+          }
+          cursor.setDate(cursor.getDate() + 7 * interval)
+        }
+      } else if (freq === 'weekdays') {
+        const cursor = new Date(startD)
+        while (cursor <= windowEnd) {
+          const dow = cursor.getDay()
+          if (dow >= 1 && dow <= 5) repeatDates.push(new Date(cursor))
+          cursor.setDate(cursor.getDate() + 1)
+        }
+      } else if (freq === 'monthly') {
+        const interval = recurrence.interval || 1
+        const cursor = new Date(startD)
+        while (cursor <= windowEnd) {
+          repeatDates.push(new Date(cursor))
+          cursor.setMonth(cursor.getMonth() + interval)
+        }
+      } else if (freq === 'quarterly') {
+        const interval = recurrence.interval || 1
+        const cursor = new Date(startD)
+        while (cursor <= windowEnd) {
+          repeatDates.push(new Date(cursor))
+          cursor.setMonth(cursor.getMonth() + 3 * interval)
+        }
+      } else if (freq === 'yearly') {
+        const cursor = new Date(startD)
+        while (cursor <= windowEnd) {
+          repeatDates.push(new Date(cursor))
+          cursor.setFullYear(cursor.getFullYear() + 1)
+        }
+      } else if (freq === 'custom' && recurrence.weekdays?.length) {
+        const interval = recurrence.interval || 1
+        const cursor = new Date(startD)
+        cursor.setDate(cursor.getDate() - cursor.getDay())
+        while (cursor <= windowEnd) {
+          for (const wd of recurrence.weekdays) {
+            const d = new Date(cursor)
+            d.setDate(d.getDate() + wd)
+            if (d >= startD && d <= windowEnd) repeatDates.push(d)
+          }
+          cursor.setDate(cursor.getDate() + 7 * interval)
+        }
+      }
+
+      if (repeatDates.length > 0) {
+        attrs.push({
+          key: 'recurrence-dots',
+          dates: repeatDates,
+          dot: { color: 'orange' },
+        })
+      }
+    }
+
+    return attrs
+  })
+
   watch(
     () => props.item,
     (newItem) => {
@@ -405,6 +529,8 @@
     else if (repeat === 'monthly') {
       const d = start.getDate()
       scheduleText = `Every ${d}${d === 1 ? 'st' : d === 2 ? 'nd' : d === 3 ? 'rd' : 'th'} of the month`
+    } else if (repeat === 'quarterly') {
+      scheduleText = 'Every quarter'
     } else if (repeat === 'yearly') {
       scheduleText = `Every year on ${start.toLocaleDateString('en-US', { month: 'long', day: 'numeric' })}`
     } else {
@@ -584,10 +710,7 @@
             v-for="opt in EVENT_TYPE_OPTIONS"
             :key="opt.value"
             class="w-full px-2 py-1.5 text-xs text-left rounded hover:bg-muted flex items-center gap-2"
-            @click="
-              editableItem.eventType = opt.value as EventType
-              eventTypeOpen = false
-            ">
+            @click="() => { editableItem.eventType = opt.value as EventType; eventTypeOpen = false }">
             <Icon :name="opt.icon" class="h-3.5 w-3.5 text-muted-foreground" />
             <span class="flex-1">{{ opt.label }}</span>
             <Icon v-if="editableItem.eventType === opt.value" name="lucide:check" class="h-3.5 w-3.5 text-primary" />
@@ -722,6 +845,29 @@
         Pinned
       </span>
 
+      <!-- Task Status -->
+      <UiPopover v-if="hasField('status')" v-model:open="taskStatusOpen">
+        <UiPopoverTrigger as-child>
+          <button
+            class="inline-flex items-center gap-1.5 px-2 py-1 rounded-lg transition-colors"
+            :class="TASK_STATUS_OPTIONS.find((s) => s.value === editableItem.taskStatus)?.color || 'bg-muted/50 hover:bg-muted'">
+            <Icon :name="TASK_STATUS_OPTIONS.find((s) => s.value === editableItem.taskStatus)?.icon || 'lucide:circle'" class="h-3.5 w-3.5" />
+            <span>{{ TASK_STATUS_OPTIONS.find((s) => s.value === editableItem.taskStatus)?.label || 'Status' }}</span>
+          </button>
+        </UiPopoverTrigger>
+        <UiPopoverContent align="start" class="w-44 p-1">
+          <button
+            v-for="opt in TASK_STATUS_OPTIONS"
+            :key="opt.value"
+            class="w-full px-2 py-1.5 text-xs text-left rounded hover:bg-muted flex items-center gap-2"
+            @click="editableItem.taskStatus = opt.value as TaskStatus; taskStatusOpen = false">
+            <Icon :name="opt.icon" class="h-3.5 w-3.5 text-muted-foreground" />
+            <span class="flex-1">{{ opt.label }}</span>
+            <Icon v-if="editableItem.taskStatus === opt.value" name="lucide:check" class="h-3.5 w-3.5 text-primary" />
+          </button>
+        </UiPopoverContent>
+      </UiPopover>
+
       <!-- Priority -->
       <UiPopover v-if="hasField('priority')" v-model:open="priorityOpen">
         <UiPopoverTrigger as-child>
@@ -802,10 +948,7 @@
             v-for="opt in CATEGORY_OPTIONS"
             :key="opt.value"
             class="w-full px-2 py-1.5 text-xs text-left rounded hover:bg-muted flex items-center gap-2"
-            @click="
-              editableItem.category = opt.value
-              categoryOpen = false
-            ">
+            @click="() => { editableItem.category = opt.value; categoryOpen = false }">
             <Icon :name="opt.icon" class="h-3.5 w-3.5 text-muted-foreground" />
             <span class="flex-1">{{ opt.label }}</span>
             <Icon v-if="editableItem.category === opt.value" name="lucide:check" class="h-3.5 w-3.5 text-primary" />
@@ -851,11 +994,7 @@
               <button
                 v-if="editableItem.owner"
                 class="w-full px-2 py-1.5 text-xs text-left rounded hover:bg-muted flex items-center gap-2 text-muted-foreground"
-                @click="
-                  editableItem.owner = undefined
-                  ownerOpen = false
-                  ownerSearch = ''
-                ">
+                @click="() => { editableItem.owner = undefined; ownerOpen = false; ownerSearch = '' }">
                 <Icon name="lucide:x" class="h-3.5 w-3.5" />
                 No assignee
               </button>
@@ -863,11 +1002,7 @@
                 v-for="o in filteredOwners"
                 :key="o.id"
                 class="w-full px-2 py-1.5 text-xs text-left rounded hover:bg-muted flex items-center gap-2"
-                @click="
-                  editableItem.owner = o.id
-                  ownerOpen = false
-                  ownerSearch = ''
-                ">
+                @click="() => { editableItem.owner = o.id; ownerOpen = false; ownerSearch = '' }">
                 <div
                   class="w-5 h-5 rounded-full bg-primary/10 flex items-center justify-center text-[9px] font-medium text-primary">
                   {{ o.name.slice(0, 2).toUpperCase() }}
@@ -946,11 +1081,7 @@
             <button
               v-if="editableItem.folder"
               class="w-full px-2 py-1.5 text-xs text-left rounded hover:bg-muted flex items-center gap-2 text-muted-foreground"
-              @click="
-                editableItem.folder = undefined
-                folderOpen = false
-                folderSearch = ''
-              ">
+              @click="() => { editableItem.folder = undefined; folderOpen = false; folderSearch = '' }">
               <Icon name="lucide:x" class="h-3.5 w-3.5" />
               No folder
             </button>
@@ -958,11 +1089,7 @@
               v-for="f in filteredFolders"
               :key="f"
               class="w-full px-2 py-1.5 text-xs text-left rounded hover:bg-muted flex items-center gap-2"
-              @click="
-                editableItem.folder = f
-                folderOpen = false
-                folderSearch = ''
-              ">
+              @click="() => { editableItem.folder = f; folderOpen = false; folderSearch = '' }">
               <Icon name="lucide:folder" class="h-3.5 w-3.5 text-muted-foreground" />
               <span class="flex-1">{{ f }}</span>
               <Icon v-if="editableItem.folder === f" name="lucide:check" class="h-3.5 w-3.5 text-primary" />
@@ -975,7 +1102,7 @@
     <!-- Tags (inline in properties row, visually grouped) -->
     <template v-if="hasField('tags')" #properties-tags>
       <span class="w-px h-4 bg-border/60 mx-0.5 shrink-0" />
-      <div class="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-lg bg-muted/30 border border-border/40">
+      <div class="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-md bg-muted/30 border border-border/40">
         <TagsSection v-model="editableItem.tags" :readonly="isViewMode" inline />
       </div>
     </template>
@@ -993,7 +1120,7 @@
             v-if="!isViewMode"
             :class="[
               'w-8 h-4.5 rounded-full transition-colors relative',
-              editableItem.allDay ? 'bg-foreground/25' : 'bg-muted-foreground/30',
+              editableItem.allDay ? 'bg-primary/50' : 'bg-muted-foreground/30',
             ]"
             @click="editableItem.allDay = !editableItem.allDay">
             <span
@@ -1005,13 +1132,13 @@
         </div>
 
         <!-- Start/End segmented toggle (only if endDate field exists) -->
-        <div v-if="hasField('endDate')" class="flex rounded-lg border border-border bg-muted/30 p-0.5">
+        <div v-if="hasField('endDate')" class="flex rounded-lg border border-border bg-muted/0 p-1">
           <button
             type="button"
-            class="flex-1 flex flex-col items-center gap-0.5 px-2 py-1.5 rounded-md text-[10px] font-medium transition-colors"
+            class="flex-1 flex flex-col items-center gap-0.5 px-2 py-2 rounded-md text-[10px] font-medium transition-colors"
             :class="
               scheduleTab === 'start'
-                ? 'bg-card shadow-sm text-foreground'
+                ? 'bg-foreground/5 shadow-sm text-foreground'
                 : 'text-muted-foreground hover:text-foreground'
             "
             @click="scheduleTab = 'start'">
@@ -1023,7 +1150,7 @@
             class="flex-1 flex flex-col items-center gap-0.5 px-2 py-1.5 rounded-md text-[10px] font-medium transition-colors"
             :class="
               scheduleTab === 'end'
-                ? 'bg-card shadow-sm text-foreground'
+                ? 'bg-foreground/5 shadow-sm text-foreground'
                 : 'text-muted-foreground hover:text-foreground'
             "
             @click="scheduleTab = 'end'">
@@ -1040,6 +1167,7 @@
               :is-dark="isDark"
               is-required
               :mode="pickerMode"
+              :attributes="datePickerAttributes"
               borderless
               transparent
               title-position="left"
@@ -1073,10 +1201,7 @@
                 type="button"
                 class="w-full flex items-center justify-between px-2 py-1.5 rounded-md text-xs hover:bg-muted/50 transition-colors"
                 :class="selectedRepeat === preset.value ? 'bg-muted/50' : ''"
-                @click="
-                  selectRepeat(preset.value)
-                  repeatOpen = false
-                ">
+                @click="() => { selectRepeat(preset.value); repeatOpen = false }">
                 <div class="flex items-center gap-1.5">
                   <span>{{ preset.label }}</span>
                   <span v-if="preset.sub" class="text-muted-foreground text-[10px]">{{ preset.sub }}</span>
@@ -1179,10 +1304,7 @@
                 type="button"
                 class="w-full flex items-center justify-between px-2 py-1.5 rounded-md text-xs hover:bg-muted/50 transition-colors"
                 :class="selectedReminder === preset.value ? 'bg-muted/50' : ''"
-                @click="
-                  selectedReminder = preset.value
-                  reminderOpen = false
-                ">
+                @click="() => { selectedReminder = preset.value; reminderOpen = false }">
                 <div class="flex items-center gap-1.5">
                   <span>{{ preset.label }}</span>
                   <span v-if="preset.time && preset.value !== 'custom'" class="text-muted-foreground text-[10px]">
@@ -1223,7 +1345,7 @@
         <!-- Type-specific content panel (dynamically resolved) -->
         <EntityContentPanel :model-value="editableItem" :mode="mode" />
 
-        <!-- References (files + entity links) -->
+        <!-- References (files + entity links) — always second-to-last -->
         <ReferencesSection
           v-model="editableItem.references"
           :readonly="isViewMode"
@@ -1231,19 +1353,7 @@
           @add-file="fileUploadOpen = true"
           @add-entity="entityPickerOpen = true" />
 
-        <!-- Notes -->
-        <div v-if="!isNote(editableItem)" class="p-4 space-y-1.5">
-          <p class="text-xs font-medium text-muted-foreground uppercase tracking-wide">Notes</p>
-          <UiRichTextEditor
-            v-if="!isViewMode"
-            v-model="editableItem.notes"
-            placeholder="Additional notes..."
-            compact
-            mentions />
-          <p v-else class="text-sm text-foreground whitespace-pre-wrap">{{ editableItem.notes || '—' }}</p>
-        </div>
-
-        <!-- Comments / Activity (collapsible, collapsed by default) -->
+        <!-- Comments / Activity (collapsible, collapsed by default) — always last -->
         <div v-if="!isCreateMode" class="p-4 space-y-2">
           <button
             type="button"
@@ -1322,22 +1432,28 @@
           <Icon name="lucide:pencil" class="h-3.5 w-3.5 mr-1.5" />
           Edit
         </UiButton>
-        <UiButton variant="outline" size="sm" @click="closeDialog">Close</UiButton>
       </template>
       <template v-else-if="isEditMode">
-        <UiButton
-          variant="outline"
-          size="sm"
-          class="gap-1.5 text-red-600 hover:bg-red-50 hover:text-red-700 border-red-200"
-          @click="handleDelete">
-          <Icon name="lucide:trash-2" class="h-3.5 w-3.5" />
-          Delete
-        </UiButton>
         <UiButton size="sm" @click="handleSave">
           <Icon name="lucide:save" class="h-3.5 w-3.5 mr-1.5" />
           Save
         </UiButton>
-        <UiButton variant="outline" size="sm" @click="closeDialog">Close</UiButton>
+        <UiDropdownMenu>
+          <UiDropdownMenuTrigger as-child>
+            <UiButton variant="ghost" size="icon" class="h-8 w-8">
+              <Icon name="lucide:more-horizontal" class="h-4 w-4" />
+            </UiButton>
+          </UiDropdownMenuTrigger>
+          <UiDropdownMenuContent align="end" class="w-40">
+            <UiDropdownMenuItem icon="lucide:share" title="Share" />
+            <UiDropdownMenuSeparator />
+            <UiDropdownMenuItem
+              icon="lucide:trash-2"
+              title="Delete"
+              variant="destructive"
+              @click="handleDelete" />
+          </UiDropdownMenuContent>
+        </UiDropdownMenu>
       </template>
       <template v-else-if="isCreateMode">
         <UiButton size="sm" :disabled="!isFormValid" @click="handleSave">Create</UiButton>

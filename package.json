@@ -17,12 +17,23 @@
     "test": "pnpm -r --if-present test",
     "clean": "pnpm -r --if-present clean && rm -rf node_modules",
     "typecheck": "pnpm -r --if-present typecheck",
-    "prepare": "husky"
+    "prepare": "husky",
+    "hq:init": "bun run hooks/tql-init.ts",
+    "hq:status": "bun run hooks/tql-status.ts",
+    "hq:query": "bun run hooks/tql-query.ts",
+    "hq:devlog": "bun run hooks/tql-devlog.ts",
+    "hq:docs": "bun run hooks/tql-docs.ts --all",
+    "hq:standup": "bun run hooks/tql-standup.ts",
+    "hq:demo": "bun run hooks/tql-demo.ts",
+    "hq:insights": "bun run hooks/tql-insights.ts",
+    "hq:export": "bun run hooks/tql-export.ts",
+    "hq:git:sync": "bun run hooks/tql-git.ts --sync",
+    "hq:git:commit": "bun run hooks/tql-git.ts",
+    "hq:compact": "bun run hooks/tql-compact.ts",
+    "hq:serve": "bun run hooks/tql-server.ts",
+    "hq:seed": "bun run hooks/tql-seed.ts"
   },
   "pnpm": {
-    "overrides": {
-      "@toolkit/ui>vite": "npm:rolldown-vite@latest"
-    },
     "onlyBuiltDependencies": [
       "better-sqlite3"
     ]
@@ -45,9 +56,26 @@
     "lint-staged": "^16.2.7",
     "prettier": "^3.6.2",
     "turbo": "^2.8.1",
-    "typescript": "^5.9.2"
+    "typescript": "^5.9.2",
+    "@types/bun": "latest"
   },
   "dependencies": {
-    "@tailwindcss/typography": "^0.5.19"
-  }
+    "@tailwindcss/typography": "^0.5.19",
+    "chalk": "^5.6.2",
+    "commander": "^14.0.3",
+    "yaml": "^2.8.2",
+    "zod": "^4.3.6",
+    "ajv": "^8.17.1"
+  },
+  "peerDependencies": {
+    "typescript": "^5"
+  },
+  "overrides": {
+    "@toolkit/ui>vite": "npm:rolldown-vite@latest"
+  },
+  "workspaces": [
+    "apps/*",
+    "packages/*",
+    "docs"
+  ]
 }

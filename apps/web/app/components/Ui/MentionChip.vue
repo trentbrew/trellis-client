@@ -81,7 +81,7 @@
             <p v-if="entity?.description" class="line-clamp-2 text-xs text-muted-foreground leading-relaxed">
               {{ entity.description }}
             </p>
-            <div v-if="formattedDate" class="flex items-center gap-1 pt-0.5">
+            <div v-if="formattedDate" class="flex items-center">
               <Icon name="lucide:calendar-days" class="h-3 w-3 opacity-50" />
               <span class="text-[10px] text-muted-foreground">{{ formattedDate }}</span>
             </div>
@@ -101,7 +101,7 @@
     display: inline-flex;
     align-items: center;
     gap: 0.25em;
-    background: hsl(var(--primary) / 0.12);
+background: yellow;
     color: hsl(var(--primary));
     border-radius: 0.375rem;
     padding: 0.05em 0.45em 0.1em;
