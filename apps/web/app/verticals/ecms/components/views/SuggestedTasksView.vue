@@ -1,7 +1,6 @@
 <script setup lang="ts">
   import { useBrowse, type BrowseViewMode } from '~/composables/useBrowse'
   import CalendarItemDialog from '~/components/dialogs/CalendarItemDialog.vue'
-  import type { ActivityItem } from '~/components/dialogs/CalendarItemDialog.vue'
 
   const props = withDefaults(
     defineProps<{
@@ -345,9 +344,6 @@
   }
 
   const _viewingTaskAttachments = computed<any[]>(() => [])
-  const viewingTaskActivity = computed<ActivityItem[]>(() => [
-    { id: '1', type: 'created', author: 'AI Assistant', date: 'Just now', content: viewingTask.value?.reason },
-  ])
 
   const handleUpdateSuggestedFromDialog = (formData: any) => {
     if (!viewingTask.value) return
@@ -534,7 +530,6 @@
       mode="edit"
       :can-navigate-prev="canNavigatePrev"
       :can-navigate-next="canNavigateNext"
-      :activity="viewingTaskActivity"
       @navigate-prev="navigateToPrevTask"
       @navigate-next="navigateToNextTask"
       @close="viewDialogOpen = false" />

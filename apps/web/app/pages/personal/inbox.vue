@@ -20,15 +20,19 @@
       .sort((a, b) => (b.createdAt ?? 0) - (a.createdAt ?? 0))
   })
 
-  const pendingItems = computed(() => inboxItems.value.filter((i) => {
-    if (i.type === 'task') return (i as TaskItem).taskStatus !== 'completed'
-    return true
-  }))
+  const pendingItems = computed(() =>
+    inboxItems.value.filter((i) => {
+      if (i.type === 'task') return (i as TaskItem).taskStatus !== 'completed'
+      return true
+    }),
+  )
 
-  const completedItems = computed(() => inboxItems.value.filter((i) => {
-    if (i.type === 'task') return (i as TaskItem).taskStatus === 'completed'
-    return false
-  }))
+  const completedItems = computed(() =>
+    inboxItems.value.filter((i) => {
+      if (i.type === 'task') return (i as TaskItem).taskStatus === 'completed'
+      return false
+    }),
+  )
 
   // ---------------------------------------------------------------------------
   // Quick capture
@@ -89,8 +93,12 @@
   )
   const canPrev = computed(() => viewingIndex.value > 0)
   const canNext = computed(() => viewingIndex.value < pendingItems.value.length - 1)
-  function navPrev() { if (canPrev.value) viewingItem.value = pendingItems.value[viewingIndex.value - 1]! }
-  function navNext() { if (canNext.value) viewingItem.value = pendingItems.value[viewingIndex.value + 1]! }
+  function navPrev() {
+    if (canPrev.value) viewingItem.value = pendingItems.value[viewingIndex.value - 1]!
+  }
+  function navNext() {
+    if (canNext.value) viewingItem.value = pendingItems.value[viewingIndex.value + 1]!
+  }
 
   // ---------------------------------------------------------------------------
   // Type icon helper
@@ -196,10 +204,13 @@
               <span
                 class="text-[10px] px-1.5 py-0.5 rounded-full"
                 :class="
-                  item.priority === 'critical' ? 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400'
-                    : item.priority === 'high' ? 'bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-400'
-                    : item.priority === 'medium' ? 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400'
-                    : 'bg-slate-100 text-slate-600 dark:bg-slate-900/30 dark:text-slate-400'
+                  item.priority === 'critical'
+                    ? 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400'
+                    : item.priority === 'high'
+                      ? 'bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-400'
+                      : item.priority === 'medium'
+                        ? 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400'
+                        : 'bg-slate-100 text-slate-600 dark:bg-slate-900/30 dark:text-slate-400'
                 ">
                 {{ item.priority }}
               </span>
@@ -235,11 +246,7 @@
     </div>
 
     <!-- Create Dialog -->
-    <CalendarItemDialog
-      v-model:open="createOpen"
-      mode="create"
-      :initial-type="createType"
-      @create="handleCreate" />
+    <CalendarItemDialog v-model:open="createOpen" mode="create" :initial-type="createType" @create="handleCreate" />
 
     <!-- View/Edit Dialog -->
     <CalendarItemDialog

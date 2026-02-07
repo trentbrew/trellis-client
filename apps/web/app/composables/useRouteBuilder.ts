@@ -231,7 +231,7 @@ export const useRouteBuilder = () => {
         railPosition: 'secondary',
         inCommandPalette: true,
         requiresAuth: true,
-        minRole: 'super_admin',
+        minRole: 'superadmin',
       },
     },
 
@@ -361,11 +361,9 @@ export const useRouteBuilder = () => {
   // Role options for permissions
   const roleOptions: { value: UserRole; label: string }[] = [
     { value: 'guest', label: 'Guest' },
-    { value: 'developer', label: 'Developer' },
-    { value: 'facility_manager', label: 'Facility Manager' },
+    { value: 'member', label: 'Member' },
     { value: 'admin', label: 'Admin' },
-    { value: 'corporate_admin', label: 'Corporate Admin' },
-    { value: 'super_admin', label: 'Super Admin' },
+    { value: 'superadmin', label: 'Super Admin' },
   ]
 
   // Layout type options

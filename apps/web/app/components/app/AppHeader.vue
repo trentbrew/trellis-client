@@ -149,9 +149,9 @@
 
 <template>
   <!-- App Header: Navigation shell (matches icon rail) -->
-  <header class="border-rail-border bg-rail/75 border-b flex h-16 shrink-0 items-center gap-0 p-0 overflow-hidden">
+  <header class="bg-card/0 border-b flex h-16 shrink-0 items-center gap-0 p-0 overflow-hidden sticky top-0 z-10">
     <!-- Year/Facility Pickers + Breadcrumbs (white area) -->
-    <nav class="flex flex-1 items-center gap-0.5 text-xs px-4">
+    <nav class="flex flex-1 items-center gap-0.5 text-xs px-4 bg-transparent">
       <!-- Sidebar Toggle -->
       <UiTooltip>
         <UiTooltipTrigger as-child>
@@ -246,7 +246,7 @@
       </UiSheet>
 
       <!-- Global Search -->
-      <UiButton
+      <!-- <UiButton
         variant="ghost"
         size="sm"
         class="text-muted-foreground hover:text-foreground border border-border/40 hover:bg-muted/40 bg-card gap-2 px-4 min-w-[200px]"
@@ -254,7 +254,7 @@
         <Icon name="lucide:search" class="h-4 w-4" />
         <span class="text-xs font-semibold">Search...</span>
         <UiKbd class="bg-muted/40 border-border/50 text-muted-foreground text-[10px]">⌘K</UiKbd>
-      </UiButton>
+      </UiButton> -->
 
       <!-- Notifications Button -->
       <UiDropdownMenu>

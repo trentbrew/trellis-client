@@ -1,7 +1,7 @@
 <script setup lang="ts">
   definePageMeta({
-    title: 'Pages',
-    icon: 'lucide:database',
+    title: 'Collections',
+    icon: 'lucide:layers',
     middleware: ['auth'],
     layout: 'fullscreen',
   })
@@ -46,27 +46,21 @@
 
 <template>
   <Page
-    variant="sidebar"
-    title="Pages"
+    variant="canvas"
+    title="Collections"
     subtitle="Workspace"
-    description="Create and manage databases"
-    icon="lucide:database"
-    :fill-height="true"
-    :left-sidebar="collections.length > 0">
-    <!-- Show sidebar only when collections exist -->
-    <template v-if="collections.length > 0" #sidebar>
-      <AppSidebar />
-    </template>
-
+    description="Create and manage collections"
+    icon="lucide:layers"
+    :fill-height="true">
     <div v-if="collections.length === 0" class="flex h-full items-center justify-center p-8">
       <div class="text-center max-w-md">
-        <Icon name="lucide:folder-code" class="text-muted-foreground mx-auto h-16 w-16 mb-4" />
-        <h3 class="text-lg font-semibold mb-2">No Pages Yet</h3>
-        <p class="text-muted-foreground text-sm mb-6">Create your first database to start tracking anything.</p>
+        <Icon name="lucide:layers" class="text-muted-foreground mx-auto h-16 w-16 mb-4" />
+        <h3 class="text-lg font-semibold mb-2">No Collections Yet</h3>
+        <p class="text-muted-foreground text-sm mb-6">Create your first collection to start tracking anything.</p>
         <div class="flex gap-2 justify-center mb-4">
           <UiButton @click="isCreating = true">
             <Icon name="lucide:plus" class="mr-2 h-4 w-4" />
-            New database
+            New Collection
           </UiButton>
           <UiButton variant="outline" @click="showImportDialog = true">
             <Icon name="lucide:upload" class="mr-2 h-4 w-4" />
@@ -78,14 +72,14 @@
 
     <div v-else class="flex h-full items-center justify-center p-8">
       <div class="text-center">
-        <Icon name="lucide:database" class="text-muted-foreground mx-auto mb-4 h-16 w-16" />
-        <h2 class="mb-2 text-2xl font-bold">Pages</h2>
-        <p class="text-muted-foreground mb-4">Select a database from the sidebar to get started</p>
+        <Icon name="lucide:layers" class="text-muted-foreground mx-auto mb-4 h-16 w-16" />
+        <h2 class="mb-2 text-2xl font-bold">Collections</h2>
+        <p class="text-muted-foreground mb-4">Select a collection from the sidebar to get started</p>
       </div>
     </div>
 
     <!-- Create Collection Modal -->
-    <CollectionCreateModal v-model:open="isCreating" />
+    <CollectionCreateDialog v-model:open="isCreating" />
 
     <!-- Import Collection Dialog -->
     <CollectionImportDialog v-model:open="showImportDialog" />

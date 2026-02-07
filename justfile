@@ -26,10 +26,10 @@ dev-all:
     @echo "  v2: http://localhost:5151"
     pnpm --filter @toolkit/ui dev & pnpm --filter @toolkit/sandbox dev
 
-# Start v2 dev server with auto-commit safety
-dev-v2-safe interval="60":
-    @echo "🚀 Starting v2 dev server with auto-commit ({{interval}}s)..."
-    pnpm --filter @toolkit/sandbox dev & ./.scripts/auto-commit.sh {{interval}}
+# Start v2 dev server
+dev-v2-safe:
+    @echo "🚀 Starting v2 dev server..."
+    pnpm --filter @toolkit/sandbox dev
 
 # Build all packages
 build:

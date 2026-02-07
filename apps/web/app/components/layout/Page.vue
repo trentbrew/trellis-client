@@ -1,11 +1,12 @@
 <script setup lang="ts">
   import AppEmptyState from '~/components/app/AppEmptyState.vue'
+  import FilterBuilder from '~/components/layout/FilterBuilder.vue'
   import type { BrowseState, BrowseVariant, BrowseViewMode } from '~/composables/useBrowse'
+  import type { AdvancedFilterState } from '~/composables/useAdvancedFilters'
 
   const NuxtLink = resolveComponent('NuxtLink')
   const pageShell = usePageShell()
   const slots = useSlots()
-
 
   interface PageTab {
     /** Tab label */
@@ -61,6 +62,7 @@
    * - 'station': Station overview with tabs only (no header), content handles its own layout
    * - 'filesystem': Full-height split layout for tree + viewer style pages
    * - 'folders': Split-view with folder tree navigation (left) and content preview (right)
+   * - 'calendar': Fullscreen calendar layout (no header/tabs/toolbar/search)
    */
   type PageVariant =
     | 'default'
@@ -72,6 +74,7 @@
     | 'station'
     | 'filesystem'
     | 'folders'
+    | 'calendar'
 
   interface PageProps {
     /** Page layout variant */
@@ -134,6 +137,8 @@
     transparent?: boolean
     /** Browse state from useBrowse (enables automatic toolbar controls) */
     browse?: BrowseState
+    /** Advanced filter state from useAdvancedFilters */
+    advancedFilters?: AdvancedFilterState
     /** Loading state for browse/list pages */
     isLoading?: boolean
     /** Error message for browse/list pages */
@@ -264,6 +269,8 @@
         return { showHeader: false, showTabs: false, contentPadding: 'p-0', maxWidth: '', showToolbar: false }
       case 'folders':
         return { showHeader: true, showTabs: false, contentPadding: 'p-0', maxWidth: '', showToolbar: false }
+      case 'calendar':
+        return { showHeader: false, showTabs: false, contentPadding: 'p-0', maxWidth: '', showToolbar: false }
       case 'station':
         return { showHeader: false, showTabs: true, contentPadding: 'p-0', maxWidth: '', showToolbar: false }
       default:
@@ -273,7 +280,10 @@
 
   const isFilesystem = computed(() => props.variant === 'filesystem')
   const isFolders = computed(() => props.variant === 'folders')
-  const effectiveFillHeight = computed(() => props.fillHeight || isFilesystem.value || isFolders.value)
+  const isCalendar = computed(() => props.variant === 'calendar')
+  const effectiveFillHeight = computed(
+    () => props.fillHeight || isFilesystem.value || isFolders.value || isCalendar.value,
+  )
 
   // Resolved display states (props override variant defaults)
   const effectiveSearchPlaceholder = computed(() => {
@@ -381,7 +391,7 @@
     const padding = variantConfig.value.contentPadding
     const maxWidth = variantConfig.value.maxWidth
     const fillClass = effectiveFillHeight.value ? 'min-h-0' : ''
-    const growthClass = isFilesystem.value ? 'flex-1' : ''
+    const growthClass = effectiveFillHeight.value ? 'flex-1' : ''
     return `${base} ${padding} ${maxWidth} ${fillClass} ${growthClass}`.trim()
   })
 
@@ -472,7 +482,6 @@
       })
     })
   }
-
 
   const isTabActive = (to: string): boolean => {
     if (to.startsWith('#')) {
@@ -661,7 +670,7 @@
 </script>
 
 <template>
-  <div class="flex h-full w-full bg-muted">
+  <div class="flex h-full w-full bg-transparent">
     <!-- Left Sidebar (optional) -->
     <aside
       v-if="leftSidebar && $slots.sidebar"
@@ -670,12 +679,12 @@
     </aside>
 
     <!-- Main Page Content -->
-    <div :class="finalContainerClass" class="flex-1 min-w-0">
+    <div :class="finalContainerClass" class="flex-1 min-w-0 h-full bg-card/0">
       <!-- Main content uses base background (darkest layer) -->
-      <div :class="[contentWrapperClass, transparent ? 'bg-transparent' : '']">
+      <div class="h-full" :class="[contentWrapperClass, transparent ? 'bg-transparent' : '']">
         <!-- Header Section (Non-sticky) -->
         <div v-if="showHeader || $slots.header" class="shrink-0 space-y-0 p-8 pb-0">
-          <div class="px-6 py-5 relative border-b border-border/60" :class="variantConfig.maxWidth">
+          <div class="px-3 py-5 relative border-b border-border/60" :class="variantConfig.maxWidth">
             <div class="relative flex items-stretch gap-6">
               <!-- Header Icon -->
               <div v-if="headerIcon || $slots.headerIcon" class="shrink-0">
@@ -739,10 +748,13 @@
                   <div
                     v-for="stat in stats"
                     :key="stat.label"
-                    class="flex flex-col justify-between gap-1 rounded-lg border border-border/60 bg-card/60 backdrop-blur-sm px-5 py-3 h-[92px] min-w-36">
+                    class="flex flex-col justify-between gap-1 rounded-lg border border-border/60 bg-card/10 backdrop-blur-sm px-5 py-3 h-[92px] min-w-36">
                     <div
                       class="flex items-center gap-1.5 text-[10px] font-medium text-muted-foreground uppercase tracking-wider">
-                      <Icon v-if="stat.icon" :name="stat.icon" :class="['size-3', stat.color || 'text-muted-foreground/70']" />
+                      <Icon
+                        v-if="stat.icon"
+                        :name="stat.icon"
+                        :class="['size-3', stat.color || 'text-muted-foreground/70']" />
                       {{ stat.label }}
                     </div>
                     <!-- Progress bar for health stat -->
@@ -766,11 +778,7 @@
                         <div
                           class="h-full rounded-full transition-all duration-500"
                           :class="[
-                            stat.progress >= 80
-                              ? 'bg-success'
-                              : stat.progress >= 50
-                                ? 'bg-warning'
-                                : 'bg-destructive',
+                            stat.progress >= 80 ? 'bg-success' : stat.progress >= 50 ? 'bg-warning' : 'bg-destructive',
                           ]"
                           :style="{ width: `${stat.progress}%` }" />
                       </div>
@@ -804,7 +812,7 @@
           ref="stickyRef"
           class="sticky -top-px z-50 transition-all duration-200 min-h-16 flex items-center justify-between"
           :class="[
-            isStuck ? 'bg-card/50 border-b border-border backdrop-blur-lg' : 'bg-transparent border-b-transparent',
+            isStuck ? 'bg-card/25 border-b border-border backdrop-blur-lg' : 'bg-transparent border-b-transparent',
             transparent ? 'bg-transparent backdrop-blur-none' : '',
           ]">
           <div class="px-0 w-full">
@@ -862,9 +870,11 @@
         <div
           v-if="variantConfig.showToolbar"
           ref="stickyRef"
-          class="sticky -top-px z-40 transition-all duration-200"
+          class="sticky -top-px z-40 transition-all duration-0"
           :class="[
-            isStuck ? 'bg-card/50 border-b border-border backdrop-blur-lg' : 'bg-transparent border-b-transparent',
+            isStuck
+              ? 'bg-background/60 border-b border-border backdrop-blur-lg'
+              : 'bg-transparent border-b-transparent',
             transparent ? 'bg-transparent backdrop-blur-none' : '',
           ]">
           <div class="mx-8 py-4">
@@ -872,7 +882,7 @@
               <!-- View Mode Switcher -->
               <div
                 v-if="showViewSwitcher"
-                class="flex items-center rounded-lg border border-border bg-card p-0.5 shrink-0">
+                class="flex items-center rounded-lg border border-border bg-card/25 p-0.5 shrink-0">
                 <slot name="viewSwitcher">
                   <button
                     v-for="option in effectiveViewModeOptions"
@@ -906,22 +916,54 @@
                     v-model="searchQuery"
                     type="text"
                     :placeholder="effectiveSearchPlaceholder"
-                    class="w-full rounded-lg border border-border bg-card py-2 pl-10 pr-4 text-sm placeholder:text-muted-foreground focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary" />
+                    class="w-full rounded-lg border border-border bg-card/0 py-2 pl-10 pr-4 text-sm placeholder:text-muted-foreground focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary" />
                   <input
                     v-else
                     type="text"
                     :placeholder="effectiveSearchPlaceholder"
-                    class="w-full rounded-lg border border-border bg-card py-2 pl-10 pr-4 text-sm placeholder:text-muted-foreground focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary" />
+                    class="w-full rounded-lg border border-border bg-card/0 py-2 pl-10 pr-4 text-sm placeholder:text-muted-foreground focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary" />
                 </slot>
               </div>
 
               <!-- Filters -->
               <div class="flex items-center gap-2 shrink-0">
                 <slot name="filters">
-                  <template v-if="browse?.filters">
+                  <!-- Advanced Filters (Notion-style) -->
+                  <UiPopover v-if="advancedFilters">
+                    <UiPopoverTrigger as-child>
+                      <UiButton
+                        variant="outline"
+                        size="sm"
+                        class="gap-1.5 bg-card max-w-[480px]"
+                        :class="advancedFilters.hasActiveFilters.value ? 'border-primary/50 text-primary' : ''">
+                        <Icon name="lucide:filter" class="h-4 w-4 shrink-0" />
+                        <template v-if="advancedFilters.hasActiveFilters.value">
+                          <span
+                            v-for="(pill, pIdx) in advancedFilters.activeFilterSummary.value.slice(0, 3)"
+                            :key="pIdx"
+                            class="inline-flex items-center gap-1 rounded-sm bg-primary/10 px-1.5 py-0.5 text-[11px] font-medium leading-none whitespace-nowrap">
+                            <span class="text-primary/70">{{ pill.fieldLabel }}</span>
+                            <span v-if="pill.displayValue" class="text-primary">{{ pill.displayValue }}</span>
+                          </span>
+                          <span
+                            v-if="advancedFilters.activeFilterSummary.value.length > 3"
+                            class="text-[11px] text-primary/60 whitespace-nowrap">
+                            +{{ advancedFilters.activeFilterSummary.value.length - 3 }}
+                          </span>
+                        </template>
+                        <span v-else>Filter</span>
+                      </UiButton>
+                    </UiPopoverTrigger>
+                    <UiPopoverContent align="start" :side-offset="8" class="w-auto p-3">
+                      <FilterBuilder :filters="advancedFilters" />
+                    </UiPopoverContent>
+                  </UiPopover>
+
+                  <!-- Simple dropdown filters (only shown when no advanced filters) -->
+                  <template v-if="browse?.filters?.length && !advancedFilters">
                     <UiDropdownMenu v-for="filter in browse.filters" :key="filter.id">
                       <UiDropdownMenuTrigger as-child>
-                        <UiButton variant="outline" size="sm" class="gap-2 bg-card">
+                        <UiButton variant="outline" size="sm" class="gap-2 bg-card/0">
                           <Icon v-if="filter.icon" :name="filter.icon" class="h-4 w-4" />
                           <span>{{ filter.label }}</span>
                           <Icon name="lucide:chevron-down" class="h-3 w-3 opacity-50" />
