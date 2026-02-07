@@ -331,6 +331,23 @@
     urgencyOpen.value = false
   }
 
+  // Format timestamps as relative time (e.g. "2m ago", "3h ago", "Jan 5")
+  const formatRelativeTime = (timestamp: number): string => {
+    if (!timestamp) return ''
+    const now = Date.now()
+    const diff = now - timestamp
+    const seconds = Math.floor(diff / 1000)
+    const minutes = Math.floor(seconds / 60)
+    const hours = Math.floor(minutes / 60)
+    const days = Math.floor(hours / 24)
+
+    if (seconds < 60) return 'Just now'
+    if (minutes < 60) return `${minutes}m ago`
+    if (hours < 24) return `${hours}h ago`
+    if (days < 7) return `${days}d ago`
+    return new Date(timestamp).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
+  }
+
   // Actions
   const closeDialog = () => {
     emit('update:open', false)
@@ -397,11 +414,13 @@
     :title-placeholder="`${currentType?.label || 'Item'} name...`"
     :can-navigate-prev="canNavigatePrev"
     :can-navigate-next="canNavigateNext"
+    :activity-open="activityOpen"
     :dialog-title="isCreateMode ? `New ${currentType?.label || 'Item'}` : editableItem.title || currentType?.label || 'Item'"
     :dialog-description="isCreateMode ? `Create a new ${currentType?.label?.toLowerCase()}.` : `View and edit ${currentType?.label?.toLowerCase()} details.`"
     @update:open="emit('update:open', $event)"
     @update:title="editableItem.title = $event"
     @update:description="editableItem.description = $event"
+    @update:activity-open="activityOpen = $event"
     @close="closeDialog"
     @navigate-prev="emit('navigatePrev')"
     @navigate-next="emit('navigateNext')">
@@ -837,7 +856,7 @@
       </div>
     </aside>
 
-    <div class="flex-1 flex flex-col min-w-0 overflow-y-auto" :class="isEditMode ? 'border-r border-border' : ''">
+    <div class="flex-1 flex flex-col min-w-0 overflow-y-auto">
       <div class="divide-y divide-border">
         <!-- Type-specific content panel (dynamically resolved) -->
         <EntityContentPanel :model-value="editableItem" :mode="mode" />
@@ -854,7 +873,8 @@
       </div>
     </div>
 
-    <aside v-if="isEditMode" class="w-64 shrink-0 overflow-y-auto bg-muted/5">
+    <!-- Activity sidebar (toggled via shell) -->
+    <template #activity>
       <div class="p-3 space-y-3">
         <p class="text-xs font-medium text-muted-foreground uppercase tracking-wide">Activity</p>
         <div class="space-y-2">
@@ -863,7 +883,10 @@
             <Icon name="lucide:send" class="h-3 w-3 mr-1.5" /> Comment
           </UiButton>
         </div>
-        <div class="space-y-3 pt-2 border-t border-border">
+        <div v-if="commentsLoading" class="flex items-center justify-center py-4">
+          <Icon name="lucide:loader-2" class="h-4 w-4 animate-spin text-muted-foreground" />
+        </div>
+        <div v-else class="space-y-3 pt-2 border-t border-border">
           <div v-for="activityItem in displayActivity" :key="activityItem.id" class="flex gap-2">
             <div class="w-6 h-6 rounded-full bg-muted flex items-center justify-center shrink-0 mt-0.5">
               <Icon v-if="activityItem.type === 'created'" name="lucide:plus" class="h-3 w-3 text-muted-foreground" />
@@ -873,16 +896,16 @@
             <div class="flex-1 min-w-0">
               <p v-if="activityItem.content" class="text-xs">{{ activityItem.content }}</p>
               <div class="flex items-center gap-1 text-[10px] text-muted-foreground">
-                <span class="font-medium">{{ activityItem.author }}</span>
+                <span class="font-medium">{{ activityItem.authorName }}</span>
                 <span v-if="activityItem.type === 'created'">created this {{ currentType?.label?.toLowerCase() || 'item' }}</span>
                 <span v-else-if="activityItem.type === 'comment'">commented</span>
-                <span class="ml-1">{{ activityItem.date }}</span>
+                <span class="ml-1">{{ formatRelativeTime(activityItem.createdAt) }}</span>
               </div>
             </div>
           </div>
         </div>
       </div>
-    </aside>
+    </template>
 
     <!-- Footer -->
     <template #footer-left>
