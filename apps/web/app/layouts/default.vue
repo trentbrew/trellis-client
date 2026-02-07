@@ -180,11 +180,11 @@
     <div class="flex flex-1 flex-col min-w-0 overflow-hidden">
       <div class="flex flex-1 min-h-0 overflow-hidden">
         <AppSidebar />
-        <div class="w-full h-full flex-1 overflow-y-auto ">
+        <div class="w-full h-full flex-1 overflow-y-auto page-transition-wrapper relative bg-transparent">
           <AppHeader />
           <main
           ref="pageEl"
-          class="page-transition-wrapper bg-transparent flex-1 p-0 relative"
+          class=" bg-transparent flex-1 p-0 relative page-transition-wrapper"
           aria-label="Main content">
           <slot />
           </main>
