@@ -1,9 +1,9 @@
 /**
  * Composable for managing user roles in Platform Sandbox
- * Hierarchy: guest < developer < facility_manager < admin < corporate_admin < super_admin
+ * Hierarchy: guest < member < admin < superadmin
  */
 
-export type UserRole = 'guest' | 'developer' | 'facility_manager' | 'admin' | 'corporate_admin' | 'super_admin'
+export type UserRole = 'guest' | 'member' | 'admin' | 'superadmin'
 
 export interface FacilityMember {
   id: string
@@ -70,35 +70,27 @@ export function useUserRole() {
   const userRole = computed<UserRole>(() => {
     if (!user.value) return 'guest'
     if (membership.value?.role) return membership.value.role as UserRole
+    const authRole = (user.value as any)?.role
+    if (authRole) return authRole as UserRole
     return 'guest'
   })
 
   const roleConfig = computed(() => {
     const configs: Record<UserRole, { label: string; color: string; icon: string }> = {
-      super_admin: {
+      superadmin: {
         label: 'Super Admin',
         color: 'bg-primary/10 text-primary border-primary/20',
         icon: 'lucide:shield',
-      },
-      corporate_admin: {
-        label: 'Corporate Admin',
-        color: 'bg-primary/10 text-primary border-primary/20',
-        icon: 'lucide:building-2',
       },
       admin: {
         label: 'Admin',
         color: 'bg-primary/10 text-primary border-primary/20',
         icon: 'lucide:shield-check',
       },
-      facility_manager: {
-        label: 'Facility Manager',
+      member: {
+        label: 'Member',
         color: 'bg-primary/10 text-primary border-primary/20',
-        icon: 'lucide:factory',
-      },
-      developer: {
-        label: 'Developer',
-        color: 'bg-primary/10 text-primary border-primary/20',
-        icon: 'lucide:code',
+        icon: 'lucide:user',
       },
       guest: {
         label: 'Guest',

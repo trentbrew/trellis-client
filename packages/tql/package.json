@@ -1,0 +1,56 @@
+{
+  "name": "@toolkit/tql",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "main": "./index.ts",
+  "types": "./index.ts",
+  "exports": {
+    ".": {
+      "types": "./index.ts",
+      "import": "./index.ts"
+    },
+    "./store": {
+      "types": "./store/eav-store.ts",
+      "import": "./store/eav-store.ts"
+    },
+    "./kernel": {
+      "types": "./kernel/trellis-kernel.ts",
+      "import": "./kernel/trellis-kernel.ts"
+    },
+    "./persist": {
+      "types": "./persist/backend.ts",
+      "import": "./persist/backend.ts"
+    },
+    "./persist/better-sqlite": {
+      "types": "./persist/better-sqlite-backend.ts",
+      "import": "./persist/better-sqlite-backend.ts"
+    },
+    "./query": {
+      "types": "./query/index.ts",
+      "import": "./query/index.ts"
+    },
+    "./graph": {
+      "types": "./graph/types.ts",
+      "import": "./graph/types.ts"
+    }
+  },
+  "files": [
+    "**/*.ts"
+  ],
+  "dependencies": {
+    "zod": "^4.2.1"
+  },
+  "peerDependencies": {
+    "better-sqlite3": ">=11.0.0"
+  },
+  "peerDependenciesMeta": {
+    "better-sqlite3": {
+      "optional": true
+    }
+  },
+  "devDependencies": {
+    "@types/better-sqlite3": "^7.6.13",
+    "typescript": "^5.9.2"
+  }
+}

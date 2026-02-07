@@ -6,6 +6,13 @@
  *
  * Each type shares a common base (CalendarItemBase) and extends
  * with type-specific properties via discriminated union on `type`.
+ *
+ * @deprecated This file is a backward-compatibility shim. The canonical
+ * type system is now `~/types/entity` which provides the two-axis Entity
+ * Class architecture (temporal / document / actor / container classes with
+ * type-specific panels). New code should import from `~/types/entity` and
+ * use the Entity class system (EntityBase + class mixins) instead.
+ * See also: `~/config/entityRegistry` for type → class → UI config mapping.
  */
 
 // ============================================================================
@@ -58,13 +65,20 @@ export interface Reminder {
 }
 
 export interface RecurrenceRule {
-  frequency: 'daily' | 'weekly' | 'monthly' | 'yearly' | 'weekdays' | 'custom'
+  frequency: 'daily' | 'weekly' | 'monthly' | 'quarterly' | 'yearly' | 'weekdays' | 'custom'
   interval?: number // e.g. every 2 weeks
   weekdays?: number[] // 0=Sun, 1=Mon, etc.
   endDate?: string // YYYY-MM-DD
   occurrences?: number // stop after N occurrences
 }
 
+// Re-export the canonical Reference types from entity.ts
+export type { FileReference, EntityReference, Reference, FileType } from '~/types/entity'
+export { isFileReference, isEntityReference } from '~/types/entity'
+
+/**
+ * @deprecated Use `FileReference` from `~/types/entity` instead.
+ */
 export interface Attachment {
   id: string
   name: string
@@ -78,6 +92,8 @@ export interface ChecklistItem {
   label: string
   completed: boolean
   order: number
+  parentId?: string | null
+  collapsed?: boolean
 }
 
 export interface Attendee {
@@ -130,7 +146,9 @@ export interface CalendarItemBase {
   folder?: string
   notes?: string
 
-  // Files & activity
+  // References (files + entity links)
+  references: import('~/types/entity').Reference[]
+  /** @deprecated Use `references` instead. */
   attachments: Attachment[]
   commentCount?: number
   fileCount?: number
@@ -226,6 +244,7 @@ export const createDefaultBase = (): Omit<CalendarItemBase, 'type'> => ({
   involved: [],
   folder: undefined,
   notes: undefined,
+  references: [],
   attachments: [],
   commentCount: 0,
   fileCount: 0,
@@ -240,7 +259,11 @@ export const createDefaultTask = (): TaskItem => ({
   ...createDefaultBase(),
   type: 'task',
   taskStatus: 'pending',
-  checklist: [],
+  checklist: [
+    { id: `cl-${Date.now()}-a`, label: '', completed: false, order: 0, parentId: null, collapsed: false },
+    { id: `cl-${Date.now()}-b`, label: '', completed: false, order: 1, parentId: null, collapsed: false },
+    { id: `cl-${Date.now()}-c`, label: '', completed: false, order: 2, parentId: null, collapsed: false },
+  ],
 })
 
 export const createDefaultEvent = (): EventItem => ({
@@ -317,41 +340,156 @@ export const isNote = (item: CalendarItem): item is NoteItem => item.type === 'n
 // ============================================================================
 
 export const PRIORITY_OPTIONS: { value: Priority; label: string; icon: string; color: string }[] = [
-  { value: 'critical', label: 'Critical', icon: 'lucide:alert-octagon', color: 'text-red-600 bg-red-100 dark:bg-red-900/30 dark:text-red-400' },
-  { value: 'high', label: 'High', icon: 'lucide:arrow-up', color: 'text-orange-600 bg-orange-100 dark:bg-orange-900/30 dark:text-orange-400' },
-  { value: 'medium', label: 'Medium', icon: 'lucide:minus', color: 'text-amber-600 bg-amber-100 dark:bg-amber-900/30 dark:text-amber-400' },
-  { value: 'low', label: 'Low', icon: 'lucide:arrow-down', color: 'text-blue-600 bg-blue-100 dark:bg-blue-900/30 dark:text-blue-400' },
+  {
+    value: 'critical',
+    label: 'Critical',
+    icon: 'lucide:alert-octagon',
+    color: 'text-red-600 bg-red-100 dark:bg-red-900/30 dark:text-red-400',
+  },
+  {
+    value: 'high',
+    label: 'High',
+    icon: 'lucide:arrow-up',
+    color: 'text-orange-600 bg-orange-100 dark:bg-orange-900/30 dark:text-orange-400',
+  },
+  {
+    value: 'medium',
+    label: 'Medium',
+    icon: 'lucide:minus',
+    color: 'text-amber-600 bg-amber-100 dark:bg-amber-900/30 dark:text-amber-400',
+  },
+  {
+    value: 'low',
+    label: 'Low',
+    icon: 'lucide:arrow-down',
+    color: 'text-blue-600 bg-blue-100 dark:bg-blue-900/30 dark:text-blue-400',
+  },
 ]
 
 export const URGENCY_OPTIONS: { value: Urgency; label: string; icon: string; color: string }[] = [
-  { value: 'urgent', label: 'Urgent', icon: 'lucide:zap', color: 'text-red-600 bg-red-100 dark:bg-red-900/30 dark:text-red-400' },
-  { value: 'not-urgent', label: 'Not Urgent', icon: 'lucide:clock', color: 'text-slate-600 bg-slate-100 dark:bg-slate-900/30 dark:text-slate-400' },
+  {
+    value: 'urgent',
+    label: 'Urgent',
+    icon: 'lucide:zap',
+    color: 'text-red-600 bg-red-100 dark:bg-red-900/30 dark:text-red-400',
+  },
+  {
+    value: 'not-urgent',
+    label: 'Not Urgent',
+    icon: 'lucide:clock',
+    color: 'text-slate-600 bg-slate-100 dark:bg-slate-900/30 dark:text-slate-400',
+  },
 ]
 
 export const TASK_STATUS_OPTIONS: { value: TaskStatus; label: string; icon: string; color: string }[] = [
-  { value: 'pending', label: 'Pending', icon: 'lucide:circle', color: 'text-slate-500 bg-slate-100 dark:bg-slate-800 dark:text-slate-400' },
-  { value: 'in-progress', label: 'In Progress', icon: 'lucide:loader', color: 'text-blue-600 bg-blue-100 dark:bg-blue-900/30 dark:text-blue-400' },
-  { value: 'on-track', label: 'On Track', icon: 'lucide:trending-up', color: 'text-emerald-600 bg-emerald-100 dark:bg-emerald-900/30 dark:text-emerald-400' },
-  { value: 'due-soon', label: 'Due Soon', icon: 'lucide:alarm-clock', color: 'text-amber-600 bg-amber-100 dark:bg-amber-900/30 dark:text-amber-400' },
-  { value: 'overdue', label: 'Overdue', icon: 'lucide:alert-triangle', color: 'text-red-600 bg-red-100 dark:bg-red-900/30 dark:text-red-400' },
-  { value: 'completed', label: 'Completed', icon: 'lucide:check-circle', color: 'text-emerald-600 bg-emerald-100 dark:bg-emerald-900/30 dark:text-emerald-400' },
+  {
+    value: 'pending',
+    label: 'Pending',
+    icon: 'lucide:circle',
+    color: 'text-slate-500 bg-slate-100 dark:bg-slate-800 dark:text-slate-400',
+  },
+  {
+    value: 'in-progress',
+    label: 'In Progress',
+    icon: 'lucide:loader',
+    color: 'text-blue-600 bg-blue-100 dark:bg-blue-900/30 dark:text-blue-400',
+  },
+  {
+    value: 'on-track',
+    label: 'On Track',
+    icon: 'lucide:trending-up',
+    color: 'text-emerald-600 bg-emerald-100 dark:bg-emerald-900/30 dark:text-emerald-400',
+  },
+  {
+    value: 'due-soon',
+    label: 'Due Soon',
+    icon: 'lucide:alarm-clock',
+    color: 'text-amber-600 bg-amber-100 dark:bg-amber-900/30 dark:text-amber-400',
+  },
+  {
+    value: 'overdue',
+    label: 'Overdue',
+    icon: 'lucide:alert-triangle',
+    color: 'text-red-600 bg-red-100 dark:bg-red-900/30 dark:text-red-400',
+  },
+  {
+    value: 'completed',
+    label: 'Completed',
+    icon: 'lucide:check-circle',
+    color: 'text-emerald-600 bg-emerald-100 dark:bg-emerald-900/30 dark:text-emerald-400',
+  },
 ]
 
 export const EVENT_TYPE_OPTIONS: { value: EventType; label: string; icon: string; color: string }[] = [
-  { value: 'meeting', label: 'Meeting', icon: 'lucide:users', color: 'text-blue-600 bg-blue-100 dark:bg-blue-900/30 dark:text-blue-400' },
-  { value: 'appointment', label: 'Appointment', icon: 'lucide:calendar-check', color: 'text-emerald-600 bg-emerald-100 dark:bg-emerald-900/30 dark:text-emerald-400' },
-  { value: 'training', label: 'Training', icon: 'lucide:graduation-cap', color: 'text-purple-600 bg-purple-100 dark:bg-purple-900/30 dark:text-purple-400' },
-  { value: 'deadline', label: 'Deadline', icon: 'lucide:alert-circle', color: 'text-red-600 bg-red-100 dark:bg-red-900/30 dark:text-red-400' },
-  { value: 'social', label: 'Social', icon: 'lucide:party-popper', color: 'text-pink-600 bg-pink-100 dark:bg-pink-900/30 dark:text-pink-400' },
-  { value: 'other', label: 'Other', icon: 'lucide:calendar', color: 'text-slate-600 bg-slate-100 dark:bg-slate-900/30 dark:text-slate-400' },
+  {
+    value: 'meeting',
+    label: 'Meeting',
+    icon: 'lucide:users',
+    color: 'text-blue-600 bg-blue-100 dark:bg-blue-900/30 dark:text-blue-400',
+  },
+  {
+    value: 'appointment',
+    label: 'Appointment',
+    icon: 'lucide:calendar-check',
+    color: 'text-emerald-600 bg-emerald-100 dark:bg-emerald-900/30 dark:text-emerald-400',
+  },
+  {
+    value: 'training',
+    label: 'Training',
+    icon: 'lucide:graduation-cap',
+    color: 'text-purple-600 bg-purple-100 dark:bg-purple-900/30 dark:text-purple-400',
+  },
+  {
+    value: 'deadline',
+    label: 'Deadline',
+    icon: 'lucide:alert-circle',
+    color: 'text-red-600 bg-red-100 dark:bg-red-900/30 dark:text-red-400',
+  },
+  {
+    value: 'social',
+    label: 'Social',
+    icon: 'lucide:party-popper',
+    color: 'text-pink-600 bg-pink-100 dark:bg-pink-900/30 dark:text-pink-400',
+  },
+  {
+    value: 'other',
+    label: 'Other',
+    icon: 'lucide:calendar',
+    color: 'text-slate-600 bg-slate-100 dark:bg-slate-900/30 dark:text-slate-400',
+  },
 ]
 
 export const TRIP_STATUS_OPTIONS: { value: TripStatus; label: string; icon: string; color: string }[] = [
-  { value: 'planning', label: 'Planning', icon: 'lucide:map', color: 'text-blue-600 bg-blue-100 dark:bg-blue-900/30 dark:text-blue-400' },
-  { value: 'booked', label: 'Booked', icon: 'lucide:ticket', color: 'text-emerald-600 bg-emerald-100 dark:bg-emerald-900/30 dark:text-emerald-400' },
-  { value: 'in-progress', label: 'In Progress', icon: 'lucide:plane', color: 'text-amber-600 bg-amber-100 dark:bg-amber-900/30 dark:text-amber-400' },
-  { value: 'completed', label: 'Completed', icon: 'lucide:check-circle', color: 'text-slate-600 bg-slate-100 dark:bg-slate-900/30 dark:text-slate-400' },
-  { value: 'cancelled', label: 'Cancelled', icon: 'lucide:x-circle', color: 'text-red-600 bg-red-100 dark:bg-red-900/30 dark:text-red-400' },
+  {
+    value: 'planning',
+    label: 'Planning',
+    icon: 'lucide:map',
+    color: 'text-blue-600 bg-blue-100 dark:bg-blue-900/30 dark:text-blue-400',
+  },
+  {
+    value: 'booked',
+    label: 'Booked',
+    icon: 'lucide:ticket',
+    color: 'text-emerald-600 bg-emerald-100 dark:bg-emerald-900/30 dark:text-emerald-400',
+  },
+  {
+    value: 'in-progress',
+    label: 'In Progress',
+    icon: 'lucide:plane',
+    color: 'text-amber-600 bg-amber-100 dark:bg-amber-900/30 dark:text-amber-400',
+  },
+  {
+    value: 'completed',
+    label: 'Completed',
+    icon: 'lucide:check-circle',
+    color: 'text-slate-600 bg-slate-100 dark:bg-slate-900/30 dark:text-slate-400',
+  },
+  {
+    value: 'cancelled',
+    label: 'Cancelled',
+    icon: 'lucide:x-circle',
+    color: 'text-red-600 bg-red-100 dark:bg-red-900/30 dark:text-red-400',
+  },
 ]
 
 export const TRANSPORT_OPTIONS: { value: TransportMode; label: string; icon: string }[] = [
@@ -363,10 +501,30 @@ export const TRANSPORT_OPTIONS: { value: TransportMode; label: string; icon: str
 ]
 
 export const PAYMENT_STATUS_OPTIONS: { value: PaymentStatus; label: string; icon: string; color: string }[] = [
-  { value: 'pending', label: 'Pending', icon: 'lucide:clock', color: 'text-amber-600 bg-amber-100 dark:bg-amber-900/30 dark:text-amber-400' },
-  { value: 'paid', label: 'Paid', icon: 'lucide:check-circle', color: 'text-emerald-600 bg-emerald-100 dark:bg-emerald-900/30 dark:text-emerald-400' },
-  { value: 'overdue', label: 'Overdue', icon: 'lucide:alert-triangle', color: 'text-red-600 bg-red-100 dark:bg-red-900/30 dark:text-red-400' },
-  { value: 'cancelled', label: 'Cancelled', icon: 'lucide:x-circle', color: 'text-slate-600 bg-slate-100 dark:bg-slate-900/30 dark:text-slate-400' },
+  {
+    value: 'pending',
+    label: 'Pending',
+    icon: 'lucide:clock',
+    color: 'text-amber-600 bg-amber-100 dark:bg-amber-900/30 dark:text-amber-400',
+  },
+  {
+    value: 'paid',
+    label: 'Paid',
+    icon: 'lucide:check-circle',
+    color: 'text-emerald-600 bg-emerald-100 dark:bg-emerald-900/30 dark:text-emerald-400',
+  },
+  {
+    value: 'overdue',
+    label: 'Overdue',
+    icon: 'lucide:alert-triangle',
+    color: 'text-red-600 bg-red-100 dark:bg-red-900/30 dark:text-red-400',
+  },
+  {
+    value: 'cancelled',
+    label: 'Cancelled',
+    icon: 'lucide:x-circle',
+    color: 'text-slate-600 bg-slate-100 dark:bg-slate-900/30 dark:text-slate-400',
+  },
 ]
 
 export const CATEGORY_OPTIONS: { value: string; label: string; icon: string }[] = [

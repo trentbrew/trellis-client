@@ -132,7 +132,7 @@
   let resizeTimeout: NodeJS.Timeout | null = null
 
   watch(isResizing, (val) => {
-    console.log('AppHeader: isResizing changed to', val)
+    // console.log('AppHeader: isResizing changed to', val)
     if (!val) {
       // When resizing ends, keep transitions disabled for 1000ms
       transitionsDisabled.value = true
@@ -152,7 +152,7 @@
   })
 
   const startResize = (e: MouseEvent) => {
-    console.log('Sidebar resize started')
+    // console.log('Sidebar resize started')
     isResizing.value = true
     if (import.meta.client) {
       document.body.classList.add('is-resizing')
@@ -352,7 +352,7 @@
 <template>
   <!-- Sidebar: Content frame (matches page header) -->
   <aside
-    class="border-sidebar-border bg-sidebar text-sidebar-foreground hidden flex-col border-r px-0 pb-0 lg:flex relative"
+    class="border-sidebar-border bg-transparent text-sidebar-foreground hidden flex-col border-r px-0 pb-0 lg:flex relative"
     :style="{
       width: sidebarCollapse.isCollapsed.value ? '0px' : `${sidebarWidth}px`,
       transition: transitionsDisabled ? 'none' : 'width 0.3s ease',
@@ -373,17 +373,32 @@
       @mousedown="startResize" />
 
     <!-- Builder Controls (Edit Mode) -->
-    <div v-if="showBuilderUI && canCreatePages" class="px-4 py-2 border-b border-sidebar-border/10">
+    <div v-if="showBuilderUI && canCreatePages" class="px-4 py-0 border-b border-sidebar-border/10">
       <UiButton
         variant="ghost"
         size="sm"
-        class="w-full text-sidebar-foreground/70 hover:text-sidebar-foreground hover:bg-amber-500/10 border border-dashed border-amber-500/30 justify-start gap-2 px-3"
+        class="w-full text-sidebar-foreground/70 hover:text-sidebar-foreground hover:bg-amber-500/10 border border-dashed border-amber-500/30 justify-start gap-2 px-3 bg-red-500"
         @click="handleCreatePage">
         <Icon name="lucide:plus" class="h-4 w-4 text-amber-500" />
         <span class="text-xs font-medium">New Page</span>
         <span class="ml-auto text-[10px] text-amber-500/70 bg-amber-500/10 px-1.5 py-0.5 rounded">Edit Mode</span>
       </UiButton>
     </div>
+
+    <!-- Global Search Button -->
+      <UiButton
+        variant="ghost"
+        size="sm"
+        class="w-full text-sidebar-foreground/50 hover:text-sidebar-foreground hover:bg-white/10 rounded-none justify-between group px-6 border-b h-16 bg-transparent"
+        @click.prevent="useCommandDialog().open()">
+        <div class="flex items-center gap-2 w-full">
+          <Icon name="lucide:search" class="h-4 w-4 transition-transform group-hover:scale-110" />
+          <span class="text-xs font-medium opacity-70 group-hover:opacity-100 transition-opacity">
+            Find anything...
+          </span>
+        </div>
+        <UiKbd class="bg-white/5 border-sidebar-border/20 text-sidebar-foreground/40 text-[10px]">⌘K</UiKbd>
+      </UiButton>
 
     <!-- Sidebar section items animate per rail route (client-only to avoid hydration mismatches from localStorage/pins) -->
     <ClientOnly>
@@ -467,7 +482,7 @@
                         <!-- Vertical indentation line -->
                         <div
                           id="border"
-                          class="absolute ml-[19px] top-0 bottom-[18px] w-px bg-sidebar-border/15 translate-y-2" />
+                          class="absolute ml-[18px] top-0 bottom-[18px] w-px bg-sidebar-border/15 translate-y-2" />
                         <motion.ul
                           class="space-y-1 text-sm"
                           :transition="transitionsDisabled ? { duration: 0 } : undefined"
@@ -488,10 +503,10 @@
                               <AppNavLink
                                 v-if="item?.path"
                                 :to="item.path"
-                                class="text-sidebar-foreground/70 hover:bg-white/10 hover:text-sidebar-foreground flex items-center gap-3 rounded-lg px-3 py-2 transition ml-8"
+                                class="text-sidebar-foreground hover:bg-foreground/5 hover:text-sidebar-foreground flex items-center gap-3 rounded-lg px-3 py-2 transition ml-8"
                                 :class="[
                                   {
-                                    'bg-white/6 text-sidebar-foreground': routes.isRouteExactlyActive(item.path),
+                                    'bg-foreground/5 text-sidebar-foreground': routes.isRouteExactlyActive(item.path),
                                   },
                                   isCollectionItem(item.path) ? 'pr-16' : 'pr-8',
                                 ]">
@@ -1337,21 +1352,20 @@
   .elbow-connector::before {
     content: '';
     position: absolute;
-    left: 19px;
+    left: 18px;
     top: 50%;
     height: 1rem;
     width: 0.875rem;
     transform: translateY(-1rem);
-    border-left: 1px solid;
-    border-bottom: 1px solid;
+    border-left: 1px solid var(--sidebar-border);
+    border-bottom: 1px solid var(--sidebar-border);
     border-bottom-left-radius: 0.5rem;
-    border-color: var(--color-rail-border);
-    backdrop-filter: blur(10px);
+    border-color: var(--sidebar-border);
   }
 
   #border {
     transform: translateY(-1rem) !important;
-    background: var(--color-rail-border);
+    background: var(--sidebar-border);
   }
 
   /* Disable all transitions on sidebar children during resize and for 1000ms after */

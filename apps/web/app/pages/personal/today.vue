@@ -118,7 +118,10 @@
 
   const formatRelDate = (d: string) => {
     try {
-      const due = startOfDay(new Date(d + 'T00:00:00'))
+      if (!d) return 'Unscheduled'
+      const parsed = new Date(d + 'T00:00:00')
+      if (Number.isNaN(parsed.getTime())) return 'Unscheduled'
+      const due = startOfDay(parsed)
       const today = startOfDay(new Date())
       const diff = Math.floor((due.getTime() - today.getTime()) / 86400000)
       if (diff === 0) return 'Today'

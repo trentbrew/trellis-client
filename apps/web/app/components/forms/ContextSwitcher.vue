@@ -6,7 +6,7 @@
   const { roleConfig, userRole } = useUserRole()
   const { workspace } = useContext()
 
-  const canSwitchApp = computed(() => userRole.value === 'super_admin')
+  const canSwitchApp = computed(() => userRole.value === 'superadmin')
   const { currentOrganization: currentWorkspace } = useOrganizations()
   const route = useRoute()
   const router = useRouter()

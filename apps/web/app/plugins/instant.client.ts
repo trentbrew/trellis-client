@@ -13,7 +13,7 @@ import { createLocalInstantDB } from '~/lib/instant-local'
 import schema from '~~/instant.schema'
 import { getPersonalSeedItems } from '~/lib/personalSeedData'
 
-export default defineNuxtPlugin(() => {
+export default defineNuxtPlugin(async () => {
   const db = createLocalInstantDB({
     storageKey: 'platform-sandbox',
     schema,
@@ -26,12 +26,12 @@ export default defineNuxtPlugin(() => {
   // localStorage so this only runs once.
 
   if (import.meta.client) {
-    const FACILITY_ID = 'platform-sandbox-facility-1'
-    const MEMBER_ID = 'member-1'
+    const FACILITY_ID = 'facility_auburn'
 
     const facilities = db._store.getAll('facilities')
-    if (facilities.length === 0) {
-      void db.transact([
+    const existingFacility = facilities.find((f: any) => f.id === FACILITY_ID)
+    if (!existingFacility) {
+      await db.transact([
         db.tx.facilities[FACILITY_ID].create({
           facilityID: FACILITY_ID,
           facility: 'Auburn',
@@ -46,18 +46,68 @@ export default defineNuxtPlugin(() => {
       ])
     }
 
-    const members = db._store.getAll('facilityMembers')
-    if (members.length === 0) {
-      const user = db.demoUsers.admin
-      void db.transact([
-        db.tx.facilityMembers[MEMBER_ID].create({
-          facilityId: FACILITY_ID,
-          organizationId: 'org_northwind',
-          userId: user.id,
-          email: user.email,
-          name: user.name,
-          role: user.role,
+    const authUser: any = await db.getAuth()
+    if (authUser?.id) {
+      const members = db._store.getAll('facilityMembers')
+      const existingMember = members.find((m: any) => m.userId === authUser.id && m.facilityId === FACILITY_ID)
+      const memberId = existingMember?.id || `member-${FACILITY_ID}-${authUser.id}`
+      const role = authUser.role || 'guest'
+
+      if (!existingMember) {
+        await db.transact([
+          db.tx.facilityMembers[memberId].create({
+            facilityId: FACILITY_ID,
+            organizationId: 'org_northwind',
+            userId: authUser.id,
+            email: authUser.email,
+            name: authUser.name,
+            role,
+            status: 'active',
+          }),
+        ])
+      } else if (existingMember.role !== role) {
+        await db.transact([
+          db.tx.facilityMembers[existingMember.id].update({
+            role,
+          }),
+        ])
+      }
+    }
+
+    // ── Seed default organization + application ─────────────────────
+    // Matches the demo org in useOrganizations.ts so the InstantDB data
+    // layer (useInstantData) has a valid org/app for scoping collections.
+    const ORG_ID = 'org_turtle_labs'
+    const APP_ID = 'app_turtle_labs_workspace'
+
+    const existingOrgs = db._store.getAll('organizations')
+    if (!existingOrgs.find((o: any) => o.id === ORG_ID)) {
+      const now = Date.now()
+      await db.transact([
+        db.tx.organizations[ORG_ID].create({
+          name: 'Turtle Labs LLC',
+          slug: 'turtle-labs',
+          description: 'Design & development studio.',
           status: 'active',
+          createdAt: now,
+          updatedAt: now,
+        }),
+      ])
+    }
+
+    const existingApps = db._store.getAll('applications')
+    if (!existingApps.find((a: any) => a.id === APP_ID)) {
+      const now = Date.now()
+      await db.transact([
+        db.tx.applications[APP_ID].create({
+          ownerId: 'user-demo-admin',
+          orgId: ORG_ID,
+          name: 'Workspace',
+          slug: 'workspace',
+          icon: 'lucide:layout-grid',
+          color: '#6366f1',
+          createdAt: now,
+          updatedAt: now,
         }),
       ])
     }
@@ -75,7 +125,7 @@ export default defineNuxtPlugin(() => {
           updatedAt: Date.now(),
         })
       })
-      void db.transact(chunks)
+      await db.transact(chunks)
     }
   }
 
