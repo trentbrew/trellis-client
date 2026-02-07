@@ -700,6 +700,14 @@ export class TrellisKernel {
     type: string,
     ctx: MiddlewareContext = {},
   ): Promise<void> {
+    // Idempotent: remove any pre-existing facts for this entity to prevent
+    // duplicate fact accumulation if createNode is called more than once
+    // with the same entityId.
+    const existing = this.store.getFactsByEntity(entityId);
+    if (existing.length > 0) {
+      await this._mutate('deleteFacts', { facts: existing }, ctx);
+    }
+
     // Use jsonEntityFactsWithExpr if @expr evaluation is enabled
     const facts = this.enableExprEvaluation
       ? jsonEntityFactsWithExpr(entityId, data, type)

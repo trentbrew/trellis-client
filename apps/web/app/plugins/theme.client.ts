@@ -1,47 +1,29 @@
 import { watch } from 'vue'
 import { useThemeStore } from '~/stores/theme'
-import { applyThemePreset } from '~/utils/theme'
 
 /**
- * Client-side plugin to initialize theme on app startup
+ * Client-side plugin to initialize theme on app startup.
+ * The store's setPreset() already calls applyThemePreset(), so we only
+ * need to re-apply when colorMode changes (light ↔ dark toggle).
  */
 export default defineNuxtPlugin(() => {
   const themeStore = useThemeStore()
   const colorMode = useColorMode()
 
-  if (import.meta.client) {
-    const storedPreference = localStorage.getItem('platform-sandbox-color-mode')
-    if (!storedPreference) {
-      colorMode.preference = 'dark'
-    }
+  // Default to dark if no stored preference
+  if (!localStorage.getItem('platform-sandbox-color-mode')) {
+    colorMode.preference = 'dark'
   }
 
-  // Initialize theme from localStorage
+  // Initialize theme (loads saved preset + applies it)
   themeStore.initTheme()
 
-  // Watch for theme changes and reapply
-  watch(
-    () => themeStore.currentPresetId,
-    (presetId) => {
-      if (presetId) {
-        const preset = themeStore.allPresets[presetId]
-        if (preset) {
-          applyThemePreset(preset, colorMode.value as 'light' | 'dark')
-        }
-      }
-    },
-    { immediate: true },
-  )
-
-  // Watch for color mode changes and reapply theme
+  // Re-apply current preset when color mode toggles
   watch(
     () => colorMode.value,
     (mode) => {
       if (themeStore.currentPresetId) {
-        const preset = themeStore.allPresets[themeStore.currentPresetId]
-        if (preset) {
-          applyThemePreset(preset, mode as 'light' | 'dark')
-        }
+        themeStore.setPreset(themeStore.currentPresetId, mode as 'light' | 'dark')
       }
     },
   )
