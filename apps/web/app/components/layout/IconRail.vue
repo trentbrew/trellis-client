@@ -13,7 +13,7 @@
 <template>
   <!-- Navigation Rail: Always visible with primary navigation routes -->
   <nav
-    class="flex w-16 flex-col items-center border-r px-2 py-0 pb-2 bg-black/15"
+    class="flex w-16 flex-col items-center border-r px-2 py-0 pb-2 bg-black/20"
     aria-label="Navigation rail">
     <!-- Logo / Home -->
     <div class="flex h-16 w-16 items-center justify-center shrink-0 border-b">
