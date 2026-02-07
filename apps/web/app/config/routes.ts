@@ -225,9 +225,9 @@ const docsSidebarSections = Object.entries(docCategories).map(([key, cat]) => ({
 
 /**
  * User roles for permission checking
- * Hierarchy: guest < developer < facility_manager < admin < corporate_admin < super_admin
+ * Hierarchy: guest < member < admin < superadmin
  */
-export type UserRole = 'guest' | 'developer' | 'facility_manager' | 'admin' | 'corporate_admin' | 'super_admin'
+export type UserRole = 'guest' | 'member' | 'admin' | 'superadmin'
 
 /**
  * Permission levels for routes
@@ -295,6 +295,9 @@ export const ROUTE_PATHS = {
     tasks: '/personal/tasks',
     calendar: '/personal/calendar',
     notes: '/personal/notes',
+    projects: '/personal/projects',
+    people: '/personal/people',
+    files: '/personal/files',
   },
   app: {
     root: '/app',
@@ -341,6 +344,14 @@ export const ROUTE_PATHS = {
       selfAssessments: '/app/reports/self-assessments',
     },
   },
+  graph: {
+    root: '/graph',
+    dashboard: '/graph/dashboard',
+    explorer: '/graph/explorer',
+    query: '/graph/query',
+    ontology: '/graph/ontology',
+    activity: '/graph/activity',
+  },
   neu: '/neu',
   admin: {
     root: '/admin',
@@ -370,6 +381,10 @@ export const ROUTE_PATHS = {
     appearance: '/settings/appearance',
     theme: '/settings/theme',
     notifications: '/settings/notifications',
+    pages: '/settings/pages',
+    integrations: '/settings/integrations',
+    marketplace: '/settings/marketplace',
+    branding: '/settings/branding',
   },
   help: '/help',
 } as const
@@ -529,7 +544,7 @@ export function parseFullPath(path: string): ParsedPath {
   const segments = path.split('/').filter(Boolean)
 
   // Check for [workspace]/[app]/... pattern (2+ segments where first is not a known top-level route)
-  const knownTopLevelRoutes = ['docs', 'settings', 'admin', 'auth', 'collections', 'workflows', 'help', 'personal', 'welcome', 'onboarding', 'notifications', 'permits', 'types', 'apptool', 'playground', 'components', 'embed', 'archive', 'members', 'learn']
+  const knownTopLevelRoutes = ['docs', 'settings', 'admin', 'auth', 'collections', 'workflows', 'help', 'personal', 'welcome', 'onboarding', 'notifications', 'permits', 'types', 'apptool', 'playground', 'components', 'embed', 'archive', 'members', 'learn', 'graph']
 
   if (segments.length >= 2 && segments[0] && !knownTopLevelRoutes.includes(segments[0])) {
     // It's a workspace/app route: /[workspace]/[app]/path...

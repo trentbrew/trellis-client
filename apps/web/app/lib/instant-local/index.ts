@@ -56,21 +56,21 @@ export function createLocalInstantDB(options: LocalInstantDBOptions = {}) {
       email: 'superadmin@platform-sandbox.local',
       name: 'Super Admin',
       avatar: null,
-      role: 'super_admin' as const,
+      role: 'superadmin' as const,
     },
     admin: {
-      id: 'user-admin',
+      id: 'user-demo-admin',
       email: 'admin@platform-sandbox.local',
       name: 'Admin User',
       avatar: null,
       role: 'admin' as const,
     },
-    manager: {
-      id: 'user-manager',
-      email: 'manager@platform-sandbox.local',
-      name: 'Facility Manager',
+    member: {
+      id: 'user-member',
+      email: 'member@platform-sandbox.local',
+      name: 'Team Member',
       avatar: null,
-      role: 'facility_manager' as const,
+      role: 'member' as const,
     },
     guest: {
       id: 'user-guest',
@@ -116,6 +116,11 @@ export function createLocalInstantDB(options: LocalInstantDBOptions = {}) {
     } catch {
       /* storage unavailable */
     }
+  }
+
+  if (currentUser?.id === demoUsers.admin.id && currentUser?.role !== demoUsers.admin.role) {
+    currentUser = { ...currentUser, role: demoUsers.admin.role }
+    persistAuth()
   }
 
   // ── Query helpers ───────────────────────────────────────────────────

@@ -87,9 +87,6 @@
       "description": "Operational compliance tracking for teams and facilities.",
       "version": "2.0.0",
       "devPort": 4141,
-      "defaultTheme": {
-        "@id": "theme:platform-brand"
-      },
       "defaultProjection": {
         "@id": "projection:table"
       },
@@ -1489,28 +1486,38 @@
       "@id": "route:collections",
       "@type": "app:Route",
       "routePath": "/collections",
-      "label": "Pages",
-      "icon": "lucide:database",
-      "tint": "text-blue-300",
-      "inRail": false,
+      "label": "Collections",
+      "icon": "lucide:layers",
+      "tint": "text-violet-300",
+      "inRail": true,
       "railPosition": "primary",
-      "order": -3,
+      "order": -1,
       "requiresAuth": true,
       "permissions": {
         "minRole": "guest",
         "permission": "read"
       },
       "meta": {
-        "title": "Pages",
-        "description": "Create and manage databases",
+        "title": "Collections",
+        "description": "Custom collections and user-generated ontologies",
         "subtitle": "Workspace"
       },
       "searchKeywords": [
         "collections",
-        "pages",
-        "database",
-        "tables",
+        "ontologies",
+        "schemas",
         "workspace"
+      ],
+      "sidebarSections": [
+        {
+          "label": "COLLECTIONS",
+          "key": "collections-list",
+          "icon": "lucide:layers",
+          "items": "unpinned",
+          "collapsible": false,
+          "editable": true,
+          "order": 0
+        }
       ]
     },
     {
@@ -1570,24 +1577,110 @@
       ]
     },
     {
+      "@id": "route:graph",
+      "@type": "app:Route",
+      "routePath": "/graph",
+      "label": "Graph",
+      "icon": "lucide:network",
+      "tint": "text-cyan-300",
+      "inRail": true,
+      "railPosition": "primary",
+      "order": 1,
+      "requiresAuth": false,
+      "permissions": {
+        "minRole": "guest"
+      },
+      "meta": {
+        "title": "Graph",
+        "description": "TQL graph engine dashboard, explorer, and developer tools.",
+        "subtitle": "Developer"
+      },
+      "sidebarSections": [
+        {
+          "label": "OVERVIEW",
+          "key": "graph-overview",
+          "icon": "lucide:layout-dashboard",
+          "items": [
+            {
+              "path": "/graph/dashboard",
+              "label": "Dashboard",
+              "icon": "lucide:gauge",
+              "tint": "text-cyan-300"
+            }
+          ],
+          "collapsible": false,
+          "order": 0
+        },
+        {
+          "label": "TOOLS",
+          "key": "graph-tools",
+          "icon": "lucide:wrench",
+          "items": [
+            {
+              "path": "/graph/explorer",
+              "label": "Explorer",
+              "icon": "lucide:search",
+              "tint": "text-emerald-300"
+            },
+            {
+              "path": "/graph/query",
+              "label": "Query Console",
+              "icon": "lucide:terminal",
+              "tint": "text-violet-300"
+            },
+            {
+              "path": "/graph/ontology",
+              "label": "Ontology",
+              "icon": "lucide:blocks",
+              "tint": "text-amber-300"
+            }
+          ],
+          "collapsible": false,
+          "order": 1
+        },
+        {
+          "label": "SYSTEM",
+          "key": "graph-system",
+          "icon": "lucide:activity",
+          "items": [
+            {
+              "path": "/graph/activity",
+              "label": "Activity Log",
+              "icon": "lucide:scroll-text",
+              "tint": "text-gray-400"
+            }
+          ],
+          "collapsible": false,
+          "order": 2
+        }
+      ],
+      "children": [
+        { "@id": "route:graph-dashboard" },
+        { "@id": "route:graph-explorer" },
+        { "@id": "route:graph-query" },
+        { "@id": "route:graph-ontology" },
+        { "@id": "route:graph-activity" }
+      ]
+    },
+    {
       "@id": "route:personal",
       "@type": "app:Route",
       "routePath": "/personal",
-      "label": "Personal",
-      "icon": "lucide:user",
+      "label": "Home",
+      "icon": "lucide:home",
       "tint": "text-emerald-300",
       "inRail": true,
       "railPosition": "primary",
-      "order": 0,
+      "order": -2,
       "requiresAuth": true,
       "permissions": {
         "minRole": "guest",
         "permission": "read"
       },
       "meta": {
-        "title": "Personal",
-        "description": "Your personal tasks and calendar.",
-        "subtitle": "Personal"
+        "title": "Home",
+        "description": "Your personal workspace — tasks, calendar, notes, and more.",
+        "subtitle": "Home"
       },
       "sidebarSections": [
         {
@@ -1718,6 +1811,69 @@
                 "ideas",
                 "bookmarks"
               ]
+            },
+            {
+              "path": "/personal/projects",
+              "label": "Projects",
+              "icon": "lucide:folder-kanban",
+              "tint": "text-orange-300",
+              "permissions": {
+                "minRole": "guest",
+                "permission": "read"
+              },
+              "meta": {
+                "title": "Projects",
+                "description": "Your projects and initiatives.",
+                "subtitle": "Personal"
+              },
+              "searchKeywords": [
+                "projects",
+                "initiatives",
+                "goals",
+                "milestones"
+              ]
+            },
+            {
+              "path": "/personal/people",
+              "label": "People",
+              "icon": "lucide:users",
+              "tint": "text-pink-300",
+              "permissions": {
+                "minRole": "guest",
+                "permission": "read"
+              },
+              "meta": {
+                "title": "People",
+                "description": "Contacts and collaborators.",
+                "subtitle": "Personal"
+              },
+              "searchKeywords": [
+                "people",
+                "contacts",
+                "collaborators",
+                "team"
+              ]
+            },
+            {
+              "path": "/personal/files",
+              "label": "Files",
+              "icon": "lucide:paperclip",
+              "tint": "text-cyan-300",
+              "permissions": {
+                "minRole": "guest",
+                "permission": "read"
+              },
+              "meta": {
+                "title": "Files",
+                "description": "Attached files and documents.",
+                "subtitle": "Personal"
+              },
+              "searchKeywords": [
+                "files",
+                "documents",
+                "attachments",
+                "uploads"
+              ]
             }
           ],
           "collapsible": false,
@@ -1739,6 +1895,15 @@
         },
         {
           "@id": "route:personal-notes"
+        },
+        {
+          "@id": "route:personal-projects"
+        },
+        {
+          "@id": "route:personal-people"
+        },
+        {
+          "@id": "route:personal-files"
         }
       ]
     },
@@ -1861,6 +2026,78 @@
       "meta": {
         "title": "Notes",
         "description": "Ideas, journal entries, and bookmarks.",
+        "subtitle": "Personal"
+      }
+    },
+    {
+      "@id": "route:personal-projects",
+      "@type": "app:Route",
+      "routePath": "/personal/projects",
+      "label": "Projects",
+      "icon": "lucide:folder-kanban",
+      "tint": "text-orange-300",
+      "order": 3,
+      "permissions": {
+        "minRole": "guest",
+        "permission": "read"
+      },
+      "searchKeywords": [
+        "projects",
+        "initiatives",
+        "goals",
+        "milestones"
+      ],
+      "meta": {
+        "title": "Projects",
+        "description": "Your projects and initiatives.",
+        "subtitle": "Personal"
+      }
+    },
+    {
+      "@id": "route:personal-people",
+      "@type": "app:Route",
+      "routePath": "/personal/people",
+      "label": "People",
+      "icon": "lucide:users",
+      "tint": "text-pink-300",
+      "order": 4,
+      "permissions": {
+        "minRole": "guest",
+        "permission": "read"
+      },
+      "searchKeywords": [
+        "people",
+        "contacts",
+        "collaborators",
+        "team"
+      ],
+      "meta": {
+        "title": "People",
+        "description": "Contacts and collaborators.",
+        "subtitle": "Personal"
+      }
+    },
+    {
+      "@id": "route:personal-files",
+      "@type": "app:Route",
+      "routePath": "/personal/files",
+      "label": "Files",
+      "icon": "lucide:paperclip",
+      "tint": "text-cyan-300",
+      "order": 5,
+      "permissions": {
+        "minRole": "guest",
+        "permission": "read"
+      },
+      "searchKeywords": [
+        "files",
+        "documents",
+        "attachments",
+        "uploads"
+      ],
+      "meta": {
+        "title": "Files",
+        "description": "Attached files and documents.",
         "subtitle": "Personal"
       }
     },
@@ -2567,26 +2804,7 @@
         "showBackButton": true
       }
     },
-    {
-      "@id": "route:neu",
-      "@type": "app:Route",
-      "routePath": "/neu",
-      "label": "NEU Training",
-      "icon": "lucide:graduation-cap",
-      "tint": "text-indigo-300",
-      "inRail": true,
-      "railPosition": "primary",
-      "order": 5,
-      "requiresAuth": true,
-      "permissions": {
-        "minRole": "corporate_admin"
-      },
-      "meta": {
-        "title": "Nucor Environmental University",
-        "description": "Manage training courses, profiles, and assignments.",
-        "subtitle": "Training"
-      }
-    },
+
     {
       "@id": "route:apptool",
       "@type": "app:Route",
@@ -2821,366 +3039,11 @@
       }
     },
     {
-      "@id": "route:admin",
-      "@type": "app:Route",
-      "routePath": "/admin",
-      "label": "Administration",
-      "icon": "lucide:shield-check",
-      "tint": "text-rose-400",
-      "inRail": true,
-      "railPosition": "secondary",
-      "order": 9,
-      "requiresAuth": true,
-      "permissions": {
-        "minRole": "corporate_admin"
-      },
-      "meta": {
-        "title": "Administration",
-        "description": "Organization-level administration and management.",
-        "subtitle": "Admin"
-      },
-      "sidebarSections": [
-        {
-          "label": "ORGANIZATION",
-          "key": "admin-org",
-          "items": [
-            {
-              "path": "/admin/overview",
-              "label": "Org Overview",
-              "icon": "lucide:layout-dashboard"
-            },
-            {
-              "path": "/admin/settings",
-              "label": "Org Settings",
-              "icon": "lucide:building-2"
-            },
-            {
-              "path": "/admin/users",
-              "label": "User Management",
-              "icon": "lucide:users"
-            },
-            {
-              "path": "/admin/roles",
-              "label": "Roles & Permissions",
-              "icon": "lucide:shield-half"
-            }
-          ],
-          "collapsible": true,
-          "order": 0
-        },
-        {
-          "label": "SYSTEM",
-          "key": "admin-system",
-          "items": [
-            {
-              "path": "/admin/audit-logs",
-              "label": "Audit Logs",
-              "icon": "lucide:scroll-text"
-            },
-            {
-              "path": "/admin/integrations",
-              "label": "Integrations",
-              "icon": "lucide:plug-zap"
-            }
-          ],
-          "collapsible": true,
-          "order": 1
-        }
-      ],
-      "children": [
-        {
-          "@id": "route:admin-overview"
-        },
-        {
-          "@id": "route:admin-settings"
-        },
-        {
-          "@id": "route:admin-users"
-        },
-        {
-          "@id": "route:admin-roles"
-        },
-        {
-          "@id": "route:admin-audit-logs"
-        },
-        {
-          "@id": "route:admin-integrations"
-        }
-      ]
-    },
-    {
-      "@id": "route:admin-overview",
-      "@type": "app:Route",
-      "routePath": "/admin/overview",
-      "label": "Org Overview",
-      "icon": "lucide:layout-dashboard",
-      "meta": {
-        "title": "Organization Overview",
-        "description": "Key metrics and status across all facilities."
-      }
-    },
-    {
-      "@id": "route:admin-settings",
-      "@type": "app:Route",
-      "routePath": "/admin/settings",
-      "label": "Org Settings",
-      "icon": "lucide:building-2",
-      "meta": {
-        "title": "Organization Settings",
-        "description": "Configure organization-wide defaults and branding."
-      }
-    },
-    {
-      "@id": "route:admin-users",
-      "@type": "app:Route",
-      "routePath": "/admin/users",
-      "label": "User Management",
-      "icon": "lucide:users",
-      "meta": {
-        "title": "User Management",
-        "description": "Manage users, invites, and organization access."
-      }
-    },
-    {
-      "@id": "route:admin-roles",
-      "@type": "app:Route",
-      "routePath": "/admin/roles",
-      "label": "Roles & Permissions",
-      "icon": "lucide:shield-half",
-      "meta": {
-        "title": "Roles & Permissions",
-        "description": "Define and assign system roles."
-      }
-    },
-    {
-      "@id": "route:admin-audit-logs",
-      "@type": "app:Route",
-      "routePath": "/admin/audit-logs",
-      "label": "Audit Logs",
-      "icon": "lucide:scroll-text",
-      "meta": {
-        "title": "System Audit Logs",
-        "description": "Track administrative actions across the organization."
-      }
-    },
-    {
-      "@id": "route:admin-integrations",
-      "@type": "app:Route",
-      "routePath": "/admin/integrations",
-      "label": "Integrations",
-      "icon": "lucide:plug-zap",
-      "meta": {
-        "title": "External Integrations",
-        "description": "Manage connections to external systems and APIs."
-      }
-    },
-    {
-      "@id": "route:setup",
-      "@type": "app:Route",
-      "routePath": "/setup",
-      "label": "Setup",
-      "icon": "lucide:settings",
-      "tint": "text-gray-400",
-      "inRail": true,
-      "railPosition": "secondary",
-      "order": 10,
-      "requiresAuth": true,
-      "permissions": {
-        "minRole": "corporate_admin"
-      },
-      "meta": {
-        "title": "Setup",
-        "description": "Configure facilities, escalations, and system settings.",
-        "subtitle": "Admin"
-      },
-      "children": [
-        {
-          "@id": "route:setup-self-assessments"
-        },
-        {
-          "@id": "route:setup-self-assessment-overview"
-        },
-        {
-          "@id": "route:setup-fes-escalations"
-        },
-        {
-          "@id": "route:setup-cea"
-        },
-        {
-          "@id": "route:setup-emails"
-        },
-        {
-          "@id": "route:setup-queue"
-        },
-        {
-          "@id": "route:setup-epa-import"
-        },
-        {
-          "@id": "route:setup-data-import-status"
-        },
-        {
-          "@id": "route:setup-new-fes-task"
-        }
-      ]
-    },
-    {
-      "@id": "route:setup-self-assessments",
-      "@type": "app:Route",
-      "routePath": "/setup/self-assessments",
-      "label": "Self Assessment Setup",
-      "icon": "lucide:clipboard-list",
-      "tint": "text-cyan-300",
-      "order": 0,
-      "permissions": {
-        "minRole": "corporate_admin"
-      },
-      "meta": {
-        "title": "Self Assessment Setup",
-        "description": "Create and manage self-assessment questionnaire forms.",
-        "subtitle": "Setup"
-      }
-    },
-    {
-      "@id": "route:setup-self-assessment-overview",
-      "@type": "app:Route",
-      "routePath": "/setup/self-assessment-overview",
-      "label": "Self Assessment Overview",
-      "icon": "lucide:layout-dashboard",
-      "tint": "text-blue-300",
-      "order": 1,
-      "permissions": {
-        "minRole": "super_admin"
-      },
-      "meta": {
-        "title": "Self Assessment Overview",
-        "description": "Corporate dashboard for all facility self-assessments.",
-        "subtitle": "Setup"
-      }
-    },
-    {
-      "@id": "route:setup-fes-escalations",
-      "@type": "app:Route",
-      "routePath": "/setup/fes-escalations",
-      "label": "FES Escalations",
-      "icon": "lucide:arrow-up-circle",
-      "tint": "text-orange-300",
-      "order": 2,
-      "permissions": {
-        "minRole": "corporate_admin"
-      },
-      "meta": {
-        "title": "Facility Audits Escalations",
-        "description": "Configure escalation rules for facility audit findings.",
-        "subtitle": "Setup"
-      }
-    },
-    {
-      "@id": "route:setup-cea",
-      "@type": "app:Route",
-      "routePath": "/setup/cea",
-      "label": "CEA Questionnaire",
-      "icon": "lucide:file-question",
-      "tint": "text-violet-300",
-      "order": 3,
-      "permissions": {
-        "minRole": "corporate_admin"
-      },
-      "meta": {
-        "title": "CEA Questionnaire",
-        "description": "Corporate environmental assessment questionnaire.",
-        "subtitle": "Setup"
-      }
-    },
-    {
-      "@id": "route:setup-emails",
-      "@type": "app:Route",
-      "routePath": "/setup/emails",
-      "label": "Email Log",
-      "icon": "lucide:mail",
-      "tint": "text-gray-400",
-      "order": 5,
-      "permissions": {
-        "minRole": "super_admin"
-      },
-      "meta": {
-        "title": "Email Log",
-        "description": "View sent notification emails.",
-        "subtitle": "System"
-      }
-    },
-    {
-      "@id": "route:setup-queue",
-      "@type": "app:Route",
-      "routePath": "/setup/queue",
-      "label": "Job Queue",
-      "icon": "lucide:list-todo",
-      "tint": "text-gray-400",
-      "order": 6,
-      "permissions": {
-        "minRole": "super_admin"
-      },
-      "meta": {
-        "title": "Job Queue",
-        "description": "View background job queue status.",
-        "subtitle": "System"
-      }
-    },
-    {
-      "@id": "route:setup-epa-import",
-      "@type": "app:Route",
-      "routePath": "/setup/epa-import",
-      "label": "EPA Import",
-      "icon": "lucide:download",
-      "tint": "text-gray-400",
-      "order": 7,
-      "permissions": {
-        "minRole": "super_admin"
-      },
-      "meta": {
-        "title": "EPA Import",
-        "description": "Import data from EPA systems.",
-        "subtitle": "System"
-      }
-    },
-    {
-      "@id": "route:setup-data-import-status",
-      "@type": "app:Route",
-      "routePath": "/setup/data-import-status",
-      "label": "Data Import Status",
-      "icon": "lucide:activity",
-      "tint": "text-gray-400",
-      "order": 8,
-      "permissions": {
-        "minRole": "super_admin"
-      },
-      "meta": {
-        "title": "Data Import Status",
-        "description": "Monitor data import progress.",
-        "subtitle": "System"
-      }
-    },
-    {
-      "@id": "route:setup-new-fes-task",
-      "@type": "app:Route",
-      "routePath": "/setup/new-fes-task",
-      "label": "New FES Task",
-      "icon": "lucide:plus-circle",
-      "tint": "text-emerald-300",
-      "permissions": {
-        "minRole": "corporate_admin"
-      },
-      "meta": {
-        "title": "New FES Task",
-        "description": "Create a new Facility Environmental Services task.",
-        "subtitle": "Tasks"
-      }
-    },
-    {
       "@id": "route:settings",
       "@type": "app:Route",
       "routePath": "/settings",
       "label": "My Settings",
-      "icon": "lucide:user-cog",
+      "icon": "lucide:settings",
       "tint": "text-sky-400",
       "inRail": true,
       "railPosition": "secondary",
@@ -3226,6 +3089,38 @@
             }
           ],
           "collapsible": false
+        },
+        {
+          "label": "WORKSPACE",
+          "key": "settings-workspace",
+          "items": [
+            {
+              "path": "/settings/pages",
+              "label": "Pages",
+              "icon": "lucide:file-plus"
+            },
+            {
+              "path": "/settings/integrations",
+              "label": "Integrations",
+              "icon": "lucide:plug"
+            },
+            {
+              "path": "/settings/marketplace",
+              "label": "Marketplace",
+              "icon": "lucide:store"
+            },
+            {
+              "path": "/settings/branding",
+              "label": "Branding",
+              "icon": "lucide:paintbrush"
+            },
+            {
+              "path": "/settings/roles",
+              "label": "Roles & Permissions",
+              "icon": "lucide:shield"
+            }
+          ],
+          "collapsible": false
         }
       ],
       "children": [
@@ -3243,6 +3138,21 @@
         },
         {
           "@id": "route:settings-notifications"
+        },
+        {
+          "@id": "route:settings-pages"
+        },
+        {
+          "@id": "route:settings-integrations"
+        },
+        {
+          "@id": "route:settings-marketplace"
+        },
+        {
+          "@id": "route:settings-branding"
+        },
+        {
+          "@id": "route:settings-roles"
         }
       ]
     },
@@ -3302,6 +3212,126 @@
       }
     },
     {
+      "@id": "route:settings-pages",
+      "@type": "app:Route",
+      "routePath": "/settings/pages",
+      "label": "Pages",
+      "icon": "lucide:file-plus",
+      "meta": {
+        "title": "Pages",
+        "description": "Create and manage custom pages in your workspace."
+      }
+    },
+    {
+      "@id": "route:settings-integrations",
+      "@type": "app:Route",
+      "routePath": "/settings/integrations",
+      "label": "Integrations",
+      "icon": "lucide:plug",
+      "meta": {
+        "title": "Integrations",
+        "description": "Connect third-party services and manage API integrations."
+      }
+    },
+    {
+      "@id": "route:settings-marketplace",
+      "@type": "app:Route",
+      "routePath": "/settings/marketplace",
+      "label": "Marketplace",
+      "icon": "lucide:store",
+      "meta": {
+        "title": "Marketplace",
+        "description": "Browse and install ontology templates and extensions."
+      }
+    },
+    {
+      "@id": "route:settings-branding",
+      "@type": "app:Route",
+      "routePath": "/settings/branding",
+      "label": "Branding",
+      "icon": "lucide:paintbrush",
+      "meta": {
+        "title": "Branding",
+        "description": "Customize your workspace brand colors, logo, and identity."
+      }
+    },
+    {
+      "@id": "route:settings-roles",
+      "@type": "app:Route",
+      "routePath": "/settings/roles",
+      "label": "Roles & Permissions",
+      "icon": "lucide:shield",
+      "meta": {
+        "title": "Roles & Permissions",
+        "description": "Manage workspace roles, display names, and permission levels."
+      }
+    },
+    {
+      "@id": "route:graph-dashboard",
+      "@type": "app:Route",
+      "routePath": "/graph/dashboard",
+      "label": "Dashboard",
+      "icon": "lucide:gauge",
+      "tint": "text-cyan-300",
+      "order": 0,
+      "meta": {
+        "title": "Graph Dashboard",
+        "description": "Health status, entity counts, and ontology summary."
+      }
+    },
+    {
+      "@id": "route:graph-explorer",
+      "@type": "app:Route",
+      "routePath": "/graph/explorer",
+      "label": "Explorer",
+      "icon": "lucide:search",
+      "tint": "text-emerald-300",
+      "order": 1,
+      "meta": {
+        "title": "Entity Explorer",
+        "description": "Browse, search, and inspect graph entities."
+      }
+    },
+    {
+      "@id": "route:graph-query",
+      "@type": "app:Route",
+      "routePath": "/graph/query",
+      "label": "Query Console",
+      "icon": "lucide:terminal",
+      "tint": "text-violet-300",
+      "order": 2,
+      "meta": {
+        "title": "Query Console",
+        "description": "Execute EQL-S queries and view results."
+      }
+    },
+    {
+      "@id": "route:graph-ontology",
+      "@type": "app:Route",
+      "routePath": "/graph/ontology",
+      "label": "Ontology",
+      "icon": "lucide:blocks",
+      "tint": "text-amber-300",
+      "order": 3,
+      "meta": {
+        "title": "Ontology Viewer",
+        "description": "Schema definitions, projections, and attribute catalog."
+      }
+    },
+    {
+      "@id": "route:graph-activity",
+      "@type": "app:Route",
+      "routePath": "/graph/activity",
+      "label": "Activity Log",
+      "icon": "lucide:scroll-text",
+      "tint": "text-gray-400",
+      "order": 4,
+      "meta": {
+        "title": "Activity Log",
+        "description": "Recent graph mutations and system events."
+      }
+    },
+    {
       "@id": "route:help",
       "@type": "app:Route",
       "routePath": "/help",
@@ -3322,132 +3352,6 @@
         "title": "Help",
         "description": "Documentation and support resources.",
         "subtitle": "Help"
-      }
-    },
-    {
-      "@id": "theme:platform-brand",
-      "@type": "ui:Theme",
-      "label": "Platform Brand",
-      "styles": {
-        "light": {
-          "background": "oklch(1.0000 0 0)",
-          "foreground": "oklch(0.2101 0.0318 264.6645)",
-          "card": "oklch(1.0000 0 0)",
-          "card-foreground": "oklch(0.2101 0.0318 264.6645)",
-          "popover": "oklch(1.0000 0 0)",
-          "popover-foreground": "oklch(0.2101 0.0318 264.6645)",
-          "primary": "oklch(0.6716 0.1368 48.5130)",
-          "primary-foreground": "oklch(1.0000 0 0)",
-          "secondary": "oklch(0.5360 0.0398 196.0280)",
-          "secondary-foreground": "oklch(1.0000 0 0)",
-          "muted": "oklch(0.9670 0.0029 264.5419)",
-          "muted-foreground": "oklch(0.5510 0.0234 264.3637)",
-          "accent": "oklch(0.9491 0 0)",
-          "accent-foreground": "oklch(0.2101 0.0318 264.6645)",
-          "destructive": "oklch(0.6368 0.2078 25.3313)",
-          "destructive-foreground": "oklch(0.9851 0 0)",
-          "border": "oklch(0.9276 0.0058 264.5313)",
-          "input": "oklch(0.9276 0.0058 264.5313)",
-          "ring": "oklch(0.6716 0.1368 48.5130)",
-          "chart-1": "oklch(0.5940 0.0443 196.0233)",
-          "chart-2": "oklch(0.7214 0.1337 49.9802)",
-          "chart-3": "oklch(0.8721 0.0864 68.5474)",
-          "chart-4": "oklch(0.6268 0 0)",
-          "chart-5": "oklch(0.6830 0 0)",
-          "sidebar": "oklch(0.9670 0.0029 264.5419)",
-          "sidebar-foreground": "oklch(0.2101 0.0318 264.6645)",
-          "sidebar-primary": "oklch(0.6716 0.1368 48.5130)",
-          "sidebar-primary-foreground": "oklch(1.0000 0 0)",
-          "sidebar-accent": "oklch(1.0000 0 0)",
-          "sidebar-accent-foreground": "oklch(0.2101 0.0318 264.6645)",
-          "sidebar-border": "oklch(0.9276 0.0058 264.5313)",
-          "sidebar-ring": "oklch(0.6716 0.1368 48.5130)",
-          "rail": "oklch(0.9670 0.0029 264.5419)",
-          "rail-foreground": "oklch(0.2101 0.0318 264.6645)",
-          "rail-border": "oklch(0.9276 0.0058 264.5313)",
-          "font-sans": "Geist Mono, ui-monospace, monospace",
-          "font-serif": "serif",
-          "font-mono": "JetBrains Mono, monospace",
-          "radius": "0.75rem",
-          "shadow-x": "0px",
-          "shadow-y": "1px",
-          "shadow-blur": "4px",
-          "shadow-spread": "0px",
-          "shadow-opacity": "0.05",
-          "shadow-color": "#000000",
-          "shadow-2xs": "0px 1px 4px 0px hsl(0 0% 0% / 0.03)",
-          "shadow-xs": "0px 1px 4px 0px hsl(0 0% 0% / 0.03)",
-          "shadow-sm": "0px 1px 4px 0px hsl(0 0% 0% / 0.05), 0px 1px 2px -1px hsl(0 0% 0% / 0.05)",
-          "shadow": "0px 1px 4px 0px hsl(0 0% 0% / 0.05), 0px 1px 2px -1px hsl(0 0% 0% / 0.05)",
-          "shadow-md": "0px 1px 4px 0px hsl(0 0% 0% / 0.05), 0px 2px 4px -1px hsl(0 0% 0% / 0.05)",
-          "shadow-lg": "0px 1px 4px 0px hsl(0 0% 0% / 0.05), 0px 4px 6px -1px hsl(0 0% 0% / 0.05)",
-          "shadow-xl": "0px 1px 4px 0px hsl(0 0% 0% / 0.05), 0px 8px 10px -1px hsl(0 0% 0% / 0.05)",
-          "shadow-2xl": "0px 1px 4px 0px hsl(0 0% 0% / 0.13)",
-          "tracking-normal": "0rem",
-          "spacing": "0.25rem"
-        },
-        "dark": {
-          "background": "oklch(0.14 0.004 308.1928)",
-          "foreground": "oklch(0.88 0 0)",
-          "card": "oklch(0.2 0.004 308.1928)",
-          "card-foreground": "oklch(0.88 0 0)",
-          "popover": "oklch(0.2 0.004 308.1928)",
-          "popover-foreground": "oklch(0.88 0 0)",
-          "primary": "oklch(0.7214 0.1337 49.9802)",
-          "primary-foreground": "oklch(0.1797 0.0043 308.1928)",
-          "secondary": "oklch(0.5940 0.0443 196.0233)",
-          "secondary-foreground": "oklch(0.1797 0.0043 308.1928)",
-          "muted": "oklch(0.24 0.004 308.1928)",
-          "muted-foreground": "oklch(0.68 0 0)",
-          "accent": "oklch(0.32 0.004 308.1928)",
-          "accent-foreground": "oklch(0.9 0 0)",
-          "destructive": "oklch(0.62 0.22 25.33)",
-          "destructive-foreground": "oklch(0.98 0 0)",
-          "success": "oklch(0.72 0.18 149.98)",
-          "success-foreground": "oklch(0.15 0.02 149.98)",
-          "warning": "oklch(0.83 0.17 84.63)",
-          "warning-foreground": "oklch(0.18 0.02 84.63)",
-          "border": "oklch(0.28 0.004 308.1928)",
-          "input": "oklch(0.28 0.004 308.1928)",
-          "ring": "oklch(0.7214 0.1337 49.9802)",
-          "chart-1": "oklch(0.5940 0.0443 196.0233)",
-          "chart-2": "oklch(0.7214 0.1337 49.9802)",
-          "chart-3": "oklch(0.8721 0.0864 68.5474)",
-          "chart-4": "oklch(0.6268 0 0)",
-          "chart-5": "oklch(0.6830 0 0)",
-          "sidebar": "oklch(0.22 0.004 308.1928)",
-          "sidebar-foreground": "oklch(0.88 0 0)",
-          "sidebar-primary": "oklch(0.7214 0.1337 49.9802)",
-          "sidebar-primary-foreground": "oklch(0.1797 0.0043 308.1928)",
-          "sidebar-accent": "oklch(0.3 0.004 308.1928)",
-          "sidebar-accent-foreground": "oklch(0.88 0 0)",
-          "sidebar-border": "oklch(0.28 0.004 308.1928)",
-          "sidebar-ring": "oklch(0.7214 0.1337 49.9802)",
-          "sidebar-input": "oklch(0.28 0.004 308.1928)",
-          "rail": "oklch(0.22 0.004 308.1928)",
-          "rail-foreground": "oklch(0.88 0 0)",
-          "rail-border": "oklch(0.28 0.004 308.1928)",
-          "font-sans": "Geist Mono, ui-monospace, monospace",
-          "font-serif": "serif",
-          "font-mono": "JetBrains Mono, monospace",
-          "radius": "0.75rem",
-          "shadow-x": "0px",
-          "shadow-y": "1px",
-          "shadow-blur": "4px",
-          "shadow-spread": "0px",
-          "shadow-opacity": "0.05",
-          "shadow-color": "#000000",
-          "shadow-2xs": "0px 1px 4px 0px hsl(0 0% 0% / 0.03)",
-          "shadow-xs": "0px 1px 4px 0px hsl(0 0% 0% / 0.03)",
-          "shadow-sm": "0px 1px 4px 0px hsl(0 0% 0% / 0.05), 0px 1px 2px -1px hsl(0 0% 0% / 0.05)",
-          "shadow": "0px 1px 4px 0px hsl(0 0% 0% / 0.05), 0px 1px 2px -1px hsl(0 0% 0% / 0.05)",
-          "shadow-md": "0px 1px 4px 0px hsl(0 0% 0% / 0.05), 0px 2px 4px -1px hsl(0 0% 0% / 0.05)",
-          "shadow-lg": "0px 1px 4px 0px hsl(0 0% 0% / 0.05), 0px 4px 6px -1px hsl(0 0% 0% / 0.05)",
-          "shadow-xl": "0px 1px 4px 0px hsl(0 0% 0% / 0.05), 0px 8px 10px -1px hsl(0 0% 0% / 0.05)",
-          "shadow-2xl": "0px 1px 4px 0px hsl(0 0% 0% / 0.13)",
-          "tracking-normal": "0rem",
-          "spacing": "0.25rem"
-        }
       }
     }
   ]

@@ -144,9 +144,7 @@
 
 <template>
   <!-- Root: base layer - edit mode adds accent ring as "4D wrapper" -->
-  <div
-    class="bg-background text-foreground flex h-dvh overflow-hidden transition-shadow duration-300"
-    :class="{ 'ring-4 ring-accent ring-inset shadow-[inset_0_0_0_4px] shadow-accent': isInEditMode }">
+  <div class="bg-background text-foreground flex h-dvh overflow-hidden transition-shadow duration-300">
     <!-- Command Dialog -->
     <UiCommandDialog
       :open="commandDialog.isOpen.value"
@@ -177,21 +175,38 @@
     </UiCommandDialog>
 
     <IconRail />
+    <AppSidebar />
 
     <div class="flex flex-1 flex-col min-w-0 overflow-hidden">
       <AppHeader />
-      <div class="flex flex-1 min-h-0 overflow-hidden">
-        <AppSidebar />
+      <Transition name="page" mode="out-in" appear>
         <main
           ref="pageEl"
           class="page-transition-wrapper bg-transparent flex-1 overflow-y-auto p-0 relative"
           aria-label="Main content">
           <slot />
         </main>
-      </div>
+      </Transition>
     </div>
 
     <!-- Global Entity Detail Sheet -->
     <EntityDetailSheet />
   </div>
 </template>
+
+<style scoped>
+  .page-enter-active,
+  .page-leave-active {
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+
+  .page-enter-from {
+    opacity: 0;
+    transform: translateX(20px);
+  }
+
+  .page-leave-to {
+    opacity: 0;
+    transform: translateX(-20px);
+  }
+</style>
