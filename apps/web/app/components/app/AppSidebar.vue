@@ -377,7 +377,7 @@
       <UiButton
         variant="ghost"
         size="sm"
-        class="w-full text-sidebar-foreground/70 hover:text-sidebar-foreground hover:bg-amber-500/10 border border-dashed border-amber-500/30 justify-start gap-2 px-3"
+        class="w-full text-sidebar-foreground/70 hover:text-sidebar-foreground hover:bg-amber-500/10 border border-dashed border-amber-500/30 justify-start gap-2 px-3 -translate-y-[1px]"
         @click="handleCreatePage">
         <Icon name="lucide:plus" class="h-4 w-4 text-amber-500" />
         <span class="text-xs font-medium">New Page</span>
@@ -388,7 +388,7 @@
       <UiButton
         variant="ghost"
         size="sm"
-        class="w-full text-sidebar-foreground/50 hover:text-sidebar-foreground hover:bg-white/10 rounded-0 justify-between group px-6 border-b py-[31px] bg-white/0"
+        class="w-full text-sidebar-foreground/50 hover:text-sidebar-foreground hover:bg-white/10 rounded-none justify-between group px-6 border-b py-8 bg-white/0"
         @click.prevent="useCommandDialog().open()">
         <div class="flex items-center gap-2 w-full">
           <Icon name="lucide:search" class="h-4 w-4 transition-transform group-hover:scale-110" />
