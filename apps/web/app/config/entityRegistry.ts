@@ -14,6 +14,8 @@ import type {
   EntityTypeConfig,
   EntityClassConfig,
   EntityPanelConfig,
+  PropertyFieldConfig,
+  PropertyFieldId,
 } from '~/types/entity'
 import type { ProjectionType } from '~/types/database'
 
@@ -53,6 +55,177 @@ export const ENTITY_CLASSES: Record<EntityClass, EntityClassConfig> = {
 }
 
 // ============================================================================
+// Property field factories — reusable field definitions
+// ============================================================================
+
+const F: Record<PropertyFieldId, PropertyFieldConfig> = {
+  type: {
+    id: 'type',
+    group: 'identity',
+    label: 'Type',
+    icon: 'lucide:layers',
+    display: 'popover',
+    editable: true,
+    required: true,
+    computed: false,
+    modes: ['create'],
+  },
+  startDate: {
+    id: 'startDate',
+    group: 'scheduling',
+    label: 'Start Date',
+    icon: 'lucide:calendar',
+    display: 'inline-input',
+    editable: true,
+    required: false,
+    computed: false,
+  },
+  endDate: {
+    id: 'endDate',
+    group: 'scheduling',
+    label: 'End Date',
+    icon: 'lucide:calendar-range',
+    display: 'inline-input',
+    editable: true,
+    required: false,
+    computed: false,
+  },
+  allDay: {
+    id: 'allDay',
+    group: 'scheduling',
+    label: 'All day',
+    icon: 'lucide:sun',
+    display: 'toggle',
+    editable: true,
+    required: false,
+    computed: false,
+    defaultValue: false,
+  },
+  timeRange: {
+    id: 'timeRange',
+    group: 'scheduling',
+    label: 'Time',
+    icon: 'lucide:clock',
+    display: 'inline-input',
+    editable: true,
+    required: false,
+    computed: false,
+  },
+  priority: {
+    id: 'priority',
+    group: 'triage',
+    label: 'Priority',
+    icon: 'lucide:minus',
+    display: 'popover',
+    editable: true,
+    required: false,
+    computed: true,
+  },
+  urgency: {
+    id: 'urgency',
+    group: 'triage',
+    label: 'Urgency',
+    icon: 'lucide:clock',
+    display: 'popover',
+    editable: true,
+    required: false,
+    computed: true,
+  },
+  status: {
+    id: 'status',
+    group: 'triage',
+    label: 'Status',
+    icon: 'lucide:circle-dot',
+    display: 'popover',
+    editable: true,
+    required: false,
+    computed: false,
+  },
+  category: {
+    id: 'category',
+    group: 'classification',
+    label: 'Category',
+    icon: 'lucide:tag',
+    display: 'popover',
+    editable: true,
+    required: false,
+    computed: false,
+  },
+  folder: {
+    id: 'folder',
+    group: 'classification',
+    label: 'Folder',
+    icon: 'lucide:folder',
+    display: 'popover',
+    editable: true,
+    required: false,
+    computed: false,
+  },
+  owner: {
+    id: 'owner',
+    group: 'people',
+    label: 'Owner',
+    icon: 'lucide:user',
+    display: 'popover',
+    editable: true,
+    required: false,
+    computed: false,
+  },
+  involved: {
+    id: 'involved',
+    group: 'people',
+    label: 'Involved',
+    icon: 'lucide:users',
+    display: 'popover',
+    editable: true,
+    required: false,
+    computed: false,
+  },
+  pin: {
+    id: 'pin',
+    group: 'annotation',
+    label: 'Pin',
+    icon: 'lucide:pin',
+    display: 'toggle',
+    editable: true,
+    required: false,
+    computed: false,
+    defaultValue: false,
+  },
+  tags: {
+    id: 'tags',
+    group: 'annotation',
+    label: 'Tags',
+    icon: 'lucide:hash',
+    display: 'inline-input',
+    editable: true,
+    required: false,
+    computed: false,
+    defaultValue: [],
+  },
+}
+
+/** Pick fields by ID in the order specified */
+function fields(...ids: PropertyFieldId[]): PropertyFieldConfig[] {
+  return ids.map(id => F[id])
+}
+
+/** Get property fields for a given entity type */
+export function getPropertyFieldsForType(type: EntityType): PropertyFieldConfig[] {
+  return ENTITY_TYPES[type].propertyFields
+}
+
+/** Check if a type has a specific property field */
+export function typeHasField(type: EntityType, fieldId: PropertyFieldId): boolean {
+  return ENTITY_TYPES[type].propertyFields.some(f => f.id === fieldId)
+}
+
+/** Get fields for a type filtered by group */
+export function getFieldsByGroup(type: EntityType, group: PropertyFieldConfig['group']): PropertyFieldConfig[] {
+  return ENTITY_TYPES[type].propertyFields.filter(f => f.group === group)
+}
+
+// ============================================================================
 // Type-level configs
 // ============================================================================
 
@@ -73,6 +246,7 @@ const ENTITY_TYPES: Record<EntityType, EntityTypeConfig> = {
       content: 'TaskContent',
       footerActions: ['complete', 'archive', 'delete'],
     },
+    propertyFields: fields('type', 'startDate', 'endDate', 'allDay', 'timeRange', 'priority', 'urgency', 'category', 'owner', 'involved', 'folder', 'tags'),
     defaultSortField: 'startDate',
     searchFields: ['title', 'description', 'notes'],
   },
@@ -91,6 +265,7 @@ const ENTITY_TYPES: Record<EntityType, EntityTypeConfig> = {
       content: 'EventContent',
       footerActions: ['duplicate', 'delete'],
     },
+    propertyFields: fields('type', 'startDate', 'endDate', 'allDay', 'timeRange', 'category', 'owner', 'involved', 'tags'),
     defaultSortField: 'startDate',
     searchFields: ['title', 'description', 'location'],
   },
@@ -109,6 +284,7 @@ const ENTITY_TYPES: Record<EntityType, EntityTypeConfig> = {
       content: 'TripContent',
       footerActions: ['duplicate', 'archive', 'delete'],
     },
+    propertyFields: fields('type', 'startDate', 'endDate', 'allDay', 'category', 'owner', 'involved', 'tags'),
     defaultSortField: 'startDate',
     searchFields: ['title', 'destination', 'origin'],
   },
@@ -127,6 +303,7 @@ const ENTITY_TYPES: Record<EntityType, EntityTypeConfig> = {
       content: 'PaymentContent',
       footerActions: ['markPaid', 'void', 'delete'],
     },
+    propertyFields: fields('type', 'startDate', 'allDay', 'priority', 'urgency', 'category', 'owner', 'tags'),
     defaultSortField: 'startDate',
     searchFields: ['title', 'payee', 'invoiceNumber'],
   },
@@ -145,6 +322,7 @@ const ENTITY_TYPES: Record<EntityType, EntityTypeConfig> = {
       content: 'AppointmentContent',
       footerActions: ['confirm', 'reschedule', 'cancel', 'delete'],
     },
+    propertyFields: fields('type', 'startDate', 'endDate', 'timeRange', 'category', 'owner', 'tags'),
     defaultSortField: 'startDate',
     searchFields: ['title', 'provider', 'location', 'specialty'],
   },
@@ -163,6 +341,7 @@ const ENTITY_TYPES: Record<EntityType, EntityTypeConfig> = {
       content: 'ReminderContent',
       footerActions: ['acknowledge', 'snooze', 'delete'],
     },
+    propertyFields: fields('type', 'startDate', 'timeRange', 'category', 'owner', 'tags'),
     defaultSortField: 'startDate',
     searchFields: ['title', 'description'],
   },
@@ -181,6 +360,7 @@ const ENTITY_TYPES: Record<EntityType, EntityTypeConfig> = {
       content: 'DeadlineContent',
       footerActions: ['markMet', 'extend', 'delete'],
     },
+    propertyFields: fields('type', 'startDate', 'allDay', 'priority', 'urgency', 'category', 'owner', 'tags'),
     defaultSortField: 'startDate',
     searchFields: ['title', 'description'],
   },
@@ -199,6 +379,7 @@ const ENTITY_TYPES: Record<EntityType, EntityTypeConfig> = {
       content: 'MilestoneContent',
       footerActions: ['achieve', 'delete'],
     },
+    propertyFields: fields('type', 'startDate', 'allDay', 'category', 'owner', 'tags'),
     defaultSortField: 'startDate',
     searchFields: ['title', 'description'],
   },
@@ -217,8 +398,9 @@ const ENTITY_TYPES: Record<EntityType, EntityTypeConfig> = {
     panels: {
       properties: 'NoteProperties',
       content: 'NoteContent',
-      footerActions: ['pin', 'archive', 'delete'],
+      footerActions: ['archive', 'delete'],
     },
+    propertyFields: fields('type', 'pin', 'category', 'owner', 'involved', 'tags'),
     defaultSortField: 'updatedAt',
     searchFields: ['title', 'content', 'description'],
   },
@@ -237,6 +419,7 @@ const ENTITY_TYPES: Record<EntityType, EntityTypeConfig> = {
       content: 'FileContent',
       footerActions: ['download', 'share', 'delete'],
     },
+    propertyFields: fields('type', 'pin', 'category', 'owner', 'involved', 'tags'),
     defaultSortField: 'updatedAt',
     searchFields: ['title', 'description'],
   },
@@ -255,6 +438,7 @@ const ENTITY_TYPES: Record<EntityType, EntityTypeConfig> = {
       content: 'PageContent',
       footerActions: ['publish', 'archive', 'delete'],
     },
+    propertyFields: fields('type', 'pin', 'category', 'owner', 'involved', 'tags'),
     defaultSortField: 'updatedAt',
     searchFields: ['title', 'content', 'description'],
   },
@@ -273,6 +457,7 @@ const ENTITY_TYPES: Record<EntityType, EntityTypeConfig> = {
       content: 'TemplateContent',
       footerActions: ['useTemplate', 'duplicate', 'delete'],
     },
+    propertyFields: fields('type', 'category', 'owner', 'tags'),
     defaultSortField: 'title',
     searchFields: ['title', 'description'],
   },
@@ -293,6 +478,7 @@ const ENTITY_TYPES: Record<EntityType, EntityTypeConfig> = {
       content: 'PersonContent',
       footerActions: ['message', 'archive', 'delete'],
     },
+    propertyFields: fields('type', 'category', 'owner', 'tags'),
     defaultSortField: 'title',
     searchFields: ['title', 'email', 'jobTitle', 'organization'],
   },
@@ -311,6 +497,7 @@ const ENTITY_TYPES: Record<EntityType, EntityTypeConfig> = {
       content: 'ContactContent',
       footerActions: ['message', 'archive', 'delete'],
     },
+    propertyFields: fields('type', 'category', 'owner', 'tags'),
     defaultSortField: 'title',
     searchFields: ['title', 'email', 'company', 'phone'],
   },
@@ -329,6 +516,7 @@ const ENTITY_TYPES: Record<EntityType, EntityTypeConfig> = {
       content: 'OrganizationContent',
       footerActions: ['archive', 'delete'],
     },
+    propertyFields: fields('type', 'category', 'owner', 'tags'),
     defaultSortField: 'title',
     searchFields: ['title', 'website', 'industry'],
   },
@@ -347,6 +535,7 @@ const ENTITY_TYPES: Record<EntityType, EntityTypeConfig> = {
       content: 'VendorContent',
       footerActions: ['archive', 'delete'],
     },
+    propertyFields: fields('type', 'category', 'owner', 'tags'),
     defaultSortField: 'title',
     searchFields: ['title', 'email', 'services'],
   },
@@ -367,6 +556,7 @@ const ENTITY_TYPES: Record<EntityType, EntityTypeConfig> = {
       content: 'ProjectContent',
       footerActions: ['archive', 'complete', 'delete'],
     },
+    propertyFields: fields('type', 'status', 'startDate', 'endDate', 'category', 'owner', 'involved', 'tags'),
     defaultSortField: 'title',
     searchFields: ['title', 'description'],
   },
@@ -385,6 +575,7 @@ const ENTITY_TYPES: Record<EntityType, EntityTypeConfig> = {
       content: 'FolderContent',
       footerActions: ['archive', 'delete'],
     },
+    propertyFields: fields('type', 'category', 'owner', 'tags'),
     defaultSortField: 'title',
     searchFields: ['title', 'description'],
   },
@@ -403,6 +594,7 @@ const ENTITY_TYPES: Record<EntityType, EntityTypeConfig> = {
       content: 'CollectionContent',
       footerActions: ['publish', 'archive', 'delete'],
     },
+    propertyFields: fields('type', 'category', 'owner', 'tags'),
     defaultSortField: 'title',
     searchFields: ['title', 'description'],
   },
@@ -421,6 +613,7 @@ const ENTITY_TYPES: Record<EntityType, EntityTypeConfig> = {
       content: 'GoalContent',
       footerActions: ['complete', 'archive', 'delete'],
     },
+    propertyFields: fields('type', 'status', 'endDate', 'category', 'owner', 'involved', 'tags'),
     defaultSortField: 'title',
     searchFields: ['title', 'description', 'metric'],
   },
