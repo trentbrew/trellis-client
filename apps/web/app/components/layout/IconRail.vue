@@ -64,7 +64,7 @@
               :class="[
                 routes.isRouteActive(route.path)
                   ? isInEditMode
-                    ? 'bg-accent-foreground/20 text-accent-foreground'
+                    ? 'bg-accent-foreground/10 text-accent-foreground'
                     : 'bg-rail-foreground/15 text-rail-foreground'
                   : isInEditMode
                     ? 'text-accent-foreground/70 hover:bg-accent-foreground/10 hover:text-accent-foreground'
