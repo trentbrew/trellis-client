@@ -1715,6 +1715,69 @@
                 "ideas",
                 "bookmarks"
               ]
+            },
+            {
+              "path": "/personal/projects",
+              "label": "Projects",
+              "icon": "lucide:folder-kanban",
+              "tint": "text-orange-300",
+              "permissions": {
+                "minRole": "guest",
+                "permission": "read"
+              },
+              "meta": {
+                "title": "Projects",
+                "description": "Your projects and initiatives.",
+                "subtitle": "Personal"
+              },
+              "searchKeywords": [
+                "projects",
+                "initiatives",
+                "goals",
+                "milestones"
+              ]
+            },
+            {
+              "path": "/personal/people",
+              "label": "People",
+              "icon": "lucide:users",
+              "tint": "text-pink-300",
+              "permissions": {
+                "minRole": "guest",
+                "permission": "read"
+              },
+              "meta": {
+                "title": "People",
+                "description": "Contacts and collaborators.",
+                "subtitle": "Personal"
+              },
+              "searchKeywords": [
+                "people",
+                "contacts",
+                "collaborators",
+                "team"
+              ]
+            },
+            {
+              "path": "/personal/files",
+              "label": "Files",
+              "icon": "lucide:paperclip",
+              "tint": "text-cyan-300",
+              "permissions": {
+                "minRole": "guest",
+                "permission": "read"
+              },
+              "meta": {
+                "title": "Files",
+                "description": "Attached files and documents.",
+                "subtitle": "Personal"
+              },
+              "searchKeywords": [
+                "files",
+                "documents",
+                "attachments",
+                "uploads"
+              ]
             }
           ],
           "collapsible": false,
@@ -1736,6 +1799,15 @@
         },
         {
           "@id": "route:personal-notes"
+        },
+        {
+          "@id": "route:personal-projects"
+        },
+        {
+          "@id": "route:personal-people"
+        },
+        {
+          "@id": "route:personal-files"
         }
       ]
     },
@@ -1858,6 +1930,78 @@
       "meta": {
         "title": "Notes",
         "description": "Ideas, journal entries, and bookmarks.",
+        "subtitle": "Personal"
+      }
+    },
+    {
+      "@id": "route:personal-projects",
+      "@type": "app:Route",
+      "routePath": "/personal/projects",
+      "label": "Projects",
+      "icon": "lucide:folder-kanban",
+      "tint": "text-orange-300",
+      "order": 3,
+      "permissions": {
+        "minRole": "guest",
+        "permission": "read"
+      },
+      "searchKeywords": [
+        "projects",
+        "initiatives",
+        "goals",
+        "milestones"
+      ],
+      "meta": {
+        "title": "Projects",
+        "description": "Your projects and initiatives.",
+        "subtitle": "Personal"
+      }
+    },
+    {
+      "@id": "route:personal-people",
+      "@type": "app:Route",
+      "routePath": "/personal/people",
+      "label": "People",
+      "icon": "lucide:users",
+      "tint": "text-pink-300",
+      "order": 4,
+      "permissions": {
+        "minRole": "guest",
+        "permission": "read"
+      },
+      "searchKeywords": [
+        "people",
+        "contacts",
+        "collaborators",
+        "team"
+      ],
+      "meta": {
+        "title": "People",
+        "description": "Contacts and collaborators.",
+        "subtitle": "Personal"
+      }
+    },
+    {
+      "@id": "route:personal-files",
+      "@type": "app:Route",
+      "routePath": "/personal/files",
+      "label": "Files",
+      "icon": "lucide:paperclip",
+      "tint": "text-cyan-300",
+      "order": 5,
+      "permissions": {
+        "minRole": "guest",
+        "permission": "read"
+      },
+      "searchKeywords": [
+        "files",
+        "documents",
+        "attachments",
+        "uploads"
+      ],
+      "meta": {
+        "title": "Files",
+        "description": "Attached files and documents.",
         "subtitle": "Personal"
       }
     },
