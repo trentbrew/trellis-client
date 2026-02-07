@@ -444,6 +444,63 @@ export const isFolder = (entity: Entity): entity is FolderItem => entity.type ==
 export const isGoal = (entity: Entity): entity is GoalItem => entity.type === 'goal'
 
 // ============================================================================
+// Property Field System — schema-driven UI field declarations
+// ============================================================================
+
+/** Canonical property field identifiers */
+export type PropertyFieldId =
+  // Scheduling
+  | 'startDate'
+  | 'endDate'
+  | 'allDay'
+  | 'timeRange'
+  // Triage
+  | 'priority'
+  | 'urgency'
+  | 'status'
+  // Classification
+  | 'type'
+  | 'category'
+  | 'folder'
+  // People
+  | 'owner'
+  | 'involved'
+  // Annotation (user-level, not intrinsic to the entity)
+  | 'pin'
+  | 'tags'
+
+/** Layout groups for the properties row */
+export type PropertyFieldGroup =
+  | 'identity'       // type switcher
+  | 'scheduling'     // dates, times, allDay
+  | 'triage'         // priority, urgency, status
+  | 'classification' // category, folder
+  | 'people'         // owner, involved
+  | 'annotation'     // pin, tags — user-level metadata, not intrinsic
+
+/** Display style for the field in the properties row */
+export type PropertyFieldDisplay = 'pill' | 'toggle' | 'inline-input' | 'popover'
+
+/** Per-field configuration: what it is, how it behaves, where it renders */
+export interface PropertyFieldConfig {
+  id: PropertyFieldId
+  group: PropertyFieldGroup
+  label: string
+  icon: string
+  display: PropertyFieldDisplay
+  /** Field is editable (vs read-only computed) */
+  editable: boolean
+  /** Field must have a value before save */
+  required: boolean
+  /** Field value is auto-computed (e.g. priority from formulas) */
+  computed: boolean
+  /** Show only in these modes (omit = show in all modes) */
+  modes?: Array<'view' | 'create' | 'edit'>
+  /** Default value when creating a new entity of this type */
+  defaultValue?: unknown
+}
+
+// ============================================================================
 // Registry Types — consumed by entityRegistry.ts
 // ============================================================================
 
@@ -465,6 +522,7 @@ export interface EntityTypeConfig {
   projections: ProjectionType[]
   dialogShell: EntityClass   // which shell to use (matches class by default)
   panels: EntityPanelConfig
+  propertyFields: PropertyFieldConfig[]
   defaultSortField: string
   searchFields: string[]
 }
