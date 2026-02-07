@@ -385,10 +385,11 @@
       </UiButton>
     </div>
 
+    <!-- Global Search Button -->
       <UiButton
         variant="ghost"
         size="sm"
-        class="w-full text-sidebar-foreground/50 hover:text-sidebar-foreground hover:bg-white/10 rounded-none justify-between group px-6 border-b py-8 bg-white/0"
+        class="w-full text-sidebar-foreground/50 hover:text-sidebar-foreground hover:bg-white/10 rounded-none justify-between group px-6 border-b h-16 bg-white/0"
         @click.prevent="useCommandDialog().open()">
         <div class="flex items-center gap-2 w-full">
           <Icon name="lucide:search" class="h-4 w-4 transition-transform group-hover:scale-110" />
