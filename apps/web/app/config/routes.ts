@@ -378,6 +378,10 @@ export const ROUTE_PATHS = {
     appearance: '/settings/appearance',
     theme: '/settings/theme',
     notifications: '/settings/notifications',
+    pages: '/settings/pages',
+    integrations: '/settings/integrations',
+    marketplace: '/settings/marketplace',
+    branding: '/settings/branding',
   },
   help: '/help',
 } as const

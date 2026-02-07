@@ -2564,26 +2564,7 @@
         "showBackButton": true
       }
     },
-    {
-      "@id": "route:neu",
-      "@type": "app:Route",
-      "routePath": "/neu",
-      "label": "NEU Training",
-      "icon": "lucide:graduation-cap",
-      "tint": "text-indigo-300",
-      "inRail": true,
-      "railPosition": "primary",
-      "order": 5,
-      "requiresAuth": true,
-      "permissions": {
-        "minRole": "corporate_admin"
-      },
-      "meta": {
-        "title": "Nucor Environmental University",
-        "description": "Manage training courses, profiles, and assignments.",
-        "subtitle": "Training"
-      }
-    },
+
     {
       "@id": "route:apptool",
       "@type": "app:Route",
@@ -3223,6 +3204,33 @@
             }
           ],
           "collapsible": false
+        },
+        {
+          "label": "WORKSPACE",
+          "key": "settings-workspace",
+          "items": [
+            {
+              "path": "/settings/pages",
+              "label": "Pages",
+              "icon": "lucide:file-plus"
+            },
+            {
+              "path": "/settings/integrations",
+              "label": "Integrations",
+              "icon": "lucide:plug"
+            },
+            {
+              "path": "/settings/marketplace",
+              "label": "Marketplace",
+              "icon": "lucide:store"
+            },
+            {
+              "path": "/settings/branding",
+              "label": "Branding",
+              "icon": "lucide:paintbrush"
+            }
+          ],
+          "collapsible": false
         }
       ],
       "children": [
@@ -3240,6 +3248,18 @@
         },
         {
           "@id": "route:settings-notifications"
+        },
+        {
+          "@id": "route:settings-pages"
+        },
+        {
+          "@id": "route:settings-integrations"
+        },
+        {
+          "@id": "route:settings-marketplace"
+        },
+        {
+          "@id": "route:settings-branding"
         }
       ]
     },
@@ -3296,6 +3316,50 @@
       "meta": {
         "title": "Notification Preferences",
         "description": "Configure how and when you receive alerts."
+      }
+    },
+    {
+      "@id": "route:settings-pages",
+      "@type": "app:Route",
+      "routePath": "/settings/pages",
+      "label": "Pages",
+      "icon": "lucide:file-plus",
+      "meta": {
+        "title": "Pages",
+        "description": "Create and manage custom pages in your workspace."
+      }
+    },
+    {
+      "@id": "route:settings-integrations",
+      "@type": "app:Route",
+      "routePath": "/settings/integrations",
+      "label": "Integrations",
+      "icon": "lucide:plug",
+      "meta": {
+        "title": "Integrations",
+        "description": "Connect third-party services and manage API integrations."
+      }
+    },
+    {
+      "@id": "route:settings-marketplace",
+      "@type": "app:Route",
+      "routePath": "/settings/marketplace",
+      "label": "Marketplace",
+      "icon": "lucide:store",
+      "meta": {
+        "title": "Marketplace",
+        "description": "Browse and install ontology templates and extensions."
+      }
+    },
+    {
+      "@id": "route:settings-branding",
+      "@type": "app:Route",
+      "routePath": "/settings/branding",
+      "label": "Branding",
+      "icon": "lucide:paintbrush",
+      "meta": {
+        "title": "Branding",
+        "description": "Customize your workspace brand colors, logo, and identity."
       }
     },
     {

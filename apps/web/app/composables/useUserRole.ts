@@ -70,6 +70,8 @@ export function useUserRole() {
   const userRole = computed<UserRole>(() => {
     if (!user.value) return 'guest'
     if (membership.value?.role) return membership.value.role as UserRole
+    const authRole = (user.value as any)?.role
+    if (authRole) return authRole as UserRole
     return 'guest'
   })
 
