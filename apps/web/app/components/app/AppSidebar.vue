@@ -373,11 +373,11 @@
       @mousedown="startResize" />
 
     <!-- Builder Controls (Edit Mode) -->
-    <div v-if="showBuilderUI && canCreatePages" class="px-4 py-2 border-b border-sidebar-border/10">
+    <div v-if="showBuilderUI && canCreatePages" class="px-4 py-0 border-b border-sidebar-border/10">
       <UiButton
         variant="ghost"
         size="sm"
-        class="w-full text-sidebar-foreground/70 hover:text-sidebar-foreground hover:bg-amber-500/10 border border-dashed border-amber-500/30 justify-start gap-2 px-3 -translate-y-[1px]"
+        class="w-full text-sidebar-foreground/70 hover:text-sidebar-foreground hover:bg-amber-500/10 border border-dashed border-amber-500/30 justify-start gap-2 px-3 bg-red-500"
         @click="handleCreatePage">
         <Icon name="lucide:plus" class="h-4 w-4 text-amber-500" />
         <span class="text-xs font-medium">New Page</span>
