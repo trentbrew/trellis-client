@@ -497,9 +497,10 @@
       </UiPopover>
     </template>
 
-    <!-- Properties Row -->
+    <!-- Properties Row (registry-driven) -->
     <template #properties>
-      <UiPopover v-if="isCreateMode" v-model:open="typeOpen">
+      <!-- Type switcher (create mode only) -->
+      <UiPopover v-if="isCreateMode && hasField('type')" v-model:open="typeOpen">
         <UiPopoverTrigger as-child>
           <button class="inline-flex items-center gap-1.5 px-2 py-1 rounded-lg bg-muted/50 hover:bg-muted transition-colors">
             <Icon :name="currentType?.icon || 'lucide:layers'" class="h-3.5 w-3.5" />
@@ -519,31 +520,50 @@
         </UiPopoverContent>
       </UiPopover>
 
-      <div class="inline-flex items-center gap-1.5 px-2 py-1 rounded-lg bg-muted/50">
+      <!-- Pin toggle (annotation) -->
+      <button
+        v-if="hasField('pin') && !isViewMode"
+        class="inline-flex items-center gap-1.5 px-2 py-1 rounded-lg transition-colors"
+        :class="editableItem.pinned ? 'bg-primary/10 text-primary' : 'bg-muted/50 hover:bg-muted text-muted-foreground'"
+        @click="editableItem.pinned = !editableItem.pinned">
+        <Icon name="lucide:pin" class="h-3.5 w-3.5" />
+        <span>{{ editableItem.pinned ? 'Pinned' : 'Pin' }}</span>
+      </button>
+      <span v-else-if="hasField('pin') && editableItem.pinned" class="inline-flex items-center gap-1.5 px-2 py-1 rounded-lg bg-primary/10 text-primary">
+        <Icon name="lucide:pin" class="h-3.5 w-3.5" /> Pinned
+      </span>
+
+      <!-- Start Date -->
+      <div v-if="hasField('startDate')" class="inline-flex items-center gap-1.5 px-2 py-1 rounded-lg bg-muted/50">
         <Icon name="lucide:calendar" class="h-3.5 w-3.5" />
         <input v-if="!isViewMode" v-model="editableItem.startDate" type="date" class="bg-transparent border-none outline-none text-xs w-28" />
         <span v-else>{{ editableItem.startDate }}</span>
       </div>
 
-      <div v-if="editableItem.endDate || !isViewMode" class="inline-flex items-center gap-1.5 px-2 py-1 rounded-lg bg-muted/50">
+      <!-- End Date -->
+      <div v-if="hasField('endDate') && (editableItem.endDate || !isViewMode)" class="inline-flex items-center gap-1.5 px-2 py-1 rounded-lg bg-muted/50">
         <Icon name="lucide:calendar-range" class="h-3.5 w-3.5" />
         <input v-if="!isViewMode" v-model="editableItem.endDate" type="date" class="bg-transparent border-none outline-none text-xs w-28" />
         <span v-else>{{ editableItem.endDate }}</span>
       </div>
 
-      <button
-        v-if="!isViewMode"
-        class="inline-flex items-center gap-1.5 px-2 py-1 rounded-lg transition-colors"
-        :class="editableItem.allDay ? 'bg-primary/10 text-primary' : 'bg-muted/50 hover:bg-muted text-muted-foreground'"
-        @click="editableItem.allDay = !editableItem.allDay">
-        <Icon name="lucide:sun" class="h-3.5 w-3.5" />
-        <span>All day</span>
-      </button>
-      <span v-else-if="editableItem.allDay" class="inline-flex items-center gap-1.5 px-2 py-1 rounded-lg bg-primary/10 text-primary">
-        <Icon name="lucide:sun" class="h-3.5 w-3.5" /> All day
-      </span>
+      <!-- All Day toggle -->
+      <template v-if="hasField('allDay')">
+        <button
+          v-if="!isViewMode"
+          class="inline-flex items-center gap-1.5 px-2 py-1 rounded-lg transition-colors"
+          :class="editableItem.allDay ? 'bg-primary/10 text-primary' : 'bg-muted/50 hover:bg-muted text-muted-foreground'"
+          @click="editableItem.allDay = !editableItem.allDay">
+          <Icon name="lucide:sun" class="h-3.5 w-3.5" />
+          <span>All day</span>
+        </button>
+        <span v-else-if="editableItem.allDay" class="inline-flex items-center gap-1.5 px-2 py-1 rounded-lg bg-primary/10 text-primary">
+          <Icon name="lucide:sun" class="h-3.5 w-3.5" /> All day
+        </span>
+      </template>
 
-      <template v-if="!editableItem.allDay">
+      <!-- Time Range -->
+      <template v-if="hasField('timeRange') && !editableItem.allDay">
         <div class="inline-flex items-center gap-1.5 px-2 py-1 rounded-lg bg-muted/50">
           <Icon name="lucide:clock" class="h-3.5 w-3.5" />
           <input v-if="!isViewMode" v-model="editableItem.startTime" type="time" class="bg-transparent border-none outline-none text-xs w-20" />
@@ -556,7 +576,8 @@
         </div>
       </template>
 
-      <UiPopover v-model:open="priorityOpen">
+      <!-- Priority -->
+      <UiPopover v-if="hasField('priority')" v-model:open="priorityOpen">
         <UiPopoverTrigger as-child>
           <button class="inline-flex items-center gap-1.5 px-2 py-1 rounded-lg transition-colors" :class="currentPriority?.color || 'bg-muted/50 hover:bg-muted'">
             <Icon :name="currentPriority?.icon || 'lucide:minus'" class="h-3.5 w-3.5" />
@@ -584,7 +605,8 @@
         </UiPopoverContent>
       </UiPopover>
 
-      <UiPopover v-model:open="urgencyOpen">
+      <!-- Urgency -->
+      <UiPopover v-if="hasField('urgency')" v-model:open="urgencyOpen">
         <UiPopoverTrigger as-child>
           <button class="inline-flex items-center gap-1.5 px-2 py-1 rounded-lg transition-colors" :class="currentUrgency?.color || 'bg-muted/50 hover:bg-muted'">
             <Icon :name="currentUrgency?.icon || 'lucide:clock'" class="h-3.5 w-3.5" />
@@ -612,7 +634,8 @@
         </UiPopoverContent>
       </UiPopover>
 
-      <UiPopover v-model:open="categoryOpen">
+      <!-- Category -->
+      <UiPopover v-if="hasField('category')" v-model:open="categoryOpen">
         <UiPopoverTrigger as-child>
           <button class="inline-flex items-center gap-1.5 px-2 py-1 rounded-lg bg-muted/50 hover:bg-muted transition-colors">
             <Icon :name="currentCategory?.icon || 'lucide:tag'" class="h-3.5 w-3.5" />
@@ -632,7 +655,8 @@
         </UiPopoverContent>
       </UiPopover>
 
-      <UiPopover v-model:open="ownerOpen">
+      <!-- Owner -->
+      <UiPopover v-if="hasField('owner')" v-model:open="ownerOpen">
         <UiPopoverTrigger as-child>
           <button
             :class="[
@@ -685,7 +709,8 @@
         </UiPopoverContent>
       </UiPopover>
 
-      <UiPopover v-model:open="involvedOpen">
+      <!-- Involved -->
+      <UiPopover v-if="hasField('involved')" v-model:open="involvedOpen">
         <UiPopoverTrigger as-child>
           <button
             :class="[
@@ -719,7 +744,8 @@
         </UiPopoverContent>
       </UiPopover>
 
-      <UiPopover v-model:open="folderOpen">
+      <!-- Folder -->
+      <UiPopover v-if="hasField('folder')" v-model:open="folderOpen">
         <UiPopoverTrigger as-child>
           <button
             :class="[
@@ -759,8 +785,13 @@
       </UiPopover>
     </template>
 
+    <!-- Tags Row (below properties, above content) -->
+    <template v-if="hasField('tags')" #tags>
+      <TagsSection v-model="editableItem.tags" :readonly="isViewMode" inline />
+    </template>
+
     <!-- Content Area (default slot) -->
-    <aside v-if="isCreateMode && !isNoteType" class="w-60 shrink-0 border-r border-border overflow-y-auto hidden md:block">
+    <aside v-if="isCreateMode && hasField('startDate')" class="w-60 shrink-0 border-r border-border overflow-y-auto hidden md:block">
       <div class="p-3 space-y-3">
         <p class="text-xs font-medium text-muted-foreground uppercase tracking-wide">Schedule</p>
         <div class="rounded-md border border-border bg-card p-1">
@@ -824,9 +855,6 @@
       <div class="divide-y divide-border">
         <!-- Type-specific content panel (dynamically resolved) -->
         <EntityContentPanel :model-value="editableItem" :mode="mode" />
-
-        <!-- Tags Section -->
-        <TagsSection v-model="editableItem.tags" :readonly="isViewMode" />
 
         <!-- Attachments -->
         <AttachmentsSection v-model="editableItem.attachments" :readonly="isViewMode" />
