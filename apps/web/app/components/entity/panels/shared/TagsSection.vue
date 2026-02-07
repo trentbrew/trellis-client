@@ -2,6 +2,7 @@
   const props = defineProps<{
     modelValue: string[]
     readonly?: boolean
+    inline?: boolean
   }>()
 
   const emit = defineEmits<{
@@ -29,7 +30,29 @@
 </script>
 
 <template>
-  <div v-if="tags.length || !readonly" class="p-4 space-y-1.5">
+  <!-- Inline mode: no wrapper padding or heading -->
+  <div v-if="inline && (tags.length || !readonly)" class="flex flex-wrap items-center gap-1.5 text-xs">
+    <Icon name="lucide:hash" class="h-3 w-3 text-muted-foreground shrink-0" />
+    <span
+      v-for="tag in tags"
+      :key="tag"
+      class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-primary/10 text-primary text-xs">
+      {{ tag }}
+      <button v-if="!readonly" class="hover:text-destructive" @click="removeTag(tag)">
+        <Icon name="lucide:x" class="h-2.5 w-2.5" />
+      </button>
+    </span>
+    <input
+      v-if="!readonly"
+      v-model="tagInput"
+      type="text"
+      placeholder="Add tag..."
+      class="bg-transparent text-xs outline-none w-24 placeholder:text-muted-foreground/50"
+      @keydown.enter.prevent="addTag" />
+  </div>
+
+  <!-- Block mode: original layout with padding and heading -->
+  <div v-else-if="!inline && (tags.length || !readonly)" class="p-4 space-y-1.5">
     <p class="text-xs font-medium text-muted-foreground uppercase tracking-wide">Tags</p>
     <div class="flex flex-wrap items-center gap-1.5">
       <span

@@ -78,7 +78,6 @@
   // Use `any` because Vue's Reactive wrapper doesn't support discriminated-union narrowing in templates.
   // Runtime type guards (isTask, isEvent, …) ensure correctness.
   const editableItem: any = reactive(createDefaultItem(props.itemType || 'task'))
-  const isNoteType = computed(() => editableItem.type === 'note')
 
   const hasField = (fieldId: PropertyFieldId): boolean => {
     try {
