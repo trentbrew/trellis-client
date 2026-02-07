@@ -15,6 +15,8 @@
     isNote,
   } from '~/types/calendarItem'
   import { useCalendarItemFormulas } from '~/composables/useCalendarItemFormulas'
+  import { typeHasField } from '~/config/entityRegistry'
+  import type { PropertyFieldId } from '~/types/entity'
 
   const colorMode = useColorMode()
   const isDark = computed(() => colorMode.value === 'dark')
@@ -77,6 +79,14 @@
   // Runtime type guards (isTask, isEvent, …) ensure correctness.
   const editableItem: any = reactive(createDefaultItem(props.itemType || 'task'))
   const isNoteType = computed(() => editableItem.type === 'note')
+
+  const hasField = (fieldId: PropertyFieldId): boolean => {
+    try {
+      return typeHasField(editableItem.type, fieldId)
+    } catch {
+      return false
+    }
+  }
 
   watch(
     () => props.item,
