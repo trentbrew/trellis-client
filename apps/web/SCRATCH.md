@@ -10,52 +10,72 @@
 
 # Proposed Property Matrix
 
-I'd like to define a `propertyFields` array per entity type in the registry. Here's what I think makes sense for each type:
+Define a `propertyFields` array per entity type in the registry.
 
 ## Temporal Entities
 
-| Field       | task | event | trip | payment | appointment | reminder | deadline | milestone |
-| ----------- | ---- | ----- | ---- | ------- | ----------- | -------- | -------- | --------- |
-| type        | ✅   | ✅    | ✅   | ✅      | ✅          | ✅       | ✅       | ✅        |
-| startDate   | ✅   | ✅    | ✅   | ✅      | ✅          | ✅       | ✅       | ✅        |
-| endDate     | ✅   | ✅    | ✅   | —       | ✅          | —        | —        | —         |
-| allDay      | ✅   | ✅    | ✅   | ✅      | —           | —        | ✅       | ✅        |
-| timeRange   | ✅   | ✅    | —    | —       | ✅          | ✅       | —        | —         |
-| priority    | ✅   | —     | —    | ✅      | —           | —        | ✅       | —         |
-| urgency     | ✅   | —     | —    | ✅      | —           | —        | ✅       | —         |
-| category    | ✅   | ✅    | ✅   | ✅      | ✅          | ✅       | ✅       | ✅        |
-| owner       | ✅   | ✅    | ✅   | ✅      | ✅          | ✅       | ✅       | ✅        |
-| involved    | ✅   | ✅    | ✅   | —       | —           | —        | —        | —         |
-| folder      | ✅   | —     | —    | —       | —           | —        | —        | —         |
+```json
+{
+  "task": ["type", "startDate", "endDate", "allDay", "timeRange", "priority", "urgency", "category", "owner", "involved", "folder"],
+  "event": ["type", "startDate", "endDate", "allDay", "timeRange", "category", "owner", "involved"],
+  "trip": ["type", "startDate", "endDate", "allDay", "category", "owner", "involved"],
+  "payment": ["type", "startDate", "allDay", "priority", "urgency", "category", "owner"],
+  "appointment": ["type", "startDate", "endDate", "timeRange", "category", "owner"],
+  "reminder": ["type", "startDate", "timeRange", "category", "owner"],
+  "deadline": ["type", "startDate", "allDay", "priority", "urgency", "category", "owner"],
+  "milestone": ["type", "startDate", "allDay", "category", "owner"]
+}
+```
 
 ## Document Entities
 
-| Field    | note | file | page | template |
-| -------- | ---- | ---- | ---- | -------- |
-| type     | ✅   | ✅   | ✅   | ✅       |
-| pin      | ✅   | ✅   | ✅   | —        |
-| category | ✅   | ✅   | ✅   | ✅       |
-| owner    | ✅   | ✅   | ✅   | ✅       |
-| involved | ✅   | ✅   | ✅   | —        |
-
-> No dates, no priority/urgency, no time fields.
+```json
+{
+  "note": ["type", "pin", "category", "owner", "involved"],
+  "file": ["type", "pin", "category", "owner", "involved"],
+  "page": ["type", "pin", "category", "owner", "involved"],
+  "template": ["type", "category", "owner"]
+}
+```
 
 ## Actor Entities
 
-| Field    | person | contact | organization | vendor |
-| -------- | ------ | ------- | ------------ | ------ |
-| type     | ✅     | ✅      | ✅           | ✅     |
-| category | ✅     | ✅      | ✅           | ✅     |
-| owner    | ✅     | ✅      | ✅           | ✅     |
+```json
+{
+  "person": ["type", "category", "owner"],
+  "contact": ["type", "category", "owner"],
+  "organization": ["type", "category", "owner"],
+  "vendor": ["type", "category", "owner"]
+}
+```
 
 ## Container Entities
 
-| Field     | project | folder | collection | goal       |
-| --------- | ------- | ------ | ---------- | ---------- |
-| type      | ✅      | ✅     | ✅         | ✅         |
-| status    | ✅      | —      | —          | ✅         |
-| startDate | ✅      | —      | —          | —          |
-| endDate   | ✅      | —      | —          | ✅ (target) |
-| category  | ✅      | ✅     | ✅         | ✅         |
-| owner     | ✅      | ✅     | ✅         | ✅         |
-| involved  | ✅      | —      | —          | ✅         |
+```json
+{
+  "project": ["type", "status", "startDate", "endDate", "category", "owner", "involved"],
+  "folder": ["type", "category", "owner"],
+  "collection": ["type", "category", "owner"],
+  "goal": ["type", "status", "endDate", "category", "owner", "involved"]
+}
+```
+
+## Field Definitions
+
+```json
+{
+  "type": { "component": "select", "required": true },
+  "startDate": { "component": "datePicker", "required": false },
+  "endDate": { "component": "datePicker", "required": false },
+  "allDay": { "component": "toggle", "default": false },
+  "timeRange": { "component": "timeRangePicker", "required": false },
+  "priority": { "component": "select", "options": ["low", "medium", "high"] },
+  "urgency": { "component": "select", "options": ["low", "medium", "high"] },
+  "category": { "component": "select", "required": false },
+  "owner": { "component": "userPicker", "required": false },
+  "involved": { "component": "userMultiPicker", "required": false },
+  "folder": { "component": "folderPicker", "required": false },
+  "pin": { "component": "pillToggle", "default": false },
+  "status": { "component": "select", "options": ["active", "completed", "archived"] }
+}
+```
