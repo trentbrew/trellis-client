@@ -17,21 +17,11 @@
   import { useCalendarItemFormulas } from '~/composables/useCalendarItemFormulas'
   import { typeHasField } from '~/config/entityRegistry'
   import type { PropertyFieldId } from '~/types/entity'
+  import { useComments } from '~/composables/useComments'
 
   const colorMode = useColorMode()
   const isDark = computed(() => colorMode.value === 'dark')
   const { user: currentUser } = useInstantAuth()
-
-  export interface ActivityItem {
-    id: string
-    author: string
-    avatar?: string
-    date: string
-    type: 'comment' | 'attachment' | 'status_change' | 'reminder' | 'created'
-    content?: string
-    filename?: string
-    status?: string
-  }
 
   const props = withDefaults(
     defineProps<{
@@ -41,7 +31,6 @@
       item?: CalendarItem | null
       canNavigatePrev?: boolean
       canNavigateNext?: boolean
-      activity?: ActivityItem[]
       owners?: { id: string; name: string }[]
       folders?: string[]
     }>(),
@@ -51,7 +40,6 @@
       item: null,
       canNavigatePrev: false,
       canNavigateNext: false,
-      activity: () => [],
       owners: () => [],
       folders: () => [],
     },
@@ -65,7 +53,6 @@
     edit: []
     navigatePrev: []
     navigateNext: []
-    addComment: [comment: string]
   }>()
 
   const { applyFormulas } = useCalendarItemFormulas()
@@ -108,6 +95,13 @@
     },
     { deep: true },
   )
+
+  // Activity sidebar toggle (hidden by default)
+  const activityOpen = ref(false)
+
+  // Comments composable — wired to current item's ID
+  const currentEntityId = computed(() => editableItem.id || undefined)
+  const { displayActivity, addComment: persistComment, loading: commentsLoading } = useComments(currentEntityId, 'calendarItem')
 
   // UI State
   const newComment = ref('')
@@ -337,13 +331,6 @@
     urgencyOpen.value = false
   }
 
-  // Activity
-  const displayActivity = computed(() => {
-    if (props.activity.length > 0) return props.activity
-    return [{ id: '1', author: 'System', type: 'created' as const, date: editableItem.createdAt || 'Just now', content: '' }]
-  })
-
-
   // Actions
   const closeDialog = () => {
     emit('update:open', false)
@@ -366,9 +353,9 @@
     emit('delete', { ...editableItem } as CalendarItem)
     closeDialog()
   }
-  const handleAddComment = () => {
+  const handleAddComment = async () => {
     if (newComment.value.trim()) {
-      emit('addComment', newComment.value.trim())
+      await persistComment(newComment.value.trim())
       newComment.value = ''
     }
   }
