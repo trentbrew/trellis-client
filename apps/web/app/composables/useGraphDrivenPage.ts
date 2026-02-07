@@ -4,6 +4,14 @@ import { buildPageConfigFromRoute, buildPageConfigFromSlug, type DerivedPageConf
 import { buildViewModeOptions } from '~/lib/projections'
 import { useBrowse, type BrowseState, type BrowseViewMode } from '~/composables/useBrowse'
 import { useFacilityEntities } from '~/composables/useFacilityEntities'
+import type { EntityType, EntityClass } from '~/types/entity'
+import {
+  getAllEntityTypeIds,
+  getEntityTypeConfig,
+  getEntityClassForType,
+  getDialogShellForType,
+  getProjectionsForType,
+} from '~/config/entityRegistry'
 
 /**
  * Route path to entity type slug mapping
@@ -73,6 +81,10 @@ export interface UseGraphDrivenPageReturn {
   dialogMode: Ref<'view' | 'edit' | 'create'>
   dialogItem: Ref<any>
   resolvedEntityType: ComputedRef<string>
+  /** Entity class resolved from entity registry ('temporal' | 'document' | 'actor' | 'container') */
+  entityClass: ComputedRef<EntityClass | null>
+  /** Dialog shell component name from entity registry */
+  dialogShell: ComputedRef<string | null>
 }
 
 /**
@@ -168,10 +180,19 @@ export function useGraphDrivenPage(options: UseGraphDrivenPageOptions): UseGraph
     loadEntityData()
   })
 
+  // Resolve search fields from registry when available
+  const registrySearchFields = computed(() => {
+    const t = entityType.value as EntityType
+    if (t && registeredTypes.has(t)) {
+      return getEntityTypeConfig(t).searchFields || ['title', 'description']
+    }
+    return ['title', 'name', 'description']
+  })
+
   // Initialize browse state with stable items ref
   const { browseState, filteredItems, viewMode } = useBrowse({
     items,
-    searchFields: ['title', 'name', 'description'] as any,
+    searchFields: registrySearchFields.value as any,
     defaultViewMode,
     sortOptions: [
       { value: 'title', label: 'Title' },
@@ -217,7 +238,11 @@ export function useGraphDrivenPage(options: UseGraphDrivenPageOptions): UseGraph
       ]
     }
 
-    const rawAllowedModes = pageConfig.value?.projectionTypes || ['table', 'list', 'grid', 'kanban', 'calendar']
+    // Fall back to registry projections when pageConfig doesn't specify
+    const registryProjections = entityType.value && registeredTypes.has(entityType.value)
+      ? getProjectionsForType(entityType.value as EntityType)
+      : ['table', 'list', 'grid', 'kanban', 'calendar']
+    const rawAllowedModes = pageConfig.value?.projectionTypes || registryProjections
     const allowedModes = (rawAllowedModes as string[]).filter((m): m is BrowseViewMode => {
       return (
         m === 'grid' ||
@@ -276,10 +301,25 @@ export function useGraphDrivenPage(options: UseGraphDrivenPageOptions): UseGraph
   const dialogMode = ref<'view' | 'edit' | 'create'>('view')
   const dialogItem = ref<any>(null)
 
+  // Resolve entity type against the registry (replaces hardcoded allowlist)
+  const registeredTypes = new Set<string>(getAllEntityTypeIds())
+
   const resolvedEntityType = computed(() => {
     const candidate = entityType.value || 'task'
-    const allowed = ['task', 'event', 'payment', 'deadline', 'reminder', 'permit', 'folder', 'document', 'default']
-    return allowed.includes(candidate) ? candidate : 'default'
+    return registeredTypes.has(candidate) ? candidate : 'default'
+  })
+
+  // Entity class and dialog shell from registry
+  const resolvedEntityClass = computed<EntityClass | null>(() => {
+    const t = resolvedEntityType.value as EntityType
+    if (!registeredTypes.has(t)) return null
+    return getEntityClassForType(t).class
+  })
+
+  const resolvedDialogShell = computed<string | null>(() => {
+    const t = resolvedEntityType.value as EntityType
+    if (!registeredTypes.has(t)) return null
+    return getDialogShellForType(t)
   })
 
   const openDetail = (item: any, opts?: { mode?: 'view' | 'edit' | 'create' }) => {
@@ -321,6 +361,8 @@ export function useGraphDrivenPage(options: UseGraphDrivenPageOptions): UseGraph
     dialogMode,
     dialogItem,
     resolvedEntityType,
+    entityClass: resolvedEntityClass,
+    dialogShell: resolvedDialogShell,
     refresh,
   }
 }
