@@ -5,6 +5,7 @@
   const props = defineProps<{
     open: boolean
     excludeId?: string
+    filterType?: string
   }>()
 
   const emit = defineEmits<{
@@ -13,8 +14,10 @@
   }>()
 
   const excludeIdRef = computed(() => props.excludeId)
+  const filterTypeRef = computed(() => props.filterType)
   const { search, filteredItems, getIcon, getColor, getLabel, buildEntityReference } = useEntitySearch({
     excludeId: excludeIdRef,
+    filterType: filterTypeRef,
   })
 
   const selectItem = (item: any) => {

@@ -23,6 +23,7 @@
     "hq:query": "bun run hooks/tql-query.ts",
     "hq:devlog": "bun run hooks/tql-devlog.ts",
     "hq:docs": "bun run hooks/tql-docs.ts --all",
+    "hq:docs-sync": "bun run hooks/tql-docs-sync.ts --all --no-amend",
     "hq:standup": "bun run hooks/tql-standup.ts",
     "hq:demo": "bun run hooks/tql-demo.ts",
     "hq:insights": "bun run hooks/tql-insights.ts",
@@ -31,7 +32,8 @@
     "hq:git:commit": "bun run hooks/tql-git.ts",
     "hq:compact": "bun run hooks/tql-compact.ts",
     "hq:serve": "bun run hooks/tql-server.ts",
-    "hq:seed": "bun run hooks/tql-seed.ts"
+    "hq:seed": "bun run hooks/tql-seed.ts",
+    "test:hooks": "bun test hooks/__tests__/"
   },
   "pnpm": {
     "onlyBuiltDependencies": [

@@ -1,147 +1,53 @@
 <script setup lang="ts">
   import type { PageStat } from '~/components/layout/Page.vue'
   import CalendarItemDialog from '~/components/dialogs/CalendarItemDialog.vue'
-  import type { CalendarItem, TaskItem, EventItem, NoteItem } from '~/types/calendarItem'
+  import type { CalendarItem, CalendarItemType, TaskItem } from '~/types/calendarItem'
+  import { createDefaultItem, CALENDAR_ITEM_TYPES } from '~/types/calendarItem'
 
   definePageMeta({ layout: 'default' })
   useHead({ title: 'Today | Personal' })
 
   // ---------------------------------------------------------------------------
-  // Live data from instant-local
+  // Dashboard data
   // ---------------------------------------------------------------------------
+
+  const {
+    statDueToday,
+    statOverdue,
+    statTodayEvents,
+    statCompleted,
+    statTotalTasks,
+    statCompletionRate,
+    tasksByPriority,
+    tasksByStatus,
+    tasksByCategory,
+    itemsByType,
+    weekActivity,
+    todaySchedule,
+    overdueList,
+    dueTodayList,
+    upcomingList,
+    formatTime,
+  } = useDashboardData()
 
   const { items: allItems, create, update, remove } = useCalendarItems()
 
-  const tasks = computed(() => allItems.value.filter((i): i is TaskItem => i.type === 'task'))
-  const events = computed(() => allItems.value.filter((i): i is EventItem => i.type === 'event'))
-  const recentNotes = computed(() =>
-    allItems.value
-      .filter((i): i is NoteItem => i.type === 'note')
-      .sort((a, b) => b.startDate.localeCompare(a.startDate))
-      .slice(0, 4),
-  )
-
   // ---------------------------------------------------------------------------
-  // Date helpers
-  // ---------------------------------------------------------------------------
-
-  const now = new Date()
-  const fmt = (d: Date) => d.toISOString().split('T')[0]!
-  const startOfDay = (d: Date) => new Date(d.getFullYear(), d.getMonth(), d.getDate())
-  const todayStr = fmt(now)
-
-  const daysFromNow = (n: number) => {
-    const d = new Date(now)
-    d.setDate(d.getDate() + n)
-    return fmt(d)
-  }
-
-  // ---------------------------------------------------------------------------
-  // Computed sections
-  // ---------------------------------------------------------------------------
-
-  const isToday = (d: string) => d === todayStr
-  const isPast = (d: string) => d < todayStr
-
-  const overdueTasks = computed(() =>
-    tasks.value.filter((t) => t.taskStatus !== 'completed' && isPast(t.startDate)),
-  )
-
-  const dueTodayTasks = computed(() =>
-    tasks.value.filter((t) => t.taskStatus !== 'completed' && isToday(t.startDate)),
-  )
-
-  const todayEvents = computed(() =>
-    events.value.filter((e) => isToday(e.startDate)).sort((a, b) => (a.startTime || '').localeCompare(b.startTime || '')),
-  )
-
-  const upcomingTasks = computed(() =>
-    tasks.value
-      .filter((t) => t.taskStatus !== 'completed' && t.startDate > todayStr && t.startDate <= daysFromNow(3))
-      .sort((a, b) => a.startDate.localeCompare(b.startDate)),
-  )
-
-  const upcomingEvents = computed(() =>
-    events.value
-      .filter((e) => e.startDate > todayStr && e.startDate <= daysFromNow(3))
-      .sort((a, b) => a.startDate.localeCompare(b.startDate)),
-  )
-
-  const completedToday = computed(() =>
-    tasks.value.filter((t) => t.taskStatus === 'completed' && isToday(t.startDate)),
-  )
-
-  // ---------------------------------------------------------------------------
-  // Stats
+  // Stats (Page header)
   // ---------------------------------------------------------------------------
 
   const stats = computed<PageStat[]>(() => [
-    { label: 'Due Today', value: dueTodayTasks.value.length, icon: 'lucide:target', color: 'text-amber-500' },
-    { label: 'Overdue', value: overdueTasks.value.length, icon: 'lucide:alert-circle', color: 'text-rose-500' },
-    { label: 'Events', value: todayEvents.value.length, icon: 'lucide:calendar', color: 'text-blue-500' },
-    { label: 'Done', value: completedToday.value.length, icon: 'lucide:check-circle', color: 'text-emerald-500' },
+    { label: 'Due Today', value: statDueToday.value, icon: 'lucide:target', color: 'text-amber-500' },
+    { label: 'Overdue', value: statOverdue.value, icon: 'lucide:alert-circle', color: 'text-rose-500' },
+    { label: 'Events', value: statTodayEvents.value, icon: 'lucide:calendar', color: 'text-blue-500' },
+    { label: 'Done', value: statCompleted.value, icon: 'lucide:check-circle', color: 'text-emerald-500' },
   ])
 
   // ---------------------------------------------------------------------------
-  // UI helpers
+  // Greeting
   // ---------------------------------------------------------------------------
 
-  const priorityColors: Record<string, string> = {
-    critical: 'text-red-500',
-    high: 'text-orange-500',
-    medium: 'text-amber-500',
-    low: 'text-blue-500',
-  }
-
-  const priorityIcons: Record<string, string> = {
-    critical: 'lucide:alert-octagon',
-    high: 'lucide:arrow-up',
-    medium: 'lucide:minus',
-    low: 'lucide:arrow-down',
-  }
-
-  const statusColors: Record<string, string> = {
-    pending: 'bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-400',
-    'in-progress': 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400',
-    overdue: 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400',
-    completed: 'bg-emerald-100 text-emerald-600 dark:bg-emerald-900/30 dark:text-emerald-400',
-  }
-
-  const categoryColors: Record<string, string> = {
-    work: 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400',
-    personal: 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400',
-    health: 'bg-rose-100 text-rose-700 dark:bg-rose-900/30 dark:text-rose-400',
-    meeting: 'bg-violet-100 text-violet-700 dark:bg-violet-900/30 dark:text-violet-400',
-    appointment: 'bg-sky-100 text-sky-700 dark:bg-sky-900/30 dark:text-sky-400',
-    general: 'bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-400',
-  }
-
-  const formatRelDate = (d: string) => {
-    try {
-      if (!d) return 'Unscheduled'
-      const parsed = new Date(d + 'T00:00:00')
-      if (Number.isNaN(parsed.getTime())) return 'Unscheduled'
-      const due = startOfDay(parsed)
-      const today = startOfDay(new Date())
-      const diff = Math.floor((due.getTime() - today.getTime()) / 86400000)
-      if (diff === 0) return 'Today'
-      if (diff === 1) return 'Tomorrow'
-      if (diff === -1) return 'Yesterday'
-      if (diff < -1) return `${Math.abs(diff)} days ago`
-      if (diff <= 7) return `In ${diff} days`
-      return new Date(d + 'T00:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
-    } catch { return d }
-  }
-
-  const formatTime = (t?: string) => {
-    if (!t) return ''
-    try {
-      const [h, m] = t.split(':').map(Number)
-      const ampm = h! >= 12 ? 'PM' : 'AM'
-      const hour = h! % 12 || 12
-      return `${hour}:${String(m).padStart(2, '0')} ${ampm}`
-    } catch { return t }
-  }
+  const now = new Date()
 
   const greeting = computed(() => {
     const h = now.getHours()
@@ -155,6 +61,53 @@
   )
 
   // ---------------------------------------------------------------------------
+  // Chart data (computed from dashboard data)
+  // ---------------------------------------------------------------------------
+
+  const priorityChartLabels = computed(() => tasksByPriority.value.map((d) => d.label))
+  const priorityChartValues = computed(() => tasksByPriority.value.map((d) => d.value))
+  const priorityChartColors = computed(() => tasksByPriority.value.map((d) => d.color || '#6b7280'))
+
+  const statusChartLabels = computed(() => tasksByStatus.value.map((d) => d.label))
+  const statusChartValues = computed(() => tasksByStatus.value.map((d) => d.value))
+  const statusChartColors = computed(() => tasksByStatus.value.map((d) => d.color || '#6b7280'))
+
+  const categoryChartLabels = computed(() => tasksByCategory.value.map((d) => d.label))
+  const categoryChartValues = computed(() => tasksByCategory.value.map((d) => d.value))
+  const categoryChartColors = computed(() => tasksByCategory.value.map((d) => d.color || '#6b7280'))
+
+  const typeChartLabels = computed(() => itemsByType.value.map((d) => d.label))
+  const typeChartValues = computed(() => itemsByType.value.map((d) => d.value))
+  const typeChartColors = computed(() => itemsByType.value.map((d) => d.color || '#6b7280'))
+
+  const weekLabels = computed(() => weekActivity.value.map((d) => d.label))
+  const weekTaskSeries = computed(() => weekActivity.value.map((d) => d.tasks))
+  const weekEventSeries = computed(() => weekActivity.value.map((d) => d.events))
+
+  // ---------------------------------------------------------------------------
+  // Quick Capture
+  // ---------------------------------------------------------------------------
+
+  const quickTitle = ref('')
+  const quickType = ref<CalendarItemType>('task')
+
+  async function quickCapture() {
+    const title = quickTitle.value.trim()
+    if (!title) return
+    const item = createDefaultItem(quickType.value)
+    await create({ ...item, title, type: quickType.value })
+    quickTitle.value = ''
+  }
+
+  function captureTypeIcon(type: CalendarItemType) {
+    return CALENDAR_ITEM_TYPES.find((t) => t.value === type)?.icon ?? 'lucide:circle'
+  }
+
+  function captureTypeLabel(type: CalendarItemType) {
+    return CALENDAR_ITEM_TYPES.find((t) => t.value === type)?.label ?? type
+  }
+
+  // ---------------------------------------------------------------------------
   // Dialog
   // ---------------------------------------------------------------------------
 
@@ -163,13 +116,17 @@
   const viewingItem = ref<CalendarItem | null>(null)
   const taskOwners = [{ id: 'you', name: 'You' }]
 
-  function openDetail(item: CalendarItem) {
-    viewingItem.value = item
-    viewOpen.value = true
+  function openDetail(itemId: string) {
+    const item = allItems.value.find((i) => i.id === itemId)
+    if (item) {
+      viewingItem.value = item
+      viewOpen.value = true
+    }
   }
 
-  function toggleComplete(item: TaskItem, e: Event) {
-    e.stopPropagation()
+  function handleToggleComplete(itemId: string) {
+    const item = allItems.value.find((i) => i.id === itemId) as TaskItem | undefined
+    if (!item) return
     const newStatus = item.taskStatus === 'completed' ? 'pending' : 'completed'
     void update({ ...item, taskStatus: newStatus })
   }
@@ -207,229 +164,205 @@
       onClick: () => (createOpen = true),
     }">
 
-    <div class="max-w-3xl mx-auto space-y-8 pb-16">
-      <!-- Greeting -->
-      <div class="pt-2">
-        <h2 class="text-2xl font-semibold tracking-tight">{{ greeting }}</h2>
-        <p class="text-sm text-muted-foreground mt-1">
-          Here's what's on your plate today.
-        </p>
+    <div class="pb-16 space-y-6">
+      <!-- Greeting + Quick Capture Row -->
+      <div class="flex items-end justify-between gap-6 pt-2">
+        <div>
+          <h2 class="text-2xl font-semibold tracking-tight">{{ greeting }}</h2>
+          <p class="text-sm text-muted-foreground mt-1">Here's what's on your plate today.</p>
+        </div>
+        <!-- Inline Quick Capture -->
+        <div class="hidden md:flex items-center gap-2">
+          <div class="relative">
+            <Icon name="lucide:plus" class="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+            <input
+              v-model="quickTitle"
+              type="text"
+              placeholder="Add something..."
+              class="w-64 rounded-lg border border-border bg-card pl-10 pr-4 py-2 text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring"
+              @keydown.enter.exact="quickCapture" />
+          </div>
+          <UiDropdownMenu>
+            <UiDropdownMenuTrigger as-child>
+              <UiButton variant="outline" size="sm" class="gap-1.5 text-xs h-9">
+                <Icon :name="captureTypeIcon(quickType)" class="h-3.5 w-3.5" />
+                <span>{{ captureTypeLabel(quickType) }}</span>
+                <Icon name="lucide:chevron-down" class="h-3 w-3 opacity-50" />
+              </UiButton>
+            </UiDropdownMenuTrigger>
+            <UiDropdownMenuContent align="end" class="w-40">
+              <UiDropdownMenuItem
+                v-for="t in CALENDAR_ITEM_TYPES.filter((ct) => ct.value !== 'trip')"
+                :key="t.value"
+                @click="quickType = t.value">
+                <Icon :name="t.icon" class="h-4 w-4 mr-2" />
+                {{ t.label }}
+              </UiDropdownMenuItem>
+            </UiDropdownMenuContent>
+          </UiDropdownMenu>
+        </div>
       </div>
 
-      <!-- =================== OVERDUE =================== -->
-      <section v-if="overdueTasks.length" class="space-y-3">
-        <div class="flex items-center gap-2">
-          <Icon name="lucide:alert-circle" class="h-4 w-4 text-red-500" />
-          <h3 class="text-xs font-semibold uppercase tracking-wide text-red-500">Overdue</h3>
-          <span class="text-[10px] bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400 rounded-full px-2 py-0.5 font-medium">
-            {{ overdueTasks.length }}
-          </span>
+      <!-- =================== ROW 1: Stats + Completion Progress =================== -->
+      <div class="grid grid-cols-12 gap-4">
+        <div class="col-span-12 lg:col-span-3">
+          <DashboardStatCard
+            title="Due Today"
+            :value="statDueToday"
+            icon="lucide:target"
+            color="text-amber-500" />
         </div>
-        <div class="space-y-1">
-          <div
-            v-for="item in overdueTasks"
-            :key="item.id"
-            class="flex items-center gap-3 rounded-lg border border-red-200 dark:border-red-900/30 bg-card px-4 py-3 hover:bg-muted/50 transition-colors cursor-pointer"
-            @click="openDetail(item)">
-            <button
-              type="button"
-              class="flex h-5 w-5 shrink-0 items-center justify-center rounded-full border-2 border-muted-foreground/40 hover:border-primary transition-colors"
-              @click="toggleComplete(item, $event)" />
-            <Icon :name="priorityIcons[item.priority] || 'lucide:minus'" :class="['h-4 w-4 shrink-0', priorityColors[item.priority]]" />
-            <div class="flex-1 min-w-0">
-              <p class="font-medium text-sm truncate">{{ item.title }}</p>
-              <p class="text-xs text-muted-foreground mt-0.5">{{ formatRelDate(item.startDate) }}</p>
-            </div>
-            <span class="rounded-full px-2 py-0.5 text-[10px] font-medium shrink-0 bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400">
-              overdue
-            </span>
-          </div>
+        <div class="col-span-12 lg:col-span-3">
+          <DashboardStatCard
+            title="Overdue"
+            :value="statOverdue"
+            icon="lucide:alert-circle"
+            color="text-rose-500" />
         </div>
-      </section>
+        <div class="col-span-12 lg:col-span-3">
+          <DashboardStatCard
+            title="Events Today"
+            :value="statTodayEvents"
+            icon="lucide:calendar"
+            color="text-blue-500" />
+        </div>
+        <div class="col-span-12 lg:col-span-3">
+          <DashboardProgressCard
+            title="Completion Rate"
+            :current="statCompleted"
+            :target="statTotalTasks || 1"
+            icon="lucide:check-circle"
+            color="text-emerald-500"
+            :label="`${statCompletionRate}% of ${statTotalTasks} tasks`" />
+        </div>
+      </div>
 
-      <!-- =================== TODAY'S EVENTS =================== -->
-      <section v-if="todayEvents.length" class="space-y-3">
-        <div class="flex items-center gap-2">
-          <Icon name="lucide:calendar" class="h-4 w-4 text-blue-500" />
-          <h3 class="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Schedule</h3>
+      <!-- =================== ROW 2: Charts Row =================== -->
+      <div class="grid grid-cols-12 gap-4">
+        <!-- Weekly Activity (bar chart, 8 cols) -->
+        <div class="col-span-12 lg:col-span-8 h-72">
+          <DashboardChartCard
+            title="Weekly Activity"
+            chart-type="bar"
+            :labels="weekLabels"
+            :series="[
+              { name: 'Tasks', data: weekTaskSeries },
+              { name: 'Events', data: weekEventSeries },
+            ]"
+            :colors="['#3b82f6', '#8b5cf6']"
+            :show-legend="true"
+            :stacked="true" />
         </div>
-        <div class="space-y-1">
-          <div
-            v-for="event in todayEvents"
-            :key="event.id"
-            class="flex items-center gap-3 rounded-lg border border-border bg-card px-4 py-3 hover:bg-muted/50 transition-colors cursor-pointer"
-            @click="openDetail(event)">
-            <div class="w-16 shrink-0 text-center">
-              <p class="text-sm font-semibold text-foreground">{{ formatTime(event.startTime) }}</p>
-              <p v-if="event.endTime" class="text-[10px] text-muted-foreground">{{ formatTime(event.endTime) }}</p>
-            </div>
-            <div class="w-px h-8 bg-blue-400 dark:bg-blue-500 shrink-0 rounded-full" />
-            <div class="flex-1 min-w-0">
-              <p class="font-medium text-sm truncate">{{ event.title }}</p>
-              <div class="flex items-center gap-2 text-xs text-muted-foreground mt-0.5">
-                <span :class="['rounded-full px-1.5 py-0.5 text-[10px] font-medium', categoryColors[event.category] || 'bg-muted text-muted-foreground']">
-                  {{ event.category }}
-                </span>
-                <span v-if="event.location" class="flex items-center gap-0.5 truncate">
-                  <Icon name="lucide:map-pin" class="h-3 w-3" />
-                  {{ event.location }}
-                </span>
-                <span v-if="event.involved?.length" class="flex items-center gap-0.5">
-                  <Icon name="lucide:users" class="h-3 w-3" />
-                  {{ event.involved.length }}
-                </span>
-              </div>
-            </div>
-          </div>
-        </div>
-      </section>
 
-      <!-- =================== DUE TODAY =================== -->
-      <section v-if="dueTodayTasks.length" class="space-y-3">
-        <div class="flex items-center gap-2">
-          <Icon name="lucide:target" class="h-4 w-4 text-amber-500" />
-          <h3 class="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Due Today</h3>
-          <span class="text-[10px] bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400 rounded-full px-2 py-0.5 font-medium">
-            {{ dueTodayTasks.length }}
-          </span>
+        <!-- Items by Type (donut, 4 cols) -->
+        <div class="col-span-12 lg:col-span-4 h-72">
+          <DashboardChartCard
+            title="Items by Type"
+            chart-type="donut"
+            :labels="typeChartLabels"
+            :series="typeChartValues"
+            :colors="typeChartColors"
+            :show-legend="true" />
         </div>
-        <div class="space-y-1">
-          <div
-            v-for="item in dueTodayTasks"
-            :key="item.id"
-            class="flex items-center gap-3 rounded-lg border border-border bg-card px-4 py-3 hover:bg-muted/50 transition-colors cursor-pointer"
-            @click="openDetail(item)">
-            <button
-              type="button"
-              :class="[
-                'flex h-5 w-5 shrink-0 items-center justify-center rounded-full border-2 transition-colors',
-                item.taskStatus === 'completed'
-                  ? 'border-emerald-500 bg-emerald-500 text-white'
-                  : 'border-muted-foreground/40 hover:border-primary',
-              ]"
-              @click="toggleComplete(item, $event)">
-              <Icon v-if="item.taskStatus === 'completed'" name="lucide:check" class="h-3 w-3" />
-            </button>
-            <Icon :name="priorityIcons[item.priority] || 'lucide:minus'" :class="['h-4 w-4 shrink-0', priorityColors[item.priority]]" />
-            <div class="flex-1 min-w-0">
-              <p :class="['font-medium text-sm truncate', item.taskStatus === 'completed' ? 'line-through text-muted-foreground' : '']">
-                {{ item.title }}
-              </p>
-              <div class="flex items-center gap-2 text-xs text-muted-foreground mt-0.5">
-                <span :class="['rounded-full px-1.5 py-0.5 text-[10px] font-medium', categoryColors[item.category] || 'bg-muted text-muted-foreground']">
-                  {{ item.category }}
-                </span>
-                <span v-if="item.reminders.length" class="flex items-center gap-0.5">
-                  <Icon name="lucide:bell" class="h-3 w-3" />
-                  {{ item.reminders.length }}
-                </span>
-              </div>
-            </div>
-            <span :class="['rounded-full px-2 py-0.5 text-[10px] font-medium shrink-0 capitalize', statusColors[item.taskStatus]]">
-              {{ item.taskStatus }}
-            </span>
-          </div>
-        </div>
-      </section>
+      </div>
 
-      <!-- =================== UPCOMING (next 3 days) =================== -->
-      <section v-if="upcomingTasks.length || upcomingEvents.length" class="space-y-3">
-        <div class="flex items-center gap-2">
-          <Icon name="lucide:clock" class="h-4 w-4 text-muted-foreground" />
-          <h3 class="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Upcoming</h3>
+      <!-- =================== ROW 3: Lists + Schedule =================== -->
+      <div class="grid grid-cols-12 gap-4">
+        <!-- Overdue Tasks -->
+        <div class="col-span-12 md:col-span-6 lg:col-span-4 min-h-64">
+          <DashboardListCard
+            title="Overdue"
+            icon="lucide:alert-circle"
+            icon-color="text-red-500"
+            :badge="overdueList.length"
+            badge-color="bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400"
+            :items="overdueList"
+            :show-checkbox="true"
+            :show-priority="true"
+            :show-date="true"
+            empty-message="No overdue tasks"
+            empty-icon="lucide:party-popper"
+            @item-click="openDetail"
+            @toggle-complete="handleToggleComplete" />
         </div>
-        <div class="space-y-1">
-          <!-- Upcoming events -->
-          <div
-            v-for="event in upcomingEvents"
-            :key="event.id"
-            class="flex items-center gap-3 rounded-lg border border-border bg-card px-4 py-3 hover:bg-muted/50 transition-colors cursor-pointer"
-            @click="openDetail(event)">
-            <Icon name="lucide:calendar-days" class="h-4 w-4 shrink-0 text-blue-500" />
-            <div class="flex-1 min-w-0">
-              <p class="font-medium text-sm truncate">{{ event.title }}</p>
-              <p class="text-xs text-muted-foreground mt-0.5">
-                {{ formatRelDate(event.startDate) }}
-                <template v-if="event.startTime"> · {{ formatTime(event.startTime) }}</template>
-              </p>
-            </div>
-            <span :class="['rounded-full px-1.5 py-0.5 text-[10px] font-medium', categoryColors[event.category] || 'bg-muted text-muted-foreground']">
-              {{ event.category }}
-            </span>
-          </div>
-          <!-- Upcoming tasks -->
-          <div
-            v-for="item in upcomingTasks"
-            :key="item.id"
-            class="flex items-center gap-3 rounded-lg border border-border bg-card px-4 py-3 hover:bg-muted/50 transition-colors cursor-pointer"
-            @click="openDetail(item)">
-            <button
-              type="button"
-              class="flex h-5 w-5 shrink-0 items-center justify-center rounded-full border-2 border-muted-foreground/40 hover:border-primary transition-colors"
-              @click="toggleComplete(item, $event)" />
-            <div class="flex-1 min-w-0">
-              <p class="font-medium text-sm truncate">{{ item.title }}</p>
-              <p class="text-xs text-muted-foreground mt-0.5">{{ formatRelDate(item.startDate) }}</p>
-            </div>
-            <Icon :name="priorityIcons[item.priority] || 'lucide:minus'" :class="['h-4 w-4 shrink-0', priorityColors[item.priority]]" />
-          </div>
-        </div>
-      </section>
 
-      <!-- =================== RECENT NOTES =================== -->
-      <section v-if="recentNotes.length" class="space-y-3">
-        <div class="flex items-center gap-2">
-          <Icon name="lucide:sticky-note" class="h-4 w-4 text-purple-500" />
-          <h3 class="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Recent Notes</h3>
+        <!-- Today's Schedule -->
+        <div class="col-span-12 md:col-span-6 lg:col-span-4 min-h-64">
+          <DashboardScheduleCard
+            title="Today's Schedule"
+            :items="todaySchedule"
+            :format-time="formatTime"
+            empty-message="No events today"
+            @item-click="openDetail" />
         </div>
-        <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
-          <div
-            v-for="note in recentNotes"
-            :key="note.id"
-            class="rounded-lg border border-border bg-card p-4 hover:bg-muted/50 transition-colors cursor-pointer"
-            @click="openDetail(note)">
-            <div class="flex items-start justify-between gap-2 mb-2">
-              <p class="font-medium text-sm truncate">{{ note.title }}</p>
-              <span :class="['rounded-full px-1.5 py-0.5 text-[10px] font-medium shrink-0', categoryColors[note.category] || 'bg-muted text-muted-foreground']">
-                {{ note.category }}
-              </span>
-            </div>
-            <p class="text-xs text-muted-foreground line-clamp-2">{{ note.content }}</p>
-            <p class="text-[10px] text-muted-foreground/60 mt-2">{{ formatRelDate(note.startDate) }}</p>
-          </div>
-        </div>
-      </section>
 
-      <!-- =================== COMPLETED =================== -->
-      <section v-if="completedToday.length" class="space-y-3">
-        <div class="flex items-center gap-2">
-          <Icon name="lucide:check-circle" class="h-4 w-4 text-emerald-500" />
-          <h3 class="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Completed</h3>
+        <!-- Due Today -->
+        <div class="col-span-12 md:col-span-6 lg:col-span-4 min-h-64">
+          <DashboardListCard
+            title="Due Today"
+            icon="lucide:target"
+            icon-color="text-amber-500"
+            :badge="dueTodayList.length"
+            badge-color="bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400"
+            :items="dueTodayList"
+            :show-checkbox="true"
+            :show-priority="true"
+            empty-message="Nothing due today"
+            empty-icon="lucide:check-circle"
+            @item-click="openDetail"
+            @toggle-complete="handleToggleComplete" />
         </div>
-        <div class="space-y-1">
-          <div
-            v-for="item in completedToday"
-            :key="item.id"
-            class="flex items-center gap-3 rounded-lg border border-border/50 bg-card px-4 py-3 opacity-60 hover:opacity-80 transition cursor-pointer"
-            @click="openDetail(item)">
-            <button
-              type="button"
-              class="flex h-5 w-5 shrink-0 items-center justify-center rounded-full border-2 border-emerald-500 bg-emerald-500 text-white transition-colors"
-              @click="toggleComplete(item, $event)">
-              <Icon name="lucide:check" class="h-3 w-3" />
-            </button>
-            <p class="font-medium text-sm truncate line-through text-muted-foreground">{{ item.title }}</p>
-          </div>
-        </div>
-      </section>
+      </div>
 
-      <!-- =================== EMPTY STATE =================== -->
-      <div
-        v-if="!overdueTasks.length && !dueTodayTasks.length && !todayEvents.length && !upcomingTasks.length && !upcomingEvents.length && !recentNotes.length"
-        class="flex flex-col items-center justify-center py-20 text-center">
-        <Icon name="lucide:sparkles" class="h-12 w-12 text-muted-foreground/30 mb-4" />
-        <p class="text-lg font-medium text-muted-foreground">All clear!</p>
-        <p class="text-sm text-muted-foreground/60 mt-1">Nothing on your plate today. Enjoy the free time.</p>
+      <!-- =================== ROW 4: More Charts + Upcoming =================== -->
+      <div class="grid grid-cols-12 gap-4">
+        <!-- Priority Breakdown (bar chart) -->
+        <div class="col-span-12 md:col-span-6 lg:col-span-4 h-64">
+          <DashboardChartCard
+            title="Priority Breakdown"
+            chart-type="bar"
+            :labels="priorityChartLabels"
+            :series="priorityChartValues"
+            :colors="priorityChartColors" />
+        </div>
+
+        <!-- Status Distribution (donut) -->
+        <div class="col-span-12 md:col-span-6 lg:col-span-4 h-64">
+          <DashboardChartCard
+            title="Task Status"
+            chart-type="donut"
+            :labels="statusChartLabels"
+            :series="statusChartValues"
+            :colors="statusChartColors"
+            :show-legend="true" />
+        </div>
+
+        <!-- Category Distribution (bar) -->
+        <div class="col-span-12 md:col-span-6 lg:col-span-4 h-64">
+          <DashboardChartCard
+            title="By Category"
+            chart-type="bar"
+            :labels="categoryChartLabels"
+            :series="categoryChartValues"
+            :colors="categoryChartColors" />
+        </div>
+      </div>
+
+      <!-- =================== ROW 5: Upcoming =================== -->
+      <div class="grid grid-cols-12 gap-4">
+        <div class="col-span-12 min-h-48">
+          <DashboardListCard
+            title="Upcoming (Next 7 Days)"
+            icon="lucide:clock"
+            icon-color="text-muted-foreground"
+            :items="upcomingList"
+            :show-date="true"
+            :show-priority="true"
+            empty-message="Nothing coming up this week"
+            empty-icon="lucide:sparkles"
+            @item-click="openDetail"
+            @toggle-complete="handleToggleComplete" />
+        </div>
       </div>
     </div>
 

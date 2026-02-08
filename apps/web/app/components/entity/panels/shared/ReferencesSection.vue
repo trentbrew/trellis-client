@@ -1,5 +1,5 @@
 <script lang="ts" setup>
-  import type { Reference, EntityReference, FileType } from '~/types/entity'
+  import type { Reference, EntityReference, FileType, EntityType } from '~/types/entity'
   import { isFileReference, isEntityReference } from '~/types/entity'
   import { getEntityTypeConfig } from '~/config/entityRegistry'
 
@@ -13,7 +13,20 @@
     openEntity: [ref: EntityReference]
     addFile: []
     addEntity: []
+    addEntityOfType: [type: EntityType]
   }>()
+
+  // ── Quick-add pill definitions ────────────────────────────────────────
+  const quickAddOptions = computed(() => {
+    const entityTypes: { type: EntityType; label: string; icon: string; color: string }[] = [
+      { type: 'note', label: 'Note', icon: 'lucide:sticky-note', color: 'text-yellow-600 bg-yellow-500/10' },
+      { type: 'task', label: 'Task', icon: 'lucide:check-square', color: 'text-blue-600 bg-blue-500/10' },
+      { type: 'event', label: 'Event', icon: 'lucide:calendar', color: 'text-purple-600 bg-purple-500/10' },
+      { type: 'project', label: 'Project', icon: 'lucide:folder-kanban', color: 'text-blue-600 bg-blue-500/10' },
+      { type: 'person', label: 'Person', icon: 'lucide:user', color: 'text-sky-600 bg-sky-500/10' },
+    ]
+    return entityTypes
+  })
 
   const references = computed({
     get: () => props.modelValue ?? [],
@@ -80,7 +93,6 @@
     }
   }
 
-  const addMenuOpen = ref(false)
 </script>
 
 <template>
@@ -88,46 +100,30 @@
     <!-- Header -->
     <div class="flex items-center justify-between">
       <p class="text-xs font-medium text-muted-foreground uppercase tracking-wide">References</p>
-      <div v-if="!readonly" class="relative">
-        <button
-          class="text-xs text-muted-foreground hover:text-foreground flex items-center gap-1"
-          @click="addMenuOpen = !addMenuOpen">
-          <Icon name="lucide:plus" class="h-3 w-3" />
-          Add
-        </button>
-        <!-- Add menu popover -->
-        <Transition
-          enter-active-class="transition duration-100 ease-out"
-          enter-from-class="opacity-0 scale-95"
-          enter-to-class="opacity-100 scale-100"
-          leave-active-class="transition duration-75 ease-in"
-          leave-from-class="opacity-100 scale-100"
-          leave-to-class="opacity-0 scale-95">
-          <div
-            v-if="addMenuOpen"
-            class="absolute right-0 top-full mt-1 z-50 w-40 rounded-lg border border-border bg-popover p-1 shadow-md"
-            @mouseleave="addMenuOpen = false">
-            <button
-              class="flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-xs hover:bg-muted transition-colors"
-              @click="() => {
-                addMenuOpen = false
-                emit('addFile')
-              }">
-              <Icon name="lucide:paperclip" class="h-3.5 w-3.5 text-muted-foreground" />
-              <span>File</span>
-            </button>
-            <button
-              class="flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-xs hover:bg-muted transition-colors"
-              @click="() => {
-                addMenuOpen = false
-                emit('addEntity')
-              }">
-              <Icon name="lucide:link" class="h-3.5 w-3.5 text-muted-foreground" />
-              <span>Entity</span>
-            </button>
-          </div>
-        </Transition>
-      </div>
+    </div>
+
+    <!-- Quick-add pills -->
+    <div v-if="!readonly" class="flex flex-wrap items-center gap-1.5">
+      <button
+        class="inline-flex items-center gap-1 px-2 py-1 rounded-md text-[11px] font-medium border border-dashed border-border text-muted-foreground hover:text-foreground hover:border-foreground/30 hover:bg-muted/50 transition-colors"
+        @click="emit('addFile')">
+        <Icon name="lucide:paperclip" class="h-3 w-3" />
+        File
+      </button>
+      <button
+        v-for="opt in quickAddOptions"
+        :key="opt.type"
+        class="inline-flex items-center gap-1 px-2 py-1 rounded-md text-[11px] font-medium border border-dashed border-border text-muted-foreground hover:text-foreground hover:border-foreground/30 hover:bg-muted/50 transition-colors"
+        @click="emit('addEntityOfType', opt.type)">
+        <Icon :name="opt.icon" class="h-3 w-3" />
+        {{ opt.label }}
+      </button>
+      <button
+        class="inline-flex items-center gap-1 px-2 py-1 rounded-md text-[11px] font-medium border border-dashed border-border text-muted-foreground hover:text-foreground hover:border-foreground/30 hover:bg-muted/50 transition-colors"
+        @click="emit('addEntity')">
+        <Icon name="lucide:plus" class="h-3 w-3" />
+        Other
+      </button>
     </div>
 
     <!-- Outgoing references (files + outgoing entity links) -->
@@ -197,8 +193,8 @@
       </div>
     </div>
 
-    <!-- Empty state -->
-    <p v-if="!outgoingRefs.length && !incomingRefs.length" class="text-xs text-muted-foreground italic">
+    <!-- Empty state (readonly only — edit mode has the pills) -->
+    <p v-if="readonly && !outgoingRefs.length && !incomingRefs.length" class="text-xs text-muted-foreground italic">
       No references
     </p>
   </div>

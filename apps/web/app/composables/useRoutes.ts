@@ -18,7 +18,7 @@ type RailConfig = {
 
 const MAX_RAIL_ITEMS_TOTAL = 12
 
-const sanitizeRailConfig = (config: RailConfig): RailConfig => {
+const _sanitizeRailConfig = (config: RailConfig): RailConfig => {
   return {
     primary: Array.isArray(config?.primary) ? [...config.primary] : [],
     secondary: Array.isArray(config?.secondary) ? [...config.secondary] : [],
@@ -218,63 +218,6 @@ export const useRoutes = () => {
     // Rail is currently code-driven (not user-editable). Keep the function for forward compatibility,
     // but do not persist anything.
     void config
-    return
-
-    try {
-      const instantDb = useInstantDb()
-      const tx = instantDb.tx as any
-      const key = getRailSettingsKey()
-      const appId = currentApp.value?.id
-      if (!appId) return
-
-      const authUser = await instantDb.getAuth()
-      const ownerId = authUser?.id
-      if (!ownerId) return
-
-      const safeConfig = sanitizeRailConfig(config)
-      const settingId = `app-${appId}-${key}`
-
-      const existing = await instantDb.queryOnce({
-        settings: {
-          $: {
-            where: {
-              settingKey: settingId,
-            },
-          },
-        },
-      })
-
-      const found = (existing.data as any)?.settings?.[0]
-      const now = Date.now()
-
-      if (found?.id) {
-        await instantDb.transact([
-          tx.settings[found.id].update({
-            ownerId,
-            entityType: 'app',
-            entityId: appId,
-            key,
-            value: safeConfig,
-            updatedAt: now,
-          }),
-        ])
-      } else {
-        const id = crypto.randomUUID()
-        await instantDb.transact([
-          tx.settings[id].create({
-            ownerId,
-            settingKey: settingId,
-            entityType: 'app',
-            entityId: appId,
-            key,
-            value: safeConfig,
-            updatedAt: now,
-          }),
-        ])
-      }
-    } catch (error) {
-      console.error('Failed to save rail config:', error)
-    }
   }
 
   const setRailSpaces = async (position: 'primary' | 'secondary', spacePaths: string[]) => {
@@ -290,7 +233,7 @@ export const useRoutes = () => {
     await saveRailConfig(enforced)
   }
 
-  const getRailSettingsKey = () => {
+  const _getRailSettingsKey = () => {
     // Rail is configured per org+app. A "space" is the first path segment (e.g. /forms).
     // Keeping the key structured makes it easy to evolve without breaking storage.
     const orgId = currentOrg.value?.id || 'unknown-org'

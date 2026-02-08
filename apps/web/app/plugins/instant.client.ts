@@ -11,7 +11,7 @@
 
 import { createLocalInstantDB } from '~/lib/instant-local'
 import schema from '~~/instant.schema'
-import { getPersonalSeedItems } from '~/lib/personalSeedData'
+import { getPersonalSeedItems, getTrellisProjectTasks } from '~/lib/personalSeedData'
 
 export default defineNuxtPlugin(async () => {
   const db = createLocalInstantDB({
@@ -126,6 +126,22 @@ export default defineNuxtPlugin(async () => {
         })
       })
       await db.transact(chunks)
+    }
+
+    // ── Seed Trellis project tasks (dogfooding) ──────────────────────
+    const hasTrellisProjectTasks = calItems.some((i: any) => typeof i.id === 'string' && i.id.startsWith('trellis-dt-'))
+    if (!hasTrellisProjectTasks) {
+      const projectTasks = getTrellisProjectTasks()
+      const projectChunks = projectTasks.map((item) => {
+        const { id: itemId, ...fields } = item
+        return db.tx.calendarItems[itemId].create({
+          ...fields,
+          ownerId: 'user-demo-admin',
+          createdAt: Date.now(),
+          updatedAt: Date.now(),
+        })
+      })
+      await db.transact(projectChunks)
     }
   }
 

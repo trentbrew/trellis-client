@@ -114,7 +114,18 @@ export default defineNuxtConfig({
   ],
 
   vite: {
-    plugins: [tailwindcss()] as any,
+    plugins: [
+      tailwindcss(),
+      // Treat .jsonld files as JSON imports (Vite only handles .json natively)
+      {
+        name: 'jsonld-loader',
+        transform(code: string, id: string) {
+          if (id.endsWith('.jsonld')) {
+            return { code: `export default ${code}`, map: null }
+          }
+        },
+      },
+    ] as any,
   },
 
   app: {

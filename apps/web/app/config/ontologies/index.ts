@@ -5,6 +5,9 @@
  * Provides runtime access to types, fields, workflows, and terminology.
  */
 
+import coreOntologyRaw from './core/core.jsonld'
+import ecmsOntologyRaw from './ecms/ecms.jsonld'
+
 export interface OntologyNode {
   '@id': string
   '@type'?: string | string[]
@@ -51,11 +54,8 @@ export interface OntologyRegistry {
   }
 }
 
-// Import ontology JSON-LD files (after interface definitions to allow proper typing)
-// eslint-disable-next-line @typescript-eslint/no-require-imports
-const coreOntology = require('./core/core.jsonld') as OntologyGraph
-// eslint-disable-next-line @typescript-eslint/no-require-imports
-const ecmsOntology = require('./ecms/ecms.jsonld') as OntologyGraph
+const coreOntology = coreOntologyRaw as unknown as OntologyGraph
+const ecmsOntology = ecmsOntologyRaw as unknown as OntologyGraph
 
 /**
  * Parse an ontology JSON-LD document into a LoadedOntology
