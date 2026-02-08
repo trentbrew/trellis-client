@@ -8,7 +8,7 @@
  *   bun run hooks/tql-devlog.ts 2026-02-07  # Generate for a specific date
  */
 
-import { TrellisKernel } from '../tql/kernel/trellis-kernel.js';
+import { TrellisKernel } from '../packages/tql/kernel/trellis-kernel.js';
 import { createKernel, requireInit, TQL_DIR } from './_kernel.js';
 import { resolve } from 'path';
 import { existsSync } from 'fs';

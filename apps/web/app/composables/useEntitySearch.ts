@@ -9,7 +9,7 @@ export interface EntitySearchItem {
   description?: string
 }
 
-export function useEntitySearch(options?: { excludeId?: Ref<string | undefined> }) {
+export function useEntitySearch(options?: { excludeId?: Ref<string | undefined>; filterType?: Ref<string | undefined> }) {
   const { items } = useCalendarItems()
 
   const search = ref('')
@@ -21,6 +21,11 @@ export function useEntitySearch(options?: { excludeId?: Ref<string | undefined> 
     const exclude = options?.excludeId?.value
     if (exclude) {
       list = list.filter((i) => i.id !== exclude)
+    }
+
+    const typeFilter = options?.filterType?.value
+    if (typeFilter) {
+      list = list.filter((i) => i.type === typeFilter)
     }
 
     if (!q) return list.slice(0, 20)

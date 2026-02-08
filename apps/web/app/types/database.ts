@@ -204,6 +204,21 @@ export type ProjectionType =
   | 'sankey'
   | 'timeline'
   | 'dashboard'
+  | 'chart'
+
+export type ChartType =
+  | 'bar'
+  | 'line'
+  | 'area'
+  | 'pie'
+  | 'donut'
+  | 'radialBar'
+  | 'scatter'
+  | 'radar'
+  | 'heatmap'
+  | 'treemap'
+
+export type AggregationFn = 'count' | 'sum' | 'avg' | 'min' | 'max'
 
 export interface ProjectionSchemaRequirements {
   fieldTypes?: Array<DatabaseField['type']>
@@ -253,6 +268,17 @@ export interface ProjectionConfig {
   dateField?: string
   endDateField?: string
   labelField?: string
+
+  // Chart specific
+  chartType?: ChartType
+  dimension?: string // field mapped to x-axis or segments
+  measure?: string // field mapped to y-axis or values
+  aggregation?: AggregationFn
+  colorField?: string // field to derive colors from
+  stacked?: boolean
+  showLegend?: boolean
+  showLabels?: boolean
+  sparkline?: boolean // minimal chart without axes (for dashboard widgets)
 
   // Extensible for custom projection types
   [key: string]: any

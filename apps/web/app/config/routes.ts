@@ -291,7 +291,7 @@ export const ROUTE_PATHS = {
   personal: {
     root: '/personal',
     today: '/personal/today',
-    inbox: '/personal/inbox',
+    feed: '/personal/feed',
     tasks: '/personal/tasks',
     calendar: '/personal/calendar',
     notes: '/personal/notes',

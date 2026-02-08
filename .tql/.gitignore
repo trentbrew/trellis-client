@@ -1,0 +1,16 @@
+# Ephemeral op log — grows fast, compacted into snapshot.json
+ops.jsonl
+
+# Runtime directories
+client/
+client-vue/
+workflows/
+devlog/
+generated/
+snapshots/
+
+# Cascade response archives (ephemeral — decisions are extracted into kernel)
+cascade-archive/
+
+# Inbox is transient
+inbox.json

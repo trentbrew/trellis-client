@@ -7,7 +7,7 @@
  * with File entities, Dependency entities, and initial metadata.
  */
 
-import { TrellisKernel } from '../tql/kernel/trellis-kernel.js';
+import { TrellisKernel } from '../packages/tql/kernel/trellis-kernel.js';
 import { createKernel, PROJECT_ROOT, TQL_DIR, WORKSPACE_PATH } from './_kernel.js';
 import { resolve, extname, relative } from 'path';
 import { readdir, stat, readFile, mkdir } from 'fs/promises';
@@ -33,7 +33,7 @@ function detectLanguage(filePath: string): string {
 const IGNORE_DIRS = new Set([
   'node_modules', '.git', '.tql', '.windsurf', 'dist', 'build',
   '.next', '.nuxt', '.svelte-kit', 'coverage', '__pycache__',
-  'cascade-archive', 'logs', '.cache', '.turbo',
+  'logs', '.cache', '.turbo',
 ]);
 
 const SOURCE_EXTENSIONS = new Set([

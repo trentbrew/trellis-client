@@ -1245,7 +1245,7 @@
       <p class="text-muted-foreground text-sm">The collection you're looking for doesn't exist.</p>
     </div>
 
-    <UiTabs v-else v-model="activeProjection" class="flex h-full flex-col">
+    <UiTabs v-else v-model="activeProjection" class="flex h-full flex-col !gap-0 border-none">
       <!-- Dynamic Projection Tabs - hidden during setup -->
       <div class="shrink-0 border-b border-border">
         <div class="relative px-6 py-3">
@@ -1558,7 +1558,7 @@
     </UiSheet>
 
     <!-- Schema Builder Dialog (Edit Mode) -->
-    <SchemaCollectionSchemaBuilder
+    <CollectionSchemaBuilder
       v-if="schema && collection"
       :open="schemaBuilderOpen"
       :schema="schema"

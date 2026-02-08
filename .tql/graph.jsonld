@@ -1,0 +1,17 @@
+{
+  "@context": {
+    "tql": "https://trellis.dev/ns/",
+    "schema": "https://schema.org/"
+  },
+  "@graph": [
+    {
+      "@id": "service:nuxt-dev",
+      "@type": "Service",
+      "title": "Nuxt Dev Server",
+      "description": "Main development server for the Trellis web app",
+      "port": 4141,
+      "userManaged": true,
+      "status": "active"
+    }
+  ]
+}

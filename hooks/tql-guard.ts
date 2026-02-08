@@ -8,7 +8,7 @@
  * Exit code 2 = block the action.
  */
 
-import { TrellisKernel } from '../tql/kernel/trellis-kernel.js';
+import { TrellisKernel } from '../packages/tql/kernel/trellis-kernel.js';
 import { createKernel, OPS_PATH, TQL_DIR } from './_kernel.js';
 import { resolve } from 'path';
 import { existsSync } from 'fs';
@@ -136,7 +136,7 @@ async function loadServices(): Promise<ServiceNode[]> {
   }
 }
 
-function checkServiceRules(command: string, services: ServiceNode[]): string | null {
+export function checkServiceRules(command: string, services: ServiceNode[]): string | null {
   for (const svc of services) {
     if (!svc.userManaged || !svc.startCommand) continue;
 
@@ -183,7 +183,7 @@ async function checkPatternWarnings(kernel: TrellisKernel, command: string): Pro
 
 // ── Guard Logic ────────────────────────────────────────────────────────
 
-function checkPatternRules(input: HookInput): string | null {
+export function checkPatternRules(input: HookInput): string | null {
   const event = input.agent_action_name;
 
   if (event === 'pre_run_command') {

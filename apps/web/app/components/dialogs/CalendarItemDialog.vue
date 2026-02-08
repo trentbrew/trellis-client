@@ -127,6 +127,7 @@
   const commentsOpen = ref(false)
   const fileUploadOpen = ref(false)
   const entityPickerOpen = ref(false)
+  const entityPickerFilterType = ref<string | undefined>(undefined)
 
   const owners = computed(() => props.owners ?? [])
   const folders = computed(() => props.folders ?? [])
@@ -1351,7 +1352,8 @@
           :readonly="isViewMode"
           @open-entity="handleOpenEntityRef"
           @add-file="fileUploadOpen = true"
-          @add-entity="entityPickerOpen = true" />
+          @add-entity="() => { entityPickerFilterType = undefined; entityPickerOpen = true }"
+          @add-entity-of-type="(type) => { entityPickerFilterType = type; entityPickerOpen = true }" />
 
         <!-- Comments / Activity (collapsible, collapsed by default) — always last -->
         <div v-if="!isCreateMode" class="p-4 space-y-2">
@@ -1486,7 +1488,7 @@
   </UiDialog>
 
   <!-- Entity Reference Picker -->
-  <EntityReferencePicker v-model:open="entityPickerOpen" :exclude-id="editableItem.id" @select="handleAddEntityRef" />
+  <EntityReferencePicker v-model:open="entityPickerOpen" :exclude-id="editableItem.id" :filter-type="entityPickerFilterType" @select="handleAddEntityRef" />
 </template>
 
 <style scoped>

@@ -63,6 +63,7 @@
    * - 'filesystem': Full-height split layout for tree + viewer style pages
    * - 'folders': Split-view with folder tree navigation (left) and content preview (right)
    * - 'calendar': Fullscreen calendar layout (no header/tabs/toolbar/search)
+   * - 'feed': Chronological stream from integrations — narrow list, source filter ribbon, no view switcher
    */
   type PageVariant =
     | 'default'
@@ -75,6 +76,7 @@
     | 'filesystem'
     | 'folders'
     | 'calendar'
+    | 'feed'
 
   interface PageProps {
     /** Page layout variant */
@@ -271,6 +273,8 @@
         return { showHeader: true, showTabs: false, contentPadding: 'p-0', maxWidth: '', showToolbar: false }
       case 'calendar':
         return { showHeader: false, showTabs: false, contentPadding: 'p-0', maxWidth: '', showToolbar: false }
+      case 'feed':
+        return { showHeader: true, showTabs: false, contentPadding: 'px-4 py-4 pt-0', maxWidth: '', showToolbar: true }
       case 'station':
         return { showHeader: false, showTabs: true, contentPadding: 'p-0', maxWidth: '', showToolbar: false }
       default:
@@ -281,6 +285,7 @@
   const isFilesystem = computed(() => props.variant === 'filesystem')
   const isFolders = computed(() => props.variant === 'folders')
   const isCalendar = computed(() => props.variant === 'calendar')
+  const isFeed = computed(() => props.variant === 'feed')
   const effectiveFillHeight = computed(
     () => props.fillHeight || isFilesystem.value || isFolders.value || isCalendar.value,
   )
@@ -683,7 +688,7 @@
       <!-- Main content uses base background (darkest layer) -->
       <div class="h-full" :class="[contentWrapperClass, transparent ? 'bg-transparent' : '']">
         <!-- Header Section (Non-sticky) -->
-        <div v-if="showHeader || $slots.header" class="shrink-0 space-y-0 p-8 pb-0">
+        <div v-if="showHeader || $slots.header" class="shrink-0 space-y-0 pb-0" :class="isFeed ? 'p-4' : 'p-8'">
           <div class="px-3 py-5 relative border-b border-border/60" :class="variantConfig.maxWidth">
             <div class="relative flex items-stretch gap-6">
               <!-- Header Icon -->
@@ -877,11 +882,11 @@
               : 'bg-transparent border-b-transparent',
             transparent ? 'bg-transparent backdrop-blur-none' : '',
           ]">
-          <div class="mx-8 py-4">
+          <div :class="isFeed ? 'mx-4' : 'mx-8'" class="py-4">
             <div class="flex justify-between items-center gap-3 w-full">
-              <!-- View Mode Switcher -->
+              <!-- View Mode Switcher (hidden for feed variant) -->
               <div
-                v-if="showViewSwitcher"
+                v-if="showViewSwitcher && !isFeed"
                 class="flex items-center rounded-lg border border-border bg-card/25 p-0.5 shrink-0">
                 <slot name="viewSwitcher">
                   <button
@@ -1039,6 +1044,13 @@
                 </slot>
               </div>
             </div>
+          </div>
+        </div>
+
+        <!-- Feed Source Bar (feed variant) -->
+        <div v-if="isFeed && $slots.sourceBar" class="shrink-0 px-4">
+          <div :class="variantConfig.maxWidth">
+            <slot name="sourceBar" />
           </div>
         </div>
 

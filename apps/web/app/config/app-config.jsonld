@@ -1719,24 +1719,24 @@
               ]
             },
             {
-              "path": "/personal/inbox",
-              "label": "Inbox",
-              "icon": "lucide:inbox",
+              "path": "/personal/feed",
+              "label": "Feed",
+              "icon": "lucide:rss",
               "tint": "text-sky-300",
               "permissions": {
                 "minRole": "guest",
                 "permission": "read"
               },
               "meta": {
-                "title": "Inbox",
-                "description": "Quick capture and triage — items land here before being organized.",
+                "title": "Feed",
+                "description": "Incoming items from integrations and connected services.",
                 "subtitle": "Personal"
               },
               "searchKeywords": [
-                "inbox",
-                "capture",
-                "quick",
-                "triage",
+                "feed",
+                "stream",
+                "integrations",
+                "incoming",
                 "new"
               ]
             }
@@ -1885,7 +1885,7 @@
           "@id": "route:personal-today"
         },
         {
-          "@id": "route:personal-inbox"
+          "@id": "route:personal-feed"
         },
         {
           "@id": "route:personal-tasks"
@@ -1933,11 +1933,11 @@
       }
     },
     {
-      "@id": "route:personal-inbox",
+      "@id": "route:personal-feed",
       "@type": "app:Route",
-      "routePath": "/personal/inbox",
-      "label": "Inbox",
-      "icon": "lucide:inbox",
+      "routePath": "/personal/feed",
+      "label": "Feed",
+      "icon": "lucide:rss",
       "tint": "text-sky-300",
       "order": -1,
       "permissions": {
@@ -1945,15 +1945,15 @@
         "permission": "read"
       },
       "searchKeywords": [
-        "inbox",
-        "capture",
-        "quick",
-        "triage",
+        "feed",
+        "stream",
+        "integrations",
+        "incoming",
         "new"
       ],
       "meta": {
-        "title": "Inbox",
-        "description": "Quick capture and triage — items land here before being organized.",
+        "title": "Feed",
+        "description": "Incoming items from integrations and connected services.",
         "subtitle": "Personal"
       }
     },

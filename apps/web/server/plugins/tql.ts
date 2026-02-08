@@ -15,7 +15,7 @@ import { mkdirSync, existsSync } from 'node:fs'
 import { TrellisKernel } from '@toolkit/tql'
 import { BetterSqliteBackend } from '@toolkit/tql/persist/better-sqlite'
 import { createWorkspaceConfig } from '../utils/tql-ontologies'
-import { getPersonalSeedItems } from '../utils/tql-seed'
+import { getPersonalSeedItems, getTrellisProjectTasks } from '../utils/tql-seed'
 
 // Module-level singleton — accessible from API routes via useTqlKernel()
 let _kernel: TrellisKernel | null = null
@@ -91,6 +91,27 @@ export default defineNitroPlugin(async (nitro) => {
     await kernel.checkpoint()
   } else {
     console.log('[tql] Kernel restored from existing data')
+  }
+
+  // ── Seed Trellis project tasks (dogfooding) ──────────────────────
+  // Targeted seed: runs even on existing databases if trellis-dt-* items
+  // don't exist yet. This lets us add project tracking tasks without
+  // requiring a database reset.
+  try {
+    const probeResult = await kernel.query('FIND calendaritem AS ?e WHERE ?e.folder = "Trellis"')
+    const hasTrellisTasks = probeResult.rows && probeResult.rows.length > 0
+    if (!hasTrellisTasks) {
+      const projectTasks = getTrellisProjectTasks()
+      for (const item of projectTasks) {
+        const entityId = `calendaritem:${item.id}`
+        const { id: _id, ...data } = item
+        await kernel.createNode(entityId, data, 'calendaritem')
+      }
+      console.log(`[tql] Seeded ${projectTasks.length} Trellis project tasks (dogfooding)`)
+      await kernel.checkpoint()
+    }
+  } catch (err) {
+    console.warn('[tql] Could not seed Trellis project tasks:', err)
   }
 
   // Store in module singleton
