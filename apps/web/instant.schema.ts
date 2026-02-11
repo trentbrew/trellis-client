@@ -46,6 +46,8 @@ const _schema = i.schema({
       name: i.string(),
       slug: i.string().indexed(),
       avatar: i.string().optional(),
+      description: i.string().optional(),
+      status: i.string().optional(),
       plan: i.string().optional(),
       createdAt: i.number().optional(),
       updatedAt: i.number().optional(),
@@ -408,6 +410,33 @@ const _schema = i.schema({
       budget: i.number().optional(),
       confirmationNumber: i.string().optional(),
       tripStatus: i.string().optional(),
+      // Actor-specific (person, contact, organization, vendor)
+      email: i.string().optional(),
+      phone: i.string().optional(),
+      avatar: i.string().optional(),
+      entityRole: i.string().optional(), // role within org (e.g. 'engineer')
+      relationships: i.json().optional(), // string[] — related entity IDs
+      jobTitle: i.string().optional(),
+      company: i.string().optional(),
+      website: i.string().optional(),
+      industry: i.string().optional(),
+      memberCount: i.number().optional(),
+      services: i.json().optional(), // string[]
+      contractEnd: i.string().optional(),
+      entityRating: i.number().optional(),
+      // File-specific (document class)
+      mimeType: i.string().optional(),
+      sizeBytes: i.number().optional(),
+      fileUrl: i.string().optional(),
+      storagePath: i.string().optional(),
+      slug: i.string().optional(),
+      isPublished: i.boolean().optional(),
+      templateFor: i.string().optional(),
+      // Container-specific (project, folder, collection, goal)
+      children: i.json().optional(), // string[] — child entity IDs
+      progress: i.number().optional(), // 0–1
+      containerStatus: i.string().optional(), // active | archived | completed | on-hold
+      parentEntityId: i.string().indexed().optional(),
       // Timestamps
       createdAt: i.number().optional(),
       updatedAt: i.number().optional(),
@@ -421,6 +450,8 @@ const _schema = i.schema({
       icon: i.string().optional(),
       color: i.string().optional(),
       description: i.string().optional(),
+      isPublic: i.boolean().optional(),
+      ontologies: i.json().optional(),
       createdAt: i.number().optional(),
       updatedAt: i.number().optional(),
     }),

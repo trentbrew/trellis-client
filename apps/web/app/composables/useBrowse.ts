@@ -7,9 +7,11 @@ export type BrowseViewMode =
   | 'calendar'
   | 'kanban'
   | 'timeline'
+  | 'gantt'
   | 'month'
   | 'week'
   | 'agenda'
+  | 'moodboard'
 
 export type BrowseVariant = 'default' | 'people' | 'media' | 'articles'
 

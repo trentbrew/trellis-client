@@ -1,0 +1,12 @@
+{
+  "mcpServers": {
+    "trellis": {
+      "command": "node",
+      "args": ["packages/trellis-mcp/bin/serve.mjs"],
+      "env": {
+        "TRELLIS_API_URL": "http://localhost:4141",
+        "TRELLIS_AGENT_ID": "claude-code"
+      }
+    }
+  }
+}

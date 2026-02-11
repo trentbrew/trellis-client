@@ -19,6 +19,105 @@ export interface SeedCalendarItem {
   [key: string]: any
 }
 
+function buildPitchDeckSlides() {
+  return [
+    {
+      id: 'slide-cover',
+      fields: {
+        order: 0,
+        title: 'Trellis',
+        subtitle: 'A semantic operating system for knowledge work.',
+        body: '',
+        layout: 'title',
+        background: '',
+        media: '',
+        speakerNotes: 'Opening slide.',
+      },
+    },
+    {
+      id: 'slide-problem',
+      fields: {
+        order: 1,
+        title: 'The Problem',
+        subtitle: 'Your work is trapped in silos.',
+        body: [
+          '- The average knowledge worker uses **9+ apps** daily',
+          '- Data is **locked in proprietary formats**',
+          '- AI assistants cannot reason across tools',
+          '- Context switching costs **$450B/year**',
+        ].join('\n'),
+        layout: 'content',
+        background: '',
+        media: '',
+        speakerNotes: '',
+      },
+    },
+    {
+      id: 'slide-insight',
+      fields: {
+        order: 2,
+        title: 'The Insight',
+        subtitle: '',
+        body: '"The next trillion-dollar platforms are systems of record for **decisions**, not just objects."',
+        layout: 'quote',
+        background: '',
+        media: '',
+        speakerNotes: '',
+      },
+    },
+    {
+      id: 'slide-intro',
+      fields: {
+        order: 3,
+        title: 'Introducing Trellis',
+        subtitle: 'NixOS for knowledge work',
+        body: [
+          '| Concept | Traditional | Trellis |',
+          '|---------|------------|---------|',
+          '| Data | Locked | Open JSON-LD graph |',
+          '| Views | Hard-coded | Declarative projections |',
+          '| AI | Bolted-on | First-class citizen |',
+        ].join('\n'),
+        layout: 'content',
+        background: '',
+        media: '',
+        speakerNotes: '',
+      },
+    },
+    {
+      id: 'slide-entity',
+      fields: {
+        order: 4,
+        title: 'Entity System',
+        subtitle: 'Four classes cover all knowledge work.',
+        body: [
+          '**Temporal** — task, event, trip, payment',
+          '**Document** — note, file, page, slide deck',
+          '**Actor** — person, contact, organization',
+          '**Container** — project, folder, collection',
+        ].join('\n'),
+        layout: 'content',
+        background: '',
+        media: '',
+        speakerNotes: '',
+      },
+    },
+    {
+      id: 'slide-vision',
+      fields: {
+        order: 5,
+        title: 'The Vision',
+        subtitle: '',
+        body: 'Same `.trellis` config = same workspace, anywhere.\n\n**Data you own. Views that adapt. AI that understands.**',
+        layout: 'quote',
+        background: '',
+        media: '',
+        speakerNotes: '',
+      },
+    },
+  ]
+}
+
 export function getPersonalSeedItems(): SeedCalendarItem[] {
   return [
     // ── Tasks ──────────────────────────────────────────────────────────
@@ -1071,6 +1170,9 @@ export function getPersonalSeedItems(): SeedCalendarItem[] {
       pinned: false,
       linkedItems: [],
     },
+
+    // ── Bookmarks are seeded separately via instant.client.ts migration ──
+    // ── People & Organizations are seeded via entitySeedData.ts ──
   ]
 }
 
@@ -1122,6 +1224,7 @@ export function getTrellisProjectTasks(): SeedCalendarItem[] {
       allDay: true,
       priority: 'high',
       urgency: 'urgent',
+      dependsOn: ['trellis-dt-1'],
       priorityOverride: false,
       urgencyOverride: false,
       category: 'work',
@@ -1159,6 +1262,7 @@ export function getTrellisProjectTasks(): SeedCalendarItem[] {
       allDay: true,
       priority: 'medium',
       urgency: 'not-urgent',
+      dependsOn: ['trellis-dt-1'],
       priorityOverride: false,
       urgencyOverride: false,
       category: 'work',
@@ -1183,6 +1287,7 @@ export function getTrellisProjectTasks(): SeedCalendarItem[] {
       id: 'trellis-dt-m1',
       type: 'task',
       title: '🏁 Milestone: Cells are editable end-to-end',
+      dependsOn: ['trellis-dt-1', 'trellis-dt-2', 'trellis-dt-3'],
       description:
         'Phase 1 complete — every cell in the datatable supports click-to-edit with type-aware inputs, changes persist to JSON-LD and auto-save to InstantDB.',
       startDate: daysFromNow(4),
@@ -1219,6 +1324,7 @@ export function getTrellisProjectTasks(): SeedCalendarItem[] {
       allDay: true,
       priority: 'high',
       urgency: 'not-urgent',
+      dependsOn: ['trellis-dt-m1'],
       priorityOverride: false,
       urgencyOverride: false,
       category: 'work',
@@ -1241,12 +1347,13 @@ export function getTrellisProjectTasks(): SeedCalendarItem[] {
     {
       id: 'trellis-dt-5',
       type: 'task',
-      title: '"+" column button — add new properties',
+      title: '"+ " column button — add new properties',
       description: 'Add a "+" button at the end of column headers that opens a popover with name input + type selector to create a new field.',
       startDate: daysFromNow(7),
       allDay: true,
       priority: 'medium',
       urgency: 'not-urgent',
+      dependsOn: ['trellis-dt-4'],
       priorityOverride: false,
       urgencyOverride: false,
       category: 'work',
@@ -1270,6 +1377,7 @@ export function getTrellisProjectTasks(): SeedCalendarItem[] {
       allDay: true,
       priority: 'medium',
       urgency: 'not-urgent',
+      dependsOn: ['trellis-dt-4'],
       priorityOverride: false,
       urgencyOverride: false,
       category: 'work',
@@ -1294,6 +1402,7 @@ export function getTrellisProjectTasks(): SeedCalendarItem[] {
       allDay: true,
       priority: 'medium',
       urgency: 'not-urgent',
+      dependsOn: ['trellis-dt-5', 'trellis-dt-6'],
       priorityOverride: false,
       urgencyOverride: false,
       category: 'work',
@@ -1317,6 +1426,7 @@ export function getTrellisProjectTasks(): SeedCalendarItem[] {
       allDay: true,
       priority: 'high',
       urgency: 'not-urgent',
+      dependsOn: ['trellis-dt-7'],
       priorityOverride: false,
       urgencyOverride: false,
       category: 'work',
@@ -1339,6 +1449,7 @@ export function getTrellisProjectTasks(): SeedCalendarItem[] {
       allDay: true,
       priority: 'medium',
       urgency: 'not-urgent',
+      dependsOn: ['trellis-dt-7', 'trellis-dt-8'],
       priorityOverride: false,
       urgencyOverride: false,
       category: 'work',
@@ -1365,6 +1476,7 @@ export function getTrellisProjectTasks(): SeedCalendarItem[] {
       allDay: true,
       priority: 'medium',
       urgency: 'not-urgent',
+      dependsOn: ['trellis-dt-8', 'trellis-dt-9'],
       priorityOverride: false,
       urgencyOverride: false,
       category: 'work',
@@ -1388,6 +1500,7 @@ export function getTrellisProjectTasks(): SeedCalendarItem[] {
       allDay: true,
       priority: 'medium',
       urgency: 'not-urgent',
+      dependsOn: ['trellis-dt-10'],
       priorityOverride: false,
       urgencyOverride: false,
       category: 'work',
@@ -1414,6 +1527,7 @@ export function getTrellisProjectTasks(): SeedCalendarItem[] {
       allDay: true,
       priority: 'medium',
       urgency: 'not-urgent',
+      dependsOn: ['trellis-dt-11'],
       priorityOverride: false,
       urgencyOverride: false,
       category: 'work',
@@ -1440,6 +1554,7 @@ export function getTrellisProjectTasks(): SeedCalendarItem[] {
       id: 'trellis-dt-m2',
       type: 'task',
       title: '🏁 Milestone: Interactive DataTable v1 shipped',
+      dependsOn: ['trellis-dt-12'],
       description:
         'All 5 phases complete — inline editing, column management, row operations, filtering, and data import are live. The collection datatable is a full Notion/Airtable-style experience.',
       startDate: daysFromNow(22),
@@ -1461,6 +1576,31 @@ export function getTrellisProjectTasks(): SeedCalendarItem[] {
       reminders: [{ id: 'r-m2', timing: '1-day-before', method: 'push' }],
       taskStatus: 'pending',
       checklist: [],
+    },
+
+    // ── Slide Decks ─────────────────────────────────────────────────────
+    {
+      id: 'slide-deck-1',
+      type: 'slide_deck',
+      title: 'Trellis Pitch Deck',
+      description: 'Investor pitch deck for Trellis — a semantic operating system for knowledge work.',
+      startDate: daysFromNow(0),
+      allDay: true,
+      priority: 'medium',
+      urgency: 'not-urgent',
+      priorityOverride: false,
+      urgencyOverride: false,
+      category: 'work',
+      tags: ['trellis', 'pitch', 'presentation'],
+      owner: 'you',
+      involved: [],
+      attachments: [],
+      references: [],
+      reminders: [],
+      pinned: true,
+      slides: JSON.stringify(buildPitchDeckSlides()),
+      slideTheme: 'dark',
+      slideTransition: 'fade',
     },
   ]
 }

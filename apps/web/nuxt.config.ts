@@ -126,6 +126,9 @@ export default defineNuxtConfig({
         },
       },
     ] as any,
+    optimizeDeps: {
+      include: ['mermaid'],
+    },
   },
 
   app: {

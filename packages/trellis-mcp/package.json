@@ -1,0 +1,27 @@
+{
+  "name": "@toolkit/trellis-mcp",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "MCP server exposing the Trellis graph API as tools for AI agents",
+  "bin": {
+    "trellis-mcp": "./bin/serve.mjs"
+  },
+  "exports": {
+    ".": {
+      "types": "./src/server.ts",
+      "import": "./src/server.mjs"
+    }
+  },
+  "files": [
+    "bin/",
+    "src/"
+  ],
+  "scripts": {
+    "build": "echo 'no build step — runs via node'",
+    "start": "node bin/serve.mjs"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.12.1"
+  }
+}

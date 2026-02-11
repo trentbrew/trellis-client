@@ -1,0 +1,47 @@
+# Trellis — Windsurf Rules
+
+You are working inside the **Trellis** monorepo — a personal knowledge graph platform.
+
+Read `AGENTS.md` for the complete reference. Key points below.
+
+## What You Can Do
+
+- **Query the graph**: `just trellis query 'FIND calendaritem AS ?t WHERE ?t.type = "task"' --pretty`
+- **CRUD entities**: `just trellis create/update/delete` — changes sync to the browser UI instantly via SSE
+- **Manage ontologies**: `just trellis ontology create/update/delete` — auto-scaffolds UI (sidebar, browse page, dialog)
+- **Link entities**: `just trellis link calendaritem:task-1 relatedTo calendaritem:note-1`
+- **Watch mutations**: `just trellis watch --pretty`
+
+## Architecture
+
+```
+apps/web/              Nuxt 3 app (localhost:4141)
+packages/tql/          TQL kernel, EAV store, EQL-S query engine
+packages/trellis-cli/  CLI + TypeScript SDK
+packages/trellis-mcp/  MCP server (15 tools)
+packages/types/        Shared TypeScript types
+```
+
+## Entity System
+
+Two-axis: **class** (temporal, document, actor, container) × **type** (task, note, person, project, etc.)
+
+Entity IDs: `calendaritem:task-1`, `calendaritem:note-meeting`
+
+## Key Rules
+
+- Dev server is always on `localhost:4141` — **never start it yourself**
+- Pass `--agent-id cascade` to track your mutations
+- Use descriptive entity ID slugs
+- Mutations appear instantly in the browser via SSE
+- Every entity needs at minimum `{ title: "..." }`
+
+## Workflows
+
+Use `/trellis-cli` for the step-by-step CLI workflow with examples.
+
+## Full Reference
+
+- `AGENTS.md` — API endpoints, entity architecture, CLI commands, SDK, MCP tools
+- `packages/trellis-mcp/SKILL.md` — Entity fields, linking conventions, query syntax
+- `.windsurf/workflows/trellis-cli.md` — CLI workflow with ontology CRUD examples

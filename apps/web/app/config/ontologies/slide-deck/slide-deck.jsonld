@@ -1,0 +1,113 @@
+{
+  "@context": {
+    "@vocab": "https://platform-sandbox.dev/ontology/slide-deck#",
+    "@version": 1.1,
+    "core": "https://platform-sandbox.dev/ontology/core#",
+    "ui": "https://platform-sandbox.dev/ontology/ui#",
+    "field": "https://platform-sandbox.dev/ontology/fields#",
+    "rdfs": "http://www.w3.org/2000/01/rdf-schema#",
+    "owl": "http://www.w3.org/2002/07/owl#",
+
+    "label": "rdfs:label",
+    "comment": "rdfs:comment",
+    "subClassOf": { "@id": "rdfs:subClassOf", "@type": "@id" },
+    "fields": { "@id": "core:fields", "@container": "@list" },
+    "required": "core:required",
+    "valueType": "core:valueType",
+    "options": { "@id": "core:options", "@container": "@list" },
+    "icon": { "@id": "ui:icon", "@type": "@id" },
+    "projectionTypes": { "@id": "ui:projectionTypes", "@container": "@list" }
+  },
+
+  "@id": "https://platform-sandbox.dev/ontology/slide-deck",
+  "@type": "owl:Ontology",
+  "label": "Slide Deck Ontology",
+  "comment": "Defines the Slide Deck collection type and Slide record schema. Each record in a slide-deck collection represents one slide.",
+  "owl:versionInfo": "1.0.0",
+
+  "@graph": [
+    {
+      "@id": "slide-deck:SlideDeck",
+      "@type": "rdfs:Class",
+      "subClassOf": "core:Collection",
+      "label": "Slide Deck",
+      "comment": "A collection of slides that can be presented as a full-screen slide deck.",
+      "icon": "lucide:presentation",
+      "projectionTypes": ["slide-deck", "table", "list", "code"]
+    },
+    {
+      "@id": "slide-deck:Slide",
+      "@type": "rdfs:Class",
+      "subClassOf": "core:Thing",
+      "label": "Slide",
+      "comment": "A single slide within a slide deck. Fields control content, layout, and appearance.",
+      "fields": [
+        {
+          "@id": "field:slide-order",
+          "label": "Order",
+          "valueType": "number",
+          "required": true,
+          "comment": "Sort position of the slide in the deck."
+        },
+        {
+          "@id": "field:slide-title",
+          "label": "Title",
+          "valueType": "text",
+          "required": false,
+          "comment": "Primary heading displayed on the slide."
+        },
+        {
+          "@id": "field:slide-subtitle",
+          "label": "Subtitle",
+          "valueType": "text",
+          "required": false,
+          "comment": "Secondary line below the title."
+        },
+        {
+          "@id": "field:slide-body",
+          "label": "Body",
+          "valueType": "text",
+          "required": false,
+          "comment": "Markdown content — bullet lists, code blocks, tables, quotes."
+        },
+        {
+          "@id": "field:slide-layout",
+          "label": "Layout",
+          "valueType": "select",
+          "required": true,
+          "comment": "Determines the visual arrangement of content on the slide.",
+          "options": [
+            { "value": "title", "label": "Title", "comment": "Centered large heading + subtitle. No body." },
+            { "value": "section", "label": "Section", "comment": "Section divider with marker bar." },
+            { "value": "content", "label": "Content", "comment": "Heading top-left, body below. Default layout." },
+            { "value": "split", "label": "Split", "comment": "50/50 text left, media right." },
+            { "value": "quote", "label": "Quote", "comment": "Large centered italic quote with attribution." },
+            { "value": "image", "label": "Image", "comment": "Full-bleed media with optional overlay text." },
+            { "value": "blank", "label": "Blank", "comment": "Body only, no heading chrome." }
+          ]
+        },
+        {
+          "@id": "field:slide-background",
+          "label": "Background",
+          "valueType": "text",
+          "required": false,
+          "comment": "CSS background value — color, gradient, or url(...)."
+        },
+        {
+          "@id": "field:slide-media",
+          "label": "Media",
+          "valueType": "url",
+          "required": false,
+          "comment": "Image or video URL for split/image layouts."
+        },
+        {
+          "@id": "field:slide-speakerNotes",
+          "label": "Speaker Notes",
+          "valueType": "text",
+          "required": false,
+          "comment": "Hidden notes for the presenter. Not rendered on the slide."
+        }
+      ]
+    }
+  ]
+}

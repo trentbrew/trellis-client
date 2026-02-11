@@ -41,7 +41,7 @@ export type TemporalEntityType =
   | 'deadline'
   | 'milestone'
 
-export type DocumentEntityType = 'note' | 'file' | 'page' | 'template'
+export type DocumentEntityType = 'note' | 'file' | 'page' | 'template' | 'slide_deck' | 'bookmark'
 
 export type ActorEntityType = 'person' | 'contact' | 'organization' | 'vendor'
 
@@ -309,6 +309,15 @@ export interface TemplateItem extends EntityBase, DocumentMixin {
   fields?: FormulaField[]
 }
 
+export interface BookmarkItem extends EntityBase, DocumentMixin {
+  type: 'bookmark'
+  url: string
+  favicon?: string
+  thumbnail?: string
+  siteName?: string
+  excerpt?: string
+}
+
 // ── Actor Entities ─────────────────────────────────────────────────────────
 
 export interface PersonItem extends EntityBase, ActorMixin {
@@ -379,7 +388,7 @@ export type TemporalEntity =
   | DeadlineItem
   | MilestoneItem
 
-export type DocumentEntity = NoteItem | FileItem | PageItem | TemplateItem
+export type DocumentEntity = NoteItem | FileItem | PageItem | TemplateItem | BookmarkItem
 
 export type ActorEntity = PersonItem | ContactItem | OrganizationItem | VendorItem
 
@@ -416,7 +425,7 @@ const TEMPORAL_TYPES: Set<string> = new Set<TemporalEntityType>([
   'deadline',
   'milestone',
 ])
-const DOCUMENT_TYPES: Set<string> = new Set<DocumentEntityType>(['note', 'file', 'page', 'template'])
+const DOCUMENT_TYPES: Set<string> = new Set<DocumentEntityType>(['note', 'file', 'page', 'template', 'bookmark'])
 const ACTOR_TYPES: Set<string> = new Set<ActorEntityType>(['person', 'contact', 'organization', 'vendor'])
 const CONTAINER_TYPES: Set<string> = new Set<ContainerEntityType>(['project', 'folder', 'collection', 'goal'])
 
@@ -446,6 +455,7 @@ export const isNote = (entity: Entity): entity is NoteItem => entity.type === 'n
 export const isFile = (entity: Entity): entity is FileItem => entity.type === 'file'
 export const isPerson = (entity: Entity): entity is PersonItem => entity.type === 'person'
 export const isProject = (entity: Entity): entity is ProjectItem => entity.type === 'project'
+export const isBookmark = (entity: Entity): entity is BookmarkItem => entity.type === 'bookmark'
 export const isFolder = (entity: Entity): entity is FolderItem => entity.type === 'folder'
 export const isGoal = (entity: Entity): entity is GoalItem => entity.type === 'goal'
 
@@ -526,6 +536,8 @@ export interface EntityTypeConfig {
   icon: string
   color: string // Tailwind color token (e.g. 'blue', 'emerald')
   projections: ProjectionType[]
+  /** The preferred default projection when viewing this entity type */
+  defaultProjection?: ProjectionType
   dialogShell: EntityClass // which shell to use (matches class by default)
   panels: EntityPanelConfig
   propertyFields: PropertyFieldConfig[]

@@ -255,7 +255,7 @@ export function useInstantData() {
       )
 
       // If the user switches apps while on a collection detail route, ensure the slug exists
-      // in the newly-selected app. Otherwise, route back to /collections.
+      // in the newly-selected app. Otherwise, route back to /database.
       watch(
         [currentApp, collections, collectionsLoading],
         () => {
@@ -264,8 +264,8 @@ export function useInstantData() {
           if (!app) return
 
           const path = route.path
-          if (!path.startsWith('/collections/')) return
-          const slug = path.split('/collections/')[1]?.split('/')[0] || ''
+          if (!path.startsWith('/database/collections/')) return
+          const slug = path.split('/database/collections/')[1]?.split('/')[0] || ''
           if (!slug) return
 
           if (collectionsLoading.value) return
@@ -273,7 +273,7 @@ export function useInstantData() {
           const exists = (collections.value || []).some((c) => c.appId === app.id && c.slug === slug)
           if (exists) return
 
-          void router.replace('/collections')
+          void router.replace('/database')
         },
         { immediate: true },
       )
