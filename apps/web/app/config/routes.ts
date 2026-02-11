@@ -27,6 +27,7 @@
 
 import { filterRoutesByPermissions } from '~/lib/permissions'
 import { buildRouteConfigTree } from '~/lib/appConfig'
+import type { ContextMenuConfig } from '~/types/contextMenu'
 
 export interface BadgeConfig {
   label: string | number
@@ -91,6 +92,8 @@ export interface RouteConfig {
   order?: number
   /** Whether this route allows creating new items in sidebar */
   editable?: boolean
+  /** Context menu actions for this route (when right-clicked in sidebar, etc.) */
+  contextMenu?: ContextMenuConfig
   /** Function to load dynamic children (e.g., from database) */
   loadChildren?: () => Promise<RouteConfig[]>
   /** Tabs to display on this page (sub-sections within the page, not sibling routes) */
@@ -120,6 +123,8 @@ export interface RouteConfig {
     editable?: boolean
     /** Order in sidebar (lower = appears first) */
     order?: number
+    /** Context menu actions for this section header */
+    contextMenu?: ContextMenuConfig
   }>
   /** Semantic graph metadata (JSON-LD) */
   jsonLd?: {
@@ -288,16 +293,20 @@ export const routeConfig: RouteConfig[] = [...buildRouteConfigTree(), ...staticR
 // Route config now sourced from app-config.jsonld via buildRouteConfigTree() plus static routes.
 
 export const ROUTE_PATHS = {
-  personal: {
-    root: '/personal',
-    today: '/personal/today',
-    feed: '/personal/feed',
-    tasks: '/personal/tasks',
-    calendar: '/personal/calendar',
-    notes: '/personal/notes',
-    projects: '/personal/projects',
-    people: '/personal/people',
-    files: '/personal/files',
+  workspace: {
+    root: '/workspace',
+    today: '/workspace/today',
+    feed: '/workspace/feed',
+    tasks: '/workspace/tasks',
+    calendar: '/workspace/calendar',
+    notes: '/workspace/notes',
+    projects: '/workspace/projects',
+    people: '/workspace/people',
+    organizations: '/workspace/organizations',
+    files: '/workspace/files',
+    documents: '/workspace/documents',
+    bookmarks: '/workspace/bookmarks',
+    places: '/workspace/places',
   },
   app: {
     root: '/app',
@@ -344,6 +353,7 @@ export const ROUTE_PATHS = {
       selfAssessments: '/app/reports/self-assessments',
     },
   },
+  database: '/database',
   graph: {
     root: '/graph',
     dashboard: '/graph/dashboard',
@@ -544,7 +554,7 @@ export function parseFullPath(path: string): ParsedPath {
   const segments = path.split('/').filter(Boolean)
 
   // Check for [workspace]/[app]/... pattern (2+ segments where first is not a known top-level route)
-  const knownTopLevelRoutes = ['docs', 'settings', 'admin', 'auth', 'collections', 'workflows', 'help', 'personal', 'welcome', 'onboarding', 'notifications', 'permits', 'types', 'apptool', 'playground', 'components', 'embed', 'archive', 'members', 'learn', 'graph']
+  const knownTopLevelRoutes = ['docs', 'settings', 'admin', 'auth', 'database', 'collections', 'workflows', 'help', 'workspace', 'welcome', 'onboarding', 'notifications', 'permits', 'types', 'apptool', 'playground', 'components', 'embed', 'archive', 'members', 'learn', 'graph']
 
   if (segments.length >= 2 && segments[0] && !knownTopLevelRoutes.includes(segments[0])) {
     // It's a workspace/app route: /[workspace]/[app]/path...

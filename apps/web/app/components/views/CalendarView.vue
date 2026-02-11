@@ -498,6 +498,197 @@
     }
   }
 
+  // ── Multi-day spanning bar logic ────────────────────────────────────
+  const MAX_VISIBLE_LANES = 3
+
+  interface MultiDayLane {
+    event: CalendarEvent
+    startCol: number
+    endCol: number
+    continuesFromPrev: boolean
+    continuesToNext: boolean
+    style: typeof defaultTypeColor
+    laneIndex: number
+  }
+
+  interface LaneSlot {
+    event: CalendarEvent
+    style: typeof defaultTypeColor
+    isStart: boolean
+    isEnd: boolean
+    isWrapStart: boolean
+    isWrapEnd: boolean
+  }
+
+  interface WeekRow {
+    days: Array<{ date: Date; isCurrentMonth: boolean; isToday: boolean }>
+    lanes: MultiDayLane[]
+    overflowCount: number
+  }
+
+  const isMultiDayEvent = (event: CalendarEvent): boolean => {
+    if (!event.range) return false
+    const s = new Date(event.range.start.getFullYear(), event.range.start.getMonth(), event.range.start.getDate())
+    const e = new Date(event.range.end.getFullYear(), event.range.end.getMonth(), event.range.end.getDate())
+    return e.getTime() > s.getTime()
+  }
+
+  const multiDayEvents = computed(() => events.value.filter(isMultiDayEvent))
+
+  const getMultiDayLanes = (
+    weekDays: Array<{ date: Date }>,
+    globalLaneMap: Map<string, number>,
+  ): { lanes: MultiDayLane[]; overflowCount: number } => {
+    if (!weekDays.length) return { lanes: [], overflowCount: 0 }
+    const weekStart = new Date(weekDays[0]!.date.getFullYear(), weekDays[0]!.date.getMonth(), weekDays[0]!.date.getDate())
+    const weekEnd = new Date(weekDays[6]!.date.getFullYear(), weekDays[6]!.date.getMonth(), weekDays[6]!.date.getDate())
+
+    const relevant = multiDayEvents.value.filter((ev) => {
+      const s = new Date(ev.range!.start.getFullYear(), ev.range!.start.getMonth(), ev.range!.start.getDate())
+      const e = new Date(ev.range!.end.getFullYear(), ev.range!.end.getMonth(), ev.range!.end.getDate())
+      return e >= weekStart && s <= weekEnd
+    })
+
+    if (!relevant.length) return { lanes: [], overflowCount: 0 }
+
+    // Sort by start date, then by span length (longer first for better packing)
+    const sorted = [...relevant].sort((a, b) => {
+      const aStart = a.range!.start.getTime()
+      const bStart = b.range!.start.getTime()
+      if (aStart !== bStart) return aStart - bStart
+      const aLen = a.range!.end.getTime() - a.range!.start.getTime()
+      const bLen = b.range!.end.getTime() - b.range!.start.getTime()
+      return bLen - aLen
+    })
+
+    // Process reserved events (continuing from previous row) first for lane consistency
+    const reserved = sorted.filter((ev) => globalLaneMap.has(ev.id))
+    const fresh = sorted.filter((ev) => !globalLaneMap.has(ev.id))
+    const processingOrder = [...reserved, ...fresh]
+
+    // Greedy lane assignment — track lane index per event
+    const laneOccupancy: number[][] = [] // laneOccupancy[lane] = array of occupied columns
+    const allLanes: MultiDayLane[] = []
+
+    for (const ev of processingOrder) {
+      const evStart = new Date(ev.range!.start.getFullYear(), ev.range!.start.getMonth(), ev.range!.start.getDate())
+      const evEnd = new Date(ev.range!.end.getFullYear(), ev.range!.end.getMonth(), ev.range!.end.getDate())
+
+      const startCol = Math.max(0, Math.round((evStart.getTime() - weekStart.getTime()) / 86400000))
+      const endCol = Math.min(6, Math.round((evEnd.getTime() - weekStart.getTime()) / 86400000))
+
+      const continuesFromPrev = evStart < weekStart
+      const continuesToNext = evEnd > weekEnd
+
+      let assignedLane = -1
+
+      // Try to reuse lane from a previous row
+      if (globalLaneMap.has(ev.id)) {
+        const preferred = globalLaneMap.get(ev.id)!
+        while (laneOccupancy.length <= preferred) laneOccupancy.push([])
+        const conflict = laneOccupancy[preferred]!.some((c) => c >= startCol && c <= endCol)
+        if (!conflict) assignedLane = preferred
+      }
+
+      // Greedy fallback: find first free lane
+      if (assignedLane === -1) {
+        for (let l = 0; l < laneOccupancy.length; l++) {
+          const conflict = laneOccupancy[l]!.some((c) => c >= startCol && c <= endCol)
+          if (!conflict) {
+            assignedLane = l
+            break
+          }
+        }
+        if (assignedLane === -1) {
+          assignedLane = laneOccupancy.length
+          laneOccupancy.push([])
+        }
+      }
+
+      // Persist lane assignment globally
+      globalLaneMap.set(ev.id, assignedLane)
+
+      // Mark columns as occupied
+      for (let c = startCol; c <= endCol; c++) {
+        laneOccupancy[assignedLane]!.push(c)
+      }
+
+      allLanes.push({
+        event: ev,
+        startCol,
+        endCol,
+        continuesFromPrev,
+        continuesToNext,
+        style: getTypeStyle(ev.typeLabel),
+        laneIndex: assignedLane,
+      })
+    }
+
+    const visible = allLanes.filter((l) => l.laneIndex < MAX_VISIBLE_LANES)
+    const overflowCount = allLanes.filter((l) => l.laneIndex >= MAX_VISIBLE_LANES).length
+
+    return { lanes: visible, overflowCount }
+  }
+
+  const weekRows = computed<WeekRow[]>(() => {
+    const days = monthDays.value
+    const rows: WeekRow[] = []
+    const globalLaneMap = new Map<string, number>()
+    for (let i = 0; i < days.length; i += 7) {
+      const weekDays = days.slice(i, i + 7)
+      const { lanes, overflowCount } = getMultiDayLanes(weekDays, globalLaneMap)
+      rows.push({ days: weekDays, lanes, overflowCount })
+    }
+    return rows
+  })
+
+  const getLaneSlotsForDay = (row: WeekRow, colIdx: number): Array<LaneSlot | null> => {
+    if (!row.lanes.length) return []
+    const maxLane = Math.max(...row.lanes.map((l) => l.laneIndex))
+    const slotCount = Math.min(maxLane + 1, MAX_VISIBLE_LANES)
+    const slots: Array<LaneSlot | null> = Array(slotCount).fill(null)
+    for (const lane of row.lanes) {
+      if (colIdx >= lane.startCol && colIdx <= lane.endCol) {
+        slots[lane.laneIndex] = {
+          event: lane.event,
+          style: lane.style,
+          isStart: colIdx === lane.startCol && !lane.continuesFromPrev,
+          isEnd: colIdx === lane.endCol && !lane.continuesToNext,
+          isWrapStart: colIdx === lane.startCol && lane.continuesFromPrev,
+          isWrapEnd: colIdx === lane.endCol && lane.continuesToNext,
+        }
+      }
+    }
+    // If no bar passes through this cell, return empty to hide spacers entirely
+    return slots.some((s) => s !== null) ? slots : []
+  }
+
+  // Multi-day event IDs set for quick lookup (to exclude from single-day rendering)
+  const multiDayEventIds = computed(() => new Set(multiDayEvents.value.map((e) => e.id)))
+
+  // Get type groups for a day, excluding multi-day events (those render as spanning bars)
+  const getSingleDayTypeGroups = (date: Date): TypeGroup[] => {
+    const dayEvents = getEventsForDay(date).filter((e) => !multiDayEventIds.value.has(e.id))
+    if (!dayEvents.length) return []
+    const grouped = new Map<string, CalendarEvent[]>()
+    for (const ev of dayEvents) {
+      const key = ev.typeLabel || 'Item'
+      if (!grouped.has(key)) grouped.set(key, [])
+      grouped.get(key)!.push(ev)
+    }
+    const result: TypeGroup[] = []
+    for (const [typeLabel, items] of grouped) {
+      const style = getTypeStyle(typeLabel)
+      const urgentCount = items.filter((i) => {
+        const u = i.urgency?.toLowerCase()
+        const p = i.priority?.toLowerCase()
+        return u === 'urgent' || u === 'high' || p === 'urgent' || p === 'high'
+      }).length
+      result.push({ typeLabel, style, items, urgentCount })
+    }
+    return result
+  }
+
   // Use ontology utilities for display configuration
   const getNodeStringValue = (node: any, keys: string[]): string | undefined => {
     // First try extractNodeValue from ontology, then fallback to unwrapLdValue
@@ -1272,168 +1463,213 @@
                   {{ day }}
                 </div>
               </div>
-              <!-- Month Grid -->
-              <div class="flex-1">
-                <div class="grid grid-cols-7 h-full" style="grid-template-rows: repeat(6, minmax(100px, 1fr))">
-                  <div
-                    v-for="(day, idx) in monthDays"
-                    :key="idx"
-                    :class="[
-                      'p-2 border-b border-r border-border/30 relative group',
-                      'last:border-r-0 nth-[7n]:border-r-0',
-                      !day.isCurrentMonth ? 'bg-muted/20' : '',
-                      day.isToday ? 'bg-primary/5 ring-2 ring-inset ring-primary/30' : '',
-                    ]"
-                    >
-                    <!-- Day header: number + hover add button -->
-                    <div class="flex items-center justify-between mb-1">
-                      <div
-                        :class="[
-                          day.isToday
-                            ? 'w-6 h-6 rounded-full bg-primary text-primary-foreground flex items-center justify-center text-[11px] font-semibold'
-                            : day.isCurrentMonth
-                              ? 'text-[11px] text-muted-foreground font-medium'
-                              : 'text-[11px] text-muted-foreground/30',
-                        ]">
-                        {{ day.date.getDate() }}
-                      </div>
-                      <!-- Hover '+' button with type picker -->
-                      <UiPopover
-                        v-if="day.isCurrentMonth"
-                        :open="isAddMenuOpen(day.date)"
-                        @update:open="(open: boolean) => { addMenuDate = open ? day.date : null }">
-                        <UiPopoverTrigger as-child>
-                          <button
-                            class="h-5 w-5 rounded flex items-center justify-center opacity-0 group-hover:opacity-100 hover:bg-muted transition-all text-muted-foreground hover:text-foreground"
-                            @click.stop="() => { addMenuDate = day.date }">
-                            <Icon name="lucide:plus" class="h-3 w-3" />
-                          </button>
-                        </UiPopoverTrigger>
-                        <UiPopoverContent align="end" side="bottom" class="w-44 p-1">
-                          <button
-                            v-for="t in temporalTypeOptions"
-                            :key="t.typeLabel"
-                            class="w-full flex items-center gap-2 px-2 py-1.5 rounded-md text-xs hover:bg-muted/50 transition-colors"
-                            @click="() => { addMenuDate = null; emit('create-request', day.date, t.typeLabel) }">
-                            <Icon :name="t.icon" :class="['h-3.5 w-3.5', t.text]" />
-                            <span>{{ t.typeLabel }}</span>
-                          </button>
-                        </UiPopoverContent>
-                      </UiPopover>
-                    </div>
-                    <!-- Type-grouped item stacks -->
+              <!-- Month Grid: week-row sub-grids -->
+              <div
+                class="flex-1 grid"
+                :style="{ gridTemplateRows: `repeat(${weekRows.length}, minmax(0, 1fr))` }">
+                <div
+                  v-for="(row, rowIdx) in weekRows"
+                  :key="rowIdx"
+                  class="min-h-0 overflow-hidden">
+                  <!-- Day cells grid -->
+                  <div class="grid grid-cols-7 h-full">
                     <div
-                      v-if="getTypeGroupsForDay(day.date).length > 0"
-                      :class="['space-y-0.5', isDayInPast(day.date) ? 'opacity-50' : '']">
-                      <UiPopover
-                        :open="isDayPopoverOpen(day.date)"
-                        @update:open="(open: boolean) => { if (open && !isDayPopoverOpen(day.date)) openDayPopover(day.date); else if (!open) closeDayPopover() }">
-                        <UiPopoverTrigger as-child>
-                          <div class="w-full text-left space-y-0.5">
+                      v-for="(day, dayIdx) in row.days"
+                      :key="dayIdx"
+                      :class="[
+                        'px-2 py-1.5 border-b border-r border-border/30 relative group/cell flex flex-col',
+                        'last:border-r-0 nth-[7n]:border-r-0',
+                        !day.isCurrentMonth ? 'bg-muted/20' : '',
+                        day.isToday ? 'bg-primary/5 ring-2 ring-inset ring-primary/30' : '',
+                      ]">
+                      <!-- Day header: number + hover add button -->
+                      <div class="flex items-center justify-between mb-1">
+                        <div
+                          :class="[
+                            day.isToday
+                              ? 'w-6 h-6 rounded-full bg-primary text-primary-foreground flex items-center justify-center text-[11px] font-semibold'
+                              : day.isCurrentMonth
+                                ? 'text-[11px] text-muted-foreground font-medium'
+                                : 'text-[11px] text-muted-foreground/30',
+                          ]">
+                          {{ day.date.getDate() }}
+                        </div>
+                        <!-- Hover '+' button with type picker -->
+                        <UiPopover
+                          v-if="day.isCurrentMonth"
+                          :open="isAddMenuOpen(day.date)"
+                          @update:open="(open: boolean) => { addMenuDate = open ? day.date : null }">
+                          <UiPopoverTrigger as-child>
                             <button
-                              v-for="group in getTypeGroupsForDay(day.date)"
-                              :key="group.typeLabel"
-                              :class="[
-                                'w-full flex items-center gap-1 px-1.5 py-0.5 rounded-md text-[11px] font-medium transition-all duration-150',
-                                'hover:ring-1 hover:ring-primary/30',
-                                group.style.bg,
-                                group.style.text,
-                              ]"
-                              @click.stop="openDayPopover(day.date, group.typeLabel)">
-                              <Icon :name="group.style.icon" class="h-3 w-3 shrink-0" />
-                              <span class="truncate">
-                                {{ group.items.length }} {{ group.style.label
-                                }}{{ group.items.length !== 1 ? 's' : '' }}
-                              </span>
-                              <span
-                                v-if="group.urgentCount > 0"
-                                class="ml-auto shrink-0 inline-flex items-center justify-center w-4 h-4 rounded-full bg-red-500 text-white text-[9px] font-bold leading-none">
-                                {{ group.urgentCount }}
-                              </span>
+                              class="h-5 w-5 rounded flex items-center justify-center opacity-0 group-hover/cell:opacity-100 hover:bg-muted transition-all text-muted-foreground hover:text-foreground"
+                              @click.stop="() => { addMenuDate = day.date }">
+                              <Icon name="lucide:plus" class="h-3 w-3" />
                             </button>
-                          </div>
-                        </UiPopoverTrigger>
-                        <UiPopoverContent align="start" class="w-72 p-0 max-h-80 overflow-hidden">
-                          <!-- Header with filter tabs -->
-                          <div class="px-3 py-2 border-b border-border bg-muted/30">
-                            <p class="text-xs font-semibold">{{ formatDate(day.date) }}</p>
-                            <p class="text-[10px] text-muted-foreground">
-                              {{ getEventsForDay(day.date).length }}
-                              {{ getEventsForDay(day.date).length === 1 ? 'item' : 'items' }}
-                            </p>
-                            <!-- Type filter tabs (only if more than one group) -->
-                            <div
-                              v-if="getTypeGroupsForDay(day.date).length > 1"
-                              class="flex items-center gap-1 mt-2 flex-wrap">
+                          </UiPopoverTrigger>
+                          <UiPopoverContent align="end" side="bottom" class="w-44 p-1">
+                            <button
+                              v-for="t in temporalTypeOptions"
+                              :key="t.typeLabel"
+                              class="w-full flex items-center gap-2 px-2 py-1.5 rounded-md text-xs hover:bg-muted/50 transition-colors"
+                              @click="() => { addMenuDate = null; emit('create-request', day.date, t.typeLabel) }">
+                              <Icon :name="t.icon" :class="['h-3.5 w-3.5', t.text]" />
+                              <span>{{ t.typeLabel }}</span>
+                            </button>
+                          </UiPopoverContent>
+                        </UiPopover>
+                      </div>
+                      <!-- Multi-day lane slots (bar segments inside each cell) -->
+                      <div
+                        v-if="getLaneSlotsForDay(row, dayIdx).length"
+                        class="-mx-2 mb-1">
+                        <div
+                          v-for="(slot, li) in getLaneSlotsForDay(row, dayIdx)"
+                          :key="`lane-${li}`"
+                          class="h-5 mt-0.5">
+                          <button
+                            v-if="slot"
+                            class="w-full h-full flex items-center gap-1 px-1.5 text-[10px] font-medium truncate cursor-pointer transition-all duration-150 hover:brightness-110 hover:shadow-sm"
+                            :class="[
+                              slot.style.bg,
+                              slot.style.text,
+                              slot.isStart ? 'rounded-l-md ml-0.5' : '',
+                              slot.isEnd ? 'rounded-r-md mr-0.5' : '',
+                            ]"
+                            :style="{
+                              maskImage: slot.isWrapStart && slot.isWrapEnd
+                                ? 'linear-gradient(to right, transparent, black 16px, black calc(100% - 16px), transparent)'
+                                : slot.isWrapStart
+                                  ? 'linear-gradient(to right, transparent, black 16px)'
+                                  : slot.isWrapEnd
+                                    ? 'linear-gradient(to left, transparent, black 16px)'
+                                    : undefined,
+                            }"
+                            @click.stop="openEventDetail(slot.event)">
+                            <Icon v-if="slot.isStart || slot.isWrapStart" :name="slot.style.icon" class="h-3 w-3 shrink-0" />
+                            <span v-if="slot.isStart || slot.isWrapStart" class="truncate">{{ slot.event.title }}</span>
+                          </button>
+                        </div>
+                      </div>
+                      <!-- Single-day type-grouped item stacks (multi-day events excluded) -->
+                      <div
+                        v-if="getSingleDayTypeGroups(day.date).length > 0"
+                        :class="['space-y-0.5', isDayInPast(day.date) ? 'opacity-50' : '']">
+                        <UiPopover
+                          :open="isDayPopoverOpen(day.date)"
+                          @update:open="(open: boolean) => { if (open && !isDayPopoverOpen(day.date)) openDayPopover(day.date); else if (!open) closeDayPopover() }">
+                          <UiPopoverTrigger as-child>
+                            <div class="w-full text-left space-y-0.5">
                               <button
-                                :class="[
-                                  'px-1.5 py-0.5 rounded text-[10px] font-medium transition-colors',
-                                  !activeDayPopoverFilter
-                                    ? 'bg-foreground/10 text-foreground'
-                                    : 'text-muted-foreground hover:text-foreground hover:bg-muted/50',
-                                ]"
-                                @click.stop="activeDayPopoverFilter = null">
-                                All
-                              </button>
-                              <button
-                                v-for="group in getTypeGroupsForDay(day.date)"
+                                v-for="group in getSingleDayTypeGroups(day.date)"
                                 :key="group.typeLabel"
                                 :class="[
-                                  'px-1.5 py-0.5 rounded text-[10px] font-medium transition-colors inline-flex items-center gap-1',
-                                  activeDayPopoverFilter === group.typeLabel
-                                    ? `${group.style.bg} ${group.style.text}`
-                                    : 'text-muted-foreground hover:text-foreground hover:bg-muted/50',
+                                  'w-full flex items-center gap-1 px-1.5 py-0.5 rounded-md text-[11px] font-medium transition-all duration-150',
+                                  'hover:ring-1 hover:ring-primary/30',
+                                  group.style.bg,
+                                  group.style.text,
                                 ]"
-                                @click.stop="activeDayPopoverFilter = group.typeLabel">
-                                <Icon :name="group.style.icon" class="h-2.5 w-2.5" />
-                                {{ group.items.length }}
+                                @click.stop="group.items.length === 1 ? openEventDetail(group.items[0]!) : openDayPopover(day.date, group.typeLabel)">
+                                <Icon :name="group.style.icon" class="h-3 w-3 shrink-0" />
+                                <span class="truncate">
+                                  <template v-if="group.items.length === 1">{{ group.items[0]!.title }}</template>
+                                  <template v-else>{{ group.items.length }} {{ group.style.label }}s</template>
+                                </span>
+                                <span
+                                  v-if="group.urgentCount > 0"
+                                  class="ml-auto shrink-0 inline-flex items-center justify-center w-4 h-4 rounded-full bg-red-500 text-white text-[9px] font-bold leading-none">
+                                  {{ group.urgentCount }}
+                                </span>
                               </button>
                             </div>
-                          </div>
-                          <!-- Filtered items -->
-                          <div class="overflow-y-auto max-h-64 p-1">
-                            <template
-                              v-for="group in getTypeGroupsForDay(day.date).filter(
-                                (g) => !activeDayPopoverFilter || g.typeLabel === activeDayPopoverFilter,
-                              )"
-                              :key="group.typeLabel">
-                              <div class="px-2 pt-2 pb-1 flex items-center gap-1.5">
-                                <Icon :name="group.style.icon" :class="['h-3 w-3', group.style.text]" />
-                                <span :class="['text-[10px] font-semibold uppercase tracking-wide', group.style.text]">
-                                  {{ group.typeLabel }}{{ group.items.length > 1 ? 's' : '' }}
-                                </span>
-                                <span class="text-[10px] text-muted-foreground">({{ group.items.length }})</span>
+                          </UiPopoverTrigger>
+                          <UiPopoverContent align="start" class="w-72 p-0 max-h-80 overflow-hidden">
+                            <!-- Header with filter tabs -->
+                            <div class="px-3 py-2 border-b border-border bg-muted/30">
+                              <p class="text-xs font-semibold">{{ formatDate(day.date) }}</p>
+                              <p class="text-[10px] text-muted-foreground">
+                                {{ getEventsForDay(day.date).length }}
+                                {{ getEventsForDay(day.date).length === 1 ? 'item' : 'items' }}
+                              </p>
+                              <!-- Type filter tabs (only if more than one group) -->
+                              <div
+                                v-if="getTypeGroupsForDay(day.date).length > 1"
+                                class="flex items-center gap-1 mt-2 flex-wrap">
+                                <button
+                                  :class="[
+                                    'px-1.5 py-0.5 rounded text-[10px] font-medium transition-colors',
+                                    !activeDayPopoverFilter
+                                      ? 'bg-foreground/10 text-foreground'
+                                      : 'text-muted-foreground hover:text-foreground hover:bg-muted/50',
+                                  ]"
+                                  @click.stop="activeDayPopoverFilter = null">
+                                  All
+                                </button>
+                                <button
+                                  v-for="group in getTypeGroupsForDay(day.date)"
+                                  :key="group.typeLabel"
+                                  :class="[
+                                    'px-1.5 py-0.5 rounded text-[10px] font-medium transition-colors inline-flex items-center gap-1',
+                                    activeDayPopoverFilter === group.typeLabel
+                                      ? `${group.style.bg} ${group.style.text}`
+                                      : 'text-muted-foreground hover:text-foreground hover:bg-muted/50',
+                                  ]"
+                                  @click.stop="activeDayPopoverFilter = group.typeLabel">
+                                  <Icon :name="group.style.icon" class="h-2.5 w-2.5" />
+                                  {{ group.items.length }}
+                                </button>
                               </div>
-                              <button
-                                v-for="event in group.items"
-                                :key="event.id"
-                                class="w-full text-left px-2.5 py-2 rounded-md hover:bg-muted/50 transition-colors flex items-start gap-2.5 group/item"
-                                @click="openEventDetail(event)">
-                                <div
-                                  :style="{ backgroundColor: group.style.dot }"
-                                  class="w-1.5 h-1.5 rounded-full mt-1.5 shrink-0" />
-                                <div class="flex-1 min-w-0">
-                                  <p
-                                    class="text-xs font-medium truncate group-hover/item:text-primary transition-colors">
-                                    {{ event.title }}
-                                  </p>
-                                  <div class="flex items-center gap-2 mt-0.5">
-                                    <span :class="['text-[10px] px-1.5 py-0.5 rounded font-medium', event.badgeClass]">
-                                      {{ event.status?.replace('-', ' ') || 'on track' }}
-                                    </span>
-                                    <span v-if="event.assignee" class="text-[10px] text-muted-foreground truncate">
-                                      {{ event.assignee }}
-                                    </span>
-                                  </div>
+                            </div>
+                            <!-- Filtered items -->
+                            <div class="overflow-y-auto max-h-64 p-1">
+                              <template
+                                v-for="group in getTypeGroupsForDay(day.date).filter(
+                                  (g) => !activeDayPopoverFilter || g.typeLabel === activeDayPopoverFilter,
+                                )"
+                                :key="group.typeLabel">
+                                <div class="px-2 pt-2 pb-1 flex items-center gap-1.5">
+                                  <Icon :name="group.style.icon" :class="['h-3 w-3', group.style.text]" />
+                                  <span :class="['text-[10px] font-semibold uppercase tracking-wide', group.style.text]">
+                                    {{ group.typeLabel }}{{ group.items.length > 1 ? 's' : '' }}
+                                  </span>
+                                  <span class="text-[10px] text-muted-foreground">({{ group.items.length }})</span>
                                 </div>
-                                <Icon
-                                  name="lucide:chevron-right"
-                                  class="h-3.5 w-3.5 text-muted-foreground/50 group-hover/item:text-primary shrink-0 mt-0.5 transition-colors" />
-                              </button>
-                            </template>
-                          </div>
-                        </UiPopoverContent>
-                      </UiPopover>
+                                <button
+                                  v-for="event in group.items"
+                                  :key="event.id"
+                                  class="w-full text-left px-2.5 py-2 rounded-md hover:bg-muted/50 transition-colors flex items-start gap-2.5 group/item"
+                                  @click="openEventDetail(event)">
+                                  <div
+                                    :style="{ backgroundColor: group.style.dot }"
+                                    class="w-1.5 h-1.5 rounded-full mt-1.5 shrink-0" />
+                                  <div class="flex-1 min-w-0">
+                                    <p
+                                      class="text-xs font-medium truncate group-hover/item:text-primary transition-colors">
+                                      {{ event.title }}
+                                    </p>
+                                    <div class="flex items-center gap-2 mt-0.5">
+                                      <span :class="['text-[10px] px-1.5 py-0.5 rounded font-medium', event.badgeClass]">
+                                        {{ event.status?.replace('-', ' ') || 'on track' }}
+                                      </span>
+                                      <span v-if="event.assignee" class="text-[10px] text-muted-foreground truncate">
+                                        {{ event.assignee }}
+                                      </span>
+                                    </div>
+                                  </div>
+                                  <Icon
+                                    name="lucide:chevron-right"
+                                    class="h-3.5 w-3.5 text-muted-foreground/50 group-hover/item:text-primary shrink-0 mt-0.5 transition-colors" />
+                                </button>
+                              </template>
+                            </div>
+                          </UiPopoverContent>
+                        </UiPopover>
+                      </div>
+                      <!-- Overflow indicator (pinned to bottom) -->
+                      <div
+                        v-if="row.overflowCount > 0 && dayIdx === 0"
+                        class="mt-auto text-[10px] text-muted-foreground font-medium">
+                        +{{ row.overflowCount }} more
+                      </div>
                     </div>
                   </div>
                 </div>

@@ -202,6 +202,10 @@
     disabled?: boolean
     visible?: boolean
     tooltip?: string
+    suggested?: boolean
+    score?: number
+    reason?: string
+    isDefault?: boolean
   }
 
   const props = withDefaults(defineProps<PageProps>(), {
@@ -688,7 +692,7 @@
       <!-- Main content uses base background (darkest layer) -->
       <div class="h-full" :class="[contentWrapperClass, transparent ? 'bg-transparent' : '']">
         <!-- Header Section (Non-sticky) -->
-        <div v-if="showHeader || $slots.header" class="shrink-0 space-y-0 pb-0" :class="isFeed ? 'p-4' : 'p-8'">
+        <div v-if="showHeader || $slots.header" class="shrink-0 space-y-0 pb-0" :class="isFeed ? 'p-4' : 'p-8 pt-4'">
           <div class="px-3 py-5 relative border-b border-border/60" :class="variantConfig.maxWidth">
             <div class="relative flex items-stretch gap-6">
               <!-- Header Icon -->
@@ -893,7 +897,7 @@
                     v-for="option in effectiveViewModeOptions"
                     :key="option.mode"
                     type="button"
-                    class="flex h-8 items-center justify-center gap-1.5 rounded-md px-3 text-sm font-medium transition-colors"
+                    class="relative flex h-8 items-center justify-center gap-1.5 rounded-md px-3 text-sm font-medium transition-colors"
                     :class="[
                       browse?.viewMode.value === option.mode
                         ? 'bg-sidebar-background/10 text-foreground hover:bg-sidebar-background/15 '
@@ -902,10 +906,13 @@
                         ? 'cursor-not-allowed opacity-50 hover:bg-transparent hover:text-muted-foreground'
                         : '',
                     ]"
-                    :title="option.tooltip || `${option.label} view`"
+                    :title="option.reason || option.tooltip || `${option.label} view`"
                     :disabled="option.disabled"
                     @click="setViewMode(option.mode, option.disabled)">
                     <Icon :name="option.icon" class="h-4 w-4" />
+                    <span
+                      v-if="option.suggested && browse?.viewMode.value !== option.mode"
+                      class="h-1.5 w-1.5 rounded-full bg-primary/60 absolute -top-0.5 -right-0.5" />
                   </button>
                 </slot>
               </div>

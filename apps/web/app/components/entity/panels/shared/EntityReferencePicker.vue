@@ -68,7 +68,8 @@
           </div>
           <div class="flex-1 min-w-0">
             <p class="text-xs font-medium truncate">{{ item.title || 'Untitled' }}</p>
-            <p v-if="item.description" class="text-[10px] text-muted-foreground truncate">{{ item.description }}</p>
+            <p v-if="(item as any).url" class="text-[10px] text-muted-foreground truncate font-mono">{{ (item as any).url }}</p>
+            <p v-else-if="item.description" class="text-[10px] text-muted-foreground truncate">{{ item.description }}</p>
           </div>
           <span class="shrink-0 text-[10px] font-medium text-muted-foreground bg-muted/60 rounded px-1.5 py-0.5">
             {{ getLabel(item.type) }}

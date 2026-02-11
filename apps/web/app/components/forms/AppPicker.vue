@@ -5,6 +5,8 @@
   const route = useRoute()
   const { applications, currentApp, organizations } = useInstantData()
 
+  const createAppOpen = ref(false)
+
   const orderedApplications = computed(() => {
     return (applications.value || []).slice().sort((a, b) => a.name.localeCompare(b.name))
   })
@@ -70,11 +72,15 @@
           </UiDropdownMenuItem>
         </div>
         <UiDropdownMenuSeparator />
-        <UiDropdownMenuItem class="gap-2">
+        <UiDropdownMenuItem class="gap-2" @click="createAppOpen = true">
           <Icon name="lucide:plus" class="h-4 w-4" />
           <span>Create App</span>
         </UiDropdownMenuItem>
       </UiDropdownMenuContent>
     </UiDropdownMenu>
+
+    <CreateAppDialog
+      :open="createAppOpen"
+      @update:open="createAppOpen = $event" />
   </div>
 </template>

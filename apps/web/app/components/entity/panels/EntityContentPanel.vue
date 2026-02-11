@@ -28,6 +28,7 @@
     trip: defineAsyncComponent(() => import('./temporal/TripContent.vue')),
     payment: defineAsyncComponent(() => import('./temporal/PaymentContent.vue')),
     note: defineAsyncComponent(() => import('./document/NoteContent.vue')),
+    bookmark: defineAsyncComponent(() => import('./document/BookmarkContent.vue')),
   }
 
   const currentPanel = computed(() => {

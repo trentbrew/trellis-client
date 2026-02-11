@@ -240,6 +240,7 @@ const ENTITY_TYPES: Record<EntityType, EntityTypeConfig> = {
     icon: 'lucide:check-square',
     color: 'blue',
     projections: ['kanban', 'calendar', 'list', 'table', 'timeline'],
+    defaultProjection: 'kanban',
     dialogShell: 'temporal',
     panels: {
       properties: 'TaskProperties',
@@ -259,6 +260,7 @@ const ENTITY_TYPES: Record<EntityType, EntityTypeConfig> = {
     icon: 'lucide:calendar',
     color: 'purple',
     projections: ['calendar', 'timeline', 'list', 'table'],
+    defaultProjection: 'calendar',
     dialogShell: 'temporal',
     panels: {
       properties: 'EventProperties',
@@ -278,6 +280,7 @@ const ENTITY_TYPES: Record<EntityType, EntityTypeConfig> = {
     icon: 'lucide:plane',
     color: 'cyan',
     projections: ['calendar', 'timeline', 'list', 'card-grid'],
+    defaultProjection: 'calendar',
     dialogShell: 'temporal',
     panels: {
       properties: 'TripProperties',
@@ -297,6 +300,7 @@ const ENTITY_TYPES: Record<EntityType, EntityTypeConfig> = {
     icon: 'lucide:credit-card',
     color: 'emerald',
     projections: ['calendar', 'list', 'table'],
+    defaultProjection: 'table',
     dialogShell: 'temporal',
     panels: {
       properties: 'PaymentProperties',
@@ -316,6 +320,7 @@ const ENTITY_TYPES: Record<EntityType, EntityTypeConfig> = {
     icon: 'lucide:stethoscope',
     color: 'rose',
     projections: ['calendar', 'list', 'table', 'timeline'],
+    defaultProjection: 'calendar',
     dialogShell: 'temporal',
     panels: {
       properties: 'AppointmentProperties',
@@ -335,6 +340,7 @@ const ENTITY_TYPES: Record<EntityType, EntityTypeConfig> = {
     icon: 'lucide:bell',
     color: 'amber',
     projections: ['list', 'calendar'],
+    defaultProjection: 'list',
     dialogShell: 'temporal',
     panels: {
       properties: 'ReminderProperties',
@@ -354,6 +360,7 @@ const ENTITY_TYPES: Record<EntityType, EntityTypeConfig> = {
     icon: 'lucide:alarm-clock',
     color: 'red',
     projections: ['calendar', 'timeline', 'list'],
+    defaultProjection: 'calendar',
     dialogShell: 'temporal',
     panels: {
       properties: 'DeadlineProperties',
@@ -373,6 +380,7 @@ const ENTITY_TYPES: Record<EntityType, EntityTypeConfig> = {
     icon: 'lucide:flag',
     color: 'orange',
     projections: ['timeline', 'list', 'calendar'],
+    defaultProjection: 'timeline',
     dialogShell: 'temporal',
     panels: {
       properties: 'MilestoneProperties',
@@ -394,6 +402,7 @@ const ENTITY_TYPES: Record<EntityType, EntityTypeConfig> = {
     icon: 'lucide:sticky-note',
     color: 'yellow',
     projections: ['card-grid', 'list', 'table'],
+    defaultProjection: 'card-grid',
     dialogShell: 'document',
     panels: {
       properties: 'NoteProperties',
@@ -413,6 +422,7 @@ const ENTITY_TYPES: Record<EntityType, EntityTypeConfig> = {
     icon: 'lucide:file',
     color: 'slate',
     projections: ['card-grid', 'list', 'table'],
+    defaultProjection: 'card-grid',
     dialogShell: 'document',
     panels: {
       properties: 'FileProperties',
@@ -432,6 +442,7 @@ const ENTITY_TYPES: Record<EntityType, EntityTypeConfig> = {
     icon: 'lucide:book-open',
     color: 'indigo',
     projections: ['list', 'card-grid'],
+    defaultProjection: 'list',
     dialogShell: 'document',
     panels: {
       properties: 'PageProperties',
@@ -451,6 +462,7 @@ const ENTITY_TYPES: Record<EntityType, EntityTypeConfig> = {
     icon: 'lucide:copy',
     color: 'violet',
     projections: ['list', 'card-grid', 'table'],
+    defaultProjection: 'list',
     dialogShell: 'document',
     panels: {
       properties: 'TemplateProperties',
@@ -460,6 +472,46 @@ const ENTITY_TYPES: Record<EntityType, EntityTypeConfig> = {
     propertyFields: fields('type', 'category', 'owner', 'tags'),
     defaultSortField: 'title',
     searchFields: ['title', 'description'],
+  },
+
+  slide_deck: {
+    type: 'slide_deck',
+    class: 'document',
+    label: 'Slide Deck',
+    labelPlural: 'Slide Decks',
+    icon: 'lucide:presentation',
+    color: 'rose',
+    projections: ['slide-deck', 'list', 'table'],
+    defaultProjection: 'slide-deck',
+    dialogShell: 'document',
+    panels: {
+      properties: 'SlideDeckProperties',
+      content: 'SlideDeckContent',
+      footerActions: ['present', 'duplicate', 'delete'],
+    },
+    propertyFields: fields('type', 'pin', 'category', 'owner', 'tags'),
+    defaultSortField: 'updatedAt',
+    searchFields: ['title', 'description'],
+  },
+
+  bookmark: {
+    type: 'bookmark',
+    class: 'document',
+    label: 'Bookmark',
+    labelPlural: 'Bookmarks',
+    icon: 'lucide:bookmark',
+    color: 'sky',
+    projections: ['card-grid', 'list', 'table', 'moodboard'],
+    defaultProjection: 'card-grid',
+    dialogShell: 'document',
+    panels: {
+      properties: 'BookmarkProperties',
+      content: 'BookmarkContent',
+      footerActions: ['pin', 'archive', 'delete'],
+    },
+    propertyFields: fields('pin', 'tags'),
+    defaultSortField: 'updatedAt',
+    searchFields: ['title', 'url', 'description', 'siteName', 'excerpt'],
   },
 
   // ── Actor ────────────────────────────────────────────────────────────────
@@ -472,6 +524,7 @@ const ENTITY_TYPES: Record<EntityType, EntityTypeConfig> = {
     icon: 'lucide:user',
     color: 'sky',
     projections: ['table', 'card-grid', 'list', 'graph'],
+    defaultProjection: 'table',
     dialogShell: 'actor',
     panels: {
       properties: 'PersonProperties',
@@ -491,6 +544,7 @@ const ENTITY_TYPES: Record<EntityType, EntityTypeConfig> = {
     icon: 'lucide:contact',
     color: 'teal',
     projections: ['table', 'card-grid', 'list'],
+    defaultProjection: 'table',
     dialogShell: 'actor',
     panels: {
       properties: 'ContactProperties',
@@ -510,6 +564,7 @@ const ENTITY_TYPES: Record<EntityType, EntityTypeConfig> = {
     icon: 'lucide:building-2',
     color: 'zinc',
     projections: ['table', 'card-grid', 'list', 'graph'],
+    defaultProjection: 'table',
     dialogShell: 'actor',
     panels: {
       properties: 'OrganizationProperties',
@@ -529,6 +584,7 @@ const ENTITY_TYPES: Record<EntityType, EntityTypeConfig> = {
     icon: 'lucide:store',
     color: 'lime',
     projections: ['table', 'card-grid', 'list'],
+    defaultProjection: 'table',
     dialogShell: 'actor',
     panels: {
       properties: 'VendorProperties',
@@ -550,6 +606,7 @@ const ENTITY_TYPES: Record<EntityType, EntityTypeConfig> = {
     icon: 'lucide:folder-kanban',
     color: 'blue',
     projections: ['kanban', 'list', 'table', 'timeline', 'dashboard'],
+    defaultProjection: 'kanban',
     dialogShell: 'container',
     panels: {
       properties: 'ProjectProperties',
@@ -569,6 +626,7 @@ const ENTITY_TYPES: Record<EntityType, EntityTypeConfig> = {
     icon: 'lucide:folder',
     color: 'amber',
     projections: ['list', 'table'],
+    defaultProjection: 'list',
     dialogShell: 'container',
     panels: {
       properties: 'FolderProperties',
@@ -588,6 +646,7 @@ const ENTITY_TYPES: Record<EntityType, EntityTypeConfig> = {
     icon: 'lucide:database',
     color: 'indigo',
     projections: ['list', 'card-grid', 'table'],
+    defaultProjection: 'table',
     dialogShell: 'container',
     panels: {
       properties: 'CollectionProperties',
@@ -607,6 +666,7 @@ const ENTITY_TYPES: Record<EntityType, EntityTypeConfig> = {
     icon: 'lucide:target',
     color: 'emerald',
     projections: ['list', 'kanban', 'table', 'timeline'],
+    defaultProjection: 'kanban',
     dialogShell: 'container',
     panels: {
       properties: 'GoalProperties',
@@ -647,6 +707,12 @@ export function getTypesForClass(entityClass: EntityClass): EntityTypeConfig[] {
 /** Get allowed projections for a type (type-specific override of class defaults) */
 export function getProjectionsForType(type: EntityType): ProjectionType[] {
   return ENTITY_TYPES[type].projections
+}
+
+/** Get the default projection for a type, falling back to first in projections list */
+export function getDefaultProjectionForType(type: EntityType): ProjectionType {
+  const config = ENTITY_TYPES[type]
+  return config.defaultProjection ?? config.projections[0] ?? 'table'
 }
 
 /** Get panel config for a type */

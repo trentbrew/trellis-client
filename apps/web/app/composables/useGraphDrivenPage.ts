@@ -4,14 +4,11 @@ import { buildPageConfigFromRoute, buildPageConfigFromSlug, type DerivedPageConf
 import { buildViewModeOptions } from '~/lib/projections'
 import { useBrowse, type BrowseState, type BrowseViewMode } from '~/composables/useBrowse'
 import { useFacilityEntities } from '~/composables/useFacilityEntities'
-import type { EntityType, EntityClass } from '~/types/entity'
+import type { EntityClass } from '~/types/entity'
 import {
   getAllEntityTypeIds,
-  getEntityTypeConfig,
-  getEntityClassForType,
-  getDialogShellForType,
-  getProjectionsForType,
 } from '~/config/entityRegistry'
+import { useOntologyRegistry } from '~/composables/useOntologyRegistry'
 
 /**
  * Route path to entity type slug mapping
@@ -97,7 +94,7 @@ export interface UseGraphDrivenPageReturn {
  * - Actions (detail sheet, create, etc.)
  */
 export function useGraphDrivenPage(options: UseGraphDrivenPageOptions): UseGraphDrivenPageReturn {
-  const { routePath, facilityId, defaultViewMode = 'table' } = options
+  const { routePath, facilityId, defaultViewMode: explicitDefaultViewMode } = options
 
   // Derive page config from route or slug
   const pageConfig = computed<DerivedPageConfig | null>(() => {
@@ -180,23 +177,41 @@ export function useGraphDrivenPage(options: UseGraphDrivenPageOptions): UseGraph
     loadEntityData()
   })
 
-  // Registry-based type set for lookups
+  // Registry-based type set for lookups (server-sourced primary, static fallback)
+  const { hasType: hasDynamicType, getEntityConfig } = useOntologyRegistry()
   const registeredTypes = new Set<string>(getAllEntityTypeIds())
 
-  // Resolve search fields from registry when available
+  // Resolve search fields from registry when available (server-sourced primary)
   const registrySearchFields = computed(() => {
-    const t = entityType.value as EntityType
-    if (t && registeredTypes.has(t)) {
-      return getEntityTypeConfig(t).searchFields || ['title', 'description']
-    }
+    const t = entityType.value
+    if (!t) return ['title', 'name', 'description']
+    // Unified lookup: server ontology first, then static fallback
+    const config = getEntityConfig(t)
+    if (config) return config.searchFields || ['title', 'description']
     return ['title', 'name', 'description']
+  })
+
+  const VALID_BROWSE_MODES: BrowseViewMode[] = ['grid', 'list', 'table', 'calendar', 'kanban', 'timeline', 'month', 'week', 'agenda']
+
+  // Resolve default view mode: explicit option > unified registry default > 'table'
+  const resolvedDefaultViewMode = computed((): BrowseViewMode => {
+    if (explicitDefaultViewMode && VALID_BROWSE_MODES.includes(explicitDefaultViewMode as BrowseViewMode)) {
+      return explicitDefaultViewMode as BrowseViewMode
+    }
+    const t = entityType.value
+    if (t) {
+      const config = getEntityConfig(t)
+      const regDefault = config?.defaultProjection as string
+      if (regDefault && VALID_BROWSE_MODES.includes(regDefault as BrowseViewMode)) return regDefault as BrowseViewMode
+    }
+    return 'table'
   })
 
   // Initialize browse state with stable items ref
   const { browseState, filteredItems, viewMode } = useBrowse({
     items,
     searchFields: registrySearchFields.value as any,
-    defaultViewMode: defaultViewMode as BrowseViewMode,
+    defaultViewMode: resolvedDefaultViewMode.value,
     sortOptions: [
       { value: 'title', label: 'Title' },
       { value: 'dueDate', label: 'Due Date' },
@@ -242,9 +257,8 @@ export function useGraphDrivenPage(options: UseGraphDrivenPageOptions): UseGraph
     }
 
     // Fall back to registry projections when pageConfig doesn't specify
-    const registryProjections = entityType.value && registeredTypes.has(entityType.value)
-      ? getProjectionsForType(entityType.value as EntityType)
-      : ['table', 'list', 'grid', 'kanban', 'calendar']
+    const config = entityType.value ? getEntityConfig(entityType.value) : null
+    const registryProjections = config?.projections || ['table', 'list', 'grid', 'kanban', 'calendar']
     const rawAllowedModes = pageConfig.value?.projectionTypes || registryProjections
     const allowedModes = (rawAllowedModes as string[]).filter((m): m is BrowseViewMode => {
       return (
@@ -304,23 +318,27 @@ export function useGraphDrivenPage(options: UseGraphDrivenPageOptions): UseGraph
   const dialogMode = ref<'view' | 'edit' | 'create'>('view')
   const dialogItem = ref<any>(null)
 
-  // Resolve entity type against the registry (replaces hardcoded allowlist)
+  // Resolve entity type against the unified registry (server-sourced primary)
   const resolvedEntityType = computed(() => {
     const candidate = entityType.value || 'task'
-    return registeredTypes.has(candidate) ? candidate : 'default'
+    if (hasDynamicType(candidate)) return candidate
+    if (registeredTypes.has(candidate)) return candidate
+    return 'default'
   })
 
-  // Entity class and dialog shell from registry
+  // Entity class and dialog shell from unified registry
   const resolvedEntityClass = computed<EntityClass | null>(() => {
-    const t = resolvedEntityType.value as EntityType
-    if (!registeredTypes.has(t)) return null
-    return getEntityClassForType(t).class
+    const t = resolvedEntityType.value
+    const config = getEntityConfig(t)
+    if (config) return config.class
+    return null
   })
 
   const resolvedDialogShell = computed<string | null>(() => {
-    const t = resolvedEntityType.value as EntityType
-    if (!registeredTypes.has(t)) return null
-    return getDialogShellForType(t)
+    const t = resolvedEntityType.value
+    const config = getEntityConfig(t)
+    if (config) return (config as any).dialogShell || config.class
+    return null
   })
 
   const openDetail = (item: any, opts?: { mode?: 'view' | 'edit' | 'create' }) => {

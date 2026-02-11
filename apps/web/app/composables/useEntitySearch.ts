@@ -29,7 +29,7 @@ export function useEntitySearch(options?: { excludeId?: Ref<string | undefined>;
     }
 
     if (!q) return list.slice(0, 20)
-    return list.filter((i) => i.title?.toLowerCase().includes(q) || i.type?.toLowerCase().includes(q)).slice(0, 20)
+    return list.filter((i) => i.title?.toLowerCase().includes(q) || i.type?.toLowerCase().includes(q) || (i as any).url?.toLowerCase().includes(q)).slice(0, 20)
   })
 
   const getIcon = (type: string) => {

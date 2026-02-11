@@ -12,7 +12,7 @@
   const route = useRoute()
   const router = useRouter()
   const pinned = usePinnedItems()
-  const { collections, currentApp } = useInstantData()
+  const { collections: _collections, currentApp: _currentApp } = useInstantData()
 
   const hasLoggedInstantAuth = useState<boolean>('debug:instantAuthLogged', () => false)
 
@@ -76,30 +76,13 @@
         return
       }
 
-      // Don't redirect if on a static child route (e.g., /collections/templates)
+      // Don't redirect if on a static child route (e.g., /database/collections/templates)
       const staticChildPaths = (section.children || []).map((c: any) => c.path)
       const isOnStaticChild = staticChildPaths.includes(cleanNewPath)
       if (isOnStaticChild) return
 
-      if (section.path === '/collections' && isOnSectionRoot && collections.value.length > 0) {
-        const appId = currentApp.value?.id
-        const storageKey = appId ? `last-visited-collection:${appId}` : ''
-        let storedSlug: string | null = null
-        if (import.meta.client && storageKey) {
-          try {
-            storedSlug = localStorage.getItem(storageKey)
-          } catch {
-            storedSlug = null
-          }
-        }
-        const hasStored = !!storedSlug && collections.value.some((c) => c.slug === storedSlug)
-        const targetSlug = hasStored ? storedSlug! : collections.value[0]!.slug
-        const targetPath = `/collections/${targetSlug}`
-        if (getCleanPath(router.currentRoute.value.path) !== targetPath) {
-          router.push(targetPath)
-        }
-        return
-      }
+      // Database has its own landing page — no auto-redirect needed
+      if (section.path === '/database' && isOnSectionRoot) return
 
       if (firstPinnedPath && (isOnSectionRoot || isOnSectionDefault)) {
         if (getCleanPath(router.currentRoute.value.path) !== firstPinnedPath) {

@@ -11,6 +11,7 @@
   const router = useRouter()
 
   const searchQuery = ref('')
+  const createOrgOpen = ref(false)
 
   const filteredOrganizations = computed(() => {
     if (!searchQuery.value.trim()) return organizations.value
@@ -98,11 +99,15 @@
           </div>
         </div>
         <UiDropdownMenuSeparator />
-        <UiDropdownMenuItem class="gap-2">
+        <UiDropdownMenuItem class="gap-2" @click="createOrgOpen = true">
           <Icon name="lucide:plus" class="h-4 w-4" />
           <span>New Organization</span>
         </UiDropdownMenuItem>
       </UiDropdownMenuContent>
     </UiDropdownMenu>
+
+    <CreateOrganizationDialog
+      :open="createOrgOpen"
+      @update:open="createOrgOpen = $event" />
   </div>
 </template>

@@ -312,6 +312,26 @@
   [role='button']:not(:disabled) {
     cursor: pointer;
   }
+
+  /* Dark-mode native checkbox styling */
+  .dark input[type='checkbox'] {
+    color-scheme: dark;
+  }
+
+  /* Dark-mode number input spinner arrows */
+  .dark input[type='number'] {
+    color-scheme: dark;
+  }
+
+  /* Dark-mode date input */
+  .dark input[type='date'] {
+    color-scheme: dark;
+  }
+
+  /* Dark-mode select */
+  .dark select {
+    color-scheme: dark;
+  }
 }
 
 /* Global transition disable during resize */

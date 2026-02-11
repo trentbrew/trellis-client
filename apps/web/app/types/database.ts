@@ -205,6 +205,8 @@ export type ProjectionType =
   | 'timeline'
   | 'dashboard'
   | 'chart'
+  | 'slide-deck'
+  | 'moodboard'
 
 export type ChartType =
   | 'bar'
@@ -238,6 +240,7 @@ export interface Projection {
   requirements?: ProjectionRequirements
   isDefault?: boolean
   order?: number
+  contextMenu?: import('~/types/contextMenu').ContextMenuConfig
 }
 
 export interface ProjectionConfig {
@@ -279,6 +282,11 @@ export interface ProjectionConfig {
   showLegend?: boolean
   showLabels?: boolean
   sparkline?: boolean // minimal chart without axes (for dashboard widgets)
+
+  // Slide-deck specific
+  slideTheme?: 'dark' | 'light' | 'auto'
+  slideTransition?: 'fade' | 'slide' | 'none'
+  slideOrderField?: string // field used to sort slides (default: 'order')
 
   // Extensible for custom projection types
   [key: string]: any

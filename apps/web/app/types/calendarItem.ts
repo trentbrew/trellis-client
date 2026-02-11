@@ -19,7 +19,7 @@
 // Enums & Primitives
 // ============================================================================
 
-export type CalendarItemType = 'task' | 'event' | 'trip' | 'payment' | 'note'
+export type CalendarItemType = 'task' | 'event' | 'trip' | 'payment' | 'note' | 'slide_deck' | 'bookmark' | 'person' | 'organization' | 'project'
 
 export type Priority = 'critical' | 'high' | 'medium' | 'low'
 export type Urgency = 'urgent' | 'not-urgent'
@@ -36,6 +36,11 @@ export const CALENDAR_ITEM_TYPES: { value: CalendarItemType; label: string; icon
   { value: 'trip', label: 'Trip', icon: 'lucide:plane' },
   { value: 'payment', label: 'Payment', icon: 'lucide:credit-card' },
   { value: 'note', label: 'Note', icon: 'lucide:sticky-note' },
+  { value: 'slide_deck', label: 'Slide Deck', icon: 'lucide:presentation' },
+  { value: 'bookmark', label: 'Bookmark', icon: 'lucide:bookmark' },
+  { value: 'person', label: 'Person', icon: 'lucide:user' },
+  { value: 'organization', label: 'Organization', icon: 'lucide:building-2' },
+  { value: 'project', label: 'Project', icon: 'lucide:folder-kanban' },
 ]
 
 export const DEFAULT_CATEGORIES = [
@@ -160,6 +165,9 @@ export interface CalendarItemBase {
   // Formulas
   formulas?: FormulaField[]
 
+  // Dependencies (IDs of items this one depends on / blocks)
+  dependsOn?: string[]
+
   // Timestamps
   createdAt?: string
   updatedAt?: string
@@ -212,11 +220,74 @@ export interface NoteItem extends CalendarItemBase {
   pinned: boolean
 }
 
+export interface SlideDeckItem extends CalendarItemBase {
+  type: 'slide_deck'
+  slides: string // JSON string of slide records
+  slideTheme?: 'dark' | 'light' | 'auto'
+  slideTransition?: 'fade' | 'slide' | 'none'
+  pinned: boolean
+}
+
+export interface BookmarkItem extends CalendarItemBase {
+  type: 'bookmark'
+  url: string
+  favicon?: string
+  thumbnail?: string
+  siteName?: string
+  excerpt?: string
+  pinned: boolean
+}
+
+export interface SocialLink {
+  platform: string
+  url: string
+  username?: string
+}
+
+export interface PersonItem extends CalendarItemBase {
+  type: 'person'
+  email?: string
+  phone?: string
+  jobTitle?: string
+  organization?: string
+  website?: string
+  avatar?: string
+  address?: string
+  socialLinks?: SocialLink[]
+  birthday?: string
+  pronouns?: string
+}
+
+export interface OrganizationItem extends CalendarItemBase {
+  type: 'organization'
+  website?: string
+  industry?: string
+  memberCount?: number
+  logo?: string
+  email?: string
+  phone?: string
+  address?: string
+  founded?: string
+  socialLinks?: SocialLink[]
+}
+
+export type ProjectStatus = 'active' | 'on-hold' | 'completed' | 'archived'
+
+export interface ProjectItem extends CalendarItemBase {
+  type: 'project'
+  status: ProjectStatus
+  progress?: number
+  budget?: number
+  currency?: string
+  children: string[]
+  parentId?: string
+}
+
 // ============================================================================
 // Discriminated Union
 // ============================================================================
 
-export type CalendarItem = TaskItem | EventItem | TripItem | PaymentItem | NoteItem
+export type CalendarItem = TaskItem | EventItem | TripItem | PaymentItem | NoteItem | SlideDeckItem | BookmarkItem | PersonItem | OrganizationItem | ProjectItem
 
 // ============================================================================
 // Defaults / Factories
@@ -310,7 +381,67 @@ export const createDefaultNote = (): NoteItem => ({
   pinned: false,
 })
 
-export const createDefaultItem = (type: CalendarItemType): CalendarItem => {
+export const createDefaultSlideDeck = (): SlideDeckItem => ({
+  ...createDefaultBase(),
+  type: 'slide_deck',
+  slides: '[]',
+  slideTheme: 'dark',
+  slideTransition: 'fade',
+  pinned: false,
+})
+
+export const createDefaultBookmark = (): BookmarkItem => ({
+  ...createDefaultBase(),
+  type: 'bookmark',
+  url: '',
+  favicon: undefined,
+  thumbnail: undefined,
+  siteName: undefined,
+  excerpt: undefined,
+  pinned: false,
+})
+
+export const createDefaultPerson = (): PersonItem => ({
+  ...createDefaultBase(),
+  type: 'person',
+  email: undefined,
+  phone: undefined,
+  jobTitle: undefined,
+  organization: undefined,
+  website: undefined,
+  avatar: undefined,
+  address: undefined,
+  socialLinks: [],
+  birthday: undefined,
+  pronouns: undefined,
+})
+
+export const createDefaultOrganization = (): OrganizationItem => ({
+  ...createDefaultBase(),
+  type: 'organization',
+  website: undefined,
+  industry: undefined,
+  memberCount: undefined,
+  logo: undefined,
+  email: undefined,
+  phone: undefined,
+  address: undefined,
+  founded: undefined,
+  socialLinks: [],
+})
+
+export const createDefaultProject = (): ProjectItem => ({
+  ...createDefaultBase(),
+  type: 'project',
+  status: 'active',
+  progress: 0,
+  budget: undefined,
+  currency: 'USD',
+  children: [],
+  parentId: undefined,
+})
+
+export const createDefaultItem = (type: CalendarItemType | string): CalendarItem => {
   switch (type) {
     case 'task':
       return createDefaultTask()
@@ -322,6 +453,18 @@ export const createDefaultItem = (type: CalendarItemType): CalendarItem => {
       return createDefaultPayment()
     case 'note':
       return createDefaultNote()
+    case 'slide_deck':
+      return createDefaultSlideDeck()
+    case 'bookmark':
+      return createDefaultBookmark()
+    case 'person':
+      return createDefaultPerson()
+    case 'organization':
+      return createDefaultOrganization()
+    case 'project':
+      return createDefaultProject()
+    default:
+      return { ...createDefaultBase(), type: type as CalendarItemType } as CalendarItem
   }
 }
 
@@ -334,6 +477,11 @@ export const isEvent = (item: CalendarItem): item is EventItem => item.type === 
 export const isTrip = (item: CalendarItem): item is TripItem => item.type === 'trip'
 export const isPayment = (item: CalendarItem): item is PaymentItem => item.type === 'payment'
 export const isNote = (item: CalendarItem): item is NoteItem => item.type === 'note'
+export const isSlideDeck = (item: CalendarItem): item is SlideDeckItem => item.type === 'slide_deck'
+export const isBookmark = (item: CalendarItem): item is BookmarkItem => item.type === 'bookmark'
+export const isPerson = (item: CalendarItem): item is PersonItem => item.type === 'person'
+export const isOrganization = (item: CalendarItem): item is OrganizationItem => item.type === 'organization'
+export const isProject = (item: CalendarItem): item is ProjectItem => item.type === 'project'
 
 // ============================================================================
 // UI Config Lookups

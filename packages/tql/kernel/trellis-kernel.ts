@@ -455,7 +455,7 @@ export class TrellisKernel {
   private async bootWorkspace(config: WorkspaceConfig): Promise<void> {
     const ws = config.workspace;
 
-    // 1. Load Ontologies
+    // 1. Load Ontologies from code config
     if (ws.ontologies) {
       for (const [id, schema] of Object.entries(ws.ontologies)) {
         this.ontologies.set(id, schema);
@@ -495,6 +495,9 @@ export class TrellisKernel {
       await Promise.all(mutationPromises);
     }
 
+    // 4. Hydrate persisted ontologies from EAV facts (merges with code config)
+    this.hydrateOntologiesFromFacts();
+
     // Refresh EQLS schema from catalog after data ingest
     this.eqls.setSchema(this.store.getCatalog());
   }
@@ -518,6 +521,129 @@ export class TrellisKernel {
    */
   getOntology(id: string): SchemaDefinition | undefined {
     return this.ontologies.get(id);
+  }
+
+  /**
+   * Lists all registered ontologies.
+   */
+  listOntologies(): SchemaDefinition[] {
+    return Array.from(this.ontologies.values());
+  }
+
+  /**
+   * Creates a new ontology and persists it as EAV facts.
+   * Throws if an ontology with the same ID already exists.
+   */
+  async createOntology(
+    schema: SchemaDefinition,
+    ctx: MiddlewareContext = {},
+  ): Promise<void> {
+    if (this.ontologies.has(schema['@id'])) {
+      throw new Error(`Ontology already exists: ${schema['@id']}`);
+    }
+    this.ontologies.set(schema['@id'], schema);
+    await this.persistOntology(schema, ctx);
+  }
+
+  /**
+   * Updates an existing ontology, replacing old EAV facts with new ones.
+   * Throws if the ontology does not exist.
+   */
+  async updateOntology(
+    schema: SchemaDefinition,
+    ctx: MiddlewareContext = {},
+  ): Promise<void> {
+    if (!this.ontologies.has(schema['@id'])) {
+      throw new Error(`Ontology not found: ${schema['@id']}`);
+    }
+    // Delete old facts then write new
+    const entityId = this.ontologyEntityId(schema['@id']);
+    const existing = this.store.getFactsByEntity(entityId);
+    if (existing.length > 0) {
+      await this._mutate('deleteFacts', { facts: existing }, ctx);
+    }
+    this.ontologies.set(schema['@id'], schema);
+    await this.persistOntology(schema, ctx);
+  }
+
+  /**
+   * Deletes an ontology from the in-memory map and removes its EAV facts.
+   * Throws if the ontology does not exist.
+   */
+  async deleteOntology(
+    id: string,
+    ctx: MiddlewareContext = {},
+  ): Promise<void> {
+    if (!this.ontologies.has(id)) {
+      throw new Error(`Ontology not found: ${id}`);
+    }
+    const entityId = this.ontologyEntityId(id);
+    const existing = this.store.getFactsByEntity(entityId);
+    if (existing.length > 0) {
+      await this._mutate('deleteFacts', { facts: existing }, ctx);
+    }
+    this.ontologies.delete(id);
+  }
+
+  /**
+   * Converts an ontology @id to an EAV entity ID for persistence.
+   */
+  private ontologyEntityId(id: string): string {
+    return `ontology:${id.replace(/[/:]/g, '_')}`;
+  }
+
+  /**
+   * Persists a SchemaDefinition as EAV facts.
+   */
+  private async persistOntology(
+    schema: SchemaDefinition,
+    ctx: MiddlewareContext = {},
+  ): Promise<void> {
+    const entityId = this.ontologyEntityId(schema['@id']);
+    const data = {
+      type: 'trellis:Schema',
+      schemaId: schema['@id'],
+      version: schema.version,
+      fields: JSON.stringify(schema.fields),
+    };
+    const facts = jsonEntityFacts(entityId, data, 'trellis:Schema');
+    await this._mutate('addFacts', { facts }, ctx);
+  }
+
+  /**
+   * Hydrates ontologies from persisted EAV facts (called during boot).
+   * Looks for entities of type 'trellis:Schema' and reconstructs SchemaDefinitions.
+   */
+  private hydrateOntologiesFromFacts(): void {
+    const allFacts = this.store.getAllFacts();
+    const schemaEntities = new Map<string, Record<string, any>>();
+
+    for (const fact of allFacts) {
+      if (!fact.e.startsWith('ontology:')) continue;
+      if (!schemaEntities.has(fact.e)) {
+        schemaEntities.set(fact.e, {});
+      }
+      const entity = schemaEntities.get(fact.e)!;
+      entity[fact.a] = fact.v;
+    }
+
+    for (const [, attrs] of schemaEntities) {
+      if (attrs.type !== 'trellis:Schema' || !attrs.schemaId) continue;
+      try {
+        const schema: SchemaDefinition = {
+          '@id': attrs.schemaId,
+          '@type': 'trellis:Schema',
+          version: attrs.version || '1.0.0',
+          fields: typeof attrs.fields === 'string' ? JSON.parse(attrs.fields) : (attrs.fields || []),
+        };
+        // Only hydrate if not already loaded from code config
+        if (!this.ontologies.has(schema['@id'])) {
+          this.ontologies.set(schema['@id'], schema);
+        }
+      } catch {
+        // Skip malformed persisted ontologies
+      }
+    }
   }
 
   /**

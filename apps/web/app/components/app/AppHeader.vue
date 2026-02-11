@@ -13,8 +13,8 @@
   // Reactive collection based on current route
   const currentCollection = computed(() => {
     const cleanPath = getCleanPath(route.path)
-    if (!cleanPath.startsWith('/collections/')) return null
-    const slug = cleanPath.split('/collections/')[1]
+    if (!cleanPath.startsWith('/database/collections/')) return null
+    const slug = cleanPath.split('/database/collections/')[1]
     if (!slug || !currentApp.value) return null
     return getCollectionBySlug(currentApp.value.id, slug)
   })
@@ -38,7 +38,7 @@
   watch(
     () => route.path,
     (path) => {
-      if (path.startsWith('/collections/')) return
+      if (path.startsWith('/database/collections/')) return
       collectionSchemaSheetOpen.value = false
     },
     { immediate: true },

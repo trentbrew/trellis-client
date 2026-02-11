@@ -8,8 +8,9 @@ import {
   routeConfig,
 } from '~/config/routes'
 import type { BadgeConfig, RouteConfig } from '~/config/routes'
-import { SYSTEM_TYPES } from '~/lib/systemTypes'
+import { PLATFORM_TYPES, ENTITY_TYPES } from '~/lib/systemTypes'
 import { filterRoutesByPermissions } from '~/lib/permissions'
+import { useOntologyRegistry } from '~/composables/useOntologyRegistry'
 
 type RailConfig = {
   primary: string[]
@@ -32,6 +33,7 @@ export const useRoutes = () => {
   const route = useRoute()
 
   const pinned = usePinnedItems()
+  const sidebarOrder = useSidebarOrder()
   const { userRole, membership } = useUserRole()
 
   const currentOrg = useState<any>('currentOrg')
@@ -45,13 +47,29 @@ export const useRoutes = () => {
   // Get collections reactively from InstantDB
   const { collections: instantCollections, customTypes, workflows } = useInstantData()
 
+  // Get user-created pages
+  const { pages } = usePages()
+
+  const pagesChildren = computed<RouteConfig[]>(() => {
+    return (pages.value || []).map((p) => ({
+      path: `/workspace/pages/${p.id}`,
+      label: p.title,
+      icon: p.icon || 'lucide:file-text',
+      tint: 'text-emerald-300',
+      meta: {
+        title: p.title,
+        subtitle: 'Page',
+      },
+    }))
+  })
+
   const collectionsChildren = computed<RouteConfig[]>(() => {
     if (!instantCollections.value) return []
 
     return instantCollections.value
       .filter((c) => !c.parentId)
       .map((col) => ({
-        path: `/collections/${col.slug}`,
+        path: `/database/collections/${col.slug}`,
         label: col.title,
         icon: col.icon || 'lucide:database',
         tint: 'text-blue-300',
@@ -79,20 +97,36 @@ export const useRoutes = () => {
     }))
   })
 
-  const systemTypesChildren = computed<RouteConfig[]>(() => {
-    return SYSTEM_TYPES.map((t) => ({
-      path: `/types/system/${t.id}`,
+  const entityTypesChildren = computed<RouteConfig[]>(() => {
+    return ENTITY_TYPES.map((t) => ({
+      path: `/database/${t.id.toLowerCase()}`,
       label: t.name,
       icon: t.icon || 'lucide:network',
       tint: 'text-violet-300',
       order: -100,
       meta: {
         title: t.name,
-        subtitle: 'System Types',
-        showBackButton: true,
+        subtitle: 'Entity',
       },
     }))
   })
+
+  const platformTypesChildren = computed<RouteConfig[]>(() => {
+    return PLATFORM_TYPES.map((t) => ({
+      path: `/database/${t.id.toLowerCase()}`,
+      label: t.name,
+      icon: t.icon || 'lucide:cog',
+      tint: 'text-muted-foreground',
+      order: 100,
+      meta: {
+        title: t.name,
+        subtitle: 'System',
+      },
+    }))
+  })
+
+  // Keep backward compat alias
+  const systemTypesChildren = entityTypesChildren
 
   const workflowsChildren = computed<RouteConfig[]>(() => {
     return (workflows.value || []).map((w) => ({
@@ -103,6 +137,52 @@ export const useRoutes = () => {
       meta: {
         title: w.name,
         subtitle: 'Workflows',
+      },
+    }))
+  })
+
+  /**
+   * Dynamic children from ontology-derived entity types.
+   * These are types created at runtime via CLI or MCP that auto-appear in the sidebar.
+   */
+  const { filteredDynamicTypes: ontologyTypes } = useOntologyRegistry()
+
+  // ── App-scoped sidebar filtering ──────────────────────────────────────
+  // Maps sidebar route paths to the entity type slugs they depend on.
+  // A sidebar item shows if ANY of its mapped types is in the app's enabled list.
+  // Items with no mapping (e.g. Overview, Feed) always show.
+  // Empty/null currentApp.ontologies → show ALL (backward compat for default Workspace app).
+  const ROUTE_ENTITY_TYPES: Record<string, string[]> = {
+    '/workspace/calendar': ['task', 'event', 'trip', 'payment', 'appointment', 'reminder', 'deadline', 'milestone'],
+    '/workspace/tasks': ['task'],
+    '/workspace/notes': ['note'],
+    '/workspace/projects': ['project'],
+    '/workspace/people': ['person', 'contact', 'organization', 'vendor'],
+    '/workspace/documents': ['note', 'file', 'page', 'template', 'slide_deck'],
+    '/workspace/files': ['file'],
+    '/workspace/bookmarks': ['bookmark'],
+  }
+
+  const isRouteEnabledForApp = (path: string): boolean => {
+    const enabledTypes = currentApp.value?.ontologies
+    // No filtering if ontologies is empty/null/undefined
+    if (!enabledTypes || enabledTypes.length === 0) return true
+    const requiredTypes = ROUTE_ENTITY_TYPES[path]
+    // No mapping → always show (meta pages like Overview, Feed, Places)
+    if (!requiredTypes) return true
+    const enabledSet = new Set(enabledTypes)
+    return requiredTypes.some((t) => enabledSet.has(t))
+  }
+
+  const ontologyTypeChildren = computed<RouteConfig[]>(() => {
+    return (ontologyTypes.value || []).map((t) => ({
+      path: `/database/${t.type}`,
+      label: t.label,
+      icon: t.icon || 'lucide:database',
+      tint: `text-${t.color}-300`,
+      meta: {
+        title: t.label,
+        subtitle: 'Custom',
       },
     }))
   })
@@ -144,12 +224,12 @@ export const useRoutes = () => {
   }
 
   const getCollectionSlugFromPath = (path: string): string | null => {
-    const match = /^\/collections\/([^/]+)$/.exec(path)
+    const match = /^\/database\/collections\/([^/]+)$/.exec(path)
     return match?.[1] || null
   }
 
   const getCollectionSlugFromRoutePath = (path: string): string | null => {
-    const match = /^\/collections\/([^/]+)(?:\/|$)/.exec(path)
+    const match = /^\/database\/collections\/([^/]+)(?:\/|$)/.exec(path)
     return match?.[1] || null
   }
 
@@ -374,11 +454,8 @@ export const useRoutes = () => {
 
     // Get dynamic children based on section
     switch (section.path) {
-      case '/collections':
-        dynamicChildren = collectionsChildren.value
-        break
-      case '/types':
-        dynamicChildren = [...systemTypesChildren.value, ...typesChildren.value]
+      case '/database':
+        dynamicChildren = [...systemTypesChildren.value, ...collectionsChildren.value, ...typesChildren.value, ...ontologyTypeChildren.value]
         break
       case '/workflows':
         dynamicChildren = workflowsChildren.value
@@ -495,12 +572,29 @@ export const useRoutes = () => {
 
     const pinnedPaths = new Set(pinned.getPinnedItems(currentSectionLinks.value).map((item) => item.path))
 
-    return section.sidebarSections
+    // Route type flags
+    const isDatabase = section.path === '/database'
+    const isWorkspace = section.path === '/workspace'
+
+    const resolved = section.sidebarSections
       .map((sectionDef) => {
         let items: RouteConfig[] = []
 
+        if (isDatabase && sectionDef.key === 'database-entities') {
+          // ENTITIES section gets schema.org-derived entity types
+          items = [...entityTypesChildren.value]
+        } else if (isDatabase && sectionDef.key === 'database-system') {
+          // SYSTEM section gets platform constructs
+          items = [...platformTypesChildren.value]
+        } else if (isDatabase && sectionDef.key === 'database-custom') {
+          // CUSTOM section gets collections + custom types + ontology types
+          items = [...collectionsChildren.value, ...typesChildren.value, ...ontologyTypeChildren.value]
+        } else if (sectionDef.key === 'personal-pages') {
+          // PAGES section gets user-created pages
+          items = [...pagesChildren.value]
+        }
         // Handle special keywords
-        if (sectionDef.items === 'pinned') {
+        else if (sectionDef.items === 'pinned') {
           items = pinned.getPinnedItems(currentSectionLinks.value)
         } else if (sectionDef.items === 'unpinned') {
           items = pinned.getUnpinnedItems(currentSectionLinks.value)
@@ -514,7 +608,7 @@ export const useRoutes = () => {
         }
 
         // Filter out pinned items from non-pinned sections
-        if (sectionDef.items !== 'pinned') {
+        if (sectionDef.items !== 'pinned' && !isDatabase) {
           items = items.filter((item) => !pinnedPaths.has(item.path))
         }
 
@@ -523,7 +617,17 @@ export const useRoutes = () => {
           items = filterRoutesByPermissions(items, userRole.value, hasFacilityMembership.value)
         }
 
-        const resolvedItems = items.filter((item) => item?.path && item.visible?.() !== false)
+        // Apply app-scoped entity type filtering
+        items = items.filter((item) => !item?.path || isRouteEnabledForApp(item.path))
+
+        let resolvedItems = items.filter((item) => item?.path && item.visible?.() !== false)
+
+        // Apply user-defined item order within this section
+        // Only for: workspace sections (all) + database-custom
+        const canReorderItems = isWorkspace || (isDatabase && sectionDef.key === 'database-custom')
+        if (canReorderItems) {
+          resolvedItems = sidebarOrder.applyItemOrder(sectionDef.key, resolvedItems)
+        }
 
         return {
           ...sectionDef,
@@ -531,11 +635,51 @@ export const useRoutes = () => {
           itemsMode: sectionDef.items,
         }
       })
-      .filter((resolvedSection) => {
-        // Hide empty sections completely (no header, no spacing)
-        return resolvedSection.items.length > 0
-      })
-      .sort((a, b) => (a.order ?? 999) - (b.order ?? 999))
+
+    // Merge in user-created custom sections (workspace only)
+    if (isWorkspace) {
+      const customSections = sidebarOrder.getCustomSections('/workspace')
+      for (const cs of customSections) {
+        resolved.push({
+          label: cs.label,
+          key: cs.key,
+          icon: cs.icon,
+          collapsible: true,
+          editable: true,
+          order: cs.order,
+          items: [], // custom sections start empty — items added via drag
+          itemsMode: undefined,
+          isCustom: true,
+        } as any)
+      }
+    }
+
+    // Filter empty sections, then apply ordering
+    const filtered = resolved.filter((resolvedSection) => {
+      // Always show custom sections (even if empty) so user can drag items in
+      if ((resolvedSection as any).isCustom) return true
+      // Always show editable sections (e.g. PAGES) so the + button is accessible
+      if (resolvedSection.editable) return true
+      // Hide empty built-in sections
+      return resolvedSection.items.length > 0
+    })
+
+    // Apply user-defined section order (workspace only), else use config order
+    const ordered = isWorkspace
+      ? sidebarOrder.applySectionOrder('/workspace', filtered)
+      : filtered.sort((a, b) => (a.order ?? 999) - (b.order ?? 999))
+
+    // Pinned section always stays at the top regardless of user reordering
+    if (isWorkspace) {
+      const pinnedIdx = ordered.findIndex((s) => s.key === 'personal-pinned')
+      if (pinnedIdx > 0) {
+        const pinnedSection = ordered[pinnedIdx]!
+        ordered.splice(pinnedIdx, 1)
+        ordered.unshift(pinnedSection)
+      }
+    }
+
+    return ordered
   })
 
   return {

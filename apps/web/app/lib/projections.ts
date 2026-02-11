@@ -21,6 +21,9 @@ const projectionIcons: Record<ProjectionType, string> = {
   sankey: 'lucide:git-branch',
   timeline: 'lucide:calendar',
   dashboard: 'lucide:layout-dashboard',
+  chart: 'lucide:bar-chart-3',
+  'slide-deck': 'lucide:presentation',
+  moodboard: 'lucide:layout-dashboard',
 }
 
 const projectionLabels: Record<ProjectionType, string> = {
@@ -37,6 +40,9 @@ const projectionLabels: Record<ProjectionType, string> = {
   sankey: 'Sankey',
   timeline: 'Timeline',
   dashboard: 'Dashboard',
+  chart: 'Chart',
+  'slide-deck': 'Slide Deck',
+  moodboard: 'Moodboard',
 }
 
 const requiredPrimaryProjectionTypes: Array<
@@ -47,8 +53,13 @@ const getProjectionIcon = (type: ProjectionType): string => {
   return resolveProjectionIcon(type) ?? projectionIcons[type]
 }
 
-export function createDefaultProjections(collectionId: string, collectionType: Collection['type']): Projection[] {
+export function createDefaultProjections(
+  collectionId: string,
+  collectionType: Collection['type'],
+  schema?: DatabaseSchema | null,
+): Projection[] {
   const projections: Projection[] = []
+  const defaultType = suggestDefaultProjection(schema)
 
   // All collections get the 5 primary "lens" projections.
   requiredPrimaryProjectionTypes.forEach((type, index) => {
@@ -58,7 +69,7 @@ export function createDefaultProjections(collectionId: string, collectionType: C
       name: projectionLabels[type],
       icon: getProjectionIcon(type),
       config: {},
-      isDefault: type === 'table',
+      isDefault: type === defaultType,
       order: index,
     })
   })
@@ -205,6 +216,16 @@ export interface ViewModeOption {
   disabled?: boolean
   visible?: boolean
   tooltip?: string
+  /** Schema analysis indicates this is a good fit for the data */
+  suggested?: boolean
+  /** Confidence score 0–1 for how well this projection fits the schema */
+  score?: number
+  /** Human-readable reason why this projection is suggested */
+  reason?: string
+  /** Whether this is the default projection for this dataset/type */
+  isDefault?: boolean
+  /** Context menu actions available when right-clicking within this view */
+  contextMenu?: import('~/types/contextMenu').ContextMenuConfig
 }
 
 /**
@@ -220,7 +241,7 @@ export interface ProjectionRequirementResult {
  * Map from projection types to BrowseViewMode.
  * Some projection types map directly, others need translation.
  */
-const projectionTypeToBrowseMode: Partial<Record<ProjectionType, BrowseViewMode>> = {
+const _projectionTypeToBrowseMode: Partial<Record<ProjectionType, BrowseViewMode>> = {
   table: 'table',
   kanban: 'kanban',
   calendar: 'calendar',
@@ -251,9 +272,11 @@ const defaultBrowseModeLabels: Record<BrowseViewMode, string> = {
   calendar: 'Calendar',
   kanban: 'Kanban',
   timeline: 'Timeline',
+  gantt: 'Gantt',
   month: 'Month',
   week: 'Week',
   agenda: 'Agenda',
+  moodboard: 'Moodboard',
 }
 
 /**
@@ -266,9 +289,11 @@ const defaultBrowseModeIcons: Record<BrowseViewMode, string> = {
   calendar: 'lucide:calendar',
   kanban: 'lucide:square-kanban',
   timeline: 'lucide:calendar',
+  gantt: 'lucide:gantt-chart',
   month: 'lucide:calendar',
   week: 'lucide:calendar-days',
   agenda: 'lucide:list-todo',
+  moodboard: 'lucide:layout-dashboard',
 }
 
 /**
@@ -408,6 +433,19 @@ export function buildViewModeOptions(
     // Add tooltip explaining why disabled
     if (!supported && missingTypes?.length) {
       option.tooltip = `Requires a ${missingTypes.join(' or ')} field`
+    }
+
+    // Annotate with suggestion metadata when schema is available
+    if (schema?.fields?.length) {
+      const scoringRule = scoringRules.find((r) => r.browseMode === mode)
+      if (scoringRule) {
+        const fieldTypes = getSchemaFieldTypes(schema)
+        const fieldCount = schema.fields.length
+        const score = scoringRule.score(fieldTypes, fieldCount)
+        option.score = score
+        option.suggested = score >= 0.3
+        option.reason = scoringRule.reason(fieldTypes)
+      }
     }
 
     viewOptions.push(option)
@@ -567,4 +605,161 @@ export function buildViewModeOptionsFromType(
 ): ViewModeOption[] {
   const schema = buildSchemaFromType(typeId)
   return buildViewModeOptions(schema, modes, options)
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Projection Suggestions — schema-aware scoring
+// ─────────────────────────────────────────────────────────────────────────────
+
+/**
+ * Projection scoring rule: maps a projection type to a scoring function
+ * that returns a score (0–1) and a human-readable reason.
+ */
+interface ProjectionScoringRule {
+  type: ProjectionType
+  browseMode: BrowseViewMode
+  score: (_fieldTypes: Set<DatabaseField['type']>, _fieldCount: number) => number
+  reason: (_fieldTypes: Set<DatabaseField['type']>) => string
+}
+
+const scoringRules: ProjectionScoringRule[] = [
+  {
+    type: 'table',
+    browseMode: 'table',
+    score: () => 1.0,
+    reason: () => 'Works with any data',
+  },
+  {
+    type: 'list',
+    browseMode: 'list',
+    score: () => 0.9,
+    reason: () => 'Works with any data',
+  },
+  {
+    type: 'kanban',
+    browseMode: 'kanban',
+    score: (ft) => (ft.has('select') ? 0.9 : 0),
+    reason: (ft) => (ft.has('select') ? 'Has select fields for grouping' : 'Needs a select field'),
+  },
+  {
+    type: 'calendar',
+    browseMode: 'calendar',
+    score: (ft) => (ft.has('date') ? 0.9 : 0),
+    reason: (ft) => (ft.has('date') ? 'Has date fields for scheduling' : 'Needs a date field'),
+  },
+  {
+    type: 'card-grid',
+    browseMode: 'grid',
+    score: (ft) => {
+      if (ft.has('file') || ft.has('url')) return 0.85
+      if (ft.has('text')) return 0.7
+      return 0.5
+    },
+    reason: (ft) => {
+      if (ft.has('file') || ft.has('url')) return 'Has media/link fields for rich cards'
+      if (ft.has('text')) return 'Has text fields for card content'
+      return 'Basic card layout'
+    },
+  },
+  {
+    type: 'chart',
+    browseMode: 'table', // chart doesn't have a browse mode; fallback
+    score: (ft) => (ft.has('number') ? 0.7 : 0),
+    reason: (ft) => (ft.has('number') ? 'Has numeric fields for charting' : 'Needs a number field'),
+  },
+  {
+    type: 'timeline',
+    browseMode: 'timeline',
+    score: (ft) => (ft.has('date') ? 0.7 : 0),
+    reason: (ft) => (ft.has('date') ? 'Has date fields for timeline' : 'Needs a date field'),
+  },
+  {
+    type: 'graph',
+    browseMode: 'table', // graph doesn't have a browse mode; fallback
+    score: (ft) => (ft.has('relation') ? 0.6 : 0.2),
+    reason: (ft) => (ft.has('relation') ? 'Has relation fields for graph edges' : 'Can visualize record relationships'),
+  },
+  {
+    type: 'slide-deck',
+    browseMode: 'table', // slide-deck doesn't have a browse mode; fallback
+    score: (ft) => (ft.has('text') ? 0.5 : 0.2),
+    reason: (ft) => (ft.has('text') ? 'Has text fields for slide content' : 'Basic slide layout'),
+  },
+  {
+    type: 'sankey',
+    browseMode: 'table', // sankey doesn't have a browse mode; fallback
+    score: (ft, _fieldCount) => {
+      const hasGrouping = ft.has('select') || ft.has('relation')
+      const hasValue = ft.has('number')
+      if (hasGrouping && hasValue) return 0.5
+      if (hasGrouping) return 0.2
+      return 0
+    },
+    reason: (ft) => {
+      const hasGrouping = ft.has('select') || ft.has('relation')
+      const hasValue = ft.has('number')
+      if (hasGrouping && hasValue) return 'Has grouping + numeric fields for flow diagram'
+      if (hasGrouping) return 'Has grouping fields (add a number field for values)'
+      return 'Needs select/relation + number fields'
+    },
+  },
+]
+
+/**
+ * Score all projection types against a schema and return sorted suggestions.
+ *
+ * @param schema - The database schema to evaluate
+ * @param options - threshold: minimum score to mark as suggested (default 0.3)
+ * @returns Sorted array of projection suggestions with scores and reasons
+ */
+export function suggestProjections(
+  schema: DatabaseSchema,
+  options?: { threshold?: number },
+): Array<{
+  type: ProjectionType
+  browseMode: BrowseViewMode
+  name: string
+  icon: string
+  score: number
+  suggested: boolean
+  reason: string
+}> {
+  const threshold = options?.threshold ?? 0.3
+  const fieldTypes = getSchemaFieldTypes(schema)
+  const fieldCount = schema.fields?.length ?? 0
+
+  return scoringRules
+    .map((rule) => {
+      const score = rule.score(fieldTypes, fieldCount)
+      return {
+        type: rule.type,
+        browseMode: rule.browseMode,
+        name: projectionLabels[rule.type] ?? rule.type,
+        icon: getProjectionIcon(rule.type),
+        score,
+        suggested: score >= threshold,
+        reason: rule.reason(fieldTypes),
+      }
+    })
+    .sort((a, b) => b.score - a.score)
+}
+
+/**
+ * Suggest the best default projection type for a schema.
+ * Prefers interactive views (kanban, calendar) over passive ones (table, list).
+ *
+ * @param schema - The database schema
+ * @returns The best projection type, or 'table' as fallback
+ */
+export function suggestDefaultProjection(schema?: DatabaseSchema | null): ProjectionType {
+  if (!schema?.fields?.length) return 'table'
+
+  const fieldTypes = getSchemaFieldTypes(schema)
+
+  // Prefer interactive views over universal ones
+  if (fieldTypes.has('select')) return 'kanban'
+  if (fieldTypes.has('date')) return 'calendar'
+  if (fieldTypes.has('file') || fieldTypes.has('url')) return 'card-grid'
+
+  return 'table'
 }

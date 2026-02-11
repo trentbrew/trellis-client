@@ -12,7 +12,8 @@
  *   GET  /api/graph/health      — Health check
  */
 
-import { useTqlKernel, getMutationLog, pushMutationLog } from '../../plugins/tql'
+import { useTqlKernel, useWorkspaceConfig, getMutationLog, pushMutationLog } from '../../plugins/tql'
+import { emitMutation } from '../../utils/tql-events'
 
 /** Reconstruct a node object from EAV facts, properly handling multi-value attributes */
 function factsToNode(entityId: string, facts: Array<{ e: string; a: string; v: unknown }>): Record<string, any> {
@@ -69,6 +70,23 @@ export default defineEventHandler(async (event) => {
     const workspace = await kernel.exportWorkspace()
     return {
       ontologies: workspace.workspace.ontologies || {},
+    }
+  }
+
+  // ─── GET /api/graph/config ────────────────────────────────────────
+  // Returns the full workspace config: routes, projections, app metadata,
+  // and ontologies. This is the single endpoint the client uses at boot
+  // to replace the static app-config.jsonld.
+  // Routes/app come from the stored workspace config; ontologies come
+  // from the kernel (which may have runtime mutations).
+  if (method === 'GET' && route === 'config') {
+    const wsConfig = useWorkspaceConfig()
+    const kernelWorkspace = await kernel.exportWorkspace()
+    return {
+      app: wsConfig.workspace.app || null,
+      routes: wsConfig.workspace.routes || {},
+      projections: kernelWorkspace.workspace.projections || {},
+      ontologies: kernelWorkspace.workspace.ontologies || {},
     }
   }
 
@@ -188,7 +206,8 @@ export default defineEventHandler(async (event) => {
   // ─── POST /api/graph/mutate ─────────────────────────────────────────
   if (method === 'POST' && route === 'mutate') {
     const body = await readBody(event)
-    const { action, entityId, data, type, e1, relation, e2 } = body || {}
+    const { action, entityId, data, type, e1, relation, e2, agentId } = body || {}
+    const agent: string = agentId || 'browser'
 
     if (!action) {
       throw createError({ statusCode: 400, message: 'Missing "action" in request body' })
@@ -200,8 +219,9 @@ export default defineEventHandler(async (event) => {
           if (!entityId || !type) {
             throw createError({ statusCode: 400, message: 'createNode requires "entityId" and "type"' })
           }
-          await kernel.createNode(entityId, data || {}, type)
+          await kernel.createNode(entityId, data || {}, type, { agentId: agent })
           pushMutationLog({ action: 'createNode', entityId, type, data })
+          emitMutation({ action: 'createNode', entityId, type, agentId: agent, data })
           return { ok: true, entityId }
         }
 
@@ -209,8 +229,9 @@ export default defineEventHandler(async (event) => {
           if (!entityId || !type) {
             throw createError({ statusCode: 400, message: 'updateNode requires "entityId" and "type"' })
           }
-          await kernel.updateNode(entityId, data || {}, type)
+          await kernel.updateNode(entityId, data || {}, type, { agentId: agent })
           pushMutationLog({ action: 'updateNode', entityId, type, data })
+          emitMutation({ action: 'updateNode', entityId, type, agentId: agent, data })
           return { ok: true, entityId }
         }
 
@@ -218,8 +239,9 @@ export default defineEventHandler(async (event) => {
           if (!entityId) {
             throw createError({ statusCode: 400, message: 'deleteNode requires "entityId"' })
           }
-          await kernel.deleteNode(entityId)
+          await kernel.deleteNode(entityId, { agentId: agent })
           pushMutationLog({ action: 'deleteNode', entityId })
+          emitMutation({ action: 'deleteNode', entityId, agentId: agent })
           return { ok: true, entityId }
         }
 
@@ -227,8 +249,9 @@ export default defineEventHandler(async (event) => {
           if (!e1 || !relation || !e2) {
             throw createError({ statusCode: 400, message: 'link requires "e1", "relation", and "e2"' })
           }
-          await kernel.link(e1, relation, e2)
+          await kernel.link(e1, relation, e2, { agentId: agent })
           pushMutationLog({ action: 'link', entityId: `${e1} -> ${e2}`, data: { relation } })
+          emitMutation({ action: 'link', entityId: `${e1} -> ${e2}`, agentId: agent, data: { relation, e1, e2 } })
           return { ok: true, e1, relation, e2 }
         }
 
@@ -237,6 +260,99 @@ export default defineEventHandler(async (event) => {
       }
     } catch (err: any) {
       if (err.statusCode) throw err
+      throw createError({ statusCode: 500, message: err.message })
+    }
+  }
+
+  // ─── GET /api/graph/ontology/:id ─────────────────────────────────────
+  if (method === 'GET' && route === 'ontology') {
+    const ontologyId = segments.slice(1).join('/')
+    if (!ontologyId) {
+      throw createError({ statusCode: 400, message: 'Missing ontology ID' })
+    }
+
+    const schema = kernel.getOntology(ontologyId)
+    if (!schema) {
+      throw createError({ statusCode: 404, message: `Ontology not found: ${ontologyId}` })
+    }
+
+    return { ontology: schema }
+  }
+
+  // ─── POST /api/graph/ontology ──────────────────────────────────────
+  if (method === 'POST' && route === 'ontology') {
+    const body = await readBody(event)
+    const { schema, agentId } = body || {}
+    const agent: string = agentId || 'browser'
+
+    if (!schema || !schema['@id'] || !schema.version || !Array.isArray(schema.fields)) {
+      throw createError({ statusCode: 400, message: 'Request body must include "schema" with @id, version, and fields[]' })
+    }
+
+    // Ensure @type is set
+    schema['@type'] = 'trellis:Schema'
+
+    try {
+      await kernel.createOntology(schema, { agentId: agent })
+      pushMutationLog({ action: 'createOntology', entityId: schema['@id'], data: { version: schema.version } })
+      emitMutation({ action: 'createOntology', entityId: schema['@id'], type: 'ontology', agentId: agent, data: schema })
+      return { ok: true, id: schema['@id'] }
+    } catch (err: any) {
+      throw createError({ statusCode: 409, message: err.message })
+    }
+  }
+
+  // ─── PUT /api/graph/ontology/:id ───────────────────────────────────
+  if (method === 'PUT' && route === 'ontology') {
+    const ontologyId = segments.slice(1).join('/')
+    if (!ontologyId) {
+      throw createError({ statusCode: 400, message: 'Missing ontology ID' })
+    }
+
+    const body = await readBody(event)
+    const { schema, agentId } = body || {}
+    const agent: string = agentId || 'browser'
+
+    if (!schema || !schema.version || !Array.isArray(schema.fields)) {
+      throw createError({ statusCode: 400, message: 'Request body must include "schema" with version and fields[]' })
+    }
+
+    // Ensure IDs match
+    schema['@id'] = ontologyId
+    schema['@type'] = 'trellis:Schema'
+
+    try {
+      await kernel.updateOntology(schema, { agentId: agent })
+      pushMutationLog({ action: 'updateOntology', entityId: ontologyId, data: { version: schema.version } })
+      emitMutation({ action: 'updateOntology', entityId: ontologyId, type: 'ontology', agentId: agent, data: schema })
+      return { ok: true, id: ontologyId }
+    } catch (err: any) {
+      if (err.message.includes('not found')) {
+        throw createError({ statusCode: 404, message: err.message })
+      }
+      throw createError({ statusCode: 500, message: err.message })
+    }
+  }
+
+  // ─── DELETE /api/graph/ontology/:id ────────────────────────────────
+  if (method === 'DELETE' && route === 'ontology') {
+    const ontologyId = segments.slice(1).join('/')
+    if (!ontologyId) {
+      throw createError({ statusCode: 400, message: 'Missing ontology ID' })
+    }
+
+    const body = await readBody(event).catch(() => ({}))
+    const agent: string = body?.agentId || 'browser'
+
+    try {
+      await kernel.deleteOntology(ontologyId, { agentId: agent })
+      pushMutationLog({ action: 'deleteOntology', entityId: ontologyId })
+      emitMutation({ action: 'deleteOntology', entityId: ontologyId, type: 'ontology', agentId: agent })
+      return { ok: true, id: ontologyId }
+    } catch (err: any) {
+      if (err.message.includes('not found')) {
+        throw createError({ statusCode: 404, message: err.message })
+      }
       throw createError({ statusCode: 500, message: err.message })
     }
   }

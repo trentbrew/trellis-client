@@ -5,7 +5,54 @@ export type SystemType = {
   icon?: string
 }
 
-export const SYSTEM_TYPES: SystemType[] = [
+/**
+ * Platform types — internal constructs that power the system.
+ * These are NOT usable as page data sources.
+ */
+export const PLATFORM_TYPES: SystemType[] = [
+  {
+    id: 'User',
+    name: 'User',
+    description: 'An authenticated user of the platform.',
+    icon: 'lucide:user-cog',
+  },
+  {
+    id: 'Ontology',
+    name: 'Ontology',
+    description: 'A schema definition for a custom entity type.',
+    icon: 'lucide:shapes',
+  },
+  {
+    id: 'Projection',
+    name: 'Projection',
+    description: 'A saved view configuration (table, kanban, calendar, etc.).',
+    icon: 'lucide:layout-template',
+  },
+  {
+    id: 'Tag',
+    name: 'Tag',
+    description: 'A label used to categorize and filter entities.',
+    icon: 'lucide:tag',
+  },
+  {
+    id: 'Workflow',
+    name: 'Workflow',
+    description: 'An automation or process definition.',
+    icon: 'lucide:git-branch',
+  },
+  {
+    id: 'Collection',
+    name: 'Collection',
+    description: 'A user-created data table or document collection.',
+    icon: 'lucide:layers',
+  },
+]
+
+/**
+ * Entity types — schema.org-derived types that hold user data.
+ * These CAN be used as page data sources.
+ */
+export const ENTITY_TYPES: SystemType[] = [
   {
     id: 'Thing',
     name: 'Thing',
@@ -44,7 +91,15 @@ export const SYSTEM_TYPES: SystemType[] = [
   },
 ]
 
+/** @deprecated Use ENTITY_TYPES instead */
+export const SYSTEM_TYPES = ENTITY_TYPES
+
 export function findSystemTypeById(id: string): SystemType | null {
-  const match = SYSTEM_TYPES.find((t) => t.id === id)
+  const match = ENTITY_TYPES.find((t) => t.id === id)
+  return match || null
+}
+
+export function findPlatformTypeById(id: string): SystemType | null {
+  const match = PLATFORM_TYPES.find((t) => t.id === id)
   return match || null
 }

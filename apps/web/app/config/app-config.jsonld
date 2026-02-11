@@ -1434,6 +1434,15 @@
       "order": 106
     },
     {
+      "@id": "projection:slide-deck",
+      "@type": "ui:Projection",
+      "label": "Slide Deck",
+      "projectionType": "slide-deck",
+      "icon": "lucide:presentation",
+      "component": "components/data/SlideDeckProjection.vue",
+      "order": 107
+    },
+    {
       "@id": "ui:component-registry",
       "@type": "ui:ComponentRegistry",
       "mappings": {
@@ -1483,11 +1492,11 @@
       }
     },
     {
-      "@id": "route:collections",
+      "@id": "route:database",
       "@type": "app:Route",
-      "routePath": "/collections",
-      "label": "Collections",
-      "icon": "lucide:layers",
+      "routePath": "/database",
+      "label": "Database",
+      "icon": "lucide:database",
       "tint": "text-violet-300",
       "inRail": true,
       "railPosition": "primary",
@@ -1498,26 +1507,72 @@
         "permission": "read"
       },
       "meta": {
-        "title": "Collections",
-        "description": "Custom collections and user-generated ontologies",
-        "subtitle": "Workspace"
+        "title": "Database",
+        "description": "Browse and manage your data — system types, custom tables, and collections.",
+        "subtitle": "Data"
       },
       "searchKeywords": [
+        "database",
         "collections",
-        "ontologies",
-        "schemas",
-        "workspace"
+        "types",
+        "schema",
+        "ontology",
+        "tables",
+        "data"
       ],
       "sidebarSections": [
         {
-          "label": "COLLECTIONS",
-          "key": "collections-list",
+          "label": "SYSTEM",
+          "key": "database-system",
+          "icon": "lucide:blocks",
+          "collapsible": true,
+          "order": 0
+        },
+        {
+          "label": "PLATFORM",
+          "key": "database-entities",
+          "icon": "lucide:box",
+          "collapsible": true,
+          "order": 1
+        },
+        {
+          "label": "CUSTOM",
+          "key": "database-custom",
           "icon": "lucide:layers",
           "items": "unpinned",
-          "collapsible": false,
+          "collapsible": true,
           "editable": true,
-          "order": 0
+          "order": 2
         }
+      ]
+    },
+    {
+      "@id": "route:calendar",
+      "@type": "app:Route",
+      "routePath": "/calendar",
+      "label": "Calendar",
+      "icon": "lucide:calendar",
+      "tint": "text-blue-300",
+      "inRail": false,
+      "railPosition": "primary",
+      "order": -1,
+      "requiresAuth": true,
+      "permissions": {
+        "minRole": "guest",
+        "permission": "read"
+      },
+      "meta": {
+        "title": "Calendar",
+        "description": "Calendar view of all your items — tasks, events, deadlines, and more.",
+        "subtitle": "Calendar"
+      },
+      "searchKeywords": [
+        "calendar",
+        "schedule",
+        "upcoming",
+        "deadlines",
+        "events",
+        "dates"
       ]
     },
     {
@@ -1665,8 +1720,8 @@
     {
       "@id": "route:personal",
       "@type": "app:Route",
-      "routePath": "/personal",
-      "label": "Home",
+      "routePath": "/workspace",
+      "label": "Workspace",
       "icon": "lucide:home",
       "tint": "text-emerald-300",
       "inRail": true,
@@ -1692,14 +1747,15 @@
           "order": -1
         },
         {
-          "label": "HOME",
-          "key": "personal-home",
-          "icon": "lucide:home",
+          "label": "TODAY",
+          "key": "personal-today-section",
+          "icon": "lucide:sun",
+          "collapsible": true,
           "items": [
             {
-              "path": "/personal/today",
-              "label": "Today",
-              "icon": "lucide:sun",
+              "path": "/workspace/today",
+              "label": "Overview",
+              "icon": "lucide:layout-dashboard",
               "tint": "text-amber-300",
               "permissions": {
                 "minRole": "guest",
@@ -1719,7 +1775,7 @@
               ]
             },
             {
-              "path": "/personal/feed",
+              "path": "/workspace/feed",
               "label": "Feed",
               "icon": "lucide:rss",
               "tint": "text-sky-300",
@@ -1741,37 +1797,15 @@
               ]
             }
           ],
-          "collapsible": false,
           "order": 0
         },
         {
-          "label": "LIBRARY",
-          "key": "personal-library",
-          "icon": "lucide:library",
+          "label": "WORKSPACE",
+          "key": "personal-workspace",
+          "icon": "lucide:briefcase",
           "items": [
             {
-              "path": "/personal/tasks",
-              "label": "Tasks",
-              "icon": "lucide:check-square",
-              "tint": "text-emerald-300",
-              "permissions": {
-                "minRole": "guest",
-                "permission": "read"
-              },
-              "meta": {
-                "title": "Tasks",
-                "description": "All your tasks and to-dos.",
-                "subtitle": "Personal"
-              },
-              "searchKeywords": [
-                "tasks",
-                "assigned",
-                "todo",
-                "work"
-              ]
-            },
-            {
-              "path": "/personal/calendar",
+              "path": "/workspace/calendar",
               "label": "Calendar",
               "icon": "lucide:calendar",
               "tint": "text-blue-300",
@@ -1792,28 +1826,7 @@
               ]
             },
             {
-              "path": "/personal/notes",
-              "label": "Notes",
-              "icon": "lucide:sticky-note",
-              "tint": "text-purple-300",
-              "permissions": {
-                "minRole": "guest",
-                "permission": "read"
-              },
-              "meta": {
-                "title": "Notes",
-                "description": "Ideas, journal entries, and bookmarks.",
-                "subtitle": "Personal"
-              },
-              "searchKeywords": [
-                "notes",
-                "journal",
-                "ideas",
-                "bookmarks"
-              ]
-            },
-            {
-              "path": "/personal/projects",
+              "path": "/workspace/projects",
               "label": "Projects",
               "icon": "lucide:folder-kanban",
               "tint": "text-orange-300",
@@ -1834,7 +1847,49 @@
               ]
             },
             {
-              "path": "/personal/people",
+              "path": "/workspace/tasks",
+              "label": "Tasks",
+              "icon": "lucide:check-square",
+              "tint": "text-emerald-300",
+              "permissions": {
+                "minRole": "guest",
+                "permission": "read"
+              },
+              "meta": {
+                "title": "Tasks",
+                "description": "All your tasks and to-dos.",
+                "subtitle": "Personal"
+              },
+              "searchKeywords": [
+                "tasks",
+                "assigned",
+                "todo",
+                "work"
+              ]
+            },
+            {
+              "path": "/workspace/notes",
+              "label": "Notes",
+              "icon": "lucide:sticky-note",
+              "tint": "text-purple-300",
+              "permissions": {
+                "minRole": "guest",
+                "permission": "read"
+              },
+              "meta": {
+                "title": "Notes",
+                "description": "Ideas, journal entries, and bookmarks.",
+                "subtitle": "Personal"
+              },
+              "searchKeywords": [
+                "notes",
+                "journal",
+                "ideas",
+                "bookmarks"
+              ]
+            },
+            {
+              "path": "/workspace/people",
               "label": "People",
               "icon": "lucide:users",
               "tint": "text-pink-300",
@@ -1853,10 +1908,42 @@
                 "collaborators",
                 "team"
               ]
+            }
+          ],
+          "collapsible": true,
+          "order": 1
+        },
+        {
+          "label": "LIBRARY",
+          "key": "personal-library",
+          "icon": "lucide:library",
+          "items": [
+            {
+              "path": "/workspace/documents",
+              "label": "Documents",
+              "icon": "lucide:file-text",
+              "tint": "text-rose-300",
+              "permissions": {
+                "minRole": "guest",
+                "permission": "read"
+              },
+              "meta": {
+                "title": "Documents",
+                "description": "Notes, files, slide decks, and presentations.",
+                "subtitle": "Personal"
+              },
+              "searchKeywords": [
+                "documents",
+                "notes",
+                "files",
+                "slide deck",
+                "presentations",
+                "library"
+              ]
             },
             {
-              "path": "/personal/files",
-              "label": "Files",
+              "path": "/workspace/files",
+              "label": "Files & Media",
               "icon": "lucide:paperclip",
               "tint": "text-cyan-300",
               "permissions": {
@@ -1864,20 +1951,74 @@
                 "permission": "read"
               },
               "meta": {
-                "title": "Files",
-                "description": "Attached files and documents.",
+                "title": "Files & Media",
+                "description": "Attached files, images, and media.",
                 "subtitle": "Personal"
               },
               "searchKeywords": [
                 "files",
-                "documents",
+                "media",
+                "images",
                 "attachments",
                 "uploads"
               ]
+            },
+            {
+              "path": "/workspace/bookmarks",
+              "label": "Bookmarks",
+              "icon": "lucide:bookmark",
+              "tint": "text-sky-300",
+              "permissions": {
+                "minRole": "guest",
+                "permission": "read"
+              },
+              "meta": {
+                "title": "Bookmarks",
+                "description": "Saved links, articles, and references.",
+                "subtitle": "Personal"
+              },
+              "searchKeywords": [
+                "bookmarks",
+                "links",
+                "saved",
+                "urls",
+                "articles",
+                "references"
+              ]
+            },
+            {
+              "path": "/workspace/places",
+              "label": "Places",
+              "icon": "lucide:map-pin",
+              "tint": "text-lime-300",
+              "permissions": {
+                "minRole": "guest",
+                "permission": "read"
+              },
+              "meta": {
+                "title": "Places",
+                "description": "Locations, addresses, and venues.",
+                "subtitle": "Personal"
+              },
+              "searchKeywords": [
+                "places",
+                "locations",
+                "addresses",
+                "venues",
+                "maps"
+              ]
             }
           ],
-          "collapsible": false,
-          "order": 1
+          "collapsible": true,
+          "order": 2
+        },
+        {
+          "label": "PAGES",
+          "key": "personal-pages",
+          "icon": "lucide:file-text",
+          "collapsible": true,
+          "editable": true,
+          "order": 3
         }
       ],
       "children": [
@@ -1888,10 +2029,10 @@
           "@id": "route:personal-feed"
         },
         {
-          "@id": "route:personal-tasks"
+          "@id": "route:personal-calendar"
         },
         {
-          "@id": "route:personal-calendar"
+          "@id": "route:personal-tasks"
         },
         {
           "@id": "route:personal-notes"
@@ -1903,14 +2044,26 @@
           "@id": "route:personal-people"
         },
         {
+          "@id": "route:personal-organizations"
+        },
+        {
           "@id": "route:personal-files"
+        },
+        {
+          "@id": "route:personal-documents"
+        },
+        {
+          "@id": "route:personal-bookmarks"
+        },
+        {
+          "@id": "route:personal-places"
         }
       ]
     },
     {
       "@id": "route:personal-today",
       "@type": "app:Route",
-      "routePath": "/personal/today",
+      "routePath": "/workspace/today",
       "label": "Today",
       "icon": "lucide:sun",
       "tint": "text-amber-300",
@@ -1935,7 +2088,7 @@
     {
       "@id": "route:personal-feed",
       "@type": "app:Route",
-      "routePath": "/personal/feed",
+      "routePath": "/workspace/feed",
       "label": "Feed",
       "icon": "lucide:rss",
       "tint": "text-sky-300",
@@ -1960,7 +2113,7 @@
     {
       "@id": "route:personal-tasks",
       "@type": "app:Route",
-      "routePath": "/personal/tasks",
+      "routePath": "/workspace/tasks",
       "label": "Tasks",
       "icon": "lucide:check-square",
       "tint": "text-emerald-300",
@@ -1984,7 +2137,7 @@
     {
       "@id": "route:personal-calendar",
       "@type": "app:Route",
-      "routePath": "/personal/calendar",
+      "routePath": "/workspace/calendar",
       "label": "Calendar",
       "icon": "lucide:calendar",
       "tint": "text-blue-300",
@@ -2008,7 +2161,7 @@
     {
       "@id": "route:personal-notes",
       "@type": "app:Route",
-      "routePath": "/personal/notes",
+      "routePath": "/workspace/notes",
       "label": "Notes",
       "icon": "lucide:sticky-note",
       "tint": "text-purple-300",
@@ -2032,7 +2185,7 @@
     {
       "@id": "route:personal-projects",
       "@type": "app:Route",
-      "routePath": "/personal/projects",
+      "routePath": "/workspace/projects",
       "label": "Projects",
       "icon": "lucide:folder-kanban",
       "tint": "text-orange-300",
@@ -2056,7 +2209,7 @@
     {
       "@id": "route:personal-people",
       "@type": "app:Route",
-      "routePath": "/personal/people",
+      "routePath": "/workspace/people",
       "label": "People",
       "icon": "lucide:users",
       "tint": "text-pink-300",
@@ -2078,9 +2231,34 @@
       }
     },
     {
+      "@id": "route:personal-organizations",
+      "@type": "app:Route",
+      "routePath": "/workspace/organizations",
+      "label": "Organizations",
+      "icon": "lucide:building-2",
+      "tint": "text-zinc-300",
+      "order": 4.5,
+      "permissions": {
+        "minRole": "guest",
+        "permission": "read"
+      },
+      "searchKeywords": [
+        "organizations",
+        "companies",
+        "teams",
+        "groups",
+        "institutions"
+      ],
+      "meta": {
+        "title": "Organizations",
+        "description": "Companies, teams, and groups you work with.",
+        "subtitle": "Personal"
+      }
+    },
+    {
       "@id": "route:personal-files",
       "@type": "app:Route",
-      "routePath": "/personal/files",
+      "routePath": "/workspace/files",
       "label": "Files",
       "icon": "lucide:paperclip",
       "tint": "text-cyan-300",
@@ -2098,6 +2276,83 @@
       "meta": {
         "title": "Files",
         "description": "Attached files and documents.",
+        "subtitle": "Personal"
+      }
+    },
+    {
+      "@id": "route:personal-documents",
+      "@type": "app:Route",
+      "routePath": "/workspace/documents",
+      "label": "Documents",
+      "icon": "lucide:file-text",
+      "tint": "text-rose-300",
+      "order": 6,
+      "permissions": {
+        "minRole": "guest",
+        "permission": "read"
+      },
+      "searchKeywords": [
+        "documents",
+        "notes",
+        "files",
+        "slide deck",
+        "presentations",
+        "library"
+      ],
+      "meta": {
+        "title": "Documents",
+        "description": "Notes, files, slide decks, and presentations.",
+        "subtitle": "Personal"
+      }
+    },
+    {
+      "@id": "route:personal-bookmarks",
+      "@type": "app:Route",
+      "routePath": "/workspace/bookmarks",
+      "label": "Bookmarks",
+      "icon": "lucide:bookmark",
+      "tint": "text-sky-300",
+      "order": 7,
+      "permissions": {
+        "minRole": "guest",
+        "permission": "read"
+      },
+      "searchKeywords": [
+        "bookmarks",
+        "links",
+        "saved",
+        "urls",
+        "articles",
+        "references"
+      ],
+      "meta": {
+        "title": "Bookmarks",
+        "description": "Saved links, articles, and references.",
+        "subtitle": "Personal"
+      }
+    },
+    {
+      "@id": "route:personal-places",
+      "@type": "app:Route",
+      "routePath": "/workspace/places",
+      "label": "Places",
+      "icon": "lucide:map-pin",
+      "tint": "text-lime-300",
+      "order": 8,
+      "permissions": {
+        "minRole": "guest",
+        "permission": "read"
+      },
+      "searchKeywords": [
+        "places",
+        "locations",
+        "addresses",
+        "venues",
+        "maps"
+      ],
+      "meta": {
+        "title": "Places",
+        "description": "Locations, addresses, and venues.",
         "subtitle": "Personal"
       }
     },

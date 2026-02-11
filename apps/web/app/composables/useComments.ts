@@ -33,9 +33,15 @@ export function useComments(entityId: Ref<string | undefined> | string, entityTy
 
   const resolvedId = computed(() => (typeof entityId === 'string' ? entityId : entityId.value))
 
+  // Track whether comment entities have been created in this session.
+  // The EAV catalog won't contain comment attributes until at least one exists,
+  // so we skip the TQL query until then to avoid 400 errors from attribute validation.
+  const _commentCreatedThisSession = ref(false)
+
   // Build reactive EQL-S query for this entity's comments
   const eqls = computed(() => {
     if (!resolvedId.value) return ''
+    if (!_commentCreatedThisSession.value) return ''
     return `FIND comment AS ?c WHERE ?c.entityId = "${resolvedId.value}" AND ?c.entityType = "${entityType}"`
   })
 
@@ -114,6 +120,9 @@ export function useComments(entityId: Ref<string | undefined> | string, entityTy
       relation: 'hasComment',
       e2: `comment:${commentId}`,
     })
+
+    // Enable TQL query now that comment attributes exist in the EAV catalog
+    _commentCreatedThisSession.value = true
 
     return commentId
   }
