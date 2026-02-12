@@ -1,5 +1,5 @@
 {
-  "lastOpHash": "trellis:op:739062b4508dcf6b2a6c1d733564d8186ae6b15a7f69b94e10b027bbc5238951",
+  "lastOpHash": "trellis:op:34143c150d2ffcdd219048692817075b9affc5c40e62f05c2ed064ed0370069c",
   "data": {
     "facts": [
       {
@@ -5023,6 +5023,76 @@
         "v": 0
       },
       {
+        "e": "file:apps/web/app/middleware/auth.global.ts",
+        "a": "type",
+        "v": "File"
+      },
+      {
+        "e": "file:apps/web/app/middleware/auth.global.ts",
+        "a": "path",
+        "v": "apps/web/app/middleware/auth.global.ts"
+      },
+      {
+        "e": "file:apps/web/app/middleware/auth.global.ts",
+        "a": "language",
+        "v": "typescript"
+      },
+      {
+        "e": "file:apps/web/app/middleware/auth.global.ts",
+        "a": "size",
+        "v": 10002
+      },
+      {
+        "e": "file:apps/web/app/middleware/auth.global.ts",
+        "a": "lastModified",
+        "v": "2026-02-05T17:07:14.341Z"
+      },
+      {
+        "e": "file:apps/web/app/middleware/auth.global.ts",
+        "a": "readCount",
+        "v": 0
+      },
+      {
+        "e": "file:apps/web/app/middleware/auth.global.ts",
+        "a": "writeCount",
+        "v": 0
+      },
+      {
+        "e": "file:apps/web/app/middleware/context.global.ts",
+        "a": "type",
+        "v": "File"
+      },
+      {
+        "e": "file:apps/web/app/middleware/context.global.ts",
+        "a": "path",
+        "v": "apps/web/app/middleware/context.global.ts"
+      },
+      {
+        "e": "file:apps/web/app/middleware/context.global.ts",
+        "a": "language",
+        "v": "typescript"
+      },
+      {
+        "e": "file:apps/web/app/middleware/context.global.ts",
+        "a": "size",
+        "v": 924
+      },
+      {
+        "e": "file:apps/web/app/middleware/context.global.ts",
+        "a": "lastModified",
+        "v": "2026-02-05T17:07:14.342Z"
+      },
+      {
+        "e": "file:apps/web/app/middleware/context.global.ts",
+        "a": "readCount",
+        "v": 0
+      },
+      {
+        "e": "file:apps/web/app/middleware/context.global.ts",
+        "a": "writeCount",
+        "v": 0
+      },
+      {
         "e": "file:apps/web/app/middleware/page-meta.global.ts",
         "a": "type",
         "v": "File"
@@ -5789,6 +5859,41 @@
       },
       {
         "e": "file:apps/web/app/composables/useNavigationLoading.ts",
+        "a": "writeCount",
+        "v": 0
+      },
+      {
+        "e": "file:apps/web/app/composables/useContext.ts",
+        "a": "type",
+        "v": "File"
+      },
+      {
+        "e": "file:apps/web/app/composables/useContext.ts",
+        "a": "path",
+        "v": "apps/web/app/composables/useContext.ts"
+      },
+      {
+        "e": "file:apps/web/app/composables/useContext.ts",
+        "a": "language",
+        "v": "typescript"
+      },
+      {
+        "e": "file:apps/web/app/composables/useContext.ts",
+        "a": "size",
+        "v": 3603
+      },
+      {
+        "e": "file:apps/web/app/composables/useContext.ts",
+        "a": "lastModified",
+        "v": "2026-02-05T17:07:14.325Z"
+      },
+      {
+        "e": "file:apps/web/app/composables/useContext.ts",
+        "a": "readCount",
+        "v": 0
+      },
+      {
+        "e": "file:apps/web/app/composables/useContext.ts",
         "a": "writeCount",
         "v": 0
       },
@@ -36308,6 +36413,41 @@
         "v": ""
       },
       {
+        "e": "file:.husky/post-commit",
+        "a": "type",
+        "v": "File"
+      },
+      {
+        "e": "file:.husky/post-commit",
+        "a": "path",
+        "v": ".husky/post-commit"
+      },
+      {
+        "e": "file:.husky/post-commit",
+        "a": "language",
+        "v": "unknown"
+      },
+      {
+        "e": "file:.husky/post-commit",
+        "a": "readCount",
+        "v": 0
+      },
+      {
+        "e": "file:.husky/post-commit",
+        "a": "writeCount",
+        "v": 1
+      },
+      {
+        "e": "file:.husky/post-commit",
+        "a": "size",
+        "v": 0
+      },
+      {
+        "e": "file:.husky/post-commit",
+        "a": "lastModified",
+        "v": "2026-02-07T16:38:42.457684-08:00"
+      },
+      {
         "e": "change:6ba8136a-d82b-43f5-bf80-921b84a89f7b:_Users_trentbrew_TURTLE_Projects_Apps_TRELLIS-APP-V2_trellis-app-builder_hooks_archive-response.ts",
         "a": "type",
         "v": "Change"
@@ -36946,6 +37086,41 @@
         "e": "change:6ba8136a-d82b-43f5-bf80-921b84a89f7b:_Users_trentbrew_TURTLE_Projects_Apps_TRELLIS-APP-V2_trellis-app-builder_hooks_tql-docs-sync.ts",
         "a": "commitHash",
         "v": ""
+      },
+      {
+        "e": "file:hooks/tql-docs-sync.ts",
+        "a": "type",
+        "v": "File"
+      },
+      {
+        "e": "file:hooks/tql-docs-sync.ts",
+        "a": "path",
+        "v": "hooks/tql-docs-sync.ts"
+      },
+      {
+        "e": "file:hooks/tql-docs-sync.ts",
+        "a": "language",
+        "v": "typescript"
+      },
+      {
+        "e": "file:hooks/tql-docs-sync.ts",
+        "a": "readCount",
+        "v": 2
+      },
+      {
+        "e": "file:hooks/tql-docs-sync.ts",
+        "a": "writeCount",
+        "v": 4
+      },
+      {
+        "e": "file:hooks/tql-docs-sync.ts",
+        "a": "size",
+        "v": 0
+      },
+      {
+        "e": "file:hooks/tql-docs-sync.ts",
+        "a": "lastModified",
+        "v": "2026-02-07T16:41:56.777707-08:00"
       },
       {
         "e": "action:6ba8136a-d82b-43f5-bf80-921b84a89f7b:post_write_code",
@@ -63723,6 +63898,41 @@
         "v": ""
       },
       {
+        "e": "file:apps/web/app/layouts/default.vue",
+        "a": "type",
+        "v": "File"
+      },
+      {
+        "e": "file:apps/web/app/layouts/default.vue",
+        "a": "path",
+        "v": "apps/web/app/layouts/default.vue"
+      },
+      {
+        "e": "file:apps/web/app/layouts/default.vue",
+        "a": "language",
+        "v": "vue"
+      },
+      {
+        "e": "file:apps/web/app/layouts/default.vue",
+        "a": "size",
+        "v": 7197
+      },
+      {
+        "e": "file:apps/web/app/layouts/default.vue",
+        "a": "lastModified",
+        "v": "2026-02-11T13:21:42.517854-08:00"
+      },
+      {
+        "e": "file:apps/web/app/layouts/default.vue",
+        "a": "readCount",
+        "v": 3
+      },
+      {
+        "e": "file:apps/web/app/layouts/default.vue",
+        "a": "writeCount",
+        "v": 3
+      },
+      {
         "e": "change:27bdbb62-b385-4f96-b088-d751ac41251b:_Users_trentbrew_TURTLE_Projects_Apps_TRELLIS-APP-V2_trellis-app-builder_apps_web_app_composables_usePages.ts",
         "a": "type",
         "v": "Change"
@@ -66088,6 +66298,41 @@
         "v": ""
       },
       {
+        "e": "file:apps/web/app/types/database.ts",
+        "a": "type",
+        "v": "File"
+      },
+      {
+        "e": "file:apps/web/app/types/database.ts",
+        "a": "path",
+        "v": "apps/web/app/types/database.ts"
+      },
+      {
+        "e": "file:apps/web/app/types/database.ts",
+        "a": "language",
+        "v": "typescript"
+      },
+      {
+        "e": "file:apps/web/app/types/database.ts",
+        "a": "size",
+        "v": 6035
+      },
+      {
+        "e": "file:apps/web/app/types/database.ts",
+        "a": "lastModified",
+        "v": "2026-02-11T14:39:42.301961-08:00"
+      },
+      {
+        "e": "file:apps/web/app/types/database.ts",
+        "a": "readCount",
+        "v": 15
+      },
+      {
+        "e": "file:apps/web/app/types/database.ts",
+        "a": "writeCount",
+        "v": 5
+      },
+      {
         "e": "change:35281ad1-2617-4525-812f-e883c0ecfacf:_Users_trentbrew_.windsurf_plans_sidebar-fixes-452d29.md",
         "a": "type",
         "v": "Change"
@@ -67063,6 +67308,41 @@
         "v": ""
       },
       {
+        "e": "file:apps/web/server/plugins/tql.ts",
+        "a": "type",
+        "v": "File"
+      },
+      {
+        "e": "file:apps/web/server/plugins/tql.ts",
+        "a": "path",
+        "v": "apps/web/server/plugins/tql.ts"
+      },
+      {
+        "e": "file:apps/web/server/plugins/tql.ts",
+        "a": "language",
+        "v": "typescript"
+      },
+      {
+        "e": "file:apps/web/server/plugins/tql.ts",
+        "a": "size",
+        "v": 3077
+      },
+      {
+        "e": "file:apps/web/server/plugins/tql.ts",
+        "a": "lastModified",
+        "v": "2026-02-11T15:09:33.567954-08:00"
+      },
+      {
+        "e": "file:apps/web/server/plugins/tql.ts",
+        "a": "readCount",
+        "v": 8
+      },
+      {
+        "e": "file:apps/web/server/plugins/tql.ts",
+        "a": "writeCount",
+        "v": 7
+      },
+      {
         "e": "change:a22349a1-b992-421f-9a75-efe3fb00af7c:_Users_trentbrew_TURTLE_Projects_Apps_TRELLIS-APP-V2_trellis-app-builder_apps_web_server_api_graph_[...path].ts",
         "a": "type",
         "v": "Change"
@@ -67091,6 +67371,41 @@
         "e": "change:a22349a1-b992-421f-9a75-efe3fb00af7c:_Users_trentbrew_TURTLE_Projects_Apps_TRELLIS-APP-V2_trellis-app-builder_apps_web_server_api_graph_[...path].ts",
         "a": "commitHash",
         "v": ""
+      },
+      {
+        "e": "file:apps/web/server/api/graph/[...path].ts",
+        "a": "type",
+        "v": "File"
+      },
+      {
+        "e": "file:apps/web/server/api/graph/[...path].ts",
+        "a": "path",
+        "v": "apps/web/server/api/graph/[...path].ts"
+      },
+      {
+        "e": "file:apps/web/server/api/graph/[...path].ts",
+        "a": "language",
+        "v": "typescript"
+      },
+      {
+        "e": "file:apps/web/server/api/graph/[...path].ts",
+        "a": "size",
+        "v": 8678
+      },
+      {
+        "e": "file:apps/web/server/api/graph/[...path].ts",
+        "a": "lastModified",
+        "v": "2026-02-11T15:09:52.224439-08:00"
+      },
+      {
+        "e": "file:apps/web/server/api/graph/[...path].ts",
+        "a": "readCount",
+        "v": 14
+      },
+      {
+        "e": "file:apps/web/server/api/graph/[...path].ts",
+        "a": "writeCount",
+        "v": 5
       },
       {
         "e": "change:a22349a1-b992-421f-9a75-efe3fb00af7c:_Users_trentbrew_TURTLE_Projects_Apps_TRELLIS-APP-V2_trellis-app-builder_apps_web_server_utils_tql-routes.ts",
@@ -71973,6 +72288,41 @@
         "v": "2026-02-11T16:29:09.278492-08:00"
       },
       {
+        "e": "file:apps/web/app/config/routes.ts",
+        "a": "type",
+        "v": "File"
+      },
+      {
+        "e": "file:apps/web/app/config/routes.ts",
+        "a": "path",
+        "v": "apps/web/app/config/routes.ts"
+      },
+      {
+        "e": "file:apps/web/app/config/routes.ts",
+        "a": "language",
+        "v": "typescript"
+      },
+      {
+        "e": "file:apps/web/app/config/routes.ts",
+        "a": "size",
+        "v": 19275
+      },
+      {
+        "e": "file:apps/web/app/config/routes.ts",
+        "a": "lastModified",
+        "v": "2026-02-11T17:37:52.16073-08:00"
+      },
+      {
+        "e": "file:apps/web/app/config/routes.ts",
+        "a": "readCount",
+        "v": 20
+      },
+      {
+        "e": "file:apps/web/app/config/routes.ts",
+        "a": "writeCount",
+        "v": 13
+      },
+      {
         "e": "action:98172113-6bba-48d5-8294-ba21fbdf4cc8:pre_read_code",
         "a": "type",
         "v": "Action"
@@ -72026,6 +72376,41 @@
         "e": "change:98172113-6bba-48d5-8294-ba21fbdf4cc8:_Users_trentbrew_TURTLE_Projects_Apps_TRELLIS-APP-V2_trellis-app-builder_apps_web_app_composables_useRoutes.ts",
         "a": "commitHash",
         "v": ""
+      },
+      {
+        "e": "file:apps/web/app/composables/useRoutes.ts",
+        "a": "type",
+        "v": "File"
+      },
+      {
+        "e": "file:apps/web/app/composables/useRoutes.ts",
+        "a": "path",
+        "v": "apps/web/app/composables/useRoutes.ts"
+      },
+      {
+        "e": "file:apps/web/app/composables/useRoutes.ts",
+        "a": "language",
+        "v": "typescript"
+      },
+      {
+        "e": "file:apps/web/app/composables/useRoutes.ts",
+        "a": "size",
+        "v": 17873
+      },
+      {
+        "e": "file:apps/web/app/composables/useRoutes.ts",
+        "a": "lastModified",
+        "v": "2026-02-11T17:54:52.136892-08:00"
+      },
+      {
+        "e": "file:apps/web/app/composables/useRoutes.ts",
+        "a": "readCount",
+        "v": 36
+      },
+      {
+        "e": "file:apps/web/app/composables/useRoutes.ts",
+        "a": "writeCount",
+        "v": 26
       },
       {
         "e": "action:98172113-6bba-48d5-8294-ba21fbdf4cc8:post_write_code",
@@ -72903,6 +73288,31 @@
         "v": "{\"wordCount\":817,\"responseLength\":11709}"
       },
       {
+        "e": "session:763f56da-75e2-4f76-8859-38048916ffa0",
+        "a": "type",
+        "v": "Session"
+      },
+      {
+        "e": "session:763f56da-75e2-4f76-8859-38048916ffa0",
+        "a": "trajectoryId",
+        "v": "763f56da-75e2-4f76-8859-38048916ffa0"
+      },
+      {
+        "e": "session:763f56da-75e2-4f76-8859-38048916ffa0",
+        "a": "startTime",
+        "v": "2026-02-11T14:44:44.744315-08:00"
+      },
+      {
+        "e": "session:763f56da-75e2-4f76-8859-38048916ffa0",
+        "a": "promptCount",
+        "v": 13
+      },
+      {
+        "e": "session:763f56da-75e2-4f76-8859-38048916ffa0",
+        "a": "intent",
+        "v": ""
+      },
+      {
         "e": "action:f76e0056-1dc7-48c5-b9ec-3b539887bb4c:pre_user_prompt",
         "a": "type",
         "v": "Action"
@@ -73528,6 +73938,56 @@
         "v": 3
       },
       {
+        "e": "action:f76e0056-1dc7-48c5-b9ec-3b539887bb4c:pre_run_command",
+        "a": "type",
+        "v": "Action"
+      },
+      {
+        "e": "action:f76e0056-1dc7-48c5-b9ec-3b539887bb4c:pre_run_command",
+        "a": "actionType",
+        "v": "pre_run_command"
+      },
+      {
+        "e": "action:f76e0056-1dc7-48c5-b9ec-3b539887bb4c:pre_run_command",
+        "a": "executionId",
+        "v": "f76e0056-1dc7-48c5-b9ec-3b539887bb4c"
+      },
+      {
+        "e": "action:f76e0056-1dc7-48c5-b9ec-3b539887bb4c:pre_run_command",
+        "a": "timestamp",
+        "v": "2026-02-11T18:38:23.229657-08:00"
+      },
+      {
+        "e": "action:f76e0056-1dc7-48c5-b9ec-3b539887bb4c:pre_run_command",
+        "a": "data",
+        "v": "{\"command\":\"git rm apps/web/app/components/forms/ContextSwitcher.vue\"}"
+      },
+      {
+        "e": "action:f76e0056-1dc7-48c5-b9ec-3b539887bb4c:post_run_command",
+        "a": "type",
+        "v": "Action"
+      },
+      {
+        "e": "action:f76e0056-1dc7-48c5-b9ec-3b539887bb4c:post_run_command",
+        "a": "actionType",
+        "v": "post_run_command"
+      },
+      {
+        "e": "action:f76e0056-1dc7-48c5-b9ec-3b539887bb4c:post_run_command",
+        "a": "executionId",
+        "v": "f76e0056-1dc7-48c5-b9ec-3b539887bb4c"
+      },
+      {
+        "e": "action:f76e0056-1dc7-48c5-b9ec-3b539887bb4c:post_run_command",
+        "a": "timestamp",
+        "v": "2026-02-11T18:38:24.130337-08:00"
+      },
+      {
+        "e": "action:f76e0056-1dc7-48c5-b9ec-3b539887bb4c:post_run_command",
+        "a": "data",
+        "v": "{\"command\":\"git rm apps/web/app/components/forms/ContextSwitcher.vue\"}"
+      },
+      {
         "e": "change:f76e0056-1dc7-48c5-b9ec-3b539887bb4c:_Users_trentbrew_TURTLE_Projects_Apps_TRELLIS-APP-V2_trellis-app-builder_apps_web_app_components_forms_index.ts",
         "a": "type",
         "v": "Change"
@@ -73658,6 +74118,31 @@
         "v": 4
       },
       {
+        "e": "action:f76e0056-1dc7-48c5-b9ec-3b539887bb4c:pre_read_code",
+        "a": "type",
+        "v": "Action"
+      },
+      {
+        "e": "action:f76e0056-1dc7-48c5-b9ec-3b539887bb4c:pre_read_code",
+        "a": "actionType",
+        "v": "pre_read_code"
+      },
+      {
+        "e": "action:f76e0056-1dc7-48c5-b9ec-3b539887bb4c:pre_read_code",
+        "a": "executionId",
+        "v": "f76e0056-1dc7-48c5-b9ec-3b539887bb4c"
+      },
+      {
+        "e": "action:f76e0056-1dc7-48c5-b9ec-3b539887bb4c:pre_read_code",
+        "a": "timestamp",
+        "v": "2026-02-11T18:39:59.098732-08:00"
+      },
+      {
+        "e": "action:f76e0056-1dc7-48c5-b9ec-3b539887bb4c:pre_read_code",
+        "a": "data",
+        "v": "{\"filePath\":\"/Users/trentbrew/TURTLE/Projects/Apps/TRELLIS-APP-V2/trellis-app-builder/apps/web/app/plugins/instant.client.ts\"}"
+      },
+      {
         "e": "change:f76e0056-1dc7-48c5-b9ec-3b539887bb4c:_Users_trentbrew_TURTLE_Projects_Apps_TRELLIS-APP-V2_trellis-app-builder_apps_web_app_plugins_instant.client.ts",
         "a": "type",
         "v": "Change"
@@ -73723,136 +74208,6 @@
         "v": 8
       },
       {
-        "e": "change:f76e0056-1dc7-48c5-b9ec-3b539887bb4c:_Users_trentbrew_TURTLE_Projects_Apps_TRELLIS-APP-V2_trellis-app-builder_apps_web_app_types_database.ts",
-        "a": "type",
-        "v": "Change"
-      },
-      {
-        "e": "change:f76e0056-1dc7-48c5-b9ec-3b539887bb4c:_Users_trentbrew_TURTLE_Projects_Apps_TRELLIS-APP-V2_trellis-app-builder_apps_web_app_types_database.ts",
-        "a": "filePath",
-        "v": "apps/web/app/types/database.ts"
-      },
-      {
-        "e": "change:f76e0056-1dc7-48c5-b9ec-3b539887bb4c:_Users_trentbrew_TURTLE_Projects_Apps_TRELLIS-APP-V2_trellis-app-builder_apps_web_app_types_database.ts",
-        "a": "linesAdded",
-        "v": 0
-      },
-      {
-        "e": "change:f76e0056-1dc7-48c5-b9ec-3b539887bb4c:_Users_trentbrew_TURTLE_Projects_Apps_TRELLIS-APP-V2_trellis-app-builder_apps_web_app_types_database.ts",
-        "a": "linesRemoved",
-        "v": 0
-      },
-      {
-        "e": "change:f76e0056-1dc7-48c5-b9ec-3b539887bb4c:_Users_trentbrew_TURTLE_Projects_Apps_TRELLIS-APP-V2_trellis-app-builder_apps_web_app_types_database.ts",
-        "a": "timestamp",
-        "v": "2026-02-11T18:40:27.583881-08:00"
-      },
-      {
-        "e": "change:f76e0056-1dc7-48c5-b9ec-3b539887bb4c:_Users_trentbrew_TURTLE_Projects_Apps_TRELLIS-APP-V2_trellis-app-builder_apps_web_app_types_database.ts",
-        "a": "commitHash",
-        "v": ""
-      },
-      {
-        "e": "file:apps/web/app/types/database.ts",
-        "a": "type",
-        "v": "File"
-      },
-      {
-        "e": "file:apps/web/app/types/database.ts",
-        "a": "path",
-        "v": "apps/web/app/types/database.ts"
-      },
-      {
-        "e": "file:apps/web/app/types/database.ts",
-        "a": "language",
-        "v": "typescript"
-      },
-      {
-        "e": "file:apps/web/app/types/database.ts",
-        "a": "size",
-        "v": 6035
-      },
-      {
-        "e": "file:apps/web/app/types/database.ts",
-        "a": "lastModified",
-        "v": "2026-02-11T18:40:27.583881-08:00"
-      },
-      {
-        "e": "file:apps/web/app/types/database.ts",
-        "a": "readCount",
-        "v": 15
-      },
-      {
-        "e": "file:apps/web/app/types/database.ts",
-        "a": "writeCount",
-        "v": 6
-      },
-      {
-        "e": "change:f76e0056-1dc7-48c5-b9ec-3b539887bb4c:_Users_trentbrew_TURTLE_Projects_Apps_TRELLIS-APP-V2_trellis-app-builder_apps_web_app_composables_useRoutes.ts",
-        "a": "type",
-        "v": "Change"
-      },
-      {
-        "e": "change:f76e0056-1dc7-48c5-b9ec-3b539887bb4c:_Users_trentbrew_TURTLE_Projects_Apps_TRELLIS-APP-V2_trellis-app-builder_apps_web_app_composables_useRoutes.ts",
-        "a": "filePath",
-        "v": "apps/web/app/composables/useRoutes.ts"
-      },
-      {
-        "e": "change:f76e0056-1dc7-48c5-b9ec-3b539887bb4c:_Users_trentbrew_TURTLE_Projects_Apps_TRELLIS-APP-V2_trellis-app-builder_apps_web_app_composables_useRoutes.ts",
-        "a": "linesAdded",
-        "v": 0
-      },
-      {
-        "e": "change:f76e0056-1dc7-48c5-b9ec-3b539887bb4c:_Users_trentbrew_TURTLE_Projects_Apps_TRELLIS-APP-V2_trellis-app-builder_apps_web_app_composables_useRoutes.ts",
-        "a": "linesRemoved",
-        "v": 0
-      },
-      {
-        "e": "change:f76e0056-1dc7-48c5-b9ec-3b539887bb4c:_Users_trentbrew_TURTLE_Projects_Apps_TRELLIS-APP-V2_trellis-app-builder_apps_web_app_composables_useRoutes.ts",
-        "a": "timestamp",
-        "v": "2026-02-11T18:41:15.262963-08:00"
-      },
-      {
-        "e": "change:f76e0056-1dc7-48c5-b9ec-3b539887bb4c:_Users_trentbrew_TURTLE_Projects_Apps_TRELLIS-APP-V2_trellis-app-builder_apps_web_app_composables_useRoutes.ts",
-        "a": "commitHash",
-        "v": ""
-      },
-      {
-        "e": "file:apps/web/app/composables/useRoutes.ts",
-        "a": "type",
-        "v": "File"
-      },
-      {
-        "e": "file:apps/web/app/composables/useRoutes.ts",
-        "a": "path",
-        "v": "apps/web/app/composables/useRoutes.ts"
-      },
-      {
-        "e": "file:apps/web/app/composables/useRoutes.ts",
-        "a": "language",
-        "v": "typescript"
-      },
-      {
-        "e": "file:apps/web/app/composables/useRoutes.ts",
-        "a": "size",
-        "v": 17873
-      },
-      {
-        "e": "file:apps/web/app/composables/useRoutes.ts",
-        "a": "lastModified",
-        "v": "2026-02-11T18:41:15.262963-08:00"
-      },
-      {
-        "e": "file:apps/web/app/composables/useRoutes.ts",
-        "a": "readCount",
-        "v": 37
-      },
-      {
-        "e": "file:apps/web/app/composables/useRoutes.ts",
-        "a": "writeCount",
-        "v": 28
-      },
-      {
         "e": "action:f76e0056-1dc7-48c5-b9ec-3b539887bb4c:post_write_code",
         "a": "type",
         "v": "Action"
@@ -73870,707 +74225,12 @@
       {
         "e": "action:f76e0056-1dc7-48c5-b9ec-3b539887bb4c:post_write_code",
         "a": "timestamp",
-        "v": "2026-02-11T18:41:15.262963-08:00"
+        "v": "2026-02-11T18:40:16.70182-08:00"
       },
       {
         "e": "action:f76e0056-1dc7-48c5-b9ec-3b539887bb4c:post_write_code",
         "a": "data",
-        "v": "{\"filePath\":\"apps/web/app/composables/useRoutes.ts\",\"linesAdded\":0,\"linesRemoved\":0}"
-      },
-      {
-        "e": "file:apps/web/server/api/graph/[...path].ts",
-        "a": "type",
-        "v": "File"
-      },
-      {
-        "e": "file:apps/web/server/api/graph/[...path].ts",
-        "a": "path",
-        "v": "apps/web/server/api/graph/[...path].ts"
-      },
-      {
-        "e": "file:apps/web/server/api/graph/[...path].ts",
-        "a": "language",
-        "v": "typescript"
-      },
-      {
-        "e": "file:apps/web/server/api/graph/[...path].ts",
-        "a": "size",
-        "v": 8678
-      },
-      {
-        "e": "file:apps/web/server/api/graph/[...path].ts",
-        "a": "lastModified",
-        "v": "2026-02-11T15:09:52.224439-08:00"
-      },
-      {
-        "e": "file:apps/web/server/api/graph/[...path].ts",
-        "a": "readCount",
-        "v": 16
-      },
-      {
-        "e": "file:apps/web/server/api/graph/[...path].ts",
-        "a": "writeCount",
-        "v": 5
-      },
-      {
-        "e": "file:apps/web/server/plugins/tql.ts",
-        "a": "type",
-        "v": "File"
-      },
-      {
-        "e": "file:apps/web/server/plugins/tql.ts",
-        "a": "path",
-        "v": "apps/web/server/plugins/tql.ts"
-      },
-      {
-        "e": "file:apps/web/server/plugins/tql.ts",
-        "a": "language",
-        "v": "typescript"
-      },
-      {
-        "e": "file:apps/web/server/plugins/tql.ts",
-        "a": "size",
-        "v": 3077
-      },
-      {
-        "e": "file:apps/web/server/plugins/tql.ts",
-        "a": "lastModified",
-        "v": "2026-02-11T15:09:33.567954-08:00"
-      },
-      {
-        "e": "file:apps/web/server/plugins/tql.ts",
-        "a": "readCount",
-        "v": 9
-      },
-      {
-        "e": "file:apps/web/server/plugins/tql.ts",
-        "a": "writeCount",
-        "v": 7
-      },
-      {
-        "e": "file:apps/web/app/layouts/default.vue",
-        "a": "type",
-        "v": "File"
-      },
-      {
-        "e": "file:apps/web/app/layouts/default.vue",
-        "a": "path",
-        "v": "apps/web/app/layouts/default.vue"
-      },
-      {
-        "e": "file:apps/web/app/layouts/default.vue",
-        "a": "language",
-        "v": "vue"
-      },
-      {
-        "e": "file:apps/web/app/layouts/default.vue",
-        "a": "size",
-        "v": 7197
-      },
-      {
-        "e": "file:apps/web/app/layouts/default.vue",
-        "a": "lastModified",
-        "v": "2026-02-11T13:21:42.517854-08:00"
-      },
-      {
-        "e": "file:apps/web/app/layouts/default.vue",
-        "a": "readCount",
-        "v": 4
-      },
-      {
-        "e": "file:apps/web/app/layouts/default.vue",
-        "a": "writeCount",
-        "v": 3
-      },
-      {
-        "e": "file:apps/web/app/composables/useContext.ts",
-        "a": "type",
-        "v": "File"
-      },
-      {
-        "e": "file:apps/web/app/composables/useContext.ts",
-        "a": "path",
-        "v": "apps/web/app/composables/useContext.ts"
-      },
-      {
-        "e": "file:apps/web/app/composables/useContext.ts",
-        "a": "language",
-        "v": "typescript"
-      },
-      {
-        "e": "file:apps/web/app/composables/useContext.ts",
-        "a": "size",
-        "v": 3603
-      },
-      {
-        "e": "file:apps/web/app/composables/useContext.ts",
-        "a": "lastModified",
-        "v": "2026-02-05T17:07:14.325Z"
-      },
-      {
-        "e": "file:apps/web/app/composables/useContext.ts",
-        "a": "readCount",
-        "v": 1
-      },
-      {
-        "e": "file:apps/web/app/composables/useContext.ts",
-        "a": "writeCount",
-        "v": 0
-      },
-      {
-        "e": "file:apps/web/app/config/routes.ts",
-        "a": "type",
-        "v": "File"
-      },
-      {
-        "e": "file:apps/web/app/config/routes.ts",
-        "a": "path",
-        "v": "apps/web/app/config/routes.ts"
-      },
-      {
-        "e": "file:apps/web/app/config/routes.ts",
-        "a": "language",
-        "v": "typescript"
-      },
-      {
-        "e": "file:apps/web/app/config/routes.ts",
-        "a": "size",
-        "v": 19275
-      },
-      {
-        "e": "file:apps/web/app/config/routes.ts",
-        "a": "lastModified",
-        "v": "2026-02-11T17:37:52.16073-08:00"
-      },
-      {
-        "e": "file:apps/web/app/config/routes.ts",
-        "a": "readCount",
-        "v": 21
-      },
-      {
-        "e": "file:apps/web/app/config/routes.ts",
-        "a": "writeCount",
-        "v": 13
-      },
-      {
-        "e": "file:apps/web/app/middleware/context.global.ts",
-        "a": "type",
-        "v": "File"
-      },
-      {
-        "e": "file:apps/web/app/middleware/context.global.ts",
-        "a": "path",
-        "v": "apps/web/app/middleware/context.global.ts"
-      },
-      {
-        "e": "file:apps/web/app/middleware/context.global.ts",
-        "a": "language",
-        "v": "typescript"
-      },
-      {
-        "e": "file:apps/web/app/middleware/context.global.ts",
-        "a": "size",
-        "v": 924
-      },
-      {
-        "e": "file:apps/web/app/middleware/context.global.ts",
-        "a": "lastModified",
-        "v": "2026-02-05T17:07:14.342Z"
-      },
-      {
-        "e": "file:apps/web/app/middleware/context.global.ts",
-        "a": "readCount",
-        "v": 1
-      },
-      {
-        "e": "file:apps/web/app/middleware/context.global.ts",
-        "a": "writeCount",
-        "v": 0
-      },
-      {
-        "e": "file:apps/web/app/middleware/auth.global.ts",
-        "a": "type",
-        "v": "File"
-      },
-      {
-        "e": "file:apps/web/app/middleware/auth.global.ts",
-        "a": "path",
-        "v": "apps/web/app/middleware/auth.global.ts"
-      },
-      {
-        "e": "file:apps/web/app/middleware/auth.global.ts",
-        "a": "language",
-        "v": "typescript"
-      },
-      {
-        "e": "file:apps/web/app/middleware/auth.global.ts",
-        "a": "size",
-        "v": 10002
-      },
-      {
-        "e": "file:apps/web/app/middleware/auth.global.ts",
-        "a": "lastModified",
-        "v": "2026-02-05T17:07:14.341Z"
-      },
-      {
-        "e": "file:apps/web/app/middleware/auth.global.ts",
-        "a": "readCount",
-        "v": 1
-      },
-      {
-        "e": "file:apps/web/app/middleware/auth.global.ts",
-        "a": "writeCount",
-        "v": 0
-      },
-      {
-        "e": "action:f76e0056-1dc7-48c5-b9ec-3b539887bb4c:pre_read_code",
-        "a": "type",
-        "v": "Action"
-      },
-      {
-        "e": "action:f76e0056-1dc7-48c5-b9ec-3b539887bb4c:pre_read_code",
-        "a": "actionType",
-        "v": "pre_read_code"
-      },
-      {
-        "e": "action:f76e0056-1dc7-48c5-b9ec-3b539887bb4c:pre_read_code",
-        "a": "executionId",
-        "v": "f76e0056-1dc7-48c5-b9ec-3b539887bb4c"
-      },
-      {
-        "e": "action:f76e0056-1dc7-48c5-b9ec-3b539887bb4c:pre_read_code",
-        "a": "timestamp",
-        "v": "2026-02-11T18:47:30.22174-08:00"
-      },
-      {
-        "e": "action:f76e0056-1dc7-48c5-b9ec-3b539887bb4c:pre_read_code",
-        "a": "data",
-        "v": "{\"filePath\":\"/Users/trentbrew/TURTLE/Projects/Apps/TRELLIS-APP-V2/trellis-app-builder/apps/web/app/middleware/auth.global.ts\"}"
-      },
-      {
-        "e": "action:f76e0056-1dc7-48c5-b9ec-3b539887bb4c:pre_run_command",
-        "a": "type",
-        "v": "Action"
-      },
-      {
-        "e": "action:f76e0056-1dc7-48c5-b9ec-3b539887bb4c:pre_run_command",
-        "a": "actionType",
-        "v": "pre_run_command"
-      },
-      {
-        "e": "action:f76e0056-1dc7-48c5-b9ec-3b539887bb4c:pre_run_command",
-        "a": "executionId",
-        "v": "f76e0056-1dc7-48c5-b9ec-3b539887bb4c"
-      },
-      {
-        "e": "action:f76e0056-1dc7-48c5-b9ec-3b539887bb4c:pre_run_command",
-        "a": "timestamp",
-        "v": "2026-02-11T18:50:04.669346-08:00"
-      },
-      {
-        "e": "action:f76e0056-1dc7-48c5-b9ec-3b539887bb4c:pre_run_command",
-        "a": "data",
-        "v": "{\"command\":\"find apps/web/node_modules/.vite -type f 2>/dev/null | wc -l; find apps/web/node_modules/.cache -type f 2>/dev/null | wc -l\"}"
-      },
-      {
-        "e": "action:f76e0056-1dc7-48c5-b9ec-3b539887bb4c:post_run_command",
-        "a": "type",
-        "v": "Action"
-      },
-      {
-        "e": "action:f76e0056-1dc7-48c5-b9ec-3b539887bb4c:post_run_command",
-        "a": "actionType",
-        "v": "post_run_command"
-      },
-      {
-        "e": "action:f76e0056-1dc7-48c5-b9ec-3b539887bb4c:post_run_command",
-        "a": "executionId",
-        "v": "f76e0056-1dc7-48c5-b9ec-3b539887bb4c"
-      },
-      {
-        "e": "action:f76e0056-1dc7-48c5-b9ec-3b539887bb4c:post_run_command",
-        "a": "timestamp",
-        "v": "2026-02-11T18:50:06.029143-08:00"
-      },
-      {
-        "e": "action:f76e0056-1dc7-48c5-b9ec-3b539887bb4c:post_run_command",
-        "a": "data",
-        "v": "{\"command\":\"find apps/web/node_modules/.vite -type f 2>/dev/null | wc -l; find apps/web/node_modules/.cache -type f 2>/dev/null | wc -l\"}"
-      },
-      {
-        "e": "action:f76e0056-1dc7-48c5-b9ec-3b539887bb4c:post_cascade_response",
-        "a": "type",
-        "v": "Action"
-      },
-      {
-        "e": "action:f76e0056-1dc7-48c5-b9ec-3b539887bb4c:post_cascade_response",
-        "a": "actionType",
-        "v": "post_cascade_response"
-      },
-      {
-        "e": "action:f76e0056-1dc7-48c5-b9ec-3b539887bb4c:post_cascade_response",
-        "a": "executionId",
-        "v": "f76e0056-1dc7-48c5-b9ec-3b539887bb4c"
-      },
-      {
-        "e": "action:f76e0056-1dc7-48c5-b9ec-3b539887bb4c:post_cascade_response",
-        "a": "timestamp",
-        "v": "2026-02-11T18:50:25.109484-08:00"
-      },
-      {
-        "e": "action:f76e0056-1dc7-48c5-b9ec-3b539887bb4c:post_cascade_response",
-        "a": "data",
-        "v": "{\"wordCount\":1943,\"responseLength\":19054}"
-      },
-      {
-        "e": "session:763f56da-75e2-4f76-8859-38048916ffa0",
-        "a": "type",
-        "v": "Session"
-      },
-      {
-        "e": "session:763f56da-75e2-4f76-8859-38048916ffa0",
-        "a": "trajectoryId",
-        "v": "763f56da-75e2-4f76-8859-38048916ffa0"
-      },
-      {
-        "e": "session:763f56da-75e2-4f76-8859-38048916ffa0",
-        "a": "startTime",
-        "v": "2026-02-11T14:44:44.744315-08:00"
-      },
-      {
-        "e": "session:763f56da-75e2-4f76-8859-38048916ffa0",
-        "a": "promptCount",
-        "v": 14
-      },
-      {
-        "e": "session:763f56da-75e2-4f76-8859-38048916ffa0",
-        "a": "intent",
-        "v": ""
-      },
-      {
-        "e": "action:6ba4a36b-76cb-459d-be4a-f2c41538b05d:pre_user_prompt",
-        "a": "type",
-        "v": "Action"
-      },
-      {
-        "e": "action:6ba4a36b-76cb-459d-be4a-f2c41538b05d:pre_user_prompt",
-        "a": "actionType",
-        "v": "pre_user_prompt"
-      },
-      {
-        "e": "action:6ba4a36b-76cb-459d-be4a-f2c41538b05d:pre_user_prompt",
-        "a": "executionId",
-        "v": "6ba4a36b-76cb-459d-be4a-f2c41538b05d"
-      },
-      {
-        "e": "action:6ba4a36b-76cb-459d-be4a-f2c41538b05d:pre_user_prompt",
-        "a": "timestamp",
-        "v": "2026-02-11T19:00:13.6371-08:00"
-      },
-      {
-        "e": "action:6ba4a36b-76cb-459d-be4a-f2c41538b05d:pre_user_prompt",
-        "a": "data",
-        "v": "{\"prompt\":\"\"}"
-      },
-      {
-        "e": "action:6ba4a36b-76cb-459d-be4a-f2c41538b05d:post_run_command",
-        "a": "type",
-        "v": "Action"
-      },
-      {
-        "e": "action:6ba4a36b-76cb-459d-be4a-f2c41538b05d:post_run_command",
-        "a": "actionType",
-        "v": "post_run_command"
-      },
-      {
-        "e": "action:6ba4a36b-76cb-459d-be4a-f2c41538b05d:post_run_command",
-        "a": "executionId",
-        "v": "6ba4a36b-76cb-459d-be4a-f2c41538b05d"
-      },
-      {
-        "e": "action:6ba4a36b-76cb-459d-be4a-f2c41538b05d:post_run_command",
-        "a": "timestamp",
-        "v": "2026-02-11T19:04:06.147701-08:00"
-      },
-      {
-        "e": "action:6ba4a36b-76cb-459d-be4a-f2c41538b05d:post_run_command",
-        "a": "data",
-        "v": "{\"command\":\"git -c core.hooksPath=/dev/null rebase --continue\"}"
-      },
-      {
-        "e": "action:6ba4a36b-76cb-459d-be4a-f2c41538b05d:pre_run_command",
-        "a": "type",
-        "v": "Action"
-      },
-      {
-        "e": "action:6ba4a36b-76cb-459d-be4a-f2c41538b05d:pre_run_command",
-        "a": "actionType",
-        "v": "pre_run_command"
-      },
-      {
-        "e": "action:6ba4a36b-76cb-459d-be4a-f2c41538b05d:pre_run_command",
-        "a": "executionId",
-        "v": "6ba4a36b-76cb-459d-be4a-f2c41538b05d"
-      },
-      {
-        "e": "action:6ba4a36b-76cb-459d-be4a-f2c41538b05d:pre_run_command",
-        "a": "timestamp",
-        "v": "2026-02-11T19:04:52.838344-08:00"
-      },
-      {
-        "e": "action:6ba4a36b-76cb-459d-be4a-f2c41538b05d:pre_run_command",
-        "a": "data",
-        "v": "{\"command\":\"git -c core.hooksPath=/dev/null rebase --abort\"}"
-      },
-      {
-        "e": "session:8faf1455-4520-492f-820c-0ed44dcc06d6",
-        "a": "type",
-        "v": "Session"
-      },
-      {
-        "e": "session:8faf1455-4520-492f-820c-0ed44dcc06d6",
-        "a": "trajectoryId",
-        "v": "8faf1455-4520-492f-820c-0ed44dcc06d6"
-      },
-      {
-        "e": "session:8faf1455-4520-492f-820c-0ed44dcc06d6",
-        "a": "startTime",
-        "v": "2026-02-11T19:08:44.663159-08:00"
-      },
-      {
-        "e": "session:8faf1455-4520-492f-820c-0ed44dcc06d6",
-        "a": "promptCount",
-        "v": 0
-      },
-      {
-        "e": "session:8faf1455-4520-492f-820c-0ed44dcc06d6",
-        "a": "intent",
-        "v": ""
-      },
-      {
-        "e": "action:8c571d7b-e367-4e5a-88f8-4fb6e1854204:pre_user_prompt",
-        "a": "type",
-        "v": "Action"
-      },
-      {
-        "e": "action:8c571d7b-e367-4e5a-88f8-4fb6e1854204:pre_user_prompt",
-        "a": "actionType",
-        "v": "pre_user_prompt"
-      },
-      {
-        "e": "action:8c571d7b-e367-4e5a-88f8-4fb6e1854204:pre_user_prompt",
-        "a": "executionId",
-        "v": "8c571d7b-e367-4e5a-88f8-4fb6e1854204"
-      },
-      {
-        "e": "action:8c571d7b-e367-4e5a-88f8-4fb6e1854204:pre_user_prompt",
-        "a": "timestamp",
-        "v": "2026-02-11T19:08:44.663159-08:00"
-      },
-      {
-        "e": "action:8c571d7b-e367-4e5a-88f8-4fb6e1854204:pre_user_prompt",
-        "a": "data",
-        "v": "{\"prompt\":\"\"}"
-      },
-      {
-        "e": "file:.husky/post-commit",
-        "a": "type",
-        "v": "File"
-      },
-      {
-        "e": "file:.husky/post-commit",
-        "a": "path",
-        "v": ".husky/post-commit"
-      },
-      {
-        "e": "file:.husky/post-commit",
-        "a": "language",
-        "v": "unknown"
-      },
-      {
-        "e": "file:.husky/post-commit",
-        "a": "readCount",
-        "v": 1
-      },
-      {
-        "e": "file:.husky/post-commit",
-        "a": "writeCount",
-        "v": 1
-      },
-      {
-        "e": "file:.husky/post-commit",
-        "a": "size",
-        "v": 0
-      },
-      {
-        "e": "file:.husky/post-commit",
-        "a": "lastModified",
-        "v": "2026-02-07T16:38:42.457684-08:00"
-      },
-      {
-        "e": "action:8c571d7b-e367-4e5a-88f8-4fb6e1854204:pre_read_code",
-        "a": "type",
-        "v": "Action"
-      },
-      {
-        "e": "action:8c571d7b-e367-4e5a-88f8-4fb6e1854204:pre_read_code",
-        "a": "actionType",
-        "v": "pre_read_code"
-      },
-      {
-        "e": "action:8c571d7b-e367-4e5a-88f8-4fb6e1854204:pre_read_code",
-        "a": "executionId",
-        "v": "8c571d7b-e367-4e5a-88f8-4fb6e1854204"
-      },
-      {
-        "e": "action:8c571d7b-e367-4e5a-88f8-4fb6e1854204:pre_read_code",
-        "a": "timestamp",
-        "v": "2026-02-11T19:09:08.128509-08:00"
-      },
-      {
-        "e": "action:8c571d7b-e367-4e5a-88f8-4fb6e1854204:pre_read_code",
-        "a": "data",
-        "v": "{\"filePath\":\"/Users/trentbrew/TURTLE/Projects/Apps/TRELLIS-APP-V2/trellis-app-builder/hooks/tql-docs-sync.ts\"}"
-      },
-      {
-        "e": "change:8c571d7b-e367-4e5a-88f8-4fb6e1854204:_Users_trentbrew_TURTLE_Projects_Apps_TRELLIS-APP-V2_trellis-app-builder_hooks_tql-docs-sync.ts",
-        "a": "type",
-        "v": "Change"
-      },
-      {
-        "e": "change:8c571d7b-e367-4e5a-88f8-4fb6e1854204:_Users_trentbrew_TURTLE_Projects_Apps_TRELLIS-APP-V2_trellis-app-builder_hooks_tql-docs-sync.ts",
-        "a": "filePath",
-        "v": "hooks/tql-docs-sync.ts"
-      },
-      {
-        "e": "change:8c571d7b-e367-4e5a-88f8-4fb6e1854204:_Users_trentbrew_TURTLE_Projects_Apps_TRELLIS-APP-V2_trellis-app-builder_hooks_tql-docs-sync.ts",
-        "a": "linesAdded",
-        "v": 4
-      },
-      {
-        "e": "change:8c571d7b-e367-4e5a-88f8-4fb6e1854204:_Users_trentbrew_TURTLE_Projects_Apps_TRELLIS-APP-V2_trellis-app-builder_hooks_tql-docs-sync.ts",
-        "a": "linesRemoved",
-        "v": 0
-      },
-      {
-        "e": "change:8c571d7b-e367-4e5a-88f8-4fb6e1854204:_Users_trentbrew_TURTLE_Projects_Apps_TRELLIS-APP-V2_trellis-app-builder_hooks_tql-docs-sync.ts",
-        "a": "timestamp",
-        "v": "2026-02-11T19:09:21.399735-08:00"
-      },
-      {
-        "e": "change:8c571d7b-e367-4e5a-88f8-4fb6e1854204:_Users_trentbrew_TURTLE_Projects_Apps_TRELLIS-APP-V2_trellis-app-builder_hooks_tql-docs-sync.ts",
-        "a": "commitHash",
-        "v": ""
-      },
-      {
-        "e": "file:hooks/tql-docs-sync.ts",
-        "a": "type",
-        "v": "File"
-      },
-      {
-        "e": "file:hooks/tql-docs-sync.ts",
-        "a": "path",
-        "v": "hooks/tql-docs-sync.ts"
-      },
-      {
-        "e": "file:hooks/tql-docs-sync.ts",
-        "a": "language",
-        "v": "typescript"
-      },
-      {
-        "e": "file:hooks/tql-docs-sync.ts",
-        "a": "readCount",
-        "v": 4
-      },
-      {
-        "e": "file:hooks/tql-docs-sync.ts",
-        "a": "writeCount",
-        "v": 5
-      },
-      {
-        "e": "file:hooks/tql-docs-sync.ts",
-        "a": "size",
-        "v": 0
-      },
-      {
-        "e": "file:hooks/tql-docs-sync.ts",
-        "a": "lastModified",
-        "v": "2026-02-11T19:09:21.399735-08:00"
-      },
-      {
-        "e": "action:8c571d7b-e367-4e5a-88f8-4fb6e1854204:post_write_code",
-        "a": "type",
-        "v": "Action"
-      },
-      {
-        "e": "action:8c571d7b-e367-4e5a-88f8-4fb6e1854204:post_write_code",
-        "a": "actionType",
-        "v": "post_write_code"
-      },
-      {
-        "e": "action:8c571d7b-e367-4e5a-88f8-4fb6e1854204:post_write_code",
-        "a": "executionId",
-        "v": "8c571d7b-e367-4e5a-88f8-4fb6e1854204"
-      },
-      {
-        "e": "action:8c571d7b-e367-4e5a-88f8-4fb6e1854204:post_write_code",
-        "a": "timestamp",
-        "v": "2026-02-11T19:09:21.399735-08:00"
-      },
-      {
-        "e": "action:8c571d7b-e367-4e5a-88f8-4fb6e1854204:post_write_code",
-        "a": "data",
-        "v": "{\"filePath\":\"hooks/tql-docs-sync.ts\",\"linesAdded\":4,\"linesRemoved\":0}"
-      },
-      {
-        "e": "action:8c571d7b-e367-4e5a-88f8-4fb6e1854204:post_run_command",
-        "a": "type",
-        "v": "Action"
-      },
-      {
-        "e": "action:8c571d7b-e367-4e5a-88f8-4fb6e1854204:post_run_command",
-        "a": "actionType",
-        "v": "post_run_command"
-      },
-      {
-        "e": "action:8c571d7b-e367-4e5a-88f8-4fb6e1854204:post_run_command",
-        "a": "executionId",
-        "v": "8c571d7b-e367-4e5a-88f8-4fb6e1854204"
-      },
-      {
-        "e": "action:8c571d7b-e367-4e5a-88f8-4fb6e1854204:post_run_command",
-        "a": "timestamp",
-        "v": "2026-02-11T19:09:27.946063-08:00"
-      },
-      {
-        "e": "action:8c571d7b-e367-4e5a-88f8-4fb6e1854204:post_run_command",
-        "a": "data",
-        "v": "{\"command\":\"git rebase --continue\"}"
-      },
-      {
-        "e": "action:8c571d7b-e367-4e5a-88f8-4fb6e1854204:pre_run_command",
-        "a": "type",
-        "v": "Action"
-      },
-      {
-        "e": "action:8c571d7b-e367-4e5a-88f8-4fb6e1854204:pre_run_command",
-        "a": "actionType",
-        "v": "pre_run_command"
-      },
-      {
-        "e": "action:8c571d7b-e367-4e5a-88f8-4fb6e1854204:pre_run_command",
-        "a": "executionId",
-        "v": "8c571d7b-e367-4e5a-88f8-4fb6e1854204"
-      },
-      {
-        "e": "action:8c571d7b-e367-4e5a-88f8-4fb6e1854204:pre_run_command",
-        "a": "timestamp",
-        "v": "2026-02-11T19:09:37.567856-08:00"
-      },
-      {
-        "e": "action:8c571d7b-e367-4e5a-88f8-4fb6e1854204:pre_run_command",
-        "a": "data",
-        "v": "{\"command\":\"git status --short\"}"
+        "v": "{\"filePath\":\"apps/web/app/plugins/instant.client.ts\",\"linesAdded\":0,\"linesRemoved\":50}"
       }
     ],
     "links": [
@@ -94268,556 +93928,6 @@
         "e1": "action:f76e0056-1dc7-48c5-b9ec-3b539887bb4c:post_write_code",
         "a": "belongs_to",
         "e2": "session:763f56da-75e2-4f76-8859-38048916ffa0"
-      },
-      {
-        "e1": "change:f76e0056-1dc7-48c5-b9ec-3b539887bb4c:_Users_trentbrew_TURTLE_Projects_Apps_TRELLIS-APP-V2_trellis-app-builder_apps_web_app_types_database.ts",
-        "a": "modifies",
-        "e2": "file:apps/web/app/types/database.ts"
-      },
-      {
-        "e1": "session:763f56da-75e2-4f76-8859-38048916ffa0",
-        "a": "produces",
-        "e2": "change:f76e0056-1dc7-48c5-b9ec-3b539887bb4c:_Users_trentbrew_TURTLE_Projects_Apps_TRELLIS-APP-V2_trellis-app-builder_apps_web_app_types_database.ts"
-      },
-      {
-        "e1": "action:f76e0056-1dc7-48c5-b9ec-3b539887bb4c:post_write_code",
-        "a": "belongs_to",
-        "e2": "session:763f56da-75e2-4f76-8859-38048916ffa0"
-      },
-      {
-        "e1": "action:f76e0056-1dc7-48c5-b9ec-3b539887bb4c:pre_read_code",
-        "a": "belongs_to",
-        "e2": "session:763f56da-75e2-4f76-8859-38048916ffa0"
-      },
-      {
-        "e1": "change:f76e0056-1dc7-48c5-b9ec-3b539887bb4c:_Users_trentbrew_TURTLE_Projects_Apps_TRELLIS-APP-V2_trellis-app-builder_apps_web_app_composables_useRoutes.ts",
-        "a": "modifies",
-        "e2": "file:apps/web/app/composables/useRoutes.ts"
-      },
-      {
-        "e1": "session:763f56da-75e2-4f76-8859-38048916ffa0",
-        "a": "produces",
-        "e2": "change:f76e0056-1dc7-48c5-b9ec-3b539887bb4c:_Users_trentbrew_TURTLE_Projects_Apps_TRELLIS-APP-V2_trellis-app-builder_apps_web_app_composables_useRoutes.ts"
-      },
-      {
-        "e1": "action:f76e0056-1dc7-48c5-b9ec-3b539887bb4c:post_write_code",
-        "a": "belongs_to",
-        "e2": "session:763f56da-75e2-4f76-8859-38048916ffa0"
-      },
-      {
-        "e1": "change:f76e0056-1dc7-48c5-b9ec-3b539887bb4c:_Users_trentbrew_TURTLE_Projects_Apps_TRELLIS-APP-V2_trellis-app-builder_apps_web_app_composables_useRoutes.ts",
-        "a": "modifies",
-        "e2": "file:apps/web/app/composables/useRoutes.ts"
-      },
-      {
-        "e1": "session:763f56da-75e2-4f76-8859-38048916ffa0",
-        "a": "produces",
-        "e2": "change:f76e0056-1dc7-48c5-b9ec-3b539887bb4c:_Users_trentbrew_TURTLE_Projects_Apps_TRELLIS-APP-V2_trellis-app-builder_apps_web_app_composables_useRoutes.ts"
-      },
-      {
-        "e1": "action:f76e0056-1dc7-48c5-b9ec-3b539887bb4c:post_write_code",
-        "a": "belongs_to",
-        "e2": "session:763f56da-75e2-4f76-8859-38048916ffa0"
-      },
-      {
-        "e1": "action:f76e0056-1dc7-48c5-b9ec-3b539887bb4c:pre_run_command",
-        "a": "belongs_to",
-        "e2": "session:763f56da-75e2-4f76-8859-38048916ffa0"
-      },
-      {
-        "e1": "action:f76e0056-1dc7-48c5-b9ec-3b539887bb4c:post_run_command",
-        "a": "belongs_to",
-        "e2": "session:763f56da-75e2-4f76-8859-38048916ffa0"
-      },
-      {
-        "e1": "action:f76e0056-1dc7-48c5-b9ec-3b539887bb4c:pre_read_code",
-        "a": "belongs_to",
-        "e2": "session:763f56da-75e2-4f76-8859-38048916ffa0"
-      },
-      {
-        "e1": "action:f76e0056-1dc7-48c5-b9ec-3b539887bb4c:pre_read_code",
-        "a": "belongs_to",
-        "e2": "session:763f56da-75e2-4f76-8859-38048916ffa0"
-      },
-      {
-        "e1": "action:f76e0056-1dc7-48c5-b9ec-3b539887bb4c:pre_read_code",
-        "a": "belongs_to",
-        "e2": "session:763f56da-75e2-4f76-8859-38048916ffa0"
-      },
-      {
-        "e1": "action:f76e0056-1dc7-48c5-b9ec-3b539887bb4c:pre_read_code",
-        "a": "belongs_to",
-        "e2": "session:763f56da-75e2-4f76-8859-38048916ffa0"
-      },
-      {
-        "e1": "action:f76e0056-1dc7-48c5-b9ec-3b539887bb4c:pre_run_command",
-        "a": "belongs_to",
-        "e2": "session:763f56da-75e2-4f76-8859-38048916ffa0"
-      },
-      {
-        "e1": "action:f76e0056-1dc7-48c5-b9ec-3b539887bb4c:post_run_command",
-        "a": "belongs_to",
-        "e2": "session:763f56da-75e2-4f76-8859-38048916ffa0"
-      },
-      {
-        "e1": "action:f76e0056-1dc7-48c5-b9ec-3b539887bb4c:pre_read_code",
-        "a": "belongs_to",
-        "e2": "session:763f56da-75e2-4f76-8859-38048916ffa0"
-      },
-      {
-        "e1": "action:f76e0056-1dc7-48c5-b9ec-3b539887bb4c:pre_read_code",
-        "a": "belongs_to",
-        "e2": "session:763f56da-75e2-4f76-8859-38048916ffa0"
-      },
-      {
-        "e1": "action:f76e0056-1dc7-48c5-b9ec-3b539887bb4c:pre_read_code",
-        "a": "belongs_to",
-        "e2": "session:763f56da-75e2-4f76-8859-38048916ffa0"
-      },
-      {
-        "e1": "action:f76e0056-1dc7-48c5-b9ec-3b539887bb4c:pre_read_code",
-        "a": "belongs_to",
-        "e2": "session:763f56da-75e2-4f76-8859-38048916ffa0"
-      },
-      {
-        "e1": "action:f76e0056-1dc7-48c5-b9ec-3b539887bb4c:pre_run_command",
-        "a": "belongs_to",
-        "e2": "session:763f56da-75e2-4f76-8859-38048916ffa0"
-      },
-      {
-        "e1": "action:f76e0056-1dc7-48c5-b9ec-3b539887bb4c:post_run_command",
-        "a": "belongs_to",
-        "e2": "session:763f56da-75e2-4f76-8859-38048916ffa0"
-      },
-      {
-        "e1": "action:f76e0056-1dc7-48c5-b9ec-3b539887bb4c:pre_run_command",
-        "a": "belongs_to",
-        "e2": "session:763f56da-75e2-4f76-8859-38048916ffa0"
-      },
-      {
-        "e1": "action:f76e0056-1dc7-48c5-b9ec-3b539887bb4c:post_run_command",
-        "a": "belongs_to",
-        "e2": "session:763f56da-75e2-4f76-8859-38048916ffa0"
-      },
-      {
-        "e1": "action:f76e0056-1dc7-48c5-b9ec-3b539887bb4c:pre_run_command",
-        "a": "belongs_to",
-        "e2": "session:763f56da-75e2-4f76-8859-38048916ffa0"
-      },
-      {
-        "e1": "action:f76e0056-1dc7-48c5-b9ec-3b539887bb4c:post_run_command",
-        "a": "belongs_to",
-        "e2": "session:763f56da-75e2-4f76-8859-38048916ffa0"
-      },
-      {
-        "e1": "action:f76e0056-1dc7-48c5-b9ec-3b539887bb4c:pre_run_command",
-        "a": "belongs_to",
-        "e2": "session:763f56da-75e2-4f76-8859-38048916ffa0"
-      },
-      {
-        "e1": "action:f76e0056-1dc7-48c5-b9ec-3b539887bb4c:post_run_command",
-        "a": "belongs_to",
-        "e2": "session:763f56da-75e2-4f76-8859-38048916ffa0"
-      },
-      {
-        "e1": "action:f76e0056-1dc7-48c5-b9ec-3b539887bb4c:pre_run_command",
-        "a": "belongs_to",
-        "e2": "session:763f56da-75e2-4f76-8859-38048916ffa0"
-      },
-      {
-        "e1": "action:f76e0056-1dc7-48c5-b9ec-3b539887bb4c:post_run_command",
-        "a": "belongs_to",
-        "e2": "session:763f56da-75e2-4f76-8859-38048916ffa0"
-      },
-      {
-        "e1": "action:f76e0056-1dc7-48c5-b9ec-3b539887bb4c:post_cascade_response",
-        "a": "belongs_to",
-        "e2": "session:763f56da-75e2-4f76-8859-38048916ffa0"
-      },
-      {
-        "e1": "action:6ba4a36b-76cb-459d-be4a-f2c41538b05d:pre_user_prompt",
-        "a": "belongs_to",
-        "e2": "session:763f56da-75e2-4f76-8859-38048916ffa0"
-      },
-      {
-        "e1": "action:6ba4a36b-76cb-459d-be4a-f2c41538b05d:pre_run_command",
-        "a": "belongs_to",
-        "e2": "session:763f56da-75e2-4f76-8859-38048916ffa0"
-      },
-      {
-        "e1": "action:6ba4a36b-76cb-459d-be4a-f2c41538b05d:post_run_command",
-        "a": "belongs_to",
-        "e2": "session:763f56da-75e2-4f76-8859-38048916ffa0"
-      },
-      {
-        "e1": "action:6ba4a36b-76cb-459d-be4a-f2c41538b05d:pre_run_command",
-        "a": "belongs_to",
-        "e2": "session:763f56da-75e2-4f76-8859-38048916ffa0"
-      },
-      {
-        "e1": "action:6ba4a36b-76cb-459d-be4a-f2c41538b05d:post_run_command",
-        "a": "belongs_to",
-        "e2": "session:763f56da-75e2-4f76-8859-38048916ffa0"
-      },
-      {
-        "e1": "action:6ba4a36b-76cb-459d-be4a-f2c41538b05d:pre_run_command",
-        "a": "belongs_to",
-        "e2": "session:763f56da-75e2-4f76-8859-38048916ffa0"
-      },
-      {
-        "e1": "action:6ba4a36b-76cb-459d-be4a-f2c41538b05d:post_run_command",
-        "a": "belongs_to",
-        "e2": "session:763f56da-75e2-4f76-8859-38048916ffa0"
-      },
-      {
-        "e1": "action:6ba4a36b-76cb-459d-be4a-f2c41538b05d:pre_run_command",
-        "a": "belongs_to",
-        "e2": "session:763f56da-75e2-4f76-8859-38048916ffa0"
-      },
-      {
-        "e1": "action:6ba4a36b-76cb-459d-be4a-f2c41538b05d:post_run_command",
-        "a": "belongs_to",
-        "e2": "session:763f56da-75e2-4f76-8859-38048916ffa0"
-      },
-      {
-        "e1": "action:6ba4a36b-76cb-459d-be4a-f2c41538b05d:pre_run_command",
-        "a": "belongs_to",
-        "e2": "session:763f56da-75e2-4f76-8859-38048916ffa0"
-      },
-      {
-        "e1": "action:6ba4a36b-76cb-459d-be4a-f2c41538b05d:post_run_command",
-        "a": "belongs_to",
-        "e2": "session:763f56da-75e2-4f76-8859-38048916ffa0"
-      },
-      {
-        "e1": "action:6ba4a36b-76cb-459d-be4a-f2c41538b05d:pre_run_command",
-        "a": "belongs_to",
-        "e2": "session:763f56da-75e2-4f76-8859-38048916ffa0"
-      },
-      {
-        "e1": "action:6ba4a36b-76cb-459d-be4a-f2c41538b05d:post_run_command",
-        "a": "belongs_to",
-        "e2": "session:763f56da-75e2-4f76-8859-38048916ffa0"
-      },
-      {
-        "e1": "action:6ba4a36b-76cb-459d-be4a-f2c41538b05d:pre_run_command",
-        "a": "belongs_to",
-        "e2": "session:763f56da-75e2-4f76-8859-38048916ffa0"
-      },
-      {
-        "e1": "action:6ba4a36b-76cb-459d-be4a-f2c41538b05d:post_run_command",
-        "a": "belongs_to",
-        "e2": "session:763f56da-75e2-4f76-8859-38048916ffa0"
-      },
-      {
-        "e1": "action:6ba4a36b-76cb-459d-be4a-f2c41538b05d:pre_run_command",
-        "a": "belongs_to",
-        "e2": "session:763f56da-75e2-4f76-8859-38048916ffa0"
-      },
-      {
-        "e1": "action:6ba4a36b-76cb-459d-be4a-f2c41538b05d:post_run_command",
-        "a": "belongs_to",
-        "e2": "session:763f56da-75e2-4f76-8859-38048916ffa0"
-      },
-      {
-        "e1": "action:6ba4a36b-76cb-459d-be4a-f2c41538b05d:pre_run_command",
-        "a": "belongs_to",
-        "e2": "session:763f56da-75e2-4f76-8859-38048916ffa0"
-      },
-      {
-        "e1": "action:6ba4a36b-76cb-459d-be4a-f2c41538b05d:post_run_command",
-        "a": "belongs_to",
-        "e2": "session:763f56da-75e2-4f76-8859-38048916ffa0"
-      },
-      {
-        "e1": "action:6ba4a36b-76cb-459d-be4a-f2c41538b05d:pre_run_command",
-        "a": "belongs_to",
-        "e2": "session:763f56da-75e2-4f76-8859-38048916ffa0"
-      },
-      {
-        "e1": "action:6ba4a36b-76cb-459d-be4a-f2c41538b05d:post_run_command",
-        "a": "belongs_to",
-        "e2": "session:763f56da-75e2-4f76-8859-38048916ffa0"
-      },
-      {
-        "e1": "action:6ba4a36b-76cb-459d-be4a-f2c41538b05d:pre_run_command",
-        "a": "belongs_to",
-        "e2": "session:763f56da-75e2-4f76-8859-38048916ffa0"
-      },
-      {
-        "e1": "action:6ba4a36b-76cb-459d-be4a-f2c41538b05d:post_run_command",
-        "a": "belongs_to",
-        "e2": "session:763f56da-75e2-4f76-8859-38048916ffa0"
-      },
-      {
-        "e1": "action:6ba4a36b-76cb-459d-be4a-f2c41538b05d:pre_run_command",
-        "a": "belongs_to",
-        "e2": "session:763f56da-75e2-4f76-8859-38048916ffa0"
-      },
-      {
-        "e1": "action:6ba4a36b-76cb-459d-be4a-f2c41538b05d:post_run_command",
-        "a": "belongs_to",
-        "e2": "session:763f56da-75e2-4f76-8859-38048916ffa0"
-      },
-      {
-        "e1": "action:6ba4a36b-76cb-459d-be4a-f2c41538b05d:pre_run_command",
-        "a": "belongs_to",
-        "e2": "session:763f56da-75e2-4f76-8859-38048916ffa0"
-      },
-      {
-        "e1": "action:6ba4a36b-76cb-459d-be4a-f2c41538b05d:post_run_command",
-        "a": "belongs_to",
-        "e2": "session:763f56da-75e2-4f76-8859-38048916ffa0"
-      },
-      {
-        "e1": "action:6ba4a36b-76cb-459d-be4a-f2c41538b05d:pre_run_command",
-        "a": "belongs_to",
-        "e2": "session:763f56da-75e2-4f76-8859-38048916ffa0"
-      },
-      {
-        "e1": "action:6ba4a36b-76cb-459d-be4a-f2c41538b05d:post_run_command",
-        "a": "belongs_to",
-        "e2": "session:763f56da-75e2-4f76-8859-38048916ffa0"
-      },
-      {
-        "e1": "action:6ba4a36b-76cb-459d-be4a-f2c41538b05d:pre_run_command",
-        "a": "belongs_to",
-        "e2": "session:763f56da-75e2-4f76-8859-38048916ffa0"
-      },
-      {
-        "e1": "action:6ba4a36b-76cb-459d-be4a-f2c41538b05d:post_run_command",
-        "a": "belongs_to",
-        "e2": "session:763f56da-75e2-4f76-8859-38048916ffa0"
-      },
-      {
-        "e1": "action:6ba4a36b-76cb-459d-be4a-f2c41538b05d:pre_run_command",
-        "a": "belongs_to",
-        "e2": "session:763f56da-75e2-4f76-8859-38048916ffa0"
-      },
-      {
-        "e1": "action:6ba4a36b-76cb-459d-be4a-f2c41538b05d:post_run_command",
-        "a": "belongs_to",
-        "e2": "session:763f56da-75e2-4f76-8859-38048916ffa0"
-      },
-      {
-        "e1": "action:6ba4a36b-76cb-459d-be4a-f2c41538b05d:pre_run_command",
-        "a": "belongs_to",
-        "e2": "session:763f56da-75e2-4f76-8859-38048916ffa0"
-      },
-      {
-        "e1": "action:6ba4a36b-76cb-459d-be4a-f2c41538b05d:post_run_command",
-        "a": "belongs_to",
-        "e2": "session:763f56da-75e2-4f76-8859-38048916ffa0"
-      },
-      {
-        "e1": "action:6ba4a36b-76cb-459d-be4a-f2c41538b05d:pre_run_command",
-        "a": "belongs_to",
-        "e2": "session:763f56da-75e2-4f76-8859-38048916ffa0"
-      },
-      {
-        "e1": "action:6ba4a36b-76cb-459d-be4a-f2c41538b05d:post_run_command",
-        "a": "belongs_to",
-        "e2": "session:763f56da-75e2-4f76-8859-38048916ffa0"
-      },
-      {
-        "e1": "action:6ba4a36b-76cb-459d-be4a-f2c41538b05d:pre_run_command",
-        "a": "belongs_to",
-        "e2": "session:763f56da-75e2-4f76-8859-38048916ffa0"
-      },
-      {
-        "e1": "action:6ba4a36b-76cb-459d-be4a-f2c41538b05d:post_run_command",
-        "a": "belongs_to",
-        "e2": "session:763f56da-75e2-4f76-8859-38048916ffa0"
-      },
-      {
-        "e1": "action:6ba4a36b-76cb-459d-be4a-f2c41538b05d:pre_run_command",
-        "a": "belongs_to",
-        "e2": "session:763f56da-75e2-4f76-8859-38048916ffa0"
-      },
-      {
-        "e1": "action:6ba4a36b-76cb-459d-be4a-f2c41538b05d:post_run_command",
-        "a": "belongs_to",
-        "e2": "session:763f56da-75e2-4f76-8859-38048916ffa0"
-      },
-      {
-        "e1": "action:6ba4a36b-76cb-459d-be4a-f2c41538b05d:pre_run_command",
-        "a": "belongs_to",
-        "e2": "session:763f56da-75e2-4f76-8859-38048916ffa0"
-      },
-      {
-        "e1": "action:6ba4a36b-76cb-459d-be4a-f2c41538b05d:post_run_command",
-        "a": "belongs_to",
-        "e2": "session:763f56da-75e2-4f76-8859-38048916ffa0"
-      },
-      {
-        "e1": "action:6ba4a36b-76cb-459d-be4a-f2c41538b05d:pre_run_command",
-        "a": "belongs_to",
-        "e2": "session:763f56da-75e2-4f76-8859-38048916ffa0"
-      },
-      {
-        "e1": "action:6ba4a36b-76cb-459d-be4a-f2c41538b05d:post_run_command",
-        "a": "belongs_to",
-        "e2": "session:763f56da-75e2-4f76-8859-38048916ffa0"
-      },
-      {
-        "e1": "action:6ba4a36b-76cb-459d-be4a-f2c41538b05d:pre_run_command",
-        "a": "belongs_to",
-        "e2": "session:763f56da-75e2-4f76-8859-38048916ffa0"
-      },
-      {
-        "e1": "action:6ba4a36b-76cb-459d-be4a-f2c41538b05d:post_run_command",
-        "a": "belongs_to",
-        "e2": "session:763f56da-75e2-4f76-8859-38048916ffa0"
-      },
-      {
-        "e1": "action:6ba4a36b-76cb-459d-be4a-f2c41538b05d:pre_run_command",
-        "a": "belongs_to",
-        "e2": "session:763f56da-75e2-4f76-8859-38048916ffa0"
-      },
-      {
-        "e1": "action:6ba4a36b-76cb-459d-be4a-f2c41538b05d:post_run_command",
-        "a": "belongs_to",
-        "e2": "session:763f56da-75e2-4f76-8859-38048916ffa0"
-      },
-      {
-        "e1": "action:6ba4a36b-76cb-459d-be4a-f2c41538b05d:pre_run_command",
-        "a": "belongs_to",
-        "e2": "session:763f56da-75e2-4f76-8859-38048916ffa0"
-      },
-      {
-        "e1": "action:6ba4a36b-76cb-459d-be4a-f2c41538b05d:post_run_command",
-        "a": "belongs_to",
-        "e2": "session:763f56da-75e2-4f76-8859-38048916ffa0"
-      },
-      {
-        "e1": "action:6ba4a36b-76cb-459d-be4a-f2c41538b05d:pre_run_command",
-        "a": "belongs_to",
-        "e2": "session:763f56da-75e2-4f76-8859-38048916ffa0"
-      },
-      {
-        "e1": "action:6ba4a36b-76cb-459d-be4a-f2c41538b05d:post_run_command",
-        "a": "belongs_to",
-        "e2": "session:763f56da-75e2-4f76-8859-38048916ffa0"
-      },
-      {
-        "e1": "action:6ba4a36b-76cb-459d-be4a-f2c41538b05d:pre_run_command",
-        "a": "belongs_to",
-        "e2": "session:763f56da-75e2-4f76-8859-38048916ffa0"
-      },
-      {
-        "e1": "action:6ba4a36b-76cb-459d-be4a-f2c41538b05d:post_run_command",
-        "a": "belongs_to",
-        "e2": "session:763f56da-75e2-4f76-8859-38048916ffa0"
-      },
-      {
-        "e1": "action:6ba4a36b-76cb-459d-be4a-f2c41538b05d:pre_run_command",
-        "a": "belongs_to",
-        "e2": "session:763f56da-75e2-4f76-8859-38048916ffa0"
-      },
-      {
-        "e1": "action:6ba4a36b-76cb-459d-be4a-f2c41538b05d:post_run_command",
-        "a": "belongs_to",
-        "e2": "session:763f56da-75e2-4f76-8859-38048916ffa0"
-      },
-      {
-        "e1": "action:6ba4a36b-76cb-459d-be4a-f2c41538b05d:pre_run_command",
-        "a": "belongs_to",
-        "e2": "session:763f56da-75e2-4f76-8859-38048916ffa0"
-      },
-      {
-        "e1": "action:6ba4a36b-76cb-459d-be4a-f2c41538b05d:post_run_command",
-        "a": "belongs_to",
-        "e2": "session:763f56da-75e2-4f76-8859-38048916ffa0"
-      },
-      {
-        "e1": "action:6ba4a36b-76cb-459d-be4a-f2c41538b05d:pre_run_command",
-        "a": "belongs_to",
-        "e2": "session:763f56da-75e2-4f76-8859-38048916ffa0"
-      },
-      {
-        "e1": "action:6ba4a36b-76cb-459d-be4a-f2c41538b05d:post_run_command",
-        "a": "belongs_to",
-        "e2": "session:763f56da-75e2-4f76-8859-38048916ffa0"
-      },
-      {
-        "e1": "action:6ba4a36b-76cb-459d-be4a-f2c41538b05d:pre_run_command",
-        "a": "belongs_to",
-        "e2": "session:763f56da-75e2-4f76-8859-38048916ffa0"
-      },
-      {
-        "e1": "action:6ba4a36b-76cb-459d-be4a-f2c41538b05d:post_run_command",
-        "a": "belongs_to",
-        "e2": "session:763f56da-75e2-4f76-8859-38048916ffa0"
-      },
-      {
-        "e1": "action:6ba4a36b-76cb-459d-be4a-f2c41538b05d:pre_run_command",
-        "a": "belongs_to",
-        "e2": "session:763f56da-75e2-4f76-8859-38048916ffa0"
-      },
-      {
-        "e1": "action:6ba4a36b-76cb-459d-be4a-f2c41538b05d:post_run_command",
-        "a": "belongs_to",
-        "e2": "session:763f56da-75e2-4f76-8859-38048916ffa0"
-      },
-      {
-        "e1": "action:6ba4a36b-76cb-459d-be4a-f2c41538b05d:pre_run_command",
-        "a": "belongs_to",
-        "e2": "session:763f56da-75e2-4f76-8859-38048916ffa0"
-      },
-      {
-        "e1": "action:6ba4a36b-76cb-459d-be4a-f2c41538b05d:pre_run_command",
-        "a": "belongs_to",
-        "e2": "session:763f56da-75e2-4f76-8859-38048916ffa0"
-      },
-      {
-        "e1": "action:8c571d7b-e367-4e5a-88f8-4fb6e1854204:pre_user_prompt",
-        "a": "belongs_to",
-        "e2": "session:8faf1455-4520-492f-820c-0ed44dcc06d6"
-      },
-      {
-        "e1": "action:8c571d7b-e367-4e5a-88f8-4fb6e1854204:pre_read_code",
-        "a": "belongs_to",
-        "e2": "session:8faf1455-4520-492f-820c-0ed44dcc06d6"
-      },
-      {
-        "e1": "action:8c571d7b-e367-4e5a-88f8-4fb6e1854204:pre_read_code",
-        "a": "belongs_to",
-        "e2": "session:8faf1455-4520-492f-820c-0ed44dcc06d6"
-      },
-      {
-        "e1": "action:8c571d7b-e367-4e5a-88f8-4fb6e1854204:pre_read_code",
-        "a": "belongs_to",
-        "e2": "session:8faf1455-4520-492f-820c-0ed44dcc06d6"
-      },
-      {
-        "e1": "change:8c571d7b-e367-4e5a-88f8-4fb6e1854204:_Users_trentbrew_TURTLE_Projects_Apps_TRELLIS-APP-V2_trellis-app-builder_hooks_tql-docs-sync.ts",
-        "a": "modifies",
-        "e2": "file:hooks/tql-docs-sync.ts"
-      },
-      {
-        "e1": "session:8faf1455-4520-492f-820c-0ed44dcc06d6",
-        "a": "produces",
-        "e2": "change:8c571d7b-e367-4e5a-88f8-4fb6e1854204:_Users_trentbrew_TURTLE_Projects_Apps_TRELLIS-APP-V2_trellis-app-builder_hooks_tql-docs-sync.ts"
-      },
-      {
-        "e1": "action:8c571d7b-e367-4e5a-88f8-4fb6e1854204:post_write_code",
-        "a": "belongs_to",
-        "e2": "session:8faf1455-4520-492f-820c-0ed44dcc06d6"
-      },
-      {
-        "e1": "action:8c571d7b-e367-4e5a-88f8-4fb6e1854204:pre_run_command",
-        "a": "belongs_to",
-        "e2": "session:8faf1455-4520-492f-820c-0ed44dcc06d6"
-      },
-      {
-        "e1": "action:8c571d7b-e367-4e5a-88f8-4fb6e1854204:post_run_command",
-        "a": "belongs_to",
-        "e2": "session:8faf1455-4520-492f-820c-0ed44dcc06d6"
-      },
-      {
-        "e1": "action:8c571d7b-e367-4e5a-88f8-4fb6e1854204:pre_run_command",
-        "a": "belongs_to",
-        "e2": "session:8faf1455-4520-492f-820c-0ed44dcc06d6"
       }
     ],
     "catalog": [
@@ -94866,7 +93976,7 @@
         "attribute": "linesRemoved",
         "type": "number",
         "cardinality": "one",
-        "distinctCount": 24,
+        "distinctCount": 25,
         "examples": [
           0,
           1,
@@ -94881,7 +93991,7 @@
         "attribute": "timestamp",
         "type": "string",
         "cardinality": "many",
-        "distinctCount": 943,
+        "distinctCount": 938,
         "examples": [
           "2026-02-07T15:54:36.083088-08:00",
           "2026-02-07T15:54:48.860866-08:00",
@@ -94944,7 +94054,7 @@
         "attribute": "lastModified",
         "type": "string",
         "cardinality": "many",
-        "distinctCount": 495,
+        "distinctCount": 500,
         "examples": [
           "2026-02-07T15:54:36.083088-08:00",
           "2026-02-07T15:54:48.860866-08:00",
@@ -94957,7 +94067,7 @@
         "attribute": "readCount",
         "type": "number",
         "cardinality": "many",
-        "distinctCount": 28,
+        "distinctCount": 27,
         "examples": [
           0,
           1,
@@ -94972,7 +94082,7 @@
         "attribute": "writeCount",
         "type": "number",
         "cardinality": "many",
-        "distinctCount": 21,
+        "distinctCount": 22,
         "examples": [
           1,
           0,
@@ -95173,7 +94283,7 @@
         "attribute": "executionId",
         "type": "string",
         "cardinality": "many",
-        "distinctCount": 145,
+        "distinctCount": 143,
         "examples": [
           "5ed4fe82-7296-4953-8873-6898bf828921",
           "06804153-f855-49b7-add2-d78bfbe8ec89",
@@ -95186,7 +94296,7 @@
         "attribute": "data",
         "type": "string",
         "cardinality": "many",
-        "distinctCount": 392,
+        "distinctCount": 398,
         "examples": [
           "{\"filePath\":\".tql/workspace.json\",\"linesAdded\":42,\"linesRemoved\":0}",
           "{\"filePath\":\".tql/policies.eqls\",\"linesAdded\":18,\"linesRemoved\":0}",
@@ -95199,7 +94309,7 @@
         "attribute": "trajectoryId",
         "type": "string",
         "cardinality": "one",
-        "distinctCount": 31,
+        "distinctCount": 30,
         "examples": [
           "98e05823-fdab-4a39-b8db-ee80a1f3c6e8",
           "f9c46a2e-6852-43fb-aace-db86243ddf5e",
@@ -95212,7 +94322,7 @@
         "attribute": "startTime",
         "type": "string",
         "cardinality": "one",
-        "distinctCount": 31,
+        "distinctCount": 30,
         "examples": [
           "2026-02-07T15:54:36.083088-08:00",
           "2026-02-07T15:55:42.132762-08:00",
@@ -95225,7 +94335,7 @@
         "attribute": "promptCount",
         "type": "number",
         "cardinality": "one",
-        "distinctCount": 14,
+        "distinctCount": 13,
         "examples": [
           0,
           1,
@@ -95334,5 +94444,5 @@
       }
     ]
   },
-  "timestamp": "2026-02-12T03:09:37.782Z"
+  "timestamp": "2026-02-12T02:40:17.037Z"
 }

@@ -17,7 +17,6 @@
  */
 
 import { filterRoutesByPermissions } from '~/lib/permissions'
-import { buildRouteConfigTree } from '~/lib/appConfig'
 import type { ContextMenuConfig } from '~/types/contextMenu'
 
 export interface BadgeConfig {
@@ -279,7 +278,7 @@ const staticRoutes: RouteConfig[] = [
   },
 ]
 
-export const routeConfig: RouteConfig[] = [...buildRouteConfigTree(), ...staticRoutes]
+export const routeConfig: RouteConfig[] = [...staticRoutes]
 
 // Static baseline — server routes are the primary source via useTrellisConfig().routeConfigTree
 

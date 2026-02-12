@@ -6,10 +6,8 @@
 
   import GraphOntologyTableNode from '~/components/graph/OntologyTableNode.vue'
   import {
-    coreOntologyNodes,
-    coreOntologyEdges,
-    entityRegistryNodes,
-    entityRegistryEdges,
+    buildNodesFromSchemas,
+    buildEdgesFromSchemas,
   } from '~/components/graph/schema-data'
 
   import '@vue-flow/core/dist/style.css'
@@ -20,31 +18,52 @@
     ontologyTable: markRaw(GraphOntologyTableNode) as any,
   }
 
+  // Fetch ontologies from server
+  const { ontologies } = useTrellisConfig()
+
+  // Split ontologies by tier
+  const coreSchemas = computed(() =>
+    Object.values(ontologies.value || {}).filter((s: any) => s.tier === 'core'),
+  )
+  const systemSchemas = computed(() =>
+    Object.values(ontologies.value || {}).filter((s: any) => s.tier === 'system'),
+  )
+
+  // Derive nodes/edges per tier
+  const coreNodes = computed(() => buildNodesFromSchemas(coreSchemas.value as any))
+  const coreEdges = computed(() => buildEdgesFromSchemas(coreSchemas.value as any))
+  const systemNodes = computed(() => buildNodesFromSchemas(systemSchemas.value as any))
+  const systemEdges = computed(() => buildEdgesFromSchemas(systemSchemas.value as any))
+
   // Active tab
-  type SchemaTab = 'core' | 'registry'
+  type SchemaTab = 'core' | 'system'
   const activeTab = ref<SchemaTab>('core')
 
   const tabs: { id: SchemaTab; label: string; icon: string; description: string }[] = [
-    { id: 'core', label: 'Core Ontology', icon: 'lucide:blocks', description: 'System types (read-only)' },
-    { id: 'registry', label: 'Entity Registry', icon: 'lucide:layers', description: 'App entity types' },
+    { id: 'core', label: 'Core Ontology', icon: 'lucide:blocks', description: 'Structural types (read-only, kernel-owned)' },
+    { id: 'system', label: 'Entity Types', icon: 'lucide:layers', description: 'App entity types (versioned)' },
   ]
 
   // Reactive nodes/edges for VueFlow
-  const nodes = ref<Node[]>([...coreOntologyNodes])
-  const edges = ref<Edge[]>([...coreOntologyEdges])
+  const nodes = ref<Node[]>([])
+  const edges = ref<Edge[]>([])
+
+  // Initialize with core data once loaded
+  watchEffect(() => {
+    if (activeTab.value === 'core' && coreNodes.value.length) {
+      nodes.value = [...coreNodes.value]
+      edges.value = [...coreEdges.value]
+    } else if (activeTab.value === 'system' && systemNodes.value.length) {
+      nodes.value = [...systemNodes.value]
+      edges.value = [...systemEdges.value]
+    }
+  })
 
   const { fitView, zoomIn, zoomOut } = useVueFlow()
 
   // Switch tab → swap data and re-fit
   function switchTab(tab: SchemaTab) {
     activeTab.value = tab
-    if (tab === 'core') {
-      nodes.value = [...coreOntologyNodes]
-      edges.value = [...coreOntologyEdges]
-    } else {
-      nodes.value = [...entityRegistryNodes]
-      edges.value = [...entityRegistryEdges]
-    }
     nextTick(() => fitView({ padding: 0.15 }))
   }
 

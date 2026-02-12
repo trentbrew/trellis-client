@@ -6,36 +6,16 @@
     type DetailSheetVariant,
   } from '~/composables/useGlobalDetailSheet'
   import { getSchemaForEntityType, getNodeTitle, extractNodeValue } from '~/lib/detailSchema'
-  import { useEcmsData } from '~/composables/useEcmsData'
   import CalendarItemDialog from '~/components/dialogs/CalendarItemDialog.vue'
   import type { CalendarItem } from '~/types/calendarItem'
 
   const { state, close, setMode, setVariant, updateField } = useGlobalDetailSheetRefs()
-  const ecmsData = useEcmsData().loadSeedData()
 
-  const owners = computed(() => {
-    const users = ecmsData?.users || []
-    const mapped = users.map((u: any) => ({
-      id: u.uid || u.id,
-      name: u.name || (u.first_name && u.last_name ? `${u.first_name} ${u.last_name}` : u.email || 'Unknown'),
-    }))
-    return mapped
-  })
+  const owners = computed(() => [
+    { id: 'you', name: 'You' },
+  ])
 
-  const folders = computed(() => {
-    const data = (ecmsData?.folders || []).map((f: any) => (typeof f === 'string' ? f : f.name))
-    return data
-  })
-
-  const _templates = computed(() => {
-    return (ecmsData?.taskTemplates || []).map((t: any) => ({
-      id: t.taskTemplateID,
-      name: t.title,
-      description: t.description,
-      category: t.category,
-      priority: t.priority,
-    }))
-  })
+  const folders = computed(() => ['Work', 'Personal'])
 
   // Variant options for the toggle
   const variantOptions: { value: DetailSheetVariant; icon: string; label: string }[] = [

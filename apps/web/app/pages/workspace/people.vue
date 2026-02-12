@@ -1,27 +1,24 @@
 <script setup lang="ts">
   import type { PageStat } from '~/components/layout/Page.vue'
-  import { useBrowse, type BrowseViewMode } from '~/composables/useBrowse'
-  import type { CalendarItem } from '~/types/calendarItem'
+  import type { BrowseViewMode } from '~/composables/useBrowse'
+  import { useBrowsePage } from '~/composables/useBrowsePage'
 
   definePageMeta({ layout: 'default' })
   useHead({ title: 'People | Personal' })
 
   // ---------------------------------------------------------------------------
-  // Live data
+  // Browse page (data + browse + dialog + CRUD)
   // ---------------------------------------------------------------------------
 
-  const { items: allItems, create: createItem, update: updateItem, remove: removeItem } = useCalendarItems()
-
-  const items = computed(() => allItems.value.filter((i: any) => i.type === 'person'))
-
-  // ---------------------------------------------------------------------------
-  // Browse
-  // ---------------------------------------------------------------------------
-
-  const { browseState, filteredItems } = useBrowse({
-    items: items as Ref<CalendarItem[]>,
-    searchFields: ['title', 'description', 'email', 'organization', 'jobTitle'] as (keyof CalendarItem)[],
-    defaultViewMode: 'grid' as BrowseViewMode,
+  const {
+    items, filteredItems, browseState, viewMode,
+    createOpen, viewOpen, viewingItem, openDetail,
+    canPrev, canNext, navPrev, navNext,
+    handleCreate, handleUpdate, handleDelete,
+  } = useBrowsePage({
+    entityType: 'person',
+    searchFields: ['title', 'description', 'email', 'organization', 'jobTitle'],
+    defaultViewMode: 'grid',
     sortOptions: [
       { value: 'title', label: 'Name' },
       { value: 'startDate', label: 'Date Added' },
@@ -40,10 +37,8 @@
     ],
   })
 
-  const viewMode = computed(() => browseState.viewMode.value)
-
   // ---------------------------------------------------------------------------
-  // Stats
+  // Stats (type-specific — stays in page)
   // ---------------------------------------------------------------------------
 
   const stats = computed<PageStat[]>(() => [
@@ -53,7 +48,7 @@
   ])
 
   // ---------------------------------------------------------------------------
-  // UI helpers
+  // UI helpers (type-specific — stays in page)
   // ---------------------------------------------------------------------------
 
   const categoryColors: Record<string, string> = {
@@ -66,41 +61,7 @@
     return name.split(' ').map((w) => w[0]).join('').toUpperCase().slice(0, 2)
   }
 
-  // ---------------------------------------------------------------------------
-  // Dialog
-  // ---------------------------------------------------------------------------
-
-  const createOpen = ref(false)
-  const viewOpen = ref(false)
-  const viewingItem = ref<CalendarItem | null>(null)
-
   const taskOwners = [{ id: 'you', name: 'You' }, { id: 'alex', name: 'Alex' }, { id: 'maya', name: 'Maya' }]
-
-  function openDetail(item: any) {
-    viewingItem.value = item
-    viewOpen.value = true
-  }
-
-  const viewingIndex = computed(() => viewingItem.value ? filteredItems.value.findIndex((i) => (i as CalendarItem).id === viewingItem.value?.id) : -1)
-  const canPrev = computed(() => viewingIndex.value > 0)
-  const canNext = computed(() => viewingIndex.value < filteredItems.value.length - 1)
-  function navPrev() { if (canPrev.value) viewingItem.value = filteredItems.value[viewingIndex.value - 1] as CalendarItem }
-  function navNext() { if (canNext.value) viewingItem.value = filteredItems.value[viewingIndex.value + 1] as CalendarItem }
-
-  async function handleCreate(item: CalendarItem) {
-    await createItem({ ...item, type: 'person' as any } as any)
-    createOpen.value = false
-  }
-
-  async function handleUpdate(item: CalendarItem) {
-    await updateItem(item)
-    viewOpen.value = false
-  }
-
-  async function handleDelete(item: CalendarItem) {
-    await removeItem(item.id)
-    viewOpen.value = false
-  }
 </script>
 
 <template>

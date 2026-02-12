@@ -1,28 +1,26 @@
 <script setup lang="ts">
   import type { PageStat } from '~/components/layout/Page.vue'
-  import { useBrowse, type BrowseViewMode } from '~/composables/useBrowse'
+  import type { BrowseViewMode } from '~/composables/useBrowse'
+  import { useBrowsePage } from '~/composables/useBrowsePage'
   import CalendarItemDialog from '~/components/dialogs/CalendarItemDialog.vue'
-  import type { CalendarItem, NoteItem } from '~/types/calendarItem'
+  import type { NoteItem } from '~/types/calendarItem'
 
   definePageMeta({ layout: 'default' })
   useHead({ title: 'Notes | Personal' })
 
   // ---------------------------------------------------------------------------
-  // Live data from instant-local
+  // Browse page (data + browse + dialog + CRUD)
   // ---------------------------------------------------------------------------
 
-  const { items: allItems, create: createItem, update: updateItem, remove: removeItem } = useCalendarItems()
-
-  const items = computed(() => allItems.value.filter((i): i is NoteItem => i.type === 'note'))
-
-  // ---------------------------------------------------------------------------
-  // Browse
-  // ---------------------------------------------------------------------------
-
-  const { browseState, filteredItems } = useBrowse({
-    items: items as Ref<CalendarItem[]>,
-    searchFields: ['title', 'content', 'description'] as (keyof CalendarItem)[],
-    defaultViewMode: 'grid' as BrowseViewMode,
+  const {
+    items, filteredItems, browseState, viewMode,
+    createOpen, viewOpen, viewingItem, openDetail,
+    canPrev, canNext, navPrev, navNext,
+    handleCreate, handleUpdate, handleDelete,
+  } = useBrowsePage({
+    entityType: 'note',
+    searchFields: ['title', 'content', 'description'],
+    defaultViewMode: 'grid',
     sortOptions: [
       { value: 'startDate', label: 'Date' },
       { value: 'title', label: 'Title' },
@@ -48,26 +46,24 @@
     ],
   })
 
-  const viewMode = computed(() => browseState.viewMode.value)
-
   const viewModeIcons: Record<string, string> = {
     grid: 'lucide:grid-3x3',
     list: 'lucide:list',
   }
 
   // ---------------------------------------------------------------------------
-  // Stats
+  // Stats (type-specific — stays in page)
   // ---------------------------------------------------------------------------
 
   const stats = computed<PageStat[]>(() => [
     { label: 'Notes', value: items.value.length, icon: 'lucide:sticky-note' },
-    { label: 'Pinned', value: items.value.filter((n) => n.pinned).length, icon: 'lucide:pin', color: 'text-amber-500' },
-    { label: 'Work', value: items.value.filter((n) => n.category === 'work').length, icon: 'lucide:briefcase', color: 'text-blue-500' },
-    { label: 'Personal', value: items.value.filter((n) => n.category === 'personal').length, icon: 'lucide:user', color: 'text-emerald-500' },
+    { label: 'Pinned', value: (items.value as NoteItem[]).filter((n) => n.pinned).length, icon: 'lucide:pin', color: 'text-amber-500' },
+    { label: 'Work', value: (items.value as NoteItem[]).filter((n) => n.category === 'work').length, icon: 'lucide:briefcase', color: 'text-blue-500' },
+    { label: 'Personal', value: (items.value as NoteItem[]).filter((n) => n.category === 'personal').length, icon: 'lucide:user', color: 'text-emerald-500' },
   ])
 
   // ---------------------------------------------------------------------------
-  // UI helpers
+  // UI helpers (type-specific — stays in page)
   // ---------------------------------------------------------------------------
 
   const categoryColors: Record<string, string> = {
@@ -81,42 +77,8 @@
     catch { return d }
   }
 
-  // ---------------------------------------------------------------------------
-  // Dialog
-  // ---------------------------------------------------------------------------
-
-  const createOpen = ref(false)
-  const viewOpen = ref(false)
-  const viewingItem = ref<CalendarItem | null>(null)
-
   const taskOwners = [{ id: 'you', name: 'You' }, { id: 'alex', name: 'Alex' }, { id: 'maya', name: 'Maya' }]
   const taskFolders = ['Work', 'Personal', 'Journal', 'Research']
-
-  function openDetail(item: NoteItem) {
-    viewingItem.value = item
-    viewOpen.value = true
-  }
-
-  const viewingIndex = computed(() => viewingItem.value ? filteredItems.value.findIndex((i) => (i as CalendarItem).id === viewingItem.value?.id) : -1)
-  const canPrev = computed(() => viewingIndex.value > 0)
-  const canNext = computed(() => viewingIndex.value < filteredItems.value.length - 1)
-  function navPrev() { if (canPrev.value) viewingItem.value = filteredItems.value[viewingIndex.value - 1] as CalendarItem }
-  function navNext() { if (canNext.value) viewingItem.value = filteredItems.value[viewingIndex.value + 1] as CalendarItem }
-
-  async function handleCreate(item: CalendarItem) {
-    await createItem({ ...item, type: 'note' } as NoteItem)
-    createOpen.value = false
-  }
-
-  async function handleUpdate(item: CalendarItem) {
-    await updateItem(item)
-    viewOpen.value = false
-  }
-
-  async function handleDelete(item: CalendarItem) {
-    await removeItem(item.id)
-    viewOpen.value = false
-  }
 </script>
 
 <template>

@@ -24,59 +24,9 @@ export default defineNuxtPlugin(async () => {
   })
 
   // ── Seed minimum data on first boot ─────────────────────────────────
-  // This ensures ECMS pages have the facility / membership data they
-  // expect, matching the old hardcoded mock. Data is persisted to
-  // localStorage so this only runs once.
+  // Data is persisted to localStorage so this only runs once.
 
   if (import.meta.client) {
-    const FACILITY_ID = 'facility_auburn'
-
-    const facilities = db._store.getAll('facilities')
-    const existingFacility = facilities.find((f: any) => f.id === FACILITY_ID)
-    if (!existingFacility) {
-      await db.transact([
-        db.tx.facilities[FACILITY_ID].create({
-          facilityID: FACILITY_ID,
-          facility: 'Auburn',
-          abbr: 'AUB',
-          group: 'northwind',
-          active: true,
-          slug: 'auburn',
-          organizationId: 'org_northwind',
-          city: 'Auburn',
-          state: 'WA',
-        }),
-      ])
-    }
-
-    const authUser: any = await db.getAuth()
-    if (authUser?.id) {
-      const members = db._store.getAll('facilityMembers')
-      const existingMember = members.find((m: any) => m.userId === authUser.id && m.facilityId === FACILITY_ID)
-      const memberId = existingMember?.id || `member-${FACILITY_ID}-${authUser.id}`
-      const role = authUser.role || 'guest'
-
-      if (!existingMember) {
-        await db.transact([
-          db.tx.facilityMembers[memberId].create({
-            facilityId: FACILITY_ID,
-            organizationId: 'org_northwind',
-            userId: authUser.id,
-            email: authUser.email,
-            name: authUser.name,
-            role,
-            status: 'active',
-          }),
-        ])
-      } else if (existingMember.role !== role) {
-        await db.transact([
-          db.tx.facilityMembers[existingMember.id].update({
-            role,
-          }),
-        ])
-      }
-    }
-
     // ── Seed default organization + application ─────────────────────
     // Matches the demo org in useOrganizations.ts so the InstantDB data
     // layer (useInstantData) has a valid org/app for scoping collections.

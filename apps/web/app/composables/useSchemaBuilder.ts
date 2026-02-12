@@ -23,7 +23,7 @@ export interface OntologyFieldDefinition {
   icon: string
   valueType: string
   options?: Array<{ value: string; label: string; color?: string }>
-  source: 'core' | 'ecms' | string
+  source: 'core' | 'system' | string
 }
 
 // Built-in field types
@@ -129,29 +129,30 @@ const BUILT_IN_FIELD_TYPES: FieldTypeDefinition[] = [
  * Main composable for schema building
  */
 export function useSchemaBuilder(_collectionId?: Ref<string | undefined>) {
-  const { allFields } = useOntology()
+  const { ontologies } = useTrellisConfig()
 
   // Get all available field types (built-in + ontology)
   const availableFieldTypes = computed<FieldTypeDefinition[]>(() => {
     const types = [...BUILT_IN_FIELD_TYPES]
 
-    // Add ontology fields as available types
-    for (const field of allFields.value) {
-      const id = field['@id']
-      if (!id) continue
-
-      // Skip if already in built-in types
-      if (types.some((t) => t.id === id)) continue
-
-      types.push({
-        id,
-        label: (field.label as string) || id.split(':').pop() || id,
-        icon: (field.icon as string) || 'lucide:box',
-        description: (field.comment as string) || `Field from ontology`,
-        valueType: (field.valueType as string) || 'text',
-        category: 'ontology',
-        defaultConfig: field.options ? { options: field.options } : undefined,
-      })
+    // Add unique field types from server ontologies
+    const seen = new Set(types.map(t => t.id))
+    for (const schema of Object.values(ontologies.value || {})) {
+      const s = schema as any
+      if (!s.fields) continue
+      for (const field of s.fields) {
+        if (seen.has(field.name)) continue
+        seen.add(field.name)
+        types.push({
+          id: field.name,
+          label: field.name,
+          icon: field.icon || 'lucide:box',
+          description: `Field from ontology`,
+          valueType: field.valueType || 'text',
+          category: 'ontology',
+          defaultConfig: field.selectOptions ? { options: field.selectOptions } : undefined,
+        })
+      }
     }
 
     return types
@@ -177,21 +178,28 @@ export function useSchemaBuilder(_collectionId?: Ref<string | undefined>) {
     return categories
   })
 
-  // Get ontology fields with their full definitions
+  // Get ontology fields with their full definitions (derived from server ontologies)
   const ontologyFields = computed<OntologyFieldDefinition[]>(() => {
-    return allFields.value.map((field) => {
-      const id = field['@id'] || ''
-      const source = id.startsWith('ecms:') ? 'ecms' : id.startsWith('core:') ? 'core' : 'custom'
-
-      return {
-        id,
-        label: (field.label as string) || id.split(':').pop() || id,
-        icon: (field.icon as string) || 'lucide:box',
-        valueType: (field.valueType as string) || 'text',
-        options: field.options as OntologyFieldDefinition['options'],
-        source,
+    const fields: OntologyFieldDefinition[] = []
+    const seen = new Set<string>()
+    for (const schema of Object.values(ontologies.value || {})) {
+      const s = schema as any
+      if (!s.fields) continue
+      const tier = s.tier || 'user'
+      for (const field of s.fields) {
+        if (seen.has(field.name)) continue
+        seen.add(field.name)
+        fields.push({
+          id: field.name,
+          label: field.name,
+          icon: field.icon || 'lucide:box',
+          valueType: field.valueType || 'text',
+          options: field.selectOptions,
+          source: tier === 'core' ? 'core' : tier === 'system' ? 'system' : 'custom',
+        })
       }
-    })
+    }
+    return fields
   })
 
   // Create a new field from a type definition
