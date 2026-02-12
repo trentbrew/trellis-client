@@ -171,14 +171,12 @@
   }
 
   function openTaskDetail(task: any) {
-    const item = createDefaultItem('task')
-    viewingTask.value = {
-      ...item,
-      id: task.id,
-      title: task.title,
-      startDate: task.dueDate,
-      priority: task.priority as 'low' | 'medium' | 'high' | 'critical',
-      owner: 'you',
+    const full = taskItems.value.find((t) => t.id === task.id)
+    if (full) {
+      viewingTask.value = full
+    } else {
+      const item = createDefaultItem('task')
+      viewingTask.value = { ...item, id: task.id, title: task.title } as CalendarItem
     }
     viewTaskOpen.value = true
   }

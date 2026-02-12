@@ -168,10 +168,19 @@ export interface EntityReference {
   direction: 'outgoing' | 'incoming'
 }
 
-export type Reference = FileReference | EntityReference
+export interface BookmarkReference {
+  kind: 'bookmark'
+  id: string
+  url: string
+  title: string
+  favicon?: string
+}
+
+export type Reference = FileReference | EntityReference | BookmarkReference
 
 export const isFileReference = (ref: Reference): ref is FileReference => ref.kind === 'file'
 export const isEntityReference = (ref: Reference): ref is EntityReference => ref.kind === 'entity'
+export const isBookmarkReference = (ref: Reference): ref is BookmarkReference => ref.kind === 'bookmark'
 
 /**
  * @deprecated Use `FileReference` instead. Kept for backward compatibility.

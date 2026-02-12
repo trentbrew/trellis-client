@@ -158,10 +158,26 @@ export default defineEventHandler(async (event) => {
     const store = kernel.getStore()
     const nodes: Record<string, any>[] = []
 
+    // Pre-index all links for O(1) lookup per entity
+    const allLinks = store.getAllLinks()
+    const outgoingByEntity = new Map<string, Array<{ relation: string; target: string }>>()
+    const incomingByEntity = new Map<string, Array<{ relation: string; source: string }>>()
+    for (const link of allLinks) {
+      if (!outgoingByEntity.has(link.e1)) outgoingByEntity.set(link.e1, [])
+      outgoingByEntity.get(link.e1)!.push({ relation: link.a, target: link.e2 })
+      if (!incomingByEntity.has(link.e2)) incomingByEntity.set(link.e2, [])
+      incomingByEntity.get(link.e2)!.push({ relation: link.a, source: link.e1 })
+    }
+
     for (const entityId of ids) {
       const facts = store.getFactsByEntity(entityId)
       if (facts.length > 0) {
-        nodes.push(factsToNode(entityId, facts))
+        const node = factsToNode(entityId, facts)
+        node._links = {
+          outgoing: outgoingByEntity.get(entityId) || [],
+          incoming: incomingByEntity.get(entityId) || [],
+        }
+        nodes.push(node)
       }
     }
 
@@ -252,6 +268,16 @@ export default defineEventHandler(async (event) => {
           await kernel.link(e1, relation, e2, { agentId: agent })
           pushMutationLog({ action: 'link', entityId: `${e1} -> ${e2}`, data: { relation } })
           emitMutation({ action: 'link', entityId: `${e1} -> ${e2}`, agentId: agent, data: { relation, e1, e2 } })
+          return { ok: true, e1, relation, e2 }
+        }
+
+        case 'unlink': {
+          if (!e1 || !relation || !e2) {
+            throw createError({ statusCode: 400, message: 'unlink requires "e1", "relation", and "e2"' })
+          }
+          await kernel.unlink(e1, relation, e2, { agentId: agent })
+          pushMutationLog({ action: 'unlink', entityId: `${e1} -> ${e2}`, data: { relation } })
+          emitMutation({ action: 'unlink', entityId: `${e1} -> ${e2}`, agentId: agent, data: { relation, e1, e2 } })
           return { ok: true, e1, relation, e2 }
         }
 

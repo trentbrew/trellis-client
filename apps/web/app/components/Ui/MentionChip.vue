@@ -2,6 +2,8 @@
   import { NodeViewWrapper, nodeViewProps } from '@tiptap/vue-3'
   import { getEntityTypeConfig } from '~/config/entityRegistry'
   import type { EntityType } from '~/types/entity'
+  import type { CalendarItem } from '~/types/calendarItem'
+  import { DIALOG_ENTITY_CONTEXT_KEY, type DialogEntityContext } from '~/composables/useDialogStack'
 
   const props = defineProps(nodeViewProps)
 
@@ -12,6 +14,37 @@
   // Look up the entity from the reactive store for hover preview
   const { items } = useCalendarItems()
   const entity = computed(() => items.value?.find((i) => i.id === entityId.value))
+
+  // Inject dialog entity context for click-to-navigate
+  const dialogEntityContext = inject<DialogEntityContext | null>(DIALOG_ENTITY_CONTEXT_KEY, null)
+
+  function handleClick() {
+    const targetItem = entity.value
+    if (!targetItem) return
+
+    const dialogStack = useDialogStack()
+
+    // If the target is already in the stack, pop back to it
+    const existingIndex = dialogStack.stack.value.findIndex((entry) => entry.entityId === entityId.value)
+    if (existingIndex >= 0) {
+      const popCount = dialogStack.stack.value.length - 1 - existingIndex
+      for (let i = 0; i < popCount; i++) dialogStack.pop()
+      return
+    }
+
+    // If the target is the originating dialog, clear the stack
+    if (dialogStack.size.value > 0 && entityId.value === dialogStack.originEntityId.value) {
+      dialogStack.clear()
+      return
+    }
+
+    // Set origin context if this is the first push
+    if (dialogStack.size.value === 0 && dialogEntityContext) {
+      dialogStack.setOriginTitle(dialogEntityContext.title, dialogEntityContext.id)
+    }
+
+    dialogStack.push(entityId.value, entityType.value as EntityType, targetItem as CalendarItem)
+  }
 
   // Type config for icon / color
   const typeConfig = computed(() => {
@@ -58,7 +91,7 @@
   <NodeViewWrapper as="span" class="mention-chip-wrapper">
     <UiHoverCard>
       <UiHoverCardTrigger as-child>
-        <span class="mention-chip" contenteditable="false">
+        <span class="mention-chip" contenteditable="false" @click.stop="handleClick">
           <Icon name="lucide:link" class="mention-chip-icon" />
           <span>{{ label }}</span>
         </span>
@@ -92,39 +125,39 @@
   </NodeViewWrapper>
 </template>
 
-<style scoped>
+<style>
   .mention-chip-wrapper {
     display: inline;
+    padding: 0;
+    margin: 0;
+    cursor: pointer;
   }
 
   .mention-chip {
-    display: inline-flex;
-    align-items: center;
-    gap: 0.25em;
-background: yellow;
-    color: hsl(var(--primary));
-    border-radius: 0.375rem;
-    padding: 0.05em 0.45em 0.1em;
-    font-size: 0.85em;
+    background: color-mix(in oklch, var(--primary) 20%, transparent);
+    color: var(--primary);
+    border-radius: 0.25rem;
+    padding: 0.1em 0.35em;
     font-weight: 500;
-    line-height: 1.4;
     cursor: pointer;
     text-decoration: none;
     transition: background 150ms;
     white-space: nowrap;
-    vertical-align: baseline;
-    position: relative;
-    top: -0.05em;
   }
 
   .mention-chip:hover {
-    background: hsl(var(--primary) / 0.22);
+    background: color-mix(in oklch, var(--primary) 30%, transparent);
+  }
+
+  .mention-chip::before {
+    content: '';
   }
 
   .mention-chip-icon {
     width: 0.75em;
     height: 0.75em;
     opacity: 0.6;
-    flex-shrink: 0;
+    vertical-align: -0.1em;
+    display: inline;
   }
 </style>

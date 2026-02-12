@@ -1,6 +1,6 @@
 <script lang="ts" setup>
   import type { Reference, EntityReference, FileType, EntityType } from '~/types/entity'
-  import { isFileReference, isEntityReference } from '~/types/entity'
+  import { isFileReference, isEntityReference, isBookmarkReference } from '~/types/entity'
   import { getEntityTypeConfig } from '~/config/entityRegistry'
 
   const props = defineProps<{
@@ -11,9 +11,11 @@
   const emit = defineEmits<{
     'update:modelValue': [value: Reference[]]
     openEntity: [ref: EntityReference]
+    removeRef: [id: string]
     addFile: []
     addEntity: []
     addEntityOfType: [type: EntityType]
+    addBookmark: []
   }>()
 
   // ── Quick-add pill definitions ────────────────────────────────────────
@@ -41,7 +43,7 @@
   )
 
   const removeRef = (id: string) => {
-    references.value = references.value.filter((r) => r.id !== id)
+    emit('removeRef', id)
   }
 
   // ── File reference helpers ──────────────────────────────────────────
@@ -111,6 +113,12 @@
         File
       </button>
       <button
+        class="inline-flex items-center gap-1 px-2 py-1 rounded-md text-[11px] font-medium border border-dashed border-border text-muted-foreground hover:text-foreground hover:border-foreground/30 hover:bg-muted/50 transition-colors"
+        @click="emit('addBookmark')">
+        <Icon name="lucide:link" class="h-3 w-3" />
+        Bookmark
+      </button>
+      <button
         v-for="opt in quickAddOptions"
         :key="opt.type"
         class="inline-flex items-center gap-1 px-2 py-1 rounded-md text-[11px] font-medium border border-dashed border-border text-muted-foreground hover:text-foreground hover:border-foreground/30 hover:bg-muted/50 transition-colors"
@@ -136,7 +144,13 @@
         @click="isEntityReference(ref) && emit('openEntity', ref)">
         <!-- Icon -->
         <div
-          v-if="isFileReference(ref)"
+          v-if="isBookmarkReference(ref)"
+          class="w-7 h-7 rounded flex items-center justify-center shrink-0 text-sky-600 bg-sky-500/10">
+          <img v-if="ref.favicon" :src="ref.favicon" class="h-3.5 w-3.5 rounded-sm" alt="" />
+          <Icon v-else name="lucide:link" class="h-3.5 w-3.5" />
+        </div>
+        <div
+          v-else-if="isFileReference(ref)"
           :class="['w-7 h-7 rounded flex items-center justify-center shrink-0', getFileColor(ref.fileType)]">
           <Icon :name="getFileIcon(ref.fileType)" class="h-3.5 w-3.5" />
         </div>
@@ -147,15 +161,35 @@
         </div>
 
         <!-- Label -->
-        <span v-if="isFileReference(ref)" class="flex-1 text-xs truncate">{{ ref.name }}</span>
+        <div v-if="isBookmarkReference(ref)" class="flex-1 min-w-0">
+          <span class="text-xs truncate block">{{ ref.title }}</span>
+          <span class="text-[10px] text-muted-foreground truncate block font-mono">{{ ref.url }}</span>
+        </div>
+        <span v-else-if="isFileReference(ref)" class="flex-1 text-xs truncate">{{ ref.name }}</span>
         <span v-else-if="isEntityReference(ref)" class="flex-1 text-xs truncate">{{ ref.title }}</span>
 
-        <!-- Type badge (entity refs only) -->
+        <!-- Type badge -->
         <span
-          v-if="isEntityReference(ref)"
+          v-if="isBookmarkReference(ref)"
+          class="shrink-0 text-[10px] font-medium text-muted-foreground bg-muted/60 rounded px-1.5 py-0.5">
+          Bookmark
+        </span>
+        <span
+          v-else-if="isEntityReference(ref)"
           class="shrink-0 text-[10px] font-medium text-muted-foreground bg-muted/60 rounded px-1.5 py-0.5">
           {{ getEntityLabel(ref) }}
         </span>
+
+        <!-- External link (bookmarks only) -->
+        <a
+          v-if="isBookmarkReference(ref)"
+          :href="ref.url"
+          target="_blank"
+          rel="noopener noreferrer"
+          class="shrink-0 h-5 w-5 flex items-center justify-center rounded opacity-0 group-hover:opacity-100 hover:bg-muted transition-all"
+          @click.stop>
+          <Icon name="lucide:external-link" class="h-3 w-3 text-muted-foreground" />
+        </a>
 
         <!-- Remove button (outgoing only, edit mode) -->
         <button

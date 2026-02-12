@@ -913,6 +913,18 @@ export class TrellisKernel {
     await this._mutate('addLinks', { links: [{ e1, a, e2 }] }, ctx);
   }
 
+  /**
+   * High-level CRUD: Remove a link between two nodes.
+   */
+  async unlink(
+    e1: string,
+    a: string,
+    e2: string,
+    ctx: MiddlewareContext = {},
+  ): Promise<void> {
+    await this._mutate('deleteLinks', { links: [{ e1, a, e2 }] }, ctx);
+  }
+
   query(
     eqlsQuery: string,
     ctx: MiddlewareContext = {},

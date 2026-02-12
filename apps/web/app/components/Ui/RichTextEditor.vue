@@ -5,6 +5,7 @@
   import { createMentionExtension } from '~/lib/mention-extension'
   import { useEntitySearch } from '~/composables/useEntitySearch'
   import type { EntitySearchItem } from '~/composables/useEntitySearch'
+  import { markdownToHtml } from '~/utils/markdown'
 
   const props = defineProps<{
     modelValue?: string
@@ -52,10 +53,22 @@
 
   const editor = useEditor({
     extensions: buildExtensions(),
-    content: props.modelValue || '',
+    content: markdownToHtml(props.modelValue || ''),
     editorProps: {
       attributes: {
         class: editorClass,
+      },
+      handlePaste: (view, event) => {
+        const clipboardData = event.clipboardData
+        if (!clipboardData) return false
+        const html = clipboardData.getData('text/html')
+        if (html) return false // already has HTML — let TipTap handle it
+        const text = clipboardData.getData('text/plain')
+        if (!text) return false
+        const converted = markdownToHtml(text)
+        if (converted === text) return false // no conversion happened
+        editor.value?.commands.insertContent(converted)
+        return true
       },
     },
     onUpdate: ({ editor: e }) => {
@@ -67,7 +80,7 @@
     () => props.modelValue,
     (val) => {
       if (editor.value && val !== editor.value.getHTML()) {
-        editor.value.commands.setContent(val || '')
+        editor.value.commands.setContent(markdownToHtml(val || ''))
       }
     },
   )
@@ -350,29 +363,5 @@
     font-weight: 600;
   }
 
-  /* Mention chip — inline styled pill */
-  :deep(.mention-chip) {
-    display: inline-flex;
-    align-items: center;
-    gap: 0.2em;
-    background: hsl(var(--primary) / 0.12);
-    color: hsl(var(--primary));
-    border-radius: 0.375rem;
-    padding: 0.1em 0.4em;
-    font-size: 0.85em;
-    font-weight: 500;
-    line-height: 1.4;
-    cursor: pointer;
-    text-decoration: none;
-    transition: background 150ms;
-    white-space: nowrap;
-  }
-
-  :deep(.mention-chip:hover) {
-    background: hsl(var(--primary) / 0.2);
-  }
-
-  :deep(.mention-chip::before) {
-    content: '';
-  }
+  /* Mention chip styles live in MentionChip.vue — do not duplicate here */
 </style>

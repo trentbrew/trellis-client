@@ -177,6 +177,14 @@
     await removeItem(item.id)
     viewDialogOpen.value = false
   }
+
+  function handleEventReschedule(eventId: string, newDate: Date) {
+    const rawId = eventId.replace(/^item:/, '').replace(/-\d+-\d+$/, '')
+    const item = items.value.find((i) => i.id === rawId)
+    if (!item) return
+    const dateStr = `${newDate.getFullYear()}-${String(newDate.getMonth() + 1).padStart(2, '0')}-${String(newDate.getDate()).padStart(2, '0')}`
+    updateItem({ ...item, startDate: dateStr } as CalendarItem)
+  }
 </script>
 
 <template>
@@ -188,7 +196,8 @@
       fullscreen
       @task-click="handleCalendarItemClick"
       @cell-click="handleCellClick"
-      @create-request="handleCreateRequest">
+      @create-request="handleCreateRequest"
+      @event-reschedule="handleEventReschedule">
       <!-- Type filter buttons under the mini calendar -->
       <template #sidebar-filters>
         <h4 class="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-2">Filter</h4>

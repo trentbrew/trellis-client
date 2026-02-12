@@ -36,12 +36,13 @@
     'task-click': [event: CalendarEvent]
     'cell-click': [date: Date]
     'create-request': [date: Date, typeLabel: string]
+    'event-reschedule': [eventId: string, newDate: Date]
   }>()
 
   // Calendar view mode state
   const calendarViewMode = ref<CalendarViewMode>('month')
   const currentDate = ref(new Date())
-  const hasAutoNavigated = ref(false)
+  const _hasAutoNavigated = ref(false)
   const isTransitioning = ref(false)
   const transitionDirection = ref<'left' | 'right'>('right')
 
@@ -465,7 +466,7 @@
     urgentCount: number
   }
 
-  const getTypeGroupsForDay = (date: Date): TypeGroup[] => {
+  const _getTypeGroupsForDay = (date: Date): TypeGroup[] => {
     const dayEvents = getEventsForDay(date)
     if (!dayEvents.length) return []
     const grouped = new Map<string, CalendarEvent[]>()
@@ -486,6 +487,46 @@
     }
     return result
   }
+
+  // ── Drag-to-reschedule ──────────────────────────────────────────────
+  const draggedEvent = ref<CalendarEvent | null>(null)
+  const dragOverDate = ref<Date | null>(null)
+
+  const onDragStart = (e: DragEvent, event: CalendarEvent) => {
+    if (!e.dataTransfer) return
+    draggedEvent.value = event
+    e.dataTransfer.effectAllowed = 'move'
+    e.dataTransfer.setData('text/plain', event.id)
+  }
+
+  const onDragEnd = () => {
+    draggedEvent.value = null
+    dragOverDate.value = null
+  }
+
+  const onCellDragOver = (e: DragEvent, date: Date) => {
+    if (!draggedEvent.value) return
+    e.preventDefault()
+    if (e.dataTransfer) e.dataTransfer.dropEffect = 'move'
+    dragOverDate.value = date
+  }
+
+  const onCellDragLeave = () => {
+    dragOverDate.value = null
+  }
+
+  const onCellDrop = (e: DragEvent, date: Date) => {
+    e.preventDefault()
+    if (!draggedEvent.value) return
+    if (!isSameDay(draggedEvent.value.date, date)) {
+      emit('event-reschedule', draggedEvent.value.id, date)
+    }
+    draggedEvent.value = null
+    dragOverDate.value = null
+  }
+
+  const isDragOver = (date: Date): boolean =>
+    !!(dragOverDate.value && isSameDay(dragOverDate.value, date))
 
   const isDayInPast = (date: Date): boolean => {
     const d = new Date(date.getFullYear(), date.getMonth(), date.getDate())
@@ -1000,20 +1041,7 @@
 
   const getEventsForDay = (date: Date) => events.value.filter((event) => isDateInEventRange(date, event))
 
-  // Auto-navigate to first event date if events exist and we haven't navigated yet
-  watch(
-    events,
-    (evts) => {
-      if (evts.length > 0 && !hasAutoNavigated.value) {
-        const firstEvent = evts[0]
-        if (firstEvent?.date) {
-          currentDate.value = new Date(firstEvent.date)
-          hasAutoNavigated.value = true
-        }
-      }
-    },
-    { immediate: true },
-  )
+  // currentDate defaults to new Date() (today) — no auto-navigation needed
 
   const _getEventsForWeek = () =>
     events.value.filter((event) => event.date >= currentWeekStart.value && event.date <= currentWeekEnd.value)
@@ -1477,11 +1505,15 @@
                       v-for="(day, dayIdx) in row.days"
                       :key="dayIdx"
                       :class="[
-                        'px-2 py-1.5 border-b border-r border-border/30 relative group/cell flex flex-col',
+                        'px-2 py-1.5 border-b border-r border-border/30 relative group/cell flex flex-col transition-colors',
                         'last:border-r-0 nth-[7n]:border-r-0',
                         !day.isCurrentMonth ? 'bg-muted/20' : '',
                         day.isToday ? 'bg-primary/5 ring-2 ring-inset ring-primary/30' : '',
-                      ]">
+                        isDragOver(day.date) ? 'bg-primary/10 ring-2 ring-inset ring-primary/50' : '',
+                      ]"
+                      @dragover="(e: DragEvent) => onCellDragOver(e, day.date)"
+                      @dragleave="onCellDragLeave"
+                      @drop="(e: DragEvent) => onCellDrop(e, day.date)">
                       <!-- Day header: number + hover add button -->
                       <div class="flex items-center justify-between mb-1">
                         <div
@@ -1562,12 +1594,16 @@
                               <button
                                 v-for="group in getSingleDayTypeGroups(day.date)"
                                 :key="group.typeLabel"
+                                :draggable="group.items.length === 1"
                                 :class="[
                                   'w-full flex items-center gap-1 px-1.5 py-0.5 rounded-md text-[11px] font-medium transition-all duration-150',
                                   'hover:ring-1 hover:ring-primary/30',
                                   group.style.bg,
                                   group.style.text,
+                                  group.items.length === 1 ? 'cursor-grab active:cursor-grabbing' : '',
                                 ]"
+                                @dragstart="(e: DragEvent) => group.items.length === 1 && onDragStart(e, group.items[0]!)"
+                                @dragend="onDragEnd"
                                 @click.stop="group.items.length === 1 ? openEventDetail(group.items[0]!) : openDayPopover(day.date, group.typeLabel)">
                                 <Icon :name="group.style.icon" class="h-3 w-3 shrink-0" />
                                 <span class="truncate">
@@ -1587,12 +1623,12 @@
                             <div class="px-3 py-2 border-b border-border bg-muted/30">
                               <p class="text-xs font-semibold">{{ formatDate(day.date) }}</p>
                               <p class="text-[10px] text-muted-foreground">
-                                {{ getEventsForDay(day.date).length }}
-                                {{ getEventsForDay(day.date).length === 1 ? 'item' : 'items' }}
+                                {{ getSingleDayTypeGroups(day.date).reduce((sum, g) => sum + g.items.length, 0) }}
+                                {{ getSingleDayTypeGroups(day.date).reduce((sum, g) => sum + g.items.length, 0) === 1 ? 'item' : 'items' }}
                               </p>
                               <!-- Type filter tabs (only if more than one group) -->
                               <div
-                                v-if="getTypeGroupsForDay(day.date).length > 1"
+                                v-if="getSingleDayTypeGroups(day.date).length > 1"
                                 class="flex items-center gap-1 mt-2 flex-wrap">
                                 <button
                                   :class="[
@@ -1605,7 +1641,7 @@
                                   All
                                 </button>
                                 <button
-                                  v-for="group in getTypeGroupsForDay(day.date)"
+                                  v-for="group in getSingleDayTypeGroups(day.date)"
                                   :key="group.typeLabel"
                                   :class="[
                                     'px-1.5 py-0.5 rounded text-[10px] font-medium transition-colors inline-flex items-center gap-1',
@@ -1622,7 +1658,7 @@
                             <!-- Filtered items -->
                             <div class="overflow-y-auto max-h-64 p-1">
                               <template
-                                v-for="group in getTypeGroupsForDay(day.date).filter(
+                                v-for="group in getSingleDayTypeGroups(day.date).filter(
                                   (g) => !activeDayPopoverFilter || g.typeLabel === activeDayPopoverFilter,
                                 )"
                                 :key="group.typeLabel">
@@ -1636,7 +1672,10 @@
                                 <button
                                   v-for="event in group.items"
                                   :key="event.id"
-                                  class="w-full text-left px-2.5 py-2 rounded-md hover:bg-muted/50 transition-colors flex items-start gap-2.5 group/item"
+                                  draggable="true"
+                                  class="w-full text-left px-2.5 py-2 rounded-md hover:bg-muted/50 transition-colors flex items-start gap-2.5 group/item cursor-grab active:cursor-grabbing"
+                                  @dragstart="(e: DragEvent) => { closeDayPopover(); onDragStart(e, event) }"
+                                  @dragend="onDragEnd"
                                   @click="openEventDetail(event)">
                                   <div
                                     :style="{ backgroundColor: group.style.dot }"
