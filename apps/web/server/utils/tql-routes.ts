@@ -31,8 +31,16 @@ const workspaceRoute: RouteDefinition = {
   },
   sidebarSections: [
     {
+      label: 'PINNED',
+      key: 'personal-pinned',
+      icon: 'lucide:pin',
+      items: 'pinned',
+      collapsible: false,
+      order: 1,
+    },
+    {
       label: 'TODAY',
-      key: 'today',
+      key: 'personal-today-section',
       icon: 'lucide:sun',
       collapsible: true,
       order: 10,
@@ -43,7 +51,7 @@ const workspaceRoute: RouteDefinition = {
     },
     {
       label: 'WORKSPACE',
-      key: 'workspace',
+      key: 'personal-workspace',
       icon: 'lucide:briefcase',
       collapsible: true,
       order: 20,
@@ -57,7 +65,7 @@ const workspaceRoute: RouteDefinition = {
     },
     {
       label: 'LIBRARY',
-      key: 'library',
+      key: 'personal-library',
       icon: 'lucide:library',
       collapsible: true,
       order: 30,
@@ -70,8 +78,8 @@ const workspaceRoute: RouteDefinition = {
     },
     {
       label: 'PAGES',
-      key: 'pages',
-      icon: 'lucide:book-open',
+      key: 'personal-pages',
+      icon: 'lucide:file-text',
       collapsible: true,
       editable: true,
       order: 40,
@@ -217,6 +225,31 @@ const databaseRoute: RouteDefinition = {
     description: 'Browse and query all entities as a database',
     fullWidth: true,
   },
+  sidebarSections: [
+    {
+      label: 'SYSTEM',
+      key: 'database-system',
+      icon: 'lucide:blocks',
+      collapsible: true,
+      order: 0,
+    },
+    {
+      label: 'PLATFORM',
+      key: 'database-entities',
+      icon: 'lucide:box',
+      collapsible: true,
+      order: 1,
+    },
+    {
+      label: 'CUSTOM',
+      key: 'database-custom',
+      icon: 'lucide:layers',
+      items: 'unpinned',
+      collapsible: true,
+      editable: true,
+      order: 2,
+    },
+  ],
 }
 
 // ============================================================================

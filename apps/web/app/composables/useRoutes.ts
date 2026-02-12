@@ -11,6 +11,7 @@ import type { BadgeConfig, RouteConfig } from '~/config/routes'
 import { PLATFORM_TYPES, ENTITY_TYPES } from '~/lib/systemTypes'
 import { filterRoutesByPermissions } from '~/lib/permissions'
 import { useOntologyRegistry } from '~/composables/useOntologyRegistry'
+import { useTrellisConfig } from '~/composables/useTrellisConfig'
 
 type RailConfig = {
   primary: string[]
@@ -40,6 +41,22 @@ export const useRoutes = () => {
   const currentApp = useState<any>('currentApp')
 
   const railConfig = ref<RailConfig | null>(null)
+
+  // Server-sourced routes (primary) with static fallback
+  const { routeConfigTree: serverRoutes } = useTrellisConfig()
+
+  // Merge server routes with static routes — docs route is static-only
+  const effectiveRouteConfig = computed<RouteConfig[]>(() => {
+    const server = serverRoutes.value
+    if (server.length > 0) {
+      // Server routes replace the app-config.jsonld routes; keep static-only routes (docs)
+      const staticOnly = routeConfig.filter(r =>
+        !server.some(s => s.path === r.path),
+      )
+      return [...server, ...staticOnly]
+    }
+    return routeConfig
+  })
 
   // Check if user has facility membership
   const hasFacilityMembership = computed(() => !!membership.value)
@@ -191,7 +208,7 @@ export const useRoutes = () => {
     const map = new Map<string, RouteConfig>()
 
     // Filter and keep section roots as rail items
-    const filteredSections = filterRoutesByPermissions(routeConfig, userRole.value, hasFacilityMembership.value)
+    const filteredSections = filterRoutesByPermissions(effectiveRouteConfig.value, userRole.value, hasFacilityMembership.value)
     filteredSections.forEach((section) => {
       if (section?.path) map.set(section.path, section)
     })
@@ -220,7 +237,7 @@ export const useRoutes = () => {
   })
 
   const isStaticSectionPath = (path: string) => {
-    return routeConfig.some((section) => section?.path === path)
+    return effectiveRouteConfig.value.some((section) => section?.path === path)
   }
 
   const getCollectionSlugFromPath = (path: string): string | null => {
@@ -332,7 +349,7 @@ export const useRoutes = () => {
     // - If any child is inRail, the parent section becomes the rail "space".
     const spaces: Array<{ path: string; order: number }> = []
 
-    routeConfig.forEach((section) => {
+    effectiveRouteConfig.value.forEach((section) => {
       if (!section?.path) return
 
       const isSpaceInRail = section.inRail && section.railPosition === position
@@ -372,7 +389,7 @@ export const useRoutes = () => {
         }
 
         // If it's already a space path (matches a top-level section), keep it.
-        const directMatch = routeConfig.some((s) => s?.path === p)
+        const directMatch = effectiveRouteConfig.value.some((s) => s?.path === p)
         const spacePath = directMatch ? p : getSpaceForPath(p)
         if (!spacePath) return
 
@@ -402,7 +419,7 @@ export const useRoutes = () => {
    * Get all routes for command palette
    */
   const commandPaletteRoutes = computed(() => {
-    const routes = getCommandPaletteRoutes()
+    const routes = getCommandPaletteRoutes(effectiveRouteConfig.value)
     return filterRoutesByPermissions(routes, userRole.value, hasFacilityMembership.value)
   })
 
@@ -435,7 +452,7 @@ export const useRoutes = () => {
   /**
    * Get current sidebar section
    */
-  const currentSidebarSection = computed(() => getSidebarSection(route.path))
+  const currentSidebarSection = computed(() => getSidebarSection(route.path, effectiveRouteConfig.value))
 
   /**
    * Dynamic children for collections - now reactive via InstantDB
@@ -463,7 +480,7 @@ export const useRoutes = () => {
     }
 
     // Merge static children (from config) with dynamic children
-    const adopted = flattenRoutes(routeConfig).filter((r) => r?.path && r.meta?.sidebarSectionPath === section.path)
+    const adopted = flattenRoutes(effectiveRouteConfig.value).filter((r) => r?.path && r.meta?.sidebarSectionPath === section.path)
 
     const allChildren = [...dynamicChildren, ...(section.children || []), ...adopted]
 
@@ -493,7 +510,7 @@ export const useRoutes = () => {
    * Get breadcrumbs for current route
    */
   const breadcrumbs = computed(() => {
-    const base = getBreadcrumbs(route.path)
+    const base = getBreadcrumbs(route.path, effectiveRouteConfig.value)
     const slug = getCollectionSlugFromRoutePath(route.path)
     if (!slug) return base
 
@@ -506,7 +523,7 @@ export const useRoutes = () => {
   /**
    * Get metadata for current route
    */
-  const currentRouteMeta = computed(() => getRouteMeta(route.path))
+  const currentRouteMeta = computed(() => getRouteMeta(route.path, effectiveRouteConfig.value))
 
   /**
    * Check if a route is active
@@ -516,7 +533,7 @@ export const useRoutes = () => {
     if (currentClean === path || currentClean.startsWith(path + '/')) return true
 
     // Check if the current route has a sidebarSectionPath that matches
-    const meta = getRouteMeta(route.path)
+    const meta = getRouteMeta(route.path, effectiveRouteConfig.value)
     if (meta?.sidebarSectionPath === path) return true
 
     return false
@@ -542,7 +559,7 @@ export const useRoutes = () => {
    * Get all routes (flattened) with permission filtering
    */
   const allRoutes = computed(() => {
-    const routes = flattenRoutes(routeConfig)
+    const routes = flattenRoutes(effectiveRouteConfig.value)
     return filterRoutesByPermissions(routes, userRole.value, hasFacilityMembership.value)
   })
 

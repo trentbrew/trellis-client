@@ -1,11 +1,44 @@
 import type { Projection, ProjectionType, Collection, DatabaseSchema, DatabaseField } from '~/types/database'
 import type { BrowseViewMode } from '~/composables/useBrowse'
-import {
-  resolveProjectionIcon,
-  getProjectionNodes,
-  buildSchemaFromType,
-  type AppConfigProjectionNode,
-} from '~/lib/appConfig'
+
+/**
+ * Projection node shape (replaces AppConfigProjectionNode from appConfig.ts).
+ * Self-contained — no longer depends on app-config.jsonld.
+ */
+export interface ProjectionNodeConfig {
+  projectionType: string
+  label?: string
+  icon?: string
+  order?: number
+  status?: string
+  requirements?: {
+    schema?: {
+      fieldTypes?: Array<DatabaseField['type']>
+    }
+  }
+}
+
+/**
+ * Static projection node definitions with schema requirements.
+ * These were previously read from app-config.jsonld via getProjectionNodes().
+ */
+const PROJECTION_NODES: ProjectionNodeConfig[] = [
+  { projectionType: 'table', label: 'Data Table', icon: 'lucide:table', order: 1 },
+  { projectionType: 'kanban', label: 'Kanban', icon: 'lucide:square-kanban', order: 2, requirements: { schema: { fieldTypes: ['select'] } } },
+  { projectionType: 'calendar', label: 'Calendar', icon: 'lucide:calendar', order: 3, requirements: { schema: { fieldTypes: ['date'] } } },
+  { projectionType: 'list', label: 'List', icon: 'lucide:list', order: 4 },
+  { projectionType: 'card-grid', label: 'Card Grid', icon: 'lucide:layout-grid', order: 5 },
+  { projectionType: 'timeline', label: 'Timeline', icon: 'lucide:calendar', order: 6, requirements: { schema: { fieldTypes: ['date'] } } },
+  { projectionType: 'graph', label: 'Graph', icon: 'lucide:network', order: 7 },
+  { projectionType: 'chart', label: 'Chart', icon: 'lucide:bar-chart-3', order: 8, requirements: { schema: { fieldTypes: ['number'] } } },
+  { projectionType: 'moodboard', label: 'Moodboard', icon: 'lucide:layout-dashboard', order: 9 },
+  { projectionType: 'slide-deck', label: 'Slide Deck', icon: 'lucide:presentation', order: 10 },
+  { projectionType: 'trellis-blocks', label: 'Trellis', icon: 'lucide:layout-list', order: 100 },
+  { projectionType: 'blocks', label: 'Blocks', icon: 'lucide:blocks', order: 101 },
+  { projectionType: 'code', label: 'JSON-LD', icon: 'lucide:code-2', order: 102 },
+]
+
+const getProjectionNodes = (): ProjectionNodeConfig[] => PROJECTION_NODES
 
 const projectionIcons: Record<ProjectionType, string> = {
   'trellis-blocks': 'lucide:layout-list',
@@ -50,7 +83,8 @@ const requiredPrimaryProjectionTypes: Array<
 > = ['table', 'kanban', 'calendar', 'graph', 'list']
 
 const getProjectionIcon = (type: ProjectionType): string => {
-  return resolveProjectionIcon(type) ?? projectionIcons[type]
+  const node = PROJECTION_NODES.find((n) => n.projectionType === type)
+  return node?.icon ?? projectionIcons[type]
 }
 
 export function createDefaultProjections(
@@ -313,7 +347,7 @@ export function getSchemaFieldTypes(schema?: DatabaseSchema | null): Set<Databas
  * @returns Result indicating if supported and any missing field types
  */
 export function evaluateProjectionRequirements(
-  projection: AppConfigProjectionNode,
+  projection: ProjectionNodeConfig,
   schema?: DatabaseSchema | null,
 ): ProjectionRequirementResult {
   const projectionType = projection.projectionType ?? ''
@@ -358,7 +392,7 @@ export function evaluateProjectionRequirements(
  */
 export function evaluateAllProjectionRequirements(
   schema?: DatabaseSchema | null,
-): Array<AppConfigProjectionNode & { requirementResult: ProjectionRequirementResult }> {
+): Array<ProjectionNodeConfig & { requirementResult: ProjectionRequirementResult }> {
   const projectionNodes = getProjectionNodes()
   return projectionNodes.map((node) => ({
     ...node,
@@ -389,7 +423,7 @@ export function buildViewModeOptions(
   const modes = allowedModes ?? defaultModes
 
   const projectionNodes = getProjectionNodes()
-  const projectionByType = new Map<string, AppConfigProjectionNode>()
+  const projectionByType = new Map<string, ProjectionNodeConfig>()
   projectionNodes.forEach((node) => {
     if (node.projectionType) {
       projectionByType.set(node.projectionType, node)
@@ -485,7 +519,7 @@ export function buildProjectionTypeOptions(
   const types = allowedTypes ?? defaultTypes
 
   const projectionNodes = getProjectionNodes()
-  const projectionByType = new Map<string, AppConfigProjectionNode>()
+  const projectionByType = new Map<string, ProjectionNodeConfig>()
   projectionNodes.forEach((node) => {
     if (node.projectionType) {
       projectionByType.set(node.projectionType, node)
@@ -598,13 +632,19 @@ export const PRIMARY_PROJECTION_TYPES = requiredPrimaryProjectionTypes
  * // and kanban enabled (Task has select fields)
  * ```
  */
+/**
+ * @deprecated Use useAppConfig().buildSchemaFromType() instead.
+ * Kept for backward compatibility with existing consumers.
+ */
 export function buildViewModeOptionsFromType(
-  typeId: string,
+  _typeId: string,
   modes: BrowseViewMode[] = ['grid', 'list', 'table', 'calendar', 'kanban'],
-  options: { includeDisabled?: boolean; hideUnsupported?: boolean } = {},
+  _options: { includeDisabled?: boolean; hideUnsupported?: boolean } = {},
 ): ViewModeOption[] {
-  const schema = buildSchemaFromType(typeId)
-  return buildViewModeOptions(schema, modes, options)
+  // Without the static appConfig.ts dependency, this function can't resolve
+  // type schemas. Consumers should use useAppConfig().buildSchemaFromType()
+  // and then call buildViewModeOptions() directly.
+  return buildViewModeOptions(null, modes, _options)
 }
 
 // ─────────────────────────────────────────────────────────────────────────────

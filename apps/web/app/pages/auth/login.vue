@@ -1,5 +1,5 @@
 <script lang="ts" setup>
-  import { getDevPort } from '~/lib/appConfig'
+  import { useTrellisConfig } from '~/composables/useTrellisConfig'
 
   definePageMeta({
     layout: 'auth',
@@ -7,6 +7,7 @@
 
   const db = useInstantDb()
   const config = useRuntimeConfig()
+  const { getDevPort } = useTrellisConfig()
   const devPort = getDevPort()
 
   const { $toast } = useNuxtApp()
