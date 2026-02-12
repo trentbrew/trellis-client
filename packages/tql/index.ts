@@ -19,6 +19,7 @@ export * from './kernel/ai-interop.js';
 export * from './kernel/operations.js';
 export * from './kernel/sync.js';
 export * from './kernel/workspace.js';
+export * from './kernel/core-ontology.js';
 export * from './kernel/trellis-kernel.js';
 
 // Query Engine

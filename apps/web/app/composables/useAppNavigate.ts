@@ -135,24 +135,9 @@ export const useAppNavigate = () => {
   const route = useRoute()
   const { animationsEnabled } = useAnimationSettings()
 
-  const { selectedYear } = useYear()
-  const { currentOrganization } = useOrganizations()
-  const { currentFacility } = useFacilities()
-
   const resolvePath = (to: string): string => {
     if (typeof to !== 'string' || !to) return to
-
-    // Only resolve clean facility paths. Full facility URLs are /:org/:year/:facility/... (not starting with /facility).
-    if (!to.startsWith('/facility') || to.includes('/[')) return to
-
-    const orgSlug = currentOrganization.value?.slug
-    const facilitySlug = currentFacility.value?.slug
-    const year = selectedYear.value
-
-    if (!orgSlug || !facilitySlug) return to
-
-    const facilityPath = to.replace(/^\/facility/, '')
-    return `/${orgSlug}/${year}/${facilitySlug}${facilityPath}`
+    return to
   }
 
   const registerPageElement = (el: HTMLElement | null) => {

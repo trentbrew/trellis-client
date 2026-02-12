@@ -85,6 +85,16 @@ export const EntityClassSchema = z.enum(['temporal', 'document', 'actor', 'conta
 export type EntityClass = z.infer<typeof EntityClassSchema>;
 
 /**
+ * Ontology tier — determines mutability and ownership
+ *
+ * - core: Built into the kernel, immutable. Defines the structural type hierarchy.
+ * - system: Shipped with the app, versioned with releases. Entity types like task, note, etc.
+ * - user: Created at runtime via API. Custom schemas and marketplace imports.
+ */
+export const OntologyTierSchema = z.enum(['core', 'system', 'user']);
+export type OntologyTier = z.infer<typeof OntologyTierSchema>;
+
+/**
  * Panel config for dialog rendering
  */
 export const PanelConfigSchema = z.object({
@@ -107,6 +117,9 @@ export const SchemaDefinitionSchema = z.object({
   '@type': z.literal('trellis:Schema'),
   version: z.string(),
   fields: z.array(PropertyValueSpecificationSchema),
+  // Tier & inheritance
+  tier: OntologyTierSchema.optional(),
+  subClassOf: z.string().optional(),
   // Entity classification
   entityClass: EntityClassSchema.optional(),
   // UI metadata

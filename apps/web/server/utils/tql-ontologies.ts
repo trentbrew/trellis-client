@@ -72,7 +72,7 @@ const containerFields = (): PVS[] => [
 // ============================================================================
 
 const taskOntology: SchemaDefinition = {
-  '@id': 'trellis:schema/task', '@type': 'trellis:Schema', version: '1.0.0',
+  '@id': 'trellis:schema/task', '@type': 'trellis:Schema', version: '1.0.0', tier: 'system',
   entityClass: 'temporal', label: 'Task', labelPlural: 'Tasks',
   icon: 'lucide:check-square', color: 'blue',
   projections: ['kanban', 'calendar', 'list', 'table', 'timeline'],
@@ -91,7 +91,7 @@ const taskOntology: SchemaDefinition = {
 }
 
 const eventOntology: SchemaDefinition = {
-  '@id': 'trellis:schema/event', '@type': 'trellis:Schema', version: '1.0.0',
+  '@id': 'trellis:schema/event', '@type': 'trellis:Schema', version: '1.0.0', tier: 'system',
   entityClass: 'temporal', label: 'Event', labelPlural: 'Events',
   icon: 'lucide:calendar', color: 'purple',
   projections: ['calendar', 'timeline', 'list', 'table'],
@@ -110,7 +110,7 @@ const eventOntology: SchemaDefinition = {
 }
 
 const tripOntology: SchemaDefinition = {
-  '@id': 'trellis:schema/trip', '@type': 'trellis:Schema', version: '1.0.0',
+  '@id': 'trellis:schema/trip', '@type': 'trellis:Schema', version: '1.0.0', tier: 'system',
   entityClass: 'temporal', label: 'Trip', labelPlural: 'Trips',
   icon: 'lucide:plane', color: 'cyan',
   projections: ['calendar', 'timeline', 'list', 'card-grid'],
@@ -133,7 +133,7 @@ const tripOntology: SchemaDefinition = {
 }
 
 const paymentOntology: SchemaDefinition = {
-  '@id': 'trellis:schema/payment', '@type': 'trellis:Schema', version: '1.0.0',
+  '@id': 'trellis:schema/payment', '@type': 'trellis:Schema', version: '1.0.0', tier: 'system',
   entityClass: 'temporal', label: 'Payment', labelPlural: 'Payments',
   icon: 'lucide:credit-card', color: 'emerald',
   projections: ['calendar', 'list', 'table'],
@@ -156,7 +156,7 @@ const paymentOntology: SchemaDefinition = {
 }
 
 const appointmentOntology: SchemaDefinition = {
-  '@id': 'trellis:schema/appointment', '@type': 'trellis:Schema', version: '1.0.0',
+  '@id': 'trellis:schema/appointment', '@type': 'trellis:Schema', version: '1.0.0', tier: 'system',
   entityClass: 'temporal', label: 'Appointment', labelPlural: 'Appointments',
   icon: 'lucide:stethoscope', color: 'rose',
   projections: ['calendar', 'list', 'table', 'timeline'],
@@ -179,7 +179,7 @@ const appointmentOntology: SchemaDefinition = {
 }
 
 const reminderOntology: SchemaDefinition = {
-  '@id': 'trellis:schema/reminder', '@type': 'trellis:Schema', version: '1.0.0',
+  '@id': 'trellis:schema/reminder', '@type': 'trellis:Schema', version: '1.0.0', tier: 'system',
   entityClass: 'temporal', label: 'Reminder', labelPlural: 'Reminders',
   icon: 'lucide:bell', color: 'amber',
   projections: ['list', 'calendar'],
@@ -196,7 +196,7 @@ const reminderOntology: SchemaDefinition = {
 }
 
 const deadlineOntology: SchemaDefinition = {
-  '@id': 'trellis:schema/deadline', '@type': 'trellis:Schema', version: '1.0.0',
+  '@id': 'trellis:schema/deadline', '@type': 'trellis:Schema', version: '1.0.0', tier: 'system',
   entityClass: 'temporal', label: 'Deadline', labelPlural: 'Deadlines',
   icon: 'lucide:alarm-clock', color: 'red',
   projections: ['calendar', 'timeline', 'list'],
@@ -215,7 +215,7 @@ const deadlineOntology: SchemaDefinition = {
 }
 
 const milestoneOntology: SchemaDefinition = {
-  '@id': 'trellis:schema/milestone', '@type': 'trellis:Schema', version: '1.0.0',
+  '@id': 'trellis:schema/milestone', '@type': 'trellis:Schema', version: '1.0.0', tier: 'system',
   entityClass: 'temporal', label: 'Milestone', labelPlural: 'Milestones',
   icon: 'lucide:flag', color: 'orange',
   projections: ['timeline', 'list', 'calendar'],
@@ -237,7 +237,7 @@ const milestoneOntology: SchemaDefinition = {
 // ============================================================================
 
 const noteOntology: SchemaDefinition = {
-  '@id': 'trellis:schema/note', '@type': 'trellis:Schema', version: '1.0.0',
+  '@id': 'trellis:schema/note', '@type': 'trellis:Schema', version: '1.0.0', tier: 'system',
   entityClass: 'document', label: 'Note', labelPlural: 'Notes',
   icon: 'lucide:sticky-note', color: 'yellow',
   projections: ['card-grid', 'list', 'table'],
@@ -251,7 +251,7 @@ const noteOntology: SchemaDefinition = {
 }
 
 const fileOntology: SchemaDefinition = {
-  '@id': 'trellis:schema/file', '@type': 'trellis:Schema', version: '1.0.0',
+  '@id': 'trellis:schema/file', '@type': 'trellis:Schema', version: '1.0.0', tier: 'system',
   entityClass: 'document', label: 'File', labelPlural: 'Files',
   icon: 'lucide:file', color: 'slate',
   projections: ['card-grid', 'list', 'table'],
@@ -271,7 +271,7 @@ const fileOntology: SchemaDefinition = {
 }
 
 const pageOntology: SchemaDefinition = {
-  '@id': 'trellis:schema/page', '@type': 'trellis:Schema', version: '1.0.0',
+  '@id': 'trellis:schema/page', '@type': 'trellis:Schema', version: '1.0.0', tier: 'system',
   entityClass: 'document', label: 'Page', labelPlural: 'Pages',
   icon: 'lucide:book-open', color: 'indigo',
   projections: ['list', 'card-grid'],
@@ -289,7 +289,7 @@ const pageOntology: SchemaDefinition = {
 }
 
 const templateOntology: SchemaDefinition = {
-  '@id': 'trellis:schema/template', '@type': 'trellis:Schema', version: '1.0.0',
+  '@id': 'trellis:schema/template', '@type': 'trellis:Schema', version: '1.0.0', tier: 'system',
   entityClass: 'document', label: 'Template', labelPlural: 'Templates',
   icon: 'lucide:copy', color: 'violet',
   projections: ['list', 'card-grid', 'table'],
@@ -306,7 +306,7 @@ const templateOntology: SchemaDefinition = {
 }
 
 const slideDeckOntology: SchemaDefinition = {
-  '@id': 'trellis:schema/slide_deck', '@type': 'trellis:Schema', version: '1.0.0',
+  '@id': 'trellis:schema/slide_deck', '@type': 'trellis:Schema', version: '1.0.0', tier: 'system',
   entityClass: 'document', label: 'Slide Deck', labelPlural: 'Slide Decks',
   icon: 'lucide:presentation', color: 'rose',
   projections: ['slide-deck', 'list', 'table'],
@@ -320,7 +320,7 @@ const slideDeckOntology: SchemaDefinition = {
 }
 
 const bookmarkOntology: SchemaDefinition = {
-  '@id': 'trellis:schema/bookmark', '@type': 'trellis:Schema', version: '1.0.0',
+  '@id': 'trellis:schema/bookmark', '@type': 'trellis:Schema', version: '1.0.0', tier: 'system',
   entityClass: 'document', label: 'Bookmark', labelPlural: 'Bookmarks',
   icon: 'lucide:bookmark', color: 'sky',
   projections: ['card-grid', 'list', 'table', 'moodboard'],
@@ -345,7 +345,7 @@ const bookmarkOntology: SchemaDefinition = {
 // ============================================================================
 
 const personOntology: SchemaDefinition = {
-  '@id': 'trellis:schema/person', '@type': 'trellis:Schema', version: '1.0.0',
+  '@id': 'trellis:schema/person', '@type': 'trellis:Schema', version: '1.0.0', tier: 'system',
   entityClass: 'actor', label: 'Person', labelPlural: 'People',
   icon: 'lucide:user', color: 'sky',
   projections: ['table', 'card-grid', 'list', 'graph'],
@@ -363,7 +363,7 @@ const personOntology: SchemaDefinition = {
 }
 
 const contactOntology: SchemaDefinition = {
-  '@id': 'trellis:schema/contact', '@type': 'trellis:Schema', version: '1.0.0',
+  '@id': 'trellis:schema/contact', '@type': 'trellis:Schema', version: '1.0.0', tier: 'system',
   entityClass: 'actor', label: 'Contact', labelPlural: 'Contacts',
   icon: 'lucide:contact', color: 'teal',
   projections: ['table', 'card-grid', 'list'],
@@ -382,7 +382,7 @@ const contactOntology: SchemaDefinition = {
 }
 
 const organizationOntology: SchemaDefinition = {
-  '@id': 'trellis:schema/organization', '@type': 'trellis:Schema', version: '1.0.0',
+  '@id': 'trellis:schema/organization', '@type': 'trellis:Schema', version: '1.0.0', tier: 'system',
   entityClass: 'actor', label: 'Organization', labelPlural: 'Organizations',
   icon: 'lucide:building-2', color: 'zinc',
   projections: ['table', 'card-grid', 'list', 'graph'],
@@ -401,7 +401,7 @@ const organizationOntology: SchemaDefinition = {
 }
 
 const vendorOntology: SchemaDefinition = {
-  '@id': 'trellis:schema/vendor', '@type': 'trellis:Schema', version: '1.0.0',
+  '@id': 'trellis:schema/vendor', '@type': 'trellis:Schema', version: '1.0.0', tier: 'system',
   entityClass: 'actor', label: 'Vendor', labelPlural: 'Vendors',
   icon: 'lucide:store', color: 'lime',
   projections: ['table', 'card-grid', 'list'],
@@ -424,7 +424,7 @@ const vendorOntology: SchemaDefinition = {
 // ============================================================================
 
 const projectOntology: SchemaDefinition = {
-  '@id': 'trellis:schema/project', '@type': 'trellis:Schema', version: '1.0.0',
+  '@id': 'trellis:schema/project', '@type': 'trellis:Schema', version: '1.0.0', tier: 'system',
   entityClass: 'container', label: 'Project', labelPlural: 'Projects',
   icon: 'lucide:folder-kanban', color: 'blue',
   projections: ['kanban', 'list', 'table', 'timeline', 'dashboard'],
@@ -443,7 +443,7 @@ const projectOntology: SchemaDefinition = {
 }
 
 const folderOntology: SchemaDefinition = {
-  '@id': 'trellis:schema/folder', '@type': 'trellis:Schema', version: '1.0.0',
+  '@id': 'trellis:schema/folder', '@type': 'trellis:Schema', version: '1.0.0', tier: 'system',
   entityClass: 'container', label: 'Folder', labelPlural: 'Folders',
   icon: 'lucide:folder', color: 'amber',
   projections: ['list', 'table'],
@@ -460,7 +460,7 @@ const folderOntology: SchemaDefinition = {
 }
 
 const collectionOntology: SchemaDefinition = {
-  '@id': 'trellis:schema/collection', '@type': 'trellis:Schema', version: '1.0.0',
+  '@id': 'trellis:schema/collection', '@type': 'trellis:Schema', version: '1.0.0', tier: 'system',
   entityClass: 'container', label: 'Collection', labelPlural: 'Collections',
   icon: 'lucide:database', color: 'indigo',
   projections: ['list', 'card-grid', 'table'],
@@ -477,7 +477,7 @@ const collectionOntology: SchemaDefinition = {
 }
 
 const goalOntology: SchemaDefinition = {
-  '@id': 'trellis:schema/goal', '@type': 'trellis:Schema', version: '1.0.0',
+  '@id': 'trellis:schema/goal', '@type': 'trellis:Schema', version: '1.0.0', tier: 'system',
   entityClass: 'container', label: 'Goal', labelPlural: 'Goals',
   icon: 'lucide:target', color: 'emerald',
   projections: ['list', 'kanban', 'table', 'timeline'],
@@ -506,6 +506,7 @@ const calendarItemOntology: SchemaDefinition = {
   '@id': 'trellis:schema/calendaritem',
   '@type': 'trellis:Schema',
   version: '1.0.0',
+  tier: 'system',
   fields: [
     f('type', 'select', { required: true, selectOptions: ['task', 'event', 'trip', 'payment', 'note', 'appointment', 'reminder', 'deadline', 'milestone', 'bookmark', 'file', 'page', 'template', 'slide_deck', 'person', 'contact', 'organization', 'vendor', 'project', 'folder', 'collection', 'goal'] }),
     f('title', 'title', { required: true }),
@@ -554,6 +555,7 @@ const commentOntology: SchemaDefinition = {
   '@id': 'trellis:schema/comment',
   '@type': 'trellis:Schema',
   version: '1.0.0',
+  tier: 'system',
   fields: [
     f('entityId', 'rich_text', { required: true }),
     f('entityType', 'select', { required: true, selectOptions: ['calendarItem', 'task', 'note', 'event', 'payment', 'trip'] }),

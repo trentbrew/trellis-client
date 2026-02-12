@@ -35,7 +35,7 @@ export const useRoutes = () => {
 
   const pinned = usePinnedItems()
   const sidebarOrder = useSidebarOrder()
-  const { userRole, membership } = useUserRole()
+  const { userRole } = useUserRole()
 
   const currentOrg = useState<any>('currentOrg')
   const currentApp = useState<any>('currentApp')
@@ -58,8 +58,8 @@ export const useRoutes = () => {
     return routeConfig
   })
 
-  // Check if user has facility membership
-  const hasFacilityMembership = computed(() => !!membership.value)
+  // All users have access (facility membership check removed)
+  const hasFacilityMembership = computed(() => true)
 
   // Get collections reactively from InstantDB
   const { collections: instantCollections, customTypes, workflows } = useInstantData()
@@ -457,7 +457,8 @@ export const useRoutes = () => {
   /**
    * Dynamic children for collections - now reactive via InstantDB
    */
-  watch([currentOrg, currentApp], loadRailConfig, { immediate: true })
+  // Re-seed rail when org/app changes OR when server routes arrive
+  watch([currentOrg, currentApp, serverRoutes], loadRailConfig, { immediate: true })
 
   /**
    * Get current section's children (for sidebar)

@@ -14,6 +14,7 @@ import {
   type ProjectionDefinition,
   WorkspaceConfigSchema,
 } from './workspace.js';
+import { CORE_ONTOLOGY } from './core-ontology.js';
 import type { SyncProvider } from './sync.js';
 import { jsonEntityFactsWithExpr } from '../computation/index.js';
 
@@ -206,6 +207,11 @@ export class TrellisKernel {
       this.sync.onRemoteOp(async (op) => {
         await this.applyRemoteOperation(op);
       });
+    }
+
+    // Auto-load core ontology (immutable, kernel-owned)
+    for (const schema of CORE_ONTOLOGY) {
+      this.ontologies.set(schema['@id'], schema);
     }
 
     const autoReplay = opts.autoReplay ?? true;
@@ -539,6 +545,10 @@ export class TrellisKernel {
     ctx: MiddlewareContext = {},
   ): Promise<void> {
     if (this.ontologies.has(schema['@id'])) {
+      const existing = this.ontologies.get(schema['@id']);
+      if (existing?.tier === 'core') {
+        throw new Error(`Cannot create ontology: ${schema['@id']} is a core type (immutable)`);
+      }
       throw new Error(`Ontology already exists: ${schema['@id']}`);
     }
     this.ontologies.set(schema['@id'], schema);
@@ -555,6 +565,10 @@ export class TrellisKernel {
   ): Promise<void> {
     if (!this.ontologies.has(schema['@id'])) {
       throw new Error(`Ontology not found: ${schema['@id']}`);
+    }
+    const current = this.ontologies.get(schema['@id']);
+    if (current?.tier === 'core') {
+      throw new Error(`Cannot update ontology: ${schema['@id']} is a core type (immutable)`);
     }
     // Delete old facts then write new
     const entityId = this.ontologyEntityId(schema['@id']);
@@ -577,12 +591,23 @@ export class TrellisKernel {
     if (!this.ontologies.has(id)) {
       throw new Error(`Ontology not found: ${id}`);
     }
+    const current = this.ontologies.get(id);
+    if (current?.tier === 'core') {
+      throw new Error(`Cannot delete ontology: ${id} is a core type (immutable)`);
+    }
     const entityId = this.ontologyEntityId(id);
     const existing = this.store.getFactsByEntity(entityId);
     if (existing.length > 0) {
       await this._mutate('deleteFacts', { facts: existing }, ctx);
     }
     this.ontologies.delete(id);
+  }
+
+  /**
+   * Returns only core ontologies (tier: 'core').
+   */
+  getCoreOntologies(): SchemaDefinition[] {
+    return Array.from(this.ontologies.values()).filter(s => s.tier === 'core');
   }
 
   /**

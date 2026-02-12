@@ -1,14 +1,8 @@
 <script lang="ts" setup>
-  import { parseFullPath } from '~/config/routes'
-
   const { organizations, currentOrganization, selectOrganization } = useOrganizations()
   const { roleConfig, userRole } = useUserRole()
-  const { selectedYear } = useYear()
 
   const canSwitchOrganization = computed(() => userRole.value === 'superadmin')
-  const { facilities } = useFacilities()
-  const route = useRoute()
-  const router = useRouter()
 
   const searchQuery = ref('')
   const createOrgOpen = ref(false)
@@ -28,16 +22,6 @@
 
     selectOrganization(organizationId)
     searchQuery.value = ''
-
-    // If we're in a facility context, we need to update the URL and potentially the facility
-    const { cleanPath } = parseFullPath(route.path)
-    if (cleanPath.startsWith('/facility')) {
-      // Find the first facility for this new organization
-      const orgFacilities = facilities.value.filter((f) => f.organizationId === organizationId)
-      const targetFacilitySlug = orgFacilities[0]?.slug || 'unknown'
-      const subPath = cleanPath.replace(/^\/facility/, '')
-      router.push(`/${org.slug}/${selectedYear.value}/${targetFacilitySlug}${subPath}`)
-    }
   }
 </script>
 

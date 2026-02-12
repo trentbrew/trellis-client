@@ -31,7 +31,7 @@ export interface Application {
   color: string
   description?: string
   isPublic?: boolean // Whether the app/workspace is publicly accessible
-  ontologies?: string[] // Imported vertical ontologies (e.g., ['ecms', 'crm'])
+  ontologies?: string[] // Imported vertical ontologies (e.g., ['crm'])
   createdAt: number
   updatedAt: number
 }

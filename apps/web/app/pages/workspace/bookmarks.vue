@@ -1,28 +1,26 @@
 <script setup lang="ts">
   import type { PageStat } from '~/components/layout/Page.vue'
-  import { useBrowse, type BrowseViewMode } from '~/composables/useBrowse'
+  import type { BrowseViewMode } from '~/composables/useBrowse'
+  import { useBrowsePage } from '~/composables/useBrowsePage'
   import CalendarItemDialog from '~/components/dialogs/CalendarItemDialog.vue'
-  import type { CalendarItem, BookmarkItem } from '~/types/calendarItem'
+  import type { BookmarkItem } from '~/types/calendarItem'
 
   definePageMeta({ layout: 'default' })
   useHead({ title: 'Bookmarks | Personal' })
 
   // ---------------------------------------------------------------------------
-  // Live data from instant-local
+  // Browse page (data + browse + dialog + CRUD)
   // ---------------------------------------------------------------------------
 
-  const { items: allItems, create: createItem, update: updateItem, remove: removeItem } = useCalendarItems()
-
-  const items = computed(() => allItems.value.filter((i): i is BookmarkItem => i.type === 'bookmark'))
-
-  // ---------------------------------------------------------------------------
-  // Browse
-  // ---------------------------------------------------------------------------
-
-  const { browseState, filteredItems } = useBrowse({
-    items: items as Ref<CalendarItem[]>,
-    searchFields: ['title', 'url', 'description', 'siteName', 'excerpt'] as (keyof CalendarItem)[],
-    defaultViewMode: 'moodboard' as BrowseViewMode,
+  const {
+    items, filteredItems, browseState, viewMode,
+    createOpen, viewOpen, viewingItem, openDetail,
+    canPrev, canNext, navPrev, navNext,
+    handleCreate, handleUpdate, handleDelete,
+  } = useBrowsePage({
+    entityType: 'bookmark',
+    searchFields: ['title', 'url', 'description', 'siteName', 'excerpt'],
+    defaultViewMode: 'moodboard',
     sortOptions: [
       { value: 'startDate', label: 'Date Added' },
       { value: 'title', label: 'Title' },
@@ -48,8 +46,6 @@
     ],
   })
 
-  const viewMode = computed(() => browseState.viewMode.value)
-
   const viewModeIcons: Record<string, string> = {
     moodboard: 'lucide:layout-dashboard',
     grid: 'lucide:grid-3x3',
@@ -57,18 +53,18 @@
   }
 
   // ---------------------------------------------------------------------------
-  // Stats
+  // Stats (type-specific — stays in page)
   // ---------------------------------------------------------------------------
 
   const stats = computed<PageStat[]>(() => [
     { label: 'Bookmarks', value: items.value.length, icon: 'lucide:bookmark' },
-    { label: 'Pinned', value: items.value.filter((b) => b.pinned).length, icon: 'lucide:pin', color: 'text-amber-500' },
-    { label: 'Work', value: items.value.filter((b) => b.category === 'work').length, icon: 'lucide:briefcase', color: 'text-blue-500' },
-    { label: 'Personal', value: items.value.filter((b) => b.category === 'personal').length, icon: 'lucide:user', color: 'text-emerald-500' },
+    { label: 'Pinned', value: (items.value as BookmarkItem[]).filter((b) => b.pinned).length, icon: 'lucide:pin', color: 'text-amber-500' },
+    { label: 'Work', value: (items.value as BookmarkItem[]).filter((b) => b.category === 'work').length, icon: 'lucide:briefcase', color: 'text-blue-500' },
+    { label: 'Personal', value: (items.value as BookmarkItem[]).filter((b) => b.category === 'personal').length, icon: 'lucide:user', color: 'text-emerald-500' },
   ])
 
   // ---------------------------------------------------------------------------
-  // UI helpers
+  // UI helpers (type-specific — stays in page)
   // ---------------------------------------------------------------------------
 
   const categoryColors: Record<string, string> = {
@@ -95,42 +91,8 @@
     window.open(url, '_blank', 'noopener,noreferrer')
   }
 
-  // ---------------------------------------------------------------------------
-  // Dialog
-  // ---------------------------------------------------------------------------
-
-  const createOpen = ref(false)
-  const viewOpen = ref(false)
-  const viewingItem = ref<CalendarItem | null>(null)
-
   const taskOwners = [{ id: 'you', name: 'You' }, { id: 'alex', name: 'Alex' }, { id: 'maya', name: 'Maya' }]
   const taskFolders = ['Work', 'Personal', 'Research']
-
-  function openDetail(item: BookmarkItem) {
-    viewingItem.value = item
-    viewOpen.value = true
-  }
-
-  const viewingIndex = computed(() => viewingItem.value ? filteredItems.value.findIndex((i) => (i as CalendarItem).id === viewingItem.value?.id) : -1)
-  const canPrev = computed(() => viewingIndex.value > 0)
-  const canNext = computed(() => viewingIndex.value < filteredItems.value.length - 1)
-  function navPrev() { if (canPrev.value) viewingItem.value = filteredItems.value[viewingIndex.value - 1] as CalendarItem }
-  function navNext() { if (canNext.value) viewingItem.value = filteredItems.value[viewingIndex.value + 1] as CalendarItem }
-
-  async function handleCreate(item: CalendarItem) {
-    await createItem({ ...item, type: 'bookmark' } as BookmarkItem)
-    createOpen.value = false
-  }
-
-  async function handleUpdate(item: CalendarItem) {
-    await updateItem(item)
-    viewOpen.value = false
-  }
-
-  async function handleDelete(item: CalendarItem) {
-    await removeItem(item.id)
-    viewOpen.value = false
-  }
 </script>
 
 <template>
