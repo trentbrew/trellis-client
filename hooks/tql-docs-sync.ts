@@ -96,6 +96,7 @@ function amendCommit(): void {
         cwd: PROJECT_ROOT,
         encoding: 'utf-8',
         timeout: 10000,
+        env: { ...process.env, TQL_DOCS_SYNC_RUNNING: '1' },
       });
       console.log('[Living Docs] Amended commit with updated docs.');
     }
@@ -474,6 +475,9 @@ export function buildDocument(module: DocModule, kernel: TrellisKernel, existing
 // ── Main ───────────────────────────────────────────────────────────────
 
 async function main() {
+  // Guard against recursive invocation: post-commit hook re-fires on --amend
+  if (process.env.TQL_DOCS_SYNC_RUNNING) return;
+
   const args = process.argv.slice(2);
   const regenerateAll = args.includes('--all');
   const noAmend = args.includes('--no-amend');
