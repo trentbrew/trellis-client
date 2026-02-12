@@ -188,15 +188,15 @@
     closeDialog()
   }
 
-  const handleOpenEntityRef = (ref: import('~/types/entity').EntityReference) => {
-    console.log('[ProjectDialog] open entity ref:', ref.entityId, ref.entityType)
-  }
+  // Auto-save in edit mode
+  const { status: saveStatus } = useAutoSave(editableItem, {
+    enabled: isEditMode,
+  })
 
-  const handleAddEntityRef = (ref: import('~/types/entity').EntityReference) => {
-    if (!editableItem.references) editableItem.references = []
-    const exists = editableItem.references.some((r: any) => r.kind === 'entity' && r.entityId === ref.entityId)
-    if (!exists) editableItem.references.push(ref)
-  }
+  // Bidirectional entity references
+  const { addEntityRef, removeRef: removeEntityRef, openEntityRef: handleOpenEntityRef } = useEntityReferences(editableItem)
+  const handleAddEntityRef = (ref: import('~/types/entity').EntityReference) => addEntityRef(ref)
+  const handleRemoveRef = (refId: string) => removeEntityRef(refId)
 
   const handleAddComment = async () => {
     if (newComment.value.trim()) {
@@ -471,6 +471,7 @@
           v-model="editableItem.references"
           :readonly="isViewMode"
           @open-entity="handleOpenEntityRef"
+          @remove-ref="handleRemoveRef"
           @add-file="fileUploadOpen = true"
           @add-entity="() => { entityPickerFilterType = undefined; entityPickerOpen = true }"
           @add-entity-of-type="(type: string) => { entityPickerFilterType = type; entityPickerOpen = true }" />
@@ -541,10 +542,12 @@
         </UiButton>
       </template>
       <template v-else-if="isEditMode">
-        <UiButton size="sm" @click="handleSave">
-          <Icon name="lucide:save" class="h-3.5 w-3.5 mr-1.5" />
-          Save
-        </UiButton>
+        <span class="text-[11px] text-muted-foreground flex items-center gap-1 mr-2 transition-opacity" :class="saveStatus === 'idle' ? 'opacity-0' : 'opacity-100'">
+          <Icon v-if="saveStatus === 'saving'" name="lucide:loader-2" class="h-3 w-3 animate-spin" />
+          <Icon v-else-if="saveStatus === 'saved'" name="lucide:check" class="h-3 w-3 text-emerald-500" />
+          <Icon v-else-if="saveStatus === 'error'" name="lucide:alert-circle" class="h-3 w-3 text-destructive" />
+          {{ saveStatus === 'saving' ? 'Saving...' : saveStatus === 'saved' ? 'Saved' : saveStatus === 'error' ? 'Error' : '' }}
+        </span>
         <UiDropdownMenu>
           <UiDropdownMenuTrigger as-child>
             <UiButton variant="ghost" size="icon" class="h-8 w-8">

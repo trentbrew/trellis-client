@@ -68,5 +68,6 @@
     <NuxtLayout>
       <NuxtPage />
     </NuxtLayout>
+    <DialogStackHost />
   </div>
 </template>

@@ -78,8 +78,8 @@ export interface RecurrenceRule {
 }
 
 // Re-export the canonical Reference types from entity.ts
-export type { FileReference, EntityReference, Reference, FileType } from '~/types/entity'
-export { isFileReference, isEntityReference } from '~/types/entity'
+export type { FileReference, EntityReference, BookmarkReference, Reference, FileType } from '~/types/entity'
+export { isFileReference, isEntityReference, isBookmarkReference } from '~/types/entity'
 
 /**
  * @deprecated Use `FileReference` from `~/types/entity` instead.

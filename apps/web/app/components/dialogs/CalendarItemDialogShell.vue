@@ -49,6 +49,9 @@
     emit('close')
   }
 
+  // ── Stack-aware positioning ─────────────────────────────────────────
+  const { buildContentStyle, overlayClass: stackOverlayClass, stackTransform, isStacked, parentTitle, hideNavigation, onBack, reportDimensions } = useDialogStackAware()
+
   // ── Resize logic ──────────────────────────────────────────────────────
   const MIN_W = 640
   const MIN_H = 480
@@ -125,23 +128,27 @@
     el.addEventListener('pointermove', onMove)
     el.addEventListener('pointerup', onUp)
   }
+
+  // Report dimensions to shared state so stacked dialogs can match
+  watch([dialogW, dialogH], ([w, h]) => reportDimensions(w, h), { immediate: true })
 </script>
 
 <template>
   <UiDialog :open="open" @update:open="emit('update:open', $event)">
     <UiDialogContent
       :hide-close="true"
-      :style="`position:fixed !important; top:50% !important; left:50% !important; translate:-50% -50% !important; width:${dialogW}px !important; max-width:${dialogW}px !important; height:${dialogH}px !important; max-height:${dialogH}px !important;`"
+      :overlay-class="stackOverlayClass"
+      :style="buildContentStyle(dialogW, dialogH)"
       :class="[isResizing ? 'select-none duration-0 transition-none' : '']"
       class="p-0! gap-0! overflow-hidden rounded-xl border border-border bg-card shadow-2xl flex! flex-col relative"
       @pointer-down-outside="
         (e: Event) => {
-          if (isResizing) e.preventDefault()
+          if (isResizing || !stackTransform.interactive) e.preventDefault()
         }
       "
       @interact-outside="
         (e: Event) => {
-          if (isResizing) e.preventDefault()
+          if (isResizing || !stackTransform.interactive) e.preventDefault()
         }
       ">
       <!-- Resize handles -->
@@ -162,7 +169,16 @@
 
       <!-- Header -->
       <div class="shrink-0 border-b border-border">
-        <div class="px-4 pt-4 pb-3">
+        <!-- Back button for stacked dialogs -->
+        <div v-if="isStacked && parentTitle" class="px-4 pt-2 pb-0">
+          <button
+            class="inline-flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground transition-colors -ml-1 px-1 py-0.5 rounded-md hover:bg-muted/50"
+            @click="onBack">
+            <Icon name="lucide:arrow-left" class="h-3.5 w-3.5" />
+            <span class="truncate max-w-[240px]">{{ parentTitle }}</span>
+          </button>
+        </div>
+        <div :class="isStacked && parentTitle ? 'px-4 pt-2 pb-3' : 'px-4 pt-4 pb-3'">
           <div class="flex items-center justify-between gap-3 mb-3">
             <div class="flex items-center gap-2 min-w-0">
               <span
@@ -174,7 +190,7 @@
               <slot name="header-badges" />
             </div>
             <div class="flex items-center gap-1 shrink-0">
-              <template v-if="!isCreateMode">
+              <template v-if="!isCreateMode && !hideNavigation">
                 <UiButton
                   variant="ghost"
                   size="icon"
@@ -192,8 +208,8 @@
                   <Icon name="lucide:chevron-down" class="h-4 w-4" />
                 </UiButton>
               </template>
-              <div v-if="!isCreateMode" class="h-5 w-px bg-border mx-0.5" />
-              <UiButton variant="ghost" size="icon" class="h-7 w-7" @click="closeDialog">
+              <div v-if="!isCreateMode && !hideNavigation" class="h-5 w-px bg-border mx-0.5" />
+              <UiButton v-if="!isStacked" variant="ghost" size="icon" class="h-7 w-7" @click="closeDialog">
                 <Icon name="lucide:x" class="h-4 w-4" />
               </UiButton>
             </div>

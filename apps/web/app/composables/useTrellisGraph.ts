@@ -38,6 +38,7 @@ type MutatePayload =
   | { action: 'updateNode'; entityId: string; type: string; data?: Record<string, any> }
   | { action: 'deleteNode'; entityId: string }
   | { action: 'link'; e1: string; relation: string; e2: string }
+  | { action: 'unlink'; e1: string; relation: string; e2: string }
 
 const API_BASE = '/api/graph'
 

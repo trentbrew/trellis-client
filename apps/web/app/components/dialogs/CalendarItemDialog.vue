@@ -128,6 +128,9 @@
   const fileUploadOpen = ref(false)
   const entityPickerOpen = ref(false)
   const entityPickerFilterType = ref<string | undefined>(undefined)
+  const bookmarkInputOpen = ref(false)
+  const bookmarkUrl = ref('')
+  watch(bookmarkInputOpen, (v) => { if (!v) bookmarkUrl.value = '' })
 
   const owners = computed(() => props.owners ?? [])
   const folders = computed(() => props.folders ?? [])
@@ -619,17 +622,42 @@
     emit('delete', { ...editableItem } as CalendarItem)
     closeDialog()
   }
-  const handleOpenEntityRef = (ref: import('~/types/entity').EntityReference) => {
-    // TODO: open the referenced entity's dialog — for now just log
-    console.log('[ReferencesSection] open entity ref:', ref.entityId, ref.entityType)
-  }
-  const handleAddEntityRef = (ref: import('~/types/entity').EntityReference) => {
+  // Auto-save in edit mode
+  const { status: saveStatus } = useAutoSave(editableItem, {
+    enabled: isEditMode,
+    beforeSave: (item) => {
+      if (!item.startDate) item.startDate = new Date().toISOString().split('T')[0]
+      if (!item.priority) item.priority = 'medium'
+      if (!item.urgency) item.urgency = 'not-urgent'
+      applyFormulas(item)
+    },
+  })
+
+  // Sync inline @mentions → TQL 'mentions' links
+  useMentionLinks(editableItem)
+
+  // Bidirectional entity references
+  const { addEntityRef, removeRef: removeEntityRef, openEntityRef: handleOpenEntityRef } = useEntityReferences(editableItem)
+  const handleAddEntityRef = (ref: import('~/types/entity').EntityReference) => addEntityRef(ref)
+  const handleRemoveRef = (refId: string) => removeEntityRef(refId)
+  const handleAddBookmark = () => {
+    const raw = bookmarkUrl.value.trim()
+    if (!raw) return
+    const url = raw.match(/^https?:\/\//) ? raw : `https://${raw}`
     if (!editableItem.references) editableItem.references = []
-    // Prevent duplicate references to the same entity
-    const exists = editableItem.references.some((r: any) => r.kind === 'entity' && r.entityId === ref.entityId)
+    const exists = editableItem.references.some((r: any) => r.kind === 'bookmark' && r.url === url)
     if (!exists) {
-      editableItem.references.push(ref)
+      let title = url
+      try { title = new URL(url).hostname } catch { /* invalid URL, use raw */ }
+      editableItem.references.push({
+        kind: 'bookmark',
+        id: `bkm-${Date.now()}`,
+        url,
+        title,
+      })
     }
+    bookmarkUrl.value = ''
+    bookmarkInputOpen.value = false
   }
   const handleAddComment = async () => {
     if (newComment.value.trim()) {
@@ -1351,9 +1379,11 @@
           v-model="editableItem.references"
           :readonly="isViewMode"
           @open-entity="handleOpenEntityRef"
+          @remove-ref="handleRemoveRef"
           @add-file="fileUploadOpen = true"
           @add-entity="() => { entityPickerFilterType = undefined; entityPickerOpen = true }"
-          @add-entity-of-type="(type) => { entityPickerFilterType = type; entityPickerOpen = true }" />
+          @add-entity-of-type="(type) => { entityPickerFilterType = type; entityPickerOpen = true }"
+          @add-bookmark="bookmarkInputOpen = true" />
 
         <!-- Comments / Activity (collapsible, collapsed by default) — always last -->
         <div v-if="!isCreateMode" class="p-4 space-y-2">
@@ -1436,10 +1466,12 @@
         </UiButton>
       </template>
       <template v-else-if="isEditMode">
-        <UiButton size="sm" @click="handleSave">
-          <Icon name="lucide:save" class="h-3.5 w-3.5 mr-1.5" />
-          Save
-        </UiButton>
+        <span class="text-[11px] text-muted-foreground flex items-center gap-1 mr-2 transition-opacity" :class="saveStatus === 'idle' ? 'opacity-0' : 'opacity-100'">
+          <Icon v-if="saveStatus === 'saving'" name="lucide:loader-2" class="h-3 w-3 animate-spin" />
+          <Icon v-else-if="saveStatus === 'saved'" name="lucide:check" class="h-3 w-3 text-emerald-500" />
+          <Icon v-else-if="saveStatus === 'error'" name="lucide:alert-circle" class="h-3 w-3 text-destructive" />
+          {{ saveStatus === 'saving' ? 'Saving...' : saveStatus === 'saved' ? 'Saved' : saveStatus === 'error' ? 'Error' : '' }}
+        </span>
         <UiDropdownMenu>
           <UiDropdownMenuTrigger as-child>
             <UiButton variant="ghost" size="icon" class="h-8 w-8">
@@ -1489,6 +1521,23 @@
 
   <!-- Entity Reference Picker -->
   <EntityReferencePicker v-model:open="entityPickerOpen" :exclude-id="editableItem.id" :filter-type="entityPickerFilterType" @select="handleAddEntityRef" />
+
+  <!-- Bookmark URL Input Dialog -->
+  <UiDialog v-model:open="bookmarkInputOpen">
+    <UiDialogContent class="sm:max-w-md">
+      <UiDialogTitle>Add Bookmark</UiDialogTitle>
+      <UiDialogDescription>Paste a URL to add as a reference</UiDialogDescription>
+      <form class="flex items-center gap-2" @submit.prevent="handleAddBookmark">
+        <Icon name="lucide:link" class="h-4 w-4 text-muted-foreground shrink-0" />
+        <input
+          v-model="bookmarkUrl"
+          type="text"
+          placeholder="https://..."
+          class="flex-1 h-9 rounded-md border border-border bg-transparent px-3 text-sm outline-none placeholder:text-muted-foreground focus:ring-1 focus:ring-ring" />
+        <UiButton size="sm" type="submit" :disabled="!bookmarkUrl.trim()">Add</UiButton>
+      </form>
+    </UiDialogContent>
+  </UiDialog>
 </template>
 
 <style scoped>
