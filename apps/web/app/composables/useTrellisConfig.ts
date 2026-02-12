@@ -202,6 +202,25 @@ function serverRouteToRouteConfig(route: ServerRouteDefinition): RouteConfig {
     ? route.children.map((child: any) => serverRouteToRouteConfig(child))
     : undefined
 
+  // Convert sidebar section items from server shape (routePath) to client shape (path)
+  const sidebarSections = Array.isArray(route.sidebarSections)
+    ? route.sidebarSections.map((section: any) => ({
+        ...section,
+        items: section.items === 'pinned' || section.items === 'unpinned'
+          ? section.items
+          : Array.isArray(section.items)
+            ? section.items.map((item: any) => ({
+                path: item.routePath || item.path,
+                label: item.label,
+                icon: item.icon || 'lucide:circle',
+                tint: item.tint,
+                meta: item.meta,
+                order: item.order,
+              }))
+            : section.items,
+      }))
+    : undefined
+
   return {
     path: route.routePath,
     label: route.label,
@@ -219,7 +238,7 @@ function serverRouteToRouteConfig(route: ServerRouteDefinition): RouteConfig {
     order: route.order,
     editable: route.editable,
     tabs: route.tabs,
-    sidebarSections: route.sidebarSections,
+    sidebarSections,
   }
 }
 
@@ -251,7 +270,7 @@ function ontologyToSchema(ontology: ServerSchemaDefinition): DatabaseSchema {
 
 // ── Composable ─────────────────────────────────────────────────────────
 
-export function useAppConfig() {
+export function useTrellisConfig() {
   // Initialize on first use (client-side only)
   if (import.meta.client && !_initialized.value && !_loading.value) {
     fetchConfig()
@@ -360,6 +379,35 @@ export function useAppConfig() {
   }
 
   /**
+   * Build a DerivedPageConfig from an entity type slug.
+   * Maps slugs like "tasks" → "task" and looks up the ontology.
+   * This replaces buildPageConfigFromSlug() from appConfig.ts.
+   */
+  function buildPageConfigFromSlug(slug: string): DerivedPageConfig | null {
+    // Normalize: plural → singular (e.g., "tasks" → "task")
+    const type = slug.endsWith('s') ? slug.slice(0, -1) : slug
+
+    const ontology = getOntologyByType(type)
+    if (!ontology) return null
+
+    const schema = ontologyToSchema(ontology)
+    const projectionTypes = ontology.projections ?? ['table', 'list', 'grid', 'kanban', 'calendar']
+
+    return {
+      routeId: `route:${slug}`,
+      title: ontology.labelPlural ?? ontology.label ?? slug,
+      subtitle: undefined,
+      description: undefined,
+      icon: ontology.icon,
+      iconClass: undefined,
+      entityTypeId: type,
+      projectionTypes,
+      pageVariant: 'browse',
+      schema,
+    }
+  }
+
+  /**
    * Get the dev port from app metadata.
    */
   function getDevPort(): number {
@@ -389,6 +437,7 @@ export function useAppConfig() {
     // Page config builders (replaces appConfig.ts exports)
     buildSchemaFromType,
     buildPageConfigFromRoute,
+    buildPageConfigFromSlug,
     getDevPort,
 
     // Actions

@@ -1,11 +1,20 @@
 /**
- * Entity Registry
+ * Entity Registry — Synchronous Fallback
  *
- * Single source of truth mapping every EntityType → its full UI config:
+ * Static baseline mapping every EntityType → its full UI config:
  * class, label, icon, projections, dialog shell, panel components, actions.
  *
- * Consumed by useEntityRegistry composable and any component that needs
- * to resolve how an entity type should look/behave at runtime.
+ * PRIMARY SOURCE: Server ontologies in `tql-ontologies.ts` served via
+ * `GET /api/graph/config`. Use `useOntologyRegistry().getEntityConfig()`
+ * for reactive, server-sourced lookups in Vue components.
+ *
+ * This file is the FALLBACK for:
+ * - SSR / initial render (before server config is fetched)
+ * - Synchronous module-level imports (dialogs, type guards)
+ * - Property field definitions (typeHasField, getPropertyFieldsForType)
+ *
+ * New consumers should prefer `useOntologyRegistry` over direct imports
+ * from this file.
  */
 
 import type {

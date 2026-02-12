@@ -1,6 +1,5 @@
 import type { PageStat } from '~/components/layout/Page.vue'
 import type { ViewModeOption } from '~/lib/projections'
-import { buildPageConfigFromRoute, buildPageConfigFromSlug, type DerivedPageConfig } from '~/lib/appConfig'
 import { buildViewModeOptions } from '~/lib/projections'
 import { useBrowse, type BrowseState, type BrowseViewMode } from '~/composables/useBrowse'
 import { useFacilityEntities } from '~/composables/useFacilityEntities'
@@ -9,6 +8,7 @@ import {
   getAllEntityTypeIds,
 } from '~/config/entityRegistry'
 import { useOntologyRegistry } from '~/composables/useOntologyRegistry'
+import { useTrellisConfig, type DerivedPageConfig } from '~/composables/useTrellisConfig'
 
 /**
  * Route path to entity type slug mapping
@@ -95,6 +95,12 @@ export interface UseGraphDrivenPageReturn {
  */
 export function useGraphDrivenPage(options: UseGraphDrivenPageOptions): UseGraphDrivenPageReturn {
   const { routePath, facilityId, defaultViewMode: explicitDefaultViewMode } = options
+
+  // Server-sourced page config builders (replaces static appConfig.ts)
+  const {
+    buildPageConfigFromRoute,
+    buildPageConfigFromSlug,
+  } = useTrellisConfig()
 
   // Derive page config from route or slug
   const pageConfig = computed<DerivedPageConfig | null>(() => {

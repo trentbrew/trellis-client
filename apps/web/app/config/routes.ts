@@ -1,28 +1,19 @@
 /**
- * Centralized Route Configuration
+ * Route Configuration — Synchronous Baseline
  *
- * This file serves as the single source of truth for all application routes.
- * It drives:
- * - Rail navigation (left icon rail)
- * - Sidebar navigation (collapsible sections)
- * - Command palette search (cmd+k)
- * - Breadcrumb generation
- * - Page metadata (title, description, SEO)
- * - Empty states and placeholders
+ * PRIMARY SOURCE: Server route definitions in `tql-routes.ts` served via
+ * `GET /api/graph/config`. Use `useTrellisConfig().routeConfigTree` for
+ * reactive, server-sourced routes in Vue components.
  *
- * Architecture Benefits:
- * - Single source of truth for navigation
- * - Type-safe route definitions
- * - Automatic generation of navigation components
- * - Consistent metadata across the app
- * - Easier to maintain and update routes
- * - Can generate breadcrumbs automatically
+ * This file provides:
+ * - Static route tree (from app-config.jsonld via buildRouteConfigTree)
+ * - Type definitions (RouteConfig, BadgeConfig, etc.)
+ * - Route utility functions (flattenRoutes, getBreadcrumbs, etc.)
+ * - ROUTE_PATHS constant for type-safe path references
  *
- * Considerations:
- * - Need to keep route definitions in sync with actual page files
- * - Large route trees might need hierarchical organization
- * - Dynamic routes (/:id) need special handling
- * - Permissions/visibility logic can be centralized here
+ * The `useRoutes` composable merges server routes with this baseline.
+ * Helper functions accept an optional `routes` parameter so they can
+ * operate on server-sourced routes when available.
  */
 
 import { filterRoutesByPermissions } from '~/lib/permissions'
@@ -290,7 +281,7 @@ const staticRoutes: RouteConfig[] = [
 
 export const routeConfig: RouteConfig[] = [...buildRouteConfigTree(), ...staticRoutes]
 
-// Route config now sourced from app-config.jsonld via buildRouteConfigTree() plus static routes.
+// Static baseline — server routes are the primary source via useTrellisConfig().routeConfigTree
 
 export const ROUTE_PATHS = {
   workspace: {
@@ -432,8 +423,8 @@ export function flattenRoutes(routes: RouteConfig[]): RouteConfig[] {
 /**
  * Get all routes for command palette
  */
-export function getCommandPaletteRoutes(): RouteConfig[] {
-  return flattenRoutes(routeConfig)
+export function getCommandPaletteRoutes(routes: RouteConfig[] = routeConfig): RouteConfig[] {
+  return flattenRoutes(routes)
     .filter((route) => route?.path && route.inCommandPalette !== false)
     .sort((a, b) => (a.order ?? 999) - (b.order ?? 999))
 }
@@ -441,19 +432,20 @@ export function getCommandPaletteRoutes(): RouteConfig[] {
 export function getFilteredCommandPaletteRoutes(
   userRole: UserRole,
   hasFacilityMembership: boolean = true,
+  routes: RouteConfig[] = routeConfig,
 ): RouteConfig[] {
-  const routes = flattenRoutes(routeConfig)
+  const filtered = flattenRoutes(routes)
     .filter((route) => route?.path && route.inCommandPalette !== false)
     .sort((a, b) => (a.order ?? 999) - (b.order ?? 999))
 
-  return filterRoutesByPermissions(routes, userRole, hasFacilityMembership)
+  return filterRoutesByPermissions(filtered, userRole, hasFacilityMembership)
 }
 
 /**
  * Get routes for rail navigation
  */
-export function getRailRoutes(position: 'primary' | 'secondary'): RouteConfig[] {
-  return flattenRoutes(routeConfig)
+export function getRailRoutes(position: 'primary' | 'secondary', routes: RouteConfig[] = routeConfig): RouteConfig[] {
+  return flattenRoutes(routes)
     .filter((route) => route?.path && route.inRail && route.railPosition === position)
     .sort((a, b) => (a.order ?? 999) - (b.order ?? 999))
 }
@@ -462,30 +454,31 @@ export function getFilteredRailRoutes(
   position: 'primary' | 'secondary',
   userRole: UserRole,
   hasFacilityMembership: boolean = true,
+  routes: RouteConfig[] = routeConfig,
 ): RouteConfig[] {
-  const routes = flattenRoutes(routeConfig)
+  const filtered = flattenRoutes(routes)
     .filter((route) => route?.path && route.inRail && route.railPosition === position)
     .sort((a, b) => (a.order ?? 999) - (b.order ?? 999))
 
-  return filterRoutesByPermissions(routes, userRole, hasFacilityMembership)
+  return filterRoutesByPermissions(filtered, userRole, hasFacilityMembership)
 }
 
 /**
  * Get sidebar section for a given path
  * Handles paths: /[org]/[year]/[facility]/path
  */
-export function getSidebarSection(path: string): RouteConfig | null {
+export function getSidebarSection(path: string, routes: RouteConfig[] = routeConfig): RouteConfig | null {
   const { cleanPath } = parseFullPath(path)
 
-  const exact = flattenRoutes(routeConfig).find((r) => r?.path === cleanPath)
+  const exact = flattenRoutes(routes).find((r) => r?.path === cleanPath)
   const override = exact?.meta?.sidebarSectionPath
   if (override) {
-    const section = routeConfig.find((s) => s?.path === override)
+    const section = routes.find((s) => s?.path === override)
     if (section) return section
   }
 
   // Find the section that matches the path prefix
-  const sections = routeConfig.filter((section) => cleanPath.startsWith(section.path))
+  const sections = routes.filter((section) => cleanPath.startsWith(section.path))
 
   if (sections.length === 0) return null
 
@@ -595,7 +588,7 @@ export function stripYearFromPath(path: string): { year: null; cleanPath: string
  * Builds breadcrumbs dynamically from path segments after workspace/app
  * Handles paths: /[workspace]/[app]/path
  */
-export function getBreadcrumbs(path: string): Array<{ label: string; path?: string }> {
+export function getBreadcrumbs(path: string, routes: RouteConfig[] = routeConfig): Array<{ label: string; path?: string }> {
   const breadcrumbs: Array<{ label: string; path?: string }> = []
   const { workspace, app, cleanPath } = parseFullPath(path)
 
@@ -614,7 +607,7 @@ export function getBreadcrumbs(path: string): Array<{ label: string; path?: stri
     if (segmentPath === '/app' && workspace && app) continue
 
     // Find the route config for this path segment
-    const route = findRouteByPath(routeConfig, segmentPath)
+    const route = findRouteByPath(routes, segmentPath)
 
     if (route) {
       const isLastSegment = i === segments.length - 1
@@ -634,9 +627,9 @@ export function getBreadcrumbs(path: string): Array<{ label: string; path?: stri
  * Get route metadata for a given path
  * Handles paths: /[workspace]/[app]/path
  */
-export function getRouteMeta(path: string): RouteConfig['meta'] | null {
+export function getRouteMeta(path: string, routes: RouteConfig[] = routeConfig): RouteConfig['meta'] | null {
   const { cleanPath } = parseFullPath(path)
-  const allRoutes = flattenRoutes(routeConfig)
-  const route = allRoutes.find((r) => r.path === cleanPath)
+  const all = flattenRoutes(routes)
+  const route = all.find((r) => r.path === cleanPath)
   return route?.meta || null
 }

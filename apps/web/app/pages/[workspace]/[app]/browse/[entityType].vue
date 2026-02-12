@@ -1,11 +1,13 @@
 <script setup lang="ts">
   import type { PageStat } from '~/components/layout/Page.vue'
   import { useBrowse } from '~/composables/useBrowse'
-  import { buildPageConfigFromSlug, type DerivedPageConfig } from '~/lib/appConfig'
+  import { useTrellisConfig, type DerivedPageConfig } from '~/composables/useTrellisConfig'
   import { buildViewModeOptions, type ViewModeOption } from '~/lib/projections'
 
   const route = useRoute()
   const entityType = computed(() => route.params.entityType as string)
+
+  const { buildPageConfigFromSlug } = useTrellisConfig()
 
   const pageConfig = computed<DerivedPageConfig | null>(() => {
     return buildPageConfigFromSlug(entityType.value)
