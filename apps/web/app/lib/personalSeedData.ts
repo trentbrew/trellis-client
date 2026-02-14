@@ -6,15 +6,17 @@
  * looks fresh.
  */
 
+import { formatYmdLocal } from '~/utils/date'
+
 const today = new Date()
-const fmt = (d: Date) => d.toISOString().split('T')[0]!
+const fmt = (d: Date) => formatYmdLocal(d)
 const daysFromNow = (n: number) => {
   const d = new Date(today)
   d.setDate(d.getDate() + n)
   return fmt(d)
 }
 
-export interface SeedCalendarItem {
+export interface SeedEntity {
   id: string
   [key: string]: any
 }
@@ -118,7 +120,7 @@ function buildPitchDeckSlides() {
   ]
 }
 
-export function getPersonalSeedItems(): SeedCalendarItem[] {
+export function getPersonalSeedItems(): SeedEntity[] {
   return [
     // ── Tasks ──────────────────────────────────────────────────────────
     {
@@ -1180,7 +1182,7 @@ export function getPersonalSeedItems(): SeedCalendarItem[] {
 // Trellis Project Tasks — dogfooding the app with real dev work
 // ============================================================================
 
-export function getTrellisProjectTasks(): SeedCalendarItem[] {
+export function getTrellisProjectTasks(): SeedEntity[] {
   return [
     // ── Phase 1: Inline Editing + Mutation Pipeline ─────────────────────
     {

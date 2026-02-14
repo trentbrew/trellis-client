@@ -1,6 +1,6 @@
 import type { InjectionKey } from 'vue'
 import type { EntityType } from '~/types/entity'
-import type { CalendarItem } from '~/types/calendarItem'
+import type { Entity } from '~/types/entity'
 
 // ============================================================================
 // Dialog Stack — Global singleton for stacked entity dialog management
@@ -14,7 +14,7 @@ export interface DialogStackEntry {
   /** Entity type determines which dialog component to render */
   entityType: EntityType
   /** Resolved entity data */
-  item: CalendarItem
+  item: Entity
 }
 
 /**
@@ -61,7 +61,7 @@ const originEntityId = ref('')
  */
 export function useDialogStack() {
   /** Push a new entity dialog onto the stack */
-  function push(entityId: string, entityType: EntityType, item: CalendarItem) {
+  function push(entityId: string, entityType: EntityType, item: Entity) {
     // Prevent duplicate top-of-stack
     const top = stack.value[stack.value.length - 1]
     if (top?.entityId === entityId) return

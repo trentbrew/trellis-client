@@ -1,6 +1,6 @@
 import type { EntityReference, EntityType } from '~/types/entity'
 import { getEntityTypeConfig } from '~/config/entityRegistry'
-import { useCalendarItems } from '~/composables/useCalendarItems'
+import { useEntities } from '~/composables/useEntities'
 
 export interface EntitySearchItem {
   id: string
@@ -10,7 +10,7 @@ export interface EntitySearchItem {
 }
 
 export function useEntitySearch(options?: { excludeId?: Ref<string | undefined>; filterType?: Ref<string | undefined> }) {
-  const { items } = useCalendarItems()
+  const { items } = useEntities()
 
   const search = ref('')
 

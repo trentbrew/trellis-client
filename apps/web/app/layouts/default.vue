@@ -3,7 +3,10 @@
   import { getSidebarSection, getCleanPath } from '~/config/routes'
 
   // Builder mode visual wrapper
-  const { isInEditMode } = useAdminUI()
+  const { isInEditMode: _isInEditMode } = useAdminUI()
+
+  // Layout preference toggle
+  const { headerAboveSidebar } = useLayoutPreferences()
 
   const commandDialog = useCommandDialog()
   const routes = useRoutes()
@@ -158,19 +161,42 @@
     </UiCommandDialog>
 
     <IconRail />
-    <AppSidebar />
 
-    <div class="flex flex-1 flex-col min-w-0 overflow-hidden">
-      <AppHeader />
-      <Transition name="page" mode="out-in" appear>
-        <main
-          ref="pageEl"
-          class="page-transition-wrapper bg-transparent flex-1 overflow-y-auto p-0 relative"
-          aria-label="Main content">
-          <slot />
-        </main>
-      </Transition>
-    </div>
+    <!-- Layout Mode A: Header above sidebar (spans sidebar + content) -->
+    <template v-if="headerAboveSidebar">
+      <div class="flex flex-1 flex-col min-w-0 overflow-hidden">
+        <AppHeader :above-sidebar="true" />
+        <div class="flex flex-1 min-h-0 overflow-hidden">
+          <AppSidebar :header-above="true" />
+          <div class="flex flex-1 flex-col min-w-0 overflow-hidden">
+            <Transition name="page" mode="out-in" appear>
+              <main
+                ref="pageEl"
+                class="page-transition-wrapper bg-transparent flex-1 overflow-y-auto p-0 relative"
+                aria-label="Main content">
+                <slot />
+              </main>
+            </Transition>
+          </div>
+        </div>
+      </div>
+    </template>
+
+    <!-- Layout Mode B: Default (header inside content column only) -->
+    <template v-else>
+      <AppSidebar :header-above="false" />
+      <div class="flex flex-1 flex-col min-w-0 overflow-hidden">
+        <AppHeader :above-sidebar="false" />
+        <Transition name="page" mode="out-in" appear>
+          <main
+            ref="pageEl"
+            class="page-transition-wrapper bg-transparent flex-1 overflow-y-auto p-0 relative"
+            aria-label="Main content">
+            <slot />
+          </main>
+        </Transition>
+      </div>
+    </template>
 
     <!-- Global Entity Detail Sheet -->
     <EntityDetailSheet />

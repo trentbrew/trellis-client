@@ -1,4 +1,4 @@
-import type { CalendarItem } from '~/types/calendarItem'
+import type { Entity } from '~/types/entity'
 
 export type SaveStatus = 'idle' | 'saving' | 'saved' | 'error'
 
@@ -25,11 +25,17 @@ export function useAutoSave<T extends Record<string, any>>(
     beforeSave?: (_item: T) => void
   },
 ) {
-  const { update: updateItem } = useCalendarItems()
+  const { update: updateItem } = useEntities()
 
   const status = ref<SaveStatus>('idle')
+  const lastSavedAt = ref<Date | null>(null)
   const debounceMs = options.debounce ?? 800
   let resetTimer: ReturnType<typeof setTimeout> | null = null
+
+  const formatLastSaved = computed(() => {
+    if (!lastSavedAt.value) return ''
+    return lastSavedAt.value.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })
+  })
 
   const setStatus = (s: SaveStatus, resetAfter?: number) => {
     status.value = s
@@ -48,7 +54,8 @@ export function useAutoSave<T extends Record<string, any>>(
     try {
       options.beforeSave?.(item)
       setStatus('saving')
-      await updateItem({ ...item } as unknown as CalendarItem)
+      await updateItem({ ...item } as unknown as Entity)
+      lastSavedAt.value = new Date()
       setStatus('saved', 2000)
     } catch (err) {
       console.error('[useAutoSave] save failed:', err)
@@ -66,5 +73,5 @@ export function useAutoSave<T extends Record<string, any>>(
     { debounce: debounceMs, deep: false },
   )
 
-  return { status, save }
+  return { status, save, lastSavedAt, formatLastSaved }
 }

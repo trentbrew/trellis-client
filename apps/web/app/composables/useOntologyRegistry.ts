@@ -39,10 +39,13 @@ interface SchemaField {
   defaultValue?: any
 }
 
+export type OntologyTier = 'core' | 'system' | 'user'
+
 interface SchemaDefinition {
   '@id': string
   '@type': string
   version: string
+  tier?: OntologyTier
   fields: SchemaField[]
   // Extended UI metadata (populated by system ontologies)
   entityClass?: EntityClass
@@ -63,6 +66,7 @@ export interface DynamicEntityTypeConfig extends Omit<EntityTypeConfig, 'type' |
   type: string
   dialogShell: string
   dynamic: true
+  tier?: OntologyTier
   schemaId: string
   schemaVersion: string
   fields: SchemaField[]
@@ -182,6 +186,7 @@ function schemaToEntityTypeConfig(schema: SchemaDefinition): DynamicEntityTypeCo
     defaultSortField: schema.defaultSortField || 'title',
     searchFields: schema.searchFields || ['title', 'description'],
     dynamic: true,
+    tier: schema.tier,
     schemaId: schema['@id'],
     schemaVersion: schema.version,
     fields: schema.fields,
@@ -274,12 +279,12 @@ export function useOntologyRegistry() {
   const serverTypes = computed(() => Array.from(_serverTypes.value.values()))
 
   /**
-   * Only user-created (truly dynamic) types — those NOT in the static registry.
+   * Only user-created (truly dynamic) types — those with tier 'user' or no tier.
+   * Excludes core (structural) and system (built-in entity) types.
    */
   const dynamicTypes = computed(() => {
-    const staticIds = new Set(getAllEntityTypeIds())
     return Array.from(_serverTypes.value.values()).filter(
-      (t) => !staticIds.has(t.type as EntityType),
+      (t) => !t.tier || t.tier === 'user',
     )
   })
 
@@ -338,11 +343,12 @@ export function useOntologyRegistry() {
   }
 
   /**
-   * Check if a type is dynamically registered (user-created, not in static registry).
+   * Check if a type is dynamically registered (user-created, tier 'user' or unset).
    */
   function isDynamicType(type: string): boolean {
-    const staticIds = new Set(getAllEntityTypeIds())
-    return _serverTypes.value.has(type) && !staticIds.has(type as EntityType)
+    const config = _serverTypes.value.get(type)
+    if (!config) return false
+    return !config.tier || config.tier === 'user'
   }
 
   // Backward-compat alias

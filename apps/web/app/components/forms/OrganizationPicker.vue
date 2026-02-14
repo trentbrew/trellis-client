@@ -33,7 +33,7 @@
           class="flex items-center justify-between gap-1.5 rounded-md px-2 py-1 transition-all duration-200 w-fit group"
           :class="[canSwitchOrganization ? 'hover:bg-muted/50' : 'cursor-default']">
           <div class="flex items-center gap-2 min-w-0">
-            <Icon name="lucide:building-2" class="text-muted-foreground/60 h-4 w-4 shrink-0" />
+            <Icon name="lucide:boxes" class="text-muted-foreground/60 h-4 w-4 shrink-0" />
             <span
               v-if="currentOrganization"
               class="text-foreground text-xs font-medium truncate leading-none min-w-fit">

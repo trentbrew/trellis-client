@@ -1,34 +1,34 @@
 <script lang="ts" setup>
-  import type { Reference, EntityReference, FileType, EntityType } from '~/types/entity'
-  import { isFileReference, isEntityReference, isBookmarkReference } from '~/types/entity'
+  import type { Reference, EntityReference, EntityType } from '~/types/entity'
+  import { isEntityReference } from '~/types/entity'
   import { getEntityTypeConfig } from '~/config/entityRegistry'
 
-  const props = defineProps<{
+  const props = withDefaults(defineProps<{
     modelValue: Reference[]
     readonly?: boolean
-  }>()
+    grouped?: boolean
+  }>(), {
+    grouped: false,
+  })
 
   const emit = defineEmits<{
     'update:modelValue': [value: Reference[]]
     openEntity: [ref: EntityReference]
     removeRef: [id: string]
-    addFile: []
     addEntity: []
     addEntityOfType: [type: EntityType]
-    addBookmark: []
   }>()
 
   // ── Quick-add pill definitions ────────────────────────────────────────
-  const quickAddOptions = computed(() => {
-    const entityTypes: { type: EntityType; label: string; icon: string; color: string }[] = [
-      { type: 'note', label: 'Note', icon: 'lucide:sticky-note', color: 'text-yellow-600 bg-yellow-500/10' },
-      { type: 'task', label: 'Task', icon: 'lucide:check-square', color: 'text-blue-600 bg-blue-500/10' },
-      { type: 'event', label: 'Event', icon: 'lucide:calendar', color: 'text-purple-600 bg-purple-500/10' },
-      { type: 'project', label: 'Project', icon: 'lucide:folder-kanban', color: 'text-blue-600 bg-blue-500/10' },
-      { type: 'person', label: 'Person', icon: 'lucide:user', color: 'text-sky-600 bg-sky-500/10' },
-    ]
-    return entityTypes
-  })
+  const quickAddOptions: { type: EntityType; label: string; icon: string }[] = [
+    { type: 'file', label: 'Add File', icon: 'lucide:paperclip' },
+    { type: 'bookmark', label: 'Add Bookmark', icon: 'lucide:link' },
+    { type: 'note', label: 'Add Note', icon: 'lucide:sticky-note' },
+    { type: 'task', label: 'Add Task', icon: 'lucide:check-square' },
+    { type: 'event', label: 'Add Event', icon: 'lucide:calendar' },
+    { type: 'project', label: 'Add Project', icon: 'lucide:folder-kanban' },
+    { type: 'person', label: 'Add Person', icon: 'lucide:user' },
+  ]
 
   const references = computed({
     get: () => props.modelValue ?? [],
@@ -42,31 +42,40 @@
     references.value.filter((r) => isEntityReference(r) && r.direction === 'incoming'),
   )
 
+  // ── Group outgoing refs by type ───────────────────────────────────────
+  interface RefGroup {
+    key: string
+    label: string
+    icon: string
+    refs: Reference[]
+  }
+
+  const groupedOutgoing = computed<RefGroup[]>(() => {
+    const groups = new Map<string, { label: string; icon: string; refs: Reference[] }>()
+
+    for (const ref of outgoingRefs.value) {
+      if (!isEntityReference(ref)) continue
+      const key = ref.entityType
+      if (!groups.has(key)) {
+        let label: string, icon: string
+        try {
+          const cfg = getEntityTypeConfig(ref.entityType)
+          label = cfg.labelPlural || cfg.label + 's'
+          icon = cfg.icon
+        } catch {
+          label = ref.entityType
+          icon = 'lucide:link'
+        }
+        groups.set(key, { label, icon, refs: [] })
+      }
+      groups.get(key)!.refs.push(ref)
+    }
+
+    return Array.from(groups.entries()).map(([key, g]) => ({ key, ...g }))
+  })
+
   const removeRef = (id: string) => {
     emit('removeRef', id)
-  }
-
-  // ── File reference helpers ──────────────────────────────────────────
-  const getFileIcon = (fileType: FileType) => {
-    const m: Record<FileType, string> = {
-      pdf: 'lucide:file-text',
-      spreadsheet: 'lucide:file-spreadsheet',
-      image: 'lucide:image',
-      document: 'lucide:file',
-      other: 'lucide:file',
-    }
-    return m[fileType] || 'lucide:file'
-  }
-
-  const getFileColor = (fileType: FileType) => {
-    const m: Record<FileType, string> = {
-      pdf: 'text-rose-600 bg-rose-500/10',
-      spreadsheet: 'text-green-600 bg-green-500/10',
-      image: 'text-violet-600 bg-violet-500/10',
-      document: 'text-blue-600 bg-blue-500/10',
-      other: 'text-gray-600 bg-gray-500/10',
-    }
-    return m[fileType] || 'text-gray-600 bg-gray-500/10'
   }
 
   // ── Entity reference helpers ────────────────────────────────────────
@@ -81,9 +90,9 @@
   const getEntityColor = (ref: EntityReference) => {
     try {
       const color = getEntityTypeConfig(ref.entityType).color
-      return `text-${color}-600 bg-${color}-500/10`
+      return `text-${color}-500 bg-${color}-500/10`
     } catch {
-      return 'text-gray-600 bg-gray-500/10'
+      return 'text-gray-500 bg-gray-500/10'
     }
   }
 
@@ -95,10 +104,15 @@
     }
   }
 
+  const handleCardClick = (ref: Reference) => {
+    if (isEntityReference(ref)) {
+      emit('openEntity', ref)
+    }
+  }
 </script>
 
 <template>
-  <div v-if="outgoingRefs.length || incomingRefs.length || !readonly" class="p-4 space-y-2">
+  <div v-if="outgoingRefs.length || incomingRefs.length || !readonly" class="p-4 space-y-3">
     <!-- Header -->
     <div class="flex items-center justify-between">
       <p class="text-xs font-medium text-muted-foreground uppercase tracking-wide">References</p>
@@ -106,18 +120,6 @@
 
     <!-- Quick-add pills -->
     <div v-if="!readonly" class="flex flex-wrap items-center gap-1.5">
-      <button
-        class="inline-flex items-center gap-1 px-2 py-1 rounded-md text-[11px] font-medium border border-dashed border-border text-muted-foreground hover:text-foreground hover:border-foreground/30 hover:bg-muted/50 transition-colors"
-        @click="emit('addFile')">
-        <Icon name="lucide:paperclip" class="h-3 w-3" />
-        File
-      </button>
-      <button
-        class="inline-flex items-center gap-1 px-2 py-1 rounded-md text-[11px] font-medium border border-dashed border-border text-muted-foreground hover:text-foreground hover:border-foreground/30 hover:bg-muted/50 transition-colors"
-        @click="emit('addBookmark')">
-        <Icon name="lucide:link" class="h-3 w-3" />
-        Bookmark
-      </button>
       <button
         v-for="opt in quickAddOptions"
         :key="opt.type"
@@ -134,96 +136,90 @@
       </button>
     </div>
 
-    <!-- Outgoing references (files + outgoing entity links) -->
-    <div v-if="outgoingRefs.length" class="space-y-1">
-      <div
+    <!-- Outgoing references — grouped mode -->
+    <template v-if="grouped">
+      <div v-for="group in groupedOutgoing" :key="group.key" class="space-y-1.5">
+        <p class="text-[10px] font-medium text-muted-foreground uppercase tracking-wide flex items-center gap-1.5">
+          <Icon :name="group.icon" class="h-3 w-3" />
+          {{ group.label }}
+        </p>
+        <div class="flex flex-wrap gap-1.5">
+          <button
+            v-for="ref in group.refs"
+            :key="ref.id"
+            class="ref-pill group inline-flex items-center gap-1.5 pl-1.5 pr-2 py-1 rounded-lg bg-muted/60 hover:bg-muted transition-colors cursor-pointer"
+            @click="handleCardClick(ref)">
+            <div :class="['w-5 h-5 rounded flex items-center justify-center shrink-0', isEntityReference(ref) ? getEntityColor(ref as EntityReference) : 'text-gray-500 bg-gray-500/10']">
+              <Icon :name="isEntityReference(ref) ? getEntityIcon(ref as EntityReference) : 'lucide:link'" class="h-3 w-3" />
+            </div>
+            <span class="text-[11px] font-medium truncate max-w-[140px]">
+              {{ isEntityReference(ref) ? (ref as EntityReference).title : '' }}
+            </span>
+            <span v-if="isEntityReference(ref)" class="text-[9px] px-1.5 py-0.5 rounded bg-muted-foreground/10 text-muted-foreground capitalize shrink-0">
+              {{ getEntityLabel(ref as EntityReference) }}
+            </span>
+            <Icon name="lucide:external-link" class="h-3 w-3 text-muted-foreground/50 shrink-0" />
+            <button
+              v-if="!readonly"
+              class="h-4 w-4 flex items-center justify-center rounded hover:bg-destructive/10 opacity-0 group-hover:opacity-100 transition-opacity shrink-0 -mr-0.5"
+              @click.stop="removeRef(ref.id)">
+              <Icon name="lucide:x" class="h-2.5 w-2.5 text-muted-foreground" />
+            </button>
+          </button>
+        </div>
+      </div>
+    </template>
+
+    <!-- Outgoing references — flat mode (default) -->
+    <div v-else-if="outgoingRefs.length" class="flex flex-wrap gap-1.5">
+      <button
         v-for="ref in outgoingRefs"
         :key="ref.id"
-        class="group flex items-center gap-2 px-2 py-1.5 rounded-md hover:bg-muted/50 transition-colors"
-        :class="{ 'cursor-pointer': isEntityReference(ref) }"
-        @click="isEntityReference(ref) && emit('openEntity', ref)">
-        <!-- Icon -->
-        <div
-          v-if="isBookmarkReference(ref)"
-          class="w-7 h-7 rounded flex items-center justify-center shrink-0 text-sky-600 bg-sky-500/10">
-          <img v-if="ref.favicon" :src="ref.favicon" class="h-3.5 w-3.5 rounded-sm" alt="" />
-          <Icon v-else name="lucide:link" class="h-3.5 w-3.5" />
+        class="ref-pill group inline-flex items-center gap-1.5 pl-1.5 pr-2 py-1 rounded-lg bg-muted/60 hover:bg-muted transition-colors cursor-pointer"
+        @click="handleCardClick(ref)">
+        <div :class="['w-5 h-5 rounded flex items-center justify-center shrink-0', isEntityReference(ref) ? getEntityColor(ref as EntityReference) : 'text-gray-500 bg-gray-500/10']">
+          <Icon :name="isEntityReference(ref) ? getEntityIcon(ref as EntityReference) : 'lucide:link'" class="h-3 w-3" />
         </div>
-        <div
-          v-else-if="isFileReference(ref)"
-          :class="['w-7 h-7 rounded flex items-center justify-center shrink-0', getFileColor(ref.fileType)]">
-          <Icon :name="getFileIcon(ref.fileType)" class="h-3.5 w-3.5" />
-        </div>
-        <div
-          v-else-if="isEntityReference(ref)"
-          :class="['w-7 h-7 rounded flex items-center justify-center shrink-0', getEntityColor(ref)]">
-          <Icon :name="getEntityIcon(ref)" class="h-3.5 w-3.5" />
-        </div>
-
-        <!-- Label -->
-        <div v-if="isBookmarkReference(ref)" class="flex-1 min-w-0">
-          <span class="text-xs truncate block">{{ ref.title }}</span>
-          <span class="text-[10px] text-muted-foreground truncate block font-mono">{{ ref.url }}</span>
-        </div>
-        <span v-else-if="isFileReference(ref)" class="flex-1 text-xs truncate">{{ ref.name }}</span>
-        <span v-else-if="isEntityReference(ref)" class="flex-1 text-xs truncate">{{ ref.title }}</span>
-
-        <!-- Type badge -->
-        <span
-          v-if="isBookmarkReference(ref)"
-          class="shrink-0 text-[10px] font-medium text-muted-foreground bg-muted/60 rounded px-1.5 py-0.5">
-          Bookmark
+        <span class="text-[11px] font-medium truncate max-w-[140px]">
+          {{ isEntityReference(ref) ? (ref as EntityReference).title : '' }}
         </span>
-        <span
-          v-else-if="isEntityReference(ref)"
-          class="shrink-0 text-[10px] font-medium text-muted-foreground bg-muted/60 rounded px-1.5 py-0.5">
-          {{ getEntityLabel(ref) }}
+        <span v-if="isEntityReference(ref)" class="text-[9px] px-1.5 py-0.5 rounded bg-muted-foreground/10 text-muted-foreground capitalize shrink-0">
+          {{ getEntityLabel(ref as EntityReference) }}
         </span>
-
-        <!-- External link (bookmarks only) -->
-        <a
-          v-if="isBookmarkReference(ref)"
-          :href="ref.url"
-          target="_blank"
-          rel="noopener noreferrer"
-          class="shrink-0 h-5 w-5 flex items-center justify-center rounded opacity-0 group-hover:opacity-100 hover:bg-muted transition-all"
-          @click.stop>
-          <Icon name="lucide:external-link" class="h-3 w-3 text-muted-foreground" />
-        </a>
-
-        <!-- Remove button (outgoing only, edit mode) -->
+        <Icon name="lucide:external-link" class="h-3 w-3 text-muted-foreground/50 shrink-0" />
         <button
           v-if="!readonly"
-          class="shrink-0 h-5 w-5 flex items-center justify-center rounded opacity-0 group-hover:opacity-100 hover:bg-muted transition-all"
+          class="h-4 w-4 flex items-center justify-center rounded hover:bg-destructive/10 opacity-0 group-hover:opacity-100 transition-opacity shrink-0 -mr-0.5"
           @click.stop="removeRef(ref.id)">
-          <Icon name="lucide:x" class="h-3 w-3 text-muted-foreground" />
+          <Icon name="lucide:x" class="h-2.5 w-2.5 text-muted-foreground" />
         </button>
-      </div>
+      </button>
     </div>
 
-    <!-- Incoming references ("Referenced by") -->
-    <div v-if="incomingRefs.length" class="space-y-1">
-      <p
-        class="text-[10px] font-medium text-muted-foreground uppercase tracking-wide mt-2 mb-0.5 flex items-center gap-1">
+    <!-- Divider between outgoing and incoming refs -->
+    <div v-if="incomingRefs.length && outgoingRefs.length" class="border-t border-border" />
+
+    <!-- Incoming references ("Referenced by") — same pill style -->
+    <div v-if="incomingRefs.length" class="space-y-1.5">
+      <p class="text-[10px] font-medium text-muted-foreground uppercase tracking-wide flex items-center gap-1.5">
         <Icon name="lucide:arrow-left" class="h-3 w-3" />
         Referenced by
       </p>
-      <div
-        v-for="ref in incomingRefs"
-        :key="ref.id"
-        class="group flex items-center gap-2 px-2 py-1.5 rounded-md hover:bg-muted/50 transition-colors cursor-pointer opacity-70 hover:opacity-100"
-        @click="isEntityReference(ref) && emit('openEntity', ref)">
-        <div
-          :class="[
-            'w-6 h-6 rounded flex items-center justify-center shrink-0',
-            getEntityColor(ref as EntityReference),
-          ]">
-          <Icon :name="getEntityIcon(ref as EntityReference)" class="h-3 w-3" />
-        </div>
-        <span class="flex-1 text-xs truncate">{{ (ref as EntityReference).title }}</span>
-        <span class="shrink-0 text-[10px] font-medium text-muted-foreground bg-muted/60 rounded px-1.5 py-0.5">
-          {{ getEntityLabel(ref as EntityReference) }}
-        </span>
+      <div class="flex flex-wrap gap-1.5">
+        <button
+          v-for="ref in incomingRefs"
+          :key="ref.id"
+          class="ref-pill group inline-flex items-center gap-1.5 pl-1.5 pr-2 py-1 rounded-lg bg-muted/60 hover:bg-muted transition-colors cursor-pointer"
+          @click="isEntityReference(ref) && emit('openEntity', ref)">
+          <div :class="['w-5 h-5 rounded flex items-center justify-center shrink-0', getEntityColor(ref as EntityReference)]">
+            <Icon :name="getEntityIcon(ref as EntityReference)" class="h-2.5 w-2.5" />
+          </div>
+          <span class="text-[11px] font-medium truncate max-w-[140px]">{{ (ref as EntityReference).title }}</span>
+          <span class="text-[9px] px-1.5 py-0.5 rounded bg-muted-foreground/10 text-muted-foreground capitalize shrink-0">
+            {{ getEntityLabel(ref as EntityReference) }}
+          </span>
+          <Icon name="lucide:external-link" class="h-3 w-3 text-muted-foreground/50 shrink-0" />
+        </button>
       </div>
     </div>
 

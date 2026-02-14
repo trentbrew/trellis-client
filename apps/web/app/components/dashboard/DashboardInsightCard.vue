@@ -1,6 +1,6 @@
 <script setup lang="ts">
   import type { DashboardInsight } from '~/composables/useDashboardInsights'
-  import { CALENDAR_ITEM_TYPES } from '~/types/calendarItem'
+  import { ENTITY_TYPE_OPTIONS } from '~/types/entity'
   import InlineSparkline from '~/components/dashboard/InlineSparkline.vue'
 
   const props = defineProps<{
@@ -109,7 +109,7 @@
         class="flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-left transition-colors hover:bg-foreground/5"
         @click="emit('itemClick', item.id)">
         <Icon
-          :name="CALENDAR_ITEM_TYPES.find((t) => t.value === item.type)?.icon || 'lucide:circle'"
+          :name="ENTITY_TYPE_OPTIONS.find((t) => t.value === item.type)?.icon || 'lucide:circle'"
           class="size-3.5 shrink-0 text-muted-foreground/60" />
         <span class="flex-1 truncate text-xs text-foreground/80">
           {{ item.title }}

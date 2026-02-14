@@ -34,7 +34,7 @@
   })
 
   // ── Entity suggestions ───────────────────────────────────────────────
-  const { items: allItems, create: createEntity, update: updateEntity } = useCalendarItems()
+  const { items: allItems, create: createEntity, update: updateEntity } = useEntities()
 
   const suggestions = ref<EntitySuggestion[]>([])
   const suggestedTags = ref<string[]>([])
@@ -312,7 +312,7 @@
                 placeholder="https://..."
                 class="flex-1 bg-transparent text-sm outline-none placeholder:text-muted-foreground/50 font-mono"
                 :disabled="unfurling"
-                autofocus
+
                 @keydown="handleUrlKeydown"
                 @paste="handleUrlPaste" />
               <button

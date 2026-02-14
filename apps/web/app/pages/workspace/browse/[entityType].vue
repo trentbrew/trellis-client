@@ -29,6 +29,7 @@
     variant="browse"
     :title="pageTitle"
     subtitle="Custom Type"
+    :data-source="entityType"
     :icon="pageIcon"
     :icon-class="`text-${pageColor}-400`"
     search-placeholder="Search..."

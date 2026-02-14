@@ -95,7 +95,7 @@
   --color-success-foreground: var(--success-foreground);
   --color-warning: var(--warning);
   --color-warning-foreground: var(--warning-foreground);
-  --color-border: var(--border);
+  --color-border: color-mix(in srgb, var(--border) 75%, transparent);
   --color-input: var(--input);
   --color-ring: var(--ring);
   --color-chart-1: var(--chart-1);
@@ -332,6 +332,20 @@
   .dark select {
     color-scheme: dark;
   }
+}
+
+/* Save-indicator fade transition (used in all dialog footers) */
+.save-fade-enter-active,
+.save-fade-leave-active {
+  transition: opacity 0.2s ease, transform 0.2s ease;
+}
+.save-fade-enter-from {
+  opacity: 0;
+  transform: translateY(4px);
+}
+.save-fade-leave-to {
+  opacity: 0;
+  transform: translateY(-4px);
 }
 
 /* Global transition disable during resize */

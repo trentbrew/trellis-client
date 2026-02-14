@@ -1,8 +1,7 @@
 <script lang="ts" setup>
-  import type { CalendarItem, ProjectStatus } from '~/types/calendarItem'
-  import { CATEGORY_OPTIONS, createDefaultItem } from '~/types/calendarItem'
+  import type { Entity, ProjectStatus, PropertyFieldId } from '~/types/entity'
+  import { CATEGORY_OPTIONS, createDefaultItem } from '~/types/entity'
   import { typeHasField } from '~/config/entityRegistry'
-  import type { PropertyFieldId } from '~/types/entity'
   import { useComments } from '~/composables/useComments'
 
   const { user: currentUser } = useInstantAuth()
@@ -11,7 +10,7 @@
     defineProps<{
       open: boolean
       mode?: 'view' | 'create' | 'edit'
-      item?: CalendarItem | null
+      item?: Entity | null
       canNavigatePrev?: boolean
       canNavigateNext?: boolean
       owners?: { id: string; name: string }[]
@@ -28,8 +27,8 @@
   const emit = defineEmits<{
     'update:open': [value: boolean]
     close: []
-    save: [item: CalendarItem]
-    delete: [item: CalendarItem]
+    save: [item: Entity]
+    delete: [item: Entity]
     edit: []
     navigatePrev: []
     navigateNext: []
@@ -80,7 +79,6 @@
   const involvedSearch = ref('')
   const statusOpen = ref(false)
   const commentsOpen = ref(false)
-  const fileUploadOpen = ref(false)
   const entityPickerOpen = ref(false)
   const entityPickerFilterType = ref<string | undefined>(undefined)
 
@@ -118,15 +116,6 @@
 
   const currentStatus = computed(() => PROJECT_STATUS_OPTIONS.find((s) => s.value === editableItem.status))
 
-  // Progress helpers
-  const progressPercent = computed(() => Math.round((editableItem.progress || 0) * 100))
-  const progressColor = computed(() => {
-    const p = editableItem.progress || 0
-    if (p < 0.3) return 'bg-red-500'
-    if (p < 0.7) return 'bg-amber-500'
-    return 'bg-emerald-500'
-  })
-
   // People
   const toggleInvolvedUser = (uid: string) => {
     const i = editableItem.involved.indexOf(uid)
@@ -161,7 +150,6 @@
       involved: [],
       children: [],
       status: 'active',
-      progress: 0,
     })
   }
 
@@ -179,17 +167,17 @@
   }
 
   const handleSave = () => {
-    emit('save', { ...editableItem } as CalendarItem)
+    emit('save', { ...editableItem } as Entity)
     closeDialog()
   }
 
   const handleDelete = () => {
-    emit('delete', { ...editableItem } as CalendarItem)
+    emit('delete', { ...editableItem } as Entity)
     closeDialog()
   }
 
   // Auto-save in edit mode
-  const { status: saveStatus } = useAutoSave(editableItem, {
+  const { status: saveStatus, formatLastSaved } = useAutoSave(editableItem, {
     enabled: isEditMode,
   })
 
@@ -356,113 +344,6 @@
       </div>
     </template>
 
-    <!-- Content: Sidebar + Main -->
-    <!-- Project Sidebar -->
-    <aside class="w-64 shrink-0 border-r border-border overflow-y-auto hidden md:block">
-      <div class="p-4 space-y-4">
-        <!-- Progress -->
-        <div class="space-y-2">
-          <p class="text-[10px] font-medium text-muted-foreground uppercase tracking-wide">Progress</p>
-          <div class="space-y-1.5">
-            <div class="flex items-center justify-between text-xs">
-              <span class="text-foreground font-medium">{{ progressPercent }}%</span>
-              <span class="text-muted-foreground">{{ currentStatus?.label || 'Active' }}</span>
-            </div>
-            <div class="h-2 rounded-full bg-muted/40 overflow-hidden">
-              <div
-                class="h-full rounded-full transition-all duration-300"
-                :class="progressColor"
-                :style="{ width: `${progressPercent}%` }" />
-            </div>
-            <input
-              v-if="!isViewMode"
-              v-model.number="editableItem.progress"
-              type="range"
-              min="0"
-              max="1"
-              step="0.05"
-              class="w-full h-1 accent-primary" />
-          </div>
-        </div>
-
-        <!-- Dates -->
-        <div class="space-y-2">
-          <p class="text-[10px] font-medium text-muted-foreground uppercase tracking-wide">Timeline</p>
-
-          <!-- Start Date -->
-          <div class="flex items-center gap-2">
-            <Icon name="lucide:calendar" class="h-3.5 w-3.5 text-muted-foreground shrink-0" />
-            <div class="flex-1">
-              <span class="text-[10px] text-muted-foreground block">Start</span>
-              <input
-                v-if="!isViewMode"
-                v-model="editableItem.startDate"
-                type="date"
-                class="w-full text-xs bg-transparent outline-none text-foreground" />
-              <span v-else class="text-xs text-foreground">{{ editableItem.startDate || '—' }}</span>
-            </div>
-          </div>
-
-          <!-- End Date -->
-          <div class="flex items-center gap-2">
-            <Icon name="lucide:calendar-range" class="h-3.5 w-3.5 text-muted-foreground shrink-0" />
-            <div class="flex-1">
-              <span class="text-[10px] text-muted-foreground block">End</span>
-              <input
-                v-if="!isViewMode"
-                v-model="editableItem.endDate"
-                type="date"
-                class="w-full text-xs bg-transparent outline-none text-foreground" />
-              <span v-else class="text-xs text-foreground">{{ editableItem.endDate || '—' }}</span>
-            </div>
-          </div>
-        </div>
-
-        <!-- Budget -->
-        <div class="space-y-2">
-          <p class="text-[10px] font-medium text-muted-foreground uppercase tracking-wide">Budget</p>
-          <div class="flex items-center gap-2">
-            <Icon name="lucide:banknote" class="h-3.5 w-3.5 text-muted-foreground shrink-0" />
-            <template v-if="!isViewMode">
-              <select
-                v-model="editableItem.currency"
-                class="h-6 rounded border border-border bg-transparent text-[10px] px-1 outline-none w-14 shrink-0">
-                <option value="USD">USD</option>
-                <option value="EUR">EUR</option>
-                <option value="GBP">GBP</option>
-                <option value="CAD">CAD</option>
-                <option value="AUD">AUD</option>
-              </select>
-              <input
-                v-model.number="editableItem.budget"
-                type="number"
-                min="0"
-                placeholder="Amount..."
-                class="flex-1 text-xs bg-transparent outline-none placeholder:text-muted-foreground/50" />
-            </template>
-            <span v-else class="text-xs text-foreground">
-              {{ editableItem.budget != null ? `${editableItem.currency || 'USD'} ${editableItem.budget.toLocaleString()}` : '—' }}
-            </span>
-          </div>
-        </div>
-
-        <!-- Quick Stats -->
-        <div v-if="!isCreateMode" class="space-y-2">
-          <p class="text-[10px] font-medium text-muted-foreground uppercase tracking-wide">Stats</p>
-          <div class="grid grid-cols-2 gap-2">
-            <div class="rounded-lg bg-muted/30 p-2 text-center">
-              <p class="text-lg font-semibold text-foreground">{{ editableItem.children?.length || 0 }}</p>
-              <p class="text-[10px] text-muted-foreground">Items</p>
-            </div>
-            <div class="rounded-lg bg-muted/30 p-2 text-center">
-              <p class="text-lg font-semibold text-foreground">{{ editableItem.involved?.length || 0 }}</p>
-              <p class="text-[10px] text-muted-foreground">Members</p>
-            </div>
-          </div>
-        </div>
-      </div>
-    </aside>
-
     <!-- Main Content -->
     <div class="flex-1 flex flex-col min-w-0 overflow-y-auto">
       <div class="divide-y divide-border flex flex-col min-h-full">
@@ -472,7 +353,6 @@
           :readonly="isViewMode"
           @open-entity="handleOpenEntityRef"
           @remove-ref="handleRemoveRef"
-          @add-file="fileUploadOpen = true"
           @add-entity="() => { entityPickerFilterType = undefined; entityPickerOpen = true }"
           @add-entity-of-type="(type: string) => { entityPickerFilterType = type; entityPickerOpen = true }" />
 
@@ -542,11 +422,21 @@
         </UiButton>
       </template>
       <template v-else-if="isEditMode">
-        <span class="text-[11px] text-muted-foreground flex items-center gap-1 mr-2 transition-opacity" :class="saveStatus === 'idle' ? 'opacity-0' : 'opacity-100'">
-          <Icon v-if="saveStatus === 'saving'" name="lucide:loader-2" class="h-3 w-3 animate-spin" />
-          <Icon v-else-if="saveStatus === 'saved'" name="lucide:check" class="h-3 w-3 text-emerald-500" />
-          <Icon v-else-if="saveStatus === 'error'" name="lucide:alert-circle" class="h-3 w-3 text-destructive" />
-          {{ saveStatus === 'saving' ? 'Saving...' : saveStatus === 'saved' ? 'Saved' : saveStatus === 'error' ? 'Error' : '' }}
+        <span class="text-[11px] text-muted-foreground flex items-center gap-1 mr-2 h-4 overflow-hidden">
+          <Transition name="save-fade" mode="out-in">
+            <span v-if="saveStatus === 'saving'" key="saving" class="flex items-center gap-1">
+              <Icon name="lucide:loader-2" class="h-3 w-3 animate-spin" />
+              Saving…
+            </span>
+            <span v-else-if="saveStatus === 'error'" key="error" class="flex items-center gap-1 text-destructive">
+              <Icon name="lucide:alert-circle" class="h-3 w-3" />
+              Error
+            </span>
+            <span v-else-if="formatLastSaved" key="saved" class="flex items-center gap-1">
+              <Icon name="lucide:check" class="h-3 w-3 text-emerald-500" />
+              Last saved at {{ formatLastSaved }}
+            </span>
+          </Transition>
         </span>
         <UiDropdownMenu>
           <UiDropdownMenuTrigger as-child>
@@ -567,27 +457,6 @@
       </template>
     </template>
   </ContainerDialogShell>
-
-  <!-- File Upload Modal -->
-  <UiDialog v-model:open="fileUploadOpen">
-    <UiDialogContent class="sm:max-w-md">
-      <UiDialogHeader>
-        <UiDialogTitle>Upload File</UiDialogTitle>
-        <UiDialogDescription>Drag and drop files here or click to browse.</UiDialogDescription>
-      </UiDialogHeader>
-      <div class="py-4">
-        <div class="border-2 border-dashed border-border rounded-lg p-8 text-center hover:border-primary hover:bg-primary/5 transition-colors cursor-pointer">
-          <Icon name="lucide:upload-cloud" class="h-10 w-10 mx-auto text-muted-foreground mb-3" />
-          <p class="text-sm font-medium">Drop files here</p>
-          <p class="text-xs text-muted-foreground mt-1">or click to browse</p>
-        </div>
-      </div>
-      <UiDialogFooter>
-        <UiButton variant="outline" @click="fileUploadOpen = false">Cancel</UiButton>
-        <UiButton @click="fileUploadOpen = false">Upload</UiButton>
-      </UiDialogFooter>
-    </UiDialogContent>
-  </UiDialog>
 
   <!-- Entity Reference Picker -->
   <EntityReferencePicker v-model:open="entityPickerOpen" :exclude-id="editableItem.id" :filter-type="entityPickerFilterType" @select="handleAddEntityRef" />

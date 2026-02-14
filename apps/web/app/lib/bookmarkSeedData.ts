@@ -3,7 +3,7 @@
  * Used by personalSeedData.ts to populate bookmark entities.
  */
 
-import type { SeedCalendarItem } from './personalSeedData'
+import type { SeedEntity } from './personalSeedData'
 
 interface BookmarkInput {
   title: string
@@ -29,7 +29,7 @@ function folderToCategory(folder?: string): 'work' | 'personal' {
   return 'personal'
 }
 
-function buildBookmark(input: BookmarkInput, index: number): SeedCalendarItem {
+function buildBookmark(input: BookmarkInput, index: number): SeedEntity {
   const domain = domainOf(input.url)
   return {
     id: `bm-${index}`,
@@ -347,6 +347,6 @@ const BOOKMARKS: BookmarkInput[] = [
   { title: 'LiveStore — Local-first data layer', url: 'https://livestore.dev/', excerpt: 'LiveStore is a state management framework based on SQLite and event-sourcing.', cover: 'https://livestore.dev/opengraph-image.jpg', folder: 'Research', created: '2024-05-31T21:21:56.288Z' },
 ]
 
-export function getBookmarkSeedItems(): SeedCalendarItem[] {
+export function getBookmarkSeedItems(): SeedEntity[] {
   return BOOKMARKS.map((b, i) => buildBookmark(b, i + 1))
 }

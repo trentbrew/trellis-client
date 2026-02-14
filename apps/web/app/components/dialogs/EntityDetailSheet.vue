@@ -6,8 +6,8 @@
     type DetailSheetVariant,
   } from '~/composables/useGlobalDetailSheet'
   import { getSchemaForEntityType, getNodeTitle, extractNodeValue } from '~/lib/detailSchema'
-  import CalendarItemDialog from '~/components/dialogs/CalendarItemDialog.vue'
-  import type { CalendarItem } from '~/types/calendarItem'
+  import EntityDialog from '~/components/dialogs/EntityDialog.vue'
+  import type { Entity } from '~/types/entity'
 
   const { state, close, setMode, setVariant, updateField } = useGlobalDetailSheetRefs()
 
@@ -138,8 +138,8 @@
     close()
   }
 
-  // Handle task save from CalendarItemDialog
-  async function handleTaskSave(task: CalendarItem) {
+  // Handle task save from EntityDialog
+  async function handleTaskSave(task: Entity) {
     const event = new CustomEvent('global-detail-sheet:save', {
       detail: {
         node: state.value.currentNode,
@@ -824,8 +824,8 @@
       </Teleport>
     </template>
 
-    <!-- CalendarItem Dialog for task entities -->
-    <CalendarItemDialog
+    <!-- Entity Dialog for task entities -->
+    <EntityDialog
       v-if="state.entityType === 'task'"
       :open="state.isOpen"
       :mode="state.mode === 'create' ? 'create' : 'edit'"

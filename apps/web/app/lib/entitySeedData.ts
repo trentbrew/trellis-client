@@ -9,10 +9,12 @@
  * and trips for a richly connected graph.
  */
 
-import type { SeedCalendarItem } from '~/lib/personalSeedData'
+import type { SeedEntity } from '~/lib/personalSeedData'
+
+import { formatYmdLocal } from '~/utils/date'
 
 const today = new Date()
-const fmt = (d: Date) => d.toISOString().split('T')[0]!
+const fmt = (d: Date) => formatYmdLocal(d)
 const daysFromNow = (n: number) => {
   const d = new Date(today)
   d.setDate(d.getDate() + n)
@@ -23,7 +25,7 @@ const daysFromNow = (n: number) => {
 // People (actor class — PersonItem)
 // ============================================================================
 
-export function getPeopleSeedItems(): SeedCalendarItem[] {
+export function getPeopleSeedItems(): SeedEntity[] {
   return [
     {
       id: 'person-1',
@@ -255,7 +257,7 @@ export function getPeopleSeedItems(): SeedCalendarItem[] {
 // Organizations (actor class — OrganizationItem)
 // ============================================================================
 
-export function getOrganizationSeedItems(): SeedCalendarItem[] {
+export function getOrganizationSeedItems(): SeedEntity[] {
   return [
     {
       id: 'org-1',
@@ -418,7 +420,7 @@ export function getOrganizationSeedItems(): SeedCalendarItem[] {
 // Files (document class — FileItem)
 // ============================================================================
 
-export function getFileSeedItems(): SeedCalendarItem[] {
+export function getFileSeedItems(): SeedEntity[] {
   return [
     {
       id: 'file-1',
@@ -636,7 +638,7 @@ export function getFileSeedItems(): SeedCalendarItem[] {
 // Projects (container class — ProjectItem)
 // ============================================================================
 
-export function getProjectSeedItems(): SeedCalendarItem[] {
+export function getProjectSeedItems(): SeedEntity[] {
   return [
     {
       id: 'project-1',

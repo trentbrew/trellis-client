@@ -163,6 +163,8 @@
     tertiaryAction?: PageAction
     /** Custom view mode options for browse view switcher */
     viewModeOptions?: ViewModeOption[]
+    /** Entity type slug(s) powering this page's data. Renders a clickable link to /database/<type>. */
+    dataSource?: string | string[]
     /** Folder tree items for folders variant */
     folderItems?: FolderTreeItem[]
     /** Currently selected folder path for folders variant */
@@ -245,6 +247,7 @@
     onMoveItem: undefined,
     folderEmptyTitle: undefined,
     folderEmptyDescription: undefined,
+    dataSource: undefined,
   })
 
   const emit = defineEmits<{
@@ -547,6 +550,25 @@
 
   const hasCalendarSlot = computed(() => !!slots.calendar)
 
+  // Data source indicator — resolves entity type slug(s) to a database link + label
+  const dataSourceTypes = computed(() => {
+    if (!props.dataSource) return []
+    return Array.isArray(props.dataSource) ? props.dataSource : [props.dataSource]
+  })
+
+  const dataSourceLink = computed(() => {
+    const types = dataSourceTypes.value
+    if (types.length === 1) return `/database/${types[0]}`
+    return '/database'
+  })
+
+  const dataSourceLabel = computed(() => {
+    const types = dataSourceTypes.value
+    if (types.length === 0) return ''
+    if (types.length === 1) return types[0]!
+    return `${types.length} types`
+  })
+
   const defaultViewModeOptions = computed<ViewModeOption[]>(() => [
     { mode: 'grid', label: 'Grid', icon: 'lucide:grid-3x3' },
     { mode: 'list', label: 'List', icon: 'lucide:list' },
@@ -708,12 +730,21 @@
 
               <div class="flex-1 min-w-0">
                 <!-- Subtitle with optional back button and icon -->
-                <div v-if="subtitle || showBackButton || icon" class="inline-flex items-center gap-0.5 mb-0">
+                <div v-if="subtitle || showBackButton || icon || dataSource" class="inline-flex items-center gap-0.5 mb-0">
                   <BackButton v-if="showBackButton" />
                   <Icon v-if="icon" :name="icon" class="mr-2 h-4 w-4 text-muted-foreground/70" />
                   <p v-if="subtitle" class="text-xs uppercase tracking-wide text-muted-foreground/80">
                     {{ subtitle }}
                   </p>
+                  <span v-if="subtitle && dataSource" class="text-muted-foreground/40 mx-1 text-xs">/</span>
+                  <NuxtLink
+                    v-if="dataSource"
+                    :to="dataSourceLink"
+                    class="inline-flex items-center gap-1 text-xs text-muted-foreground/60 hover:text-primary transition-colors group"
+                    title="View in database">
+                    <Icon name="lucide:database" class="size-3 text-muted-foreground/40 group-hover:text-primary transition-colors" />
+                    <span class="uppercase tracking-wide">{{ dataSourceLabel }}</span>
+                  </NuxtLink>
                 </div>
 
                 <!-- Title -->
@@ -910,6 +941,7 @@
                     :disabled="option.disabled"
                     @click="setViewMode(option.mode, option.disabled)">
                     <Icon :name="option.icon" class="h-4 w-4" />
+                    <span class="hidden sm:inline">{{ option.label }}</span>
                     <span
                       v-if="option.suggested && browse?.viewMode.value !== option.mode"
                       class="h-1.5 w-1.5 rounded-full bg-primary/60 absolute -top-0.5 -right-0.5" />

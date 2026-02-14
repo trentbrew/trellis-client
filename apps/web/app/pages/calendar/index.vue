@@ -1,7 +1,8 @@
 <script setup lang="ts">
   import CalendarView from '~/components/views/CalendarView.vue'
-  import CalendarItemDialog from '~/components/dialogs/CalendarItemDialog.vue'
-  import type { CalendarItem, CalendarItemType } from '~/types/calendarItem'
+  import EntityDialog from '~/components/dialogs/EntityDialog.vue'
+  import type { Entity, EntityType } from '~/types/entity'
+  import { createDefaultItem } from '~/types/entity'
 
   definePageMeta({
     layout: 'default',
@@ -22,7 +23,7 @@
     id: Section
     label: string
     icon: string
-    itemType?: CalendarItemType
+    itemType?: EntityType
   }
 
   const sections: SectionConfig[] = [
@@ -53,7 +54,7 @@
   // Live data from instant-local
   // ---------------------------------------------------------------------------
 
-  const { items, create: createItem, update: updateItem, remove: removeItem } = useCalendarItems()
+  const { items, create: createItem, update: updateItem, remove: removeItem } = useEntities()
 
   // ---------------------------------------------------------------------------
   // Filtered data per section
@@ -108,11 +109,15 @@
   // Dialog state
   // ---------------------------------------------------------------------------
 
-  const createDialogOpen = ref(false)
   const viewDialogOpen = ref(false)
-  const viewingItem = ref<CalendarItem | null>(null)
-  const createItemType = ref<CalendarItemType>('task')
-  const createStartDate = ref<string | undefined>(undefined)
+  const _viewingItemId = ref<string | null>(null)
+  const _pendingNewItem = ref<Entity | null>(null)
+  const viewingItem = computed<Entity | null>(() => {
+    if (!_viewingItemId.value) return null
+    return items.value.find((i) => i.id === _viewingItemId.value)
+      ?? _pendingNewItem.value
+      ?? null
+  })
 
   const taskOwners = [
     { id: 'you', name: 'You' },
@@ -122,10 +127,14 @@
   ]
   const taskFolders = ['Work', 'Personal', 'Health', 'Finance', 'Projects']
 
-  function openCreate(type?: CalendarItemType, startDate?: Date) {
-    createItemType.value = type || currentSection.value?.itemType || 'task'
-    createStartDate.value = startDate ? startDate.toISOString().slice(0, 10) : undefined
-    createDialogOpen.value = true
+  async function openCreate(type?: EntityType, startDate?: Date) {
+    const itemType = type || currentSection.value?.itemType || 'task'
+    const defaults = createDefaultItem(itemType)
+    if (startDate) (defaults as any).startDate = startDate.toISOString().slice(0, 10)
+    const newId = await createItem({ ...defaults, type: itemType, title: '' } as Entity)
+    _pendingNewItem.value = { ...defaults, id: newId } as Entity
+    _viewingItemId.value = newId
+    viewDialogOpen.value = true
   }
 
   function handleCellClick(date: Date) {
@@ -133,16 +142,16 @@
   }
 
   function handleCreateRequest(date: Date, typeLabel: string) {
-    const typeLower = typeLabel.toLowerCase() as CalendarItemType
+    const typeLower = typeLabel.toLowerCase() as EntityType
     openCreate(typeLower, date)
   }
 
-  function openDetail(item: CalendarItem) {
-    viewingItem.value = item
+  function openDetail(item: Entity) {
+    _viewingItemId.value = item.id
     viewDialogOpen.value = true
   }
 
-  function handleCalendarItemClick(calEvent: { id: string }) {
+  function handleEntityClick(calEvent: { id: string }) {
     // CalendarView formats IDs as "item:{uuid}-{nodeIndex}-{valueIndex}"
     // Strip the prefix and trailing index suffixes to get the original UUID
     const rawId = calEvent.id.replace(/^item:/, '').replace(/-\d+-\d+$/, '')
@@ -157,23 +166,18 @@
   const canPrev = computed(() => viewingIndex.value > 0)
   const canNext = computed(() => viewingIndex.value < sectionItems.value.length - 1)
   function navPrev() {
-    if (canPrev.value) viewingItem.value = sectionItems.value[viewingIndex.value - 1] as CalendarItem
+    if (canPrev.value) _viewingItemId.value = (sectionItems.value[viewingIndex.value - 1] as Entity).id
   }
   function navNext() {
-    if (canNext.value) viewingItem.value = sectionItems.value[viewingIndex.value + 1] as CalendarItem
+    if (canNext.value) _viewingItemId.value = (sectionItems.value[viewingIndex.value + 1] as Entity).id
   }
 
-  async function handleCreate(item: CalendarItem) {
-    await createItem(item)
-    createDialogOpen.value = false
-  }
-
-  async function handleUpdate(item: CalendarItem) {
+  async function handleUpdate(item: Entity) {
     await updateItem(item)
     viewDialogOpen.value = false
   }
 
-  async function handleDelete(item: CalendarItem) {
+  async function handleDelete(item: Entity) {
     await removeItem(item.id)
     viewDialogOpen.value = false
   }
@@ -184,7 +188,7 @@
     const item = items.value.find((i) => i.id === rawId)
     if (!item) return
     const dateStr = `${newDate.getFullYear()}-${String(newDate.getMonth() + 1).padStart(2, '0')}-${String(newDate.getDate()).padStart(2, '0')}`
-    updateItem({ ...item, startDate: dateStr } as CalendarItem)
+    updateItem({ ...item, startDate: dateStr } as Entity)
   }
 </script>
 
@@ -195,7 +199,7 @@
       :model-value="calendarData"
       :schema="calendarSchema"
       fullscreen
-      @task-click="handleCalendarItemClick"
+      @task-click="handleEntityClick"
       @cell-click="handleCellClick"
       @create-request="handleCreateRequest"
       @event-reschedule="handleEventReschedule">
@@ -244,7 +248,7 @@
     </CalendarView>
 
     <!-- View/Edit Dialog -->
-    <CalendarItemDialog
+    <EntityDialog
       v-model:open="viewDialogOpen"
       mode="edit"
       :item="viewingItem"
@@ -258,16 +262,5 @@
       @delete="handleDelete"
       @close="viewDialogOpen = false" />
 
-    <!-- Create Dialog -->
-    <CalendarItemDialog
-      v-model:open="createDialogOpen"
-      mode="create"
-      :item-type="createItemType"
-      :item="null"
-      :default-start-date="createStartDate"
-      :owners="taskOwners"
-      :folders="taskFolders"
-      @save="handleCreate"
-      @close="createDialogOpen = false" />
   </Page>
 </template>

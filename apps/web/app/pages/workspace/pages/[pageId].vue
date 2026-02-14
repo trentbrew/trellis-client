@@ -8,7 +8,7 @@
   const pageId = computed(() => route.params.pageId as string)
 
   const { pages } = usePages()
-  const { items: allItems } = useCalendarItems()
+  const { items: allItems } = useEntities()
 
   // Resolve the page config
   const pageConfig = computed<PageConfig | null>(() => {

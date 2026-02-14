@@ -2,7 +2,7 @@
   import { NodeViewWrapper, nodeViewProps } from '@tiptap/vue-3'
   import { getEntityTypeConfig } from '~/config/entityRegistry'
   import type { EntityType } from '~/types/entity'
-  import type { CalendarItem } from '~/types/calendarItem'
+  import type { Entity } from '~/types/entity'
   import { DIALOG_ENTITY_CONTEXT_KEY, type DialogEntityContext } from '~/composables/useDialogStack'
 
   const props = defineProps(nodeViewProps)
@@ -12,7 +12,7 @@
   const entityType = computed(() => props.node.attrs.entityType || 'note')
 
   // Look up the entity from the reactive store for hover preview
-  const { items } = useCalendarItems()
+  const { items } = useEntities()
   const entity = computed(() => items.value?.find((i) => i.id === entityId.value))
 
   // Inject dialog entity context for click-to-navigate
@@ -43,7 +43,7 @@
       dialogStack.setOriginTitle(dialogEntityContext.title, dialogEntityContext.id)
     }
 
-    dialogStack.push(entityId.value, entityType.value as EntityType, targetItem as CalendarItem)
+    dialogStack.push(entityId.value, entityType.value as EntityType, targetItem as Entity)
   }
 
   // Type config for icon / color

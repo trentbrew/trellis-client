@@ -1,11 +1,12 @@
 /**
  * Dashboard Data Composable
  *
- * Computes real data for dashboard widgets from useCalendarItems.
+ * Computes real data for dashboard widgets from useEntities.
  * Each widget's dataSource config is resolved into display-ready values.
  */
 
-import type { TaskItem, EventItem } from '~/types/calendarItem'
+import type { TaskItem, EventItem } from '~/types/entity'
+import { formatYmdLocal, todayYmdLocal } from '~/utils/date'
 
 interface GroupedCount {
   label: string
@@ -33,17 +34,17 @@ interface ListEntry {
 }
 
 export function useDashboardData() {
-  const { items: allItems } = useCalendarItems()
+  const { items: allItems } = useEntities()
 
   const now = new Date()
-  const todayStr = now.toISOString().split('T')[0]!
+  const todayStr = todayYmdLocal(now)
 
   const startOfDay = (d: Date) => new Date(d.getFullYear(), d.getMonth(), d.getDate())
 
   const daysFromNow = (n: number) => {
     const d = new Date(now)
     d.setDate(d.getDate() + n)
-    return d.toISOString().split('T')[0]!
+    return formatYmdLocal(d)
   }
 
   // ── Filtered item sets ───────────────────────────────────────────────────
@@ -188,7 +189,7 @@ export function useDashboardData() {
     for (let i = 6; i >= 0; i--) {
       const d = new Date(now)
       d.setDate(d.getDate() - i)
-      const dateStr = d.toISOString().split('T')[0]!
+      const dateStr = formatYmdLocal(d)
       const dayLabel = d.toLocaleDateString('en-US', { weekday: 'short' })
       days.push({
         label: dayLabel,

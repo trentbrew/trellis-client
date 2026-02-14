@@ -1,6 +1,6 @@
-import type { EntityReference, Reference } from '~/types/entity'
+import type { Entity, EntityReference, Reference } from '~/types/entity'
 import { isEntityReference } from '~/types/entity'
-import type { CalendarItem } from '~/types/calendarItem'
+import { getCurrentInstance } from 'vue'
 import { DIALOG_ENTITY_CONTEXT_KEY } from '~/composables/useDialogStack'
 
 /**
@@ -17,16 +17,18 @@ export function useEntityReferences(
   /** Reactive object for the entity currently being edited */
   editableItem: { id: string; type: string; title: string; references: Reference[] },
 ) {
-  const { items: allItems } = useCalendarItems()
+  const { items: allItems } = useEntities()
   const { mutate } = useTrellisGraph()
 
   // Provide entity context so nested TipTap NodeViews (e.g. MentionChip)
   // can navigate to referenced entities via the dialog stack.
-  provide(DIALOG_ENTITY_CONTEXT_KEY, reactive({
-    id: computed(() => editableItem.id),
-    title: computed(() => editableItem.title),
-    type: computed(() => editableItem.type),
-  }))
+  if (getCurrentInstance()) {
+    provide(DIALOG_ENTITY_CONTEXT_KEY, reactive({
+      id: computed(() => editableItem.id),
+      title: computed(() => editableItem.title),
+      type: computed(() => editableItem.type),
+    }))
+  }
 
   /**
    * Add an outgoing entity reference to the current item.
@@ -90,9 +92,9 @@ export function useEntityReferences(
    * Open a referenced entity in a stacked dialog.
    */
   function openEntityRef(ref: EntityReference) {
-    const targetItem = allItems.value.find((e: CalendarItem) => e.id === ref.entityId)
+    const targetItem = allItems.value.find((e: Entity) => e.id === ref.entityId)
     if (!targetItem) {
-      console.warn('[useEntityReferences] Entity not found for ref:', ref.entityId)
+      if (import.meta.dev) console.debug('[useEntityReferences] Entity not found for ref:', ref.entityId)
       return
     }
     const dialogStack = useDialogStack()

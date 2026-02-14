@@ -37,7 +37,7 @@
       group: 'Entity',
     }))
 
-    // CalendarItem-specific types not in ENTITY_TYPES
+    // Entity-specific types not in ENTITY_TYPES
     const calendarTypes: DataSourceOption[] = [
       { value: 'task', label: 'Task', icon: 'lucide:check-square', group: 'Entity' },
       { value: 'note', label: 'Note', icon: 'lucide:sticky-note', group: 'Entity' },

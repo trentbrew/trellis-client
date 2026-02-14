@@ -1,4 +1,6 @@
 import { extractMentionRefs } from '~/utils/extractMentionRefs'
+import type { Reference } from '~/types/entity'
+import { isEntityReference } from '~/types/entity'
 
 /**
  * Syncs inline @mentions in HTML content to TQL graph links.
@@ -10,9 +12,13 @@ import { extractMentionRefs } from '~/utils/extractMentionRefs'
  * Uses a local baseline so that opening an existing entity with mentions
  * does NOT re-create links that already exist — only actual edits trigger
  * mutations.
+ *
+ * Also pushes new mention refs optimistically to `editableItem.references`
+ * (150ms debounce) so they appear in the References section near-instantly,
+ * before the TQL roundtrip completes.
  */
 export function useMentionLinks(
-  editableItem: { id: string; content?: string },
+  editableItem: { id: string; content?: string; references?: Reference[] },
 ) {
   const { mutate } = useTrellisGraph()
 
@@ -31,7 +37,28 @@ export function useMentionLinks(
     prevMentionIds.value = extractCurrentIds()
   }
 
-  // Debounced watcher — fires ~1s after the user stops typing
+  // ── Optimistic local push (150ms debounce) ──────────────────────────
+  // Show new mention refs in the References section near-instantly,
+  // before the TQL roundtrip completes.
+  watchDebounced(
+    () => editableItem.content,
+    () => {
+      if (!editableItem.id || !editableItem.references) return
+      const currentRefs = extractMentionRefs(editableItem.content || '')
+      for (const ref of currentRefs) {
+        const alreadyExists = editableItem.references.some(
+          (r) => isEntityReference(r) && r.entityId === ref.entityId,
+        )
+        if (!alreadyExists) {
+          editableItem.references.push(ref)
+        }
+      }
+    },
+    { debounce: 150 },
+  )
+
+  // ── TQL link persistence (1s debounce) ──────────────────────────────
+  // Fires ~1s after the user stops typing to create/remove graph links.
   watchDebounced(
     () => editableItem.content,
     () => {

@@ -17,6 +17,7 @@
   import ColumnHeader from './DataTable/ColumnHeader.vue'
   import EditableCell from './DataTable/EditableCell.vue'
   import * as XLSX from 'xlsx'
+  import { todayYmdLocal } from '~/utils/date'
 
   const props = defineProps<{
     collectionId: string
@@ -361,7 +362,7 @@
       case 'text': return ''
       case 'number': return 0
       case 'checkbox': return false
-      case 'date': return new Date().toISOString().split('T')[0]
+      case 'date': return todayYmdLocal(new Date())
       case 'select': return ''
       case 'multiselect': return []
       case 'url': return ''
