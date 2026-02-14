@@ -1,11 +1,11 @@
 <script setup lang="ts">
-  import CalendarItemDialog from '~/components/dialogs/CalendarItemDialog.vue'
+  import EntityDialog from '~/components/dialogs/EntityDialog.vue'
   import DashboardPulse from '~/components/dashboard/DashboardPulse.vue'
   import DashboardTimeline from '~/components/dashboard/DashboardTimeline.vue'
   import DashboardInsightCard from '~/components/dashboard/DashboardInsightCard.vue'
   import DashboardNextUp from '~/components/dashboard/DashboardNextUp.vue'
-  import type { CalendarItem, CalendarItemType, TaskItem } from '~/types/calendarItem'
-  import { createDefaultItem, CALENDAR_ITEM_TYPES } from '~/types/calendarItem'
+  import type { Entity, EntityType, TaskItem } from '~/types/entity'
+  import { createDefaultItem, ENTITY_TYPE_OPTIONS } from '~/types/entity'
   import type { DashboardInsight, TimelineDay } from '~/composables/useDashboardInsights'
 
   definePageMeta({ layout: 'default' })
@@ -32,14 +32,14 @@
     allItems,
   } = useDashboardInsights()
 
-  const { create, update, remove } = useCalendarItems()
+  const { create, update, remove } = useEntities()
 
   // ---------------------------------------------------------------------------
   // Quick Capture
   // ---------------------------------------------------------------------------
 
   const quickTitle = ref('')
-  const quickType = ref<CalendarItemType>('task')
+  const quickType = ref<EntityType>('task')
 
   async function quickCapture() {
     const title = quickTitle.value.trim()
@@ -49,27 +49,33 @@
     quickTitle.value = ''
   }
 
-  function captureTypeIcon(type: CalendarItemType) {
-    return CALENDAR_ITEM_TYPES.find((t) => t.value === type)?.icon ?? 'lucide:circle'
+  function captureTypeIcon(type: EntityType) {
+    return ENTITY_TYPE_OPTIONS.find((t) => t.value === type)?.icon ?? 'lucide:circle'
   }
 
-  function captureTypeLabel(type: CalendarItemType) {
-    return CALENDAR_ITEM_TYPES.find((t) => t.value === type)?.label ?? type
+  function captureTypeLabel(type: EntityType) {
+    return ENTITY_TYPE_OPTIONS.find((t) => t.value === type)?.label ?? type
   }
 
   // ---------------------------------------------------------------------------
   // Dialog
   // ---------------------------------------------------------------------------
 
-  const createOpen = ref(false)
   const viewOpen = ref(false)
-  const viewingItem = ref<CalendarItem | null>(null)
+  const _viewingItemId = ref<string | null>(null)
+  const _pendingNewItem = ref<Entity | null>(null)
+  const viewingItem = computed<Entity | null>(() => {
+    if (!_viewingItemId.value) return null
+    return allItems.value.find((i) => i.id === _viewingItemId.value)
+      ?? _pendingNewItem.value
+      ?? null
+  })
   const taskOwners = [{ id: 'you', name: 'You' }]
 
   function openDetail(itemId: string) {
     const item = allItems.value.find((i) => i.id === itemId)
     if (item) {
-      viewingItem.value = item
+      _viewingItemId.value = item.id
       viewOpen.value = true
     }
   }
@@ -81,17 +87,20 @@
     void update({ ...item, taskStatus: newStatus })
   }
 
-  async function handleCreate(item: CalendarItem) {
-    await create(item)
-    createOpen.value = false
+  async function handleNewItem() {
+    const defaults = createDefaultItem('task')
+    const newId = await create({ ...defaults, type: 'task', title: '' } as Entity)
+    _pendingNewItem.value = { ...defaults, id: newId } as Entity
+    _viewingItemId.value = newId
+    viewOpen.value = true
   }
 
-  async function handleUpdate(item: CalendarItem) {
+  async function handleUpdate(item: Entity) {
     await update(item)
     viewOpen.value = false
   }
 
-  async function handleDelete(item: CalendarItem) {
+  async function handleDelete(item: Entity) {
     await remove(item.id)
     viewOpen.value = false
   }
@@ -192,7 +201,7 @@
     </div>
 
     <!-- View/Edit Dialog -->
-    <CalendarItemDialog
+    <EntityDialog
       v-model:open="viewOpen"
       mode="edit"
       :item="viewingItem"
@@ -201,14 +210,5 @@
       @delete="handleDelete"
       @close="viewOpen = false" />
 
-    <!-- Create Dialog -->
-    <CalendarItemDialog
-      v-model:open="createOpen"
-      mode="create"
-      item-type="task"
-      :item="null"
-      :owners="taskOwners"
-      @save="handleCreate"
-      @close="createOpen = false" />
   </Page>
 </template>

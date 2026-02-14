@@ -1,9 +1,10 @@
 <script setup lang="ts">
-  import type { CalendarItem } from '~/types/calendarItem'
-  import { CALENDAR_ITEM_TYPES } from '~/types/calendarItem'
+  import type { Entity } from '~/types/entity'
+  import { ENTITY_TYPE_OPTIONS } from '~/types/entity'
+  import { formatYmdLocal, todayYmdLocal } from '~/utils/date'
 
   const props = defineProps<{
-    items: CalendarItem[]
+    items: Entity[]
     label: string
     formatTime: (_t?: string) => string
   }>()
@@ -23,21 +24,21 @@
   const hiddenCount = computed(() => Math.max(0, props.items.length - 5))
 
   // Group items: today vs tomorrow
-  const todayStr = new Date().toISOString().split('T')[0]!
+  const todayStr = todayYmdLocal(new Date())
   const tomorrowStr = (() => {
     const d = new Date()
     d.setDate(d.getDate() + 1)
-    return d.toISOString().split('T')[0]!
+    return formatYmdLocal(d)
   })()
 
-  function itemGroup(item: CalendarItem): 'today' | 'tomorrow' | 'later' {
+  function itemGroup(item: Entity): 'today' | 'tomorrow' | 'later' {
     if (item.startDate === todayStr) return 'today'
     if (item.startDate === tomorrowStr) return 'tomorrow'
     return 'later'
   }
 
   function typeIcon(type: string) {
-    return CALENDAR_ITEM_TYPES.find((t) => t.value === type)?.icon || 'lucide:circle'
+    return ENTITY_TYPE_OPTIONS.find((t) => t.value === type)?.icon || 'lucide:circle'
   }
 
   const priorityDots: Record<string, string> = {
@@ -47,18 +48,18 @@
     low: 'bg-blue-500',
   }
 
-  function timeDisplay(item: CalendarItem): string {
+  function timeDisplay(item: Entity): string {
     if ('startTime' in item && item.startTime) {
       return props.formatTime(item.startTime)
     }
     return ''
   }
 
-  function isTask(item: CalendarItem): boolean {
+  function isTask(item: Entity): boolean {
     return item.type === 'task'
   }
 
-  function isCompleted(item: CalendarItem): boolean {
+  function isCompleted(item: Entity): boolean {
     return isTask(item) && (item as any).taskStatus === 'completed'
   }
 </script>

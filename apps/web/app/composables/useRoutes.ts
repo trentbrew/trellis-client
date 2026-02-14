@@ -8,7 +8,7 @@ import {
   routeConfig,
 } from '~/config/routes'
 import type { BadgeConfig, RouteConfig } from '~/config/routes'
-import { PLATFORM_TYPES, ENTITY_TYPES } from '~/lib/systemTypes'
+import { PLATFORM_TYPES } from '~/lib/systemTypes'
 import { filterRoutesByPermissions } from '~/lib/permissions'
 import { useOntologyRegistry } from '~/composables/useOntologyRegistry'
 import { useTrellisConfig } from '~/composables/useTrellisConfig'
@@ -114,18 +114,23 @@ export const useRoutes = () => {
     }))
   })
 
+  const platformTypeIds = new Set(PLATFORM_TYPES.map((t) => t.id.toLowerCase()))
+
   const entityTypesChildren = computed<RouteConfig[]>(() => {
-    return ENTITY_TYPES.map((t) => ({
-      path: `/database/${t.id.toLowerCase()}`,
-      label: t.name,
-      icon: t.icon || 'lucide:network',
-      tint: 'text-violet-300',
-      order: -100,
-      meta: {
-        title: t.name,
-        subtitle: 'Entity',
-      },
-    }))
+    return serverOntologyTypes.value
+      .filter((t) => t.tier === 'system' && !isDynamicType(t.type) && !platformTypeIds.has(t.type.toLowerCase()))
+      .sort((a, b) => a.label.localeCompare(b.label))
+      .map((t) => ({
+        path: `/database/${t.type}`,
+        label: t.label,
+        icon: t.icon || 'lucide:box',
+        tint: `text-${t.color}-300`,
+        order: -100,
+        meta: {
+          title: t.label,
+          subtitle: t.class,
+        },
+      }))
   })
 
   const platformTypesChildren = computed<RouteConfig[]>(() => {
@@ -162,7 +167,7 @@ export const useRoutes = () => {
    * Dynamic children from ontology-derived entity types.
    * These are types created at runtime via CLI or MCP that auto-appear in the sidebar.
    */
-  const { filteredDynamicTypes: ontologyTypes } = useOntologyRegistry()
+  const { serverTypes: serverOntologyTypes, filteredDynamicTypes: ontologyTypes, isDynamicType } = useOntologyRegistry()
 
   // ── App-scoped sidebar filtering ──────────────────────────────────────
   // Maps sidebar route paths to the entity type slugs they depend on.
@@ -176,7 +181,6 @@ export const useRoutes = () => {
     '/workspace/projects': ['project'],
     '/workspace/people': ['person', 'contact', 'organization', 'vendor'],
     '/workspace/documents': ['note', 'file', 'page', 'template', 'slide_deck'],
-    '/workspace/files': ['file'],
     '/workspace/bookmarks': ['bookmark'],
   }
 

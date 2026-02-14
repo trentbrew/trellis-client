@@ -1,6 +1,6 @@
 <script lang="ts" setup>
-  import type { TripStatus, TransportMode } from '~/types/calendarItem'
-  import { TRIP_STATUS_OPTIONS, TRANSPORT_OPTIONS } from '~/types/calendarItem'
+  import type { TripStatus, TransportMode } from '~/types/entity'
+  import { TRIP_STATUS_OPTIONS, TRANSPORT_OPTIONS } from '~/types/entity'
 
   const props = defineProps<{
     modelValue: any

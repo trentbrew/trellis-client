@@ -232,6 +232,44 @@ const milestoneOntology: SchemaDefinition = {
   ],
 }
 
+const sprintOntology: SchemaDefinition = {
+  '@id': 'trellis:schema/sprint', '@type': 'trellis:Schema', version: '1.0.0', tier: 'system',
+  entityClass: 'temporal', label: 'Sprint', labelPlural: 'Sprints',
+  icon: 'lucide:zap', color: 'violet',
+  projections: ['list', 'kanban', 'timeline'],
+  defaultProjection: 'list',
+  dialogShell: 'temporal',
+  panels: { properties: 'SprintProperties', content: 'SprintContent', footerActions: ['complete', 'cancel', 'delete'] },
+  propertyFieldIds: ['type', 'startDate', 'endDate', 'allDay', 'category', 'owner', 'involved', 'tags'],
+  defaultSortField: 'startDate',
+  searchFields: ['title', 'description', 'sprintGoal'],
+  fields: [
+    ...baseFields(), ...temporalFields(),
+    f('sprintGoal', 'rich_text'),
+    f('sprintStatus', 'select', { selectOptions: ['planning', 'active', 'completed', 'cancelled'], icon: 'lucide:circle-dot', group: 'triage', display: 'popover', editable: true }),
+    f('velocity', 'number'),
+  ],
+}
+
+const budgetOntology: SchemaDefinition = {
+  '@id': 'trellis:schema/budget', '@type': 'trellis:Schema', version: '1.0.0', tier: 'system',
+  entityClass: 'temporal', label: 'Budget', labelPlural: 'Budgets',
+  icon: 'lucide:wallet', color: 'emerald',
+  projections: ['list', 'table'],
+  defaultProjection: 'list',
+  dialogShell: 'temporal',
+  panels: { properties: 'BudgetProperties', content: 'BudgetContent', footerActions: ['close', 'archive', 'delete'] },
+  propertyFieldIds: ['type', 'startDate', 'endDate', 'category', 'owner', 'tags'],
+  defaultSortField: 'startDate',
+  searchFields: ['title', 'description'],
+  fields: [
+    ...baseFields(), ...temporalFields(),
+    f('amount', 'number'),
+    f('currency', 'rich_text'),
+    f('budgetStatus', 'select', { selectOptions: ['draft', 'active', 'closed', 'over-budget'], icon: 'lucide:circle-dot', group: 'triage', display: 'popover', editable: true }),
+  ],
+}
+
 // ============================================================================
 // Per-Type Ontologies — Document
 // ============================================================================
@@ -508,7 +546,7 @@ const calendarItemOntology: SchemaDefinition = {
   version: '1.0.0',
   tier: 'system',
   fields: [
-    f('type', 'select', { required: true, selectOptions: ['task', 'event', 'trip', 'payment', 'note', 'appointment', 'reminder', 'deadline', 'milestone', 'bookmark', 'file', 'page', 'template', 'slide_deck', 'person', 'contact', 'organization', 'vendor', 'project', 'folder', 'collection', 'goal'] }),
+    f('type', 'select', { required: true, selectOptions: ['task', 'event', 'trip', 'payment', 'note', 'appointment', 'reminder', 'deadline', 'milestone', 'sprint', 'budget', 'bookmark', 'file', 'page', 'template', 'slide_deck', 'person', 'contact', 'organization', 'vendor', 'project', 'folder', 'collection', 'goal'] }),
     f('title', 'title', { required: true }),
     f('description', 'rich_text'),
     f('startDate', 'date'),
@@ -584,6 +622,8 @@ const entityTypeOntologies: Record<string, SchemaDefinition> = {
   'trellis:schema/reminder': reminderOntology,
   'trellis:schema/deadline': deadlineOntology,
   'trellis:schema/milestone': milestoneOntology,
+  'trellis:schema/sprint': sprintOntology,
+  'trellis:schema/budget': budgetOntology,
   'trellis:schema/note': noteOntology,
   'trellis:schema/file': fileOntology,
   'trellis:schema/page': pageOntology,
@@ -685,4 +725,6 @@ export {
   folderOntology,
   collectionOntology,
   goalOntology,
+  sprintOntology,
+  budgetOntology,
 }

@@ -7,7 +7,8 @@
  * self-surfaces problems when they appear.
  */
 
-import type { CalendarItem, TaskItem, EventItem, PaymentItem } from '~/types/calendarItem'
+import type { Entity, TaskItem, EventItem, PaymentItem } from '~/types/entity'
+import { formatYmdLocal, todayYmdLocal } from '~/utils/date'
 
 // ── Public Types ────────────────────────────────────────────────────────────
 
@@ -30,7 +31,7 @@ export interface DashboardInsight {
   severity: InsightSeverity
   title: string
   description: string
-  items: CalendarItem[]
+  items: Entity[]
   sparkline: number[]
   trend: TrendDirection
 }
@@ -46,12 +47,12 @@ export interface TimelineDay {
   payments: number
   total: number
   density: number
-  items: CalendarItem[]
+  items: Entity[]
 }
 
 // ── Helpers ─────────────────────────────────────────────────────────────────
 
-const fmtDate = (d: Date) => d.toISOString().split('T')[0]!
+const fmtDate = (d: Date) => formatYmdLocal(d)
 
 function startOfDay(d: Date) {
   return new Date(d.getFullYear(), d.getMonth(), d.getDate())
@@ -84,10 +85,10 @@ function computeTrend(values: number[]): TrendDirection {
 // ── Composable ──────────────────────────────────────────────────────────────
 
 export function useDashboardInsights() {
-  const { items: allItems } = useCalendarItems()
+  const { items: allItems } = useEntities()
 
   const now = new Date()
-  const todayStr = fmtDate(now)
+  const todayStr = todayYmdLocal(now)
   const currentHour = now.getHours()
 
   // ── Filtered sets ───────────────────────────────────────────────────────
@@ -327,8 +328,8 @@ export function useDashboardInsights() {
     return 'This evening'
   })
 
-  const nextUp = computed<CalendarItem[]>(() => {
-    const result: CalendarItem[] = []
+  const nextUp = computed<Entity[]>(() => {
+    const result: Entity[] = []
 
     // Today's remaining events (that haven't passed yet)
     const todayEvents = events.value

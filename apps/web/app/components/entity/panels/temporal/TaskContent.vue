@@ -1,5 +1,5 @@
 <script lang="ts" setup>
-  import type { ChecklistItem } from '~/types/calendarItem'
+  import type { ChecklistItem } from '~/types/entity'
   import draggable from 'vuedraggable'
 
   const props = defineProps<{

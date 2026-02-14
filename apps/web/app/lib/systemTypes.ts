@@ -49,8 +49,14 @@ export const PLATFORM_TYPES: SystemType[] = [
 ]
 
 /**
- * Entity types — schema.org-derived types that hold user data.
- * These CAN be used as page data sources.
+ * Entity types — abstract schema.org-derived parent classes.
+ *
+ * @deprecated These 6 abstract types (Thing, Person, Organization, Event, Place, Document)
+ * are NOT the concrete entity types used in the app. For the full list of ~25 concrete
+ * entity types (task, note, person, project, etc.), use `useOntologyRegistry().serverTypes`
+ * which sources them from the TQL server ontologies with full metadata (fields, class, icon, etc.).
+ *
+ * This array is kept for backward compatibility only.
  */
 export const ENTITY_TYPES: SystemType[] = [
   {

@@ -1,7 +1,7 @@
 <script lang="ts" setup>
-  import CalendarItemDialogShell from '~/components/dialogs/CalendarItemDialogShell.vue'
+  import EntityDialogShell from '~/components/dialogs/EntityDialogShell.vue'
   import SlideDeckProjection from '~/components/data/SlideDeckProjection.vue'
-  import type { SlideDeckItem, CalendarItem } from '~/types/calendarItem'
+  import type { SlideDeckItem, Entity } from '~/types/entity'
 
   const props = withDefaults(
     defineProps<{
@@ -20,8 +20,8 @@
 
   const emit = defineEmits<{
     'update:open': [value: boolean]
-    save: [item: CalendarItem]
-    delete: [item: CalendarItem]
+    save: [item: Entity]
+    delete: [item: Entity]
     close: []
     navigatePrev: []
     navigateNext: []
@@ -165,7 +165,7 @@
 </script>
 
 <template>
-  <CalendarItemDialogShell
+  <EntityDialogShell
     :open="open"
     :title="localTitle"
     :description="localDescription"
@@ -316,7 +316,7 @@
         </UiButton>
       </div>
     </template>
-  </CalendarItemDialogShell>
+  </EntityDialogShell>
 </template>
 
 <style scoped>

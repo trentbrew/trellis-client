@@ -1,9 +1,10 @@
 <script setup lang="ts">
-  import CalendarItemDialog from '~/components/dialogs/CalendarItemDialog.vue'
-  import type { CalendarItem, TaskItem } from '~/types/calendarItem'
-  import { createDefaultItem } from '~/types/calendarItem'
+  import EntityDialog from '~/components/dialogs/EntityDialog.vue'
+  import type { Entity, TaskItem } from '~/types/entity'
+  import { createDefaultItem } from '~/types/entity'
   import { useBrowse, type BrowseViewMode } from '~/composables/useBrowse'
   import { useAdvancedFilters } from '~/composables/useAdvancedFilters'
+  import { formatYmdLocal } from '~/utils/date'
   import {
     GanttProvider,
     GanttTimeline,
@@ -27,7 +28,7 @@
   // Live data from instant-local
   // ---------------------------------------------------------------------------
 
-  const { items: allItems, create: createItem, update: updateItem, remove: _removeItem } = useCalendarItems()
+  const { items: allItems, create: createItem, update: updateItem, remove: _removeItem } = useEntities()
 
   const taskItems = computed(() => allItems.value.filter((i): i is TaskItem => i.type === 'task'))
 
@@ -160,23 +161,38 @@
   // Dialog
   // ---------------------------------------------------------------------------
 
-  const createTaskOpen = ref(false)
   const viewTaskOpen = ref(false)
-  const viewingTask = ref<CalendarItem | null>(null)
+  const _viewingTaskId = ref<string | null>(null)
+  const _pendingCreateItem = ref<Entity | null>(null)
+
+  // Resolve viewingTask from the live store by ID so it stays in sync
+  // when items are re-hydrated (e.g. after SSE link mutations).
+  // Falls back to _pendingCreateItem for Gantt create-mode items.
+  const viewingTask = computed<Entity | null>(() => {
+    if (_pendingCreateItem.value) return _pendingCreateItem.value
+    if (!_viewingTaskId.value) return null
+    return allItems.value.find((i) => i.id === _viewingTaskId.value) ?? null
+  })
 
   const taskOwners = [{ id: 'you', name: 'You' }]
 
-  function openTaskCreate() {
-    createTaskOpen.value = true
+  async function handleNewTask(defaultStartDate?: string) {
+    const defaults = createDefaultItem('task')
+    if (defaultStartDate) (defaults as any).startDate = defaultStartDate
+    const newId = await createItem({ ...defaults, type: 'task', title: '' } as TaskItem)
+    _pendingCreateItem.value = { ...defaults, id: newId } as Entity
+    _viewingTaskId.value = newId
+    viewTaskOpen.value = true
   }
 
   function openTaskDetail(task: any) {
+    _pendingCreateItem.value = null
     const full = taskItems.value.find((t) => t.id === task.id)
     if (full) {
-      viewingTask.value = full
+      _viewingTaskId.value = full.id
     } else {
       const item = createDefaultItem('task')
-      viewingTask.value = { ...item, id: task.id, title: task.title } as CalendarItem
+      _pendingCreateItem.value = { ...item, id: task.id, title: task.title } as Entity
     }
     viewTaskOpen.value = true
   }
@@ -203,12 +219,8 @@
     }
   }
 
-  async function handleCreateTask(item: CalendarItem) {
-    await createItem({ ...item, type: 'task' } as TaskItem)
-    createTaskOpen.value = false
-  }
 
-  async function handleUpdateTask(item: CalendarItem) {
+  async function handleUpdateTask(item: Entity) {
     await updateItem(item)
     viewTaskOpen.value = false
   }
@@ -294,29 +306,20 @@
     const task = taskItems.value.find((t) => t.id === payload.feature.id)
     if (!task) return
 
-    const fmt = (d: Date) => d.toISOString().split('T')[0]!
     await updateItem({
       ...task,
-      startDate: fmt(payload.startAt),
-      endDate: payload.endAt ? fmt(payload.endAt) : undefined,
+      startDate: formatYmdLocal(payload.startAt),
+      endDate: payload.endAt ? formatYmdLocal(payload.endAt) : undefined,
     })
   }
 
   const handleGanttAddItem = (date: Date) => {
-    const item = createDefaultItem('task')
-    const fmt = (d: Date) => d.toISOString().split('T')[0]!
-    viewingTask.value = {
-      ...item,
-      startDate: fmt(date),
-      owner: 'you',
-    }
-    createTaskOpen.value = true
+    handleNewTask(formatYmdLocal(date))
   }
 
   function openGanttTaskDetail(id: string) {
-    const raw = taskItems.value.find((t) => t.id === id)
-    if (!raw) return
-    viewingTask.value = raw
+    _pendingCreateItem.value = null
+    _viewingTaskId.value = id
     viewTaskOpen.value = true
   }
 </script>
@@ -326,6 +329,7 @@
     variant="browse"
     title="Tasks"
     subtitle="Personal"
+    data-source="task"
     description="Tasks assigned to you across all facilities."
     icon="lucide:check-square"
     icon-class="text-emerald-300"
@@ -336,33 +340,18 @@
     :view-mode-options="[
       { mode: 'kanban', label: 'Kanban', icon: 'lucide:layout-grid' },
       { mode: 'list', label: 'List', icon: 'lucide:list' },
+      { mode: 'table', label: 'Table', icon: 'lucide:table' },
       { mode: 'gantt', label: 'Gantt', icon: 'lucide:gantt-chart' },
     ]"
     :primary-action="{
       label: 'New Task',
       icon: 'lucide:plus',
       type: 'click',
-      onClick: openTaskCreate,
+      onClick: handleNewTask,
     }">
 
-    <!-- View Switcher -->
-    <template #viewSwitcher>
-      <div class="flex items-center gap-1">
-        <button
-          v-for="mode in (['kanban', 'list', 'gantt'] as BrowseViewMode[])"
-          :key="mode"
-          type="button"
-          class="flex h-8 items-center gap-2 rounded-md px-3 text-sm font-medium transition-colors"
-          :class="viewMode === mode ? 'bg-foreground/10 text-foreground' : 'text-muted-foreground hover:bg-foreground/5 hover:text-foreground'"
-          @click="browseState.setViewMode(mode)">
-          <Icon :name="mode === 'kanban' ? 'lucide:layout-grid' : mode === 'gantt' ? 'lucide:gantt-chart' : 'lucide:list'" class="h-4 w-4" />
-          {{ mode.charAt(0).toUpperCase() + mode.slice(1) }}
-        </button>
-      </div>
-    </template>
-
     <template #toolbarActions>
-      <UiButton @click="openTaskCreate">
+      <UiButton @click="handleNewTask()">
         <Icon name="lucide:plus" class="mr-2 h-4 w-4" />
         New Task
       </UiButton>
@@ -444,6 +433,53 @@
       </GanttProvider>
     </div>
 
+    <!-- Table View -->
+    <div v-else-if="viewMode === 'table'" class="overflow-x-auto">
+      <table class="w-full text-sm">
+        <thead>
+          <tr class="border-b border-border">
+            <th class="text-left py-2 px-3 text-xs font-medium text-muted-foreground">Title</th>
+            <th class="text-left py-2 px-3 text-xs font-medium text-muted-foreground">Status</th>
+            <th class="text-left py-2 px-3 text-xs font-medium text-muted-foreground">Priority</th>
+            <th class="text-left py-2 px-3 text-xs font-medium text-muted-foreground">Assignee</th>
+            <th class="text-left py-2 px-3 text-xs font-medium text-muted-foreground">Due</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr
+            v-for="task in finalFilteredItems"
+            :key="task.id"
+            class="border-b border-border/50 hover:bg-muted/30 cursor-pointer transition"
+            @click="openTaskDetail(task)">
+            <td class="py-2 px-3">
+              <div class="flex items-center gap-2">
+                <Icon name="lucide:check-square" class="h-4 w-4 shrink-0 text-muted-foreground" />
+                <span class="font-medium truncate">{{ task.title || 'Untitled' }}</span>
+              </div>
+            </td>
+            <td class="py-2 px-3">
+              <span :class="['rounded-full px-2 py-0.5 text-xs font-semibold', statusStyles[task.status]]">
+                {{ task.status }}
+              </span>
+            </td>
+            <td class="py-2 px-3">
+              <div class="flex items-center gap-1">
+                <Icon
+                  :name="priorityIcons[task.priority] || 'lucide:circle'"
+                  :class="['h-3 w-3', priorityColors[task.priority]]" />
+                <span class="text-muted-foreground text-xs">{{ task.priority }}</span>
+              </div>
+            </td>
+            <td class="py-2 px-3 text-muted-foreground">{{ task.assignee }}</td>
+            <td class="py-2 px-3 text-muted-foreground">{{ task.dueDate || '—' }}</td>
+          </tr>
+        </tbody>
+      </table>
+      <div v-if="!finalFilteredItems.length" class="flex items-center justify-center h-40 text-sm text-muted-foreground">
+        No tasks found
+      </div>
+    </div>
+
     <!-- Kanban View -->
     <div v-else-if="viewMode === 'kanban'" class="flex gap-4 overflow-x-auto pb-4">
       <div
@@ -490,18 +526,8 @@
       Showing {{ finalFilteredItems.length }} {{ finalFilteredItems.length === 1 ? 'task' : 'tasks' }}
     </div>
 
-    <!-- Create Task Dialog -->
-    <CalendarItemDialog
-      v-model:open="createTaskOpen"
-      mode="create"
-      item-type="task"
-      :item="null"
-      :owners="taskOwners"
-      @save="handleCreateTask"
-      @close="createTaskOpen = false" />
-
     <!-- View/Edit Task Dialog -->
-    <CalendarItemDialog
+    <EntityDialog
       v-model:open="viewTaskOpen"
       mode="edit"
       :item="viewingTask"

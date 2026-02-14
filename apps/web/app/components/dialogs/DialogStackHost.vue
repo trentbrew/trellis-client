@@ -1,18 +1,19 @@
 <script lang="ts" setup>
   import type { EntityType } from '~/types/entity'
-  import type { CalendarItem } from '~/types/calendarItem'
+  import type { Entity } from '~/types/entity'
   import type { Component } from 'vue'
-  import CalendarItemDialog from '~/components/dialogs/CalendarItemDialog.vue'
+  import EntityDialog from '~/components/dialogs/EntityDialog.vue'
   import PersonDialog from '~/components/dialogs/PersonDialog.vue'
   import OrganizationDialog from '~/components/dialogs/OrganizationDialog.vue'
   import ProjectDialog from '~/components/dialogs/ProjectDialog.vue'
+  import FileDialog from '~/components/dialogs/FileDialog.vue'
 
   const dialogStack = useDialogStack()
-  const { update: updateItem, remove: removeItem } = useCalendarItems()
+  const { update: updateItem, remove: removeItem } = useEntities()
 
   /**
    * Resolve entity type → dialog component.
-   * Falls back to CalendarItemDialog for unknown types.
+   * Falls back to EntityDialog for unknown types.
    */
   function resolveDialogComponent(entityType: EntityType): Component {
     switch (entityType) {
@@ -27,18 +28,20 @@
       case 'collection':
       case 'goal':
         return ProjectDialog
+      case 'file':
+        return FileDialog
       default:
-        return CalendarItemDialog
+        return EntityDialog
     }
   }
 
   /** Handle save from a stacked dialog */
-  async function handleSave(item: CalendarItem) {
+  async function handleSave(item: Entity) {
     await updateItem(item)
   }
 
   /** Handle delete from a stacked dialog */
-  async function handleDelete(item: CalendarItem) {
+  async function handleDelete(item: Entity) {
     await removeItem(item.id)
     dialogStack.pop()
   }

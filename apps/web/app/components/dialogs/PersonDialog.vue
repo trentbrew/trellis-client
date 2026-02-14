@@ -1,8 +1,7 @@
 <script lang="ts" setup>
-  import type { CalendarItem } from '~/types/calendarItem'
-  import { CATEGORY_OPTIONS, createDefaultItem } from '~/types/calendarItem'
+  import type { Entity, PropertyFieldId } from '~/types/entity'
+  import { CATEGORY_OPTIONS, createDefaultItem } from '~/types/entity'
   import { typeHasField } from '~/config/entityRegistry'
-  import type { PropertyFieldId } from '~/types/entity'
   import { useComments } from '~/composables/useComments'
 
   const { user: currentUser } = useInstantAuth()
@@ -11,7 +10,7 @@
     defineProps<{
       open: boolean
       mode?: 'view' | 'create' | 'edit'
-      item?: CalendarItem | null
+      item?: Entity | null
       canNavigatePrev?: boolean
       canNavigateNext?: boolean
       owners?: { id: string; name: string }[]
@@ -28,8 +27,8 @@
   const emit = defineEmits<{
     'update:open': [value: boolean]
     close: []
-    save: [item: CalendarItem]
-    delete: [item: CalendarItem]
+    save: [item: Entity]
+    delete: [item: Entity]
     edit: []
     navigatePrev: []
     navigateNext: []
@@ -78,7 +77,6 @@
   const ownerOpen = ref(false)
   const ownerSearch = ref('')
   const commentsOpen = ref(false)
-  const fileUploadOpen = ref(false)
   const entityPickerOpen = ref(false)
   const entityPickerFilterType = ref<string | undefined>(undefined)
   const owners = computed(() => props.owners ?? [])
@@ -176,17 +174,17 @@
   }
 
   const handleSave = () => {
-    emit('save', { ...editableItem } as CalendarItem)
+    emit('save', { ...editableItem } as Entity)
     closeDialog()
   }
 
   const handleDelete = () => {
-    emit('delete', { ...editableItem } as CalendarItem)
+    emit('delete', { ...editableItem } as Entity)
     closeDialog()
   }
 
   // Auto-save in edit mode
-  const { status: saveStatus } = useAutoSave(editableItem, {
+  const { status: saveStatus, formatLastSaved } = useAutoSave(editableItem, {
     enabled: isEditMode,
   })
 
@@ -482,7 +480,6 @@
           :readonly="isViewMode"
           @open-entity="handleOpenEntityRef"
           @remove-ref="handleRemoveRef"
-          @add-file="fileUploadOpen = true"
           @add-entity="() => { entityPickerFilterType = undefined; entityPickerOpen = true }"
           @add-entity-of-type="(type: string) => { entityPickerFilterType = type; entityPickerOpen = true }" />
 
@@ -557,11 +554,21 @@
         </UiButton>
       </template>
       <template v-else-if="isEditMode">
-        <span class="text-[11px] text-muted-foreground flex items-center gap-1 mr-2 transition-opacity" :class="saveStatus === 'idle' ? 'opacity-0' : 'opacity-100'">
-          <Icon v-if="saveStatus === 'saving'" name="lucide:loader-2" class="h-3 w-3 animate-spin" />
-          <Icon v-else-if="saveStatus === 'saved'" name="lucide:check" class="h-3 w-3 text-emerald-500" />
-          <Icon v-else-if="saveStatus === 'error'" name="lucide:alert-circle" class="h-3 w-3 text-destructive" />
-          {{ saveStatus === 'saving' ? 'Saving...' : saveStatus === 'saved' ? 'Saved' : saveStatus === 'error' ? 'Error' : '' }}
+        <span class="text-[11px] text-muted-foreground flex items-center gap-1 mr-2 h-4 overflow-hidden">
+          <Transition name="save-fade" mode="out-in">
+            <span v-if="saveStatus === 'saving'" key="saving" class="flex items-center gap-1">
+              <Icon name="lucide:loader-2" class="h-3 w-3 animate-spin" />
+              Saving…
+            </span>
+            <span v-else-if="saveStatus === 'error'" key="error" class="flex items-center gap-1 text-destructive">
+              <Icon name="lucide:alert-circle" class="h-3 w-3" />
+              Error
+            </span>
+            <span v-else-if="formatLastSaved" key="saved" class="flex items-center gap-1">
+              <Icon name="lucide:check" class="h-3 w-3 text-emerald-500" />
+              Last saved at {{ formatLastSaved }}
+            </span>
+          </Transition>
         </span>
         <UiDropdownMenu>
           <UiDropdownMenuTrigger as-child>
@@ -582,28 +589,6 @@
       </template>
     </template>
   </ActorDialogShell>
-
-  <!-- File Upload Modal -->
-  <UiDialog v-model:open="fileUploadOpen">
-    <UiDialogContent class="sm:max-w-md">
-      <UiDialogHeader>
-        <UiDialogTitle>Upload File</UiDialogTitle>
-        <UiDialogDescription>Drag and drop files here or click to browse.</UiDialogDescription>
-      </UiDialogHeader>
-      <div class="py-4">
-        <div class="border-2 border-dashed border-border rounded-lg p-8 text-center hover:border-primary hover:bg-primary/5 transition-colors cursor-pointer">
-          <Icon name="lucide:upload-cloud" class="h-10 w-10 mx-auto text-muted-foreground mb-3" />
-          <p class="text-sm font-medium">Drop files here</p>
-          <p class="text-xs text-muted-foreground mt-1">or click to browse</p>
-          <input type="file" class="hidden" multiple />
-        </div>
-      </div>
-      <UiDialogFooter>
-        <UiButton variant="outline" @click="fileUploadOpen = false">Cancel</UiButton>
-        <UiButton @click="fileUploadOpen = false">Upload</UiButton>
-      </UiDialogFooter>
-    </UiDialogContent>
-  </UiDialog>
 
   <!-- Entity Reference Picker -->
   <EntityReferencePicker v-model:open="entityPickerOpen" :exclude-id="editableItem.id" :filter-type="entityPickerFilterType" @select="handleAddEntityRef" />

@@ -12,6 +12,12 @@
     sidebarSurfaceMenu,
   } from '~/composables/useContextMenu'
 
+  const props = withDefaults(defineProps<{
+    headerAbove?: boolean
+  }>(), {
+    headerAbove: false,
+  })
+
   const BADGE_LABEL_THRESHOLD = 300
 
   const routes = useRoutes()
@@ -28,6 +34,9 @@
 
   // Page Builder dialog state
   const pageBuilderOpen = ref(false)
+
+  // Ontology create dialog state
+  const ontologyCreateOpen = ref(false)
 
   const sidebarSectionKey = computed(() => routes.currentSectionLabel.value)
 
@@ -253,13 +262,15 @@
     return { count: totalCount, variant }
   }
 
-  // Handle Add New button click - create collection immediately
-  const { collections, currentApp, createCollection, updateCollection, deleteCollection } = useInstantData()
+  // Handle Add New button click - opens ontology create dialog
+  const { collections, currentApp: _currentApp, createCollection: _createCollection, updateCollection, deleteCollection } = useInstantData()
   const { downloadCollectionAsTrellis } = useTrellisAdapter()
 
   const deleteDialogOpen = ref(false)
   const pendingDeleteCollectionId = ref<string | null>(null)
   const pendingDeleteCollectionTitle = ref<string>('')
+  const skipDeleteConfirm = ref(localStorage.getItem('trellis:skipDeleteCollectionConfirm') === 'true')
+  const dontAskAgain = ref(false)
 
   const handleRename = (collectionSlug: string) => {
     const collection = collections.value.find((c) => `/database/collections/${c.slug}` === collectionSlug)
@@ -285,6 +296,12 @@
 
     pendingDeleteCollectionId.value = collection.id
     pendingDeleteCollectionTitle.value = collection.title
+
+    if (skipDeleteConfirm.value) {
+      await confirmDelete()
+      return
+    }
+
     deleteDialogOpen.value = true
   }
 
@@ -312,6 +329,11 @@
 
   watch(deleteDialogOpen, (open) => {
     if (open) return
+    if (dontAskAgain.value) {
+      skipDeleteConfirm.value = true
+      localStorage.setItem('trellis:skipDeleteCollectionConfirm', 'true')
+    }
+    dontAskAgain.value = false
     pendingDeleteCollectionId.value = null
     pendingDeleteCollectionTitle.value = ''
   })
@@ -333,24 +355,7 @@
 
     const section = routes.currentSidebarSection.value
     if (section?.path === '/database') {
-      if (!currentApp.value) return
-
-      // Create new collection with defaults
-      const slug = `untitled-${Date.now()}`
-      await createCollection({
-        appId: currentApp.value.id,
-        title: 'Untitled',
-        icon: 'lucide:database',
-        slug,
-        type: 'database',
-        order: collections.value.length,
-        isPublished: false,
-        createdBy: 'current-user',
-      })
-
-      // UI updates automatically - no manual reload needed
-      // Navigate to new collection
-      navigateTo(`/database/collections/${slug}`)
+      ontologyCreateOpen.value = true
     }
   }
 
@@ -605,7 +610,7 @@
 <template>
   <!-- Sidebar: Content frame (matches page header) -->
   <aside
-    class="border-sidebar-border bg-transparent text-sidebar-foreground hidden flex-col border-r px-0 pb-0 lg:flex relative"
+    class="border-sidebar-border/75 bg-transparent text-sidebar-foreground hidden flex-col border-r px-0 pb-0 lg:flex relative overflow-hidden"
     :style="{
       width: sidebarCollapse.isCollapsed.value ? '0px' : `${sidebarWidth}px`,
       transition: transitionsDisabled ? 'none' : 'width 0.3s ease',
@@ -638,8 +643,9 @@
       </UiButton>
     </div>
 
-    <!-- Global Search Button -->
+    <!-- Global Search Button (hidden when header is above sidebar — search moves to header) -->
       <UiButton
+        v-if="!props.headerAbove"
         variant="ghost"
         size="sm"
         class="w-full text-sidebar-foreground/50 hover:text-sidebar-foreground hover:bg-white/10 rounded-none justify-between group px-6 border-b h-16 bg-transparent"
@@ -661,7 +667,7 @@
           :context="{ surface: true }"
           @action="handleContextAction">
           <template #trigger>
-        <div class="flex min-h-0 flex-1 flex-col pt-6">
+        <div class="flex min-h-0 flex-1 flex-col pt-6 overflow-y-auto overflow-x-hidden">
           <AnimatePresence mode="wait">
             <motion.div
               :key="sidebarSectionKey"
@@ -780,7 +786,7 @@
                                 class="text-sidebar-foreground hover:bg-foreground/5 hover:text-sidebar-foreground flex items-center gap-3 rounded-lg px-3 py-2 transition ml-8"
                                 :class="[
                                   {
-                                    'bg-foreground/5 text-sidebar-foreground': routes.isRouteExactlyActive(item.path),
+                                    'bg-foreground/5 text-foreground': routes.isRouteExactlyActive(item.path),
                                   },
                                   isCollectionItem(item.path) ? 'pr-16' : 'pr-8',
                                 ]">
@@ -990,7 +996,7 @@
                               :to="item.path"
                               class="text-sidebar-foreground/70 hover:bg-white/10 hover:text-sidebar-foreground flex items-center gap-3 rounded-lg px-3 py-2 transition ml-7"
                               :class="[
-                                { 'bg-white/10 text-sidebar-foreground': routes.isRouteExactlyActive(item.path) },
+                                { 'bg-white/10 text-foreground': routes.isRouteExactlyActive(item.path) },
                                 isCollectionItem(item.path) ? 'pr-16' : 'pr-8',
                               ]">
                               <Icon :name="item.icon" class="h-4 w-4 shrink-0 opacity-50" />
@@ -1148,7 +1154,7 @@
                               :to="item.path"
                               class="text-sidebar-foreground/70 hover:bg-white/10 hover:text-sidebar-foreground flex items-center gap-3 rounded-lg px-3 py-2 transition ml-8"
                               :class="[
-                                { 'bg-white/15 text-sidebar-foreground': routes.isRouteExactlyActive(item.path) },
+                                { 'bg-white/15 text-foreground': routes.isRouteExactlyActive(item.path) },
                                 isCollectionItem(item.path) ? 'pr-16' : 'pr-8',
                               ]">
                               <Icon :name="item.icon" class="h-4 w-4 shrink-0 opacity-50" />
@@ -1401,7 +1407,7 @@
                                 :to="item.path"
                                 class="text-sidebar-foreground/70 hover:bg-white/10 hover:text-sidebar-foreground flex items-center gap-3 rounded-lg px-3 py-2 transition ml-7"
                                 :class="[
-                                  { 'bg-white/15 text-sidebar-foreground': routes.isRouteExactlyActive(item.path) },
+                                  { 'bg-white/15 text-foreground': routes.isRouteExactlyActive(item.path) },
                                   'pr-8',
                                 ]">
                                 <Icon :name="item.icon" class="h-4 w-4 shrink-0 opacity-50" />
@@ -1521,7 +1527,7 @@
                                 :to="item.path"
                                 class="text-sidebar-foreground/70 hover:bg-white/10 hover:text-sidebar-foreground flex items-center gap-3 rounded-lg px-3 py-2 transition ml-7"
                                 :class="[
-                                  { 'bg-white/15 text-sidebar-foreground': routes.isRouteExactlyActive(item.path) },
+                                  { 'bg-white/15 text-foreground': routes.isRouteExactlyActive(item.path) },
                                   'pr-8',
                                 ]">
                                 <Icon :name="item.icon" class="h-4 w-4 shrink-0 opacity-50" />
@@ -1589,7 +1595,7 @@
         </AppContextMenu>
       </template>
       <template #fallback>
-        <div v-if="!sidebarCollapse.isCollapsed.value" class="min-h-0 flex-1">
+        <div v-if="!sidebarCollapse.isCollapsed.value" class="min-h-0 flex-1 overflow-y-auto overflow-x-hidden">
           <div>
             <template v-if="routes.currentSectionLinks.value.length > 0">
               <button
@@ -1604,7 +1610,7 @@
                     v-if="item?.path"
                     :to="item.path"
                     class="text-sidebar-foreground/70 hover:bg-white/10 hover:text-sidebar-foreground flex items-center gap-3 rounded-lg px-3 py-2 pr-8 transition w-full"
-                    :class="{ 'bg-white/15 text-sidebar-foreground': routes.isRouteExactlyActive(item.path) }">
+                    :class="{ 'bg-white/15 text-foreground': routes.isRouteExactlyActive(item.path) }">
                     <Icon :name="item.icon" class="h-4 w-4 shrink-0" />
                     <span class="flex-1 truncate min-w-0 overflow-hidden text-ellipsis whitespace-nowrap">
                       {{ item.label }}
@@ -1627,11 +1633,11 @@
         variant="default"
         @click="handleAddNew">
         <Icon name="lucide:plus" class="mr-2 h-4 w-4" />
-        New collection
+        New type
       </UiButton>
     </div>
 
-    <UiAlertDialog v-model:open="deleteDialogOpen">
+    <UiAlertDialog v-model:open="deleteDialogOpen" >
       <UiAlertDialogContent>
         <UiAlertDialogHeader>
           <UiAlertDialogTitle>Delete collection?</UiAlertDialogTitle>
@@ -1642,6 +1648,10 @@
             </template>
           </UiAlertDialogDescription>
         </UiAlertDialogHeader>
+        <label class="flex items-center gap-2 text-sm text-muted-foreground cursor-pointer select-none">
+          <UiCheckbox v-model:checked="dontAskAgain" />
+          Don't ask me again
+        </label>
         <UiAlertDialogFooter>
           <UiAlertDialogCancel>Cancel</UiAlertDialogCancel>
           <UiAlertDialogAction class="bg-destructive text-white hover:bg-destructive/90" @click="confirmDelete">
@@ -1650,6 +1660,9 @@
         </UiAlertDialogFooter>
       </UiAlertDialogContent>
     </UiAlertDialog>
+
+    <!-- Ontology Create Dialog -->
+    <OntologyCreateDialog v-model:open="ontologyCreateOpen" />
 
     <!-- Create Page Dialog -->
     <CreatePageDialog

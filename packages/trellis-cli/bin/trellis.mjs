@@ -218,13 +218,16 @@ async function run() {
         case 'create': {
           const id = flag('id')
           const version = flag('version') || '1.0.0'
+          const tier = flag('tier')
           const fieldsStr = flag('fields')
-          if (!id) err('Usage: trellis ontology create --id <id> [--version <v>] --fields \'[...]\'')
+          if (!id) err('Usage: trellis ontology create --id <id> [--version <v>] [--tier system|user] --fields \'[...]\'')
+          if (tier && tier !== 'system' && tier !== 'user') err('--tier must be "system" or "user"')
           let fields = []
           if (fieldsStr) {
             try { fields = JSON.parse(fieldsStr) } catch { err(`Invalid JSON for --fields: ${fieldsStr}`) }
           }
           const schema = { '@id': id, '@type': 'trellis:Schema', version, fields }
+          if (tier) schema.tier = tier
           const result = await client.createOntology(schema)
           out(result)
           break
@@ -303,7 +306,7 @@ Commands:
 
   ontology list                             List all ontologies
   ontology get <id>                         Get a single ontology
-  ontology create --id <id> --fields '[…]'  Create an ontology
+  ontology create --id <id> [--tier] --fields '[…]'  Create an ontology
   ontology update <id> [--version] [--fields]  Update an ontology
   ontology add-field <id> --field '{…}'     Add a field
   ontology remove-field <id> --field <name> Remove a field

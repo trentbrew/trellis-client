@@ -1,6 +1,7 @@
 <script setup lang="ts">
   const { $colorMode: colorMode } = useNuxtApp()
   const { animationsEnabled, setAnimationsEnabled } = useAnimationSettings()
+  const { headerAboveSidebar, setHeaderAboveSidebar } = useLayoutPreferences()
   const go = (to: string) => navigateTo(to)
 
   const isDark = computed({
@@ -19,6 +20,11 @@
   const animationsOn = computed({
     get: () => animationsEnabled.value,
     set: (checked) => setAnimationsEnabled(checked),
+  })
+
+  const headerAbove = computed({
+    get: () => headerAboveSidebar.value,
+    set: (checked) => setHeaderAboveSidebar(checked),
   })
 </script>
 
@@ -121,6 +127,55 @@
                   </div>
                 </div>
                 <UiSwitch :model-value="true" disabled />
+              </div>
+            </UiCardContent>
+          </UiCard>
+        </template>
+      </ClientOnly>
+
+      <!-- Header Layout Toggle -->
+      <ClientOnly>
+        <UiCard>
+          <UiCardHeader>
+            <UiCardTitle>Header Layout</UiCardTitle>
+            <UiCardDescription>Choose where the app header is positioned relative to the sidebar.</UiCardDescription>
+          </UiCardHeader>
+          <UiCardContent>
+            <div class="border-border bg-card flex items-center justify-between rounded-xl border px-4 py-3 shadow-sm">
+              <div class="flex items-center gap-3">
+                <div class="bg-primary/10 flex size-9 items-center justify-center rounded-lg">
+                  <Icon :name="headerAbove ? 'lucide:panel-top' : 'lucide:panel-left'" class="text-primary size-4" />
+                </div>
+                <div>
+                  <p class="text-foreground text-sm font-semibold">Header above sidebar</p>
+                  <p class="text-muted-foreground text-xs">
+                    {{ headerAbove ? 'Header spans across the top of sidebar and content' : 'Header is inside the content area only' }}
+                  </p>
+                </div>
+              </div>
+              <UiSwitch v-model="headerAbove" />
+            </div>
+          </UiCardContent>
+        </UiCard>
+        <template #fallback>
+          <UiCard>
+            <UiCardHeader>
+              <UiCardTitle>Header Layout</UiCardTitle>
+              <UiCardDescription>Choose where the app header is positioned relative to the sidebar.</UiCardDescription>
+            </UiCardHeader>
+            <UiCardContent>
+              <div
+                class="border-border bg-card flex items-center justify-between rounded-xl border px-4 py-3 shadow-sm">
+                <div class="flex items-center gap-3">
+                  <div class="bg-primary/10 flex size-9 items-center justify-center rounded-lg">
+                    <Icon name="lucide:panel-left" class="text-primary size-4" />
+                  </div>
+                  <div>
+                    <p class="text-foreground text-sm font-semibold">Header above sidebar</p>
+                    <p class="text-muted-foreground text-xs">Loading...</p>
+                  </div>
+                </div>
+                <UiSwitch :model-value="false" disabled />
               </div>
             </UiCardContent>
           </UiCard>

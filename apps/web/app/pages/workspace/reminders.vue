@@ -1,8 +1,10 @@
 <script setup lang="ts">
   import type { PageStat } from '~/components/layout/Page.vue'
   import { useBrowse, type BrowseViewMode } from '~/composables/useBrowse'
-  import CalendarItemDialog from '~/components/dialogs/CalendarItemDialog.vue'
-  import type { CalendarItem, TaskItem } from '~/types/calendarItem'
+  import EntityDialog from '~/components/dialogs/EntityDialog.vue'
+  import type { Entity, TaskItem } from '~/types/entity'
+  import { createDefaultItem } from '~/types/entity'
+  import { formatYmdLocal } from '~/utils/date'
 
   definePageMeta({ layout: 'default' })
   useHead({ title: 'Reminders | Personal' })
@@ -12,7 +14,7 @@
   // ---------------------------------------------------------------------------
 
   const today = new Date()
-  const fmt = (d: Date) => d.toISOString().split('T')[0]!
+  const fmt = (d: Date) => formatYmdLocal(d)
   const daysFromNow = (n: number) => { const d = new Date(today); d.setDate(d.getDate() + n); return fmt(d) }
 
   const items = ref<TaskItem[]>([
@@ -22,7 +24,7 @@
       startDate: daysFromNow(0), allDay: true,
       priority: 'medium', urgency: 'urgent', priorityOverride: false, urgencyOverride: false,
       category: 'health', tags: ['appointment'], owner: 'you', involved: [],
-      attachments: [], reminders: [{ id: 'r1', timing: '1-hour-before', method: 'push' }],
+      attachments: [], references: [], reminders: [{ id: 'r1', timing: '1-hour-before', method: 'push' }],
       taskStatus: 'pending', checklist: [],
     },
     {
@@ -31,7 +33,7 @@
       startDate: daysFromNow(1), allDay: true,
       priority: 'high', urgency: 'urgent', priorityOverride: false, urgencyOverride: false,
       category: 'work', tags: ['finance', 'admin'], owner: 'you', involved: [],
-      attachments: [], reminders: [{ id: 'r2', timing: '1-day-before', method: 'push' }],
+      attachments: [], references: [], reminders: [{ id: 'r2', timing: '1-day-before', method: 'push' }],
       taskStatus: 'pending', checklist: [],
     },
     {
@@ -39,7 +41,7 @@
       startDate: daysFromNow(2), allDay: true,
       priority: 'low', urgency: 'not-urgent', priorityOverride: false, urgencyOverride: false,
       category: 'personal', tags: ['errands'], owner: 'you', involved: [],
-      attachments: [], reminders: [{ id: 'r3', timing: '15-min-before', method: 'push' }],
+      attachments: [], references: [], reminders: [{ id: 'r3', timing: '15-min-before', method: 'push' }],
       taskStatus: 'pending', checklist: [],
     },
     {
@@ -48,7 +50,7 @@
       startDate: daysFromNow(5), allDay: true,
       priority: 'high', urgency: 'not-urgent', priorityOverride: false, urgencyOverride: false,
       category: 'work', tags: ['domain', 'infrastructure'], owner: 'you', involved: [],
-      attachments: [], reminders: [{ id: 'r4', timing: '1-week-before', method: 'email' }],
+      attachments: [], references: [], reminders: [{ id: 'r4', timing: '1-week-before', method: 'email' }],
       taskStatus: 'pending', checklist: [],
     },
     {
@@ -56,7 +58,7 @@
       startDate: daysFromNow(0), allDay: true,
       priority: 'low', urgency: 'not-urgent', priorityOverride: false, urgencyOverride: false,
       category: 'personal', tags: ['home'], owner: 'you', involved: [],
-      attachments: [],
+      attachments: [], references: [],
       reminders: [{ id: 'r5', timing: '1-day-before', method: 'push' }],
       recurrence: { frequency: 'weekly', weekdays: [1, 4] },
       taskStatus: 'completed', checklist: [],
@@ -67,7 +69,7 @@
       startDate: daysFromNow(7), allDay: true,
       priority: 'medium', urgency: 'not-urgent', priorityOverride: false, urgencyOverride: false,
       category: 'personal', tags: ['birthday', 'family'], owner: 'you', involved: [],
-      attachments: [], reminders: [{ id: 'r6', timing: '2-days-before', method: 'push' }],
+      attachments: [], references: [], reminders: [{ id: 'r6', timing: '2-days-before', method: 'push' }],
       taskStatus: 'pending', checklist: [],
     },
     {
@@ -76,7 +78,7 @@
       startDate: daysFromNow(-1), allDay: true,
       priority: 'medium', urgency: 'urgent', priorityOverride: false, urgencyOverride: true,
       category: 'personal', tags: ['tech', 'backup'], owner: 'you', involved: [],
-      attachments: [], reminders: [],
+      attachments: [], references: [], reminders: [],
       taskStatus: 'overdue', checklist: [],
     },
   ])
@@ -86,8 +88,8 @@
   // ---------------------------------------------------------------------------
 
   const { browseState, filteredItems } = useBrowse({
-    items: items as Ref<CalendarItem[]>,
-    searchFields: ['title', 'description'] as (keyof CalendarItem)[],
+    items: items as Ref<Entity[]>,
+    searchFields: ['title', 'description'] as (keyof Entity)[],
     defaultViewMode: 'list' as BrowseViewMode,
     sortOptions: [
       { value: 'startDate', label: 'Due Date' },
@@ -187,15 +189,22 @@
   // Dialog
   // ---------------------------------------------------------------------------
 
-  const createOpen = ref(false)
+  const { create: createItem } = useEntities()
   const viewOpen = ref(false)
-  const viewingItem = ref<CalendarItem | null>(null)
+  const _viewingItemId = ref<string | null>(null)
+  const _pendingNewItem = ref<Entity | null>(null)
+  const viewingItem = computed<Entity | null>(() => {
+    if (!_viewingItemId.value) return null
+    return items.value.find((i) => i.id === _viewingItemId.value) as Entity | undefined
+      ?? _pendingNewItem.value
+      ?? null
+  })
 
   const taskOwners = [{ id: 'you', name: 'You' }]
   const taskFolders = ['Work', 'Personal', 'Health']
 
   function openDetail(item: TaskItem) {
-    viewingItem.value = item
+    _viewingItemId.value = item.id
     viewOpen.value = true
   }
 
@@ -207,24 +216,27 @@
     }
   }
 
-  const viewingIndex = computed(() => viewingItem.value ? filteredItems.value.findIndex((i) => (i as CalendarItem).id === viewingItem.value?.id) : -1)
+  const viewingIndex = computed(() => viewingItem.value ? filteredItems.value.findIndex((i) => (i as Entity).id === viewingItem.value?.id) : -1)
   const canPrev = computed(() => viewingIndex.value > 0)
   const canNext = computed(() => viewingIndex.value < filteredItems.value.length - 1)
-  function navPrev() { if (canPrev.value) viewingItem.value = filteredItems.value[viewingIndex.value - 1] as CalendarItem }
-  function navNext() { if (canNext.value) viewingItem.value = filteredItems.value[viewingIndex.value + 1] as CalendarItem }
+  function navPrev() { if (canPrev.value) _viewingItemId.value = (filteredItems.value[viewingIndex.value - 1] as Entity).id }
+  function navNext() { if (canNext.value) _viewingItemId.value = (filteredItems.value[viewingIndex.value + 1] as Entity).id }
 
-  function handleCreate(item: CalendarItem) {
-    items.value.unshift({ ...item, id: item.id || `rem-${Date.now()}` } as TaskItem)
-    createOpen.value = false
+  async function handleNewItem() {
+    const defaults = createDefaultItem('task')
+    const newId = await createItem({ ...defaults, type: 'task', title: '' } as Entity)
+    _pendingNewItem.value = { ...defaults, id: newId } as Entity
+    _viewingItemId.value = newId
+    viewOpen.value = true
   }
 
-  function handleUpdate(item: CalendarItem) {
+  function handleUpdate(item: Entity) {
     const idx = items.value.findIndex((i) => i.id === item.id)
     if (idx !== -1) items.value[idx] = { ...item } as TaskItem
     viewOpen.value = false
   }
 
-  function handleDelete(item: CalendarItem) {
+  function handleDelete(item: Entity) {
     items.value = items.value.filter((i) => i.id !== item.id)
     viewOpen.value = false
   }
@@ -235,6 +247,7 @@
     variant="browse"
     title="Reminders"
     subtitle="Personal"
+    data-source="task"
     description="Quick reminders and upcoming deadlines."
     icon="lucide:bell"
     icon-class="text-amber-300"
@@ -245,7 +258,7 @@
 
     <!-- Toolbar Actions -->
     <template #toolbarActions>
-      <UiButton @click="createOpen = true">
+      <UiButton @click="handleNewItem()">
         <Icon name="lucide:plus" class="mr-2 h-4 w-4" />
         New Reminder
       </UiButton>
@@ -325,7 +338,7 @@
     </div>
 
     <!-- View/Edit Dialog -->
-    <CalendarItemDialog
+    <EntityDialog
       v-model:open="viewOpen"
       mode="edit"
       :item="viewingItem"
@@ -339,15 +352,5 @@
       @delete="handleDelete"
       @close="viewOpen = false" />
 
-    <!-- Create Dialog -->
-    <CalendarItemDialog
-      v-model:open="createOpen"
-      mode="create"
-      item-type="task"
-      :item="null"
-      :owners="taskOwners"
-      :folders="taskFolders"
-      @save="handleCreate"
-      @close="createOpen = false" />
   </Page>
 </template>

@@ -1,9 +1,8 @@
 <script lang="ts" setup>
   import type { EntityReference, EntityType } from '~/types/entity'
-  import type { CalendarItemType } from '~/types/calendarItem'
-  import { createDefaultItem } from '~/types/calendarItem'
+  import { createDefaultItem } from '~/types/entity'
   import { useEntitySearch } from '~/composables/useEntitySearch'
-  import { useCalendarItems } from '~/composables/useCalendarItems'
+  import { useEntities } from '~/composables/useEntities'
 
   const props = defineProps<{
     open: boolean
@@ -22,7 +21,7 @@
     excludeId: excludeIdRef,
     filterType: filterTypeRef,
   })
-  const { create: createItem } = useCalendarItems()
+  const { create: createItem } = useEntities()
 
   const selectItem = (item: any) => {
     emit('select', buildEntityReference(item))
@@ -31,7 +30,7 @@
   }
 
   const createAndSelect = async () => {
-    const type = props.filterType as CalendarItemType
+    const type = props.filterType as EntityType
     if (!type) return
     const title = search.value.trim() || `New ${getLabel(type)}`
     const newItem = { ...createDefaultItem(type), title }

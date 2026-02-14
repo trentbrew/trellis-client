@@ -7,6 +7,7 @@ import { reactive, ref } from 'vue'
 
 const mockUpdate = vi.fn()
 const mockItems = ref<any[]>([])
+const mockMutate = vi.fn()
 
 vi.mock('~/composables/useCalendarItems', () => ({
   useCalendarItems: () => ({
@@ -14,6 +15,12 @@ vi.mock('~/composables/useCalendarItems', () => ({
     update: mockUpdate,
     create: vi.fn(),
     remove: vi.fn(),
+  }),
+}))
+
+vi.mock('~/composables/useTrellisGraph', () => ({
+  useTrellisGraph: () => ({
+    mutate: mockMutate,
   }),
 }))
 
@@ -56,6 +63,7 @@ function makeItem(overrides: Record<string, any> = {}) {
 describe('useEntityReferences', () => {
   beforeEach(() => {
     mockUpdate.mockReset().mockResolvedValue(undefined)
+    mockMutate.mockReset().mockResolvedValue(undefined)
     mockItems.value = []
   })
 
@@ -108,12 +116,14 @@ describe('useEntityReferences', () => {
 
       await addEntityRef(makeEntityRef({ entityId: 'target-1' }))
 
-      // Should have called update on the target entity with an incoming ref
-      expect(mockUpdate).toHaveBeenCalledTimes(1)
-      const updatedTarget = mockUpdate.mock.calls[0][0]
-      expect(updatedTarget.references).toHaveLength(1)
-      expect(updatedTarget.references[0].direction).toBe('incoming')
-      expect(updatedTarget.references[0].entityId).toBe('source-1')
+      expect(mockUpdate).not.toHaveBeenCalled()
+      expect(mockMutate).toHaveBeenCalledTimes(1)
+      expect(mockMutate).toHaveBeenCalledWith({
+        action: 'link',
+        e1: 'calendaritem:source-1',
+        relation: 'references',
+        e2: 'calendaritem:target-1',
+      })
     })
 
     it('does not create duplicate back-references', async () => {
@@ -141,8 +151,9 @@ describe('useEntityReferences', () => {
 
       await addEntityRef(makeEntityRef({ entityId: 'target-1' }))
 
-      // Should NOT have called update since back-ref already exists
+      // Duplicate outgoing ref should be prevented; persistence should only happen once.
       expect(mockUpdate).not.toHaveBeenCalled()
+      expect(mockMutate).toHaveBeenCalledTimes(1)
     })
 
     it('initializes references array if undefined', async () => {
@@ -206,10 +217,14 @@ describe('useEntityReferences', () => {
 
       await removeRef('ref-out')
 
-      // Should have updated target to remove the incoming ref
-      expect(mockUpdate).toHaveBeenCalledTimes(1)
-      const updatedTarget = mockUpdate.mock.calls[0][0]
-      expect(updatedTarget.references).toHaveLength(0)
+      expect(mockUpdate).not.toHaveBeenCalled()
+      expect(mockMutate).toHaveBeenCalledTimes(1)
+      expect(mockMutate).toHaveBeenCalledWith({
+        action: 'unlink',
+        e1: 'calendaritem:source-1',
+        relation: 'references',
+        e2: 'calendaritem:target-1',
+      })
     })
 
     it('does NOT clean up target when removing an incoming ref', async () => {

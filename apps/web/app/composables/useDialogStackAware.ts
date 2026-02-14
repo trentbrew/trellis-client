@@ -79,6 +79,9 @@ export function useDialogStackAware() {
       `filter:brightness(${t.brightness})`,
       `pointer-events:${t.interactive ? 'auto' : 'none'}`,
       `transition: transform 300ms cubic-bezier(0.32, 0.72, 0, 1), translate 300ms cubic-bezier(0.32, 0.72, 0, 1), filter 300ms ease`,
+      ...(isStacked.value && dialogStack.distFromTop(stackIndex.value) === 0
+        ? [`animation-delay: 150ms`, `animation-fill-mode: backwards`]
+        : []),
     ]
     return parts.join('; ')
   }

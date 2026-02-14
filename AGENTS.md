@@ -92,7 +92,7 @@ just trellis log --pretty             # Mutation log
 ```bash
 just trellis ontology list --pretty
 just trellis ontology get 'trellis:schema/calendaritem' --pretty
-just trellis ontology create --id 'trellis:schema/invoice' --fields '[{"name":"title","valueType":"title","required":true},{"name":"amount","valueType":"number"}]'
+just trellis ontology create --id 'trellis:schema/invoice' --tier system --fields '[{"name":"title","valueType":"title","required":true},{"name":"amount","valueType":"number"}]'
 just trellis ontology update 'trellis:schema/invoice' --version '1.1.0' --fields '[...]'
 just trellis ontology add-field 'trellis:schema/invoice' --field '{"name":"notes","valueType":"rich_text"}'
 just trellis ontology remove-field 'trellis:schema/invoice' --field notes
@@ -100,6 +100,11 @@ just trellis ontology delete 'trellis:schema/invoice'
 ```
 
 Creating an ontology auto-scaffolds it in the UI — sidebar item, browse page, dialog support — with zero code changes.
+
+**Tier classification** (`--tier`): Controls where the type appears in the database sidebar.
+- `system` — Built-in entity type, appears under ENTITIES section (e.g. task, note, person)
+- `user` (or omitted) — User-created custom type, appears under CUSTOM section
+- `core` — Kernel structural types (immutable, code-only — never create these via CLI)
 
 ## SDK
 

@@ -1,7 +1,7 @@
 <script setup lang="ts">
-  import CalendarItemDialog from '~/components/dialogs/CalendarItemDialog.vue'
-  import type { CalendarItem, CalendarItemType, TaskItem } from '~/types/calendarItem'
-  import { CALENDAR_ITEM_TYPES } from '~/types/calendarItem'
+  import EntityDialog from '~/components/dialogs/EntityDialog.vue'
+  import type { Entity, EntityType, TaskItem } from '~/types/entity'
+  import { ENTITY_TYPE_OPTIONS } from '~/types/entity'
 
   definePageMeta({ layout: 'default' })
   useHead({ title: 'Feed | Personal' })
@@ -10,7 +10,7 @@
   // Live data from instant-local
   // ---------------------------------------------------------------------------
 
-  const { items: allItems, update, remove } = useCalendarItems()
+  const { items: allItems, update, remove } = useEntities()
 
   // ---------------------------------------------------------------------------
   // Source definitions (integration-aware)
@@ -51,12 +51,12 @@
   }
 
   // Items resolve their source (stub: everything is 'manual' until integrations land)
-  function itemSource(_item: CalendarItem): string {
+  function itemSource(_item: Entity): string {
     return 'manual'
   }
 
   // Resolve the best timestamp for an item (createdAt → startDate → 0)
-  function itemTimestamp(item: CalendarItem): number {
+  function itemTimestamp(item: Entity): number {
     if (item.createdAt) return Number(item.createdAt)
     if (item.startDate) return new Date(item.startDate + 'T00:00:00').getTime()
     return 0
@@ -118,12 +118,12 @@
         icon: 'lucide:shapes',
         options: [
           { value: 'all', label: 'All Types' },
-          ...CALENDAR_ITEM_TYPES.filter((t) => t.value !== 'trip').map((t) => ({
+          ...ENTITY_TYPE_OPTIONS.filter((t) => t.value !== 'trip').map((t) => ({
             value: t.value,
             label: t.label,
           })),
         ],
-        fn: (item: CalendarItem, val: string) => item.type === val,
+        fn: (item: Entity, val: string) => item.type === val,
       },
     ],
     defaultViewMode: 'list',
@@ -134,19 +134,19 @@
   // ---------------------------------------------------------------------------
 
   const viewOpen = ref(false)
-  const viewingItem = ref<CalendarItem | null>(null)
+  const viewingItem = ref<Entity | null>(null)
 
-  function openDetail(item: CalendarItem) {
+  function openDetail(item: Entity) {
     viewingItem.value = item
     viewOpen.value = true
   }
 
-  async function handleUpdate(item: CalendarItem) {
+  async function handleUpdate(item: Entity) {
     await update(item)
     viewOpen.value = false
   }
 
-  async function handleDelete(item: CalendarItem) {
+  async function handleDelete(item: Entity) {
     await remove(item.id)
     viewOpen.value = false
   }
@@ -155,7 +155,7 @@
   // Navigation within dialog
   // ---------------------------------------------------------------------------
 
-  const filteredItems = computed(() => browseFilteredItems.value as CalendarItem[])
+  const filteredItems = computed(() => browseFilteredItems.value as Entity[])
   const viewingIndex = computed(() =>
     viewingItem.value ? filteredItems.value.findIndex((i) => i.id === viewingItem.value?.id) : -1,
   )
@@ -172,30 +172,30 @@
   // Helpers
   // ---------------------------------------------------------------------------
 
-  function typeIcon(type: CalendarItemType) {
-    return CALENDAR_ITEM_TYPES.find((t) => t.value === type)?.icon ?? 'lucide:circle'
+  function typeIcon(type: EntityType) {
+    return ENTITY_TYPE_OPTIONS.find((t) => t.value === type)?.icon ?? 'lucide:circle'
   }
 
-  function typeLabel(type: CalendarItemType) {
-    return CALENDAR_ITEM_TYPES.find((t) => t.value === type)?.label ?? type
+  function typeLabel(type: EntityType) {
+    return ENTITY_TYPE_OPTIONS.find((t) => t.value === type)?.label ?? type
   }
 
-  function sourceIcon(item: CalendarItem) {
+  function sourceIcon(item: Entity) {
     const src = itemSource(item)
     return sources.find((s) => s.id === src)?.icon ?? 'lucide:circle'
   }
 
-  function sourceLabel(item: CalendarItem) {
+  function sourceLabel(item: Entity) {
     const src = itemSource(item)
     return sources.find((s) => s.id === src)?.label ?? src
   }
 
-  function sourceColor(item: CalendarItem) {
+  function sourceColor(item: Entity) {
     const src = itemSource(item)
     return sources.find((s) => s.id === src)?.color ?? 'text-muted-foreground'
   }
 
-  function relativeDate(item: CalendarItem) {
+  function relativeDate(item: Entity) {
     const ts = itemTimestamp(item)
     if (!ts) return ''
     const diff = now - ts
@@ -209,7 +209,7 @@
     return `${days}d ago`
   }
 
-  function formatTimestamp(item: CalendarItem) {
+  function formatTimestamp(item: Entity) {
     const ts = itemTimestamp(item)
     if (!ts) return ''
     const d = new Date(ts)
@@ -224,7 +224,7 @@
     return `${hour}:${String(m).padStart(2, '0')} ${ampm}`
   }
 
-  function formatDateLabel(item: CalendarItem) {
+  function formatDateLabel(item: Entity) {
     const ts = itemTimestamp(item)
     if (!ts) return ''
     const d = new Date(ts)
@@ -238,7 +238,7 @@
     low: 'bg-slate-100 text-slate-600 dark:bg-slate-900/30 dark:text-slate-400',
   }
 
-  const statusBadge = (item: CalendarItem) => {
+  const statusBadge = (item: Entity) => {
     if (item.type === 'task') {
       const status = (item as TaskItem).taskStatus
       if (status === 'completed') return { label: 'Done', class: 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400' }
@@ -509,7 +509,7 @@
     </div>
 
     <!-- View/Edit Dialog -->
-    <CalendarItemDialog
+    <EntityDialog
       v-model:open="viewOpen"
       mode="edit"
       :item="viewingItem ?? undefined"

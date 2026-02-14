@@ -18,6 +18,7 @@
     variant="browse"
     title="Places"
     subtitle="Personal"
+    data-source="place"
     description="Locations, addresses, and venues."
     icon="lucide:map-pin"
     icon-class="text-lime-300"

@@ -1,9 +1,8 @@
 <script setup lang="ts">
   import type { PageStat } from '~/components/layout/Page.vue'
-  import type { BrowseViewMode } from '~/composables/useBrowse'
   import { useBrowsePage } from '~/composables/useBrowsePage'
-  import CalendarItemDialog from '~/components/dialogs/CalendarItemDialog.vue'
-  import type { NoteItem } from '~/types/calendarItem'
+  import EntityDialog from '~/components/dialogs/EntityDialog.vue'
+  import type { NoteItem } from '~/types/entity'
 
   definePageMeta({ layout: 'default' })
   useHead({ title: 'Notes | Personal' })
@@ -14,9 +13,9 @@
 
   const {
     items, filteredItems, browseState, viewMode,
-    createOpen, viewOpen, viewingItem, openDetail,
+    viewOpen, viewingItem, openDetail, handleNewItem,
     canPrev, canNext, navPrev, navNext,
-    handleCreate, handleUpdate, handleDelete,
+    handleUpdate, handleDelete,
   } = useBrowsePage({
     entityType: 'note',
     searchFields: ['title', 'content', 'description'],
@@ -46,11 +45,6 @@
     ],
   })
 
-  const viewModeIcons: Record<string, string> = {
-    grid: 'lucide:grid-3x3',
-    list: 'lucide:list',
-  }
-
   // ---------------------------------------------------------------------------
   // Stats (type-specific — stays in page)
   // ---------------------------------------------------------------------------
@@ -66,13 +60,13 @@
   // UI helpers (type-specific — stays in page)
   // ---------------------------------------------------------------------------
 
-  const categoryColors: Record<string, string> = {
+  const _categoryColors: Record<string, string> = {
     work: 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400',
     personal: 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400',
     general: 'bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-400',
   }
 
-  const formatDate = (d: string) => {
+  const _formatDate = (d: string) => {
     try { return new Date(d + 'T00:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) }
     catch { return d }
   }
@@ -86,6 +80,7 @@
     variant="browse"
     title="Notes"
     subtitle="Personal"
+    data-source="note"
     description="Ideas, journal entries, and bookmarks."
     icon="lucide:sticky-note"
     icon-class="text-purple-300"
@@ -93,94 +88,92 @@
     :stats="stats"
     :show-view-switcher="true"
     :fill-height="true"
-    :browse="browseState">
-
-    <!-- View Switcher -->
-    <template #viewSwitcher>
-      <div class="flex items-center gap-1">
-        <button
-          v-for="mode in (['grid', 'list'] as BrowseViewMode[])"
-          :key="mode"
-          type="button"
-          class="flex h-8 items-center gap-2 rounded-md px-3 text-sm font-medium transition-colors"
-          :class="viewMode === mode ? 'bg-foreground/10 text-foreground' : 'text-muted-foreground hover:bg-foreground/5 hover:text-foreground'"
-          @click="browseState.setViewMode(mode)">
-          <Icon :name="viewModeIcons[mode] || 'lucide:list'" class="h-4 w-4" />
-          {{ mode.charAt(0).toUpperCase() + mode.slice(1) }}
-        </button>
-      </div>
-    </template>
+    :browse="browseState"
+    :view-mode-options="[
+      { mode: 'moodboard', label: 'Moodboard', icon: 'lucide:layout-dashboard' },
+      { mode: 'grid', label: 'Grid', icon: 'lucide:grid-3x3' },
+      { mode: 'list', label: 'List', icon: 'lucide:list' },
+      { mode: 'table', label: 'Table', icon: 'lucide:table' },
+    ]">
 
     <!-- Toolbar Actions -->
     <template #toolbarActions>
-      <UiButton @click="createOpen = true">
+      <UiButton @click="handleNewItem()">
         <Icon name="lucide:plus" class="mr-2 h-4 w-4" />
         New Note
       </UiButton>
     </template>
-
     <!-- ================= GRID VIEW ================= -->
-    <div v-if="viewMode === 'grid'" class="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-      <UiCard
+    <div v-if="viewMode === 'grid' || !['grid', 'moodboard', 'list', 'table'].includes(viewMode)" class="grid gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+      <EntityCard
         v-for="item in (filteredItems as NoteItem[])"
         :key="item.id"
-        class="relative overflow-hidden hover:bg-muted transition-colors cursor-pointer group"
-        @click="openDetail(item)">
-        <div v-if="item.pinned" class="absolute top-0 right-0 p-2">
-          <Icon name="lucide:pin" class="h-3.5 w-3.5 text-amber-500" />
-        </div>
-        <UiCardHeader class="pb-2">
-          <div class="flex items-start justify-between">
-            <Icon name="lucide:sticky-note" class="h-4 w-4 text-muted-foreground" />
-            <span :class="['rounded-full px-1.5 py-0.5 text-[10px] font-medium', categoryColors[item.category] || 'bg-muted text-muted-foreground']">
-              {{ item.category }}
-            </span>
-          </div>
-          <UiCardTitle class="text-base mt-2 line-clamp-1">{{ item.title }}</UiCardTitle>
-        </UiCardHeader>
-        <UiCardContent class="pt-0 space-y-2">
-          <p v-if="item.description" class="text-sm text-muted-foreground line-clamp-2">{{ item.description }}</p>
-          <p v-if="item.content" class="text-muted-foreground/80 line-clamp-4 whitespace-pre-line font-mono text-xs leading-relaxed bg-muted/30 rounded-md p-2">{{ item.content }}</p>
-          <div class="flex items-center justify-between text-xs text-muted-foreground border-t border-border pt-2">
-            <span>{{ formatDate(item.startDate) }}</span>
-            <div class="flex items-center gap-1">
-              <span v-for="tag in item.tags.slice(0, 2)" :key="tag" class="bg-muted px-1.5 py-0.5 rounded text-[10px]">#{{ tag }}</span>
-              <span v-if="item.tags.length > 2" class="text-[10px] text-muted-foreground">+{{ item.tags.length - 2 }}</span>
-            </div>
-          </div>
-        </UiCardContent>
-      </UiCard>
+        :item="item"
+        layout="grid"
+        @click="openDetail(item)" />
+      <div v-if="!filteredItems.length" class="col-span-full flex flex-col items-center justify-center h-48 text-muted-foreground gap-3">
+        <Icon name="lucide:sticky-note" class="h-6 w-6 text-muted-foreground/50" />
+        <p class="text-sm">No notes found</p>
+      </div>
+    </div>
+
+    <!-- ================= MOODBOARD VIEW ================= -->
+    <div v-else-if="viewMode === 'moodboard'" class="columns-2 sm:columns-3 lg:columns-4 xl:columns-5 gap-3">
+      <EntityCard
+        v-for="item in (filteredItems as NoteItem[])"
+        :key="item.id"
+        :item="item"
+        layout="moodboard"
+        @click="openDetail(item)" />
       <div v-if="!filteredItems.length" class="col-span-full flex items-center justify-center h-40 text-sm text-muted-foreground">
         No notes found
       </div>
     </div>
 
     <!-- ================= LIST VIEW ================= -->
-    <div v-if="viewMode === 'list'" class="space-y-2">
-      <div
+    <div v-else-if="viewMode === 'list'" class="flex flex-col gap-2">
+      <EntityCard
         v-for="item in (filteredItems as NoteItem[])"
         :key="item.id"
-        class="flex items-start gap-4 rounded-lg border border-border bg-card p-4 hover:bg-muted transition-colors cursor-pointer"
-        @click="openDetail(item)">
-        <Icon name="lucide:sticky-note" class="h-5 w-5 shrink-0 mt-0.5 text-purple-500" />
-        <div class="flex-1 min-w-0">
-          <div class="flex items-center gap-2 mb-1">
-            <p class="font-medium truncate">{{ item.title }}</p>
-            <Icon v-if="item.pinned" name="lucide:pin" class="h-3.5 w-3.5 text-amber-500 shrink-0" />
-          </div>
-          <p v-if="item.description" class="text-sm text-muted-foreground line-clamp-1 mb-1">{{ item.description }}</p>
-          <div class="flex items-center gap-2 text-sm text-muted-foreground flex-wrap">
-            <span :class="['rounded-full px-1.5 py-0.5 text-[10px] font-medium', categoryColors[item.category] || 'bg-muted text-muted-foreground']">
-              {{ item.category }}
-            </span>
-            <span>{{ formatDate(item.startDate) }}</span>
-            <span v-if="item.tags.length" class="flex items-center gap-1">
-              <Icon name="lucide:hash" class="h-3 w-3" />
-              {{ item.tags.slice(0, 3).join(', ') }}
-            </span>
-          </div>
-        </div>
+        :item="item"
+        layout="list"
+        @click="openDetail(item)" />
+      <div v-if="!filteredItems.length" class="flex items-center justify-center h-40 text-sm text-muted-foreground">
+        No notes found
       </div>
+    </div>
+
+    <!-- ================= TABLE VIEW ================= -->
+    <div v-else-if="viewMode === 'table'" class="overflow-x-auto">
+      <table class="w-full text-sm">
+        <thead>
+          <tr class="border-b border-border">
+            <th class="text-left py-2 px-3 text-xs font-medium text-muted-foreground">Title</th>
+            <th class="text-left py-2 px-3 text-xs font-medium text-muted-foreground">Category</th>
+            <th class="text-left py-2 px-3 text-xs font-medium text-muted-foreground">Date</th>
+            <th class="text-left py-2 px-3 text-xs font-medium text-muted-foreground w-8"></th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr
+            v-for="item in (filteredItems as NoteItem[])"
+            :key="item.id"
+            class="border-b border-border/50 hover:bg-muted/30 cursor-pointer transition"
+            @click="openDetail(item)">
+            <td class="py-2 px-3">
+              <div class="flex items-center gap-2">
+                <Icon name="lucide:sticky-note" class="h-4 w-4 shrink-0 text-muted-foreground" />
+                <span class="font-medium truncate">{{ item.title || 'Untitled' }}</span>
+              </div>
+            </td>
+            <td class="py-2 px-3 text-muted-foreground">{{ (item as any).category || '—' }}</td>
+            <td class="py-2 px-3 text-muted-foreground">{{ item.startDate ? new Date(item.startDate + 'T00:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) : '—' }}</td>
+            <td class="py-2 px-3">
+              <Icon v-if="(item as any).pinned" name="lucide:pin" class="h-3 w-3 text-amber-500" />
+            </td>
+          </tr>
+        </tbody>
+      </table>
       <div v-if="!filteredItems.length" class="flex items-center justify-center h-40 text-sm text-muted-foreground">
         No notes found
       </div>
@@ -192,7 +185,7 @@
     </div>
 
     <!-- View/Edit Dialog -->
-    <CalendarItemDialog
+    <EntityDialog
       v-model:open="viewOpen"
       mode="edit"
       :item="viewingItem"
@@ -206,15 +199,5 @@
       @delete="handleDelete"
       @close="viewOpen = false" />
 
-    <!-- Create Dialog -->
-    <CalendarItemDialog
-      v-model:open="createOpen"
-      mode="create"
-      item-type="note"
-      :item="null"
-      :owners="taskOwners"
-      :folders="taskFolders"
-      @save="handleCreate"
-      @close="createOpen = false" />
   </Page>
 </template>
