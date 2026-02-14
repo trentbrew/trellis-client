@@ -126,6 +126,10 @@
     setGap,
     applyPreset,
     previewMove,
+    undo: gridUndo,
+    redo: gridRedo,
+    canUndo: gridCanUndo,
+    canRedo: gridCanRedo,
   } = useGridLayout(pageId)
 
   // Always-on edit mode (Notion-style inline editing)
@@ -414,6 +418,10 @@
       :edit-mode="gridEditMode"
       :all-items="allItems"
       :preview-move="previewMove"
+      :can-undo="gridCanUndo"
+      :can-redo="gridCanRedo"
+      @undo="gridUndo"
+      @redo="gridRedo"
       @add-view="handleAddView"
       @add-view-at="(c, r, cs, rs) => addViewAt(c, r, cs, rs)"
       @remove-view="removeView"

@@ -26,11 +26,20 @@
     'open-detail': [item: Entity]
   }>()
 
-  // Grid placement styles
-  const cellStyle = computed(() => ({
-    gridColumn: `${props.view.col} / span ${props.view.colSpan}`,
-    gridRow: `${props.view.row} / span ${props.view.rowSpan}`,
-  }))
+  // Grid placement styles — during resize, use local state for instant feedback
+  const cellStyle = computed(() => {
+    if (isResizing.value) {
+      return {
+        gridColumn: `${currentCol.value} / span ${currentColSpan.value}`,
+        gridRow: `${currentRow.value} / span ${currentRowSpan.value}`,
+        zIndex: 20,
+      }
+    }
+    return {
+      gridColumn: `${props.view.col} / span ${props.view.colSpan}`,
+      gridRow: `${props.view.row} / span ${props.view.rowSpan}`,
+    }
+  })
 
   const isEmpty = computed(() => !props.view.dataSource)
 
@@ -50,11 +59,31 @@
   const currentColSpan = ref(0)
   const currentRowSpan = ref(0)
   const cellEl = ref<HTMLElement | null>(null)
+  // Stable per-cell dimensions computed once at resize start (avoids feedback loop)
+  let stableCellW = 0
+  let stableCellH = 0
 
   function onResizeStart(dir: ResizeDir, e: PointerEvent) {
     if (!props.editMode) return
     e.preventDefault()
     e.stopPropagation()
+
+    // Compute stable per-cell dimensions from the grid container ONCE
+    // so resizing doesn't feed back into itself.
+    const gridEl = cellEl.value?.parentElement
+    if (gridEl) {
+      const gridRect = gridEl.getBoundingClientRect()
+      const style = getComputedStyle(gridEl)
+      const gapPx = parseFloat(style.columnGap) || 0
+      stableCellW = (gridRect.width - gapPx * (GRID_COLS - 1)) / GRID_COLS
+      stableCellH = 280 // ROW_HEIGHT constant
+    } else if (cellEl.value) {
+      // Fallback: use cell rect at start
+      const rect = cellEl.value.getBoundingClientRect()
+      stableCellW = rect.width / props.view.colSpan
+      stableCellH = rect.height / props.view.rowSpan
+    }
+
     isResizing.value = true
     resizeDir.value = dir
     resizeStartX.value = e.clientX
@@ -74,9 +103,9 @@
 
   function onResizeMove(e: PointerEvent) {
     if (!isResizing.value || !cellEl.value) return
-    const rect = cellEl.value.getBoundingClientRect()
-    const cellW = rect.width / resizeStartColSpan.value
-    const cellH = rect.height / resizeStartRowSpan.value
+    // Use stable dimensions captured at resize start (no feedback loop)
+    const cellW = stableCellW || 100
+    const cellH = stableCellH || 280
 
     const dx = Math.round((e.clientX - resizeStartX.value) / cellW)
     const dy = Math.round((e.clientY - resizeStartY.value) / cellH)
@@ -118,18 +147,27 @@
     currentRow.value = newRow
     currentColSpan.value = newCS
     currentRowSpan.value = newRS
-
-    if (newCol !== props.view.col || newRow !== props.view.row ||
-        newCS !== props.view.colSpan || newRS !== props.view.rowSpan) {
-      emit('resize', props.view.id, newCol, newRow, newCS, newRS)
-    }
+    // Don't emit on every move — local cellStyle override handles the preview.
+    // We commit once on pointerup to avoid flicker from resolveCollisions.
   }
 
   function onResizeEnd() {
-    isResizing.value = false
-    resizeDir.value = 'se'
     document.removeEventListener('pointermove', onResizeMove)
     document.removeEventListener('pointerup', onResizeEnd)
+
+    // Commit final size to the layout engine once
+    const c = currentCol.value
+    const r = currentRow.value
+    const cs = currentColSpan.value
+    const rs = currentRowSpan.value
+
+    if (c !== props.view.col || r !== props.view.row ||
+        cs !== props.view.colSpan || rs !== props.view.rowSpan) {
+      emit('resize', props.view.id, c, r, cs, rs)
+    }
+
+    isResizing.value = false
+    resizeDir.value = 'se'
   }
 
   // Projection icon mapping
@@ -158,7 +196,7 @@
 
   const hasActiveSort = computed(() => localSortField.value !== 'title' || localSortDir.value !== 'asc')
   const hasActiveFilter = computed(() => !!localFilterText.value)
-  const hasSortOrFilter = computed(() => hasActiveSort.value || hasActiveFilter.value)
+  const _hasSortOrFilter = computed(() => hasActiveSort.value || hasActiveFilter.value)
 
   const sortFieldOptions = [
     { value: 'title', label: 'Title' },
@@ -203,8 +241,8 @@
     :class="[
       'rounded-lg',
       isEmpty && editMode ? 'border-2 border-dashed border-border/60 hover:border-primary/40' : '',
-      !isEmpty && !isDragSource ? 'border border-border/40 bg-card overflow-hidden' : '',
-      !isEmpty && isDragSource ? 'border-2 border-dashed border-primary/30 bg-primary/5 overflow-hidden' : '',
+      !isEmpty && !isDragSource ? 'border border-border/40 bg-card overflow-hidden flex flex-col min-h-0' : '',
+      !isEmpty && isDragSource ? 'border-2 border-dashed border-primary/30 bg-primary/5 overflow-hidden flex flex-col min-h-0' : '',
       isResizing ? 'z-20 ring-2 ring-primary/30' : '',
     ]"
     :style="cellStyle"
@@ -236,6 +274,19 @@
           {{ view.title || view.dataSource }}
         </span>
 
+        <!-- Inline search -->
+        <div class="flex items-center gap-0.5 flex-1 min-w-0">
+          <div class="relative flex items-center flex-1 min-w-0 max-w-[140px]">
+            <Icon name="lucide:search" class="absolute left-1.5 h-2.5 w-2.5 text-muted-foreground/40 pointer-events-none" />
+            <input
+              v-model="localFilterText"
+              class="w-full pl-5 pr-1.5 py-0.5 rounded bg-transparent text-[11px] outline-none border border-transparent focus:border-border/40 placeholder:text-muted-foreground/30 transition-colors"
+              placeholder="Filter..."
+              @click.stop
+              @input="applyFilter" />
+          </div>
+        </div>
+
         <!-- Projection switcher icons -->
         <div class="flex items-center gap-0.5 shrink-0">
           <button
@@ -251,12 +302,12 @@
           </button>
         </div>
 
-        <!-- Sort/filter popover -->
+        <!-- Sort popover -->
         <UiPopover v-model:open="sortFilterOpen">
           <UiPopoverTrigger as-child>
             <button
               class="p-1 rounded transition-colors shrink-0"
-              :class="hasSortOrFilter
+              :class="hasActiveSort
                 ? 'text-primary bg-primary/10'
                 : 'text-muted-foreground/40 hover:text-muted-foreground hover:bg-muted/50'"
               title="Sort & Filter"
@@ -264,8 +315,7 @@
               <Icon name="lucide:arrow-up-down" class="h-3 w-3" />
             </button>
           </UiPopoverTrigger>
-          <UiPopoverContent class="w-52 p-2 space-y-2" align="end" :side-offset="6" @click.stop>
-            <!-- Sort field -->
+          <UiPopoverContent class="w-44 p-2 space-y-2" align="end" :side-offset="6" @click.stop>
             <div class="space-y-1">
               <p class="text-[10px] font-medium text-muted-foreground/60 uppercase tracking-wide">Sort by</p>
               <div class="flex flex-wrap gap-1">
@@ -281,7 +331,6 @@
                 </button>
               </div>
             </div>
-            <!-- Sort direction -->
             <button
               class="flex items-center gap-1.5 w-full px-1.5 py-1 rounded text-[11px] text-muted-foreground hover:bg-muted/50 transition-colors"
               @click="toggleSortDir">
@@ -290,15 +339,6 @@
                 class="h-3 w-3" />
               {{ localSortDir === 'asc' ? 'Ascending' : 'Descending' }}
             </button>
-            <!-- Filter text -->
-            <div class="space-y-1">
-              <p class="text-[10px] font-medium text-muted-foreground/60 uppercase tracking-wide">Filter</p>
-              <input
-                v-model="localFilterText"
-                class="w-full px-2 py-1 rounded border border-border/50 bg-transparent text-xs outline-none focus:border-primary/50 placeholder:text-muted-foreground/30"
-                placeholder="Search items..."
-                @input="applyFilter" />
-            </div>
           </UiPopoverContent>
         </UiPopover>
 
