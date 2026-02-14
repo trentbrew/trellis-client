@@ -15,6 +15,8 @@
     editMode: boolean
     allItems: Entity[]
     previewMove: (viewId: string, col: number, row: number) => GridView[]
+    canUndo: boolean
+    canRedo: boolean
   }>()
 
   const gridContainerEl = ref<HTMLElement | null>(null)
@@ -31,6 +33,8 @@
     'apply-preset': [preset: GridPreset]
     'create-first-view': [dataSource: string, projection: ProjectionType]
     'open-detail': [item: Entity]
+    'undo': []
+    'redo': []
   }>()
 
   // Cell picker dialog state (kept for editing existing views via pencil button)
@@ -117,6 +121,49 @@
     },
   })
 
+  // ── FLIP animation helper for layout shifts ───────────────────────────
+  function snapshotCellRects(): Map<string, DOMRect> {
+    const rects = new Map<string, DOMRect>()
+    if (!gridContainerEl.value) return rects
+    const cells = gridContainerEl.value.querySelectorAll<HTMLElement>('[data-view-id]')
+    for (const cell of cells) {
+      const id = cell.dataset.viewId
+      if (id) rects.set(id, cell.getBoundingClientRect())
+    }
+    return rects
+  }
+
+  function flipAnimateCells(beforeRects: Map<string, DOMRect>, skipId?: string, duration = 200) {
+    if (!gridContainerEl.value) return
+    const cells = gridContainerEl.value.querySelectorAll<HTMLElement>('[data-view-id]')
+    for (const cell of cells) {
+      const id = cell.dataset.viewId
+      if (!id || id === skipId) continue
+      const before = beforeRects.get(id)
+      if (!before) continue
+      const after = cell.getBoundingClientRect()
+      const dx = before.left - after.left
+      const dy = before.top - after.top
+      const dw = before.width - after.width
+      const dh = before.height - after.height
+      if (Math.abs(dx) < 1 && Math.abs(dy) < 1 && Math.abs(dw) < 1 && Math.abs(dh) < 1) continue
+      cell.style.transform = `translate(${dx}px, ${dy}px)`
+      cell.style.transition = 'none'
+      requestAnimationFrame(() => {
+        cell.style.transition = `transform ${duration}ms cubic-bezier(0.2, 0, 0, 1)`
+        cell.style.transform = ''
+        const onEnd = () => { cell.style.transition = ''; cell.style.transform = ''; cell.removeEventListener('transitionend', onEnd) }
+        cell.addEventListener('transitionend', onEnd, { once: true })
+      })
+    }
+  }
+
+  function handleResize(id: string, c: number, r: number, cs: number, rs: number) {
+    const beforeRects = snapshotCellRects()
+    emit('resize-view', id, c, r, cs, rs)
+    nextTick(() => flipAnimateCells(beforeRects, id))
+  }
+
   // Re-initialize draggables when views change (added/removed/reordered)
   watch(() => props.views.length, () => {
     if (props.editMode) {
@@ -130,6 +177,25 @@
       nextTick(() => initDraggables())
     }
   })
+
+  // ── Undo / Redo keyboard shortcuts ────────────────────────────────────
+  function handleKeydown(e: KeyboardEvent) {
+    const isMod = e.metaKey || e.ctrlKey
+    if (!isMod || e.key.toLowerCase() !== 'z') return
+    // Don't intercept if user is typing in an input/textarea
+    const tag = (e.target as HTMLElement)?.tagName
+    if (tag === 'INPUT' || tag === 'TEXTAREA' || (e.target as HTMLElement)?.isContentEditable) return
+
+    e.preventDefault()
+    if (e.shiftKey) {
+      emit('redo')
+    } else {
+      emit('undo')
+    }
+  }
+
+  onMounted(() => document.addEventListener('keydown', handleKeydown))
+  onUnmounted(() => document.removeEventListener('keydown', handleKeydown))
 </script>
 
 <template>
@@ -152,11 +218,11 @@
       @apply-preset="(preset) => emit('apply-preset', preset)" />
 
     <!-- Grid -->
-    <div v-else class="flex-1 overflow-y-auto p-4 pb-[50vh]">
+    <div v-else class="flex-1 overflow-y-auto p-4">
       <div
         ref="gridContainerEl"
         :style="{ ...gridStyle, ...(guidelinesStyle || {}) }"
-        class="min-h-0"
+        class="min-h-0 pb-[50vh]"
         :class="isDrawing ? 'cursor-crosshair' : editMode ? 'cursor-crosshair' : ''">
         <GridCell
           v-for="view in views"
@@ -172,7 +238,7 @@
           @update-filter="(id, ft) => emit('update-view', id, { filters: { text: ft } })"
           @cancel="(id) => emit('remove-view', id)"
           @remove="(id) => emit('remove-view', id)"
-          @resize="(id, c, r, cs, rs) => emit('resize-view', id, c, r, cs, rs)"
+          @resize="handleResize"
           @open-detail="(item) => emit('open-detail', item)">
           <!-- Projection content slot -->
           <template #default="{ view: v, items }">

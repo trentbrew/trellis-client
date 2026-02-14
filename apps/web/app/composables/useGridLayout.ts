@@ -20,6 +20,35 @@ export function useGridLayout(pageId: MaybeRef<string>) {
   const gap = ref<GridGap>('md')
   const editMode = ref(false)
 
+  // ── Undo / Redo History ─────────────────────────────────────────────────
+  const MAX_HISTORY = 50
+  const undoStack = ref<string[]>([])
+  const redoStack = ref<string[]>([])
+
+  /** Snapshot current views state onto the undo stack (call before every mutation). */
+  function _pushUndo(): void {
+    undoStack.value.push(JSON.stringify(views.value))
+    if (undoStack.value.length > MAX_HISTORY) undoStack.value.shift()
+    redoStack.value = [] // new action clears redo
+  }
+
+  const canUndo = computed(() => undoStack.value.length > 0)
+  const canRedo = computed(() => redoStack.value.length > 0)
+
+  function undo(): void {
+    if (!undoStack.value.length) return
+    redoStack.value.push(JSON.stringify(views.value))
+    views.value = JSON.parse(undoStack.value.pop()!)
+    _persist()
+  }
+
+  function redo(): void {
+    if (!redoStack.value.length) return
+    undoStack.value.push(JSON.stringify(views.value))
+    views.value = JSON.parse(redoStack.value.pop()!)
+    _persist()
+  }
+
   // ── Sync from PageConfig ───────────────────────────────────────────────
 
   const pageConfig = computed(() =>
@@ -123,7 +152,7 @@ export function useGridLayout(pageId: MaybeRef<string>) {
     return null
   }
 
-  function resolveCollisions(movedId: string): void {
+  function resolveCollisions(movedId: string, originalPos?: { col: number; row: number }): void {
     const moved = views.value.find((v) => v.id === movedId)
     if (!moved) return
 
@@ -136,13 +165,19 @@ export function useGridLayout(pageId: MaybeRef<string>) {
       for (const other of views.value) {
         if (other.id === movedId) continue
         if (_overlaps(moved, other)) {
-          // Try to move other UPWARD first
-          const upRow = _findUpwardSlot(other, movedId)
-          if (upRow !== null) {
-            other.row = upRow
+          // 1. Try to swap into the dragged box's original position
+          if (originalPos && _canPlaceAt(other, originalPos.col, originalPos.row, movedId)) {
+            other.col = originalPos.col
+            other.row = originalPos.row
           } else {
-            // No room above — push below the moved view
-            other.row = moved.row + moved.rowSpan
+            // 2. Try to move other UPWARD
+            const upRow = _findUpwardSlot(other, movedId)
+            if (upRow !== null) {
+              other.row = upRow
+            } else {
+              // 3. Last resort — push below the moved view
+              other.row = moved.row + moved.rowSpan
+            }
           }
           changed = true
         }
@@ -156,7 +191,6 @@ export function useGridLayout(pageId: MaybeRef<string>) {
           if (_overlaps(a, b)) {
             const lower = a.row >= b.row ? a : b
             const upper = a.row >= b.row ? b : a
-            // Try to move lower upward first
             const upRow = _findUpwardSlot(lower, upper.id)
             if (upRow !== null) {
               lower.row = upRow
@@ -238,6 +272,7 @@ export function useGridLayout(pageId: MaybeRef<string>) {
       title: options?.title,
     })
 
+    _pushUndo()
     views.value.push(view)
     resolveCollisions(view.id)
     _compact()
@@ -255,6 +290,7 @@ export function useGridLayout(pageId: MaybeRef<string>) {
       dataSource: '',
       projection: 'table' as ProjectionType,
     })
+    _pushUndo()
     views.value.push(view)
     resolveCollisions(view.id)
     _compact()
@@ -269,6 +305,7 @@ export function useGridLayout(pageId: MaybeRef<string>) {
   }
 
   function removeView(id: string): void {
+    _pushUndo()
     views.value = views.value.filter((v) => v.id !== id)
     _compact()
     _persist()
@@ -280,6 +317,7 @@ export function useGridLayout(pageId: MaybeRef<string>) {
   ): void {
     const view = views.value.find((v) => v.id === id)
     if (!view) return
+    _pushUndo()
     Object.assign(view, updates)
     if (updates.col !== undefined || updates.row !== undefined ||
         updates.colSpan !== undefined || updates.rowSpan !== undefined) {
@@ -292,6 +330,7 @@ export function useGridLayout(pageId: MaybeRef<string>) {
   function resizeView(id: string, col: number, row: number, colSpan: number, rowSpan: number): void {
     const view = views.value.find((v) => v.id === id)
     if (!view) return
+    _pushUndo()
 
     // Clamp to grid bounds
     const clampedCol = Math.max(1, Math.min(col, GRID_COLS))
@@ -310,12 +349,16 @@ export function useGridLayout(pageId: MaybeRef<string>) {
   function moveView(id: string, col: number, row: number): void {
     const view = views.value.find((v) => v.id === id)
     if (!view) return
+    _pushUndo()
+
+    // Record original position for swap behavior
+    const originalPos = { col: view.col, row: view.row }
 
     // Clamp to grid bounds
     view.col = Math.max(1, Math.min(col, GRID_COLS - view.colSpan + 1))
     view.row = Math.max(1, row)
 
-    resolveCollisions(id)
+    resolveCollisions(id, originalPos)
     _compact()
     _persist()
   }
@@ -329,10 +372,13 @@ export function useGridLayout(pageId: MaybeRef<string>) {
     const moved = clone.find((v) => v.id === id)
     if (!moved) return clone
 
+    // Record original position for swap behavior
+    const originalPos = { col: moved.col, row: moved.row }
+
     moved.col = Math.max(1, Math.min(col, GRID_COLS - moved.colSpan + 1))
     moved.row = Math.max(1, row)
 
-    // Resolve collisions on clone (with upward gravity)
+    // Resolve collisions on clone (swap-first, then upward gravity)
     function canPlaceInClone(view: GridView, col: number, row: number, excludeId: string): boolean {
       for (const other of clone) {
         if (other.id === view.id || other.id === excludeId) continue
@@ -360,11 +406,19 @@ export function useGridLayout(pageId: MaybeRef<string>) {
       for (const other of clone) {
         if (other.id === id) continue
         if (_overlaps(moved, other)) {
-          const upRow = findUpInClone(other, id)
-          if (upRow !== null) {
-            other.row = upRow
+          // 1. Try to swap into the dragged box's original position
+          if (canPlaceInClone(other, originalPos.col, originalPos.row, id)) {
+            other.col = originalPos.col
+            other.row = originalPos.row
           } else {
-            other.row = moved.row + moved.rowSpan
+            // 2. Try upward
+            const upRow = findUpInClone(other, id)
+            if (upRow !== null) {
+              other.row = upRow
+            } else {
+              // 3. Push below
+              other.row = moved.row + moved.rowSpan
+            }
           }
           changed = true
         }
@@ -422,6 +476,7 @@ export function useGridLayout(pageId: MaybeRef<string>) {
   }
 
   function applyPreset(preset: GridPreset): void {
+    _pushUndo()
     views.value = preset.views.map((stub) =>
       createGridView({
         ...stub,
@@ -433,6 +488,7 @@ export function useGridLayout(pageId: MaybeRef<string>) {
   }
 
   function clearAll(): void {
+    _pushUndo()
     views.value = []
     _persist()
   }
@@ -477,5 +533,11 @@ export function useGridLayout(pageId: MaybeRef<string>) {
     autoPosition,
     resolveCollisions,
     previewMove,
+
+    // Undo / Redo
+    undo,
+    redo,
+    canUndo,
+    canRedo,
   }
 }
