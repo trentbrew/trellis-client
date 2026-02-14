@@ -1,3 +1,5 @@
+import { ENTITY_NAMESPACE } from '~/lib/tql-namespace'
+
 /**
  * Dynamic Ontology Registry
  *
@@ -202,7 +204,7 @@ const _initialized = ref(false)
 
 // Schema IDs that are storage-level (not entity types) — skip them
 const SYSTEM_SCHEMA_IDS = new Set([
-  'trellis:schema/calendaritem',
+  `trellis:schema/${ENTITY_NAMESPACE}`,
   'trellis:schema/comment',
 ])
 

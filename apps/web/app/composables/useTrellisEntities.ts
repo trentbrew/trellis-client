@@ -1,33 +1,31 @@
 import type { Entity, EntityType, EntityReference } from '~/types/entity'
 import { extractYmd } from '~/utils/date'
+import { ENTITY_NAMESPACE, entityId as toEntityId, stripNamespace, entityQuery } from '~/lib/tql-namespace'
 
-/**
- * TQL-backed entity store.
- *
- * Same API surface as the original useTrellisCalendarItems:
- * - `items`        — reactive ref of all Entity[]
- * - `loading`      — true until first fetch
- * - `byType(type)` — filtered computed for a specific EntityType
- * - `create(item)` — persist a new item via graph API
- * - `update(item)` — update an existing item via graph API
- * - `remove(id)`   — delete an item via graph API
- */
-export function useTrellisEntities() {
-  const { query, mutate, fetchNodes } = useTrellisGraph()
+// ── Singleton state (shared across all consumers) ──────────────────────
+const _items = ref<Entity[]>([])
+const _loading = ref(true)
+let _initialized = false
 
-  const items = ref<Entity[]>([])
-  const loading = ref(true)
+function _initStore() {
+  if (_initialized) return
+  _initialized = true
 
-  // Query all calendar items from the graph
-  const { data: entityIds, loading: queryLoading } = query('FIND calendaritem AS ?e')
+  // Use a detached effect scope so watchers survive component unmounts
+  const scope = effectScope(true)
+  scope.run(() => {
+    const { query, fetchNodes } = useTrellisGraph()
 
-  // When entity IDs change, batch-hydrate full nodes (single request)
-  watch(
-    entityIds,
-    async (ids) => {
+    // Single query watcher for the entire app
+    const { data: entityIds, loading: queryLoading } = query(entityQuery('?e'))
+
+    // When entity IDs change, batch-hydrate full nodes (single request)
+    watch(
+      entityIds,
+      async (ids) => {
       if (!ids || ids.length === 0) {
-        items.value = []
-        loading.value = false
+        _items.value = []
+        _loading.value = false
         return
       }
 
@@ -41,9 +39,9 @@ export function useTrellisEntities() {
           nodeMap.set(n['@id'] as string, n)
         }
 
-        items.value = rawNodes.map((node) => {
-          const entityId = node['@id'] as string
-          const id = entityId.replace('calendaritem:', '')
+        _items.value = rawNodes.map((node) => {
+          const fullId = node['@id'] as string
+          const id = stripNamespace(fullId)
           const { '@id': _ld_id, '@type': _ld_type, _links, ...rest } = node
 
           // Hydrate entity references from TQL links
@@ -56,7 +54,7 @@ export function useTrellisEntities() {
               return {
                 kind: 'entity' as const,
                 id: `ref-${l.relation}-${l.target}`,
-                entityId: l.target.replace('calendaritem:', ''),
+                entityId: stripNamespace(l.target),
                 entityType: (targetNode?.['@type'] || targetNode?.type || 'task') as EntityType,
                 title: (targetNode?.title as string) || 'Untitled',
                 direction: 'outgoing' as const,
@@ -69,7 +67,7 @@ export function useTrellisEntities() {
               return {
                 kind: 'entity' as const,
                 id: `ref-${l.relation}-${l.source}`,
-                entityId: l.source.replace('calendaritem:', ''),
+                entityId: stripNamespace(l.source),
                 entityType: (sourceNode?.['@type'] || sourceNode?.type || 'task') as EntityType,
                 title: (sourceNode?.title as string) || 'Untitled',
                 direction: 'incoming' as const,
@@ -78,8 +76,8 @@ export function useTrellisEntities() {
 
           return {
             id,
-            ...rest,
-            type: node['@type'] || node.type,
+            ...normalizeScalars(rest),
+            type: normalizeScalar(node['@type'] || node.type),
             startDate: extractYmd((node as any).startDate || (rest as any).startDate),
             endDate: extractYmd((node as any).endDate || (rest as any).endDate) || undefined,
             tags: normalizeArray(node.tags),
@@ -93,20 +91,41 @@ export function useTrellisEntities() {
       } catch (err) {
         console.error('[useTrellisEntities] hydration error:', err)
       } finally {
-        loading.value = false
+        _loading.value = false
       }
     },
     { immediate: true },
   )
 
-  // Also sync loading from query
-  watch(queryLoading, (v) => {
-    if (v) loading.value = true
-  })
+    // Also sync loading from query
+    watch(queryLoading, (v) => {
+      if (v) _loading.value = true
+    })
+  }) // end scope.run
+}
+
+/**
+ * TQL-backed entity store (singleton).
+ *
+ * All consumers share the same reactive state and single query watcher.
+ *
+ * Provides:
+ * - `items`        — reactive ref of all Entity[]
+ * - `loading`      — true until first fetch
+ * - `byType(type)` — filtered computed for a specific EntityType
+ * - `create(item)` — persist a new item via graph API
+ * - `update(item)` — update an existing item via graph API
+ * - `remove(id)`   — delete an item via graph API
+ */
+export function useTrellisEntities() {
+  const { mutate } = useTrellisGraph()
+
+  // Initialize the singleton store on first call
+  _initStore()
 
   // Filtered view by type
   function byType(type: EntityType) {
-    return computed(() => items.value.filter((i) => i.type === type))
+    return computed(() => _items.value.filter((i) => i.type === type))
   }
 
   // CRUD operations
@@ -118,8 +137,8 @@ export function useTrellisEntities() {
 
     await mutate({
       action: 'createNode',
-      entityId: `calendaritem:${itemId}`,
-      type: 'calendaritem',
+      entityId: toEntityId(itemId),
+      type: ENTITY_NAMESPACE,
       data: prepareDataForEAV({
         ...data,
         startDate: extractYmd((data as any).startDate),
@@ -137,8 +156,8 @@ export function useTrellisEntities() {
 
     await mutate({
       action: 'updateNode',
-      entityId: `calendaritem:${itemId}`,
-      type: 'calendaritem',
+      entityId: toEntityId(itemId),
+      type: ENTITY_NAMESPACE,
       data: prepareDataForEAV({
         ...fields,
         startDate: extractYmd((fields as any).startDate),
@@ -151,13 +170,13 @@ export function useTrellisEntities() {
   async function remove(itemId: string) {
     await mutate({
       action: 'deleteNode',
-      entityId: `calendaritem:${itemId}`,
+      entityId: toEntityId(itemId),
     })
   }
 
   return {
-    items,
-    loading,
+    items: _items,
+    loading: _loading,
     byType,
     create,
     update,
@@ -170,6 +189,39 @@ function normalizeArray(val: unknown): any[] {
   if (Array.isArray(val)) return val
   if (val === undefined || val === null || val === '') return []
   return [val]
+}
+
+/** Collapse arrays back to scalar values for non-array fields.
+ *  EAV stores may produce duplicate facts, e.g. title: ["Foo", "Foo"].
+ *  Takes the last element (most recent write wins). */
+function normalizeScalar(val: unknown): unknown {
+  if (!Array.isArray(val)) return val
+  if (val.length === 0) return undefined
+  return val[val.length - 1]
+}
+
+/**
+ * Fields that are genuinely multi-valued in the EAV store (stored as
+ * separate facts and should remain arrays after hydration).
+ *
+ * Everything NOT in this set defaults to scalar — new fields are
+ * automatically safe without manual registration.
+ *
+ * Note: `tags`, `involved`, `checklist`, `reminders`, `attachments`,
+ * and `references` are handled explicitly in the hydration block and
+ * never flow through `normalizeScalars()`.
+ */
+const MULTI_VALUE_FIELDS = new Set([
+  'children', 'relationships', 'dependsOn', 'counterparties', 'lineItems',
+])
+
+/** Walk an object and collapse array→scalar for all fields except known multi-value ones */
+function normalizeScalars(obj: Record<string, any>): Record<string, any> {
+  const out: Record<string, any> = {}
+  for (const [key, val] of Object.entries(obj)) {
+    out[key] = MULTI_VALUE_FIELDS.has(key) ? val : normalizeScalar(val)
+  }
+  return out
 }
 
 /** Parse a JSON-serialized array, falling back to normalizeArray */

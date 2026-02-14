@@ -2,7 +2,7 @@
  * Reactive composable for all entities.
  *
  * Delegates to TQL graph API via useTrellisEntities().
- * Same API surface as the original useCalendarItems() — zero page changes needed.
+ * Same API surface as the original composable — zero page changes needed.
  *
  * Provides:
  * - `items`        — reactive ref of all Entity[]

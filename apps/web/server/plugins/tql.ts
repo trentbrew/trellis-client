@@ -16,6 +16,7 @@ import { TrellisKernel } from '@toolkit/tql'
 import { BetterSqliteBackend } from '@toolkit/tql/persist/better-sqlite'
 import { createWorkspaceConfig } from '../utils/tql-ontologies'
 import { getPersonalSeedItems, getTrellisProjectTasks, getPeopleSeedItems, getOrganizationSeedItems, getFileSeedItems, getProjectSeedItems } from '../utils/tql-seed'
+import { ENTITY_NAMESPACE, entityId as toEntityId, entityQuery } from '../../app/lib/tql-namespace'
 
 import type { WorkspaceConfig } from '@toolkit/tql'
 
@@ -89,16 +90,16 @@ export default defineNitroPlugin(async (nitro) => {
   }
 
   if (factCount === 0) {
-    console.log('[tql] First boot — seeding personal calendar items...')
+    console.log('[tql] First boot — seeding entities...')
     const seedItems = getPersonalSeedItems()
 
     for (const item of seedItems) {
-      const entityId = `calendaritem:${item.id}`
+      const eid = toEntityId(item.id)
       const { id: _id, ...data } = item
-      await kernel.createNode(entityId, data, 'calendaritem')
+      await kernel.createNode(eid, data, ENTITY_NAMESPACE)
     }
 
-    console.log(`[tql] Seeded ${seedItems.length} calendar items`)
+    console.log(`[tql] Seeded ${seedItems.length} entities`)
     await kernel.checkpoint()
   } else {
     console.log('[tql] Kernel restored from existing data')
@@ -109,14 +110,14 @@ export default defineNitroPlugin(async (nitro) => {
   // don't exist yet. This lets us add project tracking tasks without
   // requiring a database reset.
   try {
-    const probeResult = await kernel.query('FIND calendaritem AS ?e WHERE ?e.folder = "Trellis"')
+    const probeResult = await kernel.query(`${entityQuery('?e')} WHERE ?e.folder = "Trellis"`)
     const hasTrellisTasks = probeResult.rows && probeResult.rows.length > 0
     if (!hasTrellisTasks) {
       const projectTasks = getTrellisProjectTasks()
       for (const item of projectTasks) {
-        const entityId = `calendaritem:${item.id}`
+        const eid = toEntityId(item.id)
         const { id: _id, ...data } = item
-        await kernel.createNode(entityId, data, 'calendaritem')
+        await kernel.createNode(eid, data, ENTITY_NAMESPACE)
       }
       console.log(`[tql] Seeded ${projectTasks.length} Trellis project tasks (dogfooding)`)
       await kernel.checkpoint()
@@ -127,14 +128,14 @@ export default defineNitroPlugin(async (nitro) => {
 
   // ── Seed people (actor class) ───────────────────────────────────
   try {
-    const peopleProbe = await kernel.query('FIND calendaritem AS ?e WHERE ?e.type = "person"')
+    const peopleProbe = await kernel.query(`${entityQuery('?e')} WHERE ?e.type = "person"`)
     const hasPeople = peopleProbe.rows && peopleProbe.rows.length > 0
     if (!hasPeople) {
       const people = getPeopleSeedItems()
       for (const item of people) {
-        const entityId = `calendaritem:${item.id}`
+        const eid = toEntityId(item.id)
         const { id: _id, ...data } = item
-        await kernel.createNode(entityId, data, 'calendaritem')
+        await kernel.createNode(eid, data, ENTITY_NAMESPACE)
       }
       console.log(`[tql] Seeded ${people.length} people`)
       await kernel.checkpoint()
@@ -145,14 +146,14 @@ export default defineNitroPlugin(async (nitro) => {
 
   // ── Seed organizations (actor class) ────────────────────────────
   try {
-    const orgProbe = await kernel.query('FIND calendaritem AS ?e WHERE ?e.type = "organization"')
+    const orgProbe = await kernel.query(`${entityQuery('?e')} WHERE ?e.type = "organization"`)
     const hasOrgs = orgProbe.rows && orgProbe.rows.length > 0
     if (!hasOrgs) {
       const orgs = getOrganizationSeedItems()
       for (const item of orgs) {
-        const entityId = `calendaritem:${item.id}`
+        const eid = toEntityId(item.id)
         const { id: _id, ...data } = item
-        await kernel.createNode(entityId, data, 'calendaritem')
+        await kernel.createNode(eid, data, ENTITY_NAMESPACE)
       }
       console.log(`[tql] Seeded ${orgs.length} organizations`)
       await kernel.checkpoint()
@@ -163,14 +164,14 @@ export default defineNitroPlugin(async (nitro) => {
 
   // ── Seed files (document class) ─────────────────────────────────
   try {
-    const fileProbe = await kernel.query('FIND calendaritem AS ?e WHERE ?e.type = "file"')
+    const fileProbe = await kernel.query(`${entityQuery('?e')} WHERE ?e.type = "file"`)
     const hasFiles = fileProbe.rows && fileProbe.rows.length > 0
     if (!hasFiles) {
       const files = getFileSeedItems()
       for (const item of files) {
-        const entityId = `calendaritem:${item.id}`
+        const eid = toEntityId(item.id)
         const { id: _id, ...data } = item
-        await kernel.createNode(entityId, data, 'calendaritem')
+        await kernel.createNode(eid, data, ENTITY_NAMESPACE)
       }
       console.log(`[tql] Seeded ${files.length} files`)
       await kernel.checkpoint()
@@ -181,14 +182,14 @@ export default defineNitroPlugin(async (nitro) => {
 
   // ── Seed projects (container class) ─────────────────────────────
   try {
-    const projectProbe = await kernel.query('FIND calendaritem AS ?e WHERE ?e.type = "project"')
+    const projectProbe = await kernel.query(`${entityQuery('?e')} WHERE ?e.type = "project"`)
     const hasProjects = projectProbe.rows && projectProbe.rows.length > 0
     if (!hasProjects) {
       const projects = getProjectSeedItems()
       for (const item of projects) {
-        const entityId = `calendaritem:${item.id}`
+        const eid = toEntityId(item.id)
         const { id: _id, ...data } = item
-        await kernel.createNode(entityId, data, 'calendaritem')
+        await kernel.createNode(eid, data, ENTITY_NAMESPACE)
       }
       console.log(`[tql] Seeded ${projects.length} projects`)
       await kernel.checkpoint()
@@ -201,15 +202,15 @@ export default defineNitroPlugin(async (nitro) => {
   // Targeted seed: runs even on existing databases if slide_deck items
   // don't exist yet. This lets us add slide decks without a DB reset.
   try {
-    const slideDeckProbe = await kernel.query('FIND calendaritem AS ?e WHERE ?e.type = "slide_deck"')
+    const slideDeckProbe = await kernel.query(`${entityQuery('?e')} WHERE ?e.type = "slide_deck"`)
     const hasSlideDeckItems = slideDeckProbe.rows && slideDeckProbe.rows.length > 0
     if (!hasSlideDeckItems) {
       const allSeedItems = getPersonalSeedItems()
       const slideDeckItems = allSeedItems.filter((i: any) => i.type === 'slide_deck')
       for (const item of slideDeckItems) {
-        const entityId = `calendaritem:${item.id}`
+        const eid = toEntityId(item.id)
         const { id: _id, ...data } = item
-        await kernel.createNode(entityId, data, 'calendaritem')
+        await kernel.createNode(eid, data, ENTITY_NAMESPACE)
       }
       if (slideDeckItems.length > 0) {
         console.log(`[tql] Seeded ${slideDeckItems.length} slide deck items`)

@@ -1,5 +1,5 @@
 <script setup lang="ts">
-  import type { Entity, EntityType } from '~/types/entity'
+  import type { Entity, EntityType, PropertyFieldId } from '~/types/entity'
   import { getEntityTypeConfig } from '~/config/entityRegistry'
   import { getEntityClass } from '~/types/entity'
   import { stripHtml } from '~/utils/stripHtml'
@@ -8,21 +8,36 @@
     defineProps<{
       item: Entity
       layout?: 'grid' | 'list' | 'moodboard'
+      /** Whether this card is currently selected */
+      selected?: boolean
+      /** Enable inline field editing on this card */
+      editable?: boolean
+      /** Owner list for the owner picker */
+      owners?: { id: string; name: string }[]
     }>(),
-    { layout: 'grid' },
+    { layout: 'grid', selected: false, editable: false, owners: () => [] },
   )
 
-  defineEmits<{ click: [] }>()
+  defineEmits<{
+    click: []
+    select: [event: MouseEvent]
+    'field-update': [fieldId: PropertyFieldId, value: unknown]
+  }>()
 
   const config = computed(() => getEntityTypeConfig(props.item.type as any))
   const entityClass = computed(() => getEntityClass(props.item.type as EntityType))
   const i = computed(() => props.item as any)
 
+  // ─── Entity class booleans ───
+  const isTemporal = computed(() => entityClass.value === 'temporal')
+  const isDocument = computed(() => entityClass.value === 'document')
+  const isActor = computed(() => entityClass.value === 'actor')
+  const isContainer = computed(() => entityClass.value === 'container')
+
   // ─── Entity type booleans ───
   const isBookmark = computed(() => i.value.type === 'bookmark')
   const isNote = computed(() => i.value.type === 'note')
   const isFile = computed(() => i.value.type === 'file')
-  const isActor = computed(() => entityClass.value === 'actor')
   const isOrg = computed(() => i.value.type === 'organization')
 
   // ─── Preview detection ───
@@ -36,14 +51,15 @@
     return false
   })
 
-  const initials = computed(() =>
-    props.item.title
+  const initials = computed(() => {
+    const t = typeof props.item.title === 'string' ? props.item.title : String(props.item.title ?? '')
+    return t
       .split(' ')
       .map((w) => w[0])
       .slice(0, 2)
       .join('')
-      .toUpperCase(),
-  )
+      .toUpperCase()
+  })
 
   // ─── File type icons ───
   const mimeIconMap: Record<string, { icon: string; color: string }> = {
@@ -82,10 +98,14 @@
   }
 
   // ─── Status / priority / category colors ───
-  const itemStatus = computed(() =>
-    i.value.taskStatus || i.value.tripStatus || i.value.paymentStatus
-    || i.value.sprintStatus || i.value.budgetStatus || i.value.status || '',
-  )
+  const itemStatus = computed(() => {
+    if (isTemporal.value)
+      return i.value.taskStatus || i.value.tripStatus || i.value.paymentStatus
+        || i.value.sprintStatus || i.value.budgetStatus || ''
+    if (isContainer.value)
+      return i.value.status || ''
+    return ''
+  })
 
   const statusColors: Record<string, string> = {
     'pending': 'bg-gray-500/10 text-gray-400',
@@ -123,8 +143,9 @@
     low: 'text-blue-500',
   }
 
-  // ─── Progress (containers / goals) ───
+  // ─── Progress (containers / goals only) ───
   const progressPercent = computed(() => {
+    if (!isContainer.value) return null
     if (i.value.targetValue && i.value.targetValue > 0)
       return Math.min(100, Math.round(((i.value.currentValue ?? 0) / i.value.targetValue) * 100))
     if (i.value.progress != null) return Math.round(i.value.progress * 100)
@@ -156,6 +177,7 @@
   }
 
   const dateDisplay = computed(() => {
+    if (!isTemporal.value && !isContainer.value) return null
     const start = i.value.startDate
     const end = i.value.endDate || i.value.targetDate
     if (!start && !end) return null
@@ -163,12 +185,13 @@
   })
 
   const endDateDisplay = computed(() => {
+    if (!isTemporal.value && !isContainer.value) return null
     const end = i.value.endDate || i.value.targetDate
     if (!end || !i.value.startDate) return null
     return formatDate(end)
   })
 
-  const isCompleted = computed(() => i.value.taskStatus === 'completed' || i.value.achieved === true)
+  const isCompleted = computed(() => isTemporal.value && (i.value.taskStatus === 'completed' || i.value.achieved === true))
 
   const refCount = computed(() =>
     (i.value.references || []).filter((r: any) => r.kind === 'entity').length,
@@ -214,7 +237,7 @@
         <h3 class="text-sm font-medium truncate" :class="{ 'line-through text-muted-foreground': isCompleted }">
           {{ item.title }}
         </h3>
-        <Icon v-if="i.pinned" name="lucide:pin" class="h-3 w-3 text-amber-500 shrink-0" />
+        <Icon v-if="isDocument && i.pinned" name="lucide:pin" class="h-3 w-3 text-amber-500 shrink-0" />
         <span
           v-if="itemStatus"
           :class="['ml-auto shrink-0 rounded-full px-1.5 py-0.5 text-[10px] font-medium', statusColors[itemStatus] || 'bg-muted text-muted-foreground']">
@@ -236,7 +259,7 @@
           :class="['rounded-full px-1.5 py-0.5 text-[10px] font-medium', categoryColors[i.category] || 'bg-muted text-muted-foreground']">
           {{ i.category }}
         </span>
-        <span v-if="dateDisplay" class="flex items-center gap-1">
+        <span v-if="(isTemporal || isContainer) && dateDisplay" class="flex items-center gap-1">
           <Icon name="lucide:calendar" class="h-3 w-3 opacity-50" />
           {{ dateDisplay }}
         </span>
@@ -254,11 +277,32 @@
   <!-- ═══════ GRID / MOODBOARD LAYOUT ═══════ -->
   <div
     v-else
-    class="group relative flex flex-col rounded-lg border border-border bg-card overflow-hidden cursor-pointer hover:ring-1 hover:ring-primary/30 transition-all"
-    :class="layout === 'moodboard' ? 'mb-3 break-inside-avoid' : ''"
+    class="group relative flex flex-col rounded-lg border bg-card overflow-hidden cursor-pointer transition-all"
+    :class="[
+      layout === 'moodboard' ? 'mb-3 break-inside-avoid' : '',
+      selected
+        ? 'border-primary ring-2 ring-primary/30 bg-primary/2'
+        : 'border-border hover:ring-1 hover:ring-primary/30',
+    ]"
     @click="$emit('click')">
-    <!-- Pinned indicator (absolute overlay) -->
-    <div v-if="i.pinned" class="absolute top-2 right-2 z-20">
+    <!-- Selection checkbox (top-left, visible on hover or when selected) -->
+    <div
+      v-if="editable"
+      :class="[
+        'absolute top-2 left-2 z-20 transition-opacity',
+        selected ? 'opacity-100' : 'opacity-0 group-hover:opacity-100',
+      ]">
+      <button
+        type="button"
+        class="flex h-5 w-5 items-center justify-center rounded border transition-colors"
+        :class="selected ? 'bg-primary border-primary' : 'bg-card/80 backdrop-blur border-border hover:border-primary/60'"
+        @click.stop="$emit('select', $event)">
+        <Icon v-if="selected" name="lucide:check" class="h-3 w-3 text-primary-foreground" />
+      </button>
+    </div>
+
+    <!-- Pinned indicator (absolute overlay, documents only) -->
+    <div v-if="isDocument && i.pinned" class="absolute top-2 right-2 z-20">
       <Icon name="lucide:pin" class="h-3.5 w-3.5 text-amber-500 drop-shadow" />
     </div>
 
@@ -342,24 +386,61 @@
           <Icon :name="config.icon" :class="['h-3.5 w-3.5 shrink-0', `text-${config.color}-500`]" />
         </template>
 
-        <span
-          v-if="i.category"
-          :class="['rounded-full px-1.5 py-0.5 text-[10px] font-medium', categoryColors[i.category] || 'bg-muted text-muted-foreground']">
-          {{ i.category }}
-        </span>
+        <!-- Category: inline editor or static badge -->
+        <template v-if="i.category">
+          <div v-if="editable" @click.stop>
+            <EntityFieldEditor
+              :field-id="'category'"
+              :model-value="i.category"
+              :entity-type="i.type"
+              compact
+              display="pill"
+              @update:model-value="$emit('field-update', 'category', $event)" />
+          </div>
+          <span
+            v-else
+            :class="['rounded-full px-1.5 py-0.5 text-[10px] font-medium', categoryColors[i.category] || 'bg-muted text-muted-foreground']">
+            {{ i.category }}
+          </span>
+        </template>
 
         <div class="flex-1" />
 
-        <span
-          v-if="i.priority"
-          :class="['text-[10px] font-medium', priorityColors[i.priority] || 'text-muted-foreground']">
-          {{ i.priority }}
-        </span>
-        <span
-          v-if="itemStatus"
-          :class="['rounded-full px-1.5 py-0.5 text-[10px] font-medium', statusColors[itemStatus] || 'bg-muted text-muted-foreground']">
-          {{ itemStatus }}
-        </span>
+        <!-- Priority: inline editor or static badge (temporal only) -->
+        <template v-if="isTemporal && i.priority">
+          <div v-if="editable" @click.stop>
+            <EntityFieldEditor
+              :field-id="'priority'"
+              :model-value="i.priority"
+              :entity-type="i.type"
+              compact
+              display="pill"
+              @update:model-value="$emit('field-update', 'priority', $event)" />
+          </div>
+          <span
+            v-else
+            :class="['text-[10px] font-medium', priorityColors[i.priority] || 'text-muted-foreground']">
+            {{ i.priority }}
+          </span>
+        </template>
+
+        <!-- Status: inline editor or static badge (temporal + container only) -->
+        <template v-if="(isTemporal || isContainer) && itemStatus">
+          <div v-if="editable" @click.stop>
+            <EntityFieldEditor
+              :field-id="'status'"
+              :model-value="itemStatus"
+              :entity-type="i.type"
+              compact
+              display="pill"
+              @update:model-value="$emit('field-update', 'status', $event)" />
+          </div>
+          <span
+            v-else
+            :class="['rounded-full px-1.5 py-0.5 text-[10px] font-medium', statusColors[itemStatus] || 'bg-muted text-muted-foreground']">
+            {{ itemStatus }}
+          </span>
+        </template>
       </div>
 
       <!-- Title -->
@@ -400,8 +481,8 @@
       <!-- Metric (budget/payment amount, sprint velocity) -->
       <p v-if="metricDisplay" class="text-base font-semibold">{{ metricDisplay }}</p>
 
-      <!-- Progress bar -->
-      <div v-if="progressPercent != null" class="space-y-1">
+      <!-- Progress bar (containers only) -->
+      <div v-if="isContainer && progressPercent != null" class="space-y-1">
         <div class="flex items-center justify-between text-xs text-muted-foreground">
           <span>{{ i.metric || 'Progress' }}</span>
           <span>{{ progressPercent }}%</span>

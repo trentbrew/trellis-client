@@ -1,9 +1,10 @@
 <script setup lang="ts">
   import type { PageStat } from '~/components/layout/Page.vue'
+  import type { PropertyFieldId, Entity, SlideDeckItem } from '~/types/entity'
   import { useBrowsePage } from '~/composables/useBrowsePage'
+  import { useBrowseSelection } from '~/composables/useBrowseSelection'
   import EntityDialog from '~/components/dialogs/EntityDialog.vue'
   import SlideDeckDialog from '~/components/dialogs/SlideDeckDialog.vue'
-  import type { Entity, SlideDeckItem } from '~/types/entity'
 
   definePageMeta({ layout: 'default' })
   useHead({ title: 'Documents | Personal' })
@@ -139,6 +140,12 @@
 
   const taskOwners = [{ id: 'you', name: 'You' }, { id: 'alex', name: 'Alex' }, { id: 'maya', name: 'Maya' }]
   const taskFolders = ['Work', 'Personal', 'Health', 'Finance', 'Projects']
+
+  const {
+    isSelected, toggle: toggleSelection, clearSelection,
+    selectedItems, selectionCount,
+    handleFieldUpdate, handleBatchDelete, handleBatchDuplicate, handleBatchSetField,
+  } = useBrowseSelection(filteredItems)
 </script>
 
 <template>
@@ -186,7 +193,12 @@
           :key="item.id"
           :item="item"
           layout="grid"
-          @click="openDetail(item as Entity)" />
+          editable
+          :selected="isSelected(item.id)"
+          :owners="taskOwners"
+          @click="openDetail(item as Entity)"
+          @select="toggleSelection(item.id, $event)"
+          @field-update="(fieldId: PropertyFieldId, value: unknown) => handleFieldUpdate(item, fieldId, value)" />
       </div>
 
       <!-- Moodboard view -->
@@ -196,7 +208,12 @@
           :key="item.id"
           :item="item"
           layout="moodboard"
-          @click="openDetail(item as Entity)" />
+          editable
+          :selected="isSelected(item.id)"
+          :owners="taskOwners"
+          @click="openDetail(item as Entity)"
+          @select="toggleSelection(item.id, $event)"
+          @field-update="(fieldId: PropertyFieldId, value: unknown) => handleFieldUpdate(item, fieldId, value)" />
       </div>
 
       <!-- List view -->
@@ -206,7 +223,12 @@
           :key="item.id"
           :item="item"
           layout="list"
-          @click="openDetail(item as Entity)" />
+          editable
+          :selected="isSelected(item.id)"
+          :owners="taskOwners"
+          @click="openDetail(item as Entity)"
+          @select="toggleSelection(item.id, $event)"
+          @field-update="(fieldId: PropertyFieldId, value: unknown) => handleFieldUpdate(item, fieldId, value)" />
       </div>
 
       <!-- Table view -->
@@ -253,6 +275,15 @@
     <div class="text-xs text-muted-foreground mt-4 pt-4 border-t border-border pb-10">
       Showing {{ filteredItems.length }} {{ filteredItems.length === 1 ? 'document' : 'documents' }}
     </div>
+
+    <!-- Selection Bar -->
+    <EntitySelectionBar
+      :selected-items="selectedItems"
+      :selection-count="selectionCount"
+      @batch-delete="handleBatchDelete"
+      @batch-duplicate="handleBatchDuplicate"
+      @batch-set-field="handleBatchSetField"
+      @clear-selection="clearSelection" />
 
     <!-- View/Edit Dialog -->
     <EntityDialog

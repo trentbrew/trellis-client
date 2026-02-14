@@ -169,14 +169,12 @@
         <div class="flex flex-1 min-h-0 overflow-hidden">
           <AppSidebar :header-above="true" />
           <div class="flex flex-1 flex-col min-w-0 overflow-hidden">
-            <Transition name="page" mode="out-in" appear>
-              <main
-                ref="pageEl"
-                class="page-transition-wrapper bg-transparent flex-1 overflow-y-auto p-0 relative"
-                aria-label="Main content">
-                <slot />
-              </main>
-            </Transition>
+            <main
+              ref="pageEl"
+              class="page-transition-wrapper bg-transparent flex-1 overflow-y-auto p-0 relative"
+              aria-label="Main content">
+              <slot />
+            </main>
           </div>
         </div>
       </div>
@@ -187,14 +185,12 @@
       <AppSidebar :header-above="false" />
       <div class="flex flex-1 flex-col min-w-0 overflow-hidden">
         <AppHeader :above-sidebar="false" />
-        <Transition name="page" mode="out-in" appear>
-          <main
-            ref="pageEl"
-            class="page-transition-wrapper bg-transparent flex-1 overflow-y-auto p-0 relative"
-            aria-label="Main content">
-            <slot />
-          </main>
-        </Transition>
+        <main
+          ref="pageEl"
+          class="page-transition-wrapper bg-transparent flex-1 overflow-y-auto p-0 relative"
+          aria-label="Main content">
+          <slot />
+        </main>
       </div>
     </template>
 
@@ -202,20 +198,3 @@
     <EntityDetailSheet />
   </div>
 </template>
-
-<style scoped>
-  .page-enter-active,
-  .page-leave-active {
-    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-  }
-
-  .page-enter-from {
-    opacity: 0;
-    transform: translateX(20px);
-  }
-
-  .page-leave-to {
-    opacity: 0;
-    transform: translateX(-20px);
-  }
-</style>

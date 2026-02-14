@@ -1,12 +1,22 @@
 import type { Ref } from 'vue'
+import type { GridView, GridGap } from '~/types/grid'
 
 export interface PageConfig {
   id: string
   title: string
   icon?: string
+  description?: string
   dataSource: string // entity type slug (e.g. 'task', 'note', 'invoice') or 'all' for unfiltered
   filters?: Record<string, any>
   defaultProjection?: string // e.g. 'table', 'kanban', 'calendar', 'list'
+  /** Page layout mode: 'fullscreen' (browse) or 'grid' (multi-view dashboard) */
+  layout?: 'fullscreen' | 'grid'
+  /** Grid view definitions (only used when layout === 'grid') */
+  views?: GridView[]
+  /** Grid gap size (only used when layout === 'grid') */
+  gridGap?: GridGap
+  /** Optional banner/cover image URL */
+  bannerImage?: string
   order?: number
   createdAt?: number
   updatedAt?: number

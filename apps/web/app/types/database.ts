@@ -207,6 +207,7 @@ export type ProjectionType =
   | 'chart'
   | 'slide-deck'
   | 'moodboard'
+  | 'entity-detail'
 
 export type ChartType =
   | 'bar'

@@ -68,7 +68,7 @@
     displayActivity,
     addComment: persistComment,
     loading: commentsLoading,
-  } = useComments(currentEntityId, 'calendarItem')
+  } = useComments(currentEntityId)
 
   // UI State
   const newComment = ref('')
@@ -182,8 +182,9 @@
   })
 
   // Bidirectional entity references
-  const { addEntityRef, removeRef: removeEntityRef, openEntityRef: handleOpenEntityRef } = useEntityReferences(editableItem)
+  const { addEntityRef, removeRef: removeEntityRef, openEntityRef: handleOpenEntityRef, createAndOpenEntityRef } = useEntityReferences(editableItem)
   const handleAddEntityRef = (ref: import('~/types/entity').EntityReference) => addEntityRef(ref)
+  const handleCreatedEntityRef = (ref: import('~/types/entity').EntityReference) => createAndOpenEntityRef(ref)
   const handleRemoveRef = (refId: string) => removeEntityRef(refId)
 
   const handleAddComment = async () => {
@@ -344,65 +345,84 @@
       </div>
     </template>
 
-    <!-- Main Content -->
-    <div class="flex-1 flex flex-col min-w-0 overflow-y-auto">
-      <div class="divide-y divide-border flex flex-col min-h-full">
-        <!-- References -->
-        <ReferencesSection
-          v-model="editableItem.references"
-          :readonly="isViewMode"
-          @open-entity="handleOpenEntityRef"
-          @remove-ref="handleRemoveRef"
-          @add-entity="() => { entityPickerFilterType = undefined; entityPickerOpen = true }"
-          @add-entity-of-type="(type: string) => { entityPickerFilterType = type; entityPickerOpen = true }" />
-
-        <!-- Comments / Activity -->
-        <div v-if="!isCreateMode" class="p-4 space-y-2">
-          <button
-            type="button"
-            class="w-full flex items-center justify-between text-[10px] font-medium text-muted-foreground uppercase tracking-wide hover:text-foreground transition-colors"
-            @click="commentsOpen = !commentsOpen">
-            <span>Comments / Activity</span>
-            <Icon :name="commentsOpen ? 'lucide:chevron-up' : 'lucide:chevron-down'" class="h-3 w-3" />
-          </button>
-          <div v-if="commentsOpen" class="space-y-2">
-            <div v-if="commentsLoading" class="flex items-center py-2">
-              <Icon name="lucide:loader-2" class="h-3 w-3 animate-spin text-muted-foreground" />
-            </div>
-            <div v-else-if="displayActivity.length" class="space-y-1.5 mb-2">
-              <div v-for="activityItem in displayActivity" :key="activityItem.id" class="flex items-start gap-2">
-                <div class="w-5 h-5 rounded-full bg-muted flex items-center justify-center shrink-0 mt-0.5">
-                  <Icon v-if="activityItem.type === 'created'" name="lucide:plus" class="h-2.5 w-2.5 text-muted-foreground" />
-                  <Icon v-else-if="activityItem.type === 'comment'" name="lucide:message-circle" class="h-2.5 w-2.5 text-muted-foreground" />
-                  <Icon v-else name="lucide:activity" class="h-2.5 w-2.5 text-muted-foreground" />
-                </div>
-                <div class="flex-1 min-w-0">
-                  <div class="flex items-baseline gap-1 flex-wrap">
-                    <span class="text-[11px] font-medium">{{ activityItem.authorName }}</span>
-                    <span class="text-[10px] text-muted-foreground">{{ formatRelativeTime(Number(activityItem.createdAt)) }}</span>
-                  </div>
-                  <p v-if="activityItem.content" class="text-xs text-foreground/80 mt-0.5">{{ activityItem.content }}</p>
-                  <p v-else-if="activityItem.type === 'created'" class="text-[10px] text-muted-foreground mt-0.5">created this project</p>
-                </div>
-              </div>
-            </div>
-            <div class="flex items-center gap-2">
-              <div class="w-5 h-5 rounded-full bg-muted/60 flex items-center justify-center shrink-0">
-                <Icon name="lucide:user" class="h-2.5 w-2.5 text-muted-foreground" />
-              </div>
-              <input
-                v-model="newComment"
-                type="text"
-                placeholder="Add a comment..."
-                class="flex-1 text-xs bg-transparent border-none outline-none placeholder:text-muted-foreground/50"
-                @keydown.enter="newComment.trim() && handleAddComment()" />
-              <button v-if="newComment.trim()" class="text-primary hover:text-primary/80 transition-colors" @click="handleAddComment">
-                <Icon name="lucide:send" class="h-3 w-3" />
-              </button>
-            </div>
+    <!-- Content: Center + Right Sidebar -->
+    <div class="flex flex-1 min-h-0 overflow-hidden">
+      <!-- Center Content -->
+      <div class="flex-1 overflow-y-auto min-w-0">
+        <div class="p-4 space-y-3">
+          <!-- Description / Notes -->
+          <div class="min-h-[120px]">
+            <textarea
+              v-if="!isViewMode"
+              v-model="editableItem.description"
+              placeholder="Add notes about this project..."
+              class="w-full h-full min-h-[120px] text-sm bg-transparent outline-none resize-none placeholder:text-muted-foreground/40 leading-relaxed" />
+            <p v-else-if="editableItem.description" class="text-sm text-foreground/80 leading-relaxed whitespace-pre-wrap">{{ editableItem.description }}</p>
+            <p v-else class="text-sm text-muted-foreground/40 italic">No notes</p>
           </div>
         </div>
       </div>
+
+      <!-- Right Sidebar: References + Comments -->
+      <aside class="w-72 shrink-0 border-l border-border overflow-y-auto hidden md:block">
+        <div class="divide-y divide-border">
+          <!-- References -->
+          <ReferencesSection
+            v-model="editableItem.references"
+            :readonly="isViewMode"
+            @open-entity="handleOpenEntityRef"
+            @remove-ref="handleRemoveRef"
+            @add-entity="() => { entityPickerFilterType = undefined; entityPickerOpen = true }"
+            @add-entity-of-type="(type: string) => { entityPickerFilterType = type; entityPickerOpen = true }" />
+
+          <!-- Comments / Activity -->
+          <div v-if="!isCreateMode" class="p-4 space-y-2">
+            <button
+              type="button"
+              class="w-full flex items-center justify-between text-[10px] font-medium text-muted-foreground uppercase tracking-wide hover:text-foreground transition-colors"
+              @click="commentsOpen = !commentsOpen">
+              <span>Comments / Activity</span>
+              <Icon :name="commentsOpen ? 'lucide:chevron-up' : 'lucide:chevron-down'" class="h-3 w-3" />
+            </button>
+            <div v-if="commentsOpen" class="space-y-2">
+              <div v-if="commentsLoading" class="flex items-center py-2">
+                <Icon name="lucide:loader-2" class="h-3 w-3 animate-spin text-muted-foreground" />
+              </div>
+              <div v-else-if="displayActivity.length" class="space-y-1.5 mb-2">
+                <div v-for="activityItem in displayActivity" :key="activityItem.id" class="flex items-start gap-2">
+                  <div class="w-5 h-5 rounded-full bg-muted flex items-center justify-center shrink-0 mt-0.5">
+                    <Icon v-if="activityItem.type === 'created'" name="lucide:plus" class="h-2.5 w-2.5 text-muted-foreground" />
+                    <Icon v-else-if="activityItem.type === 'comment'" name="lucide:message-circle" class="h-2.5 w-2.5 text-muted-foreground" />
+                    <Icon v-else name="lucide:activity" class="h-2.5 w-2.5 text-muted-foreground" />
+                  </div>
+                  <div class="flex-1 min-w-0">
+                    <div class="flex items-baseline gap-1 flex-wrap">
+                      <span class="text-[11px] font-medium">{{ activityItem.authorName }}</span>
+                      <span class="text-[10px] text-muted-foreground">{{ formatRelativeTime(Number(activityItem.createdAt)) }}</span>
+                    </div>
+                    <p v-if="activityItem.content" class="text-xs text-foreground/80 mt-0.5">{{ activityItem.content }}</p>
+                    <p v-else-if="activityItem.type === 'created'" class="text-[10px] text-muted-foreground mt-0.5">created this project</p>
+                  </div>
+                </div>
+              </div>
+              <div class="flex items-center gap-2">
+                <div class="w-5 h-5 rounded-full bg-muted/60 flex items-center justify-center shrink-0">
+                  <Icon name="lucide:user" class="h-2.5 w-2.5 text-muted-foreground" />
+                </div>
+                <input
+                  v-model="newComment"
+                  type="text"
+                  placeholder="Add a comment..."
+                  class="flex-1 text-xs bg-transparent border-none outline-none placeholder:text-muted-foreground/50"
+                  @keydown.enter="newComment.trim() && handleAddComment()" />
+                <button v-if="newComment.trim()" class="text-primary hover:text-primary/80 transition-colors" @click="handleAddComment">
+                  <Icon name="lucide:send" class="h-3 w-3" />
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </aside>
     </div>
 
     <!-- Footer -->
@@ -459,5 +479,5 @@
   </ContainerDialogShell>
 
   <!-- Entity Reference Picker -->
-  <EntityReferencePicker v-model:open="entityPickerOpen" :exclude-id="editableItem.id" :filter-type="entityPickerFilterType" @select="handleAddEntityRef" />
+  <EntityReferencePicker v-model:open="entityPickerOpen" :exclude-id="editableItem.id" :filter-type="entityPickerFilterType" @select="handleAddEntityRef" @created="handleCreatedEntityRef" />
 </template>

@@ -1,7 +1,7 @@
 /**
- * Seed data for personal calendar items.
+ * Seed data for personal entities.
  *
- * Used by instant.client.ts to populate the calendarItems namespace
+ * Used by the seed pipeline to populate the entity namespace
  * on first boot. Dates are relative to "today" so the data always
  * looks fresh.
  */
@@ -378,10 +378,10 @@ export function getPersonalSeedItems(): SeedEntity[] {
       checklist: [],
     },
 
-    // Multi-day task: sprint
+    // Multi-day sprint
     {
       id: 'task-12',
-      type: 'task',
+      type: 'sprint',
       title: 'Sprint 14 — API refactor',
       description: 'Refactor authentication endpoints and add rate limiting.',
       startDate: daysFromNow(-1),
@@ -398,7 +398,9 @@ export function getPersonalSeedItems(): SeedEntity[] {
       attachments: [],
       references: [],
       reminders: [],
-      taskStatus: 'in-progress',
+      sprintStatus: 'in-progress',
+      sprintGoal: 'Refactor authentication endpoints and add rate limiting.',
+      velocity: undefined,
       checklist: [
         { id: 'cl-s1', label: 'Audit existing auth endpoints', completed: true, order: 0 },
         { id: 'cl-s2', label: 'Implement rate limiter middleware', completed: false, order: 1 },
@@ -1130,7 +1132,7 @@ export function getPersonalSeedItems(): SeedEntity[] {
           kind: 'entity',
           id: 'ref-n7-t12',
           entityId: 'task-12',
-          entityType: 'task',
+          entityType: 'sprint',
           title: 'Sprint 14 — API refactor',
           direction: 'outgoing',
         },
@@ -1287,7 +1289,7 @@ export function getTrellisProjectTasks(): SeedEntity[] {
     // ── Phase 1 Milestone ───────────────────────────────────────────────
     {
       id: 'trellis-dt-m1',
-      type: 'task',
+      type: 'milestone',
       title: '🏁 Milestone: Cells are editable end-to-end',
       dependsOn: ['trellis-dt-1', 'trellis-dt-2', 'trellis-dt-3'],
       description:
@@ -1310,7 +1312,7 @@ export function getTrellisProjectTasks(): SeedEntity[] {
         { kind: 'entity', id: 'ref-m1-dt3', entityId: 'trellis-dt-3', entityType: 'task', title: 'Wire schema prop through TableView', direction: 'outgoing' },
       ],
       reminders: [{ id: 'r-m1', timing: '1-day-before', method: 'push' }],
-      taskStatus: 'pending',
+      achieved: false,
       checklist: [],
     },
 
@@ -1554,7 +1556,7 @@ export function getTrellisProjectTasks(): SeedEntity[] {
     // ── Phase 5 Milestone (all phases shipped) ──────────────────────────
     {
       id: 'trellis-dt-m2',
-      type: 'task',
+      type: 'milestone',
       title: '🏁 Milestone: Interactive DataTable v1 shipped',
       dependsOn: ['trellis-dt-12'],
       description:
@@ -1572,11 +1574,11 @@ export function getTrellisProjectTasks(): SeedEntity[] {
       folder: 'Trellis',
       attachments: [],
       references: [
-        { kind: 'entity', id: 'ref-m2-m1', entityId: 'trellis-dt-m1', entityType: 'task', title: 'Milestone: Cells are editable end-to-end', direction: 'outgoing' },
+        { kind: 'entity', id: 'ref-m2-m1', entityId: 'trellis-dt-m1', entityType: 'milestone', title: 'Milestone: Cells are editable end-to-end', direction: 'outgoing' },
         { kind: 'entity', id: 'ref-m2-dt12', entityId: 'trellis-dt-12', entityType: 'task', title: 'Import dialog — CSV / Excel / JSON / URL', direction: 'outgoing' },
       ],
       reminders: [{ id: 'r-m2', timing: '1-day-before', method: 'push' }],
-      taskStatus: 'pending',
+      achieved: false,
       checklist: [],
     },
 

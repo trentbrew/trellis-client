@@ -1,4 +1,5 @@
 import type { Ref } from 'vue'
+import { entityId as toEntityId } from '~/lib/tql-namespace'
 
 export interface Comment {
   id: string
@@ -19,12 +20,12 @@ export interface Comment {
  * Reactive composable for entity comments/activity feed.
  *
  * Uses TQL graph API to persist comments as first-class entities
- * linked to their parent (calendarItem, task, etc.).
+ * linked to their parent entity.
  *
  * @param entityId - Reactive or static ID of the parent entity
- * @param entityType - Type discriminator (e.g. 'calendarItem')
+ * @param entityType - Type discriminator (e.g. 'entity')
  */
-export function useComments(entityId: Ref<string | undefined> | string, entityType: string = 'calendarItem') {
+export function useComments(entityId: Ref<string | undefined> | string, entityType: string = 'entity') {
   const { query, mutate, fetchNodes } = useTrellisGraph()
   const { user: currentUser } = useInstantAuth()
 
@@ -116,7 +117,7 @@ export function useComments(entityId: Ref<string | undefined> | string, entityTy
     // Also link to parent entity
     await mutate({
       action: 'link',
-      e1: `calendaritem:${parentId}`,
+      e1: toEntityId(parentId),
       relation: 'hasComment',
       e2: `comment:${commentId}`,
     })

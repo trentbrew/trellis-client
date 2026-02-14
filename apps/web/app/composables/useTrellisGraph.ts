@@ -196,15 +196,16 @@ export function useTrellisGraph() {
 
   /**
    * Execute a mutation (create/update/delete/link).
-   * Bumps the graph version so all reactive queries re-fetch.
+   * Reactivity is handled by the SSE event listener bumping _graphVersion.
    */
   async function mutate(payload: MutatePayload): Promise<{ ok: boolean }> {
     const result = await graphFetch<{ ok: boolean }>('mutate', {
       method: 'POST',
       body: payload as Record<string, any>,
     })
-    // Bump version to trigger reactive re-fetch in all watchers
-    _graphVersion.value++
+    // NOTE: Don't bump _graphVersion here — the SSE 'mutation' event from the
+    // server will bump it once, which is the authoritative notification.
+    // Bumping here AND on SSE caused every reactive query to fire twice.
     return result
   }
 

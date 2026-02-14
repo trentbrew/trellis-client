@@ -65,11 +65,35 @@
     ]
   })
 
+  // Groups for the listbox
+  const dataSourceGroups = computed(() => {
+    const groups: { key: string; label: string; items: DataSourceOption[] }[] = []
+    for (const groupKey of ['General', 'Entity', 'Custom']) {
+      const items = dataSourceOptions.value.filter((o) => o.group === groupKey)
+      if (items.length) groups.push({ key: groupKey, label: groupKey, items })
+    }
+    return groups
+  })
+
+  const selectedSourceLabel = computed(() => {
+    if (!dataSource.value) return ''
+    return dataSourceOptions.value.find((o) => o.value === dataSource.value)?.label || dataSource.value
+  })
+
+  const selectedSourceIcon = computed(() => {
+    if (!dataSource.value) return ''
+    return dataSourceOptions.value.find((o) => o.value === dataSource.value)?.icon || ''
+  })
+
   const projectionOptions = [
     { value: 'table', label: 'Table', icon: 'lucide:table' },
     { value: 'list', label: 'List', icon: 'lucide:list' },
-    { value: 'kanban', label: 'Kanban', icon: 'lucide:layout-grid' },
+    { value: 'grid', label: 'Grid', icon: 'lucide:grid-3x3' },
+    { value: 'kanban', label: 'Kanban', icon: 'lucide:square-kanban' },
     { value: 'calendar', label: 'Calendar', icon: 'lucide:calendar' },
+    { value: 'timeline', label: 'Timeline', icon: 'lucide:calendar' },
+    { value: 'gantt', label: 'Gantt', icon: 'lucide:gantt-chart' },
+    { value: 'moodboard', label: 'Moodboard', icon: 'lucide:layout-dashboard' },
   ]
 
   const resetForm = () => {
@@ -124,13 +148,13 @@
   <UiDialog :open="props.open" @update:open="(v) => emit('update:open', v)">
     <UiDialogContent
       :hide-close="true"
-      class="p-0 overflow-hidden rounded-xl border border-border bg-card shadow-2xl flex flex-col gap-0 w-[min(480px,calc(100vw-4rem))]!">
+      class="p-0 overflow-hidden rounded-xl border border-border bg-card shadow-2xl flex flex-col gap-0 w-[min(640px,calc(100vw-4rem))]!">
       <!-- Accessible labels -->
       <UiDialogTitle class="sr-only">Create Page</UiDialogTitle>
       <UiDialogDescription class="sr-only">Create a new page in your workspace</UiDialogDescription>
 
       <!-- Header -->
-      <div class="shrink-0 border-b border-border px-5 py-4 flex items-center justify-between">
+      <div class="shrink-0 border-b border-border px-6 py-4 flex items-center justify-between">
         <div class="flex items-center gap-2">
           <Icon name="lucide:file-plus" class="h-5 w-5 text-muted-foreground" />
           <span class="font-semibold text-sm">New Page</span>
@@ -141,7 +165,7 @@
       </div>
 
       <!-- Form -->
-      <div class="flex-1 p-5 space-y-4">
+      <div class="flex-1 p-6 space-y-5">
         <!-- Title -->
         <div class="space-y-1.5">
           <label class="text-xs font-medium text-muted-foreground uppercase tracking-wide">Title</label>
@@ -156,28 +180,41 @@
         <!-- Data Source -->
         <div class="space-y-1.5">
           <label class="text-xs font-medium text-muted-foreground uppercase tracking-wide">Data Source</label>
-          <select
-            v-model="dataSource"
-            class="w-full rounded-lg border border-border bg-transparent px-3 py-2 text-sm outline-none focus:ring-1 focus:ring-ring appearance-none cursor-pointer">
-            <option value="" disabled>Select a data source...</option>
-            <optgroup
-              v-for="group in ['General', 'Entity', 'Custom']"
-              :key="group"
-              :label="group">
-              <option
-                v-for="opt in dataSourceOptions.filter((o) => o.group === group)"
-                :key="opt.value"
-                :value="opt.value">
-                {{ opt.label }}
-              </option>
-            </optgroup>
-          </select>
+          <UiListbox v-model="dataSource" class="gap-1.5">
+            <!-- Trigger -->
+            <button
+              type="button"
+              class="w-full flex items-center gap-2 rounded-lg border border-border bg-transparent px-3 py-2 text-sm outline-none focus:ring-1 focus:ring-ring text-left cursor-pointer"
+              :class="!dataSource ? 'text-muted-foreground' : ''">
+              <Icon v-if="selectedSourceIcon" :name="selectedSourceIcon" class="h-4 w-4 shrink-0 text-muted-foreground" />
+              <span class="flex-1 truncate">{{ selectedSourceLabel || 'Select a data source...' }}</span>
+              <Icon name="lucide:chevrons-up-down" class="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
+            </button>
+            <!-- Dropdown content -->
+            <UiListboxContent class="max-h-[240px]">
+              <template v-for="group in dataSourceGroups" :key="group.key">
+                <UiListboxGroup>
+                  <UiListboxGroupLabel class="text-[11px] uppercase tracking-wider text-muted-foreground/70 font-medium">
+                    {{ group.label }}
+                  </UiListboxGroupLabel>
+                  <UiListboxItem
+                    v-for="opt in group.items"
+                    :key="opt.value"
+                    :value="opt.value"
+                    class="flex items-center gap-2 py-1.5 px-2 rounded-md text-sm cursor-pointer hover:bg-accent">
+                    <Icon :name="opt.icon" class="h-4 w-4 shrink-0 text-muted-foreground" />
+                    <span class="truncate">{{ opt.label }}</span>
+                  </UiListboxItem>
+                </UiListboxGroup>
+              </template>
+            </UiListboxContent>
+          </UiListbox>
         </div>
 
         <!-- Default View -->
         <div class="space-y-1.5">
           <label class="text-xs font-medium text-muted-foreground uppercase tracking-wide">Default View</label>
-          <div class="flex gap-2">
+          <div class="flex flex-wrap gap-2">
             <button
               v-for="proj in projectionOptions"
               :key="proj.value"
@@ -194,7 +231,7 @@
       </div>
 
       <!-- Footer -->
-      <div class="border-t border-border px-5 py-3 shrink-0 bg-muted/10 flex items-center justify-between">
+      <div class="border-t border-border px-6 py-4 shrink-0 bg-muted/10 flex items-center justify-between">
         <span class="text-xs text-muted-foreground">
           Pages appear in your workspace sidebar
         </span>

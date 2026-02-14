@@ -1,3 +1,5 @@
+import { ENTITY_NAMESPACE } from '~/lib/tql-namespace'
+
 /**
  * Schema data for the Ontology Visualizer.
  *
@@ -127,9 +129,9 @@ function buildCoreNodes(schemas: SchemaDefinitionLike[]): OntologyNode[] {
 }
 
 function buildSystemNodes(schemas: SchemaDefinitionLike[]): OntologyNode[] {
-  // Skip calendaritem and comment (internal/legacy)
+  // Skip storage-level schemas (internal/legacy)
   const filtered = schemas.filter(s =>
-    !s['@id'].endsWith('/calendaritem') && !s['@id'].endsWith('/comment'),
+    !s['@id'].endsWith(`/${ENTITY_NAMESPACE}`) && !s['@id'].endsWith('/comment'),
   )
 
   const classOrder = ['temporal', 'document', 'actor', 'container']

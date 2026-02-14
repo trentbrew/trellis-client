@@ -22,7 +22,6 @@
       canNavigateNext?: boolean
       dialogTitle?: string
       dialogDescription?: string
-      avatar?: string
     }>(),
     {
       mode: 'edit',
@@ -56,16 +55,18 @@
   const MIN_H = 420
   const MAX_W = computed(() => window.innerWidth - 64)
   const MAX_H = computed(() => window.innerHeight - 64)
-  const DEFAULT_W = 720
-  const DEFAULT_H = 640
+  const DEFAULT_W = computed(() => Math.min(1400, Math.round(window.innerWidth * 0.82)))
+  const DEFAULT_H = computed(() => Math.min(1000, Math.round(window.innerHeight * 0.88)))
 
-  const dialogW = ref(DEFAULT_W)
-  const dialogH = ref(DEFAULT_H)
+  const dialogW = ref(DEFAULT_W.value)
+  const dialogH = ref(DEFAULT_H.value)
 
   watch(() => props.open, (val) => {
     if (val) {
-      dialogW.value = Math.min(DEFAULT_W, MAX_W.value)
-      dialogH.value = Math.min(DEFAULT_H, MAX_H.value)
+      dialogW.value = Math.min(DEFAULT_W.value, MAX_W.value)
+      dialogH.value = Math.min(DEFAULT_H.value, MAX_H.value)
+      propsExpanded.value = false
+      nextTick(checkPropsOverflow)
     }
   })
 
@@ -111,6 +112,27 @@
 
   // Report dimensions to shared state so stacked dialogs can match
   watch([dialogW, dialogH], ([w, h]) => reportDimensions(w, h), { immediate: true })
+
+  // ── Properties overflow detection ───────────────────────────────────
+  const propsRowRef = ref<HTMLElement | null>(null)
+  const propsOverflowing = ref(false)
+  const propsExpanded = ref(false)
+
+  const checkPropsOverflow = () => {
+    if (!propsRowRef.value || propsExpanded.value) return
+    propsOverflowing.value = propsRowRef.value.scrollWidth > propsRowRef.value.clientWidth + 1
+  }
+
+  let _resizeObserver: ResizeObserver | undefined
+  onMounted(() => {
+    _resizeObserver = new ResizeObserver(checkPropsOverflow)
+    if (propsRowRef.value) _resizeObserver.observe(propsRowRef.value)
+  })
+  watch(propsRowRef, (el, oldEl) => {
+    if (oldEl && _resizeObserver) _resizeObserver.unobserve(oldEl)
+    if (el && _resizeObserver) _resizeObserver.observe(el)
+  })
+  onBeforeUnmount(() => _resizeObserver?.disconnect())
 </script>
 
 <template>
@@ -150,21 +172,12 @@
         </div>
         <div :class="isStacked && parentTitle ? 'px-4 pt-2 pb-3' : 'px-4 pt-4 pb-3'">
           <div class="flex items-center justify-between gap-3 mb-3">
-            <div class="flex items-center gap-3 min-w-0">
-              <!-- Avatar -->
-              <slot name="avatar">
-                <div class="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
-                  <img v-if="avatar" :src="avatar" :alt="title" class="h-10 w-10 rounded-full object-cover" />
-                  <Icon v-else name="lucide:user" class="h-5 w-5 text-primary" />
-                </div>
-              </slot>
-              <div class="min-w-0">
-                <span v-if="typeBadge" class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-medium bg-primary/10 text-primary mb-1">
-                  <Icon :name="typeBadge.icon" class="h-3 w-3" />
-                  {{ typeBadge.label }}
-                </span>
-                <slot name="header-badges" />
-              </div>
+            <div class="flex items-center gap-2 min-w-0">
+              <span v-if="typeBadge" class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-medium bg-primary/10 text-primary">
+                <Icon :name="typeBadge.icon" class="h-3 w-3" />
+                {{ typeBadge.label }}
+              </span>
+              <slot name="header-badges" />
             </div>
             <div class="flex items-center gap-1 shrink-0">
               <template v-if="!isCreateMode && !hideNavigation">
@@ -193,13 +206,30 @@
             <p v-else-if="description" class="text-sm text-muted-foreground" v-html="description" />
             <p v-else class="text-sm text-muted-foreground/50 italic">No description</p>
           </div>
+          <div v-if="$slots['header-tags']" class="mt-2 px-1">
+            <slot name="header-tags" />
+          </div>
         </div>
       </div>
 
       <!-- Properties Row -->
       <div v-if="$slots.properties" class="sticky top-0 z-10 bg-card px-4 py-2.5 border-b border-border">
-        <div class="flex items-center gap-1.5 text-xs overflow-x-auto scrollbar-none whitespace-nowrap">
-          <slot name="properties" />
+        <div class="flex items-center gap-1.5 text-xs">
+          <div
+            ref="propsRowRef"
+            :class="[
+              'flex items-center gap-1.5 flex-1 min-w-0',
+              propsExpanded ? 'flex-wrap gap-y-1.5' : 'overflow-hidden',
+            ]">
+            <slot name="properties" />
+          </div>
+          <button
+            v-if="propsOverflowing || propsExpanded"
+            class="inline-flex items-center justify-center h-6 w-6 rounded-md bg-muted/50 hover:bg-muted transition-colors shrink-0 ml-0.5"
+            :title="propsExpanded ? 'Show less' : 'Show all properties'"
+            @click="propsExpanded = !propsExpanded">
+            <Icon :name="propsExpanded ? 'lucide:chevron-up' : 'lucide:more-horizontal'" class="h-3.5 w-3.5 text-muted-foreground" />
+          </button>
         </div>
       </div>
 

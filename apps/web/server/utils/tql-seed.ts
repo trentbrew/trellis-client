@@ -9,7 +9,7 @@
 import { getPersonalSeedItems as _getClientSeed, getTrellisProjectTasks as _getProjectTasks } from '../../app/lib/personalSeedData'
 import { getPeopleSeedItems as _getPeople, getOrganizationSeedItems as _getOrgs, getFileSeedItems as _getFiles, getProjectSeedItems as _getProjects } from '../../app/lib/entitySeedData'
 
-export type { SeedCalendarItem } from '../../app/lib/personalSeedData'
+export type { SeedEntity } from '../../app/lib/personalSeedData'
 
 export function getPersonalSeedItems() {
   return _getClientSeed()

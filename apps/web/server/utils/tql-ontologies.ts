@@ -9,12 +9,13 @@
  * EntityTypeConfig objects. This is the single source of truth for what
  * entity types exist and how they look/behave.
  *
- * Also includes the legacy polymorphic calendaritem ontology for backward
- * compat with TQL queries (FIND calendaritem AS ?t WHERE ?t.type = "task").
+ * Also includes the legacy polymorphic entity namespace ontology for backward
+ * compat with TQL queries (FIND <ENTITY_NAMESPACE> AS ?t WHERE ?t.type = "task").
  */
 
 import type { SchemaDefinition, PropertyValueSpecification, WorkspaceConfig } from '@toolkit/tql'
 import { getRouteDefinitions } from './tql-routes'
+import { ENTITY_NAMESPACE, entityQuery } from '../../app/lib/tql-namespace'
 
 // ============================================================================
 // Field helpers — compact builders for PropertyValueSpecification
@@ -536,12 +537,12 @@ const goalOntology: SchemaDefinition = {
 }
 
 // ============================================================================
-// Legacy Polymorphic Ontology — CalendarItem
-// Kept for backward compat with TQL queries: FIND calendaritem AS ?t ...
+// Legacy Polymorphic Ontology — Entity Namespace
+// Kept for backward compat with TQL queries: FIND <ENTITY_NAMESPACE> AS ?t ...
 // ============================================================================
 
 const calendarItemOntology: SchemaDefinition = {
-  '@id': 'trellis:schema/calendaritem',
+  '@id': `trellis:schema/${ENTITY_NAMESPACE}`,
   '@type': 'trellis:Schema',
   version: '1.0.0',
   tier: 'system',
@@ -596,7 +597,7 @@ const commentOntology: SchemaDefinition = {
   tier: 'system',
   fields: [
     f('entityId', 'rich_text', { required: true }),
-    f('entityType', 'select', { required: true, selectOptions: ['calendarItem', 'task', 'note', 'event', 'payment', 'trip'] }),
+    f('entityType', 'select', { required: true, selectOptions: ['entity', 'task', 'note', 'event', 'payment', 'trip'] }),
     f('authorId', 'rich_text', { required: true }),
     f('authorName', 'rich_text', { required: true }),
     f('authorAvatar', 'rich_text'),
@@ -651,7 +652,7 @@ export function createWorkspaceConfig(): WorkspaceConfig {
       description: 'Single graph, many projections — all app data as a graph.',
       ontologies: {
         // System ontologies
-        'trellis:schema/calendaritem': calendarItemOntology,
+        [`trellis:schema/${ENTITY_NAMESPACE}`]: calendarItemOntology,
         'trellis:schema/comment': commentOntology,
         // Per-type ontologies (all 22 entity types)
         ...entityTypeOntologies,
@@ -671,28 +672,28 @@ export function createWorkspaceConfig(): WorkspaceConfig {
           '@type': 'trellis:Projection',
           name: 'All Tasks',
           type: 'table',
-          query: 'FIND calendaritem AS ?t WHERE ?t.type = "task"',
+          query: `${entityQuery('?t')} WHERE ?t.type = "task"`,
         },
         'trellis:projection/all-events': {
           '@id': 'trellis:projection/all-events',
           '@type': 'trellis:Projection',
           name: 'All Events',
           type: 'table',
-          query: 'FIND calendaritem AS ?e WHERE ?e.type = "event"',
+          query: `${entityQuery('?e')} WHERE ?e.type = "event"`,
         },
         'trellis:projection/all-notes': {
           '@id': 'trellis:projection/all-notes',
           '@type': 'trellis:Projection',
           name: 'All Notes',
           type: 'card-grid',
-          query: 'FIND calendaritem AS ?n WHERE ?n.type = "note"',
+          query: `${entityQuery('?n')} WHERE ?n.type = "note"`,
         },
         'trellis:projection/all-payments': {
           '@id': 'trellis:projection/all-payments',
           '@type': 'trellis:Projection',
           name: 'All Payments',
           type: 'table',
-          query: 'FIND calendaritem AS ?p WHERE ?p.type = "payment"',
+          query: `${entityQuery('?p')} WHERE ?p.type = "payment"`,
         },
       },
     },

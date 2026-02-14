@@ -13,6 +13,7 @@
   const emit = defineEmits<{
     'update:open': [value: boolean]
     select: [ref: EntityReference]
+    created: [ref: EntityReference]
   }>()
 
   const excludeIdRef = computed(() => props.excludeId)
@@ -34,15 +35,17 @@
     if (!type) return
     const title = search.value.trim() || `New ${getLabel(type)}`
     const newItem = { ...createDefaultItem(type), title }
-    await createItem(newItem)
-    emit('select', {
+    const realId = await createItem(newItem)
+    const ref: EntityReference = {
       kind: 'entity',
       id: `ref-${crypto.randomUUID().slice(0, 8)}`,
-      entityId: newItem.id,
+      entityId: realId,
       entityType: type as EntityType,
       title,
       direction: 'outgoing',
-    })
+    }
+    emit('select', ref)
+    emit('created', ref)
     emit('update:open', false)
     search.value = ''
   }
