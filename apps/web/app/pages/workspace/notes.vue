@@ -1,8 +1,9 @@
 <script setup lang="ts">
   import type { PageStat } from '~/components/layout/Page.vue'
+  import type { PropertyFieldId, NoteItem } from '~/types/entity'
   import { useBrowsePage } from '~/composables/useBrowsePage'
+  import { useBrowseSelection } from '~/composables/useBrowseSelection'
   import EntityDialog from '~/components/dialogs/EntityDialog.vue'
-  import type { NoteItem } from '~/types/entity'
 
   definePageMeta({ layout: 'default' })
   useHead({ title: 'Notes | Personal' })
@@ -44,6 +45,16 @@
       },
     ],
   })
+
+  // ---------------------------------------------------------------------------
+  // Multi-select + batch operations
+  // ---------------------------------------------------------------------------
+
+  const {
+    isSelected, toggle: toggleSelection, clearSelection,
+    selectedItems, selectionCount,
+    handleFieldUpdate, handleBatchDelete, handleBatchDuplicate, handleBatchSetField,
+  } = useBrowseSelection(filteredItems)
 
   // ---------------------------------------------------------------------------
   // Stats (type-specific — stays in page)
@@ -110,7 +121,12 @@
         :key="item.id"
         :item="item"
         layout="grid"
-        @click="openDetail(item)" />
+        editable
+        :selected="isSelected(item.id)"
+        :owners="taskOwners"
+        @click="openDetail(item)"
+        @select="toggleSelection(item.id, $event)"
+        @field-update="(fieldId: PropertyFieldId, value: unknown) => handleFieldUpdate(item, fieldId, value)" />
       <div v-if="!filteredItems.length" class="col-span-full flex flex-col items-center justify-center h-48 text-muted-foreground gap-3">
         <Icon name="lucide:sticky-note" class="h-6 w-6 text-muted-foreground/50" />
         <p class="text-sm">No notes found</p>
@@ -124,7 +140,12 @@
         :key="item.id"
         :item="item"
         layout="moodboard"
-        @click="openDetail(item)" />
+        editable
+        :selected="isSelected(item.id)"
+        :owners="taskOwners"
+        @click="openDetail(item)"
+        @select="toggleSelection(item.id, $event)"
+        @field-update="(fieldId: PropertyFieldId, value: unknown) => handleFieldUpdate(item, fieldId, value)" />
       <div v-if="!filteredItems.length" class="col-span-full flex items-center justify-center h-40 text-sm text-muted-foreground">
         No notes found
       </div>
@@ -137,7 +158,12 @@
         :key="item.id"
         :item="item"
         layout="list"
-        @click="openDetail(item)" />
+        editable
+        :selected="isSelected(item.id)"
+        :owners="taskOwners"
+        @click="openDetail(item)"
+        @select="toggleSelection(item.id, $event)"
+        @field-update="(fieldId: PropertyFieldId, value: unknown) => handleFieldUpdate(item, fieldId, value)" />
       <div v-if="!filteredItems.length" class="flex items-center justify-center h-40 text-sm text-muted-foreground">
         No notes found
       </div>
@@ -183,6 +209,15 @@
     <div class="text-xs text-muted-foreground mt-4 pt-4 border-t border-border pb-10">
       Showing {{ filteredItems.length }} {{ filteredItems.length === 1 ? 'note' : 'notes' }}
     </div>
+
+    <!-- Selection Bar -->
+    <EntitySelectionBar
+      :selected-items="selectedItems"
+      :selection-count="selectionCount"
+      @batch-delete="handleBatchDelete"
+      @batch-duplicate="handleBatchDuplicate"
+      @batch-set-field="handleBatchSetField"
+      @clear-selection="clearSelection" />
 
     <!-- View/Edit Dialog -->
     <EntityDialog

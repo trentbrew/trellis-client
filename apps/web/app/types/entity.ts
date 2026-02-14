@@ -133,7 +133,7 @@ export type SprintStatus = 'planning' | 'active' | 'completed' | 'cancelled'
 export type BudgetStatus = 'draft' | 'active' | 'closed' | 'over-budget'
 
 // ============================================================================
-// Supporting Types (unchanged from calendarItem.ts)
+// Supporting Types
 // ============================================================================
 
 export interface Reminder {
@@ -235,7 +235,7 @@ export interface SocialLink {
 
 export type ProjectStatus = 'active' | 'on-hold' | 'completed' | 'archived'
 
-/** Alias — matches calendarItem.ts EventItem.eventType field name */
+/** Alias — matches EventItem.eventType field name */
 export type EventType = EventSubtype
 
 export const DEFAULT_CATEGORIES = [

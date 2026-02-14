@@ -16,7 +16,7 @@ If the MCP server is connected, you have these tools available:
 
 | Tool | Purpose |
 |------|---------|
-| `query_graph` | EQL-S query (`FIND calendaritem AS ?t WHERE ?t.type = "task"`) |
+| `query_graph` | EQL-S query (e.g. `FIND calendaritem AS ?t WHERE ?t.type = "task"`) |
 | `get_node` / `get_nodes` | Fetch entities by ID |
 | `create_node` / `update_node` / `delete_node` | CRUD entities |
 | `link_nodes` | Create semantic links between entities |
@@ -33,7 +33,7 @@ If the MCP server is connected, you have these tools available:
 
 - **Dev server** is always on `localhost:4141` — never start it yourself
 - **Agent ID**: Use `"claude"` — it's set in your MCP config
-- **Entity IDs**: Descriptive slugs like `calendaritem:task-deploy-v2`
+- **Entity IDs**: Descriptive slugs like `calendaritem:task-deploy-v2` (the `calendaritem` namespace is historical — app code uses `entityId()` / `entityQuery()` helpers from `app/lib/tql-namespace.ts`)
 - **Mutations are realtime**: Changes appear instantly in the browser via SSE
 - **Always set a title**: Every entity needs `{ title: "..." }`
 - **Link after creating**: Create both entities first, then link

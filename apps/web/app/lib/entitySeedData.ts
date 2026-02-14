@@ -2,7 +2,7 @@
  * Seed data for people, files, and projects.
  *
  * Follows the same pattern as personalSeedData.ts — all items go into the
- * calendarItems namespace as polymorphic entities. Names match the `involved`
+ * entity namespace as polymorphic entities. Names match the `involved`
  * arrays used throughout existing seed data (alex, jordan, maya, eli, sam).
  *
  * Cross-references connect these entities to existing tasks, events, notes,
@@ -43,7 +43,7 @@ export function getPeopleSeedItems(): SeedEntity[] {
       owner: 'you',
       involved: [],
       references: [
-        { kind: 'entity', id: 'ref-p1-t12', entityId: 'task-12', entityType: 'task', title: 'Sprint 14 — API refactor', direction: 'outgoing' },
+        { kind: 'entity', id: 'ref-p1-t12', entityId: 'task-12', entityType: 'sprint', title: 'Sprint 14 — API refactor', direction: 'outgoing' },
         { kind: 'entity', id: 'ref-p1-t14', entityId: 'task-14', entityType: 'task', title: 'Review PR #482 — pagination fix', direction: 'outgoing' },
       ],
       reminders: [],
@@ -518,7 +518,7 @@ export function getFileSeedItems(): SeedEntity[] {
       owner: 'you',
       involved: [],
       references: [
-        { kind: 'entity', id: 'ref-f4-t12', entityId: 'task-12', entityType: 'task', title: 'Sprint 14 — API refactor', direction: 'outgoing' },
+        { kind: 'entity', id: 'ref-f4-t12', entityId: 'task-12', entityType: 'sprint', title: 'Sprint 14 — API refactor', direction: 'outgoing' },
       ],
       reminders: [],
       content: '',
@@ -721,7 +721,7 @@ export function getProjectSeedItems(): SeedEntity[] {
       owner: 'you',
       involved: ['alex', 'jordan'],
       references: [
-        { kind: 'entity', id: 'ref-pj3-t12', entityId: 'task-12', entityType: 'task', title: 'Sprint 14 — API refactor', direction: 'outgoing' },
+        { kind: 'entity', id: 'ref-pj3-t12', entityId: 'task-12', entityType: 'sprint', title: 'Sprint 14 — API refactor', direction: 'outgoing' },
         { kind: 'entity', id: 'ref-pj3-t14', entityId: 'task-14', entityType: 'task', title: 'Review PR #482 — pagination fix', direction: 'outgoing' },
         { kind: 'entity', id: 'ref-pj3-n7', entityId: 'note-7', entityType: 'note', title: 'API rate-limiting research', direction: 'outgoing' },
         { kind: 'entity', id: 'ref-pj3-f4', entityId: 'file-4', entityType: 'file', title: 'Architecture Diagram.png', direction: 'outgoing' },

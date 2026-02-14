@@ -32,7 +32,9 @@ Every entity has an **entity class** (structural shape) and an **entity type** (
 | **actor** | Represents a person/entity | person, contact, organization |
 | **container** | Groups/organizes entities | project, folder, collection, goal |
 
-Entity IDs use the format `<type>:<slug>`, e.g. `calendaritem:task-1`, `calendaritem:note-meeting`.
+Entity IDs use the format `calendaritem:<slug>`, e.g. `calendaritem:task-1`, `calendaritem:note-meeting`.
+
+> **Namespace note:** All entities share the `calendaritem` TQL storage namespace for historical reasons. In application code, use the `entityId()` / `entityQuery()` helpers from `app/lib/tql-namespace.ts` instead of hardcoding the prefix.
 
 ## TQL Graph API
 
@@ -62,6 +64,8 @@ Base URL: `http://localhost:4141/api/graph`
 { "action": "deleteNode", "entityId": "calendaritem:my-task", "agentId": "my-agent" }
 { "action": "link", "e1": "calendaritem:task-1", "relation": "assignedTo", "e2": "calendaritem:person-1", "agentId": "my-agent" }
 ```
+
+> In app code, use `toEntityId('my-task')` and `ENTITY_NAMESPACE` from `~/lib/tql-namespace` instead of hardcoding `calendaritem:`.
 
 ### EQL-S Query Examples
 
@@ -112,6 +116,7 @@ Creating an ontology auto-scaffolds it in the UI — sidebar item, browse page, 
 import { TrellisClient } from '@toolkit/trellis-cli'
 const client = new TrellisClient({ agentId: 'my-agent' })
 
+// The SDK uses the raw calendaritem namespace — app code should use tql-namespace helpers instead
 await client.createNode('calendaritem:new', 'calendaritem', { type: 'task', title: 'Hello' })
 await client.query('FIND calendaritem AS ?t WHERE ?t.type = "task"')
 await client.ontologies()

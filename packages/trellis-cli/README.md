@@ -69,7 +69,9 @@ just trellis delete calendaritem:my-task --agent-id cleanup-bot
 
 ## SDK Usage
 
-The `TrellisClient` class can also be imported directly:
+The `TrellisClient` class can also be imported directly.
+
+> **Note:** The CLI/SDK uses the raw `calendaritem` TQL storage namespace. In the Nuxt app code, use `entityId()` / `entityQuery()` helpers from `app/lib/tql-namespace.ts` instead.
 
 ```typescript
 import { TrellisClient } from '@toolkit/trellis-cli'

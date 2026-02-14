@@ -32,6 +32,9 @@
   // Admin UI controls
   const { showBuilderUI, canCreatePages } = useAdminUI()
 
+  // Pages CRUD
+  const { createPage } = usePages()
+
   // Page Builder dialog state
   const pageBuilderOpen = ref(false)
 
@@ -349,7 +352,7 @@
   const handleAddNew = async (sectionKey?: string) => {
     // Route based on which section's + was clicked
     if (sectionKey === 'personal-pages') {
-      pageBuilderOpen.value = true
+      await handleCreatePageInstant()
       return
     }
 
@@ -359,7 +362,21 @@
     }
   }
 
-  // Create new page - opens the page builder dialog
+  // Instant page creation — creates a grid page and navigates to it
+  const handleCreatePageInstant = async () => {
+    try {
+      const id = await createPage({
+        title: 'Untitled',
+        dataSource: 'all',
+        layout: 'grid',
+      })
+      await navigateTo(`/workspace/pages/${id}`)
+    } catch (e) {
+      console.error('Failed to create page:', e)
+    }
+  }
+
+  // Create new page - opens the page builder dialog (kept as fallback)
   const handleCreatePage = () => {
     pageBuilderOpen.value = true
   }

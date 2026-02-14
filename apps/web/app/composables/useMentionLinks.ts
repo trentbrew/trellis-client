@@ -1,6 +1,7 @@
 import { extractMentionRefs } from '~/utils/extractMentionRefs'
 import type { Reference } from '~/types/entity'
 import { isEntityReference } from '~/types/entity'
+import { entityId as toEntityId } from '~/lib/tql-namespace'
 
 /**
  * Syncs inline @mentions in HTML content to TQL graph links.
@@ -65,16 +66,16 @@ export function useMentionLinks(
       if (!editableItem.id) return
 
       const currentIds = extractCurrentIds()
-      const sourceEntityId = `calendaritem:${editableItem.id}`
+      const sourceId = toEntityId(editableItem.id)
 
       // New mentions → create links
       for (const id of currentIds) {
         if (!prevMentionIds.value.has(id)) {
           mutate({
             action: 'link',
-            e1: sourceEntityId,
+            e1: sourceId,
             relation: 'mentions',
-            e2: `calendaritem:${id}`,
+            e2: toEntityId(id),
           }).catch((err: unknown) =>
             console.error('[useMentionLinks] Failed to create link:', err),
           )
@@ -86,9 +87,9 @@ export function useMentionLinks(
         if (!currentIds.has(id)) {
           mutate({
             action: 'unlink',
-            e1: sourceEntityId,
+            e1: sourceId,
             relation: 'mentions',
-            e2: `calendaritem:${id}`,
+            e2: toEntityId(id),
           }).catch((err: unknown) =>
             console.error('[useMentionLinks] Failed to remove link:', err),
           )

@@ -1,7 +1,8 @@
-import type { Entity, EntityReference, Reference } from '~/types/entity'
+import type { Entity, EntityReference, EntityType, Reference } from '~/types/entity'
 import { isEntityReference } from '~/types/entity'
 import { getCurrentInstance } from 'vue'
 import { DIALOG_ENTITY_CONTEXT_KEY } from '~/composables/useDialogStack'
+import { entityId as toEntityId } from '~/lib/tql-namespace'
 
 /**
  * Composable for bidirectional entity reference management.
@@ -47,14 +48,14 @@ export function useEntityReferences(
     editableItem.references.push(ref)
 
     // 2. Persist as a TQL link (graph edge)
-    const sourceEntityId = `calendaritem:${editableItem.id}`
-    const targetEntityId = `calendaritem:${ref.entityId}`
+    const sourceId = toEntityId(editableItem.id)
+    const targetId = toEntityId(ref.entityId)
     try {
       await mutate({
         action: 'link',
-        e1: sourceEntityId,
+        e1: sourceId,
         relation: 'references',
-        e2: targetEntityId,
+        e2: targetId,
       })
     } catch (err) {
       console.error('[useEntityReferences] Failed to create link:', err)
@@ -73,14 +74,14 @@ export function useEntityReferences(
 
     // If it was an outgoing entity ref, remove the TQL link
     if (removedRef && isEntityReference(removedRef) && removedRef.direction === 'outgoing') {
-      const sourceEntityId = `calendaritem:${editableItem.id}`
-      const targetEntityId = `calendaritem:${removedRef.entityId}`
+      const sourceId = toEntityId(editableItem.id)
+      const targetId = toEntityId(removedRef.entityId)
       try {
         await mutate({
           action: 'unlink',
-          e1: sourceEntityId,
+          e1: sourceId,
           relation: 'references',
-          e2: targetEntityId,
+          e2: targetId,
         })
       } catch (err) {
         console.error('[useEntityReferences] Failed to remove link:', err)
@@ -121,9 +122,47 @@ export function useEntityReferences(
     dialogStack.push(ref.entityId, ref.entityType, targetItem)
   }
 
+  /**
+   * Add a newly-created entity as a reference AND open it in a stacked dialog.
+   *
+   * Unlike `openEntityRef`, this doesn't require the entity to already be
+   * in `allItems` — it polls briefly for the store to hydrate, then pushes
+   * the entity onto the dialog stack so the user can fill in details.
+   */
+  async function createAndOpenEntityRef(ref: EntityReference) {
+    // 1. Add the reference link (also pushes to local state)
+    await addEntityRef(ref)
+
+    // 2. Wait for the store to hydrate the new entity (SSE triggers re-fetch)
+    const MAX_WAIT = 3000
+    const POLL_INTERVAL = 100
+    let elapsed = 0
+    let targetItem: Entity | undefined
+
+    while (elapsed < MAX_WAIT) {
+      targetItem = allItems.value.find((e: Entity) => e.id === ref.entityId)
+      if (targetItem) break
+      await new Promise((r) => setTimeout(r, POLL_INTERVAL))
+      elapsed += POLL_INTERVAL
+    }
+
+    if (!targetItem) {
+      // Fallback: construct a minimal entity so the dialog can still open
+      targetItem = { id: ref.entityId, type: ref.entityType as EntityType, title: ref.title } as Entity
+    }
+
+    // 3. Push onto the dialog stack
+    const dialogStack = useDialogStack()
+    if (dialogStack.size.value === 0) {
+      dialogStack.setOriginTitle(editableItem.title, editableItem.id)
+    }
+    dialogStack.push(ref.entityId, ref.entityType, targetItem)
+  }
+
   return {
     addEntityRef,
     removeRef,
     openEntityRef,
+    createAndOpenEntityRef,
   }
 }

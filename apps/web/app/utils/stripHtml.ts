@@ -2,7 +2,9 @@
  * Strip HTML tags from a string, returning plain text.
  * Works in both SSR and client contexts (regex-based, no DOM dependency).
  */
-export function stripHtml(html: string | undefined | null): string {
+export function stripHtml(input: unknown): string {
+  if (input == null) return ''
+  const html: string = typeof input === 'string' ? input : Array.isArray(input) ? input.join(' ') : String(input)
   if (!html) return ''
   return html
     .replace(/<br\s*\/?>/gi, '\n')

@@ -64,6 +64,7 @@
    * - 'folders': Split-view with folder tree navigation (left) and content preview (right)
    * - 'calendar': Fullscreen calendar layout (no header/tabs/toolbar/search)
    * - 'feed': Chronological stream from integrations — narrow list, source filter ribbon, no view switcher
+   * - 'grid': Multi-view grid dashboard — no built-in header (page renders its own inline-editable header), no toolbar
    */
   type PageVariant =
     | 'default'
@@ -77,6 +78,7 @@
     | 'folders'
     | 'calendar'
     | 'feed'
+    | 'grid'
 
   interface PageProps {
     /** Page layout variant */
@@ -284,6 +286,8 @@
         return { showHeader: true, showTabs: false, contentPadding: 'px-4 py-4 pt-0', maxWidth: '', showToolbar: true }
       case 'station':
         return { showHeader: false, showTabs: true, contentPadding: 'p-0', maxWidth: '', showToolbar: false }
+      case 'grid':
+        return { showHeader: false, showTabs: false, contentPadding: 'p-0', maxWidth: '', showToolbar: false }
       default:
         return { showHeader: true, showTabs: true, contentPadding: 'px-8 py-6', maxWidth: '', showToolbar: false }
     }

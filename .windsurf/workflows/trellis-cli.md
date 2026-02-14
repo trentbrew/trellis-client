@@ -91,11 +91,13 @@ just trellis ontology delete 'trellis:schema/invoice' --agent-id cascade
 
 ## Entity ID Convention
 
-All calendar items use the prefix `calendaritem:` followed by the item ID:
+All entities use the `calendaritem:` TQL storage namespace prefix (historical) followed by the item ID:
 - `calendaritem:task-1`
 - `calendaritem:bm-1` (bookmarks)
 - `calendaritem:note-1`
 - `calendaritem:person-1`
+
+> **In app code**, use `entityId()` / `entityQuery()` helpers from `app/lib/tql-namespace.ts` instead of hardcoding the prefix.
 
 ## Agent ID
 
@@ -111,6 +113,7 @@ Import `TrellisClient` from `@toolkit/trellis-cli` for programmatic access:
 ```js
 import { TrellisClient } from '@toolkit/trellis-cli'
 const client = new TrellisClient({ agentId: 'my-agent' })
+// SDK uses the raw calendaritem namespace — app code should use tql-namespace helpers
 await client.createNode('calendaritem:new', 'calendaritem', { type: 'task', title: 'Hello' })
 ```
 

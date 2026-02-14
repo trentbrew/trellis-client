@@ -1,6 +1,8 @@
 <script setup lang="ts">
   import type { PageStat } from '~/components/layout/Page.vue'
+  import type { PropertyFieldId } from '~/types/entity'
   import { useBrowsePage } from '~/composables/useBrowsePage'
+  import { useBrowseSelection } from '~/composables/useBrowseSelection'
 
   definePageMeta({ layout: 'default' })
   useHead({ title: 'Projects | Personal' })
@@ -73,6 +75,12 @@
   }
 
   const taskOwners = [{ id: 'you', name: 'You' }, { id: 'alex', name: 'Alex' }, { id: 'maya', name: 'Maya' }]
+
+  const {
+    isSelected, toggle: toggleSelection, clearSelection,
+    selectedItems, selectionCount,
+    handleFieldUpdate, handleBatchDelete, handleBatchDuplicate, handleBatchSetField,
+  } = useBrowseSelection(filteredItems)
 </script>
 
 <template>
@@ -110,7 +118,12 @@
         :key="item.id"
         :item="item"
         layout="grid"
-        @click="openDetail(item)" />
+        editable
+        :selected="isSelected(item.id)"
+        :owners="taskOwners"
+        @click="openDetail(item)"
+        @select="toggleSelection(item.id, $event)"
+        @field-update="(fieldId: PropertyFieldId, value: unknown) => handleFieldUpdate(item, fieldId, value)" />
       <div v-if="!filteredItems.length" class="col-span-full flex flex-col items-center justify-center py-20 text-center">
         <Icon name="lucide:folder-kanban" class="h-12 w-12 text-muted-foreground/30 mb-4" />
         <h3 class="text-lg font-medium text-foreground mb-1">No projects yet</h3>
@@ -125,7 +138,12 @@
         :key="item.id"
         :item="item"
         layout="list"
-        @click="openDetail(item)" />
+        editable
+        :selected="isSelected(item.id)"
+        :owners="taskOwners"
+        @click="openDetail(item)"
+        @select="toggleSelection(item.id, $event)"
+        @field-update="(fieldId: PropertyFieldId, value: unknown) => handleFieldUpdate(item, fieldId, value)" />
       <div v-if="!filteredItems.length" class="flex flex-col items-center justify-center py-20 text-center">
         <Icon name="lucide:folder-kanban" class="h-12 w-12 text-muted-foreground/30 mb-4" />
         <h3 class="text-lg font-medium text-foreground mb-1">No projects yet</h3>
@@ -171,6 +189,15 @@
     <div class="text-xs text-muted-foreground mt-4 pt-4 border-t border-border pb-10">
       Showing {{ filteredItems.length }} {{ filteredItems.length === 1 ? 'project' : 'projects' }}
     </div>
+
+    <!-- Selection Bar -->
+    <EntitySelectionBar
+      :selected-items="selectedItems"
+      :selection-count="selectionCount"
+      @batch-delete="handleBatchDelete"
+      @batch-duplicate="handleBatchDuplicate"
+      @batch-set-field="handleBatchSetField"
+      @clear-selection="clearSelection" />
 
     <!-- View/Edit Dialog -->
     <ProjectDialog

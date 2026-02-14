@@ -69,7 +69,7 @@
     displayActivity,
     addComment: persistComment,
     loading: commentsLoading,
-  } = useComments(currentEntityId, 'calendarItem')
+  } = useComments(currentEntityId)
 
   // UI State
   const newComment = ref('')
@@ -79,6 +79,15 @@
   const commentsOpen = ref(false)
   const entityPickerOpen = ref(false)
   const entityPickerFilterType = ref<string | undefined>(undefined)
+  const emailOpen = ref(false)
+  const phoneOpen = ref(false)
+  const websiteOpen = ref(false)
+  const socialOpen = ref(false)
+  const jobTitleOpen = ref(false)
+  const orgOpen = ref(false)
+  const addressOpen = ref(false)
+  const birthdayOpen = ref(false)
+  const pronounsOpen = ref(false)
   const owners = computed(() => props.owners ?? [])
 
   const filteredOwners = computed(() => {
@@ -121,11 +130,6 @@
 
   const getSocialIcon = (platform: string) => {
     return SOCIAL_PLATFORMS.find((p) => p.value === platform)?.icon || 'lucide:link'
-  }
-
-  // Initials helper
-  const getInitials = (name: string): string => {
-    return name.split(' ').map((w) => w[0]).join('').toUpperCase().slice(0, 2)
   }
 
   // Format timestamps
@@ -189,8 +193,9 @@
   })
 
   // Bidirectional entity references
-  const { addEntityRef, removeRef: removeEntityRef, openEntityRef: handleOpenEntityRef } = useEntityReferences(editableItem)
+  const { addEntityRef, removeRef: removeEntityRef, openEntityRef: handleOpenEntityRef, createAndOpenEntityRef } = useEntityReferences(editableItem)
   const handleAddEntityRef = (ref: import('~/types/entity').EntityReference) => addEntityRef(ref)
+  const handleCreatedEntityRef = (ref: import('~/types/entity').EntityReference) => createAndOpenEntityRef(ref)
   const handleRemoveRef = (refId: string) => removeEntityRef(refId)
 
   const handleAddComment = async () => {
@@ -211,7 +216,6 @@
     title-placeholder="Person name..."
     :can-navigate-prev="canNavigatePrev"
     :can-navigate-next="canNavigateNext"
-    :avatar="editableItem.avatar"
     :dialog-title="isCreateMode ? 'New Person' : editableItem.title || 'Person'"
     :dialog-description="isCreateMode ? 'Create a new person.' : 'View and edit person details.'"
     @update:open="emit('update:open', $event)"
@@ -220,6 +224,11 @@
     @close="closeDialog"
     @navigate-prev="emit('navigatePrev')"
     @navigate-next="emit('navigateNext')">
+
+    <!-- Tags next to Person badge -->
+    <template v-if="hasField('tags')" #header-badges>
+      <TagsSection v-model="editableItem.tags" :readonly="isViewMode" inline />
+    </template>
 
     <!-- Properties Row -->
     <template #properties>
@@ -290,72 +299,221 @@
         </UiPopoverContent>
       </UiPopover>
 
-      <!-- Tags -->
-      <span v-if="hasField('tags')" class="w-px h-4 bg-border/60 mx-0.5 shrink-0" />
-      <div v-if="hasField('tags')" class="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-md bg-muted/30 border border-border/40">
-        <TagsSection v-model="editableItem.tags" :readonly="isViewMode" inline />
-      </div>
-    </template>
+      <span class="w-px h-4 bg-border/60 mx-0.5 shrink-0" />
 
-    <!-- Content: Sidebar + Main -->
-    <!-- Contact & Social Sidebar -->
-    <aside class="w-56 shrink-0 border-r border-border overflow-y-auto hidden md:block">
-      <div class="p-4 space-y-4">
-        <!-- Contact -->
-        <div class="space-y-2">
-          <p class="text-[10px] font-medium text-muted-foreground uppercase tracking-wide">Contact</p>
+      <!-- Email -->
+      <UiPopover v-model:open="emailOpen">
+        <UiPopoverTrigger as-child>
+          <button
+            :class="[
+              'inline-flex items-center gap-1.5 px-2 py-1 rounded-lg transition-colors',
+              !editableItem.email
+                ? 'border border-dashed border-muted-foreground/40 text-muted-foreground hover:border-muted-foreground/60 hover:bg-muted/30'
+                : 'bg-muted/50 hover:bg-muted',
+            ]">
+            <Icon name="lucide:mail" class="h-3.5 w-3.5" />
+            <span class="max-w-[120px] truncate">{{ editableItem.email || 'Email' }}</span>
+          </button>
+        </UiPopoverTrigger>
+        <UiPopoverContent align="start" class="w-56 p-2">
+          <input
+            v-model="editableItem.email"
+            type="email"
+            placeholder="email@example.com"
+            class="w-full text-xs bg-muted/30 border border-border/40 rounded-md px-2 py-1.5 outline-none placeholder:text-muted-foreground/50"
+            :readonly="isViewMode"
+            @keydown.enter="emailOpen = false" />
+        </UiPopoverContent>
+      </UiPopover>
 
-          <!-- Email -->
-          <div class="flex items-center gap-2">
-            <Icon name="lucide:mail" class="h-3.5 w-3.5 text-muted-foreground shrink-0" />
-            <input
-              v-if="!isViewMode"
-              v-model="editableItem.email"
-              type="email"
-              placeholder="Email..."
-              class="flex-1 text-xs bg-transparent outline-none placeholder:text-muted-foreground/50" />
-            <a v-else-if="editableItem.email" :href="`mailto:${editableItem.email}`" class="text-xs text-primary hover:underline truncate">{{ editableItem.email }}</a>
-            <span v-else class="text-xs text-muted-foreground">—</span>
-          </div>
+      <!-- Phone -->
+      <UiPopover v-model:open="phoneOpen">
+        <UiPopoverTrigger as-child>
+          <button
+            :class="[
+              'inline-flex items-center gap-1.5 px-2 py-1 rounded-lg transition-colors',
+              !editableItem.phone
+                ? 'border border-dashed border-muted-foreground/40 text-muted-foreground hover:border-muted-foreground/60 hover:bg-muted/30'
+                : 'bg-muted/50 hover:bg-muted',
+            ]">
+            <Icon name="lucide:phone" class="h-3.5 w-3.5" />
+            <span class="max-w-[120px] truncate">{{ editableItem.phone || 'Phone' }}</span>
+          </button>
+        </UiPopoverTrigger>
+        <UiPopoverContent align="start" class="w-56 p-2">
+          <input
+            v-model="editableItem.phone"
+            type="tel"
+            placeholder="+1 (555) 000-0000"
+            class="w-full text-xs bg-muted/30 border border-border/40 rounded-md px-2 py-1.5 outline-none placeholder:text-muted-foreground/50"
+            :readonly="isViewMode"
+            @keydown.enter="phoneOpen = false" />
+        </UiPopoverContent>
+      </UiPopover>
 
-          <!-- Phone -->
-          <div class="flex items-center gap-2">
-            <Icon name="lucide:phone" class="h-3.5 w-3.5 text-muted-foreground shrink-0" />
-            <input
-              v-if="!isViewMode"
-              v-model="editableItem.phone"
-              type="tel"
-              placeholder="Phone..."
-              class="flex-1 text-xs bg-transparent outline-none placeholder:text-muted-foreground/50" />
-            <a v-else-if="editableItem.phone" :href="`tel:${editableItem.phone}`" class="text-xs text-primary hover:underline">{{ editableItem.phone }}</a>
-            <span v-else class="text-xs text-muted-foreground">—</span>
-          </div>
+      <!-- Website -->
+      <UiPopover v-model:open="websiteOpen">
+        <UiPopoverTrigger as-child>
+          <button
+            :class="[
+              'inline-flex items-center gap-1.5 px-2 py-1 rounded-lg transition-colors',
+              !editableItem.website
+                ? 'border border-dashed border-muted-foreground/40 text-muted-foreground hover:border-muted-foreground/60 hover:bg-muted/30'
+                : 'bg-muted/50 hover:bg-muted',
+            ]">
+            <Icon name="lucide:globe" class="h-3.5 w-3.5" />
+            <span class="max-w-[120px] truncate">{{ editableItem.website || 'Website' }}</span>
+          </button>
+        </UiPopoverTrigger>
+        <UiPopoverContent align="start" class="w-56 p-2">
+          <input
+            v-model="editableItem.website"
+            type="url"
+            placeholder="https://..."
+            class="w-full text-xs bg-muted/30 border border-border/40 rounded-md px-2 py-1.5 outline-none placeholder:text-muted-foreground/50"
+            :readonly="isViewMode"
+            @keydown.enter="websiteOpen = false" />
+        </UiPopoverContent>
+      </UiPopover>
 
-          <!-- Website -->
-          <div class="flex items-center gap-2">
-            <Icon name="lucide:globe" class="h-3.5 w-3.5 text-muted-foreground shrink-0" />
-            <input
-              v-if="!isViewMode"
-              v-model="editableItem.website"
-              type="url"
-              placeholder="Website..."
-              class="flex-1 text-xs bg-transparent outline-none placeholder:text-muted-foreground/50" />
-            <a v-else-if="editableItem.website" :href="editableItem.website" target="_blank" class="text-xs text-primary hover:underline truncate">{{ editableItem.website }}</a>
-            <span v-else class="text-xs text-muted-foreground">—</span>
-          </div>
-        </div>
+      <!-- Job Title -->
+      <UiPopover v-model:open="jobTitleOpen">
+        <UiPopoverTrigger as-child>
+          <button
+            :class="[
+              'inline-flex items-center gap-1.5 px-2 py-1 rounded-lg transition-colors',
+              !editableItem.jobTitle
+                ? 'border border-dashed border-muted-foreground/40 text-muted-foreground hover:border-muted-foreground/60 hover:bg-muted/30'
+                : 'bg-muted/50 hover:bg-muted',
+            ]">
+            <Icon name="lucide:briefcase" class="h-3.5 w-3.5" />
+            <span class="max-w-[120px] truncate">{{ editableItem.jobTitle || 'Job title' }}</span>
+          </button>
+        </UiPopoverTrigger>
+        <UiPopoverContent align="start" class="w-56 p-2">
+          <input
+            v-model="editableItem.jobTitle"
+            type="text"
+            placeholder="Job title..."
+            class="w-full text-xs bg-muted/30 border border-border/40 rounded-md px-2 py-1.5 outline-none placeholder:text-muted-foreground/50"
+            :readonly="isViewMode"
+            @keydown.enter="jobTitleOpen = false" />
+        </UiPopoverContent>
+      </UiPopover>
 
-        <!-- Social Links -->
-        <div class="space-y-2">
-          <div class="flex items-center justify-between">
-            <p class="text-[10px] font-medium text-muted-foreground uppercase tracking-wide">Social</p>
-            <button
-              v-if="!isViewMode"
-              class="text-[10px] text-muted-foreground hover:text-foreground flex items-center gap-0.5"
-              @click="addSocialLink">
-              <Icon name="lucide:plus" class="h-3 w-3" />
-            </button>
-          </div>
+      <!-- Organization -->
+      <UiPopover v-model:open="orgOpen">
+        <UiPopoverTrigger as-child>
+          <button
+            :class="[
+              'inline-flex items-center gap-1.5 px-2 py-1 rounded-lg transition-colors',
+              !editableItem.organization
+                ? 'border border-dashed border-muted-foreground/40 text-muted-foreground hover:border-muted-foreground/60 hover:bg-muted/30'
+                : 'bg-muted/50 hover:bg-muted',
+            ]">
+            <Icon name="lucide:building-2" class="h-3.5 w-3.5" />
+            <span class="max-w-[120px] truncate">{{ editableItem.organization || 'Organization' }}</span>
+          </button>
+        </UiPopoverTrigger>
+        <UiPopoverContent align="start" class="w-56 p-2">
+          <input
+            v-model="editableItem.organization"
+            type="text"
+            placeholder="Organization..."
+            class="w-full text-xs bg-muted/30 border border-border/40 rounded-md px-2 py-1.5 outline-none placeholder:text-muted-foreground/50"
+            :readonly="isViewMode"
+            @keydown.enter="orgOpen = false" />
+        </UiPopoverContent>
+      </UiPopover>
+
+      <!-- Address -->
+      <UiPopover v-model:open="addressOpen">
+        <UiPopoverTrigger as-child>
+          <button
+            :class="[
+              'inline-flex items-center gap-1.5 px-2 py-1 rounded-lg transition-colors',
+              !editableItem.address
+                ? 'border border-dashed border-muted-foreground/40 text-muted-foreground hover:border-muted-foreground/60 hover:bg-muted/30'
+                : 'bg-muted/50 hover:bg-muted',
+            ]">
+            <Icon name="lucide:map-pin" class="h-3.5 w-3.5" />
+            <span class="max-w-[120px] truncate">{{ editableItem.address || 'Address' }}</span>
+          </button>
+        </UiPopoverTrigger>
+        <UiPopoverContent align="start" class="w-56 p-2">
+          <input
+            v-model="editableItem.address"
+            type="text"
+            placeholder="Address..."
+            class="w-full text-xs bg-muted/30 border border-border/40 rounded-md px-2 py-1.5 outline-none placeholder:text-muted-foreground/50"
+            :readonly="isViewMode"
+            @keydown.enter="addressOpen = false" />
+        </UiPopoverContent>
+      </UiPopover>
+
+      <!-- Birthday -->
+      <UiPopover v-model:open="birthdayOpen">
+        <UiPopoverTrigger as-child>
+          <button
+            :class="[
+              'inline-flex items-center gap-1.5 px-2 py-1 rounded-lg transition-colors',
+              !editableItem.birthday
+                ? 'border border-dashed border-muted-foreground/40 text-muted-foreground hover:border-muted-foreground/60 hover:bg-muted/30'
+                : 'bg-muted/50 hover:bg-muted',
+            ]">
+            <Icon name="lucide:cake" class="h-3.5 w-3.5" />
+            <span>{{ editableItem.birthday || 'Birthday' }}</span>
+          </button>
+        </UiPopoverTrigger>
+        <UiPopoverContent align="start" class="w-56 p-2">
+          <input
+            v-model="editableItem.birthday"
+            type="date"
+            class="w-full text-xs bg-muted/30 border border-border/40 rounded-md px-2 py-1.5 outline-none"
+            :readonly="isViewMode" />
+        </UiPopoverContent>
+      </UiPopover>
+
+      <!-- Pronouns -->
+      <UiPopover v-model:open="pronounsOpen">
+        <UiPopoverTrigger as-child>
+          <button
+            :class="[
+              'inline-flex items-center gap-1.5 px-2 py-1 rounded-lg transition-colors',
+              !editableItem.pronouns
+                ? 'border border-dashed border-muted-foreground/40 text-muted-foreground hover:border-muted-foreground/60 hover:bg-muted/30'
+                : 'bg-muted/50 hover:bg-muted',
+            ]">
+            <Icon name="lucide:message-circle" class="h-3.5 w-3.5" />
+            <span>{{ editableItem.pronouns || 'Pronouns' }}</span>
+          </button>
+        </UiPopoverTrigger>
+        <UiPopoverContent align="start" class="w-56 p-2">
+          <input
+            v-model="editableItem.pronouns"
+            type="text"
+            placeholder="e.g. they/them"
+            class="w-full text-xs bg-muted/30 border border-border/40 rounded-md px-2 py-1.5 outline-none placeholder:text-muted-foreground/50"
+            :readonly="isViewMode"
+            @keydown.enter="pronounsOpen = false" />
+        </UiPopoverContent>
+      </UiPopover>
+
+      <!-- Social Links -->
+      <UiPopover v-model:open="socialOpen">
+        <UiPopoverTrigger as-child>
+          <button
+            :class="[
+              'inline-flex items-center gap-1.5 px-2 py-1 rounded-lg transition-colors',
+              !editableItem.socialLinks?.length
+                ? 'border border-dashed border-muted-foreground/40 text-muted-foreground hover:border-muted-foreground/60 hover:bg-muted/30'
+                : 'bg-muted/50 hover:bg-muted',
+            ]">
+            <Icon name="lucide:share-2" class="h-3.5 w-3.5" />
+            <span>{{ editableItem.socialLinks?.length ? `${editableItem.socialLinks.length} social` : 'Social' }}</span>
+          </button>
+        </UiPopoverTrigger>
+        <UiPopoverContent align="start" class="w-72 p-2 space-y-2">
           <div v-if="editableItem.socialLinks?.length" class="space-y-1.5">
             <div
               v-for="(link, i) in editableItem.socialLinks"
@@ -365,14 +523,14 @@
               <template v-if="!isViewMode">
                 <select
                   v-model="link.platform"
-                  class="h-6 rounded border border-border bg-transparent text-[10px] px-1 outline-none w-16 shrink-0">
+                  class="h-6 rounded border border-border bg-transparent text-[10px] px-1 outline-none w-20 shrink-0">
                   <option v-for="p in SOCIAL_PLATFORMS" :key="p.value" :value="p.value">{{ p.label }}</option>
                 </select>
                 <input
                   v-model="link.url"
                   type="url"
                   placeholder="URL..."
-                  class="flex-1 text-[11px] bg-transparent outline-none min-w-0 placeholder:text-muted-foreground/50" />
+                  class="flex-1 text-[11px] bg-muted/30 border border-border/40 rounded px-1.5 py-0.5 outline-none min-w-0 placeholder:text-muted-foreground/50" />
                 <button
                   class="shrink-0 opacity-0 group-hover:opacity-100 text-muted-foreground hover:text-destructive transition-all"
                   @click="removeSocialLink(Number(i))">
@@ -385,156 +543,90 @@
             </div>
           </div>
           <p v-else class="text-[11px] text-muted-foreground/50 italic">No social links</p>
-        </div>
-      </div>
-    </aside>
-
-    <!-- Main Content -->
-    <div class="flex-1 flex flex-col min-w-0 overflow-y-auto">
-      <div class="divide-y divide-border flex flex-col min-h-full">
-        <!-- About Section -->
-        <div class="p-4 space-y-3">
-          <p class="text-[10px] font-medium text-muted-foreground uppercase tracking-wide">About</p>
-
-          <!-- Avatar row -->
-          <div class="flex items-center gap-3">
-            <div class="h-12 w-12 rounded-full bg-primary/10 flex items-center justify-center shrink-0 overflow-hidden">
-              <img v-if="editableItem.avatar" :src="editableItem.avatar" :alt="editableItem.title" class="h-12 w-12 rounded-full object-cover" />
-              <span v-else class="text-lg font-semibold text-primary">{{ getInitials(editableItem.title || 'P') }}</span>
-            </div>
-            <div v-if="!isViewMode" class="flex-1 min-w-0">
-              <input
-                v-model="editableItem.avatar"
-                type="text"
-                placeholder="Avatar URL..."
-                class="w-full text-[11px] bg-muted/30 border border-border/40 rounded-md px-2 py-1 outline-none placeholder:text-muted-foreground/50" />
-            </div>
-          </div>
-
-          <!-- Details grid -->
-          <div class="grid grid-cols-2 gap-x-4 gap-y-2">
-            <!-- Job Title -->
-            <div class="flex items-center gap-2">
-              <Icon name="lucide:briefcase" class="h-3.5 w-3.5 text-muted-foreground shrink-0" />
-              <input
-                v-if="!isViewMode"
-                v-model="editableItem.jobTitle"
-                type="text"
-                placeholder="Job title..."
-                class="flex-1 text-xs bg-transparent outline-none placeholder:text-muted-foreground/50 min-w-0" />
-              <span v-else class="text-xs text-foreground truncate">{{ editableItem.jobTitle || '—' }}</span>
-            </div>
-
-            <!-- Organization -->
-            <div class="flex items-center gap-2">
-              <Icon name="lucide:building-2" class="h-3.5 w-3.5 text-muted-foreground shrink-0" />
-              <input
-                v-if="!isViewMode"
-                v-model="editableItem.organization"
-                type="text"
-                placeholder="Organization..."
-                class="flex-1 text-xs bg-transparent outline-none placeholder:text-muted-foreground/50 min-w-0" />
-              <span v-else class="text-xs text-foreground truncate">{{ editableItem.organization || '—' }}</span>
-            </div>
-
-            <!-- Address -->
-            <div class="flex items-center gap-2">
-              <Icon name="lucide:map-pin" class="h-3.5 w-3.5 text-muted-foreground shrink-0" />
-              <input
-                v-if="!isViewMode"
-                v-model="editableItem.address"
-                type="text"
-                placeholder="Address..."
-                class="flex-1 text-xs bg-transparent outline-none placeholder:text-muted-foreground/50 min-w-0" />
-              <span v-else class="text-xs text-foreground truncate">{{ editableItem.address || '—' }}</span>
-            </div>
-
-            <!-- Birthday -->
-            <div class="flex items-center gap-2">
-              <Icon name="lucide:cake" class="h-3.5 w-3.5 text-muted-foreground shrink-0" />
-              <input
-                v-if="!isViewMode"
-                v-model="editableItem.birthday"
-                type="date"
-                class="flex-1 text-xs bg-transparent outline-none text-foreground min-w-0" />
-              <span v-else class="text-xs text-foreground">{{ editableItem.birthday || '—' }}</span>
-            </div>
-
-            <!-- Pronouns -->
-            <div class="flex items-center gap-2">
-              <Icon name="lucide:message-circle" class="h-3.5 w-3.5 text-muted-foreground shrink-0" />
-              <input
-                v-if="!isViewMode"
-                v-model="editableItem.pronouns"
-                type="text"
-                placeholder="Pronouns..."
-                class="flex-1 text-xs bg-transparent outline-none placeholder:text-muted-foreground/50 min-w-0" />
-              <span v-else class="text-xs text-foreground">{{ editableItem.pronouns || '—' }}</span>
-            </div>
-          </div>
-        </div>
-
-        <!-- References -->
-        <ReferencesSection
-          v-model="editableItem.references"
-          :readonly="isViewMode"
-          @open-entity="handleOpenEntityRef"
-          @remove-ref="handleRemoveRef"
-          @add-entity="() => { entityPickerFilterType = undefined; entityPickerOpen = true }"
-          @add-entity-of-type="(type: string) => { entityPickerFilterType = type; entityPickerOpen = true }" />
-
-        <!-- Comments / Activity -->
-        <div v-if="!isCreateMode" class="p-4 space-y-2">
           <button
-            type="button"
-            class="w-full flex items-center justify-between text-[10px] font-medium text-muted-foreground uppercase tracking-wide hover:text-foreground transition-colors"
-            @click="commentsOpen = !commentsOpen">
-            <span>Comments / Activity</span>
-            <Icon :name="commentsOpen ? 'lucide:chevron-up' : 'lucide:chevron-down'" class="h-3 w-3" />
+            v-if="!isViewMode"
+            class="w-full text-[11px] text-muted-foreground hover:text-foreground flex items-center justify-center gap-1 py-1 rounded border border-dashed border-border hover:border-muted-foreground/60 transition-colors"
+            @click="addSocialLink">
+            <Icon name="lucide:plus" class="h-3 w-3" />
+            Add link
           </button>
-          <div v-if="commentsOpen" class="space-y-2">
-            <div v-if="commentsLoading" class="flex items-center py-2">
-              <Icon name="lucide:loader-2" class="h-3 w-3 animate-spin text-muted-foreground" />
-            </div>
-            <div v-else-if="displayActivity.length" class="space-y-1.5 mb-2">
-              <div v-for="activityItem in displayActivity" :key="activityItem.id" class="flex items-start gap-2">
-                <div class="w-5 h-5 rounded-full bg-muted flex items-center justify-center shrink-0 mt-0.5">
-                  <Icon
-                    v-if="activityItem.type === 'created'" name="lucide:plus" class="h-2.5 w-2.5 text-muted-foreground" />
-                  <Icon
-                    v-else-if="activityItem.type === 'comment'" name="lucide:message-circle" class="h-2.5 w-2.5 text-muted-foreground" />
-                  <Icon v-else name="lucide:activity" class="h-2.5 w-2.5 text-muted-foreground" />
-                </div>
-                <div class="flex-1 min-w-0">
-                  <div class="flex items-baseline gap-1 flex-wrap">
-                    <span class="text-[11px] font-medium">{{ activityItem.authorName }}</span>
-                    <span class="text-[10px] text-muted-foreground">{{ formatRelativeTime(Number(activityItem.createdAt)) }}</span>
+        </UiPopoverContent>
+      </UiPopover>
+
+    </template>
+
+    <!-- Content: Center + Right Sidebar -->
+    <div class="flex flex-1 min-h-0 overflow-hidden">
+      <!-- Center Content (summary placeholder, same as other dialogs) -->
+      <div class="flex-1 overflow-y-auto min-w-0">
+        <EntitySummaryPanel :model-value="editableItem" :mode="mode" />
+      </div>
+
+      <!-- Right Sidebar: References + Comments -->
+      <aside class="w-72 shrink-0 border-l border-border overflow-y-auto hidden md:block">
+        <div class="divide-y divide-border">
+          <!-- References -->
+          <ReferencesSection
+            v-model="editableItem.references"
+            :readonly="isViewMode"
+            @open-entity="handleOpenEntityRef"
+            @remove-ref="handleRemoveRef"
+            @add-entity="() => { entityPickerFilterType = undefined; entityPickerOpen = true }"
+            @add-entity-of-type="(type: string) => { entityPickerFilterType = type; entityPickerOpen = true }" />
+
+          <!-- Comments / Activity -->
+          <div v-if="!isCreateMode" class="p-4 space-y-2">
+            <button
+              type="button"
+              class="w-full flex items-center justify-between text-[10px] font-medium text-muted-foreground uppercase tracking-wide hover:text-foreground transition-colors"
+              @click="commentsOpen = !commentsOpen">
+              <span>Comments / Activity</span>
+              <Icon :name="commentsOpen ? 'lucide:chevron-up' : 'lucide:chevron-down'" class="h-3 w-3" />
+            </button>
+            <div v-if="commentsOpen" class="space-y-2">
+              <div v-if="commentsLoading" class="flex items-center py-2">
+                <Icon name="lucide:loader-2" class="h-3 w-3 animate-spin text-muted-foreground" />
+              </div>
+              <div v-else-if="displayActivity.length" class="space-y-1.5 mb-2">
+                <div v-for="activityItem in displayActivity" :key="activityItem.id" class="flex items-start gap-2">
+                  <div class="w-5 h-5 rounded-full bg-muted flex items-center justify-center shrink-0 mt-0.5">
+                    <Icon
+                      v-if="activityItem.type === 'created'" name="lucide:plus" class="h-2.5 w-2.5 text-muted-foreground" />
+                    <Icon
+                      v-else-if="activityItem.type === 'comment'" name="lucide:message-circle" class="h-2.5 w-2.5 text-muted-foreground" />
+                    <Icon v-else name="lucide:activity" class="h-2.5 w-2.5 text-muted-foreground" />
                   </div>
-                  <p v-if="activityItem.content" class="text-xs text-foreground/80 mt-0.5">{{ activityItem.content }}</p>
-                  <p v-else-if="activityItem.type === 'created'" class="text-[10px] text-muted-foreground mt-0.5">created this person</p>
+                  <div class="flex-1 min-w-0">
+                    <div class="flex items-baseline gap-1 flex-wrap">
+                      <span class="text-[11px] font-medium">{{ activityItem.authorName }}</span>
+                      <span class="text-[10px] text-muted-foreground">{{ formatRelativeTime(Number(activityItem.createdAt)) }}</span>
+                    </div>
+                    <p v-if="activityItem.content" class="text-xs text-foreground/80 mt-0.5">{{ activityItem.content }}</p>
+                    <p v-else-if="activityItem.type === 'created'" class="text-[10px] text-muted-foreground mt-0.5">created this person</p>
+                  </div>
                 </div>
               </div>
-            </div>
-            <div class="flex items-center gap-2">
-              <div class="w-5 h-5 rounded-full bg-muted/60 flex items-center justify-center shrink-0">
-                <Icon name="lucide:user" class="h-2.5 w-2.5 text-muted-foreground" />
+              <div class="flex items-center gap-2">
+                <div class="w-5 h-5 rounded-full bg-muted/60 flex items-center justify-center shrink-0">
+                  <Icon name="lucide:user" class="h-2.5 w-2.5 text-muted-foreground" />
+                </div>
+                <input
+                  v-model="newComment"
+                  type="text"
+                  placeholder="Add a comment..."
+                  class="flex-1 text-xs bg-transparent border-none outline-none placeholder:text-muted-foreground/50"
+                  @keydown.enter="newComment.trim() && handleAddComment()" />
+                <button
+                  v-if="newComment.trim()"
+                  class="text-primary hover:text-primary/80 transition-colors"
+                  @click="handleAddComment">
+                  <Icon name="lucide:send" class="h-3 w-3" />
+                </button>
               </div>
-              <input
-                v-model="newComment"
-                type="text"
-                placeholder="Add a comment..."
-                class="flex-1 text-xs bg-transparent border-none outline-none placeholder:text-muted-foreground/50"
-                @keydown.enter="newComment.trim() && handleAddComment()" />
-              <button
-                v-if="newComment.trim()"
-                class="text-primary hover:text-primary/80 transition-colors"
-                @click="handleAddComment">
-                <Icon name="lucide:send" class="h-3 w-3" />
-              </button>
             </div>
           </div>
         </div>
-      </div>
+      </aside>
     </div>
 
     <!-- Footer -->
@@ -591,5 +683,5 @@
   </ActorDialogShell>
 
   <!-- Entity Reference Picker -->
-  <EntityReferencePicker v-model:open="entityPickerOpen" :exclude-id="editableItem.id" :filter-type="entityPickerFilterType" @select="handleAddEntityRef" />
+  <EntityReferencePicker v-model:open="entityPickerOpen" :exclude-id="editableItem.id" :filter-type="entityPickerFilterType" @select="handleAddEntityRef" @created="handleCreatedEntityRef" />
 </template>

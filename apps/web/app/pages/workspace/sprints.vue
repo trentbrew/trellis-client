@@ -1,8 +1,9 @@
 <script setup lang="ts">
   import type { PageStat } from '~/components/layout/Page.vue'
+  import type { PropertyFieldId, SprintItem } from '~/types/entity'
   import { useBrowsePage } from '~/composables/useBrowsePage'
+  import { useBrowseSelection } from '~/composables/useBrowseSelection'
   import EntityDialog from '~/components/dialogs/EntityDialog.vue'
-  import type { SprintItem } from '~/types/entity'
 
   definePageMeta({ layout: 'default' })
   useHead({ title: 'Sprints | Workspace' })
@@ -55,6 +56,12 @@
 
   const taskOwners = [{ id: 'you', name: 'You' }, { id: 'alex', name: 'Alex' }, { id: 'maya', name: 'Maya' }]
   const taskFolders = ['Work', 'Personal']
+
+  const {
+    isSelected, toggle: toggleSelection, clearSelection,
+    selectedItems, selectionCount,
+    handleFieldUpdate, handleBatchDelete, handleBatchDuplicate, handleBatchSetField,
+  } = useBrowseSelection(filteredItems)
 </script>
 
 <template>
@@ -91,7 +98,12 @@
         :key="item.id"
         :item="item"
         layout="list"
-        @click="openDetail(item)" />
+        editable
+        :selected="isSelected(item.id)"
+        :owners="taskOwners"
+        @click="openDetail(item)"
+        @select="toggleSelection(item.id, $event)"
+        @field-update="(fieldId: PropertyFieldId, value: unknown) => handleFieldUpdate(item, fieldId, value)" />
       <div v-if="!filteredItems.length" class="flex items-center justify-center h-40 text-sm text-muted-foreground">
         No sprints found
       </div>
@@ -104,7 +116,12 @@
         :key="item.id"
         :item="item"
         layout="grid"
-        @click="openDetail(item)" />
+        editable
+        :selected="isSelected(item.id)"
+        :owners="taskOwners"
+        @click="openDetail(item)"
+        @select="toggleSelection(item.id, $event)"
+        @field-update="(fieldId: PropertyFieldId, value: unknown) => handleFieldUpdate(item, fieldId, value)" />
       <div v-if="!filteredItems.length" class="col-span-full flex items-center justify-center h-40 text-sm text-muted-foreground">
         No sprints found
       </div>
@@ -147,6 +164,14 @@
     <div class="text-xs text-muted-foreground mt-4 pt-4 border-t border-border pb-10">
       Showing {{ filteredItems.length }} {{ filteredItems.length === 1 ? 'sprint' : 'sprints' }}
     </div>
+
+    <EntitySelectionBar
+      :selected-items="selectedItems"
+      :selection-count="selectionCount"
+      @batch-delete="handleBatchDelete"
+      @batch-duplicate="handleBatchDuplicate"
+      @batch-set-field="handleBatchSetField"
+      @clear-selection="clearSelection" />
 
     <EntityDialog
       v-model:open="viewOpen"

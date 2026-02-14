@@ -68,7 +68,7 @@
     displayActivity,
     addComment: persistComment,
     loading: commentsLoading,
-  } = useComments(currentEntityId, 'calendarItem')
+  } = useComments(currentEntityId)
 
   // UI State
   const newComment = ref('')
@@ -154,8 +154,9 @@
   })
 
   // Bidirectional entity references
-  const { addEntityRef, removeRef: removeEntityRef, openEntityRef: handleOpenEntityRef } = useEntityReferences(editableItem)
+  const { addEntityRef, removeRef: removeEntityRef, openEntityRef: handleOpenEntityRef, createAndOpenEntityRef } = useEntityReferences(editableItem)
   const handleAddEntityRef = (ref: import('~/types/entity').EntityReference) => addEntityRef(ref)
+  const handleCreatedEntityRef = (ref: import('~/types/entity').EntityReference) => createAndOpenEntityRef(ref)
   const handleRemoveRef = (refId: string) => removeEntityRef(refId)
 
   const handleAddComment = async () => {
@@ -434,5 +435,5 @@
   </DocumentDialogShell>
 
   <!-- Entity Reference Picker -->
-  <EntityReferencePicker v-model:open="entityPickerOpen" :exclude-id="editableItem.id" :filter-type="entityPickerFilterType" @select="handleAddEntityRef" />
+  <EntityReferencePicker v-model:open="entityPickerOpen" :exclude-id="editableItem.id" :filter-type="entityPickerFilterType" @select="handleAddEntityRef" @created="handleCreatedEntityRef" />
 </template>

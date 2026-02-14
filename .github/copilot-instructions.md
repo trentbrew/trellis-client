@@ -45,6 +45,8 @@ Two-axis: **class** (temporal, document, actor, container) × **type** (task, no
 
 Entity IDs: `calendaritem:task-1`, `calendaritem:note-meeting`
 
+> **Namespace note:** `calendaritem` is the TQL storage namespace (historical). App code uses `entityId()` / `entityQuery()` helpers from `app/lib/tql-namespace.ts`.
+
 ## Key Rules
 
 - Dev server is always on `localhost:4141` — **never start it yourself**

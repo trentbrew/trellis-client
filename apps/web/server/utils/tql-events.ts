@@ -15,7 +15,7 @@ export interface MutationEvent {
   action: string
   /** Primary entity ID affected */
   entityId?: string
-  /** Entity type (e.g., 'calendaritem') */
+  /** Entity type (e.g., 'task', 'note') */
   type?: string
   /** Who performed the mutation (browser, agent name, etc.) */
   agentId: string
