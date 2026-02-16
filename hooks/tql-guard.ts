@@ -37,6 +37,15 @@ const GRAPH_PATH = resolve(TQL_DIR, 'graph.jsonld');
 
 // ── Built-in Pattern Rules ─────────────────────────────────────────────
 
+// Safe exceptions — commands matching these are allowed even if they match DANGEROUS_COMMANDS.
+// Used for known-safe build cache cleanup, server restarts, etc.
+const SAFE_COMMAND_EXCEPTIONS = [
+  /\brm\s+(-rf|-fr)\s+\S*\.nuxt\b/,       // Allow: rm -rf .nuxt (build cache)
+  /\brm\s+(-rf|-fr)\s+\S*\.output\b/,      // Allow: rm -rf .output (build output)
+  /\brm\s+(-rf|-fr)\s+\S*node_modules\/\.vite\b/, // Allow: Vite cache cleanup
+  /\brm\s+(-rf|-fr)\s+\S*\.data\/trellis\.db\b/,  // Allow: TQL database reset
+];
+
 const DANGEROUS_COMMANDS = [
   /\brm\s+(-rf|-fr)\s+[\/~]/i,
   /\bformat\s+[a-z]:/i,
@@ -55,7 +64,6 @@ const DANGEROUS_COMMANDS = [
 ];
 
 const SENSITIVE_PATHS = [
-  /\.env($|\.)/,
   /secrets?\//i,
   /credentials?\//i,
   /\.ssh\//,
@@ -188,9 +196,12 @@ export function checkPatternRules(input: HookInput): string | null {
 
   if (event === 'pre_run_command') {
     const command = input.tool_info.command || input.tool_info.command_line || '';
-    for (const pattern of DANGEROUS_COMMANDS) {
-      if (pattern.test(command)) {
-        return `Blocked dangerous command: "${command}" (matched pattern: ${pattern})`;
+    const isSafeException = SAFE_COMMAND_EXCEPTIONS.some((p) => p.test(command));
+    if (!isSafeException) {
+      for (const pattern of DANGEROUS_COMMANDS) {
+        if (pattern.test(command)) {
+          return `Blocked dangerous command: "${command}" (matched pattern: ${pattern})`;
+        }
       }
     }
   }

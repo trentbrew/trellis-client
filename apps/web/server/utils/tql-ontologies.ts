@@ -537,11 +537,11 @@ const goalOntology: SchemaDefinition = {
 }
 
 // ============================================================================
-// Legacy Polymorphic Ontology — Entity Namespace
-// Kept for backward compat with TQL queries: FIND <ENTITY_NAMESPACE> AS ?t ...
+// Polymorphic Entity Ontology — covers all entity types in one schema
+// Used by TQL queries: FIND <ENTITY_NAMESPACE> AS ?t ...
 // ============================================================================
 
-const calendarItemOntology: SchemaDefinition = {
+const entityOntology: SchemaDefinition = {
   '@id': `trellis:schema/${ENTITY_NAMESPACE}`,
   '@type': 'trellis:Schema',
   version: '1.0.0',
@@ -652,7 +652,7 @@ export function createWorkspaceConfig(): WorkspaceConfig {
       description: 'Single graph, many projections — all app data as a graph.',
       ontologies: {
         // System ontologies
-        [`trellis:schema/${ENTITY_NAMESPACE}`]: calendarItemOntology,
+        [`trellis:schema/${ENTITY_NAMESPACE}`]: entityOntology,
         'trellis:schema/comment': commentOntology,
         // Per-type ontologies (all 22 entity types)
         ...entityTypeOntologies,
@@ -701,7 +701,7 @@ export function createWorkspaceConfig(): WorkspaceConfig {
 }
 
 export {
-  calendarItemOntology,
+  entityOntology,
   commentOntology,
   entityTypeOntologies,
   taskOntology,

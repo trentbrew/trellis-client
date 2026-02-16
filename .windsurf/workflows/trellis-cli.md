@@ -17,26 +17,26 @@ The `trellis` CLI lets agents and humans CRUD the TQL graph. Changes sync to the
 just trellis health --pretty
 
 # Query all tasks
-just trellis query 'FIND calendaritem AS ?e WHERE ?e.type = "task"' --pretty
+just trellis query 'FIND entity AS ?e WHERE ?e.type = "task"' --pretty
 
 # Get a specific node
-just trellis get calendaritem:task-1 --pretty
+just trellis get entity:task-1 --pretty
 
 # Create a node
-just trellis create --type calendaritem --id 'calendaritem:my-id' \
+just trellis create --type entity --id 'entity:my-id' \
   --data '{"type":"task","title":"My Task","taskStatus":"pending","startDate":"2026-02-11","allDay":true,"priority":"medium"}' \
   --agent-id cascade
 
 # Update a node
-just trellis update calendaritem:my-id --type calendaritem \
+just trellis update entity:my-id --type entity \
   --data '{"type":"task","title":"Updated Title","taskStatus":"in-progress","startDate":"2026-02-11","allDay":true,"priority":"high"}' \
   --agent-id cascade
 
 # Delete a node
-just trellis delete calendaritem:my-id --agent-id cascade
+just trellis delete entity:my-id --agent-id cascade
 
 # Link two nodes
-just trellis link calendaritem:task-1 relatedTo calendaritem:note-1
+just trellis link entity:task-1 relatedTo entity:note-1
 
 # Watch for realtime mutations (streams SSE events)
 just trellis-watch
@@ -55,7 +55,7 @@ just trellis log --pretty
 just trellis ontology list --pretty
 
 # Get a single ontology
-just trellis ontology get 'trellis:schema/calendaritem' --pretty
+just trellis ontology get 'trellis:schema/entity' --pretty
 
 # Create a new ontology (auto-scaffolds UI: sidebar, browse page, dialog)
 just trellis ontology create --id 'trellis:schema/invoice' --version '1.0.0' \
@@ -91,11 +91,11 @@ just trellis ontology delete 'trellis:schema/invoice' --agent-id cascade
 
 ## Entity ID Convention
 
-All entities use the `calendaritem:` TQL storage namespace prefix (historical) followed by the item ID:
-- `calendaritem:task-1`
-- `calendaritem:bm-1` (bookmarks)
-- `calendaritem:note-1`
-- `calendaritem:person-1`
+All entities use the `entity:` TQL storage namespace prefix (historical) followed by the item ID:
+- `entity:task-1`
+- `entity:bm-1` (bookmarks)
+- `entity:note-1`
+- `entity:person-1`
 
 > **In app code**, use `entityId()` / `entityQuery()` helpers from `app/lib/tql-namespace.ts` instead of hardcoding the prefix.
 
@@ -113,8 +113,8 @@ Import `TrellisClient` from `@toolkit/trellis-cli` for programmatic access:
 ```js
 import { TrellisClient } from '@toolkit/trellis-cli'
 const client = new TrellisClient({ agentId: 'my-agent' })
-// SDK uses the raw calendaritem namespace — app code should use tql-namespace helpers
-await client.createNode('calendaritem:new', 'calendaritem', { type: 'task', title: 'Hello' })
+// SDK uses the raw entity namespace — app code should use tql-namespace helpers
+await client.createNode('entity:new', 'entity', { type: 'task', title: 'Hello' })
 ```
 
 ## E2E Test

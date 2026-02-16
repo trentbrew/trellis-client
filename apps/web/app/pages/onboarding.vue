@@ -6,9 +6,35 @@
     middleware: ['auth'],
   })
 
-  const router = useRouter()
   const instant = useInstantDb()
-  const { currentOrg, currentApp } = useInstantData()
+  // Use useState directly — do NOT import useInstantData() here because it
+  // auto-creates a default org/app, bypassing the onboarding wizard.
+  const currentOrg = useState<any>('currentOrg')
+  const currentApp = useState<any>('currentApp')
+
+  // Read the cached user that the login page stored via waitForAuth().
+  // getAuth() returns null when browser tracking prevention blocks storage,
+  // but the login page captures the user from subscribeAuth and stores it here.
+  const cachedUser = useState<any>('auth:user')
+
+  /**
+   * Resolve the current user — try getAuth() first, fall back to cachedUser,
+   * and as a last resort subscribe to auth changes briefly.
+   */
+  async function resolveUser(): Promise<any | null> {
+    const fromGetAuth = await instant.getAuth()
+    if (fromGetAuth) return fromGetAuth
+    if (cachedUser.value) return cachedUser.value
+
+    // Last resort: wait up to 3s for subscribeAuth
+    return new Promise((resolve) => {
+      let unsub: (() => void) | null = null
+      const timer = setTimeout(() => { unsub?.(); resolve(null) }, 3000)
+      unsub = instant.subscribeAuth((auth: any) => {
+        if (auth?.user) { clearTimeout(timer); unsub?.(); resolve(auth.user) }
+      })
+    })
+  }
 
   const open = ref(true)
   const canClose = ref(false)
@@ -171,17 +197,21 @@
 
     isSubmitting.value = true
     try {
-      const user = await instant.getAuth()
+      const user = await resolveUser()
       if (!user) {
-        router.replace('/auth/login')
+        console.error('[onboarding] No authenticated user found — cannot complete setup')
+        errorMessage.value = 'Session expired. Please sign in again.'
+        isSubmitting.value = false
         return
       }
+      console.log('[onboarding] user resolved:', user.id)
 
       const now = Date.now()
       const orgId = crypto.randomUUID()
       const appId = crypto.randomUUID()
       const org: Organization = {
         id: orgId,
+        ownerId: user.id,
         name: orgName,
         slug: generateSlug(orgName) || crypto.randomUUID(),
         plan: 'free',
@@ -235,7 +265,12 @@
 
       canClose.value = true
       open.value = false
-      router.replace('/welcome')
+
+      // Invalidate middleware cache so it re-reads onboardingComplete
+      const authInitialized = useState<boolean>('auth:initialized')
+      authInitialized.value = false
+
+      await navigateTo('/welcome')
     } catch (err: any) {
       errorMessage.value = err?.message || 'Onboarding failed'
       console.error('Onboarding error:', err)

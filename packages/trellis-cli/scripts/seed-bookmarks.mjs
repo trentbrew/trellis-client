@@ -14,7 +14,7 @@ const client = new TrellisClient({ agentId: 'cascade' })
 
 const bookmarks = [
   {
-    id: 'calendaritem:bm-cli-1',
+    id: 'entity:bm-cli-1',
     data: {
       type: 'bookmark',
       title: 'Designing Data-Intensive Applications',
@@ -34,7 +34,7 @@ const bookmarks = [
     },
   },
   {
-    id: 'calendaritem:bm-cli-2',
+    id: 'entity:bm-cli-2',
     data: {
       type: 'bookmark',
       title: 'JSON-LD Playground',
@@ -53,7 +53,7 @@ const bookmarks = [
     },
   },
   {
-    id: 'calendaritem:bm-cli-3',
+    id: 'entity:bm-cli-3',
     data: {
       type: 'bookmark',
       title: 'The Local-First Web',
@@ -73,7 +73,7 @@ const bookmarks = [
     },
   },
   {
-    id: 'calendaritem:bm-cli-4',
+    id: 'entity:bm-cli-4',
     data: {
       type: 'bookmark',
       title: 'Tailwind CSS',
@@ -93,7 +93,7 @@ const bookmarks = [
     },
   },
   {
-    id: 'calendaritem:bm-cli-5',
+    id: 'entity:bm-cli-5',
     data: {
       type: 'bookmark',
       title: 'Build an Agent in 10 mins with AI SDK 5',
@@ -113,7 +113,7 @@ const bookmarks = [
     },
   },
   {
-    id: 'calendaritem:bm-cli-6',
+    id: 'entity:bm-cli-6',
     data: {
       type: 'bookmark',
       title: 'Jazz — Whip up an app',
@@ -133,7 +133,7 @@ const bookmarks = [
     },
   },
   {
-    id: 'calendaritem:bm-cli-7',
+    id: 'entity:bm-cli-7',
     data: {
       type: 'bookmark',
       title: 'Vue.js — The Progressive JavaScript Framework',
@@ -175,7 +175,7 @@ async function run() {
       // Doesn't exist — create it
     }
 
-    const result = await client.createNode(bm.id, 'calendaritem', bm.data)
+    const result = await client.createNode(bm.id, 'entity', bm.data)
     if (result.ok) {
       console.log(`  ✓  ${bm.data.title}`)
     } else {

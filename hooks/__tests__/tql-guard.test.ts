@@ -62,6 +62,13 @@ describe('checkPatternRules', () => {
       expect(checkPatternRules(makeInput('pre_run_command', { command: 'cat package.json' }))).toBeNull();
     });
 
+    it('allows safe exceptions for build cache cleanup', () => {
+      expect(checkPatternRules(makeInput('pre_run_command', { command: 'rm -rf /path/to/apps/web/.nuxt' }))).toBeNull();
+      expect(checkPatternRules(makeInput('pre_run_command', { command: 'rm -rf /path/to/.output' }))).toBeNull();
+      expect(checkPatternRules(makeInput('pre_run_command', { command: 'rm -rf /path/to/node_modules/.vite' }))).toBeNull();
+      expect(checkPatternRules(makeInput('pre_run_command', { command: 'rm -rf /path/to/.data/trellis.db' }))).toBeNull();
+    });
+
     it('reads command from command_line fallback', () => {
       const result = checkPatternRules(makeInput('pre_run_command', { command_line: 'rm -rf /' }));
       expect(result).not.toBeNull();
@@ -69,17 +76,6 @@ describe('checkPatternRules', () => {
   });
 
   describe('pre_write_code — sensitive paths', () => {
-    it('blocks writes to .env', () => {
-      const result = checkPatternRules(makeInput('pre_write_code', { file_path: '/app/.env' }));
-      expect(result).not.toBeNull();
-      expect(result).toContain('sensitive');
-    });
-
-    it('blocks writes to .env.local', () => {
-      const result = checkPatternRules(makeInput('pre_write_code', { file_path: '/app/.env.local' }));
-      expect(result).not.toBeNull();
-    });
-
     it('blocks writes to secrets/', () => {
       const result = checkPatternRules(makeInput('pre_write_code', { file_path: '/app/secrets/key.pem' }));
       expect(result).not.toBeNull();

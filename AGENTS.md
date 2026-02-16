@@ -32,9 +32,9 @@ Every entity has an **entity class** (structural shape) and an **entity type** (
 | **actor** | Represents a person/entity | person, contact, organization |
 | **container** | Groups/organizes entities | project, folder, collection, goal |
 
-Entity IDs use the format `calendaritem:<slug>`, e.g. `calendaritem:task-1`, `calendaritem:note-meeting`.
+Entity IDs use the format `entity:<slug>`, e.g. `entity:task-1`, `entity:note-meeting`.
 
-> **Namespace note:** All entities share the `calendaritem` TQL storage namespace for historical reasons. In application code, use the `entityId()` / `entityQuery()` helpers from `app/lib/tql-namespace.ts` instead of hardcoding the prefix.
+> **Namespace note:** All entities share the `entity` TQL storage namespace for historical reasons. In application code, use the `entityId()` / `entityQuery()` helpers from `app/lib/tql-namespace.ts` instead of hardcoding the prefix.
 
 ## TQL Graph API
 
@@ -59,19 +59,19 @@ Base URL: `http://localhost:4141/api/graph`
 ### Mutation Actions
 
 ```json
-{ "action": "createNode", "entityId": "calendaritem:my-task", "type": "calendaritem", "data": { "type": "task", "title": "My Task" }, "agentId": "my-agent" }
-{ "action": "updateNode", "entityId": "calendaritem:my-task", "type": "calendaritem", "data": { "title": "Updated" }, "agentId": "my-agent" }
-{ "action": "deleteNode", "entityId": "calendaritem:my-task", "agentId": "my-agent" }
-{ "action": "link", "e1": "calendaritem:task-1", "relation": "assignedTo", "e2": "calendaritem:person-1", "agentId": "my-agent" }
+{ "action": "createNode", "entityId": "entity:my-task", "type": "entity", "data": { "type": "task", "title": "My Task" }, "agentId": "my-agent" }
+{ "action": "updateNode", "entityId": "entity:my-task", "type": "entity", "data": { "title": "Updated" }, "agentId": "my-agent" }
+{ "action": "deleteNode", "entityId": "entity:my-task", "agentId": "my-agent" }
+{ "action": "link", "e1": "entity:task-1", "relation": "assignedTo", "e2": "entity:person-1", "agentId": "my-agent" }
 ```
 
-> In app code, use `toEntityId('my-task')` and `ENTITY_NAMESPACE` from `~/lib/tql-namespace` instead of hardcoding `calendaritem:`.
+> In app code, use `toEntityId('my-task')` and `ENTITY_NAMESPACE` from `~/lib/tql-namespace` instead of hardcoding `entity:`.
 
 ### EQL-S Query Examples
 
 ```
-FIND calendaritem AS ?t WHERE ?t.type = "task" RETURN ?t.title, ?t.startDate, ?t.taskStatus
-FIND calendaritem AS ?n WHERE ?n.type = "note" RETURN ?n.title ORDER BY ?n.updatedAt DESC LIMIT 10
+FIND entity AS ?t WHERE ?t.type = "task" RETURN ?t.title, ?t.startDate, ?t.taskStatus
+FIND entity AS ?n WHERE ?n.type = "note" RETURN ?n.title ORDER BY ?n.updatedAt DESC LIMIT 10
 ```
 
 ## CLI
@@ -80,12 +80,12 @@ The CLI is available via `just trellis` or `node packages/trellis-cli/bin/trelli
 
 ```bash
 just trellis health --pretty
-just trellis query 'FIND calendaritem AS ?e WHERE ?e.type = "task"' --pretty
-just trellis get calendaritem:task-1 --pretty
-just trellis create --type calendaritem --id 'calendaritem:my-id' --data '{"type":"task","title":"My Task"}' --agent-id my-agent
-just trellis update calendaritem:my-id --type calendaritem --data '{"title":"Updated"}' --agent-id my-agent
-just trellis delete calendaritem:my-id --agent-id my-agent
-just trellis link calendaritem:task-1 relatedTo calendaritem:note-1
+just trellis query 'FIND entity AS ?e WHERE ?e.type = "task"' --pretty
+just trellis get entity:task-1 --pretty
+just trellis create --type entity --id 'entity:my-id' --data '{"type":"task","title":"My Task"}' --agent-id my-agent
+just trellis update entity:my-id --type entity --data '{"title":"Updated"}' --agent-id my-agent
+just trellis delete entity:my-id --agent-id my-agent
+just trellis link entity:task-1 relatedTo entity:note-1
 just trellis watch                    # SSE stream
 just trellis schema --pretty          # List ontologies
 just trellis log --pretty             # Mutation log
@@ -95,7 +95,7 @@ just trellis log --pretty             # Mutation log
 
 ```bash
 just trellis ontology list --pretty
-just trellis ontology get 'trellis:schema/calendaritem' --pretty
+just trellis ontology get 'trellis:schema/entity' --pretty
 just trellis ontology create --id 'trellis:schema/invoice' --tier system --fields '[{"name":"title","valueType":"title","required":true},{"name":"amount","valueType":"number"}]'
 just trellis ontology update 'trellis:schema/invoice' --version '1.1.0' --fields '[...]'
 just trellis ontology add-field 'trellis:schema/invoice' --field '{"name":"notes","valueType":"rich_text"}'
@@ -116,9 +116,9 @@ Creating an ontology auto-scaffolds it in the UI — sidebar item, browse page, 
 import { TrellisClient } from '@toolkit/trellis-cli'
 const client = new TrellisClient({ agentId: 'my-agent' })
 
-// The SDK uses the raw calendaritem namespace — app code should use tql-namespace helpers instead
-await client.createNode('calendaritem:new', 'calendaritem', { type: 'task', title: 'Hello' })
-await client.query('FIND calendaritem AS ?t WHERE ?t.type = "task"')
+// The SDK uses the raw entity namespace — app code should use tql-namespace helpers instead
+await client.createNode('entity:new', 'entity', { type: 'task', title: 'Hello' })
+await client.query('FIND entity AS ?t WHERE ?t.type = "task"')
 await client.ontologies()
 await client.createOntology({ '@id': 'trellis:schema/invoice', '@type': 'trellis:Schema', version: '1.0.0', fields: [...] })
 ```
@@ -183,9 +183,41 @@ When creating ontology fields, use these Notion-compatible value types:
 - **Always set a title**: Every entity needs at minimum `{ title: "..." }`
 - **Link after creating**: Create both entities first, then link them
 
+## Data Adapter (Unified Data Layer)
+
+Trellis supports two data modes, toggled via the `TRELLIS_DATA_MODE` env var:
+
+| Mode | Env Value | Auth | Entity Storage | Platform Data |
+|------|-----------|------|----------------|---------------|
+| **Local** (default) | `local` | No login (Obsidian-like) | TQL kernel (SQLite) | instant-local (localStorage) |
+| **Cloud** | `cloud` | Real InstantDB auth | InstantDB `entities` | InstantDB cloud |
+
+**Key files:**
+- `app/lib/data-adapter/types.ts` — `DataAdapter` interface
+- `app/lib/data-adapter/local-adapter.ts` — wraps instant-local
+- `app/lib/data-adapter/cloud-adapter.ts` — wraps `@instantdb/core`
+- `app/lib/data-adapter/migrate.ts` — export/import between modes
+- `plugins/instant.client.ts` — selects adapter based on env var
+- `composables/useDataAdapter.ts` — typed access to active adapter
+- `composables/useAdapterStatus.ts` — reactive mode/health info
+
+**Env vars** (set in `.env`):
+```
+TRELLIS_DATA_MODE=local          # or 'cloud'
+INSTANT_APP_ID=<your-app-id>     # required for cloud mode
+```
+
+**Ontology tiering:**
+- `core` — immutable, hardcoded in TQL kernel
+- `system` — code-defined, loaded at boot
+- `user` — stored in database (TQL or InstantDB depending on mode), shareable
+
+The TQL kernel **always runs** in both modes — it serves core/system ontologies, graph queries, CLI, and MCP tools.
+
 ## Further Reading
 
 - `packages/trellis-mcp/SKILL.md` — Full domain knowledge (entity fields, examples, best practices)
 - `.windsurf/workflows/trellis-cli.md` — Step-by-step CLI workflow
 - `docs/architecture/` — App architecture documentation
 - `docs/data/` — Data layer and seeding guides
+- `.windsurf/plans/unified-data-layer-fd57dd.md` — Full data adapter implementation plan

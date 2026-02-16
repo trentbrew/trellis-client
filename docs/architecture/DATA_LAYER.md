@@ -81,7 +81,7 @@ Entity definitions live in `instant.schema.ts` at the project root. The schema u
 - **settings** — Key-value settings (user prefs, app config, schemas)
 - **facilities** — ECMS physical locations
 - **facilityMembers** — User ↔ facility role assignments
-- **calendarItems** — Tasks, events, payments, notes (polymorphic entity namespace)
+- **entities** — Tasks, events, payments, notes, people, projects (polymorphic entity namespace)
 
 ## Migration Path
 

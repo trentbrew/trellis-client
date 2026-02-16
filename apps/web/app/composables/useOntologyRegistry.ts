@@ -1,4 +1,5 @@
 import { ENTITY_NAMESPACE } from '~/lib/tql-namespace'
+import type { DataAdapter } from '~/lib/data-adapter'
 
 /**
  * Dynamic Ontology Registry
@@ -208,24 +209,77 @@ const SYSTEM_SCHEMA_IDS = new Set([
   'trellis:schema/comment',
 ])
 
+/**
+ * Fetch core + system ontologies from TQL API.
+ * These always come from the server regardless of ontologyBackend.
+ */
+async function fetchOntologiesFromTql(): Promise<Map<string, DynamicEntityTypeConfig>> {
+  const data = await $fetch<{ ontologies: Record<string, SchemaDefinition> }>('/api/graph/ontologies')
+  const ontologies = data.ontologies || {}
+  const map = new Map<string, DynamicEntityTypeConfig>()
+
+  for (const [, schema] of Object.entries(ontologies)) {
+    if (SYSTEM_SCHEMA_IDS.has(schema['@id'])) continue
+    const config = schemaToEntityTypeConfig(schema)
+    map.set(config.type, config)
+  }
+
+  return map
+}
+
+/**
+ * Fetch user ontologies from the DataAdapter (InstantDB settings).
+ * User ontologies are stored as settings with key prefix 'ontology:'.
+ */
+async function fetchUserOntologiesFromAdapter(adapter: DataAdapter): Promise<Map<string, DynamicEntityTypeConfig>> {
+  const map = new Map<string, DynamicEntityTypeConfig>()
+
+  try {
+    const result = await adapter.queryOnce({
+      settings: {
+        $: {
+          where: {
+            entityType: 'ontology',
+          },
+        },
+      },
+    })
+
+    const settings = (result.data as any)?.settings || []
+    for (const setting of settings) {
+      const schema = setting.value as SchemaDefinition | null
+      if (!schema || !schema['@id'] || !schema.fields) continue
+      if (SYSTEM_SCHEMA_IDS.has(schema['@id'])) continue
+
+      // Ensure user ontologies have tier 'user'
+      schema.tier = schema.tier || 'user'
+      const config = schemaToEntityTypeConfig(schema)
+      map.set(config.type, config)
+    }
+  } catch (err) {
+    console.error('[useOntologyRegistry] Failed to fetch user ontologies from adapter:', err)
+  }
+
+  return map
+}
+
 async function fetchOntologies(): Promise<void> {
   _loading.value = true
   _error.value = null
 
   try {
-    const data = await $fetch<{ ontologies: Record<string, SchemaDefinition> }>('/api/graph/ontologies')
-    const ontologies = data.ontologies || {}
-    const newMap = new Map<string, DynamicEntityTypeConfig>()
+    // Core + system ontologies always come from TQL
+    const tqlMap = await fetchOntologiesFromTql()
 
-    for (const [, schema] of Object.entries(ontologies)) {
-      // Skip system/storage-level ontologies
-      if (SYSTEM_SCHEMA_IDS.has(schema['@id'])) continue
-
-      const config = schemaToEntityTypeConfig(schema)
-      newMap.set(config.type, config)
+    // If ontologyBackend is 'adapter', also fetch user ontologies from the adapter
+    let adapterMap = new Map<string, DynamicEntityTypeConfig>()
+    if (_adapterRef && _adapterRef.ontologyBackend === 'adapter') {
+      adapterMap = await fetchUserOntologiesFromAdapter(_adapterRef)
     }
 
-    _serverTypes.value = newMap
+    // Merge: adapter user ontologies overlay TQL ontologies
+    const merged = new Map([...tqlMap, ...adapterMap])
+    _serverTypes.value = merged
   } catch (err: any) {
     _error.value = err.message || 'Failed to fetch ontologies'
   } finally {
@@ -234,7 +288,11 @@ async function fetchOntologies(): Promise<void> {
   }
 }
 
+// Reference to the adapter for ontology fetching
+let _adapterRef: DataAdapter | null = null
+
 let _sseCleanup: (() => void) | null = null
+let _adapterOntologyUnsub: (() => void) | null = null
 
 function subscribeToSSE(): void {
   if (!import.meta.client) return
@@ -264,11 +322,46 @@ function subscribeToSSE(): void {
   }
 }
 
+/**
+ * Subscribe to adapter ontology changes (for cloud mode).
+ * When a user ontology is created/updated/deleted in InstantDB,
+ * re-fetch and merge ontologies.
+ */
+function subscribeToAdapterOntologies(adapter: DataAdapter): void {
+  if (!import.meta.client) return
+  if (_adapterOntologyUnsub) return
+
+  _adapterOntologyUnsub = adapter.subscribeQuery(
+    {
+      settings: {
+        $: {
+          where: {
+            entityType: 'ontology',
+          },
+        },
+      },
+    },
+    () => {
+      // Re-fetch all ontologies when adapter ontology settings change
+      fetchOntologies()
+    },
+  )
+}
+
 export function useOntologyRegistry() {
   // Initialize on first use (client-side only)
   if (import.meta.client && !_initialized.value && !_loading.value) {
+    // Capture adapter reference for ontology fetching
+    const adapter = useDataAdapter()
+    _adapterRef = adapter
+
     fetchOntologies()
     subscribeToSSE()
+
+    // If ontologyBackend is 'adapter', also subscribe to adapter ontology changes
+    if (adapter.ontologyBackend === 'adapter') {
+      subscribeToAdapterOntologies(adapter)
+    }
   }
 
   // ── Computed views ────────────────────────────────────────────────

@@ -1,16 +1,18 @@
 import type { Entity, EntityType, EntityReference } from '~/types/entity'
 import { extractYmd } from '~/utils/date'
 import { ENTITY_NAMESPACE, entityId as toEntityId, stripNamespace, entityQuery } from '~/lib/tql-namespace'
+import type { DataAdapter } from '~/lib/data-adapter'
 
 // ── Singleton state (shared across all consumers) ──────────────────────
 const _items = ref<Entity[]>([])
 const _loading = ref(true)
 let _initialized = false
 
-function _initStore() {
-  if (_initialized) return
-  _initialized = true
-
+/**
+ * Initialize entity store from TQL kernel (local mode).
+ * Queries the graph API for all entities and hydrates them from EAV facts.
+ */
+function _initStoreFromTql() {
   // Use a detached effect scope so watchers survive component unmounts
   const scope = effectScope(true)
   scope.run(() => {
@@ -105,6 +107,50 @@ function _initStore() {
 }
 
 /**
+ * Initialize entity store from the DataAdapter (cloud mode).
+ * Subscribes to InstantDB's entities table for reactive entity data.
+ * Entities arrive as flat objects — no EAV normalization needed.
+ */
+function _initStoreFromAdapter(adapter: DataAdapter) {
+  adapter.subscribeQuery({ entities: {} }, (result) => {
+    if (result.error) {
+      console.error('[useTrellisEntities] adapter query error:', result.error)
+      _loading.value = false
+      return
+    }
+
+    const rawItems = (result.data as any)?.entities || []
+    _items.value = rawItems.map((item: any) => {
+      const { id: itemId, ...fields } = item
+      return {
+        id: itemId,
+        ...fields,
+        tags: Array.isArray(fields.tags) ? fields.tags : [],
+        involved: Array.isArray(fields.involved) ? fields.involved : [],
+        checklist: Array.isArray(fields.checklist) ? fields.checklist : [],
+        attachments: Array.isArray(fields.attachments) ? fields.attachments : [],
+        reminders: Array.isArray(fields.reminders) ? fields.reminders : [],
+        references: [], // TODO: Phase 3+ — resolve references from adapter links
+      } as unknown as Entity
+    })
+    _loading.value = false
+  })
+}
+
+function _initStore() {
+  if (_initialized) return
+  _initialized = true
+
+  const adapter = useDataAdapter()
+
+  if (adapter.entityBackend === 'adapter') {
+    _initStoreFromAdapter(adapter)
+  } else {
+    _initStoreFromTql()
+  }
+}
+
+/**
  * TQL-backed entity store (singleton).
  *
  * All consumers share the same reactive state and single query watcher.
@@ -118,7 +164,7 @@ function _initStore() {
  * - `remove(id)`   — delete an item via graph API
  */
 export function useTrellisEntities() {
-  const { mutate } = useTrellisGraph()
+  const adapter = useDataAdapter()
 
   // Initialize the singleton store on first call
   _initStore()
@@ -128,9 +174,50 @@ export function useTrellisEntities() {
     return computed(() => _items.value.filter((i) => i.type === type))
   }
 
-  // CRUD operations
-  async function create(item: Partial<Entity> & { type: EntityType; title: string }) {
-    // Always generate a fresh UUID — dialog may reuse stale IDs across creates
+  // ── CRUD: Adapter backend (cloud mode) ──────────────────────────────
+
+  async function createViaAdapter(item: Partial<Entity> & { type: EntityType; title: string }) {
+    const itemId = crypto.randomUUID()
+    const { id: _id, references: _refs, ...data } = item
+    const now = Date.now()
+
+    await adapter.transact([
+      adapter.tx.entities[itemId].create({
+        ...data,
+        ownerId: (await adapter.getAuth())?.id || 'unknown',
+        startDate: extractYmd((data as any).startDate),
+        endDate: extractYmd((data as any).endDate) || undefined,
+        createdAt: now,
+        updatedAt: now,
+      }),
+    ])
+
+    return itemId
+  }
+
+  async function updateViaAdapter(item: Entity) {
+    const { id: itemId, references: _refs, ...fields } = item
+
+    await adapter.transact([
+      adapter.tx.entities[itemId].update({
+        ...fields,
+        startDate: extractYmd((fields as any).startDate),
+        endDate: extractYmd((fields as any).endDate) || undefined,
+        updatedAt: Date.now(),
+      }),
+    ])
+  }
+
+  async function removeViaAdapter(itemId: string) {
+    await adapter.transact([
+      adapter.tx.entities[itemId].delete(),
+    ])
+  }
+
+  // ── CRUD: TQL backend (local mode) ──────────────────────────────────
+
+  async function createViaTql(item: Partial<Entity> & { type: EntityType; title: string }) {
+    const { mutate } = useTrellisGraph()
     const itemId = crypto.randomUUID()
     const { id: _id, ...data } = item
     const now = Date.now()
@@ -151,7 +238,8 @@ export function useTrellisEntities() {
     return itemId
   }
 
-  async function update(item: Entity) {
+  async function updateViaTql(item: Entity) {
+    const { mutate } = useTrellisGraph()
     const { id: itemId, ...fields } = item
 
     await mutate({
@@ -167,12 +255,21 @@ export function useTrellisEntities() {
     })
   }
 
-  async function remove(itemId: string) {
+  async function removeViaTql(itemId: string) {
+    const { mutate } = useTrellisGraph()
     await mutate({
       action: 'deleteNode',
       entityId: toEntityId(itemId),
     })
   }
+
+  // ── Select backend ──────────────────────────────────────────────────
+
+  const useAdapter = adapter.entityBackend === 'adapter'
+
+  const create = useAdapter ? createViaAdapter : createViaTql
+  const update = useAdapter ? updateViaAdapter : updateViaTql
+  const remove = useAdapter ? removeViaAdapter : removeViaTql
 
   return {
     items: _items,

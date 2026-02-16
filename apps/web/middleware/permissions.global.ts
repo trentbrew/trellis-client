@@ -12,7 +12,7 @@ export default defineNuxtRouteMiddleware((to: any) => {
   }
 
   const { user } = useInstantAuth()
-  const { userRole, membership } = useUserRole()
+  const { userRole } = useUserRole()
 
   // Redirect to login if not authenticated
   if (!user.value) {
@@ -23,19 +23,10 @@ export default defineNuxtRouteMiddleware((to: any) => {
   const routePermissions = to.meta.permissions
 
   // Check if user has permission to access this route
-  const hasStationMembership = !!membership.value
-  const canAccess = canAccessRoute(userRole.value, routePermissions, hasStationMembership)
+  const canAccess = canAccessRoute(userRole.value, routePermissions)
 
   if (!canAccess) {
-    // User doesn't have permission - redirect to appropriate page
     console.warn(`[Permissions] User ${user.value.email} (${userRole.value}) denied access to ${to.path}`)
-
-    // If user is not a member of any station, redirect to welcome
-    if (!hasStationMembership) {
-      return navigateTo('/welcome')
-    }
-
-    // If user has insufficient role, show access denied
     return navigateTo('/unauthorized')
   }
 })

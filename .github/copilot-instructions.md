@@ -14,15 +14,15 @@ You can interact with the graph via CLI or REST API:
 
 ```bash
 # Query
-just trellis query 'FIND calendaritem AS ?t WHERE ?t.type = "task"' --pretty
+just trellis query 'FIND entity AS ?t WHERE ?t.type = "task"' --pretty
 
 # CRUD entities
-just trellis create --type calendaritem --id 'calendaritem:my-task' --data '{"type":"task","title":"My Task"}' --agent-id copilot
-just trellis update calendaritem:my-task --type calendaritem --data '{"title":"Updated"}' --agent-id copilot
-just trellis delete calendaritem:my-task --agent-id copilot
+just trellis create --type entity --id 'entity:my-task' --data '{"type":"task","title":"My Task"}' --agent-id copilot
+just trellis update entity:my-task --type entity --data '{"title":"Updated"}' --agent-id copilot
+just trellis delete entity:my-task --agent-id copilot
 
 # Link entities
-just trellis link calendaritem:task-1 relatedTo calendaritem:note-1
+just trellis link entity:task-1 relatedTo entity:note-1
 
 # Ontology CRUD (auto-scaffolds UI)
 just trellis ontology create --id 'trellis:schema/invoice' --fields '[{"name":"title","valueType":"title","required":true},{"name":"amount","valueType":"number"}]'
@@ -43,9 +43,9 @@ packages/types/        Shared TypeScript types
 
 Two-axis: **class** (temporal, document, actor, container) × **type** (task, note, person, project, etc.)
 
-Entity IDs: `calendaritem:task-1`, `calendaritem:note-meeting`
+Entity IDs: `entity:task-1`, `entity:note-meeting`
 
-> **Namespace note:** `calendaritem` is the TQL storage namespace (historical). App code uses `entityId()` / `entityQuery()` helpers from `app/lib/tql-namespace.ts`.
+> **Namespace note:** `entity` is the TQL storage namespace (historical). App code uses `entityId()` / `entityQuery()` helpers from `app/lib/tql-namespace.ts`.
 
 ## Key Rules
 

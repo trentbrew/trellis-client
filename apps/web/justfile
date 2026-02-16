@@ -9,7 +9,7 @@ port := `jq -r '.["@graph"][] | select(.["@type"] == "app:Application") | .devPo
 run:
     @just clear
     -lsof -ti:{{port}} | xargs kill -9 2>/dev/null || true
-    @echo "🚀 Starting v2 dev server on port {{port}}..."
+    @echo "🚀 Starting Trellis dev server on port {{port}}..."
     pnpm dev
 
 # Validate deployment (lint, tests, route validation, build)
@@ -25,7 +25,7 @@ build:
     @just clear
     pnpm build
 
-# Deploy to Firebase Hosting (toolkit-ui-v2)
+# Deploy to Firebase Hosting (Trellis web app)
 deploy: build
     firebase deploy --only hosting:v2
 
@@ -39,7 +39,7 @@ preview: build
 
 # Show Firebase hosting targets
 targets:
-    firebase target:apply hosting v2 toolkit-ui-v2
+    firebase target:apply hosting v2 trellis-web
 
 # Clear Nuxt cache
 clear:

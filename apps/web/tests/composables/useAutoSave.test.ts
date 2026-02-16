@@ -2,13 +2,13 @@ import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { reactive, ref } from 'vue'
 
 // ---------------------------------------------------------------------------
-// Mock useCalendarItems at the module level (Nuxt auto-import)
+// Mock useEntities at the module level (Nuxt auto-import)
 // ---------------------------------------------------------------------------
 
 const mockUpdate = vi.fn()
 
-vi.mock('~/composables/useCalendarItems', () => ({
-  useCalendarItems: () => ({
+vi.mock('~/composables/useEntities', () => ({
+  useEntities: () => ({
     items: ref([]),
     update: mockUpdate,
     create: vi.fn(),

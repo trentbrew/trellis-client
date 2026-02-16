@@ -443,6 +443,41 @@ export function useInstantData() {
       watch([organizations, applications], reconcileOrgAndApp, { immediate: true })
       watch(() => [route?.query?.org, route?.query?.app], reconcileOrgAndApp, { immediate: true })
 
+      // Auto-create a default organization when none exist.
+      // In cloud mode, users start with an empty InstantDB — this bootstraps the data layer
+      // so the UI has a valid org/app context on first load after authentication.
+      const isAutoCreatingOrg = useState<boolean>('instantData:isAutoCreatingOrg', () => false)
+      watch(
+        [organizations, orgsLoading, user],
+        async ([orgs, loading, authUser]) => {
+          if (loading || isAutoCreatingOrg.value || !authUser?.id) return
+          if ((orgs || []).length > 0) return
+
+          isAutoCreatingOrg.value = true
+          try {
+            const id = crypto.randomUUID()
+            const now = Date.now()
+            await db.transact([
+              tx.organizations[id].update({
+                ownerId: authUser.id,
+                name: 'My Workspace',
+                slug: 'my-workspace',
+                description: 'Default workspace',
+                status: 'active',
+                createdAt: now,
+                updatedAt: now,
+              }),
+            ])
+            console.info('✓ Auto-created default organization')
+          } catch (e) {
+            console.error('Failed to auto-create default organization:', e)
+          } finally {
+            isAutoCreatingOrg.value = false
+          }
+        },
+        { immediate: true },
+      )
+
       // Auto-create a default app when an org exists but has no apps.
       // This avoids the "No active app" error without removing the appId-based data layer.
       const isAutoCreatingApp = useState<boolean>('instantData:isAutoCreatingApp', () => false)

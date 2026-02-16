@@ -1,6 +1,6 @@
-# ECMS Redesign (Unified Platform Sandbox)
+# Trellis Web App
 
-A dedicated sandbox for experimenting with what the **Toolkit ecosystem / unified platform** should look like in the future.
+The primary web app for the **Trellis knowledge graph** platform — not a toolkit sandbox.
 
 This codebase is optimized for:
 
@@ -14,7 +14,7 @@ It contains a working implementation of a **graph-driven architecture** (JSON-LD
 
 ## Overview
 
-The **ecms-redesign** project is the place to prototype (and stress test) the next generation of the Toolkit product line. It is intentionally designed to move quickly and to produce reusable decisions and patterns that can later be migrated into production apps.
+The Trellis web app is the place to prototype (and stress test) next‑generation knowledge graph workflows. It is intentionally designed to move quickly and to produce reusable decisions and patterns that can later be migrated into production apps.
 
 **Primary outputs:**
 
@@ -24,25 +24,25 @@ The **ecms-redesign** project is the place to prototype (and stress test) the ne
 
 ### Relationship to Other Apps
 
-| App                      | Purpose                                          | Tech Stack                 | Status                                               |
-| ------------------------ | ------------------------------------------------ | -------------------------- | ---------------------------------------------------- |
-| **ecms-redesign** (this) | Primary sandbox for the unified platform vision  | Nuxt 4, InstantDB, JSON-LD | Active Development                                   |
+| App                 | Purpose                                      | Tech Stack                 | Status             |
+| ------------------- | -------------------------------------------- | -------------------------- | ------------------ |
+| **trellis-web** (this) | Primary Trellis knowledge graph web app       | Nuxt 4, InstantDB, JSON-LD | Active Development |
 | **ecms**                 | Legacy environmental compliance management       | Vue 3, Firebase, Firestore | Production                                           |
 | **tri**                  | Toxic Release Inventory (EPA Form R/A) reporting | Vue 3, Firebase, Postgres  | Production                                           |
 | **ui**                   | Shared component library (169+ pages)            | Vue 3                      | Production-grade component library (not the sandbox) |
 
 ### Strategic Roadmap
 
-The ecms-redesign aims to:
+The Trellis web app aims to:
 
-1. **Act as the single “design surface”** for the unified platform (instead of using `ui` as the sandbox)
+1. **Act as the single “design surface”** for the Trellis knowledge graph platform
 2. **Consolidate** core concepts across ECMS + TRI into one cohesive UX shell
 3. **Enable high-velocity iteration** via a canonical configuration + seeded demo data
 4. **Generate durable artifacts**: decisions, implications, guidelines, and implementation notes
 
 **Non-goals (for this repo):** production-hardening, perfect backend parity, long-term API stability.
 
-## Sandbox Operating Model
+## Operating Model
 
 **What belongs here**
 
@@ -302,8 +302,8 @@ This repo enforces `pnpm` via a `preinstall` guard.
 ### Installation
 
 ```bash
-# Clone and enter directory
-cd ecms-redesign/v1
+# From repo root
+cd apps/web
 
 # Install dependencies
 pnpm install
@@ -312,13 +312,13 @@ pnpm install
 pnpm dev
 ```
 
-The app runs at `http://localhost:5151`
+The app runs at `http://localhost:4141`
 
 ### Development Scripts
 
 | Command           | Description                                               |
 | ----------------- | --------------------------------------------------------- |
-| `pnpm dev`        | Start dev server (port 5151)                              |
+| `pnpm dev`        | Start dev server (port 4141)                              |
 | `pnpm build`      | Production build                                          |
 | `pnpm test`       | Run Vitest tests                                          |
 | `pnpm lint`       | Run ESLint                                                |

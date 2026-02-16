@@ -1,15 +1,18 @@
 /**
- * InstantDB plugin — local-first adapter.
+ * InstantDB plugin — data adapter injection.
  *
- * Uses `instant-local` to provide the same API surface as @instantdb/core
- * with in-memory storage persisted to localStorage. When ready to migrate
- * to the real InstantDB cloud, replace `createLocalInstantDB()` with
- * `init({ appId, schema })` from `@instantdb/core`.
+ * Selects the appropriate DataAdapter based on `TRELLIS_DATA_MODE`:
+ *   - 'local' (default) → LocalAdapter (instant-local + TQL kernel)
+ *   - 'cloud'           → CloudAdapter (@instantdb/core with real auth & sync)
  *
- * See apps/web/app/lib/instant-local/index.ts for the adapter source.
+ * In cloud mode, entities + platform data + user ontologies all live in InstantDB.
+ * Core/system ontologies are always served by the TQL kernel via /api/graph/ontologies.
+ *
+ * All downstream composables receive the adapter via `useInstantDb()`.
  */
 
-import { createLocalInstantDB } from '~/lib/instant-local'
+import { createLocalAdapter, createCloudAdapter } from '~/lib/data-adapter'
+import type { DataAdapter, DataMode } from '~/lib/data-adapter'
 import schema from '~~/instant.schema'
 import { getPersonalSeedItems, getTrellisProjectTasks } from '~/lib/personalSeedData'
 import { getBookmarkSeedItems } from '~/lib/bookmarkSeedData'
@@ -17,16 +20,32 @@ import { getTrellisPitchDeckContent, SLIDE_DECK_SCHEMA_FIELDS } from '~/lib/slid
 import { getPeopleSeedItems, getOrganizationSeedItems, getFileSeedItems, getProjectSeedItems } from '~/lib/entitySeedData'
 
 export default defineNuxtPlugin(async () => {
-  const db = createLocalInstantDB({
-    storageKey: 'platform-sandbox',
-    schema,
-    verbose: false,
-  })
+  const config = useRuntimeConfig()
+  const dataMode = (config.public.dataMode || 'local') as DataMode
+  const instantAppId = config.public.instantAppId as string
 
-  // ── Seed minimum data on first boot ─────────────────────────────────
+  let db: DataAdapter
+
+  if (dataMode === 'cloud' && instantAppId) {
+    db = createCloudAdapter({
+      appId: instantAppId,
+      schema,
+      verbose: import.meta.dev,
+      devtool: import.meta.dev,
+    })
+  } else {
+    db = createLocalAdapter({
+      storageKey: 'platform-sandbox',
+      schema,
+      verbose: false,
+    })
+  }
+
+  // ── Seed minimum data on first boot (local mode only) ──────────────
   // Data is persisted to localStorage so this only runs once.
+  // Cloud mode gets its data from InstantDB — no local seeding needed.
 
-  if (import.meta.client) {
+  if (import.meta.client && db.mode === 'local') {
     // ── Seed default organization + application ─────────────────────
     // Matches the demo org in useOrganizations.ts so the InstantDB data
     // layer (useInstantData) has a valid org/app for scoping collections.
@@ -66,12 +85,12 @@ export default defineNuxtPlugin(async () => {
     }
 
     // ── Seed personal calendar items ────────────────────────────────
-    const calItems = db._store.getAll('calendarItems')
+    const calItems = db._store.getAll('entities')
     if (calItems.length === 0) {
       const seedItems = getPersonalSeedItems()
       const chunks = seedItems.map((item) => {
         const { id: itemId, ...fields } = item
-        return db.tx.calendarItems[itemId].create({
+        return db.tx.entities[itemId].create({
           ...fields,
           ownerId: 'user-demo-admin',
           createdAt: Date.now(),
@@ -87,7 +106,7 @@ export default defineNuxtPlugin(async () => {
       const projectTasks = getTrellisProjectTasks()
       const projectChunks = projectTasks.map((item) => {
         const { id: itemId, ...fields } = item
-        return db.tx.calendarItems[itemId].create({
+        return db.tx.entities[itemId].create({
           ...fields,
           ownerId: 'user-demo-admin',
           createdAt: Date.now(),
@@ -103,7 +122,7 @@ export default defineNuxtPlugin(async () => {
       const peopleItems = getPeopleSeedItems()
       const peopleChunks = peopleItems.map((item) => {
         const { id: itemId, ...fields } = item
-        return db.tx.calendarItems[itemId].create({
+        return db.tx.entities[itemId].create({
           ...fields,
           ownerId: 'user-demo-admin',
           createdAt: Date.now(),
@@ -120,7 +139,7 @@ export default defineNuxtPlugin(async () => {
       const orgItems = getOrganizationSeedItems()
       const orgChunks = orgItems.map((item) => {
         const { id: itemId, ...fields } = item
-        return db.tx.calendarItems[itemId].create({
+        return db.tx.entities[itemId].create({
           ...fields,
           ownerId: 'user-demo-admin',
           createdAt: Date.now(),
@@ -137,7 +156,7 @@ export default defineNuxtPlugin(async () => {
       const fileItems = getFileSeedItems()
       const fileChunks = fileItems.map((item) => {
         const { id: itemId, ...fields } = item
-        return db.tx.calendarItems[itemId].create({
+        return db.tx.entities[itemId].create({
           ...fields,
           ownerId: 'user-demo-admin',
           createdAt: Date.now(),
@@ -154,7 +173,7 @@ export default defineNuxtPlugin(async () => {
       const projectItems = getProjectSeedItems()
       const projectChunks = projectItems.map((item) => {
         const { id: itemId, ...fields } = item
-        return db.tx.calendarItems[itemId].create({
+        return db.tx.entities[itemId].create({
           ...fields,
           ownerId: 'user-demo-admin',
           createdAt: Date.now(),
@@ -171,13 +190,13 @@ export default defineNuxtPlugin(async () => {
       // Remove old placeholder bookmarks
       const oldBookmarks = calItems.filter((i: any) => typeof i.id === 'string' && i.id.startsWith('bookmark-'))
       if (oldBookmarks.length > 0) {
-        await db.transact(oldBookmarks.map((i: any) => db.tx.calendarItems[i.id].delete()))
+        await db.transact(oldBookmarks.map((i: any) => db.tx.entities[i.id].delete()))
       }
       // Seed new bookmarks from Raindrop.io CSV
       const bookmarkItems = getBookmarkSeedItems()
       const bmChunks = bookmarkItems.map((item) => {
         const { id: itemId, ...fields } = item
-        return db.tx.calendarItems[itemId].create({
+        return db.tx.entities[itemId].create({
           ...fields,
           ownerId: 'user-demo-admin',
           createdAt: Date.now(),
@@ -284,7 +303,7 @@ export default defineNuxtPlugin(async () => {
   }
 
   if (import.meta.dev) {
-    console.info('✓ instant-local adapter active (localStorage-backed)')
+    console.info(`✓ DataAdapter active (mode: ${db.mode}, entities: ${db.entityBackend}, ontologies: ${db.ontologyBackend})`)
   }
 
   return {

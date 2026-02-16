@@ -53,9 +53,9 @@ const rules = {
     bind: ['isOwner', 'auth.id != null && auth.id == data.ownerId'],
   },
 
-  stations: {
+  entities: {
     allow: {
-      view: 'true',
+      view: 'isOwner',
       create: 'isOwner',
       update: 'isOwner',
       delete: 'isOwner',
@@ -63,31 +63,14 @@ const rules = {
     bind: ['isOwner', 'auth.id != null && auth.id == data.ownerId'],
   },
 
-  viewershipSessions: {
+  comments: {
     allow: {
-      view: 'false',
-      create: 'true',
-      update: 'false',
-      delete: 'false',
+      view: 'true',
+      create: 'isAuthor',
+      update: 'isAuthor',
+      delete: 'isAuthor',
     },
-  },
-
-  viewershipEvents: {
-    allow: {
-      view: 'false',
-      create: 'true',
-      update: 'false',
-      delete: 'false',
-    },
-  },
-
-  viewershipAggregates: {
-    allow: {
-      view: 'false',
-      create: 'false',
-      update: 'false',
-      delete: 'false',
-    },
+    bind: ['isAuthor', 'auth.id != null && auth.id == data.authorId'],
   },
 
   /**

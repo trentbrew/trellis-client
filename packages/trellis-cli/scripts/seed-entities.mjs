@@ -27,7 +27,7 @@ function daysFromNow(n) {
 
 const people = [
   {
-    id: 'calendaritem:person-1',
+    id: 'entity:person-1',
     data: {
       type: 'person',
       title: 'Alex Chen',
@@ -54,7 +54,7 @@ const people = [
     },
   },
   {
-    id: 'calendaritem:person-2',
+    id: 'entity:person-2',
     data: {
       type: 'person',
       title: 'Maya Rodriguez',
@@ -82,7 +82,7 @@ const people = [
     },
   },
   {
-    id: 'calendaritem:person-3',
+    id: 'entity:person-3',
     data: {
       type: 'person',
       title: 'Jordan Park',
@@ -109,7 +109,7 @@ const people = [
     },
   },
   {
-    id: 'calendaritem:person-4',
+    id: 'entity:person-4',
     data: {
       type: 'person',
       title: 'Eli Torres',
@@ -136,7 +136,7 @@ const people = [
     },
   },
   {
-    id: 'calendaritem:person-5',
+    id: 'entity:person-5',
     data: {
       type: 'person',
       title: 'Sam Liu',
@@ -163,7 +163,7 @@ const people = [
     },
   },
   {
-    id: 'calendaritem:person-6',
+    id: 'entity:person-6',
     data: {
       type: 'person',
       title: 'Dr. Anita Patel',
@@ -190,7 +190,7 @@ const people = [
     },
   },
   {
-    id: 'calendaritem:person-7',
+    id: 'entity:person-7',
     data: {
       type: 'person',
       title: 'Kenji Watanabe',
@@ -214,7 +214,7 @@ const people = [
     },
   },
   {
-    id: 'calendaritem:person-8',
+    id: 'entity:person-8',
     data: {
       type: 'person',
       title: 'Priya Sharma',
@@ -247,7 +247,7 @@ const people = [
 
 const files = [
   {
-    id: 'calendaritem:file-1',
+    id: 'entity:file-1',
     data: {
       type: 'file',
       title: 'Q1 Revenue Dashboard.pdf',
@@ -272,7 +272,7 @@ const files = [
     },
   },
   {
-    id: 'calendaritem:file-2',
+    id: 'entity:file-2',
     data: {
       type: 'file',
       title: 'January Receipts.xlsx',
@@ -297,7 +297,7 @@ const files = [
     },
   },
   {
-    id: 'calendaritem:file-3',
+    id: 'entity:file-3',
     data: {
       type: 'file',
       title: 'Brand Guidelines v2.1.pdf',
@@ -322,7 +322,7 @@ const files = [
     },
   },
   {
-    id: 'calendaritem:file-4',
+    id: 'entity:file-4',
     data: {
       type: 'file',
       title: 'Architecture Diagram.png',
@@ -347,7 +347,7 @@ const files = [
     },
   },
   {
-    id: 'calendaritem:file-5',
+    id: 'entity:file-5',
     data: {
       type: 'file',
       title: 'Employee Handbook 2026.pdf',
@@ -370,7 +370,7 @@ const files = [
     },
   },
   {
-    id: 'calendaritem:file-6',
+    id: 'entity:file-6',
     data: {
       type: 'file',
       title: 'Trellis Entity Model.svg',
@@ -395,7 +395,7 @@ const files = [
     },
   },
   {
-    id: 'calendaritem:file-7',
+    id: 'entity:file-7',
     data: {
       type: 'file',
       title: 'Roadmap Planning Recording.mp4',
@@ -421,7 +421,7 @@ const files = [
     },
   },
   {
-    id: 'calendaritem:file-8',
+    id: 'entity:file-8',
     data: {
       type: 'file',
       title: 'Invoice INV-2026-0042.pdf',
@@ -453,7 +453,7 @@ const files = [
 
 const projects = [
   {
-    id: 'calendaritem:project-1',
+    id: 'entity:project-1',
     data: {
       type: 'project',
       title: 'Trellis Platform',
@@ -486,7 +486,7 @@ const projects = [
     },
   },
   {
-    id: 'calendaritem:project-2',
+    id: 'entity:project-2',
     data: {
       type: 'project',
       title: 'Q1 Planning & Execution',
@@ -513,7 +513,7 @@ const projects = [
     },
   },
   {
-    id: 'calendaritem:project-3',
+    id: 'entity:project-3',
     data: {
       type: 'project',
       title: 'Sprint 14 — API Refactor',
@@ -540,7 +540,7 @@ const projects = [
     },
   },
   {
-    id: 'calendaritem:project-4',
+    id: 'entity:project-4',
     data: {
       type: 'project',
       title: 'Asheville Trip Planning',
@@ -565,7 +565,7 @@ const projects = [
     },
   },
   {
-    id: 'calendaritem:project-5',
+    id: 'entity:project-5',
     data: {
       type: 'project',
       title: 'Personal Growth — Q1',
@@ -591,7 +591,7 @@ const projects = [
     },
   },
   {
-    id: 'calendaritem:project-6',
+    id: 'entity:project-6',
     data: {
       type: 'project',
       title: 'CI/CD Migration',
@@ -636,7 +636,7 @@ async function seedGroup(label, items) {
       // Doesn't exist — create it
     }
 
-    const result = await client.createNode(item.id, 'calendaritem', item.data)
+    const result = await client.createNode(item.id, 'entity', item.data)
     if (result.ok) {
       console.log(`  ✓  ${item.data.title}`)
       created++
