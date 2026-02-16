@@ -5,7 +5,31 @@
 ## Overview
 
 <!-- manual:start -->
-*Write your content here. This section is preserved across regenerations.*
+Trellis uses a **Unified Data Layer** with two interchangeable backends:
+
+- **Local mode** (`TRELLIS_DATA_MODE=local`) — `instant-local` (localStorage) + TQL kernel. No login required. Single-user, Obsidian-like.
+- **Cloud mode** (`TRELLIS_DATA_MODE=cloud`) — `@instantdb/core` with real auth (Google). Multi-device sync via InstantDB.
+
+All composables talk to a single `DataAdapter` interface. The plugin (`plugins/instant.client.ts`) injects the right implementation at boot.
+
+### Key files
+| File | Role |
+|------|------|
+| `lib/data-adapter/types.ts` | `DataAdapter` interface |
+| `lib/data-adapter/local-adapter.ts` | Wraps `instant-local` |
+| `lib/data-adapter/cloud-adapter.ts` | Wraps `@instantdb/core` |
+| `lib/data-adapter/migrate.ts` | Export/import between modes |
+| `composables/useDataAdapter.ts` | Typed access to active adapter |
+| `composables/useAdapterStatus.ts` | Reactive mode/health info |
+| `composables/useTrellisEntities.ts` | Conditional TQL vs adapter entity backend |
+| `composables/useOntologyRegistry.ts` | Merges TQL core/system + adapter user ontologies |
+
+### Ontology tiering
+- **Core** — hardcoded in TQL kernel (immutable)
+- **System** — code-defined in `tql-ontologies.ts` (loaded at boot)
+- **User** — stored in database (TQL EAV or InstantDB settings depending on mode)
+
+The TQL kernel **always runs** in both modes — it serves core/system ontologies, graph queries, CLI, MCP tools, and SSE events.
 <!-- manual:end -->
 
 ## Local Adapter
