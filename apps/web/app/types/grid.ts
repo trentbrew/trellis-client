@@ -5,7 +5,28 @@
  * entity projections (views) are spatially arranged in a 12-column grid.
  */
 
-import type { ProjectionType } from '~/types/database'
+import type { ProjectionType, ChartType, AggregationFn } from '~/types/database'
+
+// ============================================================================
+// Chart Configuration (for chart projection cells)
+// ============================================================================
+
+export interface ChartConfig {
+  /** Chart visualization type */
+  chartType: ChartType
+  /** Field to group by (e.g. 'priority', 'taskStatus', 'category', 'type') */
+  dimension: string
+  /** 'count' or a numeric field name */
+  measure: string
+  /** Aggregation function when measure is a numeric field */
+  aggregation: AggregationFn
+  /** Custom color palette */
+  colors?: string[]
+  /** Show chart legend */
+  showLegend?: boolean
+  /** Stack bars/areas */
+  stacked?: boolean
+}
 
 // ============================================================================
 // Grid View (a single cell in the grid)
@@ -36,6 +57,8 @@ export interface GridView {
   sortDirection?: 'asc' | 'desc'
   /** Entity ID for entity-detail projection */
   entityId?: string
+  /** Chart projection configuration */
+  chartConfig?: ChartConfig
 }
 
 // ============================================================================
@@ -139,6 +162,19 @@ export const GRID_PRESETS: GridPreset[] = [
       { col: 9, row: 1, colSpan: 4, rowSpan: 2 },
     ],
   },
+  {
+    id: 'analytics',
+    name: 'Analytics',
+    icon: 'lucide:bar-chart-3',
+    description: 'Charts and stats overview',
+    views: [
+      { col: 1, row: 1, colSpan: 6, rowSpan: 1 },
+      { col: 7, row: 1, colSpan: 6, rowSpan: 1 },
+      { col: 1, row: 2, colSpan: 4, rowSpan: 1 },
+      { col: 5, row: 2, colSpan: 4, rowSpan: 1 },
+      { col: 9, row: 2, colSpan: 4, rowSpan: 1 },
+    ],
+  },
 ]
 
 // ============================================================================
@@ -161,6 +197,8 @@ export function createGridView(
     filters: partial.filters,
     sortField: partial.sortField,
     sortDirection: partial.sortDirection,
+    entityId: partial.entityId,
+    chartConfig: partial.chartConfig,
   }
 }
 

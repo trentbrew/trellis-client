@@ -476,6 +476,9 @@ export const useRoutes = () => {
 
     // Get dynamic children based on section
     switch (section.path) {
+      case '/workspace':
+        dynamicChildren = [...pagesChildren.value]
+        break
       case '/database':
         dynamicChildren = [...systemTypesChildren.value, ...collectionsChildren.value, ...typesChildren.value, ...ontologyTypeChildren.value]
         break
@@ -514,8 +517,24 @@ export const useRoutes = () => {
   /**
    * Get breadcrumbs for current route
    */
+  const { pages: _breadcrumbPages } = usePages()
   const breadcrumbs = computed(() => {
     const base = getBreadcrumbs(route.path, effectiveRouteConfig.value)
+
+    // Custom pages: /workspace/pages/:pageId → append page title
+    const cleanPath = getCleanPath(route.path)
+    const pageMatch = cleanPath.match(/^\/workspace\/pages\/(.+)$/)
+    if (pageMatch) {
+      const pageId = pageMatch[1]
+      const page = (_breadcrumbPages.value || []).find((p: any) => p.id === pageId)
+      const pagesBase = [
+        { label: 'Workspace', path: '/workspace' },
+        { label: 'Pages', path: '/workspace' },
+        { label: page?.title || 'Untitled' },
+      ]
+      return pagesBase
+    }
+
     const slug = getCollectionSlugFromRoutePath(route.path)
     if (!slug) return base
 

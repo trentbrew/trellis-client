@@ -534,6 +534,10 @@ export function useGridLayout(pageId: MaybeRef<string>) {
     resolveCollisions,
     previewMove,
 
+    // Batch mutation (for gap resize — single undo entry + single persist)
+    beginBatchMutation: () => _pushUndo(),
+    commitBatchMutation: () => _persist(),
+
     // Undo / Redo
     undo,
     redo,

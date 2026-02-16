@@ -130,9 +130,40 @@
   const ownerSearch = ref('')
   const folderSearch = ref('')
   const involvedSearch = ref('')
-  const commentsOpen = ref(false)
   const entityPickerOpen = ref(false)
   const entityPickerFilterType = ref<string | undefined>(undefined)
+
+  // Sidebar state
+  const rightSidebarTab = ref<'references' | 'activity'>('references')
+  const leftSidebarW = ref(288)
+  const rightSidebarW = ref(288)
+  const isResizingSidebar = ref(false)
+
+  const startSidebarResize = (side: 'left' | 'right', e: PointerEvent) => {
+    e.preventDefault()
+    e.stopPropagation()
+    const el = e.currentTarget as HTMLElement
+    el.setPointerCapture(e.pointerId)
+    isResizingSidebar.value = true
+    const startX = e.clientX
+    const startW = side === 'left' ? leftSidebarW.value : rightSidebarW.value
+    document.body.style.cursor = 'ew-resize'
+    const onMove = (ev: PointerEvent) => {
+      const dx = ev.clientX - startX
+      const newW = Math.max(200, Math.min(480, startW + (side === 'left' ? dx : -dx)))
+      if (side === 'left') leftSidebarW.value = newW
+      else rightSidebarW.value = newW
+    }
+    const onUp = () => {
+      isResizingSidebar.value = false
+      document.body.style.cursor = ''
+      el.releasePointerCapture(e.pointerId)
+      el.removeEventListener('pointermove', onMove)
+      el.removeEventListener('pointerup', onUp)
+    }
+    el.addEventListener('pointermove', onMove)
+    el.addEventListener('pointerup', onUp)
+  }
 
   // Type-specific property pill popover states
   const paymentStatusOpen = ref(false)
@@ -732,8 +763,7 @@
   }
 
   const hasVisibleProperties = computed(() => {
-    // Type switcher only shows in create mode
-    if (isCreateMode.value && hasField('type')) return true
+    if (hasField('startDate')) return true
     if (hasField('status')) return true
     if (hasField('priority')) return true
     if (hasField('urgency')) return true
@@ -830,20 +860,27 @@
         {{ eventTemporalStatus.label }}
       </span>
 
-      <button
-        v-if="hasField('startDate')"
-        class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-medium transition-colors"
-        :class="[
-          scheduleDescription.isOverdue
-            ? 'bg-destructive/15 text-destructive hover:bg-destructive/25'
-            : 'bg-muted/50 text-muted-foreground hover:bg-muted',
-          schedulePanelOpen ? 'ring-1 ring-primary/30' : '',
-        ]"
-        @click="schedulePanelOpen = !schedulePanelOpen">
-        <Icon :name="scheduleDescription.isRecurring ? 'lucide:repeat' : 'lucide:calendar'" class="h-3 w-3" />
-        <span>{{ scheduleDescription.scheduleText }}</span>
-        <span v-if="scheduleDescription.statusText" class="opacity-70">({{ scheduleDescription.statusText }})</span>
-      </button>
+      <!-- Type switcher (create mode only) -->
+      <UiPopover v-if="isCreateMode && hasField('type')" v-model:open="typeOpen">
+        <UiPopoverTrigger as-child>
+          <button
+            class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-medium bg-muted/50 hover:bg-muted transition-colors">
+            <Icon :name="currentType?.icon || 'lucide:layers'" class="h-3 w-3" />
+            {{ currentType?.label || 'Type' }}
+          </button>
+        </UiPopoverTrigger>
+        <UiPopoverContent align="start" class="w-44 p-1">
+          <button
+            v-for="opt in ENTITY_TYPE_OPTIONS"
+            :key="opt.value"
+            class="w-full px-2 py-1.5 text-xs text-left rounded hover:bg-muted flex items-center gap-2"
+            @click="switchType(opt.value)">
+            <Icon :name="opt.icon" class="h-3.5 w-3.5 text-muted-foreground" />
+            <span class="flex-1">{{ opt.label }}</span>
+            <Icon v-if="editableItem.type === opt.value" name="lucide:check" class="h-3.5 w-3.5 text-primary" />
+          </button>
+        </UiPopoverContent>
+      </UiPopover>
 
       <!-- Tags (inline in header badges) -->
       <template v-if="hasField('tags')">
@@ -855,8 +892,14 @@
     <!-- Schedule Sidebar (left, collapsible via date badge) -->
     <aside
       v-if="hasField('startDate')"
-      class="shrink-0 border-r border-border overflow-y-auto hidden md:block transition-all duration-200"
-      :class="schedulePanelOpen ? 'w-72' : 'w-0 border-r-0 overflow-hidden'">
+      class="shrink-0 border-r border-border overflow-y-auto hidden md:block transition-all duration-200 relative"
+      :class="[schedulePanelOpen ? '' : 'w-0 border-r-0! overflow-hidden', isResizingSidebar ? 'select-none' : '']"
+      :style="schedulePanelOpen ? { width: leftSidebarW + 'px' } : {}">
+      <!-- Resize handle -->
+      <div
+        v-if="schedulePanelOpen"
+        class="absolute inset-y-0 right-0 w-1 cursor-ew-resize z-10 hover:bg-primary/20 transition-colors"
+        @pointerdown="startSidebarResize('left', $event)" />
       <div class="p-3 space-y-3">
         <!-- All Day toggle -->
         <div v-if="hasField('allDay')" class="flex items-center justify-between">
@@ -1088,34 +1131,25 @@
       </div>
     </aside>
 
-    <!-- Right column: properties row + main content + sidebar -->
-    <div class="flex-1 flex flex-col min-w-0 overflow-hidden">
-      <!-- Properties Row (inline, right of sidebar) -->
-      <div v-if="hasVisibleProperties" class="sticky top-0 z-10 bg-card px-4 py-2.5 border-b border-border shrink-0">
-        <div class="flex items-center gap-1.5 text-xs flex-wrap">
-          <!-- Type switcher (create mode only) -->
-          <UiPopover v-if="isCreateMode && hasField('type')" v-model:open="typeOpen">
-            <UiPopoverTrigger as-child>
-              <button
-                class="inline-flex items-center gap-1.5 px-2 py-1 rounded-lg bg-muted/50 hover:bg-muted transition-colors">
-                <Icon :name="currentType?.icon || 'lucide:layers'" class="h-3.5 w-3.5" />
-                <span>{{ currentType?.label || 'Type' }}</span>
-              </button>
-            </UiPopoverTrigger>
-            <UiPopoverContent align="start" class="w-44 p-1">
-              <button
-                v-for="opt in ENTITY_TYPE_OPTIONS"
-                :key="opt.value"
-                class="w-full px-2 py-1.5 text-xs text-left rounded hover:bg-muted flex items-center gap-2"
-                @click="switchType(opt.value)">
-                <Icon :name="opt.icon" class="h-3.5 w-3.5 text-muted-foreground" />
-                <span class="flex-1">{{ opt.label }}</span>
-                <Icon v-if="editableItem.type === opt.value" name="lucide:check" class="h-3.5 w-3.5 text-primary" />
-              </button>
-            </UiPopoverContent>
-          </UiPopover>
+    <!-- Properties Row (full-width, above sidebars) -->
+    <template v-if="hasVisibleProperties" #properties>
+      <!-- Date badge (toggles schedule sidebar) -->
+      <button
+        v-if="hasField('startDate')"
+        class="inline-flex items-center gap-1.5 px-2 py-1 rounded-lg text-xs font-medium transition-colors"
+        :class="[
+          scheduleDescription.isOverdue
+            ? 'bg-destructive/15 text-destructive hover:bg-destructive/25'
+            : 'bg-muted/50 text-muted-foreground hover:bg-muted',
+          schedulePanelOpen ? 'ring-1 ring-primary/30' : '',
+        ]"
+        @click="schedulePanelOpen = !schedulePanelOpen">
+        <Icon :name="scheduleDescription.isRecurring ? 'lucide:repeat' : 'lucide:calendar'" class="h-3.5 w-3.5" />
+        <span>{{ scheduleDescription.scheduleText }}</span>
+        <span v-if="scheduleDescription.statusText" class="opacity-70">({{ scheduleDescription.statusText }})</span>
+      </button>
 
-          <!-- Task Status -->
+      <!-- Task Status -->
           <UiPopover v-if="hasField('status')" v-model:open="taskStatusOpen">
             <UiPopoverTrigger as-child>
               <button
@@ -1200,28 +1234,6 @@
                 @click="resetUrgency">
                 <Icon name="lucide:rotate-ccw" class="h-3.5 w-3.5" />
                 <span>Reset to auto</span>
-              </button>
-            </UiPopoverContent>
-          </UiPopover>
-
-          <!-- Category -->
-          <UiPopover v-if="hasField('category')" v-model:open="categoryOpen">
-            <UiPopoverTrigger as-child>
-              <button
-                class="inline-flex items-center gap-1.5 px-2 py-1 rounded-lg bg-muted/50 hover:bg-muted transition-colors">
-                <Icon :name="currentCategory?.icon || 'lucide:tag'" class="h-3.5 w-3.5" />
-                <span>{{ currentCategory?.label || editableItem.category || 'Category' }}</span>
-              </button>
-            </UiPopoverTrigger>
-            <UiPopoverContent align="start" class="w-44 p-1">
-              <button
-                v-for="opt in CATEGORY_OPTIONS"
-                :key="opt.value"
-                class="w-full px-2 py-1.5 text-xs text-left rounded hover:bg-muted flex items-center gap-2"
-                @click="() => { editableItem.category = opt.value; categoryOpen = false }">
-                <Icon :name="opt.icon" class="h-3.5 w-3.5 text-muted-foreground" />
-                <span class="flex-1">{{ opt.label }}</span>
-                <Icon v-if="editableItem.category === opt.value" name="lucide:check" class="h-3.5 w-3.5 text-primary" />
               </button>
             </UiPopoverContent>
           </UiPopover>
@@ -1321,6 +1333,28 @@
                   <span class="flex-1 truncate">{{ o.name }}</span>
                 </button>
               </div>
+            </UiPopoverContent>
+          </UiPopover>
+
+          <!-- Category -->
+          <UiPopover v-if="hasField('category')" v-model:open="categoryOpen">
+            <UiPopoverTrigger as-child>
+              <button
+                class="inline-flex items-center gap-1.5 px-2 py-1 rounded-lg bg-muted/50 hover:bg-muted transition-colors">
+                <Icon :name="currentCategory?.icon || 'lucide:tag'" class="h-3.5 w-3.5" />
+                <span>{{ currentCategory?.label || editableItem.category || 'Category' }}</span>
+              </button>
+            </UiPopoverTrigger>
+            <UiPopoverContent align="start" class="w-44 p-1">
+              <button
+                v-for="opt in CATEGORY_OPTIONS"
+                :key="opt.value"
+                class="w-full px-2 py-1.5 text-xs text-left rounded hover:bg-muted flex items-center gap-2"
+                @click="() => { editableItem.category = opt.value; categoryOpen = false }">
+                <Icon :name="opt.icon" class="h-3.5 w-3.5 text-muted-foreground" />
+                <span class="flex-1">{{ opt.label }}</span>
+                <Icon v-if="editableItem.category === opt.value" name="lucide:check" class="h-3.5 w-3.5 text-primary" />
+              </button>
             </UiPopoverContent>
           </UiPopover>
 
@@ -1917,90 +1951,104 @@
             </UiPopoverContent>
           </UiPopover>
 
-        </div>
+    </template>
+
+    <!-- Center: type-specific content panel -->
+    <div class="flex-1 flex flex-col min-w-0 overflow-y-auto">
+      <EntityContentPanel :model-value="editableItem" :mode="mode" />
+    </div>
+
+    <!-- Right sidebar: tabbed references + activity -->
+    <aside
+      class="shrink-0 border-l border-border overflow-hidden flex flex-col relative"
+      :class="isResizingSidebar ? 'select-none' : ''"
+      :style="{ width: rightSidebarW + 'px' }">
+      <!-- Resize handle -->
+      <div
+        class="absolute inset-y-0 left-0 w-1 cursor-ew-resize z-10 hover:bg-primary/20 transition-colors"
+        @pointerdown="startSidebarResize('right', $event)" />
+      <!-- Tab bar -->
+      <div class="flex border-b border-border shrink-0">
+        <button
+          class="flex-1 px-3 py-2 text-[10px] font-medium uppercase tracking-wide transition-colors"
+          :class="rightSidebarTab === 'references' ? 'text-foreground border-b-2 border-primary' : 'text-muted-foreground hover:text-foreground'"
+          @click="rightSidebarTab = 'references'">
+          References
+        </button>
+        <button
+          v-if="!isCreateMode"
+          class="flex-1 px-3 py-2 text-[10px] font-medium uppercase tracking-wide transition-colors"
+          :class="rightSidebarTab === 'activity' ? 'text-foreground border-b-2 border-primary' : 'text-muted-foreground hover:text-foreground'"
+          @click="rightSidebarTab = 'activity'">
+          Activity
+          <span v-if="displayActivity.length" class="ml-1 text-[9px] bg-muted rounded-full px-1.5 py-0.5">{{ displayActivity.length }}</span>
+        </button>
       </div>
-      <!-- Content + Right Sidebar -->
-      <div class="flex-1 flex min-h-0">
-        <!-- Center: type-specific content panel (dynamically resolved) or summary -->
-        <div class="flex-1 flex flex-col min-w-0 overflow-y-auto">
-          <EntityContentPanel :model-value="editableItem" :mode="mode" />
-        </div>
-
-        <!-- Right sidebar: references + comments -->
-        <aside class="shrink-0 w-72 border-l border-border overflow-y-auto divide-y divide-border">
-          <!-- References (files + entity links) -->
-          <ReferencesSection
-            v-model="editableItem.references"
-            :readonly="isViewMode"
-            @open-entity="handleOpenEntityRef"
-            @remove-ref="handleRemoveRef"
-            @add-entity="() => { entityPickerFilterType = undefined; entityPickerOpen = true }"
-            @add-entity-of-type="(type) => { entityPickerFilterType = type; entityPickerOpen = true }" />
-
-          <!-- Comments / Activity -->
-          <div v-if="!isCreateMode" class="p-4 space-y-2">
-            <button
-              type="button"
-              class="w-full flex items-center justify-between text-[10px] font-medium text-muted-foreground uppercase tracking-wide hover:text-foreground transition-colors"
-              @click="commentsOpen = !commentsOpen">
-              <span>Comments / Activity</span>
-              <Icon :name="commentsOpen ? 'lucide:chevron-up' : 'lucide:chevron-down'" class="h-3 w-3" />
-            </button>
-            <div v-if="commentsOpen" class="space-y-2">
-              <div v-if="commentsLoading" class="flex items-center py-2">
-                <Icon name="lucide:loader-2" class="h-3 w-3 animate-spin text-muted-foreground" />
+      <!-- Tab content -->
+      <div class="flex-1 overflow-y-auto">
+        <!-- References tab -->
+        <ReferencesSection
+          v-if="rightSidebarTab === 'references'"
+          v-model="editableItem.references"
+          :readonly="isViewMode"
+          @open-entity="handleOpenEntityRef"
+          @remove-ref="handleRemoveRef"
+          @add-entity="() => { entityPickerFilterType = undefined; entityPickerOpen = true }"
+          @add-entity-of-type="(type) => { entityPickerFilterType = type; entityPickerOpen = true }" />
+        <!-- Activity tab -->
+        <div v-if="rightSidebarTab === 'activity' && !isCreateMode" class="p-4 space-y-2">
+          <div v-if="commentsLoading" class="flex items-center py-2">
+            <Icon name="lucide:loader-2" class="h-3 w-3 animate-spin text-muted-foreground" />
+          </div>
+          <div v-else-if="displayActivity.length" class="space-y-1.5 mb-2">
+            <div v-for="activityItem in displayActivity" :key="activityItem.id" class="flex items-start gap-2">
+              <div class="w-5 h-5 rounded-full bg-muted flex items-center justify-center shrink-0 mt-0.5">
+                <Icon
+                  v-if="activityItem.type === 'created'"
+                  name="lucide:plus"
+                  class="h-2.5 w-2.5 text-muted-foreground" />
+                <Icon
+                  v-else-if="activityItem.type === 'comment'"
+                  name="lucide:message-circle"
+                  class="h-2.5 w-2.5 text-muted-foreground" />
+                <Icon v-else name="lucide:activity" class="h-2.5 w-2.5 text-muted-foreground" />
               </div>
-              <div v-else-if="displayActivity.length" class="space-y-1.5 mb-2">
-                <div v-for="activityItem in displayActivity" :key="activityItem.id" class="flex items-start gap-2">
-                  <div class="w-5 h-5 rounded-full bg-muted flex items-center justify-center shrink-0 mt-0.5">
-                    <Icon
-                      v-if="activityItem.type === 'created'"
-                      name="lucide:plus"
-                      class="h-2.5 w-2.5 text-muted-foreground" />
-                    <Icon
-                      v-else-if="activityItem.type === 'comment'"
-                      name="lucide:message-circle"
-                      class="h-2.5 w-2.5 text-muted-foreground" />
-                    <Icon v-else name="lucide:activity" class="h-2.5 w-2.5 text-muted-foreground" />
-                  </div>
-                  <div class="flex-1 min-w-0">
-                    <div class="flex items-baseline gap-1 flex-wrap">
-                      <span class="text-[11px] font-medium">{{ activityItem.authorName }}</span>
-                      <span class="text-[10px] text-muted-foreground">
-                        {{ formatRelativeTime(activityItem.createdAt) }}
-                      </span>
-                    </div>
-                    <p v-if="activityItem.content" class="text-xs text-foreground/80 mt-0.5">
-                      {{ activityItem.content }}
-                    </p>
-                    <p v-else-if="activityItem.type === 'created'" class="text-[10px] text-muted-foreground mt-0.5">
-                      created this {{ currentType?.label?.toLowerCase() || 'item' }}
-                    </p>
-                  </div>
+              <div class="flex-1 min-w-0">
+                <div class="flex items-baseline gap-1 flex-wrap">
+                  <span class="text-[11px] font-medium">{{ activityItem.authorName }}</span>
+                  <span class="text-[10px] text-muted-foreground">
+                    {{ formatRelativeTime(activityItem.createdAt) }}
+                  </span>
                 </div>
-              </div>
-              <div class="flex items-center gap-2">
-                <div class="w-5 h-5 rounded-full bg-muted/60 flex items-center justify-center shrink-0">
-                  <Icon name="lucide:user" class="h-2.5 w-2.5 text-muted-foreground" />
-                </div>
-                <input
-                  v-model="newComment"
-                  type="text"
-                  placeholder="Add a comment..."
-                  class="flex-1 text-xs bg-transparent border-none outline-none placeholder:text-muted-foreground/50"
-                  @keydown.enter="newComment.trim() && handleAddComment()" />
-                <button
-                  v-if="newComment.trim()"
-                  class="text-primary hover:text-primary/80 transition-colors"
-                  @click="handleAddComment">
-                  <Icon name="lucide:send" class="h-3 w-3" />
-                </button>
+                <p v-if="activityItem.content" class="text-xs text-foreground/80 mt-0.5">
+                  {{ activityItem.content }}
+                </p>
+                <p v-else-if="activityItem.type === 'created'" class="text-[10px] text-muted-foreground mt-0.5">
+                  created this {{ currentType?.label?.toLowerCase() || 'item' }}
+                </p>
               </div>
             </div>
           </div>
-        </aside>
+          <div class="flex items-center gap-2">
+            <div class="w-5 h-5 rounded-full bg-muted/60 flex items-center justify-center shrink-0">
+              <Icon name="lucide:user" class="h-2.5 w-2.5 text-muted-foreground" />
+            </div>
+            <input
+              v-model="newComment"
+              type="text"
+              placeholder="Add a comment..."
+              class="flex-1 text-xs bg-transparent border-none outline-none placeholder:text-muted-foreground/50"
+              @keydown.enter="newComment.trim() && handleAddComment()" />
+            <button
+              v-if="newComment.trim()"
+              class="text-primary hover:text-primary/80 transition-colors"
+              @click="handleAddComment">
+              <Icon name="lucide:send" class="h-3 w-3" />
+            </button>
+          </div>
+        </div>
       </div>
-    </div>
+    </aside>
 
     <!-- Footer -->
     <template #footer-left>

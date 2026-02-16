@@ -122,25 +122,31 @@ export function useEntitySelection(
   const hasSelection = computed(() => selectedIds.value.size > 0)
   const selectionCount = computed(() => selectedIds.value.size)
 
-  // ── Keyboard handler ───────────────────────────────────────────────────
+  // ── Keyboard shortcuts via registry ────────────────────────────────────
 
-  const handleKeydown = (e: KeyboardEvent) => {
-    if (e.key === 'Escape' && hasSelection.value) {
-      e.preventDefault()
+  const { register: registerShortcut, pushScope, popScope } = useKeyboardShortcuts()
+
+  const _unregSelectAll = registerShortcut('select-all', () => {
+    selectAll()
+    const count = selectedIds.value.size
+    return count ? `${count} item${count !== 1 ? 's' : ''}` : undefined
+  })
+  const _unregClearSelection = registerShortcut('clear-selection', () => {
+    const count = selectedIds.value.size
+    if (count) {
       clearSelection()
+      return `${count} item${count !== 1 ? 's' : ''}`
     }
-    if ((e.metaKey || e.ctrlKey) && e.key === 'a') {
-      e.preventDefault()
-      selectAll()
-    }
-  }
+  })
 
   onMounted(() => {
-    document.addEventListener('keydown', handleKeydown)
+    pushScope('browse')
   })
 
   onUnmounted(() => {
-    document.removeEventListener('keydown', handleKeydown)
+    popScope('browse')
+    _unregSelectAll()
+    _unregClearSelection()
   })
 
   return {

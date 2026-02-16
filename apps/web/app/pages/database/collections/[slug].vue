@@ -1297,89 +1297,99 @@
       <p class="text-muted-foreground text-sm">The collection you're looking for doesn't exist.</p>
     </div>
 
-    <UiTabs v-else v-model="activeProjection" class="flex h-full flex-col !gap-0 border-none">
+    <UiTabs v-else v-model="activeProjection" class="flex h-full flex-col gap-0! border-none">
       <!-- Dynamic Projection Tabs - hidden during setup -->
-      <div class="shrink-0 border-b border-border">
-        <div class="relative px-6 py-3">
-          <div class="flex items-center justify-between gap-0">
-            <UiDropdownMenu v-model:open="isProjectionMenuOpen">
-              <UiDropdownMenuTrigger as-child>
-                <UiButton
-                  variant="ghost"
-                  size="sm"
-                  class="text-muted-foreground hover:text-foreground flex items-center">
-                  <Icon :name="activeProjectionConfig?.icon || 'lucide:sliders-horizontal'" class="mr-2 h-4 w-4" />
-                  {{ activeProjectionConfig?.name || 'View' }}
-                  <Icon name="lucide:chevron-down" class="ml-2 h-3.5 w-3.5" />
-                </UiButton>
-              </UiDropdownMenuTrigger>
-              <UiDropdownMenuContent align="start" class="w-56">
-                <template v-if="recommendedViews.length">
-                  <UiDropdownMenuLabel>Recommended</UiDropdownMenuLabel>
-                  <UiDropdownMenuSeparator />
-                  <UiTooltipProvider v-for="view in recommendedViews" :key="view.type">
-                    <UiTooltip :disabled="!view.reason">
-                      <UiTooltipTrigger as-child>
-                        <UiDropdownMenuItem
-                          class="gap-2 group/view"
-                          @click="switchToView(view)">
-                          <Icon :name="view.icon" class="h-4 w-4" />
-                          <span class="flex-1">{{ view.name }}</span>
-                          <Icon v-if="view.isDefault" name="lucide:pin" class="h-3 w-3 text-muted-foreground/60" title="Default view" />
-                          <button
-                            v-if="view.projectionId && !view.isDefault"
-                            type="button"
-                            class="h-5 w-5 flex items-center justify-center rounded opacity-0 group-hover/view:opacity-100 hover:bg-accent transition-all"
-                            title="Set as default"
-                            @click.stop="view.projectionId && _setDefaultProjection(view.projectionId)">
-                            <Icon name="lucide:pin" class="h-3 w-3 text-muted-foreground" />
-                          </button>
-                          <Icon v-if="view.isActive" name="lucide:check" class="h-4 w-4 text-primary" />
-                        </UiDropdownMenuItem>
-                      </UiTooltipTrigger>
-                      <UiTooltipContent v-if="view.reason" side="left">
-                        {{ view.reason }}
-                      </UiTooltipContent>
-                    </UiTooltip>
-                  </UiTooltipProvider>
-                  <UiDropdownMenuSeparator v-if="otherViews.length" />
-                </template>
+      <DatabaseToolbar>
+        <template #left>
+          <UiDropdownMenu v-model:open="isProjectionMenuOpen">
+            <UiDropdownMenuTrigger as-child>
+              <UiButton
+                variant="ghost"
+                size="sm"
+                class="text-muted-foreground hover:text-foreground flex items-center">
+                <Icon :name="activeProjectionConfig?.icon || 'lucide:sliders-horizontal'" class="mr-2 h-4 w-4" />
+                {{ activeProjectionConfig?.name || 'View' }}
+                <Icon name="lucide:chevron-down" class="ml-2 h-3.5 w-3.5" />
+              </UiButton>
+            </UiDropdownMenuTrigger>
+            <UiDropdownMenuContent align="start" class="w-56">
+              <template v-if="recommendedViews.length">
+                <UiDropdownMenuLabel>Recommended</UiDropdownMenuLabel>
+                <UiDropdownMenuSeparator />
+                <UiTooltipProvider v-for="view in recommendedViews" :key="view.type">
+                  <UiTooltip :disabled="!view.reason">
+                    <UiTooltipTrigger as-child>
+                      <UiDropdownMenuItem
+                        class="gap-2 group/view"
+                        @click="switchToView(view)">
+                        <Icon :name="view.icon" class="h-4 w-4" />
+                        <span class="flex-1">{{ view.name }}</span>
+                        <Icon v-if="view.isDefault" name="lucide:pin" class="h-3 w-3 text-muted-foreground/60" title="Default view" />
+                        <button
+                          v-if="view.projectionId && !view.isDefault"
+                          type="button"
+                          class="h-5 w-5 flex items-center justify-center rounded opacity-0 group-hover/view:opacity-100 hover:bg-accent transition-all"
+                          title="Set as default"
+                          @click.stop="view.projectionId && _setDefaultProjection(view.projectionId)">
+                          <Icon name="lucide:pin" class="h-3 w-3 text-muted-foreground" />
+                        </button>
+                        <Icon v-if="view.isActive" name="lucide:check" class="h-4 w-4 text-primary" />
+                      </UiDropdownMenuItem>
+                    </UiTooltipTrigger>
+                    <UiTooltipContent v-if="view.reason" side="left">
+                      {{ view.reason }}
+                    </UiTooltipContent>
+                  </UiTooltip>
+                </UiTooltipProvider>
+                <UiDropdownMenuSeparator v-if="otherViews.length" />
+              </template>
 
-                <template v-if="otherViews.length">
-                  <UiDropdownMenuLabel>All</UiDropdownMenuLabel>
-                  <UiDropdownMenuSeparator />
-                  <UiTooltipProvider v-for="view in otherViews" :key="view.type">
-                    <UiTooltip :disabled="!view.disabled && !view.tooltip">
-                      <UiTooltipTrigger as-child>
-                        <UiDropdownMenuItem
-                          class="gap-2 group/view"
-                          :disabled="view.disabled"
-                          @click="switchToView(view)">
-                          <Icon :name="view.icon" class="h-4 w-4" />
-                          <span class="flex-1">{{ view.name }}</span>
-                          <Icon v-if="view.isDefault" name="lucide:pin" class="h-3 w-3 text-muted-foreground/60" title="Default view" />
-                          <button
-                            v-if="view.projectionId && !view.isDefault"
-                            type="button"
-                            class="h-5 w-5 flex items-center justify-center rounded opacity-0 group-hover/view:opacity-100 hover:bg-accent transition-all"
-                            title="Set as default"
-                            @click.stop="view.projectionId && _setDefaultProjection(view.projectionId)">
-                            <Icon name="lucide:pin" class="h-3 w-3 text-muted-foreground" />
-                          </button>
-                          <Icon v-if="view.isActive" name="lucide:check" class="h-4 w-4 text-primary" />
-                        </UiDropdownMenuItem>
-                      </UiTooltipTrigger>
-                      <UiTooltipContent v-if="view.tooltip" side="left">
-                        {{ view.tooltip }}
-                      </UiTooltipContent>
-                    </UiTooltip>
-                  </UiTooltipProvider>
-                </template>
-              </UiDropdownMenuContent>
-            </UiDropdownMenu>
-          </div>
-        </div>
-      </div>
+              <template v-if="otherViews.length">
+                <UiDropdownMenuLabel>All</UiDropdownMenuLabel>
+                <UiDropdownMenuSeparator />
+                <UiTooltipProvider v-for="view in otherViews" :key="view.type">
+                  <UiTooltip :disabled="!view.disabled && !view.tooltip">
+                    <UiTooltipTrigger as-child>
+                      <UiDropdownMenuItem
+                        class="gap-2 group/view"
+                        :disabled="view.disabled"
+                        @click="switchToView(view)">
+                        <Icon :name="view.icon" class="h-4 w-4" />
+                        <span class="flex-1">{{ view.name }}</span>
+                        <Icon v-if="view.isDefault" name="lucide:pin" class="h-3 w-3 text-muted-foreground/60" title="Default view" />
+                        <button
+                          v-if="view.projectionId && !view.isDefault"
+                          type="button"
+                          class="h-5 w-5 flex items-center justify-center rounded opacity-0 group-hover/view:opacity-100 hover:bg-accent transition-all"
+                          title="Set as default"
+                          @click.stop="view.projectionId && _setDefaultProjection(view.projectionId)">
+                          <Icon name="lucide:pin" class="h-3 w-3 text-muted-foreground" />
+                        </button>
+                        <Icon v-if="view.isActive" name="lucide:check" class="h-4 w-4 text-primary" />
+                      </UiDropdownMenuItem>
+                    </UiTooltipTrigger>
+                    <UiTooltipContent v-if="view.tooltip" side="left">
+                      {{ view.tooltip }}
+                    </UiTooltipContent>
+                  </UiTooltip>
+                </UiTooltipProvider>
+              </template>
+            </UiDropdownMenuContent>
+          </UiDropdownMenu>
+        </template>
+
+        <template #right>
+          <UiButton
+            v-if="isDatabaseCollection"
+            variant="ghost"
+            size="icon-sm"
+            class="h-7 w-7"
+            title="Edit schema"
+            @click="setCollectionSchemaSheetOpen(true)">
+            <Icon name="lucide:panel-right" class="h-3.5 w-3.5" />
+          </UiButton>
+        </template>
+      </DatabaseToolbar>
 
       <div
         ref="contentContainer"

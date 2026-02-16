@@ -57,8 +57,26 @@
   const MIN_H = 480
   const MAX_W = computed(() => window.innerWidth - 64)
   const MAX_H = computed(() => window.innerHeight - 64)
-  const DEFAULT_W = computed(() => Math.min(1400, Math.round(window.innerWidth * 0.82)))
-  const DEFAULT_H = computed(() => Math.min(1000, Math.round(window.innerHeight * 0.88)))
+  const defaultSize = computed(() => {
+    const vpW = window.innerWidth
+    const vpH = window.innerHeight
+    const aspect = vpW / vpH
+    const scale = 0.82
+    let w = Math.round(vpW * scale)
+    let h = Math.round(vpH * scale)
+    // Apply max caps while preserving viewport aspect ratio
+    if (w > 1400) {
+      w = 1400
+      h = Math.round(w / aspect)
+    }
+    if (h > 1000) {
+      h = 1000
+      w = Math.round(h * aspect)
+    }
+    return { w, h }
+  })
+  const DEFAULT_W = computed(() => defaultSize.value.w)
+  const DEFAULT_H = computed(() => defaultSize.value.h)
 
   const dialogW = ref(DEFAULT_W.value)
   const dialogH = ref(DEFAULT_H.value)

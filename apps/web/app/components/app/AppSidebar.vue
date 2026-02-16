@@ -41,6 +41,51 @@
   // Ontology create dialog state
   const ontologyCreateOpen = ref(false)
 
+  // ── Sidebar filter ─────────────────────────────────────────
+  const sidebarFilter = ref('')
+  const sidebarFilterInputRef = ref<HTMLInputElement | null>(null)
+
+  const matchesFilter = (label: string) => {
+    if (!sidebarFilter.value) return true
+    return label.toLowerCase().includes(sidebarFilter.value.toLowerCase())
+  }
+
+  const filteredDynamicSidebarSections = computed(() => {
+    const sections = dynamicSidebarSections.value
+    if (!sections || !sidebarFilter.value) return sections
+    return sections
+      .map((section: any) => ({
+        ...section,
+        items: section.items?.filter((item: any) => matchesFilter(item?.label || '')) || [],
+      }))
+      .filter((section: any) => section.items.length > 0)
+  })
+
+  const filteredPinnedItems = computed(() => {
+    if (!sidebarFilter.value) return pinnedItems.value
+    return pinnedItems.value.filter((item: any) => matchesFilter(item?.label || ''))
+  })
+
+  const filteredUnpinnedItems = computed(() => {
+    if (!sidebarFilter.value) return unpinnedItems.value
+    return unpinnedItems.value.filter((item: any) => matchesFilter(item?.label || ''))
+  })
+
+  const filteredSystemUnpinnedItems = computed(() => {
+    if (!sidebarFilter.value) return systemUnpinnedItems.value
+    return systemUnpinnedItems.value.filter((item: any) => matchesFilter(item?.label || ''))
+  })
+
+  const filteredCustomUnpinnedItems = computed(() => {
+    if (!sidebarFilter.value) return customUnpinnedItems.value
+    return customUnpinnedItems.value.filter((item: any) => matchesFilter(item?.label || ''))
+  })
+
+  // Clear filter when switching sidebar sections
+  watch(() => routes.currentSectionLabel.value, () => {
+    sidebarFilter.value = ''
+  })
+
   const sidebarSectionKey = computed(() => routes.currentSectionLabel.value)
 
   const isTypesSection = computed(() => routes.currentSidebarSection.value?.path === '/types')
@@ -266,7 +311,14 @@
   }
 
   // Handle Add New button click - opens ontology create dialog
-  const { collections, currentApp: _currentApp, createCollection: _createCollection, updateCollection, deleteCollection } = useInstantData()
+  const {
+    collections,
+    currentApp: _currentApp,
+    createCollection: _createCollection,
+    updateCollection,
+    deleteCollection,
+    deleteCustomType,
+  } = useInstantData()
   const { downloadCollectionAsTrellis } = useTrellisAdapter()
 
   const deleteDialogOpen = ref(false)
@@ -400,6 +452,34 @@
     })
   }
 
+  const typeItemMenu = (item: any) => {
+    return [
+      {
+        id: CONTEXT_ACTIONS.OPEN,
+        label: 'Open',
+        icon: 'lucide:arrow-right',
+      },
+      {
+        id: CONTEXT_ACTIONS.OPEN_NEW_TAB,
+        label: 'Open in New Tab',
+        icon: 'lucide:external-link',
+      },
+      {
+        id: CONTEXT_ACTIONS.COPY_LINK,
+        label: 'Copy Link',
+        icon: 'lucide:link',
+      },
+      {
+        id: CONTEXT_ACTIONS.DELETE,
+        label: 'Delete Type',
+        icon: 'lucide:trash-2',
+        variant: 'destructive' as const,
+        separator: true,
+        visible: !!item?.isCustom,
+      },
+    ]
+  }
+
   const getSidebarSurfaceMenu = () => {
     const sections = dynamicSidebarSections.value || []
     const hasCollapsed = sections.some((s: any) => collapsed.isCollapsed(s.key))
@@ -421,7 +501,7 @@
     })
   }
 
-  const handleContextAction = (event: ContextMenuEvent) => {
+  const handleContextAction = async (event: ContextMenuEvent) => {
     const { actionId, context } = event
     switch (actionId) {
       // Navigation
@@ -480,7 +560,14 @@
         if (context?.isCustomSection) {
           handleDeleteCustomSection(context.key)
         } else if (context?.path) {
-          handleDelete(context.path)
+          if (isTypesSection.value && context.typeId) {
+            const label = context.typeLabel || 'this type'
+            const confirmed = window.confirm(`Delete ${label}? This action cannot be undone.`)
+            if (!confirmed) break
+            await handleDeleteType(context.typeId)
+          } else {
+            handleDelete(context.path)
+          }
         }
         break
 
@@ -614,6 +701,16 @@
     sidebarOrder.deleteSection(key)
   }
 
+  const handleDeleteType = async (typeId: string) => {
+    try {
+      await deleteCustomType(typeId)
+      ;(nuxtApp as any).$toast?.success('Type deleted')
+    } catch (e) {
+      const message = e instanceof Error ? e.message : 'Failed to delete type'
+      ;(nuxtApp as any).$toast?.error(message)
+    }
+  }
+
   const handleRenameCustomSection = (key: string) => {
     const section = sidebarOrder.getCustomSections('/workspace').find((s) => s.key === key)
     if (!section) return
@@ -684,7 +781,46 @@
           :context="{ surface: true }"
           @action="handleContextAction">
           <template #trigger>
-        <div class="flex min-h-0 flex-1 flex-col pt-6 overflow-y-auto overflow-x-hidden">
+        <div class="flex min-h-0 flex-1 flex-col overflow-y-auto overflow-x-hidden ">
+          <!-- Sticky sidebar filter -->
+          <div class="sticky top-0 z-10 px-3 pt-4 pb-3" style="background: linear-gradient(to bottom, var(--background) 70%, transparent 100%)">
+            <div class="flex items-center gap-1.5">
+              <div class="relative flex-1">
+                <Icon name="lucide:search" class="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-sidebar-foreground/60 z-10" />
+                <input
+                  ref="sidebarFilterInputRef"
+                  v-model="sidebarFilter"
+                  type="text"
+                  placeholder="Search..."
+                  class="w-full bg-foreground/2 border border-sidebar-border/50 backdrop-blur-md text-sidebar-foreground text-xs rounded-md pl-8 pr-7 py-2 outline-none placeholder:text-sidebar-foreground/30 focus:ring-1 focus:ring-ring/50 transition-colors"
+                  @keydown.escape="sidebarFilter = ''" />
+                <button
+                  v-if="sidebarFilter"
+                  type="button"
+                  class="absolute right-2 top-1/2 -translate-y-1/2 text-sidebar-foreground/40 hover:text-sidebar-foreground transition-colors"
+                  aria-label="Clear filter"
+                  @click="sidebarFilter = ''">
+                  <Icon name="lucide:x" class="h-3.5 w-3.5" />
+                </button>
+              </div>
+              <UiTooltipProvider v-if="isWorkspaceRoute || routes.currentSidebarSection.value?.path === '/database'">
+                <UiTooltip>
+                  <UiTooltipTrigger as-child>
+                    <button
+                      type="button"
+                      class="flex items-center justify-center h-[30px] w-[30px] shrink-0 rounded-md border border-sidebar-border/50 bg-foreground/2 text-sidebar-foreground/50 hover:text-sidebar-foreground hover:bg-foreground/5 transition-colors"
+                      :aria-label="isWorkspaceRoute ? 'Add page' : 'New type'"
+                      @click="isWorkspaceRoute ? handleCreatePageInstant() : handleAddNew()">
+                      <Icon name="lucide:plus" class="h-3.5 w-3.5" />
+                    </button>
+                  </UiTooltipTrigger>
+                  <UiTooltipContent side="bottom" :side-offset="4">
+                    <p>{{ isWorkspaceRoute ? 'Add page' : 'New type' }}</p>
+                  </UiTooltipContent>
+                </UiTooltip>
+              </UiTooltipProvider>
+            </div>
+          </div>
           <AnimatePresence mode="wait">
             <motion.div
               :key="sidebarSectionKey"
@@ -692,11 +828,11 @@
               :animate="{ opacity: 1, x: 0 }"
               :exit="{ opacity: 0, x: -8 }"
               :transition="transitionsDisabled ? { duration: 0 } : { duration: 0.22, ease: 'easeOut' }"
-              class="flex min-h-0 flex-1 flex-col p-3 pl-2 pt-0">
+              class="flex min-h-0 flex-1 flex-col p-3 pl-2 pt-0 pb-24">
               <!-- Dynamic Sidebar Sections (if configured in route) -->
-              <template v-if="dynamicSidebarSections">
-                <div ref="sectionsContainerRef">
-                <div v-for="(section, idx) in dynamicSidebarSections" :key="section.key" :data-section-key="section.key" :data-section-pinned="section.key === 'personal-pinned' ? '' : undefined" :class="idx > 0 ? 'mt-6' : ''">
+              <template v-if="filteredDynamicSidebarSections">
+                <div ref="sectionsContainerRef" class="py-4">
+                <div v-for="(section, idx) in filteredDynamicSidebarSections" :key="section.key" :data-section-key="section.key" :data-section-pinned="section.key === 'personal-pinned' ? '' : undefined" :class="idx > 0 ? 'mt-6' : ''">
                   <AppContextMenu
                     :actions="getSectionContextMenu(section)"
                     :context="{ key: section.key, label: section.label, isCustomSection: !!(section as any).isCustom }"
@@ -792,8 +928,8 @@
                             "
                             :layout="!transitionsDisabled">
                             <AppContextMenu
-                              :actions="getItemContextMenu(item, section.key)"
-                              :context="{ path: item?.path, label: item?.label, sectionKey: section.key }"
+                              :actions="isTypesSection ? typeItemMenu(item) : getItemContextMenu(item, section.key)"
+                              :context="isTypesSection ? { path: item.path, typeId: item.id } : { path: item.path, sectionKey: section.key }"
                               @action="handleContextAction">
                               <template #trigger>
                             <div class="group relative elbow-connector">
@@ -944,7 +1080,7 @@
               </template>
 
               <div
-                v-else-if="!dynamicSidebarSections && pinnedItems.length === 0 && !isTypesSection"
+                v-else-if="!filteredDynamicSidebarSections && filteredPinnedItems.length === 0 && !isTypesSection"
                 class="flex flex-col items-center justify-center py-8 text-center">
                 <Icon name="lucide:inbox" class="w-8 h-8 text-sidebar-foreground/50 mb-3" />
                 <p class="text-sm text-sidebar-foreground/70">No available sections</p>
@@ -952,7 +1088,7 @@
               </div>
 
               <!-- Fallback: Legacy Pinned Section (if no dynamic sections configured) -->
-              <div v-else-if="pinnedItems.length > 0" class="mb-6">
+              <div v-else-if="filteredPinnedItems.length > 0" class="mb-6">
                 <button
                   type="button"
                   class="text-muted-foreground hover:text-sidebar-foreground flex w-full items-center justify-start text-xs tracking-wide uppercase transition-colors"
@@ -996,7 +1132,7 @@
                         :transition="transitionsDisabled ? { duration: 0 } : undefined"
                         :layout="!transitionsDisabled">
                         <motion.li
-                          v-for="(item, i) in pinnedItems"
+                          v-for="(item, i) in filteredPinnedItems"
                           :key="item?.path || ''"
                           :initial="{ opacity: 0, x: -10 }"
                           :animate="{ opacity: 1, x: 0 }"
@@ -1112,7 +1248,7 @@
               </div>
 
               <!-- Regular Section (legacy fallback - only show if no dynamic sections) -->
-              <div v-if="!dynamicSidebarSections && !isTypesSection && unpinnedItems.length > 0">
+              <div v-if="!filteredDynamicSidebarSections && !isTypesSection && filteredUnpinnedItems.length > 0">
                 <button
                   type="button"
                   class="text-muted-foreground hover:text-sidebar-foreground flex w-full items-center justify-start text-xs tracking-wide uppercase transition-colors"
@@ -1154,7 +1290,7 @@
                         :transition="transitionsDisabled ? { duration: 0 } : undefined"
                         :layout="!transitionsDisabled">
                         <motion.li
-                          v-for="(item, i) in unpinnedItems"
+                          v-for="(item, i) in filteredUnpinnedItems"
                           :key="item?.path || ''"
                           :initial="{ opacity: 0, x: -10 }"
                           :animate="{ opacity: 1, x: 0 }"
@@ -1407,7 +1543,7 @@
                           :transition="transitionsDisabled ? { duration: 0 } : undefined"
                           :layout="!transitionsDisabled">
                           <motion.li
-                            v-for="(item, i) in systemUnpinnedItems"
+                            v-for="(item, i) in filteredSystemUnpinnedItems"
                             :key="item?.path || ''"
                             :initial="{ opacity: 0, x: -10 }"
                             :animate="{ opacity: 1, x: 0 }"
@@ -1485,7 +1621,7 @@
                   </AnimatePresence>
                 </div>
 
-                <div v-if="customUnpinnedItems.length > 0" class="mt-6">
+                <div v-if="filteredCustomUnpinnedItems.length > 0" class="mt-6">
                   <button
                     type="button"
                     class="text-muted-foreground hover:text-sidebar-foreground flex w-full items-center justify-start text-xs tracking-wide uppercase transition-colors"
@@ -1527,7 +1663,7 @@
                           :transition="transitionsDisabled ? { duration: 0 } : undefined"
                           :layout="!transitionsDisabled">
                           <motion.li
-                            v-for="(item, i) in customUnpinnedItems"
+                            v-for="(item, i) in filteredCustomUnpinnedItems"
                             :key="item?.path || ''"
                             :initial="{ opacity: 0, x: -10 }"
                             :animate="{ opacity: 1, x: 0 }"
@@ -1538,66 +1674,73 @@
                                 : { duration: 0.28, ease: 'easeOut', delay: i * 0.035 }
                             "
                             :layout="!transitionsDisabled">
-                            <div class="group relative elbow-connector">
-                              <AppNavLink
-                                v-if="item?.path"
-                                :to="item.path"
-                                class="text-sidebar-foreground/70 hover:bg-white/10 hover:text-sidebar-foreground flex items-center gap-3 rounded-lg px-3 py-2 transition ml-7"
-                                :class="[
-                                  { 'bg-white/15 text-foreground': routes.isRouteExactlyActive(item.path) },
-                                  'pr-8',
-                                ]">
-                                <Icon :name="item.icon" class="h-4 w-4 shrink-0 opacity-50" />
-                                <span class="flex-1 truncate min-w-0 overflow-hidden text-ellipsis whitespace-nowrap">
-                                  {{ item.label }}
-                                </span>
-                                <template v-if="routes.getRouteBadge(item)">
-                                  <template v-if="typeof routes.getRouteBadge(item) === 'object'">
-                                    <span
-                                      class="rounded-full px-2 py-0.5 text-[10px] font-semibold shrink-0"
-                                      :class="[
-                                        (routes.getRouteBadge(item) as any).variant === 'success'
-                                          ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/20'
-                                          : (routes.getRouteBadge(item) as any).variant === 'warning'
-                                            ? 'bg-amber-500/20 text-amber-400 border border-amber-500/20'
-                                            : (routes.getRouteBadge(item) as any).variant === 'destructive'
-                                              ? 'bg-rose-500/20 text-rose-400 border border-rose-500/20'
-                                              : (routes.getRouteBadge(item) as any).variant === 'accent'
-                                                ? 'bg-accent text-accent-foreground'
-                                                : 'bg-white/10 text-sidebar-foreground/70',
-                                      ]"
-                                      :style="
-                                        (routes.getRouteBadge(item) as any).color
-                                          ? { color: (routes.getRouteBadge(item) as any).color }
-                                          : {}
-                                      ">
-                                      {{
-                                        sidebarWidth >= BADGE_LABEL_THRESHOLD
-                                          ? (routes.getRouteBadge(item) as any).label
-                                          : (routes.getRouteBadge(item) as any).label.match(/\d+/)?.[0] ||
-                                            (routes.getRouteBadge(item) as any).label
-                                      }}
+                            <AppContextMenu
+                              :actions="typeItemMenu(item)"
+                              :context="{ path: item.path, typeId: item.id, typeLabel: item.label, isCustom: true }"
+                              @action="handleContextAction">
+                              <template #trigger>
+                                <div class="group relative elbow-connector">
+                                  <AppNavLink
+                                    v-if="item?.path"
+                                    :to="item.path"
+                                    class="text-sidebar-foreground/70 hover:bg-white/10 hover:text-sidebar-foreground flex items-center gap-3 rounded-lg px-3 py-2 transition ml-7"
+                                    :class="[
+                                      { 'bg-white/15 text-foreground': routes.isRouteExactlyActive(item.path) },
+                                      'pr-8',
+                                    ]">
+                                    <Icon :name="item.icon" class="h-4 w-4 shrink-0 opacity-50" />
+                                    <span class="flex-1 truncate min-w-0 overflow-hidden text-ellipsis whitespace-nowrap">
+                                      {{ item.label }}
                                     </span>
-                                  </template>
-                                  <template v-else>
-                                    <span
-                                      class="bg-accent text-accent-foreground rounded-full px-2 py-0.5 text-[10px] font-semibold shrink-0">
-                                      {{ routes.getRouteBadge(item) }}
-                                    </span>
-                                  </template>
-                                </template>
-                              </AppNavLink>
-                              <div
-                                class="absolute right-2 top-1/2 flex -translate-y-1/2 items-center gap-1 opacity-0 transition-opacity group-hover:opacity-100">
-                                <button
-                                  type="button"
-                                  class="text-sidebar-foreground/60 hover:text-sidebar-foreground rounded p-0.5 hover:bg-white/10"
-                                  aria-label="Pin"
-                                  @click.stop="pinned.togglePin(item.path)">
-                                  <Icon name="lucide:pin" class="h-3.5 w-3.5" />
-                                </button>
-                              </div>
-                            </div>
+                                    <template v-if="routes.getRouteBadge(item)">
+                                      <template v-if="typeof routes.getRouteBadge(item) === 'object'">
+                                        <span
+                                          class="rounded-full px-2 py-0.5 text-[10px] font-semibold shrink-0"
+                                          :class="[
+                                            (routes.getRouteBadge(item) as any).variant === 'success'
+                                              ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/20'
+                                              : (routes.getRouteBadge(item) as any).variant === 'warning'
+                                                ? 'bg-amber-500/20 text-amber-400 border border-amber-500/20'
+                                                : (routes.getRouteBadge(item) as any).variant === 'destructive'
+                                                  ? 'bg-rose-500/20 text-rose-400 border border-rose-500/20'
+                                                  : (routes.getRouteBadge(item) as any).variant === 'accent'
+                                                    ? 'bg-accent text-accent-foreground'
+                                                    : 'bg-white/10 text-sidebar-foreground/70',
+                                          ]"
+                                          :style="
+                                            (routes.getRouteBadge(item) as any).color
+                                              ? { color: (routes.getRouteBadge(item) as any).color }
+                                              : {}
+                                          ">
+                                          {{
+                                            sidebarWidth >= BADGE_LABEL_THRESHOLD
+                                              ? (routes.getRouteBadge(item) as any).label
+                                              : (routes.getRouteBadge(item) as any).label.match(/\d+/)?.[0] ||
+                                                (routes.getRouteBadge(item) as any).label
+                                          }}
+                                        </span>
+                                      </template>
+                                      <template v-else>
+                                        <span
+                                          class="bg-accent text-accent-foreground rounded-full px-2 py-0.5 text-[10px] font-semibold shrink-0">
+                                          {{ routes.getRouteBadge(item) }}
+                                        </span>
+                                      </template>
+                                    </template>
+                                  </AppNavLink>
+                                  <div
+                                    class="absolute right-2 top-1/2 flex -translate-y-1/2 items-center gap-1 opacity-0 transition-opacity group-hover:opacity-100">
+                                    <button
+                                      type="button"
+                                      class="text-sidebar-foreground/60 hover:text-sidebar-foreground rounded p-0.5 hover:bg-white/10"
+                                      aria-label="Pin"
+                                      @click.stop="pinned.togglePin(item.path)">
+                                      <Icon name="lucide:pin" class="h-3.5 w-3.5" />
+                                    </button>
+                                  </div>
+                                </div>
+                              </template>
+                            </AppContextMenu>
                           </motion.li>
                         </motion.ul>
                       </div>
@@ -1641,18 +1784,6 @@
       </template>
     </ClientOnly>
 
-    <!-- Sidebar content -->
-    <div
-      v-if="!sidebarCollapse.isCollapsed.value && routes.currentSidebarSection.value?.path === '/database'"
-      class="border-border bg-transparent rounded-xl border-none p-4 pt-0">
-      <UiButton
-        class="w-full justify-center bg-white/10 border border-white/20 text-sidebar-foreground hover:bg-white/20 hover:text-sidebar-foreground"
-        variant="default"
-        @click="handleAddNew">
-        <Icon name="lucide:plus" class="mr-2 h-4 w-4" />
-        New type
-      </UiButton>
-    </div>
 
     <UiAlertDialog v-model:open="deleteDialogOpen" >
       <UiAlertDialogContent>
