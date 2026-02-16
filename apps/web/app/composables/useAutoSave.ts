@@ -23,6 +23,8 @@ export function useAutoSave<T extends Record<string, any>>(
     debounce?: number
     /** Called before each save — use for field defaults, formulas, etc. */
     beforeSave?: (_item: T) => void
+    /** Keys to ignore when computing the change snapshot. */
+    ignoreKeys?: string[]
   },
 ) {
   const { update: updateItem } = useEntities()
@@ -31,6 +33,8 @@ export function useAutoSave<T extends Record<string, any>>(
   const lastSavedAt = ref<Date | null>(null)
   const debounceMs = options.debounce ?? 800
   let resetTimer: ReturnType<typeof setTimeout> | null = null
+  const ignoredKeys = new Set(options.ignoreKeys ?? ['updatedAt', 'createdAt', 'references'])
+  const lastSnapshot = ref<string | null>(null)
 
   const formatLastSaved = computed(() => {
     if (!lastSavedAt.value) return ''
@@ -45,6 +49,19 @@ export function useAutoSave<T extends Record<string, any>>(
         status.value = 'idle'
       }, resetAfter)
     }
+  }
+
+  const buildSnapshot = (): string => {
+    const base: Record<string, unknown> = {}
+    for (const [key, value] of Object.entries(item as Record<string, unknown>)) {
+      if (ignoredKeys.has(key)) continue
+      base[key] = value
+    }
+    return JSON.stringify(base)
+  }
+
+  const resetSnapshot = () => {
+    lastSnapshot.value = buildSnapshot()
   }
 
   const save = async () => {
@@ -63,12 +80,26 @@ export function useAutoSave<T extends Record<string, any>>(
     }
   }
 
+  watch(
+    () => [options.enabled.value, item.id],
+    ([enabled, id]) => {
+      if (enabled && id) resetSnapshot()
+      else lastSnapshot.value = null
+    },
+    { immediate: true },
+  )
+
   watchDebounced(
-    () => JSON.stringify(item),
-    () => {
-      if (options.enabled.value && item.id) {
-        save()
+    () => buildSnapshot(),
+    (snapshot) => {
+      if (!options.enabled.value || !item.id) return
+      if (lastSnapshot.value === null) {
+        lastSnapshot.value = snapshot
+        return
       }
+      if (snapshot === lastSnapshot.value) return
+      lastSnapshot.value = snapshot
+      save()
     },
     { debounce: debounceMs, deep: false },
   )

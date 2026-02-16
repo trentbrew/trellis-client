@@ -12,6 +12,7 @@
   import EntityDialog from '~/components/dialogs/EntityDialog.vue'
   import GridEditor from '~/components/grid/GridEditor.vue'
   import GridEntityDetail from '~/components/grid/projections/GridEntityDetail.vue'
+  import GridChartProjection from '~/components/grid/projections/GridChartProjection.vue'
 
   definePageMeta({ layout: 'default' })
 
@@ -126,6 +127,8 @@
     setGap,
     applyPreset,
     previewMove,
+    beginBatchMutation,
+    commitBatchMutation,
     undo: gridUndo,
     redo: gridRedo,
     canUndo: gridCanUndo,
@@ -252,8 +255,121 @@
     catch { return d }
   }
 
+  function formatRelativeTime(ts: number): string {
+    const now = Date.now()
+    const diffMs = now - ts
+    const diffSecs = Math.floor(diffMs / 1000)
+    const diffMins = Math.floor(diffSecs / 60)
+    const diffHours = Math.floor(diffMins / 60)
+    const diffDays = Math.floor(diffHours / 24)
+    if (diffDays > 0) return `${diffDays}d ago`
+    if (diffHours > 0) return `${diffHours}h ago`
+    if (diffMins > 0) return `${diffMins}m ago`
+    return 'just now'
+  }
+
   function entityIcon(type: string): string {
     return getEntityTypeConfig(type as any)?.icon || 'lucide:file'
+  }
+
+  // ── Kanban helpers ────────────────────────────────────────────────────────
+
+  const KANBAN_STATUS_COLUMNS = [
+    { id: 'pending', label: 'Pending', border: 'border-slate-400', bg: 'bg-slate-400/5' },
+    { id: 'in-progress', label: 'In Progress', border: 'border-blue-500', bg: 'bg-blue-500/5' },
+    { id: 'on-track', label: 'On Track', border: 'border-emerald-500', bg: 'bg-emerald-500/5' },
+    { id: 'due-soon', label: 'Due Soon', border: 'border-amber-500', bg: 'bg-amber-500/5' },
+    { id: 'overdue', label: 'Overdue', border: 'border-red-500', bg: 'bg-red-500/5' },
+    { id: 'completed', label: 'Completed', border: 'border-emerald-600', bg: 'bg-emerald-600/5' },
+  ]
+
+  function getKanbanColumns(items: Entity[]) {
+    // Group by taskStatus, priority, or type — whichever yields >1 group
+    const byStatus = groupBy(items, (i) => (i as any).taskStatus || (i as any).status || 'none')
+    if (Object.keys(byStatus).length > 1) {
+      return KANBAN_STATUS_COLUMNS
+        .filter((col) => byStatus[col.id]?.length)
+        .map((col) => ({ ...col, items: byStatus[col.id] || [] }))
+        .concat(
+          Object.entries(byStatus)
+            .filter(([k]) => !KANBAN_STATUS_COLUMNS.some((c) => c.id === k))
+            .map(([k, v]) => ({ id: k, label: k, border: 'border-border', bg: 'bg-muted/5', items: v })),
+        )
+    }
+    // Fallback: group by type
+    const byType = groupBy(items, (i) => i.type || 'unknown')
+    return Object.entries(byType).map(([key, vals]) => ({
+      id: key, label: key, border: 'border-border', bg: 'bg-muted/5', items: vals,
+    }))
+  }
+
+  function groupBy<T>(arr: T[], fn: (_el: T) => string): Record<string, T[]> {
+    const result: Record<string, T[]> = {}
+    for (const el of arr) {
+      const key = fn(el)
+      ;(result[key] ||= []).push(el)
+    }
+    return result
+  }
+
+  // ── Calendar helpers ──────────────────────────────────────────────────────
+
+  function getCalendarMonth() {
+    const now = new Date()
+    return { year: now.getFullYear(), month: now.getMonth() }
+  }
+
+  function getCalendarDays(year: number, month: number) {
+    const firstDay = new Date(year, month, 1)
+    const lastDay = new Date(year, month + 1, 0)
+    const startDow = firstDay.getDay()
+    const days: { date: number; inMonth: boolean; key: string }[] = []
+
+    // Previous month padding
+    const prevLast = new Date(year, month, 0).getDate()
+    for (let i = startDow - 1; i >= 0; i--) {
+      days.push({ date: prevLast - i, inMonth: false, key: `prev-${prevLast - i}` })
+    }
+    // Current month
+    for (let d = 1; d <= lastDay.getDate(); d++) {
+      days.push({ date: d, inMonth: true, key: `cur-${d}` })
+    }
+    // Next month padding
+    const remaining = 7 - (days.length % 7)
+    if (remaining < 7) {
+      for (let d = 1; d <= remaining; d++) {
+        days.push({ date: d, inMonth: false, key: `next-${d}` })
+      }
+    }
+    return days
+  }
+
+  function getItemsForDay(items: Entity[], year: number, month: number, date: number) {
+    const dateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(date).padStart(2, '0')}`
+    return items.filter((i) => i.startDate?.startsWith(dateStr))
+  }
+
+  const calendarMonth = getCalendarMonth()
+  const calendarDays = getCalendarDays(calendarMonth.year, calendarMonth.month)
+  const calendarMonthLabel = new Date(calendarMonth.year, calendarMonth.month).toLocaleDateString('en-US', { month: 'long', year: 'numeric' })
+
+  // ── Timeline helpers ──────────────────────────────────────────────────────
+
+  function getTimelineItems(items: Entity[]) {
+    return items
+      .filter((i) => i.startDate)
+      .sort((a, b) => (a.startDate || '').localeCompare(b.startDate || ''))
+  }
+
+  // ── Projection metadata ───────────────────────────────────────────────────
+
+  const unimplementedProjections: Record<string, { icon: string; label: string }> = {
+    graph: { icon: 'lucide:network', label: 'Graph View' },
+    spreadsheet: { icon: 'lucide:sheet', label: 'Spreadsheet' },
+    dashboard: { icon: 'lucide:layout-dashboard', label: 'Dashboard' },
+    moodboard: { icon: 'lucide:image', label: 'Moodboard' },
+    'slide-deck': { icon: 'lucide:presentation', label: 'Slide Deck' },
+    sankey: { icon: 'lucide:git-branch', label: 'Sankey Diagram' },
   }
 </script>
 
@@ -329,78 +445,90 @@
       </UiDialogContent>
     </UiDialog>
 
-    <!-- Custom inline-editable header (matches Page.vue browse variant spacing) -->
-    <div class="shrink-0 space-y-0 pb-0 p-8 pt-4">
-      <div class="px-3 py-5 relative border-b border-border/60">
-        <div class="relative flex items-start gap-4">
-          <!-- Editable icon -->
-          <button
-            class="shrink-0 mt-1 p-1.5 rounded-lg hover:bg-muted/50 transition-colors group"
-            title="Change icon"
-            @click="iconPickerOpen = true">
-            <Icon :name="pageIcon" class="h-6 w-6 text-muted-foreground/60 group-hover:text-muted-foreground transition-colors" />
-          </button>
+    <!-- Full-width header with icon above title -->
+    <div class="shrink-0 w-full px-8 pt-6 pb-4 border-b border-border/60">
+      <div class="flex flex-col items-start gap-3 max-w-none">
+        <!-- Editable icon (above title) -->
+        <button
+          class="p-2 rounded-xl hover:bg-muted/50 transition-colors group"
+          title="Change icon"
+          @click="iconPickerOpen = true">
+          <Icon :name="pageIcon" class="h-8 w-8 text-muted-foreground/60 group-hover:text-muted-foreground transition-colors" />
+        </button>
 
-          <div class="flex-1 min-w-0">
-            <!-- Inline title -->
-            <input
-              v-if="isEditingTitle"
-              ref="titleInput"
-              v-model="editableTitle"
-              class="text-3xl font-semibold bg-transparent border-none outline-none w-full focus:ring-0 placeholder:text-muted-foreground/40 my-2"
-              placeholder="Untitled"
-              @blur="finishEditingTitle"
-              @keydown.enter="finishEditingTitle"
-              @keydown.escape="finishEditingTitle" />
-            <h1
-              v-else
-              class="text-foreground text-3xl font-semibold my-2 cursor-text hover:bg-muted/30 rounded px-1 -mx-1 transition-colors truncate"
-              @click="startEditingTitle">
-              {{ editableTitle || 'Untitled' }}
-            </h1>
+        <div class="flex-1 min-w-0 w-full">
+          <div class="flex items-start justify-between gap-4">
+            <div class="flex-1 min-w-0">
+              <!-- Inline title -->
+              <input
+                v-if="isEditingTitle"
+                ref="titleInput"
+                v-model="editableTitle"
+                class="text-3xl font-semibold bg-transparent border-none outline-none w-full focus:ring-0 placeholder:text-muted-foreground/40"
+                placeholder="Untitled"
+                @blur="finishEditingTitle"
+                @keydown.enter="finishEditingTitle"
+                @keydown.escape="finishEditingTitle" />
+              <h1
+                v-else
+                class="text-foreground text-3xl font-semibold cursor-text hover:bg-muted/30 rounded px-1 -mx-1 transition-colors truncate"
+                @click="startEditingTitle">
+                {{ editableTitle || 'Untitled' }}
+              </h1>
 
-            <!-- Inline description -->
-            <input
-              v-if="isEditingDescription"
-              ref="descriptionInput"
-              v-model="editableDescription"
-              class="max-w-2xl text-sm text-muted-foreground bg-transparent border-none outline-none w-full focus:ring-0 placeholder:text-muted-foreground/30"
-              placeholder="Add a description..."
-              @blur="finishEditingDescription"
-              @keydown.enter="finishEditingDescription"
-              @keydown.escape="finishEditingDescription" />
-            <p
-              v-else
-              class="max-w-2xl text-sm text-muted-foreground/60 cursor-text hover:bg-muted/30 rounded px-1 -mx-1 transition-colors truncate"
-              @click="startEditingDescription">
-              {{ editableDescription || 'Add a description...' }}
-            </p>
-          </div>
+              <!-- Inline description -->
+              <input
+                v-if="isEditingDescription"
+                ref="descriptionInput"
+                v-model="editableDescription"
+                class="max-w-2xl text-sm text-muted-foreground bg-transparent border-none outline-none w-full focus:ring-0 placeholder:text-muted-foreground/30 mt-1"
+                placeholder="Add a description..."
+                @blur="finishEditingDescription"
+                @keydown.enter="finishEditingDescription"
+                @keydown.escape="finishEditingDescription" />
+              <p
+                v-else
+                class="max-w-2xl text-sm text-muted-foreground/60 cursor-text hover:bg-muted/30 rounded px-1 -mx-1 transition-colors truncate mt-1"
+                @click="startEditingDescription">
+                {{ editableDescription || 'Add a description...' }}
+              </p>
+            </div>
 
-          <!-- View count + controls -->
-          <div class="flex items-center gap-2 shrink-0 mt-3">
-            <span v-if="gridHasViews" class="text-xs text-muted-foreground/50">
-              {{ gridViewCount }} {{ gridViewCount === 1 ? 'view' : 'views' }}
-            </span>
+            <!-- View count + controls -->
+            <div class="flex items-center gap-2 shrink-0">
+              <span v-if="gridHasViews" class="text-xs text-muted-foreground/50">
+                {{ gridViewCount }} {{ gridViewCount === 1 ? 'view' : 'views' }}
+              </span>
 
-            <!-- + New View -->
-            <button
-              v-if="gridHasViews"
-              class="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-md text-xs border border-border text-muted-foreground hover:bg-muted hover:text-foreground transition-colors"
-              @click="handleAddView('', '' as ProjectionType)">
-              <Icon name="lucide:plus" class="h-3.5 w-3.5" />
-              New View
-            </button>
+              <!-- + New View -->
+              <button
+                v-if="gridHasViews"
+                class="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-md text-xs border border-border text-muted-foreground hover:bg-muted hover:text-foreground transition-colors"
+                @click="handleAddView('', '' as ProjectionType)">
+                <Icon name="lucide:plus" class="h-3.5 w-3.5" />
+                New View
+              </button>
+            </div>
           </div>
         </div>
 
-        <!-- Templates button (when views exist) -->
-        <div v-if="gridHasViews" class="mt-3 pt-3 border-t border-border/30">
-          <button
-            class="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-md text-xs border border-border text-muted-foreground hover:bg-muted hover:text-foreground transition-colors">
-            <Icon name="lucide:layout-template" class="h-3.5 w-3.5" />
-            Templates
-          </button>
+        <!-- Last updated + templates row -->
+        <div class="flex items-center justify-between w-full mt-1">
+          <div class="flex items-center gap-3">
+            <!-- Last updated indicator -->
+            <span v-if="pageConfig?.updatedAt" class="text-[11px] text-muted-foreground/50 flex items-center gap-1">
+              <Icon name="lucide:clock" class="h-3 w-3" />
+              Updated {{ formatRelativeTime(pageConfig.updatedAt) }}
+            </span>
+
+            <!-- Templates button (when views exist) -->
+            <button
+              v-if="gridHasViews"
+              class="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-md text-xs text-muted-foreground hover:bg-muted hover:text-foreground transition-colors">
+              <Icon name="lucide:layout-template" class="h-3.5 w-3.5" />
+              Templates
+            </button>
+          </div>
         </div>
       </div>
     </div>
@@ -418,6 +546,8 @@
       :edit-mode="gridEditMode"
       :all-items="allItems"
       :preview-move="previewMove"
+      :begin-batch-mutation="beginBatchMutation"
+      :commit-batch-mutation="commitBatchMutation"
       :can-undo="gridCanUndo"
       :can-redo="gridCanRedo"
       @undo="gridUndo"
@@ -435,7 +565,7 @@
       @open-detail="openDetail">
       <!-- Cell content: render a simple projection per cell -->
       <template #cell-content="{ view: cellView, items: cellItems }">
-        <div class="h-full overflow-auto p-3">
+        <div class="h-full overflow-auto" :class="['calendar', 'kanban'].includes(cellView.projection) ? '' : 'p-3'">
           <!-- Table projection -->
           <template v-if="cellView.projection === 'table'">
             <table v-if="cellItems.length" class="w-full text-xs">
@@ -499,6 +629,118 @@
             </div>
           </template>
 
+          <!-- Chart projection -->
+          <template v-else-if="cellView.projection === 'chart'">
+            <GridChartProjection
+              :view="cellView"
+              :items="cellItems"
+              @update-chart-config="(config) => handleUpdateView(cellView.id, { chartConfig: config })"
+              @open-config="() => {}" />
+          </template>
+
+          <!-- Kanban projection -->
+          <template v-else-if="cellView.projection === 'kanban'">
+            <div v-if="cellItems.length" class="flex gap-2 overflow-x-auto h-full pb-1">
+              <div
+                v-for="col in getKanbanColumns(cellItems)"
+                :key="col.id"
+                class="shrink-0 w-40 rounded-md border-t-2 flex flex-col min-h-0"
+                :class="[col.border, col.bg]">
+                <div class="px-2 py-1.5 flex items-center justify-between">
+                  <span class="text-[10px] font-medium text-muted-foreground uppercase tracking-wide truncate">{{ col.label }}</span>
+                  <span class="text-[9px] text-muted-foreground/50 bg-muted/30 rounded-full px-1.5">{{ col.items.length }}</span>
+                </div>
+                <div class="flex-1 overflow-y-auto px-1.5 pb-1.5 space-y-1">
+                  <div
+                    v-for="item in col.items"
+                    :key="item.id"
+                    class="px-2 py-1.5 rounded bg-card border border-border/30 cursor-pointer hover:border-border/60 transition-colors"
+                    @click="openDetail(item)">
+                    <p class="text-[11px] font-medium truncate">{{ item.title || 'Untitled' }}</p>
+                    <p v-if="item.startDate" class="text-[9px] text-muted-foreground/50 mt-0.5">{{ formatDate(item.startDate) }}</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div v-else class="flex items-center justify-center h-full text-xs text-muted-foreground">
+              No items
+            </div>
+          </template>
+
+          <!-- Calendar projection -->
+          <template v-else-if="cellView.projection === 'calendar'">
+            <div class="flex flex-col h-full overflow-hidden">
+              <!-- Month header -->
+              <div class="text-center py-1.5 border-b border-border/60 shrink-0">
+                <span class="text-[11px] font-medium text-muted-foreground">{{ calendarMonthLabel }}</span>
+              </div>
+              <!-- Day-of-week header -->
+              <div class="grid grid-cols-7 shrink-0 border-b border-border/40">
+                <div
+                  v-for="dow in ['Su','Mo','Tu','We','Th','Fr','Sa']"
+                  :key="dow"
+                  class="text-[8px] font-medium text-muted-foreground/50 py-1 text-center border-r border-border/20 last:border-r-0">
+                  {{ dow }}
+                </div>
+              </div>
+              <!-- Day grid — fills remaining height -->
+              <div
+                class="grid grid-cols-7 flex-1 min-h-0"
+                :style="{ gridTemplateRows: `repeat(${Math.ceil(calendarDays.length / 7)}, 1fr)` }">
+                <div
+                  v-for="day in calendarDays"
+                  :key="day.key"
+                  class="border-r border-b border-border/20 last:border-r-0 flex flex-col min-h-0 overflow-hidden p-0.5"
+                  :class="day.inMonth ? 'bg-transparent' : 'bg-muted/10'">
+                  <!-- Date number -->
+                  <span
+                    class="text-[9px] leading-tight shrink-0 px-0.5"
+                    :class="day.inMonth ? 'text-foreground/60' : 'text-muted-foreground/20'">
+                    {{ day.date }}
+                  </span>
+                  <!-- Items for this day -->
+                  <div v-if="day.inMonth" class="flex-1 overflow-hidden flex flex-col gap-px mt-0.5">
+                    <div
+                      v-for="item in getItemsForDay(cellItems, calendarMonth.year, calendarMonth.month, day.date).slice(0, 3)"
+                      :key="item.id"
+                      class="text-[8px] leading-tight truncate rounded px-0.5 py-px cursor-pointer hover:bg-primary/15 transition-colors"
+                      :class="(item as Record<string, any>).taskStatus === 'completed' ? 'text-muted-foreground/40 line-through' : 'text-foreground/70 bg-primary/8'"
+                      :title="item.title"
+                      @click="openDetail(item)">
+                      {{ item.title }}
+                    </div>
+                    <span
+                      v-if="getItemsForDay(cellItems, calendarMonth.year, calendarMonth.month, day.date).length > 3"
+                      class="text-[7px] text-muted-foreground/50 px-0.5">
+                      +{{ getItemsForDay(cellItems, calendarMonth.year, calendarMonth.month, day.date).length - 3 }} more
+                    </span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </template>
+
+          <!-- Timeline projection -->
+          <template v-else-if="cellView.projection === 'timeline'">
+            <div v-if="getTimelineItems(cellItems).length" class="relative pl-4">
+              <div class="absolute left-[7px] top-2 bottom-2 w-px bg-border/50" />
+              <div
+                v-for="item in getTimelineItems(cellItems)"
+                :key="item.id"
+                class="relative flex items-start gap-2 py-1.5 cursor-pointer hover:bg-accent/10 rounded transition-colors"
+                @click="openDetail(item)">
+                <div class="absolute left-[-13px] top-2.5 w-2 h-2 rounded-full bg-primary/60 border-2 border-card" />
+                <div class="flex-1 min-w-0">
+                  <p class="text-[11px] font-medium truncate">{{ item.title || 'Untitled' }}</p>
+                  <p class="text-[9px] text-muted-foreground/50">{{ item.startDate ? formatDate(item.startDate) : '' }}</p>
+                </div>
+              </div>
+            </div>
+            <div v-else class="flex items-center justify-center h-full text-xs text-muted-foreground">
+              No dated items
+            </div>
+          </template>
+
           <!-- Entity detail projection -->
           <template v-else-if="cellView.projection === 'entity-detail'">
             <GridEntityDetail
@@ -507,7 +749,19 @@
               @open-detail="openDetail" />
           </template>
 
-          <!-- Fallback: compact list for any other projection -->
+          <!-- Unimplemented projection placeholder -->
+          <template v-else-if="unimplementedProjections[cellView.projection]">
+            <div class="flex flex-col items-center justify-center h-full gap-2 text-center p-4">
+              <div class="w-9 h-9 rounded-lg bg-muted/40 flex items-center justify-center">
+                <Icon :name="unimplementedProjections[cellView.projection]?.icon || 'lucide:layout-grid'" class="h-4 w-4 text-muted-foreground/40" />
+              </div>
+              <p class="text-[11px] font-medium text-muted-foreground/60">{{ unimplementedProjections[cellView.projection]?.label || cellView.projection }}</p>
+              <p class="text-[9px] text-muted-foreground/40">Coming soon</p>
+              <p v-if="cellItems.length" class="text-[9px] text-muted-foreground/30">{{ cellItems.length }} items</p>
+            </div>
+          </template>
+
+          <!-- Fallback: compact list for any unknown projection -->
           <template v-else>
             <div v-if="cellItems.length" class="space-y-0.5">
               <div

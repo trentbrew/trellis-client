@@ -5,9 +5,11 @@
   import { GRID_COLS, GRID_GAP_PX } from '~/types/grid'
   import { useGridDraggable } from '~/composables/useGridDraggable'
   import { useGridDraw } from '~/composables/useGridDraw'
+  import { useGapResize } from '~/composables/useGapResize'
   import GridCell from '~/components/grid/GridCell.vue'
   import GridCellPicker from '~/components/grid/GridCellPicker.vue'
   import GridEmptyState from '~/components/grid/GridEmptyState.vue'
+  import { DEFAULT_CHART_CONFIG } from '~/composables/useChartProjection'
 
   const props = defineProps<{
     views: GridView[]
@@ -15,6 +17,8 @@
     editMode: boolean
     allItems: Entity[]
     previewMove: (viewId: string, col: number, row: number) => GridView[]
+    beginBatchMutation: () => void
+    commitBatchMutation: () => void
     canUndo: boolean
     canRedo: boolean
   }>()
@@ -67,6 +71,18 @@
         (item.title || '').toLowerCase().includes(filterText) ||
         (item.type || '').toLowerCase().includes(filterText),
       )
+    }
+
+    // Field-level filters (e.g. { priority: ['high','medium'], taskStatus: ['pending'] })
+    const fieldFilters = view.filters?.fields as Record<string, string[]> | undefined
+    if (fieldFilters) {
+      for (const [field, values] of Object.entries(fieldFilters)) {
+        if (!values?.length) continue
+        items = items.filter((item) => {
+          const val = (item as Record<string, any>)[field]
+          return val && values.includes(String(val))
+        })
+      }
     }
 
     // Sort
@@ -178,24 +194,40 @@
     }
   })
 
-  // ── Undo / Redo keyboard shortcuts ────────────────────────────────────
-  function handleKeydown(e: KeyboardEvent) {
-    const isMod = e.metaKey || e.ctrlKey
-    if (!isMod || e.key.toLowerCase() !== 'z') return
-    // Don't intercept if user is typing in an input/textarea
-    const tag = (e.target as HTMLElement)?.tagName
-    if (tag === 'INPUT' || tag === 'TEXTAREA' || (e.target as HTMLElement)?.isContentEditable) return
+  // ── Gap resize integration ──────────────────────────────────────────
+  const { gapHandles, getHandleStyle, getIndicatorStyle, onGapPointerDown, isDraggingGap: _isDraggingGap, hoverHandleId, activeHandle } = useGapResize({
+    gridEl: gridContainerEl,
+    gap: computed(() => props.gap),
+    editMode: computed(() => props.editMode),
+    views: writableViews as unknown as Ref<GridView[]>,
+    onDragStart: () => props.beginBatchMutation(),
+    onDragEnd: () => props.commitBatchMutation(),
+  })
 
-    e.preventDefault()
-    if (e.shiftKey) {
-      emit('redo')
-    } else {
-      emit('undo')
-    }
-  }
+  // ── Undo / Redo via shortcut registry ─────────────────────────────────
+  const { register: registerShortcut, pushScope, popScope } = useKeyboardShortcuts()
 
-  onMounted(() => document.addEventListener('keydown', handleKeydown))
-  onUnmounted(() => document.removeEventListener('keydown', handleKeydown))
+  onMounted(() => {
+    pushScope('grid')
+  })
+  onUnmounted(() => {
+    popScope('grid')
+    _unregUndo()
+    _unregRedo()
+    _unregEdit()
+  })
+
+  const _unregUndo = registerShortcut('undo', () => {
+    if (!props.canUndo) return 'Nothing to undo'
+    emit('undo')
+    return 'Grid layout'
+  })
+  const _unregRedo = registerShortcut('redo', () => {
+    if (!props.canRedo) return 'Nothing to redo'
+    emit('redo')
+    return 'Grid layout'
+  })
+  const _unregEdit = registerShortcut('toggle-edit-mode', () => { emit('toggle-edit'); return props.editMode ? 'Edit mode off' : 'Edit mode on' })
 </script>
 
 <template>
@@ -222,7 +254,7 @@
       <div
         ref="gridContainerEl"
         :style="{ ...gridStyle, ...(guidelinesStyle || {}) }"
-        class="min-h-0 pb-[50vh]"
+        class="relative min-h-0 pb-[50vh]"
         :class="isDrawing ? 'cursor-crosshair' : editMode ? 'cursor-crosshair' : ''">
         <GridCell
           v-for="view in views"
@@ -232,10 +264,11 @@
           :edit-mode="editMode"
           :is-drag-source="dragViewId === view.id"
           @edit="openPickerForEdit"
-          @configure="(id, ds, proj) => emit('update-view', id, { dataSource: ds, projection: proj })"
+          @configure="(id, ds, proj) => emit('update-view', id, { dataSource: ds, projection: proj, ...(proj === 'chart' ? { chartConfig: { ...DEFAULT_CHART_CONFIG } } : {}) })"
           @change-projection="(id, proj) => emit('update-view', id, { projection: proj })"
           @update-sort="(id, sf, sd) => emit('update-view', id, { sortField: sf, sortDirection: sd })"
           @update-filter="(id, ft) => emit('update-view', id, { filters: { text: ft } })"
+          @update-view="(id, updates) => emit('update-view', id, updates)"
           @cancel="(id) => emit('remove-view', id)"
           @remove="(id) => emit('remove-view', id)"
           @resize="handleResize"
@@ -245,6 +278,27 @@
             <slot name="cell-content" :view="v" :items="items" />
           </template>
         </GridCell>
+
+        <!-- Gap resize handles (edit mode only) -->
+        <template v-if="editMode && !isDragging && !isDrawing">
+          <div
+            v-for="handle in gapHandles"
+            :key="handle.id"
+            :style="getHandleStyle(handle)"
+            class="group/gap"
+            @pointerdown="(e) => onGapPointerDown(handle, e)"
+            @pointerenter="hoverHandleId = handle.id"
+            @pointerleave="hoverHandleId = null">
+            <!-- Visual indicator line -->
+          </div>
+          <!-- Accent line for hovered/active gap -->
+          <div
+            v-for="handle in gapHandles.filter(h => h.id === hoverHandleId || h.id === activeHandle?.id)"
+            :key="`line-${handle.id}`"
+            :style="getIndicatorStyle(handle)"
+            class="rounded-full transition-opacity duration-150"
+            :class="activeHandle?.id === handle.id ? 'bg-primary/60' : 'bg-primary/30'" />
+        </template>
 
         <!-- Draw preview overlay -->
         <div

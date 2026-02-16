@@ -256,10 +256,12 @@
         v-if="props.aboveSidebar"
         variant="ghost"
         size="sm"
-        class="text-muted-foreground hover:text-foreground border border-border/40 hover:bg-muted/40 bg-card gap-2 px-4 min-w-[200px]"
+        class="text-muted-foreground hover:text-foreground border border-border/40 hover:bg-muted/40 bg-card gap-2 px-4 min-w-[300px] flex items-center justify-between"
         @click="commandDialog.open()">
-        <Icon name="lucide:search" class="h-4 w-4" />
-        <span class="text-xs font-semibold">Search...</span>
+        <div class="flex items-center gap-2">
+          <Icon name="lucide:search" class="h-4 w-4" />
+          <span class="text-xs font-semibold">Find anything...</span>
+        </div>
         <UiKbd class="bg-muted/40 border-border/50 text-muted-foreground text-[10px]">⌘K</UiKbd>
       </UiButton>
 

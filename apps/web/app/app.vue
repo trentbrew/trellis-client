@@ -9,6 +9,7 @@
 
   const route = useRoute()
   const commandDialog = useCommandDialog()
+  const { register } = useKeyboardShortcuts()
   provideSheetStack()
 
   const previousPath = ref('')
@@ -18,20 +19,13 @@
     previousPath.value = route.path
     isInitialMount = false
 
-    // Global keyboard shortcuts
-    const handleKeyDown = (e: KeyboardEvent) => {
-      // Command/Ctrl + K for command palette
-      if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
-        e.preventDefault()
-        commandDialog.toggle()
-      }
-      // Escape to close
-      if (e.key === 'Escape' && commandDialog.isOpen.value) {
-        commandDialog.close()
-      }
-    }
-
-    window.addEventListener('keydown', handleKeyDown)
+    // Register global keyboard shortcuts via the central registry
+    const unregisterPalette = register('command-palette', () => commandDialog.toggle())
+    const unregisterNavigate = register('go-settings', () => { navigateTo('/settings'); return 'Settings' })
+    const unregisterSidebar = register('toggle-sidebar', () => {
+      // Sidebar toggle — uses the sidebar provider's keyboard shortcut
+      document.querySelector<HTMLButtonElement>('[data-sidebar="trigger"]')?.click()
+    })
 
     // Watch for route changes to handle browser back/forward navigation
     watch(
@@ -56,7 +50,9 @@
     )
 
     onBeforeUnmount(() => {
-      window.removeEventListener('keydown', handleKeyDown)
+      unregisterPalette()
+      unregisterNavigate()
+      unregisterSidebar()
     })
   })
 </script>

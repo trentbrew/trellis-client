@@ -225,96 +225,92 @@
     <!-- Found -->
     <div v-else class="flex h-full flex-col">
       <!-- Toolbar -->
-      <div class="shrink-0 border-b border-border px-6 py-2.5">
-        <div class="flex items-center justify-between gap-4">
-          <!-- Left: view mode + badges + count + search -->
-          <div class="flex items-center gap-3 min-w-0 flex-1">
-            <!-- View mode switcher -->
-            <div class="flex items-center rounded-lg border border-border bg-card/25 p-0.5 shrink-0">
-              <button
-                v-for="opt in viewModeOptions"
-                :key="opt.mode"
-                type="button"
-                class="flex h-7 items-center gap-1.5 rounded-md px-2.5 text-xs font-medium transition-colors"
-                :class="viewMode === opt.mode
-                  ? 'bg-sidebar-background/10 text-foreground'
-                  : 'text-muted-foreground hover:text-foreground'"
-                @click="browseState.setViewMode(opt.mode)">
-                <Icon :name="opt.icon" class="h-3.5 w-3.5" />
-                <span class="hidden sm:inline">{{ opt.label }}</span>
-              </button>
-            </div>
-
-            <div class="flex items-center gap-1.5 shrink-0">
-              <span
-                v-if="isPlatform"
-                class="inline-flex items-center gap-1 text-[10px] text-muted-foreground/60 bg-muted/30 px-2 py-0.5 rounded-full">
-                <Icon name="lucide:lock" class="h-3 w-3" />
-                Platform
-              </span>
-              <span
-                v-else-if="isDynamic"
-                class="inline-flex items-center gap-1 text-[10px] bg-blue-500/10 text-blue-400 px-2 py-0.5 rounded-full">
-                <Icon name="lucide:blocks" class="h-3 w-3" />
-                Custom
-              </span>
-              <span
-                v-else-if="resolvedConfig"
-                class="inline-flex items-center gap-1 text-[10px] text-muted-foreground bg-muted/50 px-2 py-0.5 rounded-full">
-                <Icon name="lucide:box" class="h-3 w-3" />
-                Entity
-              </span>
-              <span
-                v-if="entityClassConfig"
-                class="inline-flex items-center gap-1 text-[10px] text-muted-foreground bg-muted/30 px-2 py-0.5 rounded-full">
-                <Icon :name="entityClassConfig.icon" class="h-3 w-3" />
-                {{ entityClassConfig.label }}
-              </span>
-              <span class="text-[11px] text-muted-foreground">
-                {{ typeItems.length }} {{ typeItems.length === 1 ? 'record' : 'records' }}
-              </span>
-            </div>
-
-            <!-- Inline search -->
-            <div class="relative max-w-xs flex-1">
-              <Icon name="lucide:search" class="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
-              <input
-                v-model="browseState.searchQuery.value"
-                type="text"
-                placeholder="Search..."
-                class="w-full rounded-md border border-border bg-transparent py-1.5 pl-8 pr-3 text-xs outline-none focus:ring-1 focus:ring-ring" />
-            </div>
+      <DatabaseToolbar>
+        <template #left>
+          <!-- View mode switcher -->
+          <div class="flex items-center rounded-lg border border-border bg-card/25 p-0.5 shrink-0">
+            <button
+              v-for="opt in viewModeOptions"
+              :key="opt.mode"
+              type="button"
+              class="flex h-7 items-center gap-1.5 rounded-md px-2.5 text-xs font-medium transition-colors"
+              :class="viewMode === opt.mode
+                ? 'bg-sidebar-background/10 text-foreground'
+                : 'text-muted-foreground hover:text-foreground'"
+              @click="browseState.setViewMode(opt.mode)">
+              <Icon :name="opt.icon" class="h-3.5 w-3.5" />
+              <span class="hidden sm:inline">{{ opt.label }}</span>
+            </button>
           </div>
 
-          <!-- Right: actions -->
           <div class="flex items-center gap-1.5 shrink-0">
-            <!-- Import -->
-            <UiButton variant="ghost" size="icon-sm" class="h-7 w-7" title="Import">
-              <Icon name="lucide:upload" class="h-3.5 w-3.5" />
-            </UiButton>
-            <!-- Export -->
-            <UiButton variant="ghost" size="icon-sm" class="h-7 w-7" title="Export">
-              <Icon name="lucide:download" class="h-3.5 w-3.5" />
-            </UiButton>
-            <!-- Detail panel toggle -->
-            <UiButton
-              v-if="hasServerSchema && ontologyType"
-              variant="ghost"
-              size="icon-sm"
-              class="h-7 w-7"
-              :class="detailPanelOpen ? 'bg-muted' : ''"
-              title="Toggle schema panel"
-              @click="detailPanelOpen = !detailPanelOpen">
-              <Icon name="lucide:panel-right" class="h-3.5 w-3.5" />
-            </UiButton>
-            <!-- New entity -->
-            <UiButton v-if="resolvedConfig" size="sm" @click="handleCreateNew">
-              <Icon name="lucide:plus" class="mr-1.5 h-3.5 w-3.5" />
-              New {{ typeLabel }}
-            </UiButton>
+            <span
+              v-if="isPlatform"
+              class="inline-flex items-center gap-1 text-[10px] text-muted-foreground/60 bg-muted/30 px-2 py-0.5 rounded-full">
+              <Icon name="lucide:lock" class="h-3 w-3" />
+              Platform
+            </span>
+            <span
+              v-else-if="isDynamic"
+              class="inline-flex items-center gap-1 text-[10px] bg-blue-500/10 text-blue-400 px-2 py-0.5 rounded-full">
+              <Icon name="lucide:blocks" class="h-3 w-3" />
+              Custom
+            </span>
+            <span
+              v-else-if="resolvedConfig"
+              class="inline-flex items-center gap-1 text-[10px] text-muted-foreground bg-muted/50 px-2 py-0.5 rounded-full">
+              <Icon name="lucide:box" class="h-3 w-3" />
+              Entity
+            </span>
+            <span
+              v-if="entityClassConfig"
+              class="inline-flex items-center gap-1 text-[10px] text-muted-foreground bg-muted/30 px-2 py-0.5 rounded-full">
+              <Icon :name="entityClassConfig.icon" class="h-3 w-3" />
+              {{ entityClassConfig.label }}
+            </span>
+            <span class="text-[11px] text-muted-foreground">
+              {{ typeItems.length }} {{ typeItems.length === 1 ? 'record' : 'records' }}
+            </span>
           </div>
-        </div>
-      </div>
+
+          <!-- Inline search -->
+          <div class="relative max-w-xs flex-1">
+            <Icon name="lucide:search" class="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
+            <input
+              v-model="browseState.searchQuery.value"
+              type="text"
+              placeholder="Search..."
+              class="w-full rounded-md border border-border bg-transparent py-1.5 pl-8 pr-3 text-xs outline-none focus:ring-1 focus:ring-ring" />
+          </div>
+        </template>
+
+        <template #right>
+          <!-- Import -->
+          <UiButton variant="ghost" size="icon-sm" class="h-7 w-7" title="Import">
+            <Icon name="lucide:upload" class="h-3.5 w-3.5" />
+          </UiButton>
+          <!-- Export -->
+          <UiButton variant="ghost" size="icon-sm" class="h-7 w-7" title="Export">
+            <Icon name="lucide:download" class="h-3.5 w-3.5" />
+          </UiButton>
+          <!-- Detail panel toggle -->
+          <UiButton
+            v-if="hasServerSchema && ontologyType"
+            variant="ghost"
+            size="icon-sm"
+            class="h-7 w-7"
+            :class="detailPanelOpen ? 'bg-muted' : ''"
+            title="Toggle schema panel"
+            @click="detailPanelOpen = !detailPanelOpen">
+            <Icon name="lucide:panel-right" class="h-3.5 w-3.5" />
+          </UiButton>
+          <!-- New entity -->
+          <UiButton v-if="resolvedConfig" size="sm" @click="handleCreateNew">
+            <Icon name="lucide:plus" class="mr-1.5 h-3.5 w-3.5" />
+            New {{ typeLabel }}
+          </UiButton>
+        </template>
+      </DatabaseToolbar>
 
       <!-- Content + optional detail panel -->
       <div class="flex-1 flex min-h-0">

@@ -1,10 +1,11 @@
 <script setup lang="ts">
-  import type { GridView } from '~/types/grid'
+  import type { GridView, ChartConfig } from '~/types/grid'
   import type { ProjectionType } from '~/types/database'
   import type { Entity, EntityType } from '~/types/entity'
   import { GRID_COLS } from '~/types/grid'
-  import { getProjectionsForType } from '~/config/entityRegistry'
+  import { getProjectionsForType, getEntityTypeConfig, buildEntityTypeOptions } from '~/config/entityRegistry'
   import GridCellInlinePicker from '~/components/grid/GridCellInlinePicker.vue'
+  import GridChartConfig from '~/components/grid/projections/GridChartConfig.vue'
 
   const props = defineProps<{
     view: GridView
@@ -21,6 +22,7 @@
     'change-projection': [id: string, projection: ProjectionType]
     'update-sort': [id: string, sortField: string, sortDirection: 'asc' | 'desc']
     'update-filter': [id: string, filterText: string]
+    'update-view': [id: string, updates: Partial<GridView>]
     configure: [id: string, dataSource: string, projection: ProjectionType]
     cancel: [id: string]
     'open-detail': [item: Entity]
@@ -42,6 +44,50 @@
   })
 
   const isEmpty = computed(() => !props.view.dataSource)
+
+  // ── Data source icon & label ──────────────────────────────────────────
+  const dataSourceIcon = computed(() => {
+    const ds = props.view.dataSource
+    if (!ds || ds === 'all') return 'lucide:layers'
+    try {
+      return getEntityTypeConfig(ds as EntityType)?.icon || 'lucide:layers'
+    } catch { return 'lucide:layers' }
+  })
+
+  const dataSourceLabel = computed(() => {
+    const ds = props.view.dataSource
+    if (!ds) return 'Select source'
+    if (ds === 'all') return 'All entities'
+    return ds
+  })
+
+  // ── Inline rename ─────────────────────────────────────────────────────
+  const isRenaming = ref(false)
+  const renameInputEl = ref<HTMLInputElement | null>(null)
+  const localTitle = ref(props.view.title || '')
+
+  watch(() => props.view.title, (t) => { localTitle.value = t || '' })
+
+  function startRename() {
+    localTitle.value = props.view.title || props.view.dataSource || ''
+    isRenaming.value = true
+    nextTick(() => {
+      renameInputEl.value?.focus()
+      renameInputEl.value?.select()
+    })
+  }
+
+  function commitRename() {
+    isRenaming.value = false
+    const newTitle = localTitle.value.trim()
+    if (newTitle !== (props.view.title || '')) {
+      emit('update-view', props.view.id, { title: newTitle || undefined })
+    }
+  }
+
+  // ── Change data source popover ────────────────────────────────────────
+  const sourcePopoverOpen = ref(false)
+  const sourceOptions = computed(() => buildEntityTypeOptions())
 
   // ── Resize state ────────────────────────────────────────────────────
   type ResizeDir = 'n' | 's' | 'e' | 'w' | 'ne' | 'nw' | 'se' | 'sw'
@@ -190,13 +236,87 @@
 
   // ── Sort / Filter state ─────────────────────────────────────────────
   const sortFilterOpen = ref(false)
+  const searchExpanded = ref(false)
+  const searchInputEl = ref<HTMLInputElement | null>(null)
   const localSortField = ref(props.view.sortField || 'title')
   const localSortDir = ref<'asc' | 'desc'>(props.view.sortDirection || 'asc')
   const localFilterText = ref((props.view.filters?.text as string) || '')
 
   const hasActiveSort = computed(() => localSortField.value !== 'title' || localSortDir.value !== 'asc')
   const hasActiveFilter = computed(() => !!localFilterText.value)
-  const _hasSortOrFilter = computed(() => hasActiveSort.value || hasActiveFilter.value)
+
+  // ── Field-level filters ───────────────────────────────────────────
+  const filterPopoverOpen = ref(false)
+
+  const filterFields = [
+    { key: 'priority', label: 'Priority', options: ['critical', 'high', 'medium', 'low'] },
+    { key: 'taskStatus', label: 'Status', options: ['pending', 'in-progress', 'on-track', 'due-soon', 'overdue', 'completed'] },
+  ] as const
+
+  // Derive available types from items
+  const availableTypes = computed(() => {
+    const types = new Set(props.items.map((i) => i.type).filter(Boolean))
+    return [...types].sort()
+  })
+
+  // Local filter state keyed by field
+  const localFieldFilters = ref<Record<string, string[]>>({
+    ...(props.view.filters?.fields as Record<string, string[]> || {}),
+  })
+
+  const activeFilterCount = computed(() => {
+    return Object.values(localFieldFilters.value).filter((v) => v.length > 0).length
+  })
+
+  function toggleFieldFilter(field: string, value: string) {
+    const current = localFieldFilters.value[field] || []
+    const idx = current.indexOf(value)
+    if (idx >= 0) {
+      localFieldFilters.value[field] = current.filter((_v) => _v !== value)
+    } else {
+      localFieldFilters.value[field] = [...current, value]
+    }
+    emitFilters()
+  }
+
+  function clearFieldFilter(field: string) {
+    localFieldFilters.value[field] = []
+    emitFilters()
+  }
+
+  function clearAllFilters() {
+    localFieldFilters.value = {}
+    emitFilters()
+  }
+
+  function isFieldFilterActive(field: string, value: string) {
+    return (localFieldFilters.value[field] || []).includes(value)
+  }
+
+  function emitFilters() {
+    emit('update-view', props.view.id, {
+      filters: {
+        text: localFilterText.value,
+        fields: { ...localFieldFilters.value },
+      },
+    })
+  }
+
+  function toggleSearch() {
+    searchExpanded.value = !searchExpanded.value
+    if (searchExpanded.value) {
+      nextTick(() => searchInputEl.value?.focus())
+    } else if (!localFilterText.value) {
+      localFilterText.value = ''
+      applyFilter()
+    }
+  }
+
+  function handleSearchBlur() {
+    if (!localFilterText.value) {
+      searchExpanded.value = false
+    }
+  }
 
   const sortFieldOptions = [
     { value: 'title', label: 'Title' },
@@ -218,6 +338,14 @@
 
   function applyFilter() {
     emit('update-filter', props.view.id, localFilterText.value)
+  }
+
+  // ── Chart config popover ───────────────────────────────────────────
+  const chartConfigOpen = ref(false)
+  const isChartProjection = computed(() => props.view.projection === 'chart')
+
+  function handleChartConfigUpdate(config: ChartConfig) {
+    emit('update-view', props.view.id, { chartConfig: config })
   }
 
   /** Projections available for this cell's data source */
@@ -268,24 +396,69 @@
       <!-- Title bar -->
       <div
         data-drag-handle
-        class="flex items-center gap-2 px-3 py-2 border-b border-border/30 bg-card/50 shrink-0"
+        class="flex items-center gap-1.5 px-3 py-2 border-b border-border bg-foreground/3 shrink-0"
         :class="editMode ? 'cursor-grab active:cursor-grabbing' : ''">
-        <span class="text-xs font-medium text-muted-foreground truncate flex-1">
+
+        <!-- Entity type icon -->
+        <Icon :name="dataSourceIcon" class="h-3 w-3 text-muted-foreground/50 shrink-0" />
+
+        <!-- Inline-editable title -->
+        <input
+          v-if="isRenaming"
+          ref="renameInputEl"
+          v-model="localTitle"
+          class="text-xs font-medium text-foreground bg-transparent outline-none border-b border-primary/40 truncate flex-1 min-w-0"
+          @blur="commitRename"
+          @keydown.enter.prevent="commitRename"
+          @keydown.escape.prevent="isRenaming = false"
+          @click.stop />
+        <span
+          v-else
+          class="text-xs font-medium text-muted-foreground truncate flex-1 min-w-0"
+          :title="view.title || view.dataSource"
+          @dblclick.stop="startRename">
           {{ view.title || view.dataSource }}
         </span>
 
-        <!-- Inline search -->
-        <div class="flex items-center gap-0.5 flex-1 min-w-0">
-          <div class="relative flex items-center flex-1 min-w-0 max-w-[140px]">
-            <Icon name="lucide:search" class="absolute left-1.5 h-2.5 w-2.5 text-muted-foreground/40 pointer-events-none" />
-            <input
-              v-model="localFilterText"
-              class="w-full pl-5 pr-1.5 py-0.5 rounded bg-transparent text-[11px] outline-none border border-transparent focus:border-border/40 placeholder:text-muted-foreground/30 transition-colors"
-              placeholder="Filter..."
-              @click.stop
-              @input="applyFilter" />
-          </div>
-        </div>
+        <!-- Data source badge (clickable to change) -->
+        <UiPopover v-model:open="sourcePopoverOpen">
+          <UiPopoverTrigger as-child>
+            <button
+              class="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] text-muted-foreground/60 bg-muted/30 hover:bg-muted/60 hover:text-muted-foreground transition-colors shrink-0"
+              title="Change data source"
+              @click.stop>
+              {{ dataSourceLabel }}
+              <Icon name="lucide:chevron-down" class="h-2.5 w-2.5" />
+            </button>
+          </UiPopoverTrigger>
+          <UiPopoverContent class="w-48 p-0" align="start" :side-offset="6" @click.stop>
+            <UiCommand class="rounded-lg">
+              <UiCommandInput placeholder="Search..." class="h-8 text-xs" />
+              <UiCommandList class="max-h-[200px] overflow-y-auto">
+                <UiCommandEmpty class="py-3 text-center text-[11px] text-muted-foreground">No results</UiCommandEmpty>
+                <UiCommandGroup>
+                  <UiCommandItem
+                    value="all"
+                    class="text-xs gap-2"
+                    @select="() => { emit('update-view', view.id, { dataSource: 'all' }); sourcePopoverOpen = false }">
+                    <Icon name="lucide:layers" class="h-3.5 w-3.5 text-muted-foreground" />
+                    All entities
+                  </UiCommandItem>
+                  <UiCommandSeparator class="my-0.5" />
+                  <UiCommandItem
+                    v-for="opt in sourceOptions"
+                    :key="opt.value"
+                    :value="opt.value"
+                    class="text-xs gap-2"
+                    @select="() => { emit('update-view', view.id, { dataSource: opt.value }); sourcePopoverOpen = false }">
+                    <Icon :name="opt.icon" class="h-3.5 w-3.5 text-muted-foreground" />
+                    {{ opt.label }}
+                  </UiCommandItem>
+                </UiCommandGroup>
+              </UiCommandList>
+            </UiCommand>
+          </UiPopoverContent>
+        </UiPopover>
 
         <!-- Projection switcher icons -->
         <div class="flex items-center gap-0.5 shrink-0">
@@ -302,6 +475,92 @@
           </button>
         </div>
 
+        <!-- Divider -->
+        <div class="w-px h-3.5 bg-border shrink-0" />
+
+        <!-- Filter popover -->
+        <UiPopover v-model:open="filterPopoverOpen">
+          <UiPopoverTrigger as-child>
+            <button
+              class="p-1 rounded transition-colors shrink-0 relative"
+              :class="activeFilterCount > 0
+                ? 'text-primary bg-primary/10'
+                : 'text-muted-foreground/40 hover:text-muted-foreground hover:bg-muted/50'"
+              title="Filter"
+              @click.stop>
+              <Icon name="lucide:filter" class="h-3 w-3" />
+              <span
+                v-if="activeFilterCount > 0"
+                class="absolute -top-0.5 -right-0.5 w-3 h-3 rounded-full bg-primary text-[7px] text-primary-foreground flex items-center justify-center font-bold">
+                {{ activeFilterCount }}
+              </span>
+            </button>
+          </UiPopoverTrigger>
+          <UiPopoverContent class="w-52 p-0" align="end" :side-offset="6" @click.stop>
+            <div class="p-2 space-y-2">
+              <div class="flex items-center justify-between">
+                <p class="text-[10px] font-medium text-muted-foreground/60 uppercase tracking-wide">Filters</p>
+                <button
+                  v-if="activeFilterCount > 0"
+                  class="text-[10px] text-primary hover:underline"
+                  @click="clearAllFilters">
+                  Clear all
+                </button>
+              </div>
+
+              <!-- Type filter (dynamic from items) -->
+              <div v-if="availableTypes.length > 1" class="space-y-1">
+                <div class="flex items-center justify-between">
+                  <p class="text-[10px] font-medium text-muted-foreground/80">Type</p>
+                  <button
+                    v-if="(localFieldFilters.type || []).length"
+                    class="text-[9px] text-muted-foreground hover:text-foreground"
+                    @click="clearFieldFilter('type')">
+                    clear
+                  </button>
+                </div>
+                <div class="flex flex-wrap gap-1">
+                  <button
+                    v-for="t in availableTypes"
+                    :key="t"
+                    class="px-1.5 py-0.5 rounded text-[10px] transition-colors"
+                    :class="isFieldFilterActive('type', t)
+                      ? 'bg-primary/15 text-primary'
+                      : 'text-muted-foreground hover:bg-muted/50'"
+                    @click="toggleFieldFilter('type', t)">
+                    {{ t }}
+                  </button>
+                </div>
+              </div>
+
+              <!-- Static field filters (priority, status) -->
+              <div v-for="field in filterFields" :key="field.key" class="space-y-1">
+                <div class="flex items-center justify-between">
+                  <p class="text-[10px] font-medium text-muted-foreground/80">{{ field.label }}</p>
+                  <button
+                    v-if="(localFieldFilters[field.key] || []).length"
+                    class="text-[9px] text-muted-foreground hover:text-foreground"
+                    @click="clearFieldFilter(field.key)">
+                    clear
+                  </button>
+                </div>
+                <div class="flex flex-wrap gap-1">
+                  <button
+                    v-for="opt in field.options"
+                    :key="opt"
+                    class="px-1.5 py-0.5 rounded text-[10px] transition-colors"
+                    :class="isFieldFilterActive(field.key, opt)
+                      ? 'bg-primary/15 text-primary'
+                      : 'text-muted-foreground hover:bg-muted/50'"
+                    @click="toggleFieldFilter(field.key, opt)">
+                    {{ opt }}
+                  </button>
+                </div>
+              </div>
+            </div>
+          </UiPopoverContent>
+        </UiPopover>
+
         <!-- Sort popover -->
         <UiPopover v-model:open="sortFilterOpen">
           <UiPopoverTrigger as-child>
@@ -310,7 +569,7 @@
               :class="hasActiveSort
                 ? 'text-primary bg-primary/10'
                 : 'text-muted-foreground/40 hover:text-muted-foreground hover:bg-muted/50'"
-              title="Sort & Filter"
+              title="Sort"
               @click.stop>
               <Icon name="lucide:arrow-up-down" class="h-3 w-3" />
             </button>
@@ -339,6 +598,58 @@
                 class="h-3 w-3" />
               {{ localSortDir === 'asc' ? 'Ascending' : 'Descending' }}
             </button>
+          </UiPopoverContent>
+        </UiPopover>
+
+        <!-- Collapsible search -->
+        <div class="flex items-center gap-0.5 shrink-0">
+          <div
+            v-if="searchExpanded"
+            class="relative flex items-center">
+            <Icon name="lucide:search" class="absolute left-1.5 h-2.5 w-2.5 text-muted-foreground/40 pointer-events-none" />
+            <input
+              ref="searchInputEl"
+              v-model="localFilterText"
+              class="w-[120px] pl-5 pr-1.5 py-0.5 rounded bg-muted/30 text-[11px] outline-none border border-border/40 focus:border-primary/40 placeholder:text-muted-foreground/30 transition-all"
+              placeholder="Filter..."
+              @click.stop
+              @input="applyFilter"
+              @blur="handleSearchBlur"
+              @keydown.escape.prevent="toggleSearch" />
+          </div>
+          <button
+            v-else
+            class="p-1 rounded transition-colors"
+            :class="hasActiveFilter
+              ? 'text-primary bg-primary/10'
+              : 'text-muted-foreground/40 hover:text-muted-foreground hover:bg-muted/50'"
+            title="Search"
+            @click.stop="toggleSearch">
+            <Icon name="lucide:search" class="h-3 w-3" />
+          </button>
+        </div>
+
+        <!-- Divider -->
+        <div class="w-px h-3.5 bg-border shrink-0" />
+
+        <!-- Chart config popover (chart projection only) -->
+        <UiPopover v-if="isChartProjection" v-model:open="chartConfigOpen">
+          <UiPopoverTrigger as-child>
+            <button
+              class="p-1 rounded transition-colors shrink-0"
+              :class="view.chartConfig
+                ? 'text-primary bg-primary/10'
+                : 'text-muted-foreground/40 hover:text-muted-foreground hover:bg-muted/50'"
+              title="Chart Settings"
+              @click.stop>
+              <Icon name="lucide:settings-2" class="h-3 w-3" />
+            </button>
+          </UiPopoverTrigger>
+          <UiPopoverContent class="w-56 p-0" align="end" :side-offset="6" @click.stop>
+            <GridChartConfig
+              :config="view.chartConfig"
+              :items="items"
+              @update:config="handleChartConfigUpdate" />
           </UiPopoverContent>
         </UiPopover>
 

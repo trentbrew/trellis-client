@@ -127,7 +127,10 @@ export default defineNuxtConfig({
       },
     ] as any,
     optimizeDeps: {
-      include: ['mermaid'],
+      include: ['mermaid', 'vue-sonner'],
+    },
+    resolve: {
+      dedupe: ['vue-sonner'],
     },
   },
 
