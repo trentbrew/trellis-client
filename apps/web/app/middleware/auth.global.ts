@@ -39,11 +39,15 @@ const createMockTestUser = () => {
   } as any
 }
 
-const ENABLE_AUTH_MIDDLEWARE = false
+const ENABLE_AUTH_MIDDLEWARE = true
 
 export default defineNuxtRouteMiddleware(async (to) => {
   if (!ENABLE_AUTH_MIDDLEWARE) return
   if (!import.meta.client) return
+
+  // Local mode (self-hosted) — no login required, skip auth entirely
+  const dataMode = useRuntimeConfig().public.dataMode || 'local'
+  if (dataMode === 'local') return
 
   const log = (...args: any[]) => {
     if (!import.meta.dev) return
@@ -78,8 +82,20 @@ export default defineNuxtRouteMiddleware(async (to) => {
     return
   }
 
+  // Try getAuth() first, then fall back to cached user from login page.
+  // After signInWithIdToken, the WebSocket reconnects asynchronously —
+  // getAuth() may return null before the reconnection completes, but
+  // the login page stores the confirmed user in cachedUser via waitForAuth().
+  const getAuthResult = await instant.getAuth()
+  let user = getAuthResult || cachedUser.value
+
+  log('auth resolve', {
+    getAuthResult: getAuthResult ? `user:${getAuthResult.id}` : null,
+    cachedUser: cachedUser.value ? `user:${cachedUser.value.id}` : null,
+    resolved: user ? `user:${user.id}` : null,
+  })
+
   // Test bypass mode - create mock user for automated testing
-  let user = await instant.getAuth()
   const testBypassEnabled = isTestBypassEnabled()
 
   if (testBypassEnabled && !user) {
@@ -193,157 +209,150 @@ export default defineNuxtRouteMiddleware(async (to) => {
     ])
   }
 
-  let personalOrgId = await getSetting('user', user.id, 'personalOrgId')
-  if (typeof personalOrgId !== 'string' || !personalOrgId) {
-    const now = Date.now()
-    const createdId = crypto.randomUUID()
-
-    await instant.transact([
-      tx.organizations[createdId].create({
-        ownerId: user.id,
-        name: 'Personal',
-        slug: 'personal',
-        plan: 'free',
-        createdAt: now,
-        updatedAt: now,
-      }),
-    ])
-
-    await upsertSetting('user', user.id, 'personalOrgId', createdId)
-    personalOrgId = createdId
-  }
-
-  if (forceDemoSeed && import.meta.dev) {
-    await upsertSetting('user', user.id, 'demoSeedVersion', 0)
-  }
-
-  await ensureDemoSeedV1({
-    instant,
-    tx,
-    userId: user.id,
-    orgId: personalOrgId,
-    getSetting,
-    upsertSetting,
-  })
-
-  const demoAppResp = await instant.queryOnce({
-    applications: {
-      $: {
-        where: {
-          ownerId: user.id,
-          orgId: personalOrgId,
-          slug: 'personal',
-        },
-      },
-    },
-  })
-  const demoPersonalAppId = (demoAppResp.data as any)?.applications?.[0]?.id
-
-  const onboardingComplete = await getSetting('user', user.id, 'onboardingComplete')
-  if (onboardingComplete !== true) {
-    await upsertSetting('user', user.id, 'onboardingComplete', true)
-
-    const lastOrgId = await getSetting('user', user.id, 'lastOrgId')
-    if (typeof lastOrgId !== 'string' || !lastOrgId) {
-      await upsertSetting('user', user.id, 'lastOrgId', personalOrgId)
-    }
-
-    const lastAppId = await getSetting('user', user.id, 'lastAppId')
-    if ((typeof lastAppId !== 'string' || !lastAppId) && typeof demoPersonalAppId === 'string' && demoPersonalAppId) {
-      await upsertSetting('user', user.id, 'lastAppId', demoPersonalAppId)
-    }
-  }
-
-  const rawDataVersion = await getSetting('user', user.id, 'dataVersion')
-  const dataVersion = typeof rawDataVersion === 'number' ? rawDataVersion : 0
-
-  let nextDataVersion = dataVersion
-
-  if (nextDataVersion < 1) {
-    await migrateUserToV1(instant, user.id)
-    nextDataVersion = 1
-  }
-
-  if (nextDataVersion < 2) {
-    await migrateUserToV2(instant, user.id)
-    nextDataVersion = 2
-  }
-
-  if (nextDataVersion !== dataVersion && nextDataVersion === CURRENT_DATA_VERSION) {
-    await upsertSetting('user', user.id, 'dataVersion', CURRENT_DATA_VERSION)
-  }
-
+  // ── Step 1: Check onboarding status ────────────────────────────────
+  // New users must complete onboarding (create org + first world) before
+  // we run any heavy setup like demo seeding or data migrations.
   const isOnboardingComplete = (await getSetting('user', user.id, 'onboardingComplete')) === true
 
-  if (!isOnboardingComplete && !isOnboardingRoute) {
+  if (!isOnboardingComplete) {
+    if (isOnboardingRoute) {
+      log('allow onboarding route (onboarding incomplete)')
+      return
+    }
+    if (isAuthRoute) {
+      log('allow auth route (onboarding incomplete)')
+      return
+    }
     log('redirect -> /onboarding (onboarding incomplete)')
     return navigateTo('/onboarding')
   }
 
-  // Set current org and app if available, but don't block navigation
-  const ensureValidOrgAndApp = async () => {
-    const lastOrgId = await getSetting('user', user.id, 'lastOrgId')
-    const lastAppId = await getSetting('user', user.id, 'lastAppId')
+  // ── Step 2: Onboarding complete — ensure org/app and run post-setup ─
+  // At this point the onboarding page has already created the user's org,
+  // first world (app), and set onboardingComplete + lastOrgId + lastAppId.
 
-    const resp = await instant.queryOnce({
-      organizations: {
-        $: { where: { ownerId: user.id } },
-      },
-      applications: {
-        $: { where: { ownerId: user.id } },
-      },
-    })
+  // Reactive status message — the /welcome page reads this to show real-time progress
+  const setupStatus = useState<string>('setup:status', () => '')
 
-    const orgs = ((resp.data as any)?.organizations || []) as any[]
-    const allApps = ((resp.data as any)?.applications || []) as any[]
-
-    const picked = pickOrgAndApp({
-      orgs,
-      apps: allApps,
-      lastOrgId,
-      lastAppId,
-    })
-
-    currentOrg.value = picked.org
-    currentApp.value = picked.app
-  }
-
-  await ensureValidOrgAndApp()
-
-  log('post-ensureValidOrgAndApp', {
-    currentOrgId: currentOrg.value?.id ?? null,
-    currentAppId: currentApp.value?.id ?? null,
-    to: to.fullPath,
-  })
-
-  // If on an auth route and onboarding is complete, navigate to welcome
-  if (isAuthRoute && isOnboardingComplete) {
-    log('redirect -> /welcome (auth route, onboarding complete)')
+  // If coming from auth or onboarding, redirect to /welcome immediately so the
+  // loading screen renders while we run heavy setup in the background.
+  if (isAuthRoute || isOnboardingRoute) {
+    log('redirect -> /welcome (setup complete, will run post-setup on next tick)')
     return navigateTo('/welcome')
   }
 
-  // If on an onboarding route and onboarding is complete, navigate to welcome
-  if (isOnboardingRoute && isOnboardingComplete) {
-    log('redirect -> /welcome (onboarding route, onboarding complete)')
-    return navigateTo('/welcome')
+  // For the /welcome route (or any other route), run post-setup.
+  // On /welcome this runs while the loading screen is already visible.
+  const isWelcomeRoute = to.path === '/welcome'
+
+  const runPostSetup = async () => {
+    const personalOrgId = await getSetting('user', user.id, 'lastOrgId')
+
+    if (personalOrgId) {
+      if (forceDemoSeed && import.meta.dev) {
+        await upsertSetting('user', user.id, 'demoSeedVersion', 0)
+      }
+
+      try {
+        setupStatus.value = 'Seeding demo data…'
+        await ensureDemoSeedV1({
+          instant,
+          tx,
+          userId: user.id,
+          orgId: personalOrgId,
+          getSetting,
+          upsertSetting,
+        })
+      } catch (err) {
+        console.warn('[auth.global] Demo seed failed (non-fatal):', (err as any)?.message || err)
+      }
+    }
+
+    // Data migrations
+    try {
+      setupStatus.value = 'Running data migrations…'
+      const rawDataVersion = await getSetting('user', user.id, 'dataVersion')
+      const dataVersion = typeof rawDataVersion === 'number' ? rawDataVersion : 0
+
+      let nextDataVersion = dataVersion
+
+      if (nextDataVersion < 1) {
+        await migrateUserToV1(instant, user.id)
+        nextDataVersion = 1
+      }
+
+      if (nextDataVersion < 2) {
+        await migrateUserToV2(instant, user.id)
+        nextDataVersion = 2
+      }
+
+      if (nextDataVersion !== dataVersion && nextDataVersion === CURRENT_DATA_VERSION) {
+        await upsertSetting('user', user.id, 'dataVersion', CURRENT_DATA_VERSION)
+      }
+    } catch (err) {
+      console.warn('[auth.global] Data migration failed (non-fatal):', (err as any)?.message || err)
+    }
+
+    // Resolve org and app
+    setupStatus.value = 'Loading your workspace…'
+    const ensureValidOrgAndApp = async () => {
+      const lastOrgId = await getSetting('user', user.id, 'lastOrgId')
+      const lastAppId = await getSetting('user', user.id, 'lastAppId')
+
+      const resp = await instant.queryOnce({
+        organizations: {
+          $: { where: { ownerId: user.id } },
+        },
+        applications: {
+          $: { where: { ownerId: user.id } },
+        },
+      })
+
+      const orgs = ((resp.data as any)?.organizations || []) as any[]
+      const allApps = ((resp.data as any)?.applications || []) as any[]
+
+      const picked = pickOrgAndApp({
+        orgs,
+        apps: allApps,
+        lastOrgId,
+        lastAppId,
+      })
+
+      currentOrg.value = picked.org
+      currentApp.value = picked.app
+    }
+
+    try {
+      await ensureValidOrgAndApp()
+    } catch (err) {
+      console.warn('[auth.global] ensureValidOrgAndApp failed (non-fatal):', (err as any)?.message || err)
+    }
+
+    setupStatus.value = 'Almost ready…'
+
+    log('post-setup complete', {
+      currentOrgId: currentOrg.value?.id ?? null,
+      currentAppId: currentApp.value?.id ?? null,
+    })
+
+    // Mark as initialized and cache user for fast path on subsequent navigations
+    authInitialized.value = true
+    cachedUser.value = user
+    demoSeedChecked.value = true
   }
 
-  // If on an auth route and onboarding is not complete, allow it (e.g., login page)
-  if (isAuthRoute && !isOnboardingComplete) {
-    log('allow auth route (onboarding incomplete)')
+  if (isWelcomeRoute) {
+    // Fire-and-forget: let the welcome page render immediately with the loading
+    // screen, while post-setup runs in the background. The welcome page polls
+    // currentOrg/currentApp and navigates to /workspace/tasks when ready.
+    runPostSetup()
+    log('allow /welcome (post-setup running in background)')
     return
   }
 
-  // If on an onboarding route and onboarding is not complete, allow it
-  if (isOnboardingRoute && !isOnboardingComplete) {
-    log('allow onboarding route (onboarding incomplete)')
-    return
-  }
-
-  // Mark as initialized and cache user for fast path on subsequent navigations
-  authInitialized.value = true
-  cachedUser.value = user
-  demoSeedChecked.value = true
+  // For all other routes, run post-setup synchronously (blocking) so the page
+  // has org/app state available when it renders.
+  await runPostSetup()
 
   log('allow route')
 })

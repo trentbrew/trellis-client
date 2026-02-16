@@ -1,10 +1,10 @@
-# Toolkit UI Monorepo
+# Trellis Monorepo
 # Run `just` to see available commands
 
 set dotenv-load
 
 run:
-  @just dev-all
+  @just dev
 
 # Default: show help
 default:
@@ -14,37 +14,18 @@ default:
 install:
     pnpm install
 
-# Start v1 (component library) dev server
-dev-v1:
-    pnpm --filter @toolkit/ui dev
-
-# Start v2 (Nuxt sandbox) dev server
-dev-v2:
-    pnpm --filter @toolkit/sandbox dev
-
-# Start both dev servers (requires tmux or similar)
-dev-all:
-    @echo "Starting both dev servers..."
-    @echo "  v1: http://localhost:5173"
-    @echo "  v2: http://localhost:5151"
-    pnpm --filter @toolkit/ui dev & pnpm --filter @toolkit/sandbox dev
-
-# Start v2 dev server
-dev-v2-safe:
-    @echo "🚀 Starting v2 dev server..."
-    pnpm --filter @toolkit/sandbox dev
+# Start Trellis web app dev server
+dev:
+    @echo "🚀 Starting Trellis dev server..."
+    pnpm --filter ./apps/web dev
 
 # Build all packages
 build:
     pnpm -r build
 
-# Build v1 only
-build-v1:
-    pnpm --filter @toolkit/ui build
-
-# Build v2 only
-build-v2:
-    pnpm --filter @toolkit/sandbox build
+# Build Trellis web app only
+build-web:
+    pnpm --filter ./apps/web build
 
 # Run linting across all packages
 lint:

@@ -9,8 +9,8 @@ const mockUpdate = vi.fn()
 const mockItems = ref<any[]>([])
 const mockMutate = vi.fn()
 
-vi.mock('~/composables/useCalendarItems', () => ({
-  useCalendarItems: () => ({
+vi.mock('~/composables/useEntities', () => ({
+  useEntities: () => ({
     items: mockItems,
     update: mockUpdate,
     create: vi.fn(),
@@ -120,9 +120,9 @@ describe('useEntityReferences', () => {
       expect(mockMutate).toHaveBeenCalledTimes(1)
       expect(mockMutate).toHaveBeenCalledWith({
         action: 'link',
-        e1: 'calendaritem:source-1',
+        e1: 'entity:source-1',
         relation: 'references',
-        e2: 'calendaritem:target-1',
+        e2: 'entity:target-1',
       })
     })
 
@@ -221,9 +221,9 @@ describe('useEntityReferences', () => {
       expect(mockMutate).toHaveBeenCalledTimes(1)
       expect(mockMutate).toHaveBeenCalledWith({
         action: 'unlink',
-        e1: 'calendaritem:source-1',
+        e1: 'entity:source-1',
         relation: 'references',
-        e2: 'calendaritem:target-1',
+        e2: 'entity:target-1',
       })
     })
 

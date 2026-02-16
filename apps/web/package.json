@@ -1,5 +1,5 @@
 {
-  "name": "@toolkit/sandbox",
+  "name": "@trellis/web",
   "private": true,
   "author": {
     "name": "Behon Baker",
@@ -35,6 +35,7 @@
     "@alcyone-labs/zod-to-json-schema": "4.0.10",
     "@guolao/vue-monaco-editor": "1.6.0",
     "@iconify-json/svg-spinners": "1.2.4",
+    "@instantdb/core": "0.22.138",
     "@internationalized/date": "3.10.1",
     "@internationalized/number": "3.6.5",
     "@jspreadsheet-ce/vue": "5.0.1",

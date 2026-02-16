@@ -1,14 +1,14 @@
 ---
 title: Documentation
-description: Toolkit UI Monorepo Documentation
+description: Trellis Knowledge Graph Documentation
 icon: lucide:book-open
 navigation:
   order: 0
 ---
 
-# Toolkit Documentation
+# Trellis Documentation
 
-Welcome to the Toolkit UI documentation. This documentation covers both the component library (v1) and the ECMS Redesign sandbox (v2).
+Welcome to the Trellis knowledge graph documentation. This documentation covers the Trellis web app, data layer, and architecture.
 
 ## Categories
 

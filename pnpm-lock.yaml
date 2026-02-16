@@ -72,6 +72,9 @@ importers:
       '@iconify-json/svg-spinners':
         specifier: 1.2.4
         version: 1.2.4
+      '@instantdb/core':
+        specifier: 0.22.138
+        version: 0.22.138
       '@internationalized/date':
         specifier: 3.10.1
         version: 3.10.1
@@ -1125,6 +1128,12 @@ packages:
     resolution: {integrity: sha512-C+KuEWIF5nSBrobFJhT//JS87OZ++QDORB6f2q2Wm6fl2mueSTpFBeBsveK0KW9hWiZ4mNiPjsh6Zs4jjdROSg==}
     peerDependencies:
       vue: '>=3'
+
+  '@instantdb/core@0.22.138':
+    resolution: {integrity: sha512-nz975Lk7epQb9iLo8Mc/JbHMFZrU+TbDGDI1F+CygbMJjJiiwdD0xHJL9CN22HkXU4cGrLKlamA6pjjwHrpqaQ==}
+
+  '@instantdb/version@0.22.138':
+    resolution: {integrity: sha512-LP5o8DFvmSMQu9Wsfhr9fj2S4WLdcysmkXE9dMxXL+99Omqe2QvmgNKU718pS9k0vl0uGa+NwgYLnri3doFMxw==}
 
   '@internationalized/date@3.10.1':
     resolution: {integrity: sha512-oJrXtQiAXLvT9clCf1K4kxp3eKsQhIaZqxEyowkBcsvZDdZkbWrVmnGknxs5flTD0VGsxrxKgBCZty1EzoiMzA==}
@@ -5934,6 +5943,10 @@ packages:
   muggle-string@0.4.1:
     resolution: {integrity: sha512-VNTrAak/KhO2i8dqqnqnAHOa3cYBwXEZe9h+D5h/1ZqFSTEFHdM65lR7RoIqq3tBBYavsOXV84NoHXZ0AkPyqQ==}
 
+  mutative@1.3.0:
+    resolution: {integrity: sha512-8MJj6URmOZAV70dpFe1YnSppRTKC4DsMkXQiBDFayLcDI4ljGokHxmpqaBQuDWa4iAxWaJJ1PS8vAmbntjjKmQ==}
+    engines: {node: '>=14.0'}
+
   nano-spawn@2.0.0:
     resolution: {integrity: sha512-tacvGzUY5o2D8CBh2rrwxyNojUsZNU2zjNTzKQrkgGJQTbGAfArVWXSKMBokBeeg6C7OLRGUEyoFlYbfeWQIqw==}
     engines: {node: '>=20.17'}
@@ -8839,6 +8852,14 @@ snapshots:
     dependencies:
       '@iconify/types': 2.0.0
       vue: 3.5.27(typescript@5.9.3)
+
+  '@instantdb/core@0.22.138':
+    dependencies:
+      '@instantdb/version': 0.22.138
+      mutative: 1.3.0
+      uuid: 11.1.0
+
+  '@instantdb/version@0.22.138': {}
 
   '@internationalized/date@3.10.1':
     dependencies:
@@ -14389,6 +14410,8 @@ snapshots:
   ms@2.1.3: {}
 
   muggle-string@0.4.1: {}
+
+  mutative@1.3.0: {}
 
   nano-spawn@2.0.0: {}
 

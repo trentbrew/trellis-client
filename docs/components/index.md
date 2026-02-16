@@ -8,4 +8,4 @@ navigation:
 
 # Components
 
-This section contains documentation for the Toolkit component library and individual component guides.
+This section contains documentation for Trellis UI components and individual component guides.

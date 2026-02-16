@@ -48,6 +48,8 @@ export default defineNuxtConfig({
   runtimeConfig: {
     public: {
       googleClientId: process.env.GOOGLE_CLIENT_ID,
+      dataMode: process.env.TRELLIS_DATA_MODE || 'local',
+      instantAppId: process.env.INSTANTDB_APP_ID || process.env.INSTANT_APP_ID || '',
     },
   },
 
@@ -91,7 +93,7 @@ export default defineNuxtConfig({
     ],
   },
 
-  colorMode: { classSuffix: '', storageKey: 'platform-sandbox-color-mode', preference: 'dark' },
+  colorMode: { classSuffix: '', storageKey: 'trellis-color-mode', preference: 'dark' },
 
   icon: {
     clientBundle: { scan: true, sizeLimitKb: 0 },
@@ -136,7 +138,7 @@ export default defineNuxtConfig({
 
   app: {
     head: {
-      titleTemplate: '%s | Platform Sandbox',
+      titleTemplate: '%s | Trellis',
       link: [
         {
           rel: 'stylesheet',

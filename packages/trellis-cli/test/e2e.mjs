@@ -8,7 +8,7 @@
 import { TrellisClient } from '../src/client.mjs'
 
 const client = new TrellisClient({ agentId: 'e2e-test' })
-const TEST_ID = 'calendaritem:e2e-test-' + Date.now()
+const TEST_ID = 'entity:e2e-test-' + Date.now()
 let passed = 0
 let failed = 0
 
@@ -33,7 +33,7 @@ async function run() {
 
   // Create
   console.log('\n2. Create node')
-  const created = await client.createNode(TEST_ID, 'calendaritem', {
+  const created = await client.createNode(TEST_ID, 'entity', {
     type: 'task',
     title: 'E2E test task',
     taskStatus: 'pending',
@@ -54,7 +54,7 @@ async function run() {
 
   // Update
   console.log('\n4. Update node')
-  const updated = await client.updateNode(TEST_ID, 'calendaritem', {
+  const updated = await client.updateNode(TEST_ID, 'entity', {
     type: 'task',
     title: 'E2E updated task',
     taskStatus: 'in-progress',
@@ -70,7 +70,7 @@ async function run() {
 
   // Query
   console.log('\n5. Query')
-  const query = await client.query('FIND calendaritem AS ?e WHERE ?e.type = "task"')
+  const query = await client.query('FIND entity AS ?e WHERE ?e.type = "task"')
   const ids = query.data.map((r) => r['?e'])
   assert('query returns data', query.data.length > 0)
   assert('test node in results', ids.includes(TEST_ID))
@@ -78,7 +78,7 @@ async function run() {
   // Schema
   console.log('\n6. Schema')
   const schema = await client.ontologies()
-  assert('has calendaritem schema', 'trellis:schema/calendaritem' in schema)
+  assert('has entity schema', 'trellis:schema/entity' in schema)
 
   // Delete
   console.log('\n7. Delete node')
