@@ -1076,7 +1076,7 @@
 <style scoped>
   :deep(.ProseMirror) {
     outline: none;
-    color: hsl(var(--foreground)) !important;
+    color: var(--foreground) !important;
   }
 
   :deep(.tiptap) {
@@ -1090,23 +1090,23 @@
   :deep(.ProseMirror h1) {
     font-size: 1.75rem !important;
     margin-top: 1.5rem !important;
-    color: hsl(var(--foreground));
+    color: var(--foreground);
   }
 
   :deep(.ProseMirror h2) {
     font-size: 1.5rem !important;
     margin-top: 1.25rem !important;
-    color: hsl(var(--foreground));
+    color: var(--foreground);
   }
 
   :deep(.ProseMirror p),
   :deep(.ProseMirror li),
   :deep(.ProseMirror h3) {
-    color: hsl(var(--foreground));
+    color: var(--foreground);
   }
 
   :deep(.ProseMirror p.is-editor-empty:first-child::before) {
-    color: hsl(var(--muted-foreground));
+    color: var(--muted-foreground);
     opacity: 0.5;
     content: attr(data-placeholder);
     float: left;
@@ -1115,22 +1115,22 @@
   }
 
   :deep(.ProseMirror pre) {
-    background: hsl(var(--muted)) !important;
+    background: var(--muted) !important;
     border-radius: 0.375rem !important;
-    color: hsl(var(--foreground)) !important;
+    color: var(--foreground) !important;
     font-family: 'JetBrainsMono', monospace !important;
     font-size: 0.8rem !important;
     padding: 0.5rem 0.75rem !important;
-    border: 1px solid hsl(var(--border)) !important;
+    border: 1px solid var(--border) !important;
   }
 
   :deep(.ProseMirror code) {
-    background: hsl(var(--muted)) !important;
+    background: var(--muted) !important;
     border-radius: 0.25rem !important;
-    color: hsl(var(--foreground)) !important;
+    color: var(--foreground) !important;
     font-size: 0.85em !important;
     padding: 0.15em 0.3em !important;
-    border: 1px solid hsl(var(--border)) !important;
+    border: 1px solid var(--border) !important;
   }
 
   :deep(.ProseMirror pre code) {
@@ -1142,9 +1142,9 @@
   }
 
   :deep(.ProseMirror blockquote) {
-    border-left: 2px solid hsl(var(--border));
+    border-left: 2px solid var(--border);
     padding-left: 0.75rem;
-    color: hsl(var(--muted-foreground));
+    color: var(--muted-foreground);
     margin: 0.5rem 0;
   }
 
@@ -1279,7 +1279,7 @@
 
   /* Mathematics extension styles */
   :deep(.tiptap-mathematics-render) {
-    color: hsl(var(--foreground));
+    color: var(--foreground);
   }
 
   :deep(.tiptap-mathematics-render--editable) {
@@ -1295,8 +1295,8 @@
   }
 
   :deep(.tiptap-mathematics-render[data-type='block-math']) {
-    background: hsl(var(--muted));
-    border: 1px solid hsl(var(--border));
+    background: var(--muted);
+    border: 1px solid var(--border);
     border-radius: 0.375rem;
     display: block;
     margin: 0.75rem 0;
@@ -1305,7 +1305,7 @@
   }
 
   :deep(.tiptap-mathematics-render .katex) {
-    color: hsl(var(--foreground));
+    color: var(--foreground);
     font-size: 1em;
   }
 
@@ -1371,7 +1371,7 @@
 
   :deep(ul[data-type='taskList'] li[data-checked='true'] > div p) {
     text-decoration: line-through;
-    color: hsl(var(--muted-foreground));
+    color: var(--muted-foreground);
   }
 
   :deep(hr) {
@@ -1382,7 +1382,7 @@
   /* ── Syntax Highlighting (lowlight / hljs) ──────────────────────────── */
   :deep(.hljs-comment),
   :deep(.hljs-quote) {
-    color: hsl(var(--muted-foreground));
+    color: var(--muted-foreground);
     font-style: italic;
   }
 
@@ -1445,7 +1445,7 @@
     font-family: sans-serif;
     text-transform: uppercase;
     letter-spacing: 0.05em;
-    color: hsl(var(--muted-foreground));
+    color: var(--muted-foreground);
     opacity: 0.6;
     pointer-events: none;
   }
@@ -1460,7 +1460,7 @@
   }
 
   :deep(.ProseMirror .editor-image.ProseMirror-selectednode) {
-    outline: 2px solid hsl(var(--primary));
+    outline: 2px solid var(--primary);
     outline-offset: 2px;
     border-radius: 0.375rem;
   }
@@ -1472,7 +1472,7 @@
   }
 
   :deep(strong) {
-    color: hsl(var(--foreground));
+    color: var(--foreground);
   }
 
   @keyframes image-upload-pulse {
@@ -1494,13 +1494,13 @@
     justify-content: center;
     cursor: grab;
     border-radius: 0.25rem;
-    color: hsl(var(--muted-foreground));
+    color: var(--muted-foreground);
     transition: all 0.15s ease;
   }
 
   :deep(.drag-handle:hover) {
-    background: hsl(var(--muted));
-    color: hsl(var(--foreground));
+    background: var(--muted);
+    color: var(--foreground);
   }
 
   :deep(.drag-handle:active) {
@@ -1521,16 +1521,8 @@
   /* Highlight node being dragged */
   :deep(.ProseMirror .is-dragging) {
     opacity: 0.5;
-    background: hsl(var(--muted) / 0.5);
+    background: color-mix(in oklch, var(--muted) 50%, transparent);
     border-radius: 0.25rem;
   }
 
-  :deep(#tippy-1 > div) {
-    background-color: var(--color-card) !important;
-    color: var(--color-foreground) !important;
-    border-radius: 0.25rem !important;
-    box-shadow: 0 0 0.5rem rgba(0, 0, 0, 0.1) !important;
-    font-size: 0.75rem !important;
-    padding: 0.5rem !important;
-  }
 </style>
