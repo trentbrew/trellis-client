@@ -63,6 +63,8 @@
    * - 'filesystem': Full-height split layout for tree + viewer style pages
    * - 'folders': Split-view with folder tree navigation (left) and content preview (right)
    * - 'calendar': Fullscreen calendar layout (no header/tabs/toolbar/search)
+   * - 'feed': Chronological stream from integrations — narrow list, source filter ribbon, no view switcher
+   * - 'grid': Multi-view grid dashboard — no built-in header (page renders its own inline-editable header), no toolbar
    */
   type PageVariant =
     | 'default'
@@ -75,6 +77,8 @@
     | 'filesystem'
     | 'folders'
     | 'calendar'
+    | 'feed'
+    | 'grid'
 
   interface PageProps {
     /** Page layout variant */
@@ -161,6 +165,8 @@
     tertiaryAction?: PageAction
     /** Custom view mode options for browse view switcher */
     viewModeOptions?: ViewModeOption[]
+    /** Entity type slug(s) powering this page's data. Renders a clickable link to /database/<type>. */
+    dataSource?: string | string[]
     /** Folder tree items for folders variant */
     folderItems?: FolderTreeItem[]
     /** Currently selected folder path for folders variant */
@@ -200,6 +206,10 @@
     disabled?: boolean
     visible?: boolean
     tooltip?: string
+    suggested?: boolean
+    score?: number
+    reason?: string
+    isDefault?: boolean
   }
 
   const props = withDefaults(defineProps<PageProps>(), {
@@ -239,6 +249,7 @@
     onMoveItem: undefined,
     folderEmptyTitle: undefined,
     folderEmptyDescription: undefined,
+    dataSource: undefined,
   })
 
   const emit = defineEmits<{
@@ -271,8 +282,12 @@
         return { showHeader: true, showTabs: false, contentPadding: 'p-0', maxWidth: '', showToolbar: false }
       case 'calendar':
         return { showHeader: false, showTabs: false, contentPadding: 'p-0', maxWidth: '', showToolbar: false }
+      case 'feed':
+        return { showHeader: true, showTabs: false, contentPadding: 'px-4 py-4 pt-0', maxWidth: '', showToolbar: true }
       case 'station':
         return { showHeader: false, showTabs: true, contentPadding: 'p-0', maxWidth: '', showToolbar: false }
+      case 'grid':
+        return { showHeader: false, showTabs: false, contentPadding: 'p-0', maxWidth: '', showToolbar: false }
       default:
         return { showHeader: true, showTabs: true, contentPadding: 'px-8 py-6', maxWidth: '', showToolbar: false }
     }
@@ -281,6 +296,7 @@
   const isFilesystem = computed(() => props.variant === 'filesystem')
   const isFolders = computed(() => props.variant === 'folders')
   const isCalendar = computed(() => props.variant === 'calendar')
+  const isFeed = computed(() => props.variant === 'feed')
   const effectiveFillHeight = computed(
     () => props.fillHeight || isFilesystem.value || isFolders.value || isCalendar.value,
   )
@@ -538,6 +554,25 @@
 
   const hasCalendarSlot = computed(() => !!slots.calendar)
 
+  // Data source indicator — resolves entity type slug(s) to a database link + label
+  const dataSourceTypes = computed(() => {
+    if (!props.dataSource) return []
+    return Array.isArray(props.dataSource) ? props.dataSource : [props.dataSource]
+  })
+
+  const dataSourceLink = computed(() => {
+    const types = dataSourceTypes.value
+    if (types.length === 1) return `/database/${types[0]}`
+    return '/database'
+  })
+
+  const dataSourceLabel = computed(() => {
+    const types = dataSourceTypes.value
+    if (types.length === 0) return ''
+    if (types.length === 1) return types[0]!
+    return `${types.length} types`
+  })
+
   const defaultViewModeOptions = computed<ViewModeOption[]>(() => [
     { mode: 'grid', label: 'Grid', icon: 'lucide:grid-3x3' },
     { mode: 'list', label: 'List', icon: 'lucide:list' },
@@ -683,8 +718,8 @@
       <!-- Main content uses base background (darkest layer) -->
       <div class="h-full" :class="[contentWrapperClass, transparent ? 'bg-transparent' : '']">
         <!-- Header Section (Non-sticky) -->
-        <div v-if="showHeader || $slots.header" class="shrink-0 space-y-0 p-8 pb-0">
-          <div class="px-3 py-5 relative border-b border-border/60" :class="variantConfig.maxWidth">
+        <div v-if="showHeader || $slots.header" class="shrink-0 space-y-0 pb-0" :class="isFeed ? 'p-4' : 'p-0'">
+          <div class="px-8 py-8 relative border-b border-border/60" :class="variantConfig.maxWidth">
             <div class="relative flex items-stretch gap-6">
               <!-- Header Icon -->
               <div v-if="headerIcon || $slots.headerIcon" class="shrink-0">
@@ -699,12 +734,21 @@
 
               <div class="flex-1 min-w-0">
                 <!-- Subtitle with optional back button and icon -->
-                <div v-if="subtitle || showBackButton || icon" class="inline-flex items-center gap-0.5 mb-0">
+                <div v-if="subtitle || showBackButton || icon || dataSource" class="inline-flex items-center gap-0.5 mb-0">
                   <BackButton v-if="showBackButton" />
                   <Icon v-if="icon" :name="icon" class="mr-2 h-4 w-4 text-muted-foreground/70" />
                   <p v-if="subtitle" class="text-xs uppercase tracking-wide text-muted-foreground/80">
                     {{ subtitle }}
                   </p>
+                  <span v-if="subtitle && dataSource" class="text-muted-foreground/40 mx-1 text-xs">/</span>
+                  <NuxtLink
+                    v-if="dataSource"
+                    :to="dataSourceLink"
+                    class="inline-flex items-center gap-1 text-xs text-muted-foreground/60 hover:text-primary transition-colors group"
+                    title="View in database">
+                    <Icon name="lucide:database" class="size-3 text-muted-foreground/40 group-hover:text-primary transition-colors" />
+                    <span class="uppercase tracking-wide">{{ dataSourceLabel }}</span>
+                  </NuxtLink>
                 </div>
 
                 <!-- Title -->
@@ -850,7 +894,7 @@
                     <UiButton
                       v-if="action"
                       :variant="action.variant || (action === primaryAction ? 'default' : 'outline')"
-                      size="sm"
+                      size="xs"
                       :disabled="action.disabled"
                       :loading="action.isLoading"
                       class="gap-2"
@@ -877,18 +921,18 @@
               : 'bg-transparent border-b-transparent',
             transparent ? 'bg-transparent backdrop-blur-none' : '',
           ]">
-          <div class="mx-8 py-4">
+          <div :class="isFeed ? 'mx-4' : 'mx-8'" class="py-4">
             <div class="flex justify-between items-center gap-3 w-full">
-              <!-- View Mode Switcher -->
+              <!-- View Mode Switcher (hidden for feed variant) -->
               <div
-                v-if="showViewSwitcher"
+                v-if="showViewSwitcher && !isFeed"
                 class="flex items-center rounded-lg border border-border bg-card/25 p-0.5 shrink-0">
                 <slot name="viewSwitcher">
                   <button
                     v-for="option in effectiveViewModeOptions"
                     :key="option.mode"
                     type="button"
-                    class="flex h-8 items-center justify-center gap-1.5 rounded-md px-3 text-sm font-medium transition-colors"
+                    class="relative flex h-8 items-center justify-center gap-1.5 rounded-md px-3 text-sm font-medium transition-colors"
                     :class="[
                       browse?.viewMode.value === option.mode
                         ? 'bg-sidebar-background/10 text-foreground hover:bg-sidebar-background/15 '
@@ -897,10 +941,14 @@
                         ? 'cursor-not-allowed opacity-50 hover:bg-transparent hover:text-muted-foreground'
                         : '',
                     ]"
-                    :title="option.tooltip || `${option.label} view`"
+                    :title="option.reason || option.tooltip || `${option.label} view`"
                     :disabled="option.disabled"
                     @click="setViewMode(option.mode, option.disabled)">
                     <Icon :name="option.icon" class="h-4 w-4" />
+                    <span class="hidden sm:inline">{{ option.label }}</span>
+                    <span
+                      v-if="option.suggested && browse?.viewMode.value !== option.mode"
+                      class="h-1.5 w-1.5 rounded-full bg-primary/60 absolute -top-0.5 -right-0.5" />
                   </button>
                 </slot>
               </div>
@@ -1039,6 +1087,13 @@
                 </slot>
               </div>
             </div>
+          </div>
+        </div>
+
+        <!-- Feed Source Bar (feed variant) -->
+        <div v-if="isFeed && $slots.sourceBar" class="shrink-0 px-4">
+          <div :class="variantConfig.maxWidth">
+            <slot name="sourceBar" />
           </div>
         </div>
 

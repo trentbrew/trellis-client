@@ -57,6 +57,7 @@ export const useCollapsedSections = () => {
   })
 
   return {
+    collapsedSections: readonly(collapsedSections),
     isCollapsed,
     toggleSection,
   }

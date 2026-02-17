@@ -1,31 +1,25 @@
-import type { DatabaseRecord, DatabaseSchema, Workflow, CustomType } from '~/types/database'
-import { createDefaultProjections } from '~/lib/projections'
-import { createCollectionGraph, serializeTrellisDocument } from '~/lib/trellis'
-import { normalizeDatabaseSchema, createDefaultDatabaseSchema } from '~/lib/normalizeDatabaseSchema'
+/**
+ * Demo seed — REMOVED.
+ *
+ * All seed data has been removed. These stubs are kept so any stale
+ * imports don't crash at runtime — they simply no-op.
+ */
 
-type SeedAppDef = {
-  slug: string
-  name: string
-  icon: string
-  color: string
-  description: string
-}
-
-const DEMO_SEED_V2_VERSION = 3
-const DEMO_SEED_V2_VERSION_KEY = 'demoSeedV2Version'
-const DEFAULT_WORKSPACE_SLUG = 'default-workspace'
-
-type EnsureDemoSeedV2Params = {
+type EnsureDemoSeedParams = {
   instant: any
   tx: any
   userId: string
-  getSetting: (entityType: 'user' | 'org' | 'app' | 'collection', entityId: string, key: string) => Promise<any>
-  upsertSetting: (
-    entityType: 'user' | 'org' | 'app' | 'collection',
-    entityId: string,
-    key: string,
-    value: any,
-  ) => Promise<void>
+  orgId?: string
+  getSetting: (...args: any[]) => Promise<any>
+  upsertSetting: (...args: any[]) => Promise<void>
+}
+
+export async function ensureDemoSeedV1(_params: EnsureDemoSeedParams): Promise<void> {
+  // no-op — seed data removed
+}
+
+export async function ensureDemoSeedV2(_params: EnsureDemoSeedParams): Promise<void> {
+  // no-op — seed data removed
 }
 
 type SeedRecordDefV2 = {
@@ -1166,7 +1160,7 @@ export async function ensureDemoSeedV2(params: EnsureDemoSeedV2Params) {
         createdAt: now,
         updatedAt: now,
       }),
-      tx.organizations[orgId].link({ applications: id }),
+      tx.applications[id].link({ organization: orgId }),
     ])
 
     appIdsBySlug.set(def.slug, id)
@@ -1210,7 +1204,7 @@ export async function ensureDemoSeedV2(params: EnsureDemoSeedV2Params) {
             createdAt: now,
             updatedAt: now,
           }),
-          tx.applications[appId].link({ collections: collectionId }),
+          tx.collections[collectionId].link({ application: appId }),
         ])
       }
 
@@ -1895,6 +1889,16 @@ const ensureSettingIfMissing = async (
   ])
 }
 
+/**
+ * Batched demo seed — reduces 22+ sequential transactions to ~3 batched ones.
+ *
+ * Strategy:
+ *   1. Query all existing apps in one call → create missing apps in one transact
+ *   2. Query all existing collections in one call → create missing collections in one transact
+ *   3. Query all existing settings in one call → create missing settings in one transact
+ *
+ * This avoids InstantDB's per-transaction timeout (5s) being hit by sequential upserts.
+ */
 export async function ensureDemoSeedV1(params: EnsureDemoSeedParams) {
   const { instant, tx, userId, orgId, getSetting, upsertSetting } = params
 
@@ -1904,32 +1908,29 @@ export async function ensureDemoSeedV1(params: EnsureDemoSeedParams) {
 
   const { apps, collectionsByAppSlug, customTypesByAppSlug, workflowsByAppSlug } = getDemoSpecV1()
 
+  // ── Step 1: Ensure all apps exist (1 query + 1 transact) ────────────
+
+  const existingAppsResp = await instant.queryOnce({
+    applications: {
+      $: { where: { ownerId: userId, orgId } },
+    },
+  })
+  const existingApps = ((existingAppsResp.data as any)?.applications || []) as any[]
+  const existingAppsBySlug = new Map(existingApps.map((a: any) => [a.slug, a.id]))
+
   const appIdsBySlug = new Map<string, string>()
+  const appCreateChunks: any[] = []
 
   for (const def of apps) {
-    const resp = await instant.queryOnce({
-      applications: {
-        $: {
-          where: {
-            ownerId: userId,
-            orgId,
-            slug: def.slug,
-          },
-        },
-      },
-    })
-
-    const existing = (resp.data as any)?.applications?.[0]
-
-    if (existing?.id) {
-      appIdsBySlug.set(def.slug, existing.id)
+    const existingId = existingAppsBySlug.get(def.slug)
+    if (existingId) {
+      appIdsBySlug.set(def.slug, existingId)
       continue
     }
 
     const id = crypto.randomUUID()
     const now = Date.now()
-
-    await instant.transact([
+    appCreateChunks.push(
       tx.applications[id].update({
         ownerId: userId,
         orgId,
@@ -1941,51 +1942,103 @@ export async function ensureDemoSeedV1(params: EnsureDemoSeedParams) {
         createdAt: now,
         updatedAt: now,
       }),
-      tx.organizations[orgId].link({ applications: id }),
-    ])
-
+      tx.applications[id].link({ organization: orgId }),
+    )
     appIdsBySlug.set(def.slug, id)
+  }
+
+  if (appCreateChunks.length > 0) {
+    await instant.transact(appCreateChunks)
+  }
+
+  // ── Step 2: Ensure all collections exist (1 query + 1 transact) ─────
+
+  const existingCollsResp = await instant.queryOnce({
+    collections: {
+      $: { where: { ownerId: userId } },
+    },
+  })
+  const existingColls = ((existingCollsResp.data as any)?.collections || []) as any[]
+  const existingCollsByKey = new Map(existingColls.map((c: any) => [`${c.appId}:${c.slug}`, c.id]))
+
+  // Track collectionId for each (appSlug, colSlug) pair for settings step
+  const collectionIdMap = new Map<string, string>()
+  const collCreateChunks: any[] = []
+
+  for (const [appSlug, appId] of appIdsBySlug.entries()) {
+    const collectionDefs = collectionsByAppSlug[appSlug] || []
+    for (const colDef of collectionDefs) {
+      const key = `${appId}:${colDef.slug}`
+      const existingId = existingCollsByKey.get(key)
+
+      if (existingId) {
+        collectionIdMap.set(`${appSlug}:${colDef.slug}`, existingId)
+        continue
+      }
+
+      const collectionId = crypto.randomUUID()
+      const now = Date.now()
+      collCreateChunks.push(
+        tx.collections[collectionId].update({
+          ownerId: userId,
+          appId,
+          parentId: null,
+          title: colDef.title,
+          slug: colDef.slug,
+          icon: colDef.icon,
+          type: 'database',
+          order: colDef.order,
+          isPublished: true,
+          createdBy: userId,
+          createdAt: now,
+          updatedAt: now,
+        }),
+        tx.collections[collectionId].link({ application: appId }),
+      )
+      collectionIdMap.set(`${appSlug}:${colDef.slug}`, collectionId)
+    }
+  }
+
+  if (collCreateChunks.length > 0) {
+    await instant.transact(collCreateChunks)
+  }
+
+  // ── Step 3: Ensure all settings exist (1 query + batched transacts) ──
+
+  const existingSettingsResp = await instant.queryOnce({
+    settings: {
+      $: { where: { ownerId: userId } },
+    },
+  })
+  const existingSettings = ((existingSettingsResp.data as any)?.settings || []) as any[]
+  const existingSettingKeys = new Set(existingSettings.map((s: any) => s.settingKey))
+
+  const settingCreateChunks: any[] = []
+
+  const addSettingIfMissing = (entityType: string, entityId: string, key: string, value: any) => {
+    const settingKey = `${entityType}:${entityId}:${key}`
+    if (existingSettingKeys.has(settingKey)) return
+
+    const id = crypto.randomUUID()
+    settingCreateChunks.push(
+      tx.settings[id].create({
+        ownerId: userId,
+        settingKey,
+        entityType,
+        entityId,
+        key,
+        value,
+        updatedAt: Date.now(),
+      }),
+    )
+    existingSettingKeys.add(settingKey) // prevent duplicates within this batch
   }
 
   for (const [appSlug, appId] of appIdsBySlug.entries()) {
     const collectionDefs = collectionsByAppSlug[appSlug] || []
     for (const colDef of collectionDefs) {
-      const resp = await instant.queryOnce({
-        collections: {
-          $: {
-            where: {
-              appId,
-              slug: colDef.slug,
-            },
-          },
-        },
-      })
-
-      const existing = (resp.data as any)?.collections?.[0]
-      let collectionId = existing?.id as string | undefined
-
-      if (!collectionId) {
-        collectionId = crypto.randomUUID()
-        const now = Date.now()
-
-        await instant.transact([
-          tx.collections[collectionId].update({
-            ownerId: userId,
-            appId,
-            parentId: null,
-            title: colDef.title,
-            slug: colDef.slug,
-            icon: colDef.icon,
-            type: 'database',
-            order: colDef.order,
-            isPublished: true,
-            createdBy: userId,
-            createdAt: now,
-            updatedAt: now,
-          }),
-          tx.applications[appId].link({ collections: collectionId }),
-        ])
-      }
+      const collectionId = collectionIdMap.get(`${appSlug}:${colDef.slug}`)
+      if (!collectionId) continue
 
       const schema: DatabaseSchema = {
         id: '',
@@ -1995,11 +2048,10 @@ export async function ensureDemoSeedV1(params: EnsureDemoSeedParams) {
         createdAt: Date.now(),
         updatedAt: Date.now(),
       }
-
-      await ensureSettingIfMissing(instant, tx, userId, 'collection', collectionId, 'schema', schema)
+      addSettingIfMissing('collection', collectionId, 'schema', schema)
 
       const projections = createDefaultProjections(collectionId, 'database')
-      await ensureSettingIfMissing(instant, tx, userId, 'collection', collectionId, 'projections', projections)
+      addSettingIfMissing('collection', collectionId, 'projections', projections)
 
       const records: DatabaseRecord[] = (colDef.records || []).map((r) => {
         const now = Date.now()
@@ -2012,21 +2064,20 @@ export async function ensureDemoSeedV1(params: EnsureDemoSeedParams) {
           updatedAt: now,
         }
       })
-
-      await ensureSettingIfMissing(instant, tx, userId, 'collection', collectionId, 'records', records)
+      addSettingIfMissing('collection', collectionId, 'records', records)
     }
 
-    const types = (customTypesByAppSlug[appSlug] || []).map((t) => ({
-      ...t,
-      appId,
-    }))
-    const workflows = (workflowsByAppSlug[appSlug] || []).map((w) => ({
-      ...w,
-      appId,
-    }))
+    const types = (customTypesByAppSlug[appSlug] || []).map((t) => ({ ...t, appId }))
+    const workflows = (workflowsByAppSlug[appSlug] || []).map((w) => ({ ...w, appId }))
+    addSettingIfMissing('app', appId, 'customTypes', types)
+    addSettingIfMissing('app', appId, 'workflows', workflows)
+  }
 
-    await ensureSettingIfMissing(instant, tx, userId, 'app', appId, 'customTypes', types)
-    await ensureSettingIfMissing(instant, tx, userId, 'app', appId, 'workflows', workflows)
+  // Batch settings into chunks of 10 to stay well under InstantDB limits
+  const BATCH_SIZE = 10
+  for (let i = 0; i < settingCreateChunks.length; i += BATCH_SIZE) {
+    const batch = settingCreateChunks.slice(i, i + BATCH_SIZE)
+    await instant.transact(batch)
   }
 
   await upsertSetting('user', userId, 'demoSeedVersion', DEMO_SEED_VERSION)

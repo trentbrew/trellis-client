@@ -52,6 +52,10 @@
       {
         "command": "bun run hooks/tql-eval.ts",
         "show_output": true
+      },
+      {
+        "command": "bun run hooks/tql-heal.ts",
+        "show_output": true
       }
     ],
     "post_run_command": [

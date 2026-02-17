@@ -8,31 +8,9 @@
   }>()
 
   const appNavigate = useAppNavigate()
-  const { workspace, app } = useContext()
-  const { currentOrganization: currentWorkspace } = useOrganizations()
-  const { currentFacility: currentApp } = useFacilities()
+  const { wp } = useWorkspacePath()
 
-  // Build full path with [workspace]/[app] prefix for app routes
-  const resolvedPath = computed(() => {
-    const path = props.to
-
-    // Skip if path already has workspace prefix or is not an app path
-    if (!path.startsWith('/app') && !path.startsWith('/facility') || path.includes('/[')) {
-      return path
-    }
-
-    // Check if we have the required context
-    const workspaceSlug = currentWorkspace.value?.slug || workspace.value
-    const appSlug = currentApp.value?.slug || app.value
-
-    if (!workspaceSlug || !appSlug) {
-      return path
-    }
-
-    // Transform /app/tasks -> /[workspace]/[app]/tasks
-    const appPath = path.replace(/^\/app/, '').replace(/^\/facility/, '')
-    return `/${workspaceSlug}/${appSlug}${appPath}`
-  })
+  const resolvedPath = computed(() => wp(props.to))
 
   const onClick = async (e: MouseEvent) => {
     // Allow new-tab/middle-click behavior to work normally.

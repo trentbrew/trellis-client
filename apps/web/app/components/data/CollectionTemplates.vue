@@ -107,6 +107,23 @@
         { name: 'Last Updated', type: 'date' },
       ],
     },
+    {
+      id: 'slide-deck',
+      name: 'Slide Deck',
+      description: 'Presentation slides — edit as data, present as slides',
+      icon: 'lucide:presentation',
+      color: 'text-indigo-500',
+      fields: [
+        { name: 'order', type: 'number', required: true },
+        { name: 'title', type: 'text' },
+        { name: 'subtitle', type: 'text' },
+        { name: 'body', type: 'text' },
+        { name: 'layout', type: 'select', required: true },
+        { name: 'background', type: 'text' },
+        { name: 'media', type: 'url' },
+        { name: 'speakerNotes', type: 'text' },
+      ],
+    },
   ]
 
   const handleSelect = (template: CollectionTemplate) => {

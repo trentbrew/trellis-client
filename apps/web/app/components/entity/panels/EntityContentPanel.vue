@@ -9,7 +9,7 @@
    * Usage:
    *   <EntityContentPanel v-model="editableItem" :mode="mode" />
    */
-  import type { CalendarItemType } from '~/types/calendarItem'
+  import type { EntityType } from '~/types/entity'
 
   const props = defineProps<{
     modelValue: any
@@ -20,19 +20,23 @@
     'update:modelValue': [value: any]
   }>()
 
-  const entityType = computed(() => props.modelValue?.type as CalendarItemType | undefined)
+  const entityType = computed(() => props.modelValue?.type as EntityType | undefined)
 
   const panelComponents: Record<string, ReturnType<typeof defineAsyncComponent>> = {
     task: defineAsyncComponent(() => import('./temporal/TaskContent.vue')),
     event: defineAsyncComponent(() => import('./temporal/EventContent.vue')),
-    trip: defineAsyncComponent(() => import('./temporal/TripContent.vue')),
-    payment: defineAsyncComponent(() => import('./temporal/PaymentContent.vue')),
     note: defineAsyncComponent(() => import('./document/NoteContent.vue')),
+    file: defineAsyncComponent(() => import('./document/FileContent.vue')),
+    bookmark: defineAsyncComponent(() => import('./document/BookmarkContent.vue')),
+    goal: defineAsyncComponent(() => import('./container/GoalContent.vue')),
+    // trip, sprint, milestone, budget, payment — use summary fallback
   }
 
+  const SummaryPanel = defineAsyncComponent(() => import('./shared/EntitySummaryPanel.vue'))
+
   const currentPanel = computed(() => {
-    if (!entityType.value) return null
-    return panelComponents[entityType.value] ?? null
+    if (!entityType.value) return SummaryPanel
+    return panelComponents[entityType.value] ?? SummaryPanel
   })
 </script>
 

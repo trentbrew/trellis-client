@@ -8,7 +8,7 @@
  *   bun run hooks/tql-standup.ts 2026-02-07  # Standup for a specific date
  */
 
-import { TrellisKernel } from '../tql/kernel/trellis-kernel.js';
+import { TrellisKernel } from '../packages/tql/kernel/trellis-kernel.js';
 import { createKernel, requireInit } from './_kernel.js';
 
 async function safeQuery(kernel: TrellisKernel, q: string): Promise<Record<string, unknown>[]> {

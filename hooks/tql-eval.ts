@@ -15,7 +15,7 @@
  * Exit code 0 always — this hook never blocks.
  */
 
-import { TrellisKernel } from '../tql/kernel/trellis-kernel.js';
+import { TrellisKernel } from '../packages/tql/kernel/trellis-kernel.js';
 import { createKernel, OPS_PATH } from './_kernel.js';
 import { existsSync } from 'fs';
 

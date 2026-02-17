@@ -1,4 +1,6 @@
 <script setup lang="ts">
+  import { entityQuery } from '~/lib/tql-namespace'
+
   const graph = useTrellisGraph()
 
   const health = ref<{ status: string; factCount: number; linkCount: number } | null>(null)
@@ -57,7 +59,7 @@
       }))
 
       // Get entity type breakdown by fetching all entities and counting types
-      const result = await graph.queryOnce('FIND calendaritem AS ?e')
+      const result = await graph.queryOnce(entityQuery('?e'))
       const ids = result.data.map((row) => String((row as any)['?e']))
       if (ids.length > 0) {
         const nodes = await graph.fetchNodes(ids)

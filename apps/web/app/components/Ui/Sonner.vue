@@ -19,10 +19,11 @@
       classes: {
         icon: 'mt-0.5',
         toast:
-          'group toast group-[.toaster]:bg-background group-[.toaster]:text-foreground group-[.toaster]:border-border group-[.toaster]:shadow-lg',
-        description: 'group-[.toast]:text-muted-foreground',
-        actionButton: 'group-[.toast]:bg-primary group-[.toast]:text-primary-foreground',
-        cancelButton: 'group-[.toast]:bg-muted group-[.toast]:text-muted-foreground',
+          'group toast group-[.toaster]:bg-background group-[.toaster]:text-foreground group-[.toaster]:border-border group-[.toaster]:shadow-lg whitespace-nowrap overflow-hidden',
+        description: 'group-[.toast]:text-muted-foreground truncate',
+        title: 'truncate',
+        actionButton: 'group-[.toast]:bg-primary group-[.toast]:text-primary-foreground whitespace-nowrap',
+        cancelButton: 'group-[.toast]:bg-muted group-[.toast]:text-muted-foreground whitespace-nowrap',
       },
     }"
   />

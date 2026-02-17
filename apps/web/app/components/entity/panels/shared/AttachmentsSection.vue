@@ -1,5 +1,5 @@
 <script lang="ts" setup>
-  import type { Attachment } from '~/types/calendarItem'
+  import type { Attachment } from '~/types/entity'
 
   const props = defineProps<{
     modelValue: Attachment[]

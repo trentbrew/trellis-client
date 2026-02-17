@@ -1,0 +1,23 @@
+{
+  "name": "@toolkit/trellis-cli",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "CLI for agents and humans to CRUD the Trellis graph with realtime sync",
+  "bin": {
+    "trellis": "./bin/trellis.mjs"
+  },
+  "exports": {
+    ".": {
+      "types": "./src/client.ts",
+      "import": "./src/client.ts"
+    }
+  },
+  "files": [
+    "bin/",
+    "src/"
+  ],
+  "scripts": {
+    "build": "echo 'no build step — runs via tsx or direct node'"
+  }
+}

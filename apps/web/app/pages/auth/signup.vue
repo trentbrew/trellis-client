@@ -1,5 +1,5 @@
 <script lang="ts" setup>
-  import { getDevPort } from '~/lib/appConfig'
+  import { useTrellisConfig } from '~/composables/useTrellisConfig'
 
   definePageMeta({
     layout: 'auth',
@@ -7,6 +7,7 @@
 
   const db = useInstantDb()
   const config = useRuntimeConfig()
+  const { getDevPort } = useTrellisConfig()
   const devPort = getDevPort()
 
   const { $toast } = useNuxtApp()
@@ -34,6 +35,30 @@
     })
   }
 
+  /**
+   * Wait for InstantDB's auth state to propagate after signInWithIdToken.
+   * The HTTP call resolves before the WebSocket reconnects with the new
+   * refresh token, so getAuth() returns null if we navigate immediately.
+   */
+  function waitForAuth(timeoutMs = 5000): Promise<any | null> {
+    return new Promise((resolve) => {
+      let unsub: (() => void) | null = null
+      const timer = setTimeout(() => {
+        console.warn('[auth] waitForAuth timed out after', timeoutMs, 'ms')
+        unsub?.()
+        resolve(null)
+      }, timeoutMs)
+
+      unsub = db.subscribeAuth((auth: any) => {
+        if (auth?.user) {
+          clearTimeout(timer)
+          unsub?.()
+          resolve(auth.user)
+        }
+      })
+    })
+  }
+
   async function handleSignUpWithGoogle(response: any) {
     isLoading.value = true
 
@@ -44,7 +69,24 @@
         nonce: nonce.value,
       })
 
-      await navigateTo('/onboarding')
+      // Wait for InstantDB's internal auth state to propagate via WebSocket.
+      // Returns the user object directly from subscribeAuth.
+      const confirmedUser = await waitForAuth()
+
+      if (!confirmedUser) {
+        $toast?.error('Sign-up succeeded but session failed to initialize. Please try again.')
+        isLoading.value = false
+        return
+      }
+
+      // Seed the middleware cache with the confirmed user
+      const authInitialized = useState<boolean>('auth:initialized')
+      authInitialized.value = false
+      const cachedUser = useState<any>('auth:user')
+      cachedUser.value = confirmedUser
+
+      // Use soft navigation — middleware will redirect to /onboarding for new users
+      await navigateTo('/welcome')
     } catch (err: any) {
       console.error('Auth error:', err)
       showFriendlyAuthError(err)

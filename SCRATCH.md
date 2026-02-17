@@ -1,0 +1,11 @@
+1. I think they should be flat for now, and we can go back and assign a 'class' to each one later. I don't think 'temporal', 'document', 'actor', 'container' are sufficient. We will need many more than this, but now's not the time to discern what that list of classes should be since we don't have a broad enough set of entity types to make that decision. I understand that the main purpose of these classes is for human-level categorization and also for bespoke dialog features for each so if this is a blocker we can define a few additional ones In the meantime. Feel free to expand the list accordingly before we proceed, just don't expect for it to be the final forever list of entity classes/categories.
+
+2. I think it's useful for them to be present, I just wanna make sure they accurately reflect the reality of the system. Currently all the system entities have no records but there are clearly many projections, ontologies, collections, tags, etc present. I'm thinking about how we can have the system use these as the source of truth for what exists rather than using hard-coded lookup listst.
+
+3. I think we should definitely hae a tab in the detail view for this or generally some kind of way to view what is referencing/using that data source. This is a great idea, I'm down.
+
+---
+
+I'm thinking about how we can approach the concept of entity type inheritance as well, and how we can most effectively visually represent that.
+
+On another more human-level / ux note I'm also beginning to think about the concept of 'apps' as something more akin to 'worlds'. My personal life is my 'world'; A graph representing a fictional story for a game I'm making with characters, lore, magic systems, etc is a 'world'; My job is a 'world'; Research and knowledge work is all aobut understanding a 'world'. These aren't apps, they're worlds that each have their own ontolgoies. That said sometimes these worlds can overlap and share ontologies/records which is where both the marketplace concept or even some kind of scoping ontology comes in.... I know that's a lot, just thinking about how to represent this concept in the app especially as it relates to the separation of concerns and relationship between *orgs* and *apps*. Feels relevant as we solidify the 5 Ws of this whole trellis universe.

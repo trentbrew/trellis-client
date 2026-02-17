@@ -242,6 +242,12 @@ export function createLocalInstantDB(options: LocalInstantDBOptions = {}) {
     auth: {
       signOut,
       signInWithIdToken,
+      async sendMagicCode(_args: any) {
+        console.warn('[instant-local] sendMagicCode is a no-op in local mode')
+      },
+      async verifyMagicCode(_args: any) {
+        console.warn('[instant-local] verifyMagicCode is a no-op in local mode')
+      },
     },
     getAuth,
 

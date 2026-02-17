@@ -1,5 +1,5 @@
 <script lang="ts" setup>
-  import { getDevPort } from '~/lib/appConfig'
+  import { useTrellisConfig } from '~/composables/useTrellisConfig'
 
   definePageMeta({
     layout: 'auth',
@@ -7,6 +7,7 @@
 
   const db = useInstantDb()
   const config = useRuntimeConfig()
+  const { getDevPort } = useTrellisConfig()
   const devPort = getDevPort()
 
   const { $toast } = useNuxtApp()
@@ -34,6 +35,32 @@
     })
   }
 
+  /**
+   * Wait for InstantDB's auth state to propagate after signInWithIdToken.
+   * The HTTP call resolves before the WebSocket reconnects with the new
+   * refresh token, so getAuth() returns null if we navigate immediately.
+   * This polls subscribeAuth until a user appears (or times out).
+   */
+  function waitForAuth(timeoutMs = 5000): Promise<any | null> {
+    return new Promise((resolve) => {
+      let unsub: (() => void) | null = null
+      const timer = setTimeout(() => {
+        console.warn('[auth] waitForAuth timed out after', timeoutMs, 'ms')
+        unsub?.()
+        resolve(null)
+      }, timeoutMs)
+
+      unsub = db.subscribeAuth((auth: any) => {
+        console.log('[auth] subscribeAuth fired:', { hasUser: !!auth?.user, userId: auth?.user?.id })
+        if (auth?.user) {
+          clearTimeout(timer)
+          unsub?.()
+          resolve(auth.user)
+        }
+      })
+    })
+  }
+
   async function handleSignInWithGoogle(response: any) {
     isLoading.value = true
 
@@ -44,13 +71,30 @@
         nonce: nonce.value,
       })
 
-      // Invalidate cached auth state so middleware re-evaluates
-      const authInitialized = useState<boolean>('auth:initialized')
-      const cachedUser = useState<any>('auth:user')
-      authInitialized.value = false
-      cachedUser.value = null
+      // Wait for InstantDB's internal auth state to propagate via WebSocket.
+      // Returns the user object directly from subscribeAuth (not getAuth(),
+      // which may still return null due to internal state lag).
+      const confirmedUser = await waitForAuth()
 
-      window.location.href = '/'
+      if (!confirmedUser) {
+        $toast?.error('Sign-in succeeded but session failed to initialize. Please try again.')
+        isLoading.value = false
+        return
+      }
+
+      console.log('[auth] User confirmed, navigating:', confirmedUser.id)
+
+      // Seed the middleware cache with the confirmed user so it doesn't
+      // need to call getAuth() (which may still return null).
+      const authInitialized = useState<boolean>('auth:initialized')
+      authInitialized.value = false
+      const cachedUser = useState<any>('auth:user')
+      cachedUser.value = confirmedUser
+
+      // Soft navigation preserves the in-memory auth token.
+      // /welcome triggers the global auth middleware which handles
+      // onboarding checks, org/app setup, and demo seeding.
+      await navigateTo('/welcome')
     } catch (err: any) {
       console.error('Auth error:', err)
       showFriendlyAuthError(err)

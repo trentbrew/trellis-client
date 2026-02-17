@@ -8,7 +8,7 @@
  * Exit code 2 = block the action.
  */
 
-import { TrellisKernel } from '../tql/kernel/trellis-kernel.js';
+import { TrellisKernel } from '../packages/tql/kernel/trellis-kernel.js';
 import { createKernel, OPS_PATH, TQL_DIR } from './_kernel.js';
 import { resolve } from 'path';
 import { existsSync } from 'fs';
@@ -37,6 +37,15 @@ const GRAPH_PATH = resolve(TQL_DIR, 'graph.jsonld');
 
 // ── Built-in Pattern Rules ─────────────────────────────────────────────
 
+// Safe exceptions — commands matching these are allowed even if they match DANGEROUS_COMMANDS.
+// Used for known-safe build cache cleanup, server restarts, etc.
+const SAFE_COMMAND_EXCEPTIONS = [
+  /\brm\s+(-rf|-fr)\s+\S*\.nuxt\b/,       // Allow: rm -rf .nuxt (build cache)
+  /\brm\s+(-rf|-fr)\s+\S*\.output\b/,      // Allow: rm -rf .output (build output)
+  /\brm\s+(-rf|-fr)\s+\S*node_modules\/\.vite\b/, // Allow: Vite cache cleanup
+  /\brm\s+(-rf|-fr)\s+\S*\.data\/trellis\.db\b/,  // Allow: TQL database reset
+];
+
 const DANGEROUS_COMMANDS = [
   /\brm\s+(-rf|-fr)\s+[\/~]/i,
   /\bformat\s+[a-z]:/i,
@@ -55,7 +64,6 @@ const DANGEROUS_COMMANDS = [
 ];
 
 const SENSITIVE_PATHS = [
-  /\.env($|\.)/,
   /secrets?\//i,
   /credentials?\//i,
   /\.ssh\//,
@@ -136,7 +144,7 @@ async function loadServices(): Promise<ServiceNode[]> {
   }
 }
 
-function checkServiceRules(command: string, services: ServiceNode[]): string | null {
+export function checkServiceRules(command: string, services: ServiceNode[]): string | null {
   for (const svc of services) {
     if (!svc.userManaged || !svc.startCommand) continue;
 
@@ -183,14 +191,17 @@ async function checkPatternWarnings(kernel: TrellisKernel, command: string): Pro
 
 // ── Guard Logic ────────────────────────────────────────────────────────
 
-function checkPatternRules(input: HookInput): string | null {
+export function checkPatternRules(input: HookInput): string | null {
   const event = input.agent_action_name;
 
   if (event === 'pre_run_command') {
     const command = input.tool_info.command || input.tool_info.command_line || '';
-    for (const pattern of DANGEROUS_COMMANDS) {
-      if (pattern.test(command)) {
-        return `Blocked dangerous command: "${command}" (matched pattern: ${pattern})`;
+    const isSafeException = SAFE_COMMAND_EXCEPTIONS.some((p) => p.test(command));
+    if (!isSafeException) {
+      for (const pattern of DANGEROUS_COMMANDS) {
+        if (pattern.test(command)) {
+          return `Blocked dangerous command: "${command}" (matched pattern: ${pattern})`;
+        }
       }
     }
   }

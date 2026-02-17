@@ -6,9 +6,8 @@
 echo "🧪 Testing Auth Bypass Feature"
 echo ""
 
-# Get port from JSON-LD graph
-CONFIG_FILE="app/config/app-config.jsonld"
-PORT=$(jq -r '.["@graph"][] | select(.["@type"] == "app:Application") | .devPort // 4141' "$CONFIG_FILE")
+# Get port from environment
+PORT="${TRELLIS_PORT:-1414}"
 
 # Check if dev server is already running
 if curl -s "http://localhost:$PORT" > /dev/null 2>&1; then

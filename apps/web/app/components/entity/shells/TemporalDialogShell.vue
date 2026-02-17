@@ -1,13 +1,13 @@
 <script lang="ts" setup>
   /**
-   * TemporalDialogShell — Alias for CalendarItemDialogShell.
+   * TemporalDialogShell — Alias for EntityDialogShell.
    *
    * Temporal entities (task, event, trip, payment) share the same dialog chrome:
    * schedule badges, date pickers, mini-calendar sidebar, nav arrows.
    *
    * This thin wrapper exists so the entity registry can reference
    * 'TemporalDialogShell' consistently, while the actual implementation
-   * lives in CalendarItemDialogShell for backward compatibility.
+   * lives in EntityDialogShell for backward compatibility.
    */
 
   defineProps<{
@@ -34,7 +34,7 @@
 </script>
 
 <template>
-  <CalendarItemDialogShell
+  <EntityDialogShell
     :open="open"
     :title="title"
     :description="description"
@@ -64,5 +64,5 @@
     <template v-if="$slots['header-badges']" #header-badges>
       <slot name="header-badges" />
     </template>
-  </CalendarItemDialogShell>
+  </EntityDialogShell>
 </template>

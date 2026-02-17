@@ -113,7 +113,7 @@ const handleCancel = () => {
       <div class="flex-1 overflow-hidden flex flex-col min-h-0">
         <!-- Fields List -->
         <div class="flex-1 overflow-y-auto pr-2 space-y-2">
-          <SchemaSchemaFieldEditor
+          <SchemaFieldEditor
             v-for="(field, index) in localSchema.fields"
             :key="field.id"
             :field="field"
@@ -179,7 +179,7 @@ const handleCancel = () => {
 
             <!-- Field Type Grid -->
             <div class="grid grid-cols-2 gap-2 max-h-48 overflow-y-auto">
-              <SchemaFieldTypeCard
+              <FieldTypeCard
                 v-for="fieldType in currentCategoryFields"
                 :key="fieldType.id"
                 :field-type="fieldType"

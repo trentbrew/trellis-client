@@ -1,0 +1,78 @@
+# Trellis — Cursor Rules
+
+You are working inside the **Trellis** monorepo — a personal knowledge graph platform.
+
+Read `AGENTS.md` in the repo root for the complete reference. Key points below.
+
+## What This Is
+
+Trellis is a personal knowledge graph where everything is an entity with typed properties and semantic links. The graph powers a Nuxt 3 web app on `localhost:$TRELLIS_PORT` with realtime sync via SSE.
+
+## What You Can Do
+
+You can interact with the graph via CLI or REST API:
+
+```bash
+# Query
+just trellis query 'FIND calendaritem AS ?t WHERE ?t.type = "task"' --pretty
+
+# CRUD entities
+just trellis create --type calendaritem --id 'calendaritem:my-task' --data '{"type":"task","title":"My Task"}' --agent-id cursor
+just trellis update calendaritem:my-task --type calendaritem --data '{"title":"Updated"}' --agent-id cursor
+just trellis delete calendaritem:my-task --agent-id cursor
+
+# Link entities
+just trellis link calendaritem:task-1 relatedTo calendaritem:note-1
+
+# Ontology CRUD (auto-scaffolds UI)
+just trellis ontology create --id 'trellis:schema/invoice' --fields '[{"name":"title","valueType":"title","required":true},{"name":"amount","valueType":"number"}]'
+just trellis ontology list --pretty
+```
+
+## Architecture
+
+```
+apps/web/              Nuxt 3 app (localhost:$TRELLIS_PORT)
+packages/tql/          TQL kernel, EAV store, EQL-S query engine
+packages/trellis-cli/  CLI + TypeScript SDK
+packages/trellis-mcp/  MCP server (15 tools)
+packages/types/        Shared TypeScript types
+```
+
+## Entity System
+
+Two-axis: **class** (temporal, document, actor, container) × **type** (task, note, person, project, etc.)
+
+Entity IDs: `calendaritem:task-1`, `calendaritem:note-meeting`
+
+## Key Rules
+
+- Dev server is always on `localhost:$TRELLIS_PORT` — **never start it yourself**
+- Pass `--agent-id cursor` to track your mutations
+- Use descriptive entity ID slugs — `"task-deploy-v2"` not `"abc123"`
+- Mutations appear instantly in the browser via SSE
+- Every entity needs at minimum `{ title: "..." }`
+- Create both entities first, then link them
+
+## MCP Server
+
+If you have MCP support, connect to the Trellis MCP server:
+
+```json
+{
+  "mcpServers": {
+    "trellis-graph": {
+      "command": "node",
+      "args": ["packages/trellis-mcp/bin/serve.mjs"],
+      "env": { "TRELLIS_PORT": "1414", "TRELLIS_AGENT_ID": "cursor" }
+    }
+  }
+}
+```
+
+15 tools: `query_graph`, `get_node`, `get_nodes`, `create_node`, `update_node`, `delete_node`, `link_nodes`, `graph_health`, `get_schema`, `get_catalog`, `get_mutation_log`, `get_ontology`, `create_ontology`, `update_ontology`, `delete_ontology`
+
+## Full Reference
+
+- `AGENTS.md` — API endpoints, entity architecture, CLI commands, SDK, MCP tools
+- `packages/trellis-mcp/SKILL.md` — Entity fields, linking conventions, query syntax

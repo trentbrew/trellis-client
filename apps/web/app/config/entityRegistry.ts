@@ -1,11 +1,20 @@
 /**
- * Entity Registry
+ * Entity Registry — Synchronous Fallback
  *
- * Single source of truth mapping every EntityType → its full UI config:
+ * Static baseline mapping every EntityType → its full UI config:
  * class, label, icon, projections, dialog shell, panel components, actions.
  *
- * Consumed by useEntityRegistry composable and any component that needs
- * to resolve how an entity type should look/behave at runtime.
+ * PRIMARY SOURCE: Server ontologies in `tql-ontologies.ts` served via
+ * `GET /api/graph/config`. Use `useOntologyRegistry().getEntityConfig()`
+ * for reactive, server-sourced lookups in Vue components.
+ *
+ * This file is the FALLBACK for:
+ * - SSR / initial render (before server config is fetched)
+ * - Synchronous module-level imports (dialogs, type guards)
+ * - Property field definitions (typeHasField, getPropertyFieldsForType)
+ *
+ * New consumers should prefer `useOntologyRegistry` over direct imports
+ * from this file.
  */
 
 import type {
@@ -203,6 +212,286 @@ const F: Record<PropertyFieldId, PropertyFieldConfig> = {
     computed: false,
     defaultValue: [],
   },
+
+  // ── Payment fields ──────────────────────────────────────────────────────
+  amount: {
+    id: 'amount',
+    group: 'type-specific' as any,
+    label: 'Amount',
+    icon: 'lucide:banknote',
+    display: 'popover',
+    editable: true,
+    required: false,
+    computed: false,
+    defaultValue: 0,
+  },
+  currency: {
+    id: 'currency',
+    group: 'type-specific' as any,
+    label: 'Currency',
+    icon: 'lucide:coins',
+    display: 'popover',
+    editable: true,
+    required: false,
+    computed: false,
+    defaultValue: 'USD',
+  },
+  payee: {
+    id: 'payee',
+    group: 'type-specific' as any,
+    label: 'Payee',
+    icon: 'lucide:user-check',
+    display: 'popover',
+    editable: true,
+    required: false,
+    computed: false,
+  },
+  invoiceNumber: {
+    id: 'invoiceNumber',
+    group: 'type-specific' as any,
+    label: 'Invoice #',
+    icon: 'lucide:hash',
+    display: 'popover',
+    editable: true,
+    required: false,
+    computed: false,
+  },
+  paymentStatus: {
+    id: 'paymentStatus',
+    group: 'type-specific' as any,
+    label: 'Payment Status',
+    icon: 'lucide:clock',
+    display: 'popover',
+    editable: true,
+    required: false,
+    computed: false,
+  },
+  recurring: {
+    id: 'recurring',
+    group: 'type-specific' as any,
+    label: 'Recurring',
+    icon: 'lucide:repeat',
+    display: 'toggle',
+    editable: true,
+    required: false,
+    computed: false,
+    defaultValue: false,
+  },
+
+  // ── Trip fields ─────────────────────────────────────────────────────────
+  origin: {
+    id: 'origin',
+    group: 'type-specific' as any,
+    label: 'Origin',
+    icon: 'lucide:map-pin',
+    display: 'popover',
+    editable: true,
+    required: false,
+    computed: false,
+  },
+  destination: {
+    id: 'destination',
+    group: 'type-specific' as any,
+    label: 'Destination',
+    icon: 'lucide:map-pin',
+    display: 'popover',
+    editable: true,
+    required: false,
+    computed: false,
+  },
+  transportation: {
+    id: 'transportation',
+    group: 'type-specific' as any,
+    label: 'Transport',
+    icon: 'lucide:navigation',
+    display: 'popover',
+    editable: true,
+    required: false,
+    computed: false,
+  },
+  tripStatus: {
+    id: 'tripStatus',
+    group: 'type-specific' as any,
+    label: 'Trip Status',
+    icon: 'lucide:map',
+    display: 'popover',
+    editable: true,
+    required: false,
+    computed: false,
+  },
+  tripBudget: {
+    id: 'tripBudget',
+    group: 'type-specific' as any,
+    label: 'Budget',
+    icon: 'lucide:wallet',
+    display: 'popover',
+    editable: true,
+    required: false,
+    computed: false,
+  },
+  confirmationNumber: {
+    id: 'confirmationNumber',
+    group: 'type-specific' as any,
+    label: 'Confirmation #',
+    icon: 'lucide:ticket',
+    display: 'popover',
+    editable: true,
+    required: false,
+    computed: false,
+  },
+
+  // ── Sprint fields ───────────────────────────────────────────────────────
+  sprintStatus: {
+    id: 'sprintStatus',
+    group: 'type-specific' as any,
+    label: 'Sprint Status',
+    icon: 'lucide:zap',
+    display: 'popover',
+    editable: true,
+    required: false,
+    computed: false,
+  },
+  velocity: {
+    id: 'velocity',
+    group: 'type-specific' as any,
+    label: 'Velocity',
+    icon: 'lucide:gauge',
+    display: 'popover',
+    editable: true,
+    required: false,
+    computed: false,
+  },
+  sprintGoal: {
+    id: 'sprintGoal',
+    group: 'type-specific' as any,
+    label: 'Sprint Goal',
+    icon: 'lucide:target',
+    display: 'popover',
+    editable: true,
+    required: false,
+    computed: false,
+  },
+
+  // ── Milestone fields ────────────────────────────────────────────────────
+  achieved: {
+    id: 'achieved',
+    group: 'type-specific' as any,
+    label: 'Achieved',
+    icon: 'lucide:check-circle',
+    display: 'toggle',
+    editable: true,
+    required: false,
+    computed: false,
+    defaultValue: false,
+  },
+  projectId: {
+    id: 'projectId',
+    group: 'type-specific' as any,
+    label: 'Project',
+    icon: 'lucide:folder-kanban',
+    display: 'popover',
+    editable: true,
+    required: false,
+    computed: false,
+  },
+
+  // ── Budget fields ───────────────────────────────────────────────────────
+  budgetAmount: {
+    id: 'budgetAmount',
+    group: 'type-specific' as any,
+    label: 'Amount',
+    icon: 'lucide:banknote',
+    display: 'popover',
+    editable: true,
+    required: false,
+    computed: false,
+    defaultValue: 0,
+  },
+  budgetCurrency: {
+    id: 'budgetCurrency',
+    group: 'type-specific' as any,
+    label: 'Currency',
+    icon: 'lucide:coins',
+    display: 'popover',
+    editable: true,
+    required: false,
+    computed: false,
+    defaultValue: 'USD',
+  },
+  budgetStatus: {
+    id: 'budgetStatus',
+    group: 'type-specific' as any,
+    label: 'Budget Status',
+    icon: 'lucide:wallet',
+    display: 'popover',
+    editable: true,
+    required: false,
+    computed: false,
+  },
+
+  // ── Goal fields ─────────────────────────────────────────────────────────
+  metric: {
+    id: 'metric',
+    group: 'type-specific' as any,
+    label: 'Metric',
+    icon: 'lucide:bar-chart-3',
+    display: 'popover',
+    editable: true,
+    required: false,
+    computed: false,
+  },
+  targetDate: {
+    id: 'targetDate',
+    group: 'type-specific' as any,
+    label: 'Target Date',
+    icon: 'lucide:calendar-check',
+    display: 'popover',
+    editable: true,
+    required: false,
+    computed: false,
+  },
+  currentValue: {
+    id: 'currentValue',
+    group: 'type-specific' as any,
+    label: 'Current',
+    icon: 'lucide:trending-up',
+    display: 'popover',
+    editable: true,
+    required: false,
+    computed: false,
+  },
+  targetValue: {
+    id: 'targetValue',
+    group: 'type-specific' as any,
+    label: 'Target',
+    icon: 'lucide:target',
+    display: 'popover',
+    editable: true,
+    required: false,
+    computed: false,
+  },
+
+  // ── Event fields ────────────────────────────────────────────────────────
+  location: {
+    id: 'location',
+    group: 'type-specific' as any,
+    label: 'Location',
+    icon: 'lucide:map-pin',
+    display: 'popover',
+    editable: true,
+    required: false,
+    computed: false,
+  },
+  eventSubtype: {
+    id: 'eventSubtype',
+    group: 'type-specific' as any,
+    label: 'Event Type',
+    icon: 'lucide:calendar',
+    display: 'popover',
+    editable: true,
+    required: false,
+    computed: false,
+  },
 }
 
 /** Pick fields by ID in the order specified */
@@ -240,6 +529,7 @@ const ENTITY_TYPES: Record<EntityType, EntityTypeConfig> = {
     icon: 'lucide:check-square',
     color: 'blue',
     projections: ['kanban', 'calendar', 'list', 'table', 'timeline'],
+    defaultProjection: 'kanban',
     dialogShell: 'temporal',
     panels: {
       properties: 'TaskProperties',
@@ -259,13 +549,14 @@ const ENTITY_TYPES: Record<EntityType, EntityTypeConfig> = {
     icon: 'lucide:calendar',
     color: 'purple',
     projections: ['calendar', 'timeline', 'list', 'table'],
+    defaultProjection: 'calendar',
     dialogShell: 'temporal',
     panels: {
       properties: 'EventProperties',
       content: 'EventContent',
       footerActions: ['duplicate', 'delete'],
     },
-    propertyFields: fields('type', 'startDate', 'endDate', 'allDay', 'timeRange', 'category', 'owner', 'involved', 'tags'),
+    propertyFields: fields('type', 'eventSubtype', 'location', 'startDate', 'endDate', 'allDay', 'timeRange', 'category', 'owner', 'involved', 'tags'),
     defaultSortField: 'startDate',
     searchFields: ['title', 'description', 'location'],
   },
@@ -278,13 +569,14 @@ const ENTITY_TYPES: Record<EntityType, EntityTypeConfig> = {
     icon: 'lucide:plane',
     color: 'cyan',
     projections: ['calendar', 'timeline', 'list', 'card-grid'],
+    defaultProjection: 'calendar',
     dialogShell: 'temporal',
     panels: {
       properties: 'TripProperties',
       content: 'TripContent',
       footerActions: ['duplicate', 'archive', 'delete'],
     },
-    propertyFields: fields('type', 'startDate', 'endDate', 'allDay', 'category', 'owner', 'involved', 'tags'),
+    propertyFields: fields('type', 'tripStatus', 'origin', 'destination', 'transportation', 'tripBudget', 'confirmationNumber', 'startDate', 'endDate', 'allDay', 'category', 'owner', 'involved', 'tags'),
     defaultSortField: 'startDate',
     searchFields: ['title', 'destination', 'origin'],
   },
@@ -297,13 +589,14 @@ const ENTITY_TYPES: Record<EntityType, EntityTypeConfig> = {
     icon: 'lucide:credit-card',
     color: 'emerald',
     projections: ['calendar', 'list', 'table'],
+    defaultProjection: 'table',
     dialogShell: 'temporal',
     panels: {
       properties: 'PaymentProperties',
       content: 'PaymentContent',
       footerActions: ['markPaid', 'void', 'delete'],
     },
-    propertyFields: fields('type', 'startDate', 'allDay', 'priority', 'urgency', 'category', 'owner', 'tags'),
+    propertyFields: fields('type', 'paymentStatus', 'amount', 'currency', 'payee', 'invoiceNumber', 'recurring', 'startDate', 'allDay', 'priority', 'urgency', 'category', 'owner', 'tags'),
     defaultSortField: 'startDate',
     searchFields: ['title', 'payee', 'invoiceNumber'],
   },
@@ -316,6 +609,7 @@ const ENTITY_TYPES: Record<EntityType, EntityTypeConfig> = {
     icon: 'lucide:stethoscope',
     color: 'rose',
     projections: ['calendar', 'list', 'table', 'timeline'],
+    defaultProjection: 'calendar',
     dialogShell: 'temporal',
     panels: {
       properties: 'AppointmentProperties',
@@ -335,6 +629,7 @@ const ENTITY_TYPES: Record<EntityType, EntityTypeConfig> = {
     icon: 'lucide:bell',
     color: 'amber',
     projections: ['list', 'calendar'],
+    defaultProjection: 'list',
     dialogShell: 'temporal',
     panels: {
       properties: 'ReminderProperties',
@@ -354,6 +649,7 @@ const ENTITY_TYPES: Record<EntityType, EntityTypeConfig> = {
     icon: 'lucide:alarm-clock',
     color: 'red',
     projections: ['calendar', 'timeline', 'list'],
+    defaultProjection: 'calendar',
     dialogShell: 'temporal',
     panels: {
       properties: 'DeadlineProperties',
@@ -373,13 +669,54 @@ const ENTITY_TYPES: Record<EntityType, EntityTypeConfig> = {
     icon: 'lucide:flag',
     color: 'orange',
     projections: ['timeline', 'list', 'calendar'],
+    defaultProjection: 'timeline',
     dialogShell: 'temporal',
     panels: {
       properties: 'MilestoneProperties',
       content: 'MilestoneContent',
       footerActions: ['achieve', 'delete'],
     },
-    propertyFields: fields('type', 'startDate', 'allDay', 'category', 'owner', 'tags'),
+    propertyFields: fields('type', 'achieved', 'projectId', 'startDate', 'allDay', 'category', 'owner', 'tags'),
+    defaultSortField: 'startDate',
+    searchFields: ['title', 'description'],
+  },
+
+  sprint: {
+    type: 'sprint',
+    class: 'temporal',
+    label: 'Sprint',
+    labelPlural: 'Sprints',
+    icon: 'lucide:zap',
+    color: 'violet',
+    projections: ['list', 'kanban', 'timeline'],
+    defaultProjection: 'list',
+    dialogShell: 'temporal',
+    panels: {
+      properties: 'SprintProperties',
+      content: 'SprintContent',
+      footerActions: ['complete', 'cancel', 'delete'],
+    },
+    propertyFields: fields('type', 'sprintStatus', 'velocity', 'sprintGoal', 'startDate', 'endDate', 'allDay', 'category', 'owner', 'involved', 'tags'),
+    defaultSortField: 'startDate',
+    searchFields: ['title', 'description'],
+  },
+
+  budget: {
+    type: 'budget',
+    class: 'temporal',
+    label: 'Budget',
+    labelPlural: 'Budgets',
+    icon: 'lucide:wallet',
+    color: 'emerald',
+    projections: ['list', 'table'],
+    defaultProjection: 'list',
+    dialogShell: 'temporal',
+    panels: {
+      properties: 'BudgetProperties',
+      content: 'BudgetContent',
+      footerActions: ['close', 'archive', 'delete'],
+    },
+    propertyFields: fields('type', 'budgetStatus', 'budgetAmount', 'budgetCurrency', 'startDate', 'endDate', 'category', 'owner', 'tags'),
     defaultSortField: 'startDate',
     searchFields: ['title', 'description'],
   },
@@ -394,6 +731,7 @@ const ENTITY_TYPES: Record<EntityType, EntityTypeConfig> = {
     icon: 'lucide:sticky-note',
     color: 'yellow',
     projections: ['card-grid', 'list', 'table'],
+    defaultProjection: 'card-grid',
     dialogShell: 'document',
     panels: {
       properties: 'NoteProperties',
@@ -413,6 +751,7 @@ const ENTITY_TYPES: Record<EntityType, EntityTypeConfig> = {
     icon: 'lucide:file',
     color: 'slate',
     projections: ['card-grid', 'list', 'table'],
+    defaultProjection: 'card-grid',
     dialogShell: 'document',
     panels: {
       properties: 'FileProperties',
@@ -432,6 +771,7 @@ const ENTITY_TYPES: Record<EntityType, EntityTypeConfig> = {
     icon: 'lucide:book-open',
     color: 'indigo',
     projections: ['list', 'card-grid'],
+    defaultProjection: 'list',
     dialogShell: 'document',
     panels: {
       properties: 'PageProperties',
@@ -451,6 +791,7 @@ const ENTITY_TYPES: Record<EntityType, EntityTypeConfig> = {
     icon: 'lucide:copy',
     color: 'violet',
     projections: ['list', 'card-grid', 'table'],
+    defaultProjection: 'list',
     dialogShell: 'document',
     panels: {
       properties: 'TemplateProperties',
@@ -460,6 +801,46 @@ const ENTITY_TYPES: Record<EntityType, EntityTypeConfig> = {
     propertyFields: fields('type', 'category', 'owner', 'tags'),
     defaultSortField: 'title',
     searchFields: ['title', 'description'],
+  },
+
+  slide_deck: {
+    type: 'slide_deck',
+    class: 'document',
+    label: 'Slide Deck',
+    labelPlural: 'Slide Decks',
+    icon: 'lucide:presentation',
+    color: 'rose',
+    projections: ['slide-deck', 'list', 'table'],
+    defaultProjection: 'slide-deck',
+    dialogShell: 'document',
+    panels: {
+      properties: 'SlideDeckProperties',
+      content: 'SlideDeckContent',
+      footerActions: ['present', 'duplicate', 'delete'],
+    },
+    propertyFields: fields('type', 'pin', 'category', 'owner', 'tags'),
+    defaultSortField: 'updatedAt',
+    searchFields: ['title', 'description'],
+  },
+
+  bookmark: {
+    type: 'bookmark',
+    class: 'document',
+    label: 'Bookmark',
+    labelPlural: 'Bookmarks',
+    icon: 'lucide:bookmark',
+    color: 'sky',
+    projections: ['card-grid', 'list', 'table', 'moodboard'],
+    defaultProjection: 'card-grid',
+    dialogShell: 'document',
+    panels: {
+      properties: 'BookmarkProperties',
+      content: 'BookmarkContent',
+      footerActions: ['pin', 'archive', 'delete'],
+    },
+    propertyFields: fields('pin', 'tags'),
+    defaultSortField: 'updatedAt',
+    searchFields: ['title', 'url', 'description', 'siteName', 'excerpt'],
   },
 
   // ── Actor ────────────────────────────────────────────────────────────────
@@ -472,6 +853,7 @@ const ENTITY_TYPES: Record<EntityType, EntityTypeConfig> = {
     icon: 'lucide:user',
     color: 'sky',
     projections: ['table', 'card-grid', 'list', 'graph'],
+    defaultProjection: 'table',
     dialogShell: 'actor',
     panels: {
       properties: 'PersonProperties',
@@ -491,6 +873,7 @@ const ENTITY_TYPES: Record<EntityType, EntityTypeConfig> = {
     icon: 'lucide:contact',
     color: 'teal',
     projections: ['table', 'card-grid', 'list'],
+    defaultProjection: 'table',
     dialogShell: 'actor',
     panels: {
       properties: 'ContactProperties',
@@ -510,6 +893,7 @@ const ENTITY_TYPES: Record<EntityType, EntityTypeConfig> = {
     icon: 'lucide:building-2',
     color: 'zinc',
     projections: ['table', 'card-grid', 'list', 'graph'],
+    defaultProjection: 'table',
     dialogShell: 'actor',
     panels: {
       properties: 'OrganizationProperties',
@@ -529,6 +913,7 @@ const ENTITY_TYPES: Record<EntityType, EntityTypeConfig> = {
     icon: 'lucide:store',
     color: 'lime',
     projections: ['table', 'card-grid', 'list'],
+    defaultProjection: 'table',
     dialogShell: 'actor',
     panels: {
       properties: 'VendorProperties',
@@ -550,6 +935,7 @@ const ENTITY_TYPES: Record<EntityType, EntityTypeConfig> = {
     icon: 'lucide:folder-kanban',
     color: 'blue',
     projections: ['kanban', 'list', 'table', 'timeline', 'dashboard'],
+    defaultProjection: 'kanban',
     dialogShell: 'container',
     panels: {
       properties: 'ProjectProperties',
@@ -569,6 +955,7 @@ const ENTITY_TYPES: Record<EntityType, EntityTypeConfig> = {
     icon: 'lucide:folder',
     color: 'amber',
     projections: ['list', 'table'],
+    defaultProjection: 'list',
     dialogShell: 'container',
     panels: {
       properties: 'FolderProperties',
@@ -588,6 +975,7 @@ const ENTITY_TYPES: Record<EntityType, EntityTypeConfig> = {
     icon: 'lucide:database',
     color: 'indigo',
     projections: ['list', 'card-grid', 'table'],
+    defaultProjection: 'table',
     dialogShell: 'container',
     panels: {
       properties: 'CollectionProperties',
@@ -607,13 +995,14 @@ const ENTITY_TYPES: Record<EntityType, EntityTypeConfig> = {
     icon: 'lucide:target',
     color: 'emerald',
     projections: ['list', 'kanban', 'table', 'timeline'],
+    defaultProjection: 'kanban',
     dialogShell: 'container',
     panels: {
       properties: 'GoalProperties',
       content: 'GoalContent',
       footerActions: ['complete', 'archive', 'delete'],
     },
-    propertyFields: fields('type', 'status', 'endDate', 'category', 'owner', 'involved', 'tags'),
+    propertyFields: fields('type', 'status', 'metric', 'targetDate', 'currentValue', 'targetValue', 'endDate', 'category', 'owner', 'involved', 'tags'),
     defaultSortField: 'title',
     searchFields: ['title', 'description', 'metric'],
   },
@@ -647,6 +1036,12 @@ export function getTypesForClass(entityClass: EntityClass): EntityTypeConfig[] {
 /** Get allowed projections for a type (type-specific override of class defaults) */
 export function getProjectionsForType(type: EntityType): ProjectionType[] {
   return ENTITY_TYPES[type].projections
+}
+
+/** Get the default projection for a type, falling back to first in projections list */
+export function getDefaultProjectionForType(type: EntityType): ProjectionType {
+  const config = ENTITY_TYPES[type]
+  return config.defaultProjection ?? config.projections[0] ?? 'table'
 }
 
 /** Get panel config for a type */

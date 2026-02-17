@@ -4,10 +4,6 @@
 
   // Navigation routes
   const routes = useRoutes()
-
-  const secondaryRoutes = computed(() => {
-    return routes.secondaryRailRoutes.value || []
-  })
 </script>
 
 <template>
@@ -21,7 +17,7 @@
         to="/"
         class="flex h-9 w-9 items-center justify-center rounded-lg transition bg-transparent hover:bg-transparent"
         :class="isInEditMode ? 'bg-accent-foreground/10 hover:bg-accent-foreground/20' : 'bg-rail-foreground/10 hover:bg-rail-foreground/20'">
-        <img src="https://trentbrew.pockethost.io/api/files/swvnum16u65or8w/75p6fv4xnwa3mq7/a_g_ciBq3Onk8f.svg?token=" alt="Logo" class="h-5 w-5" />
+        <AppLogo />
       </AppNavLink>
     </div>
 
@@ -37,12 +33,12 @@
                 routes.isRouteActive(route.path)
                   ? isInEditMode
                     ? 'bg-accent-foreground/10 text-accent-foreground/80'
-                    : 'bg-rail-foreground/10 text-rail-foreground/80'
+                    : 'bg-rail-foreground/10 text-foreground'
                   : isInEditMode
                     ? 'text-accent-foreground/70 hover:bg-accent-foreground/10 hover:text-accent-foreground'
                     : 'text-rail-foreground/70 hover:bg-rail-foreground/10 hover:text-rail-foreground',
               ]">
-              <Icon :name="route.icon" class="h-4 w-4" />
+              <Icon :name="route.icon" class="h-4 w-4 opacity-50" />
             </AppNavLink>
           </UiTooltipTrigger>
           <UiTooltipContent side="right">{{ route.label }}</UiTooltipContent>
@@ -54,8 +50,8 @@
     <div class="flex-1" />
 
     <!-- Secondary Navigation Routes -->
-    <div v-if="secondaryRoutes.length > 0" class="flex flex-col gap-1 pb-2">
-      <template v-for="route in secondaryRoutes" :key="route.path">
+    <div v-if="routes.secondaryRailRoutes.value?.length > 0" class="flex flex-col gap-1 pb-2">
+      <template v-for="route in routes.secondaryRailRoutes.value" :key="route.path">
         <UiTooltip>
           <UiTooltipTrigger as-child>
             <AppNavLink
@@ -65,12 +61,12 @@
                 routes.isRouteActive(route.path)
                   ? isInEditMode
                     ? 'bg-accent-foreground/10 text-accent-foreground/80'
-                    : 'bg-rail-foreground/10 text-rail-foreground/80'
+                    : 'bg-rail-foreground/10 text-foreground'
                   : isInEditMode
                     ? 'text-accent-foreground/70 hover:bg-accent-foreground/10 hover:text-accent-foreground'
                     : 'text-rail-foreground/70 hover:bg-rail-foreground/10 hover:text-rail-foreground',
               ]">
-              <Icon :name="route.icon" class="h-4 w-4" />
+              <Icon :name="route.icon" class="h-4 w-4 opacity-50" />
             </AppNavLink>
           </UiTooltipTrigger>
           <UiTooltipContent side="right">{{ route.label }}</UiTooltipContent>

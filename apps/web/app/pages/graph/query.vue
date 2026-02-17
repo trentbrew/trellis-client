@@ -1,7 +1,9 @@
 <script setup lang="ts">
+  import { entityQuery } from '~/lib/tql-namespace'
+
   const graph = useTrellisGraph()
 
-  const queryText = ref('FIND calendaritem AS ?e')
+  const queryText = ref(entityQuery('?e'))
   const results = ref<Record<string, unknown>[]>([])
   const meta = ref<{ executionTime?: number; plan?: string; trace?: unknown[] } | null>(null)
   const error = ref<string | null>(null)
@@ -9,12 +11,12 @@
   const projectionsList = ref<{ id: string; name: string; query: string }[]>([])
 
   const presets = [
-    { label: 'All entities', query: 'FIND calendaritem AS ?e' },
-    { label: 'Tasks only', query: 'FIND calendaritem AS ?t WHERE ?t.type = "task"' },
-    { label: 'Events only', query: 'FIND calendaritem AS ?t WHERE ?t.type = "event"' },
-    { label: 'Notes only', query: 'FIND calendaritem AS ?t WHERE ?t.type = "note"' },
-    { label: 'Payments only', query: 'FIND calendaritem AS ?t WHERE ?t.type = "payment"' },
-    { label: 'High priority', query: 'FIND calendaritem AS ?t WHERE ?t.priority = "high"' },
+    { label: 'All entities', query: entityQuery('?e') },
+    { label: 'Tasks only', query: `${entityQuery('?t')} WHERE ?t.type = "task"` },
+    { label: 'Events only', query: `${entityQuery('?t')} WHERE ?t.type = "event"` },
+    { label: 'Notes only', query: `${entityQuery('?t')} WHERE ?t.type = "note"` },
+    { label: 'Payments only', query: `${entityQuery('?t')} WHERE ?t.type = "payment"` },
+    { label: 'High priority', query: `${entityQuery('?t')} WHERE ?t.priority = "high"` },
   ]
 
   const executeQuery = async () => {
@@ -124,7 +126,7 @@
           v-model="queryText"
           rows="3"
           class="w-full bg-muted/30 px-4 py-3 text-sm font-mono placeholder:text-muted-foreground focus:outline-none resize-y"
-          placeholder="FIND calendaritem AS ?e"
+          :placeholder="entityQuery('?e')"
           @keydown.meta.enter="executeQuery"
           @keydown.ctrl.enter="executeQuery" />
         <div class="flex items-center justify-between px-4 py-1.5 bg-muted/10 text-[10px] text-muted-foreground">

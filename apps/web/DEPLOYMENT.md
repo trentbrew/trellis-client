@@ -1,12 +1,12 @@
-# Deployment Guide - Platform Sandbox V2
+# Deployment Guide - Trellis Web App
 
 ## Overview
 
-The v2 app is deployed to **Firebase Hosting** under the `toolkit-playground-ceecf` project.
+The Trellis web app is deployed to **Firebase Hosting** under the Trellis project.
 
-- **Production URL**: https://toolkit-ui-v2.web.app
-- **Firebase Project**: `toolkit-playground-ceecf`
-- **Hosting Target**: `v2` → `toolkit-ui-v2`
+- **Production URL**: (TBD)
+- **Firebase Project**: `trellis-web` (update when provisioned)
+- **Hosting Target**: `v2` → `trellis-web`
 
 ## Prerequisites
 
@@ -32,14 +32,14 @@ The v2 app is deployed to **Firebase Hosting** under the `toolkit-playground-cee
 Using just (recommended):
 
 ```bash
-cd apps/v2
+cd apps/web
 just deploy
 ```
 
 Or manually:
 
 ```bash
-cd apps/v2
+cd apps/web
 pnpm build
 firebase deploy --only hosting:v2
 ```
@@ -58,17 +58,17 @@ firebase deploy --only hosting:v2
 
 ### `.firebaserc`
 
-Defines the Firebase project and hosting targets:
+Defines the Firebase project and hosting targets (update when Trellis project is provisioned):
 
 ```json
 {
   "projects": {
-    "default": "toolkit-playground-ceecf"
+    "default": "trellis-web"
   },
   "targets": {
-    "toolkit-playground-ceecf": {
+    "trellis-web": {
       "hosting": {
-        "v2": ["toolkit-ui-v2"]
+        "v2": ["trellis-web"]
       }
     }
   }
@@ -110,7 +110,7 @@ This is configured in `nuxt.config.ts` with `ssr: false` for client-side renderi
 For production deployments, ensure these are configured:
 
 - `GOOGLE_CLIENT_ID` - Google OAuth client ID
-- `INSTANT_APP_ID` - InstantDB app ID
+- `INSTANTDB_APP_ID` - InstantDB app ID
 
 These can be set in Firebase Hosting environment or in a `.env` file before building.
 
@@ -118,14 +118,14 @@ These can be set in Firebase Hosting environment or in a `.env` file before buil
 
 ### "Not in a Firebase app directory"
 
-Make sure you're running commands from the `apps/v2` directory, not the monorepo root.
+Make sure you're running commands from the `apps/web` directory, not the monorepo root.
 
 ### Target not configured
 
-Run:
+Run (once project exists):
 
 ```bash
-firebase target:apply hosting v2 toolkit-ui-v2 --project toolkit-playground-ceecf
+firebase target:apply hosting v2 trellis-web --project trellis-web
 ```
 
 ### Build fails

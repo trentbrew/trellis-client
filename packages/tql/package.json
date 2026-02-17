@@ -22,6 +22,10 @@
       "types": "./persist/backend.ts",
       "import": "./persist/backend.ts"
     },
+    "./persist/jsonl": {
+      "types": "./persist/jsonl-backend.ts",
+      "import": "./persist/jsonl-backend.ts"
+    },
     "./persist/better-sqlite": {
       "types": "./persist/better-sqlite-backend.ts",
       "import": "./persist/better-sqlite-backend.ts"
