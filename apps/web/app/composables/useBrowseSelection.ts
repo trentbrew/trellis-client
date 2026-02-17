@@ -16,6 +16,12 @@ export function useBrowseSelection(
 
   const selection = useEntitySelection(filteredItems)
 
+  // Checkbox clicks (@select) should always be additive — users expect each
+  // checkbox click to toggle that single item without clearing others.
+  const toggleSelection = (id: string, event?: MouseEvent | KeyboardEvent) => {
+    selection.toggle(id, event, true)
+  }
+
   const handleFieldUpdate = async (item: Entity, fieldId: PropertyFieldId, value: unknown) => {
     const propKey = resolvePropertyKey(fieldId, item.type)
     const updated = { ...item, [propKey]: value }
@@ -47,6 +53,8 @@ export function useBrowseSelection(
 
   return {
     ...selection,
+    toggle: toggleSelection,
+    toggleSelection,
     handleFieldUpdate,
     handleBatchDelete,
     handleBatchDuplicate,

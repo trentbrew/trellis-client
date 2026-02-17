@@ -718,8 +718,8 @@
       <!-- Main content uses base background (darkest layer) -->
       <div class="h-full" :class="[contentWrapperClass, transparent ? 'bg-transparent' : '']">
         <!-- Header Section (Non-sticky) -->
-        <div v-if="showHeader || $slots.header" class="shrink-0 space-y-0 pb-0" :class="isFeed ? 'p-4' : 'p-8 pt-4'">
-          <div class="px-3 py-5 relative border-b border-border/60" :class="variantConfig.maxWidth">
+        <div v-if="showHeader || $slots.header" class="shrink-0 space-y-0 pb-0" :class="isFeed ? 'p-4' : 'p-0'">
+          <div class="px-8 py-8 relative border-b border-border/60" :class="variantConfig.maxWidth">
             <div class="relative flex items-stretch gap-6">
               <!-- Header Icon -->
               <div v-if="headerIcon || $slots.headerIcon" class="shrink-0">
@@ -894,7 +894,7 @@
                     <UiButton
                       v-if="action"
                       :variant="action.variant || (action === primaryAction ? 'default' : 'outline')"
-                      size="sm"
+                      size="xs"
                       :disabled="action.disabled"
                       :loading="action.isLoading"
                       class="gap-2"

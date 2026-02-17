@@ -15,7 +15,7 @@ Read `AGENTS.md` for the complete reference. Key points below.
 ## Architecture
 
 ```
-apps/web/              Nuxt 3 app (localhost:4141)
+apps/web/              Nuxt 3 app (localhost:$TRELLIS_PORT)
 packages/tql/          TQL kernel, EAV store, EQL-S query engine
 packages/trellis-cli/  CLI + TypeScript SDK
 packages/trellis-mcp/  MCP server (15 tools)
@@ -30,7 +30,7 @@ Entity IDs: `calendaritem:task-1`, `calendaritem:note-meeting`
 
 ## Key Rules
 
-- Dev server is always on `localhost:4141` — **never start it yourself**
+- Dev server is always on `localhost:$TRELLIS_PORT` — **never start it yourself**
 - Pass `--agent-id cascade` to track your mutations
 - Use descriptive entity ID slugs
 - Mutations appear instantly in the browser via SSE

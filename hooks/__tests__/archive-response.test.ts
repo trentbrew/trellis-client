@@ -183,7 +183,7 @@ describe('extractVerification', () => {
   });
 
   it('detects browser tested', () => {
-    const v = extractVerification('Verified in browser at localhost:4141');
+    const v = extractVerification('Verified in browser at localhost:$TRELLIS_PORT');
     expect(v['tql:browserTested']).toBe(true);
   });
 

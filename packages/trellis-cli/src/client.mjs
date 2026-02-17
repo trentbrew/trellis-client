@@ -15,7 +15,8 @@ export class TrellisClient {
    * @param {{ baseUrl?: string, agentId?: string }} [options]
    */
   constructor(options = {}) {
-    this.#baseUrl = (options.baseUrl || process.env.TRELLIS_API_URL || 'http://localhost:4141').replace(/\/$/, '')
+    const defaultApiUrl = `http://localhost:${process.env.TRELLIS_PORT || '1414'}`
+    this.#baseUrl = (options.baseUrl || process.env.TRELLIS_API_URL || defaultApiUrl).replace(/\/$/, '')
     this.#agentId = options.agentId || process.env.TRELLIS_AGENT_ID || 'cli'
   }
 

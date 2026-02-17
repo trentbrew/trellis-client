@@ -3,8 +3,10 @@
     layout: 'default',
   })
 
+  const { wp } = useWorkspacePath()
+
   onMounted(() => {
-    navigateTo('/workspace/today')
+    navigateTo(wp('/workspace/today'))
   })
 </script>
 

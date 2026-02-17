@@ -31,7 +31,13 @@
       placeholder="Write your note..."
       class="flex-1 min-h-0 border-none! rounded-none!"
       fill-height
-      mentions />
+      mentions
+      tasklist
+      images
+      embeds
+      tables
+      mathematics
+      :entity-id="item.id" />
     <div
       v-else
       class="prose prose-sm max-w-none text-sm text-foreground flex-1 p-4"

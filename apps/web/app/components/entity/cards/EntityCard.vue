@@ -18,12 +18,6 @@
     { layout: 'grid', selected: false, editable: false, owners: () => [] },
   )
 
-  defineEmits<{
-    click: []
-    select: [event: MouseEvent]
-    'field-update': [fieldId: PropertyFieldId, value: unknown]
-  }>()
-
   const config = computed(() => getEntityTypeConfig(props.item.type as any))
   const entityClass = computed(() => getEntityClass(props.item.type as EntityType))
   const i = computed(() => props.item as any)
@@ -87,6 +81,12 @@
     if (!i.value.content) return ''
     return stripHtml(i.value.content).slice(0, 300)
   })
+
+  // ─── Display helpers (placeholders for empty fields) ───
+  const displayTitle = computed(() => props.item.title || 'Untitled')
+  const hasRealTitle = computed(() => !!props.item.title)
+  const displayDescription = computed(() => description.value || contentPreview.value || 'No description')
+  const hasRealDescription = computed(() => !!(description.value || contentPreview.value))
 
   const getDomain = (url: string) => {
     try {
@@ -196,6 +196,34 @@
   const refCount = computed(() =>
     (i.value.references || []).filter((r: any) => r.kind === 'entity').length,
   )
+
+  // ─── Inline tag input (footer) ───
+  const showTagInput = ref(false)
+  const cardTagInput = ref('')
+  const tagInputEl = ref<HTMLInputElement | null>(null)
+
+  const emit = defineEmits<{
+    click: []
+    select: [event: MouseEvent]
+    'field-update': [fieldId: PropertyFieldId, value: unknown]
+  }>()
+
+  const addCardTag = () => {
+    const t = cardTagInput.value.trim()
+    if (t) {
+      const existing = props.item.tags || []
+      if (!existing.includes(t)) {
+        emit('field-update', 'tags', [...existing, t])
+      }
+    }
+    cardTagInput.value = ''
+    showTagInput.value = false
+  }
+
+  const openTagInput = () => {
+    showTagInput.value = true
+    nextTick(() => tagInputEl.value?.focus())
+  }
 </script>
 
 <template>
@@ -285,22 +313,6 @@
         : 'border-border hover:ring-1 hover:ring-primary/30',
     ]"
     @click="$emit('click')">
-    <!-- Selection checkbox (top-left, visible on hover or when selected) -->
-    <div
-      v-if="editable"
-      :class="[
-        'absolute top-2 left-2 z-20 transition-opacity',
-        selected ? 'opacity-100' : 'opacity-0 group-hover:opacity-100',
-      ]">
-      <button
-        type="button"
-        class="flex h-5 w-5 items-center justify-center rounded border transition-colors"
-        :class="selected ? 'bg-primary border-primary' : 'bg-card/80 backdrop-blur border-border hover:border-primary/60'"
-        @click.stop="$emit('select', $event)">
-        <Icon v-if="selected" name="lucide:check" class="h-3 w-3 text-primary-foreground" />
-      </button>
-    </div>
-
     <!-- Pinned indicator (absolute overlay, documents only) -->
     <div v-if="isDocument && i.pinned" class="absolute top-2 right-2 z-20">
       <Icon name="lucide:pin" class="h-3.5 w-3.5 text-amber-500 drop-shadow" />
@@ -333,12 +345,19 @@
     </div>
 
     <!-- ─── Preview: Note rendered content ─── -->
-    <div v-else-if="isNote && i.content" class="relative border-b border-border/50">
-      <div class="absolute inset-0 bg-linear-to-b from-transparent via-transparent to-card pointer-events-none z-10" />
+    <div v-else-if="isNote" class="relative border-b bg-background/50 border-border">
+      <div class="absolute inset-0 bg-linear-to-b from-transparent via-transparent to-background/50 pointer-events-none z-10" />
       <div
-        class="prose prose-sm dark:prose-invert max-w-none text-xs leading-relaxed p-3 overflow-hidden"
-        :class="layout === 'grid' ? 'max-h-32' : 'max-h-48'"
+        v-if="i.content"
+        class="prose prose-sm dark:prose-invert max-w-none text-[8px] leading-relaxed p-3 overflow-hidden opacity-50"
+        :class="layout === 'grid' ? 'h-32' : 'h-48'"
         v-html="i.content" />
+      <div
+        v-else
+        class="flex items-center justify-center text-muted-foreground/30"
+        :class="layout === 'grid' ? 'h-32' : 'h-48'">
+        <Icon name="lucide:sticky-note" class="h-8 w-8" />
+      </div>
     </div>
 
     <!-- ─── Preview: Generic document icon (page, template, slide_deck, etc.) ─── -->
@@ -446,8 +465,11 @@
       <!-- Title -->
       <h3
         class="text-sm font-medium leading-snug line-clamp-2 group-hover:text-primary transition-colors"
-        :class="{ 'line-through text-muted-foreground': isCompleted }">
-        {{ item.title }}
+        :class="[
+          isCompleted ? 'line-through text-muted-foreground' : '',
+          !hasRealTitle ? 'text-muted-foreground/50 italic' : '',
+        ]">
+        {{ displayTitle }}
       </h3>
 
       <!-- Actor subtitle -->
@@ -457,13 +479,12 @@
 
       <!-- Description -->
       <p
-        v-if="description"
-        class="text-xs text-muted-foreground"
-        :class="layout === 'moodboard' ? 'line-clamp-4' : 'line-clamp-2'">
-        {{ description }}
-      </p>
-      <p v-else-if="contentPreview && !isNote" class="text-xs text-muted-foreground line-clamp-2">
-        {{ contentPreview }}
+        class="text-xs"
+        :class="[
+          layout === 'moodboard' ? 'line-clamp-4' : 'line-clamp-2',
+          hasRealDescription ? 'text-muted-foreground' : 'text-muted-foreground/40 italic',
+        ]">
+        {{ displayDescription }}
       </p>
 
       <!-- Actor contact info -->
@@ -497,16 +518,33 @@
     </div>
 
     <!-- ─── Footer ─── -->
-    <div class="flex items-center justify-between text-xs text-muted-foreground px-3 py-2 mt-auto border-t border-border/50">
-      <div class="flex items-center gap-1.5">
-        <Icon v-if="dateDisplay" name="lucide:calendar" class="h-3 w-3 opacity-50" />
-        <span v-if="dateDisplay">{{ dateDisplay }}</span>
-        <template v-if="endDateDisplay">
-          <span class="opacity-40">→</span>
-          <span>{{ endDateDisplay }}</span>
-        </template>
+    <div class="flex items-center justify-between text-xs text-muted-foreground px-3 h-9 mt-auto border-t border-border/50">
+      <!-- Left: checkbox + date -->
+      <div class="flex items-center gap-2">
+        <button
+          v-if="editable"
+          type="button"
+          class="flex h-4 w-4 shrink-0 items-center justify-center rounded border transition-colors"
+          :class="[
+            selected
+              ? 'bg-primary border-primary'
+              : 'border-border hover:border-primary/60',
+            selected ? 'opacity-100' : 'opacity-0 group-hover:opacity-100',
+          ]"
+          @click.stop="$emit('select', $event)">
+          <Icon v-if="selected" name="lucide:check" class="h-2.5 w-2.5 text-primary-foreground" />
+        </button>
+        <div class="flex items-center gap-1.5">
+          <Icon v-if="dateDisplay" name="lucide:calendar" class="h-3 w-3 opacity-50" />
+          <span v-if="dateDisplay">{{ dateDisplay }}</span>
+          <template v-if="endDateDisplay">
+            <span class="opacity-40">→</span>
+            <span>{{ endDateDisplay }}</span>
+          </template>
+        </div>
       </div>
-      <div class="flex items-center gap-1.5">
+      <!-- Right: tags + inline tag input -->
+      <div class="flex items-center gap-1.5 min-w-0" @click.stop>
         <span v-if="isActor && refCount" class="flex items-center gap-0.5 text-[10px] opacity-60">
           <Icon name="lucide:link" class="h-3 w-3" />
           {{ refCount }}
@@ -515,11 +553,30 @@
           <span
             v-for="tag in item.tags.slice(0, 2)"
             :key="tag"
-            class="bg-muted/80 px-1.5 py-0.5 rounded text-[10px] font-medium">#{{ tag }}</span>
+            class="bg-muted/80 px-1.5 py-0.5 rounded text-[10px] font-medium truncate max-w-[80px]">#{{ tag }}</span>
           <span
             v-if="item.tags.length > 2"
             class="text-[10px] opacity-60">+{{ item.tags.length - 2 }}</span>
         </template>
+        <!-- Inline tag input (visible on click) -->
+        <input
+          v-if="editable && showTagInput"
+          ref="tagInputEl"
+          v-model="cardTagInput"
+          type="text"
+          placeholder="tag..."
+          class="bg-transparent text-[10px] outline-none w-16 placeholder:text-muted-foreground/40"
+          @keydown.enter.prevent="addCardTag"
+          @blur="addCardTag"
+          @keydown.escape.prevent="showTagInput = false, cardTagInput = ''" />
+        <!-- Add tag trigger (visible on hover when no input shown) -->
+        <button
+          v-else-if="editable"
+          type="button"
+          class="flex items-center gap-0.5 text-[10px] text-muted-foreground/40 hover:text-muted-foreground transition-colors opacity-0 group-hover:opacity-100"
+          @click.stop="openTagInput">
+          <Icon name="lucide:hash" class="h-3 w-3" />
+        </button>
       </div>
     </div>
   </div>

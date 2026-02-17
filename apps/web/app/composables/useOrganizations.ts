@@ -17,6 +17,7 @@ export interface Organization {
   ownerId?: string // User ID of workspace owner
   name: string
   slug: string
+  plan?: 'free' | 'pro' | 'enterprise'
   logoUrl?: string
   description?: string
   facilities?: string[] // Array of facility IDs belonging to this organization
@@ -32,6 +33,7 @@ function toOrganization(dbOrg: DbOrganization): Organization {
     ownerId: dbOrg.ownerId,
     name: dbOrg.name,
     slug: dbOrg.slug,
+    plan: dbOrg.plan,
     logoUrl: dbOrg.avatar,
     description: (dbOrg as any).description ?? '',
     facilities: [],

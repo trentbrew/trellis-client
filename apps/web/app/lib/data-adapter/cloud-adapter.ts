@@ -39,7 +39,7 @@ export function createCloudAdapter(options: CloudAdapterOptions): DataAdapter {
   // Only pass websocketURI/apiURI when explicitly provided.
   // When omitted, InstantDB defaults to its cloud servers (api.instantdb.com).
   // Passing `undefined` causes the SDK to resolve against the current page origin,
-  // which breaks in dev (ws://localhost:4141/undefined).
+  // which breaks in dev (ws://localhost:<TRELLIS_PORT>/undefined).
   const initOpts: Record<string, any> = { appId, schema, verbose, devtool }
   if (websocketURI) initOpts.websocketURI = websocketURI
   if (apiURI) initOpts.apiURI = apiURI
@@ -50,6 +50,7 @@ export function createCloudAdapter(options: CloudAdapterOptions): DataAdapter {
     mode: 'cloud',
     entityBackend: 'adapter',
     ontologyBackend: 'adapter',
+    _rawDb: db,
 
     subscribeQuery(query: Record<string, any>, callback: QueryCallback): () => void {
       return db.subscribeQuery(query, (result: any) => {
@@ -106,18 +107,25 @@ export function createCloudAdapter(options: CloudAdapterOptions): DataAdapter {
         async signInWithIdToken(args: any) {
           await (db.auth as any).signInWithIdToken(args)
         },
+        async sendMagicCode(args: any) {
+          await (db.auth as any).sendMagicCode(args)
+        },
+        async verifyMagicCode(args: any) {
+          await (db.auth as any).signInWithMagicCode(args)
+        },
       }
     },
 
     async getAuth() {
       try {
-        const auth = await (db as any).getAuth()
-        if (!auth?.user) return null
+        // getAuth() returns the user object directly (not wrapped in { user })
+        const user = await (db as any).getAuth()
+        if (!user) return null
         return {
-          id: auth.user.id,
-          email: auth.user.email || null,
-          name: (auth.user as any).name || null,
-          avatar: (auth.user as any).avatar || null,
+          id: user.id,
+          email: user.email || null,
+          name: (user as any).name || null,
+          avatar: (user as any).avatar || null,
           role: null,
         }
       } catch {

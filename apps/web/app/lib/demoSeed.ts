@@ -1,31 +1,25 @@
-import type { DatabaseRecord, DatabaseSchema, Workflow, CustomType } from '~/types/database'
-import { createDefaultProjections } from '~/lib/projections'
-import { createCollectionGraph, serializeTrellisDocument } from '~/lib/trellis'
-import { normalizeDatabaseSchema, createDefaultDatabaseSchema } from '~/lib/normalizeDatabaseSchema'
+/**
+ * Demo seed — REMOVED.
+ *
+ * All seed data has been removed. These stubs are kept so any stale
+ * imports don't crash at runtime — they simply no-op.
+ */
 
-type SeedAppDef = {
-  slug: string
-  name: string
-  icon: string
-  color: string
-  description: string
-}
-
-const DEMO_SEED_V2_VERSION = 3
-const DEMO_SEED_V2_VERSION_KEY = 'demoSeedV2Version'
-const DEFAULT_WORKSPACE_SLUG = 'default-workspace'
-
-type EnsureDemoSeedV2Params = {
+type EnsureDemoSeedParams = {
   instant: any
   tx: any
   userId: string
-  getSetting: (entityType: 'user' | 'org' | 'app' | 'collection', entityId: string, key: string) => Promise<any>
-  upsertSetting: (
-    entityType: 'user' | 'org' | 'app' | 'collection',
-    entityId: string,
-    key: string,
-    value: any,
-  ) => Promise<void>
+  orgId?: string
+  getSetting: (...args: any[]) => Promise<any>
+  upsertSetting: (...args: any[]) => Promise<void>
+}
+
+export async function ensureDemoSeedV1(_params: EnsureDemoSeedParams): Promise<void> {
+  // no-op — seed data removed
+}
+
+export async function ensureDemoSeedV2(_params: EnsureDemoSeedParams): Promise<void> {
+  // no-op — seed data removed
 }
 
 type SeedRecordDefV2 = {
@@ -1166,7 +1160,7 @@ export async function ensureDemoSeedV2(params: EnsureDemoSeedV2Params) {
         createdAt: now,
         updatedAt: now,
       }),
-      tx.organizations[orgId].link({ applications: id }),
+      tx.applications[id].link({ organization: orgId }),
     ])
 
     appIdsBySlug.set(def.slug, id)
@@ -1210,7 +1204,7 @@ export async function ensureDemoSeedV2(params: EnsureDemoSeedV2Params) {
             createdAt: now,
             updatedAt: now,
           }),
-          tx.applications[appId].link({ collections: collectionId }),
+          tx.collections[collectionId].link({ application: appId }),
         ])
       }
 
@@ -1948,7 +1942,7 @@ export async function ensureDemoSeedV1(params: EnsureDemoSeedParams) {
         createdAt: now,
         updatedAt: now,
       }),
-      tx.organizations[orgId].link({ applications: id }),
+      tx.applications[id].link({ organization: orgId }),
     )
     appIdsBySlug.set(def.slug, id)
   }
@@ -1999,7 +1993,7 @@ export async function ensureDemoSeedV1(params: EnsureDemoSeedParams) {
           createdAt: now,
           updatedAt: now,
         }),
-        tx.applications[appId].link({ collections: collectionId }),
+        tx.collections[collectionId].link({ application: appId }),
       )
       collectionIdMap.set(`${appSlug}:${colDef.slug}`, collectionId)
     }

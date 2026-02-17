@@ -20,6 +20,8 @@ export function useEntityReferences(
 ) {
   const { items: allItems } = useEntities()
   const { mutate } = useTrellisGraph()
+  const adapter = useDataAdapter()
+  const isCloudMode = adapter.mode === 'cloud'
 
   // Provide entity context so nested TipTap NodeViews (e.g. MentionChip)
   // can navigate to referenced entities via the dialog stack.
@@ -47,18 +49,21 @@ export function useEntityReferences(
     // 1. Add to local state for immediate UI feedback
     editableItem.references.push(ref)
 
-    // 2. Persist as a TQL link (graph edge)
-    const sourceId = toEntityId(editableItem.id)
-    const targetId = toEntityId(ref.entityId)
-    try {
-      await mutate({
-        action: 'link',
-        e1: sourceId,
-        relation: 'references',
-        e2: targetId,
-      })
-    } catch (err) {
-      console.error('[useEntityReferences] Failed to create link:', err)
+    // 2. Persist as a TQL link (graph edge) — only in local mode.
+    // In cloud mode, the references JSON field is persisted via auto-save.
+    if (!isCloudMode) {
+      const sourceId = toEntityId(editableItem.id)
+      const targetId = toEntityId(ref.entityId)
+      try {
+        await mutate({
+          action: 'link',
+          e1: sourceId,
+          relation: 'references',
+          e2: targetId,
+        })
+      } catch (err) {
+        console.error('[useEntityReferences] Failed to create link:', err)
+      }
     }
   }
 
@@ -72,8 +77,8 @@ export function useEntityReferences(
     const removedRef = editableItem.references.find((r) => r.id === refId)
     editableItem.references = editableItem.references.filter((r) => r.id !== refId)
 
-    // If it was an outgoing entity ref, remove the TQL link
-    if (removedRef && isEntityReference(removedRef) && removedRef.direction === 'outgoing') {
+    // If it was an outgoing entity ref, remove the TQL link (local mode only)
+    if (!isCloudMode && removedRef && isEntityReference(removedRef) && removedRef.direction === 'outgoing') {
       const sourceId = toEntityId(editableItem.id)
       const targetId = toEntityId(removedRef.entityId)
       try {

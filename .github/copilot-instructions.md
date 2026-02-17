@@ -6,7 +6,7 @@ Read `AGENTS.md` in the repo root for the complete reference. Key points below.
 
 ## What This Is
 
-Trellis is a personal knowledge graph where everything is an entity with typed properties and semantic links. The graph powers a Nuxt 3 web app on `localhost:4141` with realtime sync via SSE.
+Trellis is a personal knowledge graph where everything is an entity with typed properties and semantic links. The graph powers a Nuxt 3 web app on `localhost:$TRELLIS_PORT` with realtime sync via SSE.
 
 ## What You Can Do
 
@@ -32,7 +32,7 @@ just trellis ontology list --pretty
 ## Architecture
 
 ```
-apps/web/              Nuxt 3 app (localhost:4141)
+apps/web/              Nuxt 3 app (localhost:$TRELLIS_PORT)
 packages/tql/          TQL kernel, EAV store, EQL-S query engine
 packages/trellis-cli/  CLI + TypeScript SDK
 packages/trellis-mcp/  MCP server (15 tools)
@@ -49,7 +49,7 @@ Entity IDs: `entity:task-1`, `entity:note-meeting`
 
 ## Key Rules
 
-- Dev server is always on `localhost:4141` — **never start it yourself**
+- Dev server is always on `localhost:$TRELLIS_PORT` — **never start it yourself**
 - Pass `--agent-id copilot` to track your mutations
 - Use descriptive entity ID slugs — `"task-deploy-v2"` not `"abc123"`
 - Mutations appear instantly in the browser via SSE
@@ -58,7 +58,7 @@ Entity IDs: `entity:task-1`, `entity:note-meeting`
 
 ## REST API Quick Reference
 
-Base URL: `http://localhost:4141/api/graph`
+Base URL: `http://localhost:$TRELLIS_PORT/api/graph`
 
 | Method | Endpoint | Purpose |
 |--------|----------|---------|

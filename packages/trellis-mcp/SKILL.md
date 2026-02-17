@@ -12,7 +12,7 @@ description: >
 
 Trellis is a personal knowledge graph where everything is an entity with typed
 properties and semantic links. The graph powers a Nuxt web app running on
-`localhost:4141` with realtime sync — any mutations you make via MCP tools
+`localhost:$TRELLIS_PORT` with realtime sync — any mutations you make via MCP tools
 appear instantly in the browser UI.
 
 ## Entity Architecture

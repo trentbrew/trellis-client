@@ -1,6 +1,6 @@
 # Trellis Agent Instructions
 
-You are working inside the **Trellis** monorepo — a personal knowledge graph platform. Everything in this system is an entity with typed properties and semantic links. The graph powers a Nuxt web app running on `localhost:4141` with realtime sync.
+You are working inside the **Trellis** monorepo — a personal knowledge graph platform. Everything in this system is an entity with typed properties and semantic links. The graph powers a Nuxt web app running on `localhost:$TRELLIS_PORT` with realtime sync.
 
 **You are a Trellis-aware agent.** You can read, write, query, and manage the graph directly — either through the REST API, the CLI, or MCP tools. Any mutations you make appear instantly in the browser UI via SSE.
 
@@ -11,7 +11,7 @@ You are working inside the **Trellis** monorepo — a personal knowledge graph p
 ## Monorepo Structure
 
 ```
-apps/web/              Nuxt 3 app (localhost:4141)
+apps/web/              Nuxt 3 app (localhost:$TRELLIS_PORT)
 packages/tql/          TQL kernel, EAV store, EQL-S query engine
 packages/trellis-cli/  CLI + TypeScript SDK
 packages/trellis-mcp/  MCP server (15 tools)
@@ -38,7 +38,7 @@ Entity IDs use the format `entity:<slug>`, e.g. `entity:task-1`, `entity:note-me
 
 ## TQL Graph API
 
-Base URL: `http://localhost:4141/api/graph`
+Base URL: `http://localhost:$TRELLIS_PORT/api/graph`
 
 | Method | Endpoint | Purpose |
 |--------|----------|---------|
@@ -138,7 +138,7 @@ The MCP server (`packages/trellis-mcp/`) exposes 15 tools:
     "trellis-graph": {
       "command": "node",
       "args": ["packages/trellis-mcp/bin/serve.mjs"],
-      "env": { "TRELLIS_API_URL": "http://localhost:4141", "TRELLIS_AGENT_ID": "claude" }
+      "env": { "TRELLIS_PORT": "1414", "TRELLIS_AGENT_ID": "claude" }
     }
   }
 }
@@ -151,7 +151,7 @@ The MCP server (`packages/trellis-mcp/`) exposes 15 tools:
     "trellis-graph": {
       "command": "node",
       "args": ["packages/trellis-mcp/bin/serve.mjs"],
-      "env": { "TRELLIS_API_URL": "http://localhost:4141", "TRELLIS_AGENT_ID": "opencode" }
+      "env": { "TRELLIS_PORT": "1414", "TRELLIS_AGENT_ID": "opencode" }
     }
   }
 }
@@ -175,7 +175,7 @@ When creating ontology fields, use these Notion-compatible value types:
 
 ## Key Conventions
 
-- **Dev server**: Always running on `localhost:4141` — never start it yourself
+- **Dev server**: Always running on `localhost:$TRELLIS_PORT` — never start it yourself
 - **Agent ID**: Pass `--agent-id <name>` (or set `TRELLIS_AGENT_ID`) to track who made a mutation
 - **Entity IDs**: Use descriptive slugs — `"task-deploy-v2"` not `"abc123"`
 - **Dates**: ISO 8601 — `"2026-02-10"` for dates, `"14:30"` for times

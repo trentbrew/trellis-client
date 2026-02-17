@@ -4,11 +4,18 @@
   const router = useRouter()
   const route = useRoute()
   const { applications, currentApp, organizations } = useInstantData()
+  const { getRoleInfo } = useOrgRoles()
 
   const createAppOpen = ref(false)
 
   const orderedApplications = computed(() => {
     return (applications.value || []).slice().sort((a, b) => a.name.localeCompare(b.name))
+  })
+
+  const currentAppRole = computed(() => {
+    const orgId = currentApp.value?.orgId
+    if (!orgId) return null
+    return getRoleInfo(orgId)
   })
 
   const selectApp = async (app: Application) => {
@@ -35,18 +42,19 @@
             {{ currentApp?.name || 'Select App' }}
           </span>
           <UiBadge
-            v-if="currentApp"
-            :variant="currentApp.isPublic ? 'outline' : 'secondary'"
+            v-if="currentAppRole"
+            variant="secondary"
             size="sm"
-            class="ml-1 text-[9px] px-1.5 py-0 h-4">
-            {{ currentApp.isPublic ? 'Public' : 'Private' }}
+            class="ml-1 text-[9px] px-1.5 py-0 h-4"
+            :class="currentAppRole.color">
+            {{ currentAppRole.label }}
           </UiBadge>
           <Icon
             name="lucide:chevrons-up-down"
             class="text-muted-foreground/75 h-3.5 w-3.5 shrink-0 group-hover/trigger:text-muted-foreground/60 transition-colors ml-0.5" />
         </button>
       </UiDropdownMenuTrigger>
-      <UiDropdownMenuContent align="start" :side-offset="8" class="w-[220px]">
+      <UiDropdownMenuContent align="start" :side-offset="8" class="w-[320px]">
         <UiDropdownMenuLabel class="text-xs text-muted-foreground">Select App</UiDropdownMenuLabel>
         <UiDropdownMenuSeparator />
         <div class="max-h-[300px] overflow-y-auto">
@@ -62,10 +70,11 @@
             </div>
             <div class="flex items-center gap-1.5 shrink-0">
               <UiBadge
-                :variant="app.isPublic ? 'outline' : 'secondary'"
+                variant="secondary"
                 size="sm"
-                class="text-[9px] px-1.5 py-0 h-4">
-                {{ app.isPublic ? 'Public' : 'Private' }}
+                class="text-[9px] px-1.5 py-0 h-4"
+                :class="getRoleInfo(app.orgId).color">
+                {{ getRoleInfo(app.orgId).label }}
               </UiBadge>
               <Icon v-if="app.id === currentApp?.id" name="lucide:check" class="text-primary h-4 w-4" />
             </div>

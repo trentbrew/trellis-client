@@ -8,7 +8,7 @@ This is the **Trellis** monorepo — a personal knowledge graph platform. You ha
 
 1. **MCP Server** (15 tools) — configured in `.claude/settings.json`
 2. **CLI** — `just trellis <command>` (runs `node packages/trellis-cli/bin/trellis.mjs`)
-3. **REST API** — `http://localhost:4141/api/graph/*`
+3. **REST API** — `http://localhost:$TRELLIS_PORT/api/graph/*`
 
 ## Your MCP Tools
 
@@ -31,7 +31,7 @@ If the MCP server is connected, you have these tools available:
 
 ## Key Rules
 
-- **Dev server** is always on `localhost:4141` — never start it yourself
+- **Dev server** is always on `localhost:$TRELLIS_PORT` — never start it yourself
 - **Agent ID**: Use `"claude"` — it's set in your MCP config
 - **Entity IDs**: Descriptive slugs like `entity:task-deploy-v2` (the `entity` namespace is historical — app code uses `entityId()` / `entityQuery()` helpers from `app/lib/tql-namespace.ts`)
 - **Mutations are realtime**: Changes appear instantly in the browser via SSE

@@ -5,7 +5,7 @@ CLI for agents and humans to CRUD the Trellis graph with realtime sync.
 ## Quick Start
 
 ```bash
-# From project root (requires dev server running on :4141)
+# From project root (requires dev server running on :$TRELLIS_PORT)
 just trellis health
 
 # Or directly
@@ -43,7 +43,8 @@ node --import tsx packages/trellis-cli/bin/trellis.mjs health
 
 | Variable | Default | Description |
 |---|---|---|
-| `TRELLIS_API_URL` | `http://localhost:4141` | Base URL of the Trellis API |
+| `TRELLIS_API_URL` | `http://localhost:$TRELLIS_PORT` | Base URL of the Trellis API |
+| `TRELLIS_PORT` | `1414` | Dev server port fallback when `TRELLIS_API_URL` is not set |
 | `TRELLIS_AGENT_ID` | `cli` | Default agent identifier |
 
 ## Examples

@@ -49,18 +49,21 @@
     }
   }
 
+  const _loadedItemId = ref<string | null>(null)
   watch(
-    () => props.item,
-    (newItem) => {
-      if (newItem) {
+    () => props.item?.id,
+    (newId) => {
+      if (newId && newId !== _loadedItemId.value) {
+        const newItem = props.item!
         const defaults = createDefaultItem(newItem.type)
         Object.assign(editableItem, { ...defaults, ...newItem })
-      } else if (isCreateMode.value) {
-        const defaults = createDefaultItem('person')
-        Object.assign(editableItem, { ...defaults })
+        _loadedItemId.value = newId
+      } else if (!newId && isCreateMode.value) {
+        Object.assign(editableItem, { ...createDefaultItem('person') })
+        _loadedItemId.value = null
       }
     },
-    { immediate: true, deep: true },
+    { immediate: true },
   )
 
   // Comments

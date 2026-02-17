@@ -25,7 +25,7 @@
       priority: 'medium', urgency: 'urgent', priorityOverride: false, urgencyOverride: false,
       category: 'health', tags: ['appointment'], owner: 'you', involved: [],
       attachments: [], references: [], reminders: [{ id: 'r1', timing: '1-hour-before', method: 'push' }],
-      taskStatus: 'pending', checklist: [],
+      taskStatus: 'pending', checklistContent: '',
     },
     {
       id: 'rem-2', type: 'task', title: 'Submit expense report',
@@ -34,7 +34,7 @@
       priority: 'high', urgency: 'urgent', priorityOverride: false, urgencyOverride: false,
       category: 'work', tags: ['finance', 'admin'], owner: 'you', involved: [],
       attachments: [], references: [], reminders: [{ id: 'r2', timing: '1-day-before', method: 'push' }],
-      taskStatus: 'pending', checklist: [],
+      taskStatus: 'pending', checklistContent: '',
     },
     {
       id: 'rem-3', type: 'task', title: 'Pick up dry cleaning',
@@ -42,7 +42,7 @@
       priority: 'low', urgency: 'not-urgent', priorityOverride: false, urgencyOverride: false,
       category: 'personal', tags: ['errands'], owner: 'you', involved: [],
       attachments: [], references: [], reminders: [{ id: 'r3', timing: '15-min-before', method: 'push' }],
-      taskStatus: 'pending', checklist: [],
+      taskStatus: 'pending', checklistContent: '',
     },
     {
       id: 'rem-4', type: 'task', title: 'Renew domain — trellis.dev',
@@ -51,7 +51,7 @@
       priority: 'high', urgency: 'not-urgent', priorityOverride: false, urgencyOverride: false,
       category: 'work', tags: ['domain', 'infrastructure'], owner: 'you', involved: [],
       attachments: [], references: [], reminders: [{ id: 'r4', timing: '1-week-before', method: 'email' }],
-      taskStatus: 'pending', checklist: [],
+      taskStatus: 'pending', checklistContent: '',
     },
     {
       id: 'rem-5', type: 'task', title: 'Water the plants',
@@ -61,7 +61,7 @@
       attachments: [], references: [],
       reminders: [{ id: 'r5', timing: '1-day-before', method: 'push' }],
       recurrence: { frequency: 'weekly', weekdays: [1, 4] },
-      taskStatus: 'completed', checklist: [],
+      taskStatus: 'completed', checklistContent: '',
     },
     {
       id: 'rem-6', type: 'task', title: 'Send birthday card to Sam',
@@ -70,7 +70,7 @@
       priority: 'medium', urgency: 'not-urgent', priorityOverride: false, urgencyOverride: false,
       category: 'personal', tags: ['birthday', 'family'], owner: 'you', involved: [],
       attachments: [], references: [], reminders: [{ id: 'r6', timing: '2-days-before', method: 'push' }],
-      taskStatus: 'pending', checklist: [],
+      taskStatus: 'pending', checklistContent: '',
     },
     {
       id: 'rem-7', type: 'task', title: 'Back up laptop',
@@ -79,7 +79,7 @@
       priority: 'medium', urgency: 'urgent', priorityOverride: false, urgencyOverride: true,
       category: 'personal', tags: ['tech', 'backup'], owner: 'you', involved: [],
       attachments: [], references: [], reminders: [],
-      taskStatus: 'overdue', checklist: [],
+      taskStatus: 'overdue', checklistContent: '',
     },
   ])
 

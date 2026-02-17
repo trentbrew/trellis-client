@@ -16,7 +16,8 @@
  *   trellis log                                   — Recent mutation log
  *
  * Environment:
- *   TRELLIS_API_URL   — Base URL (default: http://localhost:4141)
+ *   TRELLIS_API_URL   — Base URL (default: http://localhost:$TRELLIS_PORT)
+ *   TRELLIS_PORT      — Dev server port fallback when TRELLIS_API_URL is not set (default: 1414)
  *   TRELLIS_AGENT_ID  — Agent identifier (default: cli)
  *
  * Flags:
@@ -47,6 +48,7 @@ function hasFlag(name) {
 const pretty = hasFlag('pretty')
 const agentId = flag('agent-id')
 const baseUrl = flag('url')
+const defaultApiUrl = `http://localhost:${process.env.TRELLIS_PORT || '1414'}`
 
 const command = args[0]
 
@@ -149,7 +151,7 @@ async function run() {
     // ── watch ─────────────────────────────────────────────────────────
     case 'watch':
     case 'w': {
-      console.error(`Watching mutations on ${client.health ? baseUrl || process.env.TRELLIS_API_URL || 'http://localhost:4141' : ''}...`)
+      console.error(`Watching mutations on ${client.health ? baseUrl || process.env.TRELLIS_API_URL || defaultApiUrl : ''}...`)
       console.error('Press Ctrl+C to stop.\n')
       const ac = client.watch(
         (event) => {
@@ -315,7 +317,7 @@ Commands:
 Flags:
   --pretty            Pretty-print JSON output
   --agent-id <name>   Set agent ID for mutations (default: cli)
-  --url <url>         Override API base URL (default: $TRELLIS_API_URL or http://localhost:4141)
+  --url <url>         Override API base URL (default: $TRELLIS_API_URL or http://localhost:$TRELLIS_PORT)
 
 Aliases: q=query g=get c=create u=update d=delete l=link w=watch h=health s=schema ont=ontology
 `)

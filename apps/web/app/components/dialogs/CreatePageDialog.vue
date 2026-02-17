@@ -121,7 +121,8 @@
       resetForm()
 
       // Navigate to the new page
-      await navigateTo(`/workspace/pages/${id}`)
+      const { wp } = useWorkspacePath()
+      await navigateTo(wp(`/workspace/pages/${id}`))
     } catch (e) {
       console.error('Failed to create page:', e)
     } finally {

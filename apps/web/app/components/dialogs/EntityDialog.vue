@@ -86,18 +86,28 @@
     }
   }
 
+  // Track which entity ID is currently loaded into editableItem.
+  // We only do a full overwrite when the entity ID changes (switching entities)
+  // or on first load. While the dialog is open in edit mode, local state is
+  // authoritative — subscription echoes of our own saves must NOT clobber edits.
+  const _loadedItemId = ref<string | null>(null)
+
   watch(
-    () => props.item,
-    (newItem) => {
-      if (newItem) {
+    () => props.item?.id,
+    (newId, _oldId) => {
+      if (newId && newId !== _loadedItemId.value) {
+        // Different entity (or first load) — full hydrate
+        const newItem = props.item!
         const defaults = createDefaultItem(newItem.type)
         Object.assign(editableItem, { ...defaults, ...newItem })
-      } else if (isCreateMode.value) {
+        _loadedItemId.value = newId
+      } else if (!newId && isCreateMode.value) {
         const defaults = createDefaultItem(props.itemType || 'task')
         Object.assign(editableItem, { ...defaults })
+        _loadedItemId.value = null
       }
     },
-    { immediate: true, deep: true },
+    { immediate: true },
   )
 
   watch(
@@ -750,6 +760,9 @@
   // Sync inline @mentions → TQL 'mentions' links
   useMentionLinks(editableItem)
 
+  // Sync inline images → content-derived FileReference entries
+  useImageLinks(editableItem)
+
   // Bidirectional entity references
   const { addEntityRef, removeRef: removeEntityRef, openEntityRef: handleOpenEntityRef, createAndOpenEntityRef } = useEntityReferences(editableItem)
   const handleAddEntityRef = (ref: import('~/types/entity').EntityReference) => addEntityRef(ref)
@@ -816,6 +829,7 @@
     :title="editableItem.title"
     :description="editableItem.description"
     :mode="mode"
+    :entity-id="editableItem.id || undefined"
     :type-badge="currentType ? { icon: currentType.icon, label: currentType.label } : undefined"
     :title-placeholder="`${currentType?.label || 'Item'} name...`"
     :can-navigate-prev="canNavigatePrev"

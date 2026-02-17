@@ -9,7 +9,7 @@ Agent (OpenCode / Claude Code / Gemini CLI)
   ↓ MCP (stdio)
 trellis-mcp server
   ↓ HTTP
-Trellis dev server (localhost:4141)
+Trellis dev server (localhost:$TRELLIS_PORT)
   ↓ SSE
 Browser UI (realtime updates)
 ```
@@ -55,7 +55,7 @@ pnpm install
       "command": "node",
       "args": ["packages/trellis-mcp/bin/serve.mjs"],
       "env": {
-        "TRELLIS_API_URL": "http://localhost:4141",
+        "TRELLIS_PORT": "1414",
         "TRELLIS_AGENT_ID": "claude-code"
       }
     }
@@ -71,7 +71,7 @@ pnpm install
       "command": "node",
       "args": ["packages/trellis-mcp/bin/serve.mjs"],
       "env": {
-        "TRELLIS_API_URL": "http://localhost:4141",
+        "TRELLIS_PORT": "1414",
         "TRELLIS_AGENT_ID": "opencode"
       }
     }
@@ -87,7 +87,7 @@ pnpm install
       "command": "node",
       "args": ["/absolute/path/to/packages/trellis-mcp/bin/serve.mjs"],
       "env": {
-        "TRELLIS_API_URL": "http://localhost:4141",
+        "TRELLIS_PORT": "1414",
         "TRELLIS_AGENT_ID": "gemini"
       }
     }
@@ -110,7 +110,8 @@ Or reference it in Claude Code's plugin system.
 
 | Variable | Default | Description |
 |----------|---------|-------------|
-| `TRELLIS_API_URL` | `http://localhost:4141` | Base URL of the running Trellis dev server |
+| `TRELLIS_API_URL` | `http://localhost:$TRELLIS_PORT` | Base URL of the running Trellis dev server |
+| `TRELLIS_PORT` | `1414` | Dev server port fallback when `TRELLIS_API_URL` is not set |
 | `TRELLIS_AGENT_ID` | `mcp` | Agent identifier for mutation attribution |
 
 ## How It Works

@@ -15,8 +15,6 @@ import { mkdirSync, existsSync } from 'node:fs'
 import { TrellisKernel } from '@toolkit/tql'
 import { BetterSqliteBackend } from '@toolkit/tql/persist/better-sqlite'
 import { createWorkspaceConfig } from '../utils/tql-ontologies'
-import { getPersonalSeedItems, getTrellisProjectTasks, getPeopleSeedItems, getOrganizationSeedItems, getFileSeedItems, getProjectSeedItems } from '../utils/tql-seed'
-import { ENTITY_NAMESPACE, entityId as toEntityId, entityQuery } from '../../app/lib/tql-namespace'
 
 import type { WorkspaceConfig } from '@toolkit/tql'
 
@@ -80,146 +78,7 @@ export default defineNitroPlugin(async (nitro) => {
   _workspaceConfig = workspaceConfig
   await kernel.boot(workspaceConfig)
 
-  // Seed data on first boot (if the store is empty)
-  const store = kernel.getStore()
-  const existingFacts = store.getAllFacts()
-  let factCount = 0
-  for (const _ of existingFacts) {
-    factCount++
-    if (factCount > 0) break
-  }
-
-  if (factCount === 0) {
-    console.log('[tql] First boot — seeding entities...')
-    const seedItems = getPersonalSeedItems()
-
-    for (const item of seedItems) {
-      const eid = toEntityId(item.id)
-      const { id: _id, ...data } = item
-      await kernel.createNode(eid, data, ENTITY_NAMESPACE)
-    }
-
-    console.log(`[tql] Seeded ${seedItems.length} entities`)
-    await kernel.checkpoint()
-  } else {
-    console.log('[tql] Kernel restored from existing data')
-  }
-
-  // ── Seed Trellis project tasks (dogfooding) ──────────────────────
-  // Targeted seed: runs even on existing databases if trellis-dt-* items
-  // don't exist yet. This lets us add project tracking tasks without
-  // requiring a database reset.
-  try {
-    const probeResult = await kernel.query(`${entityQuery('?e')} WHERE ?e.folder = "Trellis"`)
-    const hasTrellisTasks = probeResult.rows && probeResult.rows.length > 0
-    if (!hasTrellisTasks) {
-      const projectTasks = getTrellisProjectTasks()
-      for (const item of projectTasks) {
-        const eid = toEntityId(item.id)
-        const { id: _id, ...data } = item
-        await kernel.createNode(eid, data, ENTITY_NAMESPACE)
-      }
-      console.log(`[tql] Seeded ${projectTasks.length} Trellis project tasks (dogfooding)`)
-      await kernel.checkpoint()
-    }
-  } catch (err) {
-    console.warn('[tql] Could not seed Trellis project tasks:', err)
-  }
-
-  // ── Seed people (actor class) ───────────────────────────────────
-  try {
-    const peopleProbe = await kernel.query(`${entityQuery('?e')} WHERE ?e.type = "person"`)
-    const hasPeople = peopleProbe.rows && peopleProbe.rows.length > 0
-    if (!hasPeople) {
-      const people = getPeopleSeedItems()
-      for (const item of people) {
-        const eid = toEntityId(item.id)
-        const { id: _id, ...data } = item
-        await kernel.createNode(eid, data, ENTITY_NAMESPACE)
-      }
-      console.log(`[tql] Seeded ${people.length} people`)
-      await kernel.checkpoint()
-    }
-  } catch (err) {
-    console.warn('[tql] Could not seed people:', err)
-  }
-
-  // ── Seed organizations (actor class) ────────────────────────────
-  try {
-    const orgProbe = await kernel.query(`${entityQuery('?e')} WHERE ?e.type = "organization"`)
-    const hasOrgs = orgProbe.rows && orgProbe.rows.length > 0
-    if (!hasOrgs) {
-      const orgs = getOrganizationSeedItems()
-      for (const item of orgs) {
-        const eid = toEntityId(item.id)
-        const { id: _id, ...data } = item
-        await kernel.createNode(eid, data, ENTITY_NAMESPACE)
-      }
-      console.log(`[tql] Seeded ${orgs.length} organizations`)
-      await kernel.checkpoint()
-    }
-  } catch (err) {
-    console.warn('[tql] Could not seed organizations:', err)
-  }
-
-  // ── Seed files (document class) ─────────────────────────────────
-  try {
-    const fileProbe = await kernel.query(`${entityQuery('?e')} WHERE ?e.type = "file"`)
-    const hasFiles = fileProbe.rows && fileProbe.rows.length > 0
-    if (!hasFiles) {
-      const files = getFileSeedItems()
-      for (const item of files) {
-        const eid = toEntityId(item.id)
-        const { id: _id, ...data } = item
-        await kernel.createNode(eid, data, ENTITY_NAMESPACE)
-      }
-      console.log(`[tql] Seeded ${files.length} files`)
-      await kernel.checkpoint()
-    }
-  } catch (err) {
-    console.warn('[tql] Could not seed files:', err)
-  }
-
-  // ── Seed projects (container class) ─────────────────────────────
-  try {
-    const projectProbe = await kernel.query(`${entityQuery('?e')} WHERE ?e.type = "project"`)
-    const hasProjects = projectProbe.rows && projectProbe.rows.length > 0
-    if (!hasProjects) {
-      const projects = getProjectSeedItems()
-      for (const item of projects) {
-        const eid = toEntityId(item.id)
-        const { id: _id, ...data } = item
-        await kernel.createNode(eid, data, ENTITY_NAMESPACE)
-      }
-      console.log(`[tql] Seeded ${projects.length} projects`)
-      await kernel.checkpoint()
-    }
-  } catch (err) {
-    console.warn('[tql] Could not seed projects:', err)
-  }
-
-  // ── Seed slide deck items ─────────────────────────────────────────
-  // Targeted seed: runs even on existing databases if slide_deck items
-  // don't exist yet. This lets us add slide decks without a DB reset.
-  try {
-    const slideDeckProbe = await kernel.query(`${entityQuery('?e')} WHERE ?e.type = "slide_deck"`)
-    const hasSlideDeckItems = slideDeckProbe.rows && slideDeckProbe.rows.length > 0
-    if (!hasSlideDeckItems) {
-      const allSeedItems = getPersonalSeedItems()
-      const slideDeckItems = allSeedItems.filter((i: any) => i.type === 'slide_deck')
-      for (const item of slideDeckItems) {
-        const eid = toEntityId(item.id)
-        const { id: _id, ...data } = item
-        await kernel.createNode(eid, data, ENTITY_NAMESPACE)
-      }
-      if (slideDeckItems.length > 0) {
-        console.log(`[tql] Seeded ${slideDeckItems.length} slide deck items`)
-        await kernel.checkpoint()
-      }
-    }
-  } catch (err) {
-    console.warn('[tql] Could not seed slide deck items:', err)
-  }
+  console.log('[tql] Kernel booted (no seed data)')
 
   // Store in module singleton
   _kernel = kernel
@@ -231,5 +90,5 @@ export default defineNitroPlugin(async (nitro) => {
     console.log('[tql] Kernel closed')
   })
 
-  console.log('[tql] TrellisKernel ready (v2 — expanded seed)')
+  console.log('[tql] TrellisKernel ready')
 })

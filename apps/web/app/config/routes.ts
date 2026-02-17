@@ -543,10 +543,26 @@ export function buildNavPath(
 }
 
 export function parseFullPath(path: string): ParsedPath {
+  // Strip /w/:orgSlug/ prefix from workspace-scoped URLs
+  // e.g. /w/trent-ws/workspace/notes → /workspace/notes
+  const wsMatch = path.match(/^\/w\/([^/]+)(\/.*)$/)
+  if (wsMatch) {
+    const workspace = wsMatch[1] ?? null
+    const innerPath = wsMatch[2] || '/'
+    return {
+      workspace,
+      app: null,
+      cleanPath: innerPath,
+      org: workspace,
+      year: null,
+      facility: null,
+    }
+  }
+
   const segments = path.split('/').filter(Boolean)
 
   // Check for [workspace]/[app]/... pattern (2+ segments where first is not a known top-level route)
-  const knownTopLevelRoutes = ['docs', 'settings', 'admin', 'auth', 'database', 'collections', 'workflows', 'help', 'workspace', 'welcome', 'onboarding', 'notifications', 'permits', 'types', 'apptool', 'playground', 'components', 'embed', 'archive', 'members', 'learn', 'graph']
+  const knownTopLevelRoutes = ['docs', 'settings', 'admin', 'auth', 'database', 'collections', 'workflows', 'help', 'workspace', 'welcome', 'onboarding', 'notifications', 'permits', 'types', 'apptool', 'playground', 'components', 'embed', 'archive', 'members', 'learn', 'graph', 'calendar', 'documents', 'invite', 'w']
 
   if (segments.length >= 2 && segments[0] && !knownTopLevelRoutes.includes(segments[0])) {
     // It's a workspace/app route: /[workspace]/[app]/path...

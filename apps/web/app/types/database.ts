@@ -16,7 +16,7 @@ export interface Member {
   email: string
   name: string
   avatar?: string
-  role: 'owner' | 'admin' | 'member' | 'viewer'
+  role: 'owner' | 'admin' | 'member' | 'guest'
   invitedAt: number
   joinedAt?: number
   status: 'pending' | 'active' | 'suspended'

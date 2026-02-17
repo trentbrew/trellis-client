@@ -170,6 +170,7 @@
     :title="localTitle"
     :description="localDescription"
     :mode="mode"
+    :entity-id="props.item?.id || undefined"
     :type-badge="{ icon: 'lucide:presentation', label: 'Slide Deck' }"
     title-placeholder="Untitled Slide Deck"
     :can-navigate-prev="canNavigatePrev"

@@ -13,8 +13,79 @@
   const pinnedItems = usePinnedItems()
   const sidebarCollapse = useSidebarCollapse()
   const { currentApp, updateCollection: updateCollectionData, getCollectionBySlug } = useInstantData()
-  const { userRole: _userRole } = useUserRole()
+  const { userRole: _userRole, roleConfig } = useUserRole()
+  const { isInEditMode, toggleEditMode, canToggleEditMode, canManageMembers, isAdmin: _isAdmin } = useAdminUI()
+  const { onlineCount, totalMembers, members: workspaceMembers, isUserOnline } = usePresence()
   const isResizing = useState<boolean>('isSidebarResizing', () => false)
+
+  // User avatar and auth
+  const { user, signOut } = useInstantAuth()
+
+  const getInitials = (value: string) => {
+    const cleaned = value.trim()
+    if (!cleaned) return 'U'
+    const emailPrefix = cleaned.includes('@') ? cleaned.split('@')[0]! : cleaned
+    const parts = emailPrefix.split(/[\s._-]+/g).filter(Boolean)
+    const first = parts[0]?.[0] ?? 'U'
+    const second = parts[1]?.[0] ?? parts[0]?.[1] ?? ''
+    return `${first}${second}`.toUpperCase().slice(0, 2)
+  }
+
+  const workspaceUsers = computed(() => {
+    // Current user + other members
+    const all = []
+
+    // Add current user first
+    if (user.value) {
+      all.push({
+        id: user.value.id,
+        name: (user.value as any).name || (user.value as any).email || 'You',
+        avatar: avatarUrl.value,
+        initials: initials.value,
+        isOnline: true,
+        isMe: true
+      })
+    }
+
+    // Add other active members
+    const others = (workspaceMembers.value || [])
+      .filter(m => m.userId !== user.value?.id)
+      .map(m => ({
+        id: m.userId,
+        name: m.name || m.email || 'Member',
+        avatar: m.avatar,
+        initials: getInitials(m.name || m.email || 'M'),
+        isOnline: m.userId ? isUserOnline(m.userId) : false,
+        isMe: false
+      }))
+
+    return [...all, ...others].slice(0, 5) // Limit to top 5
+  })
+
+  const initials = computed(() => {
+    const email = (user.value as any)?.email
+    const name = (user.value as any)?.name
+    return getInitials(name || email || 'User')
+  })
+
+  const userDisplayName = computed(() => {
+    const u = user.value as any
+    return u?.name || u?.email || 'User'
+  })
+
+  const avatarUrl = computed(() => {
+    const u = user.value as any
+    const candidate = u?.picture || u?.photoURL || u?.avatarUrl || u?.imageUrl || u?.imageURL || u?.profileImageUrl
+    return typeof candidate === 'string' && candidate.trim() ? candidate.trim() : null
+  })
+
+  const handleLogout = async () => {
+    await signOut()
+    await navigateTo('/auth/login')
+  }
+
+  // Invite dialog
+  const inviteDialogOpen = ref(false)
 
   // Reactive collection based on current route
   const currentCollection = computed(() => {
@@ -164,7 +235,7 @@
           <UiButton
             variant="ghost"
             size="icon-sm"
-            class="text-muted-foreground hover:text-foreground mr-2"
+            class="text-muted-foreground hover:text-foreground mr-2 ml-1"
             :aria-label="sidebarCollapse.isCollapsed.value ? 'Expand sidebar' : 'Collapse sidebar'"
             @click="sidebarCollapse.toggle()">
             <Icon name="lucide:menu" class="h-4 w-4" />
@@ -175,7 +246,7 @@
         </UiTooltipContent>
       </UiTooltip>
 
-      <!-- Organization Picker -->
+      <!-- Organization Picker (all authenticated users) -->
       <ClientOnly>
         <OrganizationPicker />
       </ClientOnly>
@@ -184,7 +255,7 @@
         /
       </span>
 
-      <!-- App Picker -->
+      <!-- Workspace Picker (all members) -->
       <ClientOnly>
         <AppPicker />
       </ClientOnly>
@@ -222,8 +293,10 @@
           <Icon name="lucide:refresh-cw" class="h-4 w-4" />
         </UiButton>
       </div>
+
+
     </nav>
-    <div class="flex items-center mr-4 gap-3">
+    <div class="flex items-center mr-4 gap-2">
       <!-- Save Status -->
       <UiSheet>
         <UiSheetTrigger as-child>
@@ -255,15 +328,56 @@
       <UiButton
         v-if="props.aboveSidebar"
         variant="ghost"
-        size="sm"
-        class="text-muted-foreground hover:text-foreground border border-border/40 hover:bg-muted/40 bg-card gap-2 px-4 min-w-[300px] flex items-center justify-between"
+        class="rounded-full text-muted-foreground/50 hover:text-foreground border border-border hover:bg-muted/40 bg-transparent gap-2 px-4 min-w-[250px] flex items-center justify-between"
         @click="commandDialog.open()">
         <div class="flex items-center gap-2">
           <Icon name="lucide:search" class="h-4 w-4" />
-          <span class="text-xs font-semibold">Find anything...</span>
+          <span class="text-xs font-semibold">Find...</span>
         </div>
-        <UiKbd class="bg-muted/40 border-border/50 text-muted-foreground text-[10px]">⌘K</UiKbd>
+        <UiKbd class="bg-muted/40 border-border/50 text-muted-foreground text-[12px] font-mono">⌘ K</UiKbd>
       </UiButton>
+
+      <!-- Workspace Members & Presence -->
+      <div v-if="workspaceUsers.length > 0" class="flex items-center ml-auto mr-2">
+        <div class="flex items-center rounded-full border border-border bg-background/50 p-1 shadow-sm transition-colors hover:bg-background/80">
+          <div class="flex -space-x-1.5 px-0.5">
+            <UiTooltip v-for="u in workspaceUsers" :key="u.id">
+              <UiTooltipTrigger as-child>
+                <div class="relative">
+                  <UiAvatar class="size-6 ring-2 ring-background grayscale-[0.3] transition-all hover:grayscale-0 hover:scale-110 cursor-pointer">
+                    <UiAvatarImage v-if="u.avatar" :src="u.avatar" :alt="u.name" />
+                    <UiAvatarFallback class="text-[9px] font-bold">{{ u.initials }}</UiAvatarFallback>
+                  </UiAvatar>
+                  <span
+                    v-if="u.isOnline"
+                    class="absolute bottom-0 right-0 h-2 w-2 rounded-full border border-background bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.5)]"
+                  />
+                </div>
+              </UiTooltipTrigger>
+              <UiTooltipContent side="bottom" class="flex flex-col gap-0.5">
+                <span class="font-bold text-xs">{{ u.name }}</span>
+                <span class="text-[10px] text-muted-foreground">{{ u.isOnline ? 'Online now' : 'Away' }} {{ u.isMe ? '(You)' : '' }}</span>
+              </UiTooltipContent>
+            </UiTooltip>
+          </div>
+          <div class="px-3 border-l ml-1.5 flex flex-col justify-center h-5">
+            <p class="text-[10px] leading-none font-bold text-foreground/80">
+              {{ onlineCount }} <span class="text-muted-foreground font-medium uppercase tracking-tighter">Online</span>
+            </p>
+          </div>
+                <!-- Invite Button (admin+ only) -->
+      <UiButton
+        v-if="canManageMembers"
+        variant="outline"
+        size="xs"
+        class="text-muted-foreground hover:bg-primary/10 hover:text-primary gap-1.5 pl-2 pr-3 font-semibold transition-colors "
+        @click="inviteDialogOpen = true"
+      >
+        <Icon name="lucide:plus" class="h-4 w-4" />
+        <span>Invite</span>
+      </UiButton>
+        </div>
+      </div>
 
       <!-- Notifications Button -->
       <UiDropdownMenu>
@@ -271,7 +385,7 @@
           <UiButton
             variant="ghost"
             size="icon-sm"
-            class="text-muted-foreground hover:text-foreground relative transition-transform active:scale-95">
+            class="text-muted-foreground hover:text-foreground relative transition-transform active:scale-95 mr-3">
             <Icon name="lucide:bell" class="h-4 w-4" />
             <Motion
               v-if="unreadCount > 0"
@@ -423,24 +537,79 @@
         </UiDropdownMenuContent>
       </UiDropdownMenu>
 
-      <!-- Activity Button -->
-      <UiSheet>
-        <UiSheetTrigger as-child>
-          <UiButton variant="ghost" size="icon-sm" class="text-muted-foreground hover:text-foreground">
-            <Icon name="lucide:activity" class="h-4 w-4" />
-          </UiButton>
-        </UiSheetTrigger>
-        <UiSheetContent side="right">
-          <UiSheetHeader>
-            <UiSheetTitle>Activity</UiSheetTitle>
-            <UiSheetDescription>Recent activity and updates</UiSheetDescription>
-          </UiSheetHeader>
-          <div class="flex flex-col items-center justify-center h-64 text-muted-foreground">
-            <Icon name="lucide:activity" class="h-12 w-12 mb-4 opacity-50" />
-            <p class="text-sm">Activity feed coming soon</p>
+
+      <!-- User Avatar -->
+      <ClientOnly>
+        <UiDropdownMenu>
+          <UiDropdownMenuTrigger as-child>
+            <button
+              type="button"
+              class="relative flex h-8 w-8 shrink-0 items-center justify-center overflow-hidden rounded-full border border-border/50 bg-muted/50 text-xs font-semibold transition-all hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring active:scale-95"
+              aria-label="User menu"
+            >
+              <img
+                v-if="avatarUrl"
+                :src="avatarUrl"
+                :alt="userDisplayName"
+                class="h-full w-full rounded-full object-cover"
+                referrerpolicy="no-referrer"
+              />
+              <span v-else class="text-[10px] text-foreground/70">{{ initials }}</span>
+            </button>
+            <!-- <span class="absolute bottom-4 right-4 h-2 w-2 rounded-full border-2 border-background bg-emerald-500 " /> -->
+          </UiDropdownMenuTrigger>
+
+          <UiDropdownMenuContent align="end" class="w-[220px] shadow-2xl border-border/50">
+            <div class="px-2 py-2 mb-1 border-b bg-muted/5 flex items-center gap-3">
+              <div class="h-8 w-8 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
+                <span class="text-[10px] font-bold text-primary">{{ initials }}</span>
+              </div>
+              <div class="flex-1 min-w-0">
+                <div class="text-sm font-bold truncate leading-none">{{ userDisplayName }}</div>
+                <div class="text-[10px] text-muted-foreground truncate mt-1 uppercase tracking-wider font-bold">{{ roleConfig?.label || 'Member' }}</div>
+              </div>
+            </div>
+
+            <UiDropdownMenuItem as-child>
+              <AppNavLink to="/settings/profile" class="flex w-full items-center">
+                <Icon name="lucide:user" class="mr-2 h-4 w-4" />
+                Profile settings
+              </AppNavLink>
+            </UiDropdownMenuItem>
+
+            <template v-if="canToggleEditMode">
+              <UiDropdownMenuSeparator />
+              <UiDropdownMenuItem class="flex items-center justify-between" @click="toggleEditMode">
+                <div class="flex items-center gap-2">
+                  <Icon :name="isInEditMode ? 'lucide:pencil-off' : 'lucide:pencil'" class="h-4 w-4" />
+                  <span>{{ isInEditMode ? 'Exit Edit Mode' : 'Edit Mode' }}</span>
+                </div>
+                <div
+                  v-if="isInEditMode"
+                  class="h-2 w-2 rounded-full bg-amber-500 animate-pulse" />
+              </UiDropdownMenuItem>
+            </template>
+
+            <UiDropdownMenuSeparator />
+            <UiDropdownMenuItem class="text-destructive focus:text-destructive" @click="handleLogout">
+              <Icon name="lucide:log-out" class="mr-2 h-4 w-4" />
+              Sign out
+            </UiDropdownMenuItem>
+          </UiDropdownMenuContent>
+        </UiDropdownMenu>
+
+        <template #fallback>
+          <div
+            class="flex h-8 w-8 items-center justify-center rounded-full bg-muted/50 text-[10px] font-semibold"
+            aria-label="User"
+          >
+            <Icon name="lucide:user" class="h-4 w-4 opacity-50" />
           </div>
-        </UiSheetContent>
-      </UiSheet>
+        </template>
+      </ClientOnly>
+
+      <!-- Member Invite Dialog -->
+      <MemberInviteDialog v-model:open="inviteDialogOpen" />
     </div>
   </header>
 </template>

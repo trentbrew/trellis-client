@@ -24,7 +24,8 @@ import {
 
 // ── Config ──────────────────────────────────────────────────────────────────
 
-const BASE_URL = (process.env.TRELLIS_API_URL || 'http://localhost:4141').replace(/\/$/, '')
+const defaultApiUrl = `http://localhost:${process.env.TRELLIS_PORT || '1414'}`
+const BASE_URL = (process.env.TRELLIS_API_URL || defaultApiUrl).replace(/\/$/, '')
 const AGENT_ID = process.env.TRELLIS_AGENT_ID || 'mcp'
 const API = `${BASE_URL}/api/graph`
 

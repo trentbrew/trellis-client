@@ -33,7 +33,7 @@ export function useAutoSave<T extends Record<string, any>>(
   const lastSavedAt = ref<Date | null>(null)
   const debounceMs = options.debounce ?? 800
   let resetTimer: ReturnType<typeof setTimeout> | null = null
-  const ignoredKeys = new Set(options.ignoreKeys ?? ['updatedAt', 'createdAt', 'references'])
+  const ignoredKeys = new Set(options.ignoreKeys ?? ['updatedAt', 'createdAt'])
   const lastSnapshot = ref<string | null>(null)
 
   const formatLastSaved = computed(() => {

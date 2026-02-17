@@ -24,6 +24,8 @@
       dialogTitle?: string
       /** sr-only dialog description override */
       dialogDescription?: string
+      /** Entity ID for per-entity editing presence */
+      entityId?: string
     }>(),
     {
       mode: 'edit',
@@ -48,6 +50,10 @@
     emit('update:open', false)
     emit('close')
   }
+
+  // ── Per-entity editing presence ────────────────────────────────────
+  const presenceEntityId = computed(() => props.entityId)
+  const { peerList, peerCount } = useEntityPresence(presenceEntityId)
 
   // ── Stack-aware positioning ─────────────────────────────────────────
   const { buildContentStyle, overlayClass: stackOverlayClass, stackTransform, isStacked, parentTitle, hideNavigation, onBack, reportDimensions } = useDialogStackAware()
@@ -208,6 +214,31 @@
               <slot name="header-badges" />
             </div>
             <div class="flex items-center gap-1 shrink-0">
+              <!-- Per-entity editing presence avatars -->
+              <div v-if="peerCount > 0" class="flex items-center -space-x-1.5 mr-1">
+                <div
+                  v-for="peer in peerList.slice(0, 4)"
+                  :key="peer.peerId"
+                  :title="peer.name + (peer.editingField ? ` · editing ${peer.editingField}` : ' · viewing')"
+                  class="relative flex items-center justify-center h-6 w-6 rounded-full ring-2 ring-card text-[10px] font-medium"
+                  :class="peer.editingField ? 'bg-primary/20 text-primary' : 'bg-muted text-muted-foreground'">
+                  <img
+                    v-if="peer.avatar"
+                    :src="peer.avatar"
+                    :alt="peer.name"
+                    class="h-6 w-6 rounded-full object-cover" />
+                  <span v-else>{{ String(peer.name || peer.email || '?').charAt(0).toUpperCase() }}</span>
+                  <span
+                    class="absolute -bottom-0.5 -right-0.5 h-2 w-2 rounded-full ring-1 ring-card"
+                    :class="peer.editingField ? 'bg-primary animate-pulse' : 'bg-green-500'" />
+                </div>
+                <div
+                  v-if="peerList.length > 4"
+                  class="flex items-center justify-center h-6 w-6 rounded-full ring-2 ring-card bg-muted text-[10px] font-medium text-muted-foreground">
+                  +{{ peerList.length - 4 }}
+                </div>
+              </div>
+              <div v-if="peerCount > 0 && !isCreateMode && !hideNavigation" class="h-5 w-px bg-border mx-0.5" />
               <template v-if="!isCreateMode && !hideNavigation">
                 <UiButton
                   variant="ghost"

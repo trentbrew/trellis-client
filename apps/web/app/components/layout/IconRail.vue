@@ -4,10 +4,6 @@
 
   // Navigation routes
   const routes = useRoutes()
-
-  const secondaryRoutes = computed(() => {
-    return routes.secondaryRailRoutes.value || []
-  })
 </script>
 
 <template>
@@ -54,8 +50,8 @@
     <div class="flex-1" />
 
     <!-- Secondary Navigation Routes -->
-    <div v-if="secondaryRoutes.length > 0" class="flex flex-col gap-1 pb-2">
-      <template v-for="route in secondaryRoutes" :key="route.path">
+    <div v-if="routes.secondaryRailRoutes.value?.length > 0" class="flex flex-col gap-1 pb-2">
+      <template v-for="route in routes.secondaryRailRoutes.value" :key="route.path">
         <UiTooltip>
           <UiTooltipTrigger as-child>
             <AppNavLink
