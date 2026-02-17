@@ -86,6 +86,7 @@ function _initStoreFromTql() {
             involved: normalizeArray(node.involved),
             reminders: parseJsonArray(node.reminders),
             checklist: parseJsonArray(node.checklist),
+            checklistContent: normalizeScalar(node.checklistContent) || '',
             attachments: parseJsonArray(node.attachments),
             references: [...outgoingRefs, ...incomingRefs],
           } as unknown as Entity
@@ -110,30 +111,54 @@ function _initStoreFromTql() {
  * Initialize entity store from the DataAdapter (cloud mode).
  * Subscribes to InstantDB's entities table for reactive entity data.
  * Entities arrive as flat objects — no EAV normalization needed.
+ *
+ * Scoped by orgId — re-subscribes when the current org changes so all
+ * org members see the same entities in realtime.
  */
 function _initStoreFromAdapter(adapter: DataAdapter) {
-  adapter.subscribeQuery({ entities: {} }, (result) => {
-    if (result.error) {
-      console.error('[useTrellisEntities] adapter query error:', result.error)
-      _loading.value = false
-      return
-    }
+  const currentOrg = useState<any>('currentOrg')
+  let unsub: (() => void) | null = null
 
-    const rawItems = (result.data as any)?.entities || []
-    _items.value = rawItems.map((item: any) => {
-      const { id: itemId, ...fields } = item
-      return {
-        id: itemId,
-        ...fields,
-        tags: Array.isArray(fields.tags) ? fields.tags : [],
-        involved: Array.isArray(fields.involved) ? fields.involved : [],
-        checklist: Array.isArray(fields.checklist) ? fields.checklist : [],
-        attachments: Array.isArray(fields.attachments) ? fields.attachments : [],
-        reminders: Array.isArray(fields.reminders) ? fields.reminders : [],
-        references: [], // TODO: Phase 3+ — resolve references from adapter links
-      } as unknown as Entity
+  const subscribe = (orgId: string | null) => {
+    if (unsub) { unsub(); unsub = null }
+
+    _loading.value = true
+
+    // Build query: scope by orgId when available, otherwise fall back to all visible entities
+    const query = orgId
+      ? { entities: { $: { where: { orgId } } } }
+      : { entities: {} }
+
+    unsub = adapter.subscribeQuery(query, (result) => {
+      if (result.error) {
+        console.error('[useTrellisEntities] adapter query error:', result.error)
+        _loading.value = false
+        return
+      }
+
+      const rawItems = (result.data as any)?.entities || []
+      _items.value = rawItems.map((item: any) => {
+        const { id: itemId, ...fields } = item
+        return {
+          id: itemId,
+          ...fields,
+          tags: Array.isArray(fields.tags) ? fields.tags : [],
+          involved: Array.isArray(fields.involved) ? fields.involved : [],
+          checklist: Array.isArray(fields.checklist) ? fields.checklist : [],
+          checklistContent: fields.checklistContent || '',
+          attachments: Array.isArray(fields.attachments) ? fields.attachments : [],
+          reminders: Array.isArray(fields.reminders) ? fields.reminders : [],
+          references: [], // TODO: Phase 3+ — resolve references from adapter links
+        } as unknown as Entity
+      })
+      _loading.value = false
     })
-    _loading.value = false
+  }
+
+  // Subscribe immediately with current org, re-subscribe when org changes
+  subscribe(currentOrg.value?.id || null)
+  watch(() => currentOrg.value?.id, (newOrgId) => {
+    subscribe(newOrgId || null)
   })
 }
 
@@ -165,6 +190,7 @@ function _initStore() {
  */
 export function useTrellisEntities() {
   const adapter = useDataAdapter()
+  const { user } = useInstantAuth()
 
   // Initialize the singleton store on first call
   _initStore()
@@ -177,30 +203,69 @@ export function useTrellisEntities() {
   // ── CRUD: Adapter backend (cloud mode) ──────────────────────────────
 
   async function createViaAdapter(item: Partial<Entity> & { type: EntityType; title: string }) {
+    const currentOrg = useState<any>('currentOrg')
     const itemId = crypto.randomUUID()
     const { id: _id, references: _refs, ...data } = item
     const now = Date.now()
+    const ownerId = user.value?.id || (await adapter.getAuth())?.id
+    const orgId = currentOrg.value?.id
 
-    await adapter.transact([
+    if (!ownerId) {
+      throw new Error('[useTrellisEntities] Cannot create entity: no authenticated user (ownerId required).')
+    }
+
+    // Default owner display name to the current user if not set
+    const ownerName = (data as any).owner || user.value?.email || ownerId
+
+    const txs: any[] = [
       adapter.tx.entities[itemId].create({
-        ...data,
-        ownerId: (await adapter.getAuth())?.id || 'unknown',
+        ...toAdapterPayload(data),
+        ownerId,
+        owner: ownerName,
+        orgId: orgId || undefined,
+        visibility: (data as any).visibility || 'org',
+        involved: (data as any).involved?.length ? (data as any).involved : [ownerId],
         startDate: extractYmd((data as any).startDate),
         endDate: extractYmd((data as any).endDate) || undefined,
         createdAt: now,
         updatedAt: now,
       }),
-    ])
+    ]
+
+    // Link entity to the org so CEL permission rules can traverse the link.
+    // Link from the entity side — the creator owns the entity and has update
+    // permission on it. Linking from the org side would require org update
+    // permission (owner-only), blocking non-owner members.
+    if (orgId) {
+      txs.push(adapter.tx.entities[itemId].link({ organization: orgId }))
+    }
+
+    await adapter.transact(txs)
 
     return itemId
   }
 
   async function updateViaAdapter(item: Entity) {
-    const { id: itemId, references: _refs, ...fields } = item
+    const { id: itemId, references: _refs, ...fields } = item as any
+    const existing = _items.value.find((i) => i.id === itemId) as Record<string, any> | undefined
+    const ownerId = fields.ownerId || existing?.ownerId || user.value?.id || (await adapter.getAuth())?.id
+
+    if (!ownerId) {
+      throw new Error(`[useTrellisEntities] Cannot update entity ${itemId}: no ownerId available for permission checks.`)
+    }
+
+    // Ensure the current editor is tracked in the involved array
+    const currentUserId = user.value?.id
+    const involved = Array.isArray(fields.involved) ? [...fields.involved] : (existing?.involved ? [...existing.involved] : [])
+    if (currentUserId && !involved.includes(currentUserId)) {
+      involved.push(currentUserId)
+    }
 
     await adapter.transact([
       adapter.tx.entities[itemId].update({
-        ...fields,
+        ...toAdapterPayload(fields),
+        ownerId,
+        involved,
         startDate: extractYmd((fields as any).startDate),
         endDate: extractYmd((fields as any).endDate) || undefined,
         updatedAt: Date.now(),
@@ -279,6 +344,50 @@ export function useTrellisEntities() {
     update,
     remove,
   }
+}
+
+/**
+ * Convert potentially reactive/proxy-rich objects into plain JSON-safe payloads
+ * before sending them to InstantDB transactions (avoids IndexedDB DataCloneError).
+ */
+function toAdapterPayload<T>(value: T): T {
+  try {
+    return JSON.parse(JSON.stringify(value)) as T
+  } catch {
+    return sanitizeAdapterValue(value) as T
+  }
+}
+
+function sanitizeAdapterValue(value: unknown, seen = new WeakSet<object>()): unknown {
+  if (value === null || value === undefined) return value
+
+  const t = typeof value
+  if (t === 'string' || t === 'number' || t === 'boolean') return value
+  if (t === 'bigint') return Number(value)
+  if (t === 'function' || t === 'symbol') return undefined
+
+  if (value instanceof Date) return value.toISOString()
+
+  if (Array.isArray(value)) {
+    return value
+      .map((v) => sanitizeAdapterValue(v, seen))
+      .filter((v) => v !== undefined)
+  }
+
+  if (t === 'object') {
+    const obj = value as Record<string, unknown>
+    if (seen.has(obj)) return undefined
+    seen.add(obj)
+
+    const out: Record<string, unknown> = {}
+    for (const [key, val] of Object.entries(obj)) {
+      const sanitized = sanitizeAdapterValue(val, seen)
+      if (sanitized !== undefined) out[key] = sanitized
+    }
+    return out
+  }
+
+  return undefined
 }
 
 /** Normalize a value to an array — EAV stores may flatten single values */

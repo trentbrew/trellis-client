@@ -50,6 +50,8 @@ const _schema = i.schema({
 
     entities: i.entity({
       ownerId: i.string().indexed(),
+      orgId: i.string().indexed().optional(), // scopes entity to a workspace
+      visibility: i.string().optional(), // 'org' (default) | 'private' | 'public'
       type: i.string().indexed(), // task | event | trip | payment | note | person | project …
       title: i.string(),
       description: i.string().optional(),
@@ -79,7 +81,8 @@ const _schema = i.schema({
       dependsOn: i.json().optional(), // string[] — entity IDs this depends on
       // Task-specific
       taskStatus: i.string().indexed().optional(), // pending | in-progress | completed | overdue …
-      checklist: i.json().optional(), // ChecklistItem[]
+      checklist: i.json().optional(), // @deprecated — use checklistContent
+      checklistContent: i.string().optional(), // TipTap TaskList HTML
       // Event-specific
       location: i.string().optional(),
       attendees: i.json().optional(), // Attendee[]
@@ -237,12 +240,17 @@ const _schema = i.schema({
     members: i.entity({
       ownerId: i.string().indexed(),
       orgId: i.string().indexed(),
+      worldId: i.string().indexed().optional(),
       userId: i.string().indexed(),
       email: i.string().optional(),
       name: i.string().optional(),
       role: i.string().optional(),
       status: i.string().optional(),
       invitedAt: i.number().optional(),
+      inviteToken: i.string().indexed().optional(),
+      inviterName: i.string().optional(),
+      orgName: i.string().optional(),
+      worldName: i.string().optional(),
     }),
 
     settings: i.entity({
@@ -314,6 +322,19 @@ const _schema = i.schema({
     // Comments Links
     // ========================================================================
 
+    organizationEntities: {
+      forward: {
+        on: 'organizations',
+        has: 'many',
+        label: 'entities',
+      },
+      reverse: {
+        on: 'entities',
+        has: 'one',
+        label: 'organization',
+      },
+    },
+
     entityComments: {
       forward: {
         on: 'entities',
@@ -327,7 +348,26 @@ const _schema = i.schema({
       },
     },
   },
-  rooms: {},
+  rooms: {
+    // Workspace-level presence (who's online)
+    workspace: {
+      presence: i.entity({
+        userId: i.string(),
+        joinedAt: i.number(),
+      }),
+    },
+    // Per-entity editing presence (who has an entity dialog open)
+    entity: {
+      presence: i.entity({
+        userId: i.string(),
+        email: i.string(),
+        name: i.string(),
+        avatar: i.string(),
+        editingField: i.string(),
+        openedAt: i.number(),
+      }),
+    },
+  },
 })
 
 // This helps Typescript display nicer intellisense

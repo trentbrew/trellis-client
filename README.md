@@ -163,7 +163,7 @@ timestamp: ...
           { "@type": "tql:FileRead", "tql:path": "app/config/app-config.jsonld" },
           { "@type": "tql:FileEdit", "tql:path": "app/pages/collections/index.vue", "tql:linesAdded": 5, "tql:linesRemoved": 8 },
           { "@type": "tql:CodeSearch", "tql:query": "sidebarSections" },
-          { "@type": "tql:BrowserVerification", "tql:url": "http://localhost:4141/collections", "tql:result": "0 errors" }
+          { "@type": "tql:BrowserVerification", "tql:url": "http://localhost:$TRELLIS_PORT/collections", "tql:result": "0 errors" }
         ],
         "tql:decisions": [
           {

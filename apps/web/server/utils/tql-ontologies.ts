@@ -17,6 +17,10 @@ import type { SchemaDefinition, PropertyValueSpecification, WorkspaceConfig } fr
 import { getRouteDefinitions } from './tql-routes'
 import { ENTITY_NAMESPACE, entityQuery } from '../../app/lib/tql-namespace'
 
+const DEFAULT_DEV_PORT = 1414
+const parsedDevPort = Number.parseInt(process.env.TRELLIS_PORT || '', 10)
+const DEV_PORT = Number.isFinite(parsedDevPort) ? parsedDevPort : DEFAULT_DEV_PORT
+
 // ============================================================================
 // Field helpers — compact builders for PropertyValueSpecification
 // ============================================================================
@@ -88,6 +92,7 @@ const taskOntology: SchemaDefinition = {
     f('taskStatus', 'select', { selectOptions: ['pending', 'in-progress', 'on-track', 'due-soon', 'overdue', 'completed'], icon: 'lucide:circle-dot', group: 'triage', display: 'popover', editable: true }),
     f('folder', 'rich_text', { icon: 'lucide:folder', group: 'classification', display: 'popover', editable: true }),
     f('notes', 'rich_text'),
+    f('checklistContent', 'rich_text'),
   ],
 }
 
@@ -249,6 +254,7 @@ const sprintOntology: SchemaDefinition = {
     f('sprintGoal', 'rich_text'),
     f('sprintStatus', 'select', { selectOptions: ['planning', 'active', 'completed', 'cancelled'], icon: 'lucide:circle-dot', group: 'triage', display: 'popover', editable: true }),
     f('velocity', 'number'),
+    f('checklistContent', 'rich_text'),
   ],
 }
 
@@ -583,6 +589,7 @@ const entityOntology: SchemaDefinition = {
     f('budget', 'number'),
     f('confirmationNumber', 'rich_text'),
     f('tripStatus', 'select', { selectOptions: ['planning', 'booked', 'in-progress', 'completed', 'cancelled'] }),
+    f('checklistContent', 'rich_text'),
   ],
 }
 
@@ -664,7 +671,7 @@ export function createWorkspaceConfig(): WorkspaceConfig {
         title: 'Trellis',
         description: 'Personal knowledge graph platform',
         version: '0.1.0',
-        devPort: 4141,
+        devPort: DEV_PORT,
       },
       projections: {
         'trellis:projection/all-tasks': {

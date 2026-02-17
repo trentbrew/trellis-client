@@ -2,8 +2,8 @@
 default:
     @just --list
 
-# Get port from JSON-LD graph
-port := `jq -r '.["@graph"][] | select(.["@type"] == "app:Application") | .devPort // 4141' app/config/app-config.jsonld`
+# Get port from environment (fallback: 1414)
+port := `printf "%s" "${TRELLIS_PORT:-1414}"`
 
 # Run the dev server on canonical port (kills any existing process on that port first)
 run:

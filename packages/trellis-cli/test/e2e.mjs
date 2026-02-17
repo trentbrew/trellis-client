@@ -2,7 +2,7 @@
  * E2E smoke test for trellis-cli against a running dev server.
  *
  * Run: node packages/trellis-cli/test/e2e.mjs
- * Requires: dev server on http://localhost:4141
+ * Requires: dev server on http://localhost:$TRELLIS_PORT
  */
 
 import { TrellisClient } from '../src/client.mjs'

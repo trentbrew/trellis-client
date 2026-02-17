@@ -1,6 +1,7 @@
 <script setup lang="ts">
   import type { DatabaseField, DatabaseSchema } from '~/types/database'
   import type { AttributeConfig } from '~/components/Ui/Calendar.vue'
+  import type { RecurrenceRule } from '~/types/entity'
   import { createDefaultTrellisContext } from '~/lib/trellis'
   import { extractNodeValue, fieldKeyAliases, getStatusBadgeClass, getPriorityDisplay } from '~/lib/ontology'
   import { useGlobalDetailSheet } from '~/composables/useGlobalDetailSheet'
@@ -9,6 +10,7 @@
 
   interface CalendarEvent {
     id: string
+    sourceId: string
     title: string
     date: Date
     endDate?: Date
@@ -21,6 +23,7 @@
     priority?: string
     urgency?: string
     description?: string
+    isRecurringInstance?: boolean
   }
 
   const props = defineProps<{
@@ -382,6 +385,182 @@
     const date = parseDateValue(value)
     if (!date) return []
     return [{ date }]
+  }
+
+  const parseRecurrenceRule = (value: any): RecurrenceRule | null => {
+    const unwrapped = unwrapLdValue(value)
+    if (!unwrapped || typeof unwrapped !== 'object' || Array.isArray(unwrapped)) return null
+
+    const frequency = String((unwrapped as any).frequency || '').toLowerCase()
+    if (!frequency) return null
+
+    const validFrequencies = new Set(['daily', 'weekly', 'monthly', 'quarterly', 'yearly', 'weekdays', 'custom'])
+    if (!validFrequencies.has(frequency)) return null
+
+    const parseNum = (input: any): number | undefined => {
+      const n = Number(input)
+      return Number.isFinite(n) && n > 0 ? n : undefined
+    }
+
+    const weekdaysRaw = (unwrapped as any).weekdays
+    const weekdays = Array.isArray(weekdaysRaw)
+      ? weekdaysRaw
+          .map((d) => Number(d))
+          .filter((d) => Number.isInteger(d) && d >= 0 && d <= 6)
+      : undefined
+
+    return {
+      frequency: frequency as RecurrenceRule['frequency'],
+      interval: parseNum((unwrapped as any).interval),
+      weekdays: weekdays?.length ? weekdays : undefined,
+      endDate: typeof (unwrapped as any).endDate === 'string' ? (unwrapped as any).endDate : undefined,
+      occurrences: parseNum((unwrapped as any).occurrences),
+    }
+  }
+
+  const startOfDay = (date: Date) => new Date(date.getFullYear(), date.getMonth(), date.getDate())
+  const endOfDay = (date: Date) => new Date(date.getFullYear(), date.getMonth(), date.getDate(), 23, 59, 59, 999)
+
+  const addDays = (date: Date, days: number) => {
+    const next = new Date(date)
+    next.setDate(next.getDate() + days)
+    return next
+  }
+
+  const addMonths = (date: Date, months: number) => {
+    const next = new Date(date)
+    next.setMonth(next.getMonth() + months)
+    return next
+  }
+
+  const addYears = (date: Date, years: number) => {
+    const next = new Date(date)
+    next.setFullYear(next.getFullYear() + years)
+    return next
+  }
+
+  const getViewRange = (): { start: Date; end: Date } => {
+    const base = new Date(currentDate.value)
+    base.setHours(0, 0, 0, 0)
+
+    switch (calendarViewMode.value) {
+      case 'day':
+        return { start: startOfDay(base), end: endOfDay(base) }
+      case 'week': {
+        const start = new Date(base)
+        start.setDate(start.getDate() - start.getDay())
+        const end = new Date(start)
+        end.setDate(start.getDate() + 6)
+        return { start: startOfDay(start), end: endOfDay(end) }
+      }
+      case 'month': {
+        const firstDay = new Date(base.getFullYear(), base.getMonth(), 1)
+        const lastDay = new Date(base.getFullYear(), base.getMonth() + 1, 0)
+        const start = new Date(firstDay)
+        start.setDate(firstDay.getDate() - firstDay.getDay())
+        const totalDays = Math.ceil((start.getDay() + lastDay.getDate()) / 7) * 7
+        const end = new Date(start)
+        end.setDate(start.getDate() + totalDays - 1)
+        return { start: startOfDay(start), end: endOfDay(end) }
+      }
+      case 'year': {
+        const start = new Date(base.getFullYear(), 0, 1)
+        const end = new Date(base.getFullYear(), 11, 31)
+        return { start: startOfDay(start), end: endOfDay(end) }
+      }
+      default:
+        return { start: startOfDay(base), end: endOfDay(base) }
+    }
+  }
+
+  const toWeekAnchor = (date: Date) => {
+    const anchor = startOfDay(date)
+    anchor.setDate(anchor.getDate() - anchor.getDay())
+    return anchor
+  }
+
+  const getCustomRecurrenceFrequency = (rule: RecurrenceRule): 'daily' | 'weekly' | 'monthly' | 'yearly' => {
+    if (rule.weekdays?.length) return 'weekly'
+    return 'daily'
+  }
+
+  const generateRecurringDates = (
+    baseDate: Date,
+    recurrence: RecurrenceRule,
+    rangeStart: Date,
+    rangeEnd: Date,
+  ): Date[] => {
+    const interval = Math.max(1, recurrence.interval || 1)
+    const parsedEndDate = recurrence.endDate ? parseDateValue(recurrence.endDate) : null
+    const endDateBound = parsedEndDate ? endOfDay(parsedEndDate) : rangeEnd
+    const hardEnd = endDateBound < rangeEnd ? endDateBound : rangeEnd
+    const maxOccurrences = Math.max(1, recurrence.occurrences || 200)
+
+    const results: Date[] = []
+    let generated = 0
+
+    const pushIfInRange = (candidate: Date) => {
+      if (candidate <= baseDate) return
+      if (candidate > hardEnd) return
+      if (candidate >= rangeStart) results.push(new Date(candidate))
+      generated += 1
+    }
+
+    const base = new Date(baseDate)
+
+    const frequency = recurrence.frequency === 'custom'
+      ? getCustomRecurrenceFrequency(recurrence)
+      : recurrence.frequency
+
+    if (frequency === 'weekdays') {
+      let cursor = addDays(base, 1)
+      while (cursor <= hardEnd && generated < maxOccurrences) {
+        const day = cursor.getDay()
+        if (day >= 1 && day <= 5) {
+          pushIfInRange(cursor)
+        }
+        cursor = addDays(cursor, 1)
+      }
+      return results
+    }
+
+    if ((frequency === 'weekly' || recurrence.weekdays?.length) && recurrence.weekdays?.length) {
+      const weekdays = [...new Set(recurrence.weekdays)].sort((a, b) => a - b)
+      const anchor = toWeekAnchor(base)
+      let weekOffset = 0
+
+      while (generated < maxOccurrences) {
+        const weekStart = addDays(anchor, weekOffset * 7 * interval)
+        if (weekStart > hardEnd) break
+
+        for (const weekday of weekdays) {
+          const candidate = new Date(weekStart)
+          candidate.setDate(weekStart.getDate() + weekday)
+          candidate.setHours(base.getHours(), base.getMinutes(), base.getSeconds(), base.getMilliseconds())
+          pushIfInRange(candidate)
+          if (generated >= maxOccurrences) break
+        }
+
+        weekOffset += 1
+      }
+
+      return results.sort((a, b) => a.getTime() - b.getTime())
+    }
+
+    let cursor = new Date(base)
+    while (generated < maxOccurrences) {
+      if (frequency === 'daily') cursor = addDays(cursor, interval)
+      else if (frequency === 'weekly') cursor = addDays(cursor, interval * 7)
+      else if (frequency === 'monthly') cursor = addMonths(cursor, interval)
+      else if (frequency === 'quarterly') cursor = addMonths(cursor, interval * 3)
+      else if (frequency === 'yearly') cursor = addYears(cursor, interval)
+      else break
+
+      if (cursor > hardEnd) break
+      pushIfInRange(cursor)
+    }
+
+    return results
   }
 
   const _palette: Array<{ dot: string; badge: string }> = [
@@ -900,9 +1079,16 @@
     const field = selectedDateField.value
     if (!field) return []
 
+    const { start: viewStart, end: viewEnd } = getViewRange()
+
     const out: CalendarEvent[] = []
     recordNodes.value.forEach((node, nodeIndex) => {
       const values = normalizeDateValues(getFieldValue(node, field))
+      const recurrence = parseRecurrenceRule(
+        getFieldValue(node, { id: 'recurrence', name: 'recurrence', type: 'text', order: 0, required: false } as DatabaseField)
+        ?? (node as any)['user:recurrence']
+        ?? (node as any).recurrence,
+      )
 
       // Extract display properties using ontology field key aliases
       const status = getNodeStringValue(node, [...fieldKeyAliases.status])
@@ -918,10 +1104,18 @@
       const typeStyle = getTypeStyle(nodeType)
 
       const description = getNodeStringValue(node, ['user:description', 'description', 'trellis:description'])
+      const baseId = getNodeId(node) || 'record'
 
       values.forEach((val, valueIndex) => {
+        const baseEventId = `${baseId}-${nodeIndex}-${valueIndex}`
+        const baseRange = val.range
+        const baseStart = baseRange?.start ? new Date(baseRange.start) : new Date(val.date)
+        const baseEnd = baseRange?.end ? new Date(baseRange.end) : new Date(val.date)
+        const durationMs = Math.max(0, baseEnd.getTime() - baseStart.getTime())
+
         out.push({
-          id: `${getNodeId(node) || 'record'}-${nodeIndex}-${valueIndex}`,
+          id: baseEventId,
+          sourceId: baseEventId,
           title: nodeTitle(node),
           date: val.date,
           range: val.range,
@@ -933,6 +1127,34 @@
           priority: priority?.toLowerCase(),
           urgency: urgency?.toLowerCase(),
           description,
+          isRecurringInstance: false,
+        })
+
+        if (!recurrence) return
+
+        const recurringDates = generateRecurringDates(baseStart, recurrence, viewStart, viewEnd)
+        recurringDates.forEach((occurrenceStart, recurrenceIndex) => {
+          const occurrenceEnd = new Date(occurrenceStart.getTime() + durationMs)
+          const occurrenceRange = durationMs > 0
+            ? { start: occurrenceStart, end: occurrenceEnd }
+            : undefined
+
+          out.push({
+            id: `${baseEventId}-repeat-${recurrenceIndex + 1}`,
+            sourceId: baseEventId,
+            title: nodeTitle(node),
+            date: occurrenceStart,
+            range: occurrenceRange,
+            typeLabel: nodeType,
+            badgeClass,
+            dotColor: typeStyle.dot,
+            status: status || 'on-track',
+            assignee,
+            priority: priority?.toLowerCase(),
+            urgency: urgency?.toLowerCase(),
+            description,
+            isRecurringInstance: true,
+          })
         })
       })
     })
@@ -1134,7 +1356,9 @@
       isCurrentMonth: boolean
       isToday: boolean
       hasEvents: boolean
+      hasRecurring: boolean
       eventCount: number
+      recurringCount: number
     }> = []
 
     // Previous month padding
@@ -1142,12 +1366,15 @@
     for (let i = startPadding - 1; i >= 0; i--) {
       const date = new Date(year, month - 1, prevMonthLastDay - i)
       const dayEvents = events.value.filter((e) => isDateInEventRange(date, e))
+      const recurringCount = dayEvents.filter((e) => hasRecurringInstance(e)).length
       days.push({
         day: prevMonthLastDay - i,
         isCurrentMonth: false,
         isToday: isSameDay(date, today.value),
         hasEvents: dayEvents.length > 0,
+        hasRecurring: recurringCount > 0,
         eventCount: dayEvents.length,
+        recurringCount,
       })
     }
 
@@ -1155,12 +1382,15 @@
     for (let i = 1; i <= lastDay.getDate(); i++) {
       const date = new Date(year, month, i)
       const dayEvents = events.value.filter((e) => isDateInEventRange(date, e))
+      const recurringCount = dayEvents.filter((e) => hasRecurringInstance(e)).length
       days.push({
         day: i,
         isCurrentMonth: true,
         isToday: isSameDay(date, today.value),
         hasEvents: dayEvents.length > 0,
+        hasRecurring: recurringCount > 0,
         eventCount: dayEvents.length,
+        recurringCount,
       })
     }
 
@@ -1169,12 +1399,15 @@
     for (let i = 1; i <= remaining; i++) {
       const date = new Date(year, month + 1, i)
       const dayEvents = events.value.filter((e) => isDateInEventRange(date, e))
+      const recurringCount = dayEvents.filter((e) => hasRecurringInstance(e)).length
       days.push({
         day: i,
         isCurrentMonth: false,
         isToday: isSameDay(date, today.value),
         hasEvents: dayEvents.length > 0,
+        hasRecurring: recurringCount > 0,
         eventCount: dayEvents.length,
+        recurringCount,
       })
     }
 
@@ -1221,6 +1454,13 @@
   }
 
   const getEventsForDay = (date: Date) => events.value.filter((event) => isDateInEventRange(date, event))
+
+  const hasRecurringInstance = (event: CalendarEvent) => event.isRecurringInstance === true
+
+  const recurringItemClasses = (event: CalendarEvent) =>
+    hasRecurringInstance(event)
+      ? 'ring-1 ring-primary/35 border border-dashed border-primary/35'
+      : ''
 
   // currentDate defaults to new Date() (today) — no auto-navigation needed
 
@@ -1411,6 +1651,7 @@
                       ? 'text-foreground hover:bg-muted'
                       : 'text-muted-foreground/40',
                   day.hasEvents && !day.isToday ? 'font-medium' : '',
+                  day.hasRecurring && day.isCurrentMonth && !day.isToday ? 'ring-1 ring-primary/35' : '',
                 ]"
                 @click="
                   () => {
@@ -1423,8 +1664,12 @@
                   v-if="day.hasEvents && day.isCurrentMonth"
                   :class="[
                     'absolute bottom-0.5 left-1/2 -translate-x-1/2 w-1 h-1 rounded-full',
-                    day.isToday ? 'bg-primary-foreground' : 'bg-primary',
+                    day.isToday ? 'bg-primary-foreground' : day.hasRecurring ? 'bg-violet-500' : 'bg-primary',
                   ]" />
+                <Icon
+                  v-if="day.hasRecurring && day.isCurrentMonth && !day.isToday"
+                  name="lucide:repeat"
+                  class="absolute top-0.5 right-0.5 h-2.5 w-2.5 text-violet-600/80 dark:text-violet-300/80" />
               </button>
             </div>
           </div>
@@ -1695,6 +1940,7 @@
                                 @click.stop="openEventDetail(slot.event)">
                                 <span v-if="slot.isStart || slot.isWrapStart" class="flex items-center gap-1">
                                   <Icon :name="slot.style.icon" class="h-3 w-3 shrink-0" />
+                                  <Icon v-if="hasRecurringInstance(slot.event)" name="lucide:repeat" class="h-3 w-3 shrink-0 opacity-80" />
                                   <span class="truncate">{{ slot.event.title }}</span>
                                 </span>
                               </button>
@@ -1704,6 +1950,7 @@
                                 <h4 class="text-sm font-semibold leading-tight truncate">{{ slot.event.title }}</h4>
                                 <div class="flex items-center gap-1.5">
                                   <Icon :name="slot.style.icon" :class="['h-3 w-3 shrink-0', slot.style.text]" />
+                                  <Icon v-if="hasRecurringInstance(slot.event)" name="lucide:repeat" class="h-3 w-3 opacity-70" />
                                   <span class="text-xs text-muted-foreground capitalize">{{ slot.event.typeLabel || 'Item' }}</span>
                                   <span class="text-xs text-muted-foreground">·</span>
                                   <Icon name="lucide:calendar-days" class="h-3 w-3 opacity-50" />
@@ -1744,11 +1991,13 @@
                               'hover:ring-1 hover:ring-primary/30 cursor-grab active:cursor-grabbing',
                               getTypeStyle(item.typeLabel || '').bg,
                               getTypeStyle(item.typeLabel || '').text,
+                              recurringItemClasses(item),
                             ]"
                             @dragstart="(e: DragEvent) => onDragStart(e, item)"
                             @dragend="onDragEnd"
                             @click.stop="openEventDetail(item)">
                             <Icon :name="getTypeStyle(item.typeLabel || '').icon" class="h-3 w-3 shrink-0" />
+                            <Icon v-if="hasRecurringInstance(item)" name="lucide:repeat" class="h-3 w-3 shrink-0 opacity-80" />
                             <span class="truncate">{{ item.title }}</span>
                           </button>
                         </UiHoverCardTrigger>
@@ -1757,6 +2006,7 @@
                             <h4 class="text-sm font-semibold leading-tight truncate">{{ item.title }}</h4>
                             <div class="flex items-center gap-1.5">
                               <Icon :name="getTypeStyle(item.typeLabel || '').icon" :class="['h-3 w-3 shrink-0', getTypeStyle(item.typeLabel || '').text]" />
+                              <Icon v-if="hasRecurringInstance(item)" name="lucide:repeat" class="h-3 w-3 opacity-70" />
                               <span class="text-xs text-muted-foreground capitalize">{{ item.typeLabel || 'Item' }}</span>
                               <span class="text-xs text-muted-foreground">·</span>
                               <Icon name="lucide:calendar-days" class="h-3 w-3 opacity-50" />
@@ -1919,6 +2169,7 @@
                                 @mouseleave="hoveredMultiDayEventId = null"
                                 @click.stop="openEventDetail(slot.event)">
                                 <Icon v-if="slot.isStart || slot.isWrapStart" :name="slot.style.icon" class="h-3 w-3 shrink-0" />
+                                <Icon v-if="(slot.isStart || slot.isWrapStart) && hasRecurringInstance(slot.event)" name="lucide:repeat" class="h-3 w-3 shrink-0 opacity-80" />
                                 <span v-if="slot.isStart || slot.isWrapStart" class="truncate">{{ slot.event.title }}</span>
                               </button>
                             </UiHoverCardTrigger>
@@ -1927,6 +2178,7 @@
                                 <h4 class="text-sm font-semibold leading-tight truncate">{{ slot.event.title }}</h4>
                                 <div class="flex items-center gap-1.5">
                                   <Icon :name="slot.style.icon" :class="['h-3 w-3 shrink-0', slot.style.text]" />
+                                  <Icon v-if="hasRecurringInstance(slot.event)" name="lucide:repeat" class="h-3 w-3 opacity-70" />
                                   <span class="text-xs text-muted-foreground capitalize">{{ slot.event.typeLabel || 'Item' }}</span>
                                   <span class="text-xs text-muted-foreground">·</span>
                                   <Icon name="lucide:calendar-days" class="h-3 w-3 opacity-50" />
@@ -1966,11 +2218,13 @@
                                 'hover:ring-1 hover:ring-primary/30 cursor-grab active:cursor-grabbing',
                                 getTypeStyle(item.typeLabel || '').bg,
                                 getTypeStyle(item.typeLabel || '').text,
+                                recurringItemClasses(item),
                               ]"
                               @dragstart="(e: DragEvent) => onDragStart(e, item)"
                               @dragend="onDragEnd"
                               @click.stop="openEventDetail(item)">
                               <Icon :name="getTypeStyle(item.typeLabel || '').icon" class="h-3 w-3 shrink-0" />
+                              <Icon v-if="hasRecurringInstance(item)" name="lucide:repeat" class="h-3 w-3 shrink-0 opacity-80" />
                               <span class="truncate">{{ item.title }}</span>
                             </button>
                           </UiHoverCardTrigger>
@@ -1979,6 +2233,7 @@
                               <h4 class="text-sm font-semibold leading-tight truncate">{{ item.title }}</h4>
                               <div class="flex items-center gap-1.5">
                                 <Icon :name="getTypeStyle(item.typeLabel || '').icon" :class="['h-3 w-3 shrink-0', getTypeStyle(item.typeLabel || '').text]" />
+                                <Icon v-if="hasRecurringInstance(item)" name="lucide:repeat" class="h-3 w-3 opacity-70" />
                                 <span class="text-xs text-muted-foreground capitalize">{{ item.typeLabel || 'Item' }}</span>
                                 <span class="text-xs text-muted-foreground">·</span>
                                 <Icon name="lucide:calendar-days" class="h-3 w-3 opacity-50" />
@@ -2058,6 +2313,7 @@
                                     class="w-1.5 h-1.5 rounded-full mt-1.5 shrink-0" />
                                   <div class="flex-1 min-w-0">
                                     <p class="text-xs font-medium truncate group-hover/item:text-primary transition-colors">
+                                      <Icon v-if="hasRecurringInstance(event)" name="lucide:repeat" class="h-3 w-3 inline-block mr-1 opacity-70 align-[-1px]" />
                                       {{ event.title }}
                                     </p>
                                     <div class="flex items-center gap-2 mt-0.5">
@@ -2134,7 +2390,9 @@
                           ? 'bg-primary text-primary-foreground font-bold'
                           : day.isCurrentMonth
                             ? day.hasEvents
-                              ? 'text-foreground font-medium'
+                              ? day.hasRecurring
+                                ? 'text-violet-700 dark:text-violet-300 font-semibold ring-1 ring-violet-500/40'
+                                : 'text-foreground font-medium'
                               : 'text-foreground/70'
                             : 'text-muted-foreground/30',
                       ]">
@@ -2142,7 +2400,14 @@
                       <!-- Event indicator dot -->
                       <span
                         v-if="day.hasEvents && day.isCurrentMonth && !day.isToday"
-                        class="absolute -bottom-0.5 left-1/2 -translate-x-1/2 w-1 h-1 rounded-full bg-primary" />
+                        :class="[
+                          'absolute -bottom-0.5 left-1/2 -translate-x-1/2 w-1 h-1 rounded-full',
+                          day.hasRecurring ? 'bg-violet-500' : 'bg-primary',
+                        ]" />
+                      <Icon
+                        v-if="day.hasRecurring && day.isCurrentMonth && !day.isToday"
+                        name="lucide:repeat"
+                        class="absolute top-0.5 right-0.5 h-2.5 w-2.5 text-violet-600/80 dark:text-violet-300/80" />
                     </div>
                   </div>
                 </div>

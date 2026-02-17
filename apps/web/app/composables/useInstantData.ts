@@ -446,69 +446,142 @@ export function useInstantData() {
       // Auto-create a default organization when none exist.
       // In cloud mode, users start with an empty InstantDB — this bootstraps the data layer
       // so the UI has a valid org/app context on first load after authentication.
+      //
+      // IMPORTANT: This must NOT fire for invited members who belong to an existing org.
+      // We gate on:
+      //   1. onboardingComplete — if onboarding hasn't finished, the onboarding page handles org setup
+      //   2. lastOrgId — if set, the user already belongs to an org; wait for the subscription to resolve it
+      //   3. memberships — if the user has any pending/active member records, skip auto-creation
+      //   4. debounce — give the WebSocket subscription time to deliver permission-based orgs
       const isAutoCreatingOrg = useState<boolean>('instantData:isAutoCreatingOrg', () => false)
+      let orgAutoCreateTimer: ReturnType<typeof setTimeout> | null = null
       watch(
         [organizations, orgsLoading, user],
-        async ([orgs, loading, authUser]) => {
+        ([orgs, loading, authUser]) => {
+          // Clear any pending auto-create when the watcher re-fires
+          if (orgAutoCreateTimer) { clearTimeout(orgAutoCreateTimer); orgAutoCreateTimer = null }
+
           if (loading || isAutoCreatingOrg.value || !authUser?.id) return
           if ((orgs || []).length > 0) return
 
-          isAutoCreatingOrg.value = true
-          try {
-            const id = crypto.randomUUID()
-            const now = Date.now()
-            await db.transact([
-              tx.organizations[id].update({
-                ownerId: authUser.id,
-                name: 'My Workspace',
-                slug: 'my-workspace',
-                description: 'Default workspace',
-                status: 'active',
-                createdAt: now,
-                updatedAt: now,
-              }),
-            ])
-            console.info('✓ Auto-created default organization')
-          } catch (e) {
-            console.error('Failed to auto-create default organization:', e)
-          } finally {
-            isAutoCreatingOrg.value = false
-          }
+          // Debounce: wait 2s for WebSocket sync to deliver member-visible orgs
+          orgAutoCreateTimer = setTimeout(async () => {
+            // Re-check after debounce — orgs may have arrived via subscription
+            if ((organizations.value || []).length > 0 || isAutoCreatingOrg.value) return
+
+            // Gate 1: Don't auto-create if onboarding hasn't completed
+            try {
+              const settingResp = await db.queryOnce({
+                settings: { $: { where: { settingKey: `user:${authUser.id}:onboardingComplete` } } },
+              })
+              const onboardingDone = (settingResp.data as any)?.settings?.[0]?.value
+              if (!onboardingDone) {
+                console.info('[useInstantData] Skipping auto-create org: onboarding not complete')
+                return
+              }
+            } catch (_e) { /* non-fatal — proceed with other checks */ }
+
+            // Gate 2: Don't auto-create if lastOrgId is set (user belongs to an existing org)
+            try {
+              const orgIdResp = await db.queryOnce({
+                settings: { $: { where: { settingKey: `user:${authUser.id}:lastOrgId` } } },
+              })
+              const lastOrgId = (orgIdResp.data as any)?.settings?.[0]?.value
+              if (typeof lastOrgId === 'string' && lastOrgId) {
+                console.info('[useInstantData] Skipping auto-create org: lastOrgId is set, waiting for subscription')
+                return
+              }
+            } catch (_e) { /* non-fatal */ }
+
+            // Gate 3: Don't auto-create if user has memberships (invited to an existing org)
+            try {
+              const memberResp = await db.queryOnce({
+                members: { $: { where: { userId: authUser.id } } },
+              })
+              const memberships = (memberResp.data as any)?.members || []
+              if (memberships.length > 0) {
+                console.info('[useInstantData] Skipping auto-create org: user has', memberships.length, 'membership(s)')
+                return
+              }
+            } catch (_e) { /* non-fatal */ }
+
+            // Final re-check: orgs may have appeared during the async checks
+            if ((organizations.value || []).length > 0) return
+
+            isAutoCreatingOrg.value = true
+            try {
+              const id = crypto.randomUUID()
+              const now = Date.now()
+              await db.transact([
+                tx.organizations[id].update({
+                  ownerId: authUser.id,
+                  name: 'My Workspace',
+                  slug: 'my-workspace',
+                  description: 'Default workspace',
+                  status: 'active',
+                  createdAt: now,
+                  updatedAt: now,
+                }),
+              ])
+              console.info('✓ Auto-created default organization')
+            } catch (e) {
+              console.error('Failed to auto-create default organization:', e)
+            } finally {
+              isAutoCreatingOrg.value = false
+            }
+          }, 2000)
         },
         { immediate: true },
       )
 
       // Auto-create a default app when an org exists but has no apps.
       // This avoids the "No active app" error without removing the appId-based data layer.
+      // Only auto-create if the current user is the org OWNER — members should not create apps
+      // in orgs they were invited to.
       const isAutoCreatingApp = useState<boolean>('instantData:isAutoCreatingApp', () => false)
+      let appAutoCreateTimer: ReturnType<typeof setTimeout> | null = null
       watch(
         [currentOrg, applications, appsLoading, user],
-        async ([org, apps, loading, authUser]) => {
+        ([org, apps, loading, authUser]) => {
+          if (appAutoCreateTimer) { clearTimeout(appAutoCreateTimer); appAutoCreateTimer = null }
+
           if (!org || loading || isAutoCreatingApp.value || !authUser?.id) return
           const orgApps = (apps || []).filter((a) => a.orgId === org.id)
           if (orgApps.length > 0) return
 
-          isAutoCreatingApp.value = true
-          try {
-            const id = crypto.randomUUID()
-            const now = Date.now()
-            await db.transact([
-              tx.applications[id].update({
-                ownerId: authUser.id,
-                orgId: org.id,
-                name: 'Workspace',
-                slug: 'workspace',
-                icon: 'lucide:layout-grid',
-                color: '#6366f1',
-                createdAt: now,
-                updatedAt: now,
-              }),
-            ])
-          } catch (e) {
-            console.error('Failed to auto-create default app:', e)
-          } finally {
-            isAutoCreatingApp.value = false
+          // Only org owners should auto-create apps
+          if ((org as any).ownerId !== authUser.id) {
+            console.info('[useInstantData] Skipping auto-create app: user is not org owner')
+            return
           }
+
+          // Debounce: wait 1.5s for apps to arrive via subscription
+          appAutoCreateTimer = setTimeout(async () => {
+            const currentApps = (applications.value || []).filter((a) => a.orgId === (currentOrg.value as any)?.id)
+            if (currentApps.length > 0 || isAutoCreatingApp.value) return
+
+            isAutoCreatingApp.value = true
+            try {
+              const id = crypto.randomUUID()
+              const now = Date.now()
+              await db.transact([
+                tx.applications[id].update({
+                  ownerId: authUser.id,
+                  orgId: org.id,
+                  name: 'Workspace',
+                  slug: 'workspace',
+                  icon: 'lucide:layout-grid',
+                  color: '#6366f1',
+                  createdAt: now,
+                  updatedAt: now,
+                }),
+              ])
+            } catch (e) {
+              console.error('Failed to auto-create default app:', e)
+            } finally {
+              isAutoCreatingApp.value = false
+            }
+          }, 1500)
         },
         { immediate: true },
       )

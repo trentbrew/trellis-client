@@ -263,6 +263,7 @@ const databaseRoute: RouteDefinition = {
   railPosition: 'primary',
   inCommandPalette: true,
   requiresAuth: true,
+  permissions: { minRole: 'admin', permission: 'read' },
   pageVariant: 'database',
   projectionTypes: ['table', 'kanban', 'card-grid', 'calendar', 'timeline', 'gallery', 'list', 'moodboard'],
   meta: {
@@ -312,6 +313,7 @@ const graphRoute: RouteDefinition = {
   railPosition: 'primary',
   inCommandPalette: true,
   requiresAuth: true,
+  permissions: { minRole: 'admin', permission: 'read' },
   collapseSidebar: true,
   meta: {
     title: 'Graph',
@@ -383,6 +385,28 @@ const graphRoute: RouteDefinition = {
 }
 
 // ============================================================================
+// Members Route — /members
+// ============================================================================
+
+const membersRoute: RouteDefinition = {
+  '@id': 'route:members',
+  '@type': 'trellis:Route',
+  routePath: '/members',
+  label: 'Members',
+  icon: 'lucide:users-round',
+  order: 80,
+  inRail: true,
+  railPosition: 'secondary',
+  inCommandPalette: true,
+  requiresAuth: true,
+  permissions: { minRole: 'admin', permission: 'admin' },
+  meta: {
+    title: 'Members',
+    description: 'Manage team members, invites, and permissions',
+  },
+}
+
+// ============================================================================
 // Settings Route — /settings
 // ============================================================================
 
@@ -422,15 +446,15 @@ const settingsRoute: RouteDefinition = {
     },
   ],
   children: [
-    { '@id': 'route:settings/project', '@type': 'trellis:Route', routePath: '/settings/project', label: 'Project', icon: 'lucide:folder', meta: { title: 'Project Settings' } },
+    { '@id': 'route:settings/project', '@type': 'trellis:Route', routePath: '/settings/project', label: 'Project', icon: 'lucide:folder', permissions: { minRole: 'admin', permission: 'admin' }, meta: { title: 'Project Settings' } },
     { '@id': 'route:settings/profile', '@type': 'trellis:Route', routePath: '/settings/profile', label: 'Profile', icon: 'lucide:user', meta: { title: 'Profile Settings' } },
     { '@id': 'route:settings/appearance', '@type': 'trellis:Route', routePath: '/settings/appearance', label: 'Appearance', icon: 'lucide:paintbrush', meta: { title: 'Appearance' } },
     { '@id': 'route:settings/theme', '@type': 'trellis:Route', routePath: '/settings/theme', label: 'Theme', icon: 'lucide:palette', meta: { title: 'Theme' } },
     { '@id': 'route:settings/notifications', '@type': 'trellis:Route', routePath: '/settings/notifications', label: 'Notifications', icon: 'lucide:bell', meta: { title: 'Notifications' } },
-    { '@id': 'route:settings/pages', '@type': 'trellis:Route', routePath: '/settings/pages', label: 'Pages', icon: 'lucide:book-open', meta: { title: 'Pages' } },
-    { '@id': 'route:settings/integrations', '@type': 'trellis:Route', routePath: '/settings/integrations', label: 'Integrations', icon: 'lucide:plug', meta: { title: 'Integrations' } },
-    { '@id': 'route:settings/marketplace', '@type': 'trellis:Route', routePath: '/settings/marketplace', label: 'Marketplace', icon: 'lucide:store', meta: { title: 'Marketplace' } },
-    { '@id': 'route:settings/branding', '@type': 'trellis:Route', routePath: '/settings/branding', label: 'Branding', icon: 'lucide:sparkles', meta: { title: 'Branding' } },
+    { '@id': 'route:settings/pages', '@type': 'trellis:Route', routePath: '/settings/pages', label: 'Pages', icon: 'lucide:book-open', permissions: { minRole: 'admin', permission: 'admin' }, meta: { title: 'Pages' } },
+    { '@id': 'route:settings/integrations', '@type': 'trellis:Route', routePath: '/settings/integrations', label: 'Integrations', icon: 'lucide:plug', permissions: { minRole: 'admin', permission: 'admin' }, meta: { title: 'Integrations' } },
+    { '@id': 'route:settings/marketplace', '@type': 'trellis:Route', routePath: '/settings/marketplace', label: 'Marketplace', icon: 'lucide:store', permissions: { minRole: 'admin', permission: 'admin' }, meta: { title: 'Marketplace' } },
+    { '@id': 'route:settings/branding', '@type': 'trellis:Route', routePath: '/settings/branding', label: 'Branding', icon: 'lucide:sparkles', permissions: { minRole: 'admin', permission: 'admin' }, meta: { title: 'Branding' } },
   ],
 }
 
@@ -443,6 +467,7 @@ export function getRouteDefinitions(): Record<string, RouteDefinition> {
     'route:workspace': workspaceRoute,
     'route:database': databaseRoute,
     'route:graph': graphRoute,
+    'route:members': membersRoute,
     'route:settings': settingsRoute,
   }
 }
@@ -451,5 +476,6 @@ export {
   workspaceRoute,
   databaseRoute,
   graphRoute,
+  membersRoute,
   settingsRoute,
 }

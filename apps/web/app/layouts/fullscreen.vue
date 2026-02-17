@@ -1,4 +1,5 @@
 <script lang="ts" setup>
+  const { isAdmin: showIconRail } = useAdminUI()
   const commandDialog = useCommandDialog()
   const routes = useRoutes()
   const appNavigate = useAppNavigate()
@@ -79,7 +80,7 @@
     </UiCommandDialog>
 
     <div class="flex flex-1 overflow-hidden">
-      <IconRail />
+      <IconRail v-if="showIconRail" />
 
       <!-- Conditional sidebar slot - pages can choose to render sidebar or not -->
       <slot name="sidebar">

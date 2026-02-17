@@ -292,7 +292,10 @@ export interface EntityItemBase {
 export interface TaskItem extends EntityItemBase {
   type: 'task'
   taskStatus: TaskStatus
+  /** @deprecated Use `checklistContent` (HTML string) instead */
   checklist?: ChecklistItem[]
+  /** TipTap TaskList HTML — replaces the legacy ChecklistItem[] array */
+  checklistContent?: string
 }
 
 export interface EventItem extends EntityItemBase {
@@ -686,11 +689,7 @@ export const createDefaultTask = (): TaskItem => ({
   ...createDefaultBase(),
   type: 'task',
   taskStatus: 'pending',
-  checklist: [
-    { id: `cl-${Date.now()}-a`, label: '', completed: false, order: 0, parentId: null, collapsed: false },
-    { id: `cl-${Date.now()}-b`, label: '', completed: false, order: 1, parentId: null, collapsed: false },
-    { id: `cl-${Date.now()}-c`, label: '', completed: false, order: 2, parentId: null, collapsed: false },
-  ],
+  checklistContent: '',
 })
 
 export const createDefaultEvent = (): EventItem => ({

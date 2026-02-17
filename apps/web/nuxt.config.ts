@@ -1,21 +1,35 @@
+import { resolve } from 'node:path'
+import { readFileSync, existsSync } from 'node:fs'
 import tailwindcss from '@tailwindcss/vite'
-import fs from 'node:fs'
-import path from 'node:path'
+import { findAvailablePort } from './utils/find-port'
 
-// Function to extract port from JSON-LD graph
-const getPortFromGraph = () => {
-  try {
-    const configPath = path.resolve(__dirname, 'app/config/app-config.jsonld')
-    const configRaw = fs.readFileSync(configPath, 'utf8')
-    const config = JSON.parse(configRaw)
-    const appNode = config['@graph']?.find((n: any) => n['@type'] === 'app:Application')
-    return appNode?.devPort || 4141
-  } catch {
-    return 4141
+// Load .env from monorepo root (two levels up from apps/web/)
+// Nuxt only auto-loads .env from the project root (apps/web/), so we
+// manually inject monorepo-root env vars that aren't already set.
+const monoEnvPath = resolve(__dirname, '../../.env')
+if (existsSync(monoEnvPath)) {
+  const lines = readFileSync(monoEnvPath, 'utf-8').split('\n')
+  for (const line of lines) {
+    const trimmed = line.trim()
+    if (!trimmed || trimmed.startsWith('#')) continue
+    const eqIdx = trimmed.indexOf('=')
+    if (eqIdx < 1) continue
+    const key = trimmed.slice(0, eqIdx).trim()
+    const val = trimmed.slice(eqIdx + 1).trim()
+    if (!process.env[key]) process.env[key] = val
   }
 }
 
-const DEV_PORT = getPortFromGraph()
+const DEFAULT_DEV_PORT = 1414
+const parsedDevPort = Number.parseInt(process.env.TRELLIS_PORT || '', 10)
+const PREFERRED_PORT = Number.isFinite(parsedDevPort) ? parsedDevPort : DEFAULT_DEV_PORT
+
+// Find an available port starting from the preferred port, incrementing if needed
+const DEV_PORT = await findAvailablePort(PREFERRED_PORT)
+
+if (DEV_PORT !== PREFERRED_PORT) {
+  console.log(`⚠️  Port ${PREFERRED_PORT} is in use, using port ${DEV_PORT} instead`)
+}
 
 // https://nuxt.com/docs/api/configuration/nuxt-config
 export default defineNuxtConfig({
@@ -46,10 +60,14 @@ export default defineNuxtConfig({
   ssr: false,
 
   runtimeConfig: {
+    // Server-only (not exposed to client)
+    instantAppId: process.env.INSTANTDB_APP_ID || process.env.INSTANT_APP_ID || '',
+    instantAppSecret: process.env.INSTANTDB_APP_SECRET || '',
     public: {
       googleClientId: process.env.GOOGLE_CLIENT_ID,
       dataMode: process.env.TRELLIS_DATA_MODE || 'local',
       instantAppId: process.env.INSTANTDB_APP_ID || process.env.INSTANT_APP_ID || '',
+      trellisPort: DEV_PORT,
     },
   },
 
@@ -109,6 +127,7 @@ export default defineNuxtConfig({
 
   css: [
     '~/assets/css/tailwind.css',
+    'katex/dist/katex.min.css',
     '@vue-flow/core/dist/style.css',
     '@vue-flow/core/dist/theme-default.css',
     '@vue-flow/controls/dist/style.css',

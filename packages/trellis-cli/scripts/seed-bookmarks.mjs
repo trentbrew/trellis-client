@@ -5,12 +5,13 @@
  * entities that immediately appear in the browser UI via SSE.
  *
  * Run: node packages/trellis-cli/scripts/seed-bookmarks.mjs
- * Requires: dev server on http://localhost:4141
+ * Requires: dev server on http://localhost:$TRELLIS_PORT
  */
 
 import { TrellisClient } from '../src/client.mjs'
 
 const client = new TrellisClient({ agentId: 'cascade' })
+const DEV_URL = `http://localhost:${process.env.TRELLIS_PORT || '1414'}`
 
 const bookmarks = [
   {
@@ -161,7 +162,7 @@ async function run() {
   try {
     await client.health()
   } catch {
-    console.error('Error: dev server not reachable at http://localhost:4141')
+    console.error(`Error: dev server not reachable at ${DEV_URL}`)
     process.exit(1)
   }
 

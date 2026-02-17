@@ -87,6 +87,7 @@
       'user:dueDate': item.endDate
         ? { start: `${item.startDate}T00:00:00`, end: `${item.endDate}T00:00:00` }
         : `${item.startDate}T00:00:00`,
+      'user:recurrence': item.recurrence,
       'user:status': (item as any).taskStatus || (item as any).paymentStatus || (item as any).eventType || 'note',
       'user:priority': item.priority,
       'user:urgency': item.urgency,
@@ -154,9 +155,13 @@
   }
 
   function handleEntityClick(calEvent: { id: string }) {
-    // CalendarView formats IDs as "item:{uuid}-{nodeIndex}-{valueIndex}"
+    // CalendarView formats IDs as "item:{uuid}-{nodeIndex}-{valueIndex}".
+    // Repeated instances append "-repeat-{n}".
     // Strip the prefix and trailing index suffixes to get the original UUID
-    const rawId = calEvent.id.replace(/^item:/, '').replace(/-\d+-\d+$/, '')
+    const rawId = calEvent.id
+      .replace(/^item:/, '')
+      .replace(/-repeat-\d+$/, '')
+      .replace(/-\d+-\d+$/, '')
     const item = items.value.find((i) => i.id === rawId)
     if (item) openDetail(item)
   }
@@ -185,7 +190,10 @@
   }
 
   function handleEventReschedule(eventId: string, newDate: Date) {
-    const rawId = eventId.replace(/^item:/, '').replace(/-\d+-\d+$/, '')
+    const rawId = eventId
+      .replace(/^item:/, '')
+      .replace(/-repeat-\d+$/, '')
+      .replace(/-\d+-\d+$/, '')
     const item = items.value.find((i) => i.id === rawId)
     if (!item) return
     const dateStr = `${newDate.getFullYear()}-${String(newDate.getMonth() + 1).padStart(2, '0')}-${String(newDate.getDate()).padStart(2, '0')}`

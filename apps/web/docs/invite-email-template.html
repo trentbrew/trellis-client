@@ -1,0 +1,67 @@
+<!--
+  Trellis — Custom Magic Code Email Template
+  ============================================
+  Paste this into the InstantDB dashboard under:
+  App Settings → Custom Magic Code Email → Body (HTML)
+
+  Subject: {code} — Your invite code for {app_title}
+  From:    Trellis
+
+  Template variables available:
+    {code}       — the 6-digit magic code
+    {app_title}  — your app's title (e.g. "trellis-web")
+    {user_email} — the recipient's email address
+-->
+<div style="background: #0a0a0a; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; padding: 40px 20px;">
+  <div style="max-width: 480px; margin: 0 auto; background: #141414; border-radius: 16px; border: 1px solid #262626; overflow: hidden;">
+
+    <!-- Header -->
+    <div style="padding: 32px 32px 24px; text-align: center; border-bottom: 1px solid #262626;">
+      <!-- Trellis Logo (text fallback) -->
+      <div style="font-size: 28px; font-weight: 700; color: #ffffff; letter-spacing: -0.5px;">
+        &#x25C6; Trellis
+      </div>
+    </div>
+
+    <!-- Body -->
+    <div style="padding: 32px;">
+      <p style="color: #e5e5e5; font-size: 16px; line-height: 1.6; margin: 0 0 8px;">
+        <strong style="color: #ffffff;">You've been invited!</strong>
+      </p>
+      <p style="color: #a3a3a3; font-size: 14px; line-height: 1.6; margin: 0 0 24px;">
+        Someone invited you to collaborate on <strong style="color: #e5e5e5;">{app_title}</strong>.
+        Use the code below to verify your email and join the workspace.
+      </p>
+
+      <!-- Code -->
+      <div style="background: #1a1a2e; border: 1px solid #2d2d44; border-radius: 12px; padding: 24px; text-align: center; margin: 0 0 24px;">
+        <div style="font-size: 36px; font-weight: 700; color: #ffffff; letter-spacing: 8px; font-family: 'SF Mono', SFMono-Regular, Menlo, Monaco, Consolas, monospace;">
+          {code}
+        </div>
+        <div style="color: #737373; font-size: 12px; margin-top: 8px;">
+          Expires in 24 hours
+        </div>
+      </div>
+
+      <!-- CTA -->
+      <div style="text-align: center; margin: 0 0 24px;">
+        <a href="https://trellis.app/invite/accept" style="display: inline-block; background: #ffffff; color: #0a0a0a; font-size: 14px; font-weight: 600; padding: 12px 32px; border-radius: 8px; text-decoration: none;">
+          Open Trellis &rarr;
+        </a>
+      </div>
+
+      <p style="color: #737373; font-size: 12px; line-height: 1.5; margin: 0; text-align: center;">
+        Copy and paste the code above into the verification screen.
+        If you didn't expect this invite, you can safely ignore this email.
+      </p>
+    </div>
+
+    <!-- Footer -->
+    <div style="padding: 20px 32px; border-top: 1px solid #262626; text-align: center;">
+      <p style="color: #525252; font-size: 11px; margin: 0;">
+        Sent by <strong>Trellis</strong> &mdash; Your personal knowledge graph
+      </p>
+    </div>
+
+  </div>
+</div>

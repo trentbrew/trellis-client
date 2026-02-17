@@ -8,7 +8,7 @@ The `trellis` CLI lets agents and humans CRUD the TQL graph. Changes sync to the
 
 ## Prerequisites
 
-- Dev server running on `:4141` (`just dev-v2`)
+- Dev server running on `:$TRELLIS_PORT` (`just dev-v2`)
 
 ## Quick Reference
 

@@ -312,13 +312,13 @@ pnpm install
 pnpm dev
 ```
 
-The app runs at `http://localhost:4141`
+The app runs at `http://localhost:$TRELLIS_PORT`
 
 ### Development Scripts
 
 | Command           | Description                                               |
 | ----------------- | --------------------------------------------------------- |
-| `pnpm dev`        | Start dev server (port 4141)                              |
+| `pnpm dev`        | Start dev server (port `$TRELLIS_PORT`, default `1414`)   |
 | `pnpm build`      | Production build                                          |
 | `pnpm test`       | Run Vitest tests                                          |
 | `pnpm lint`       | Run ESLint                                                |

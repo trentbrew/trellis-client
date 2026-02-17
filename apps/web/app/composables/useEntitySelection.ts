@@ -46,10 +46,10 @@ export function useEntitySelection(
    * Supports modifier keys for range and additive selection.
    *
    * - No modifier: replace selection with this item
-   * - Cmd/Ctrl: toggle this item without affecting others
+   * - Cmd/Ctrl (or forceAdditive): toggle this item without affecting others
    * - Shift: select range from last selected to this item
    */
-  const toggle = (id: string, event?: MouseEvent | KeyboardEvent) => {
+  const toggle = (id: string, event?: MouseEvent | KeyboardEvent, forceAdditive = false) => {
     const isMetaKey = event?.metaKey || event?.ctrlKey
     const isShiftKey = event?.shiftKey
 
@@ -58,7 +58,7 @@ export function useEntitySelection(
       return
     }
 
-    if (isMetaKey) {
+    if (isMetaKey || forceAdditive) {
       handleAdditiveToggle(id)
       return
     }

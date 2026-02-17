@@ -8,8 +8,9 @@
   }>()
 
   const appNavigate = useAppNavigate()
+  const { wp } = useWorkspacePath()
 
-  const resolvedPath = computed(() => props.to)
+  const resolvedPath = computed(() => wp(props.to))
 
   const onClick = async (e: MouseEvent) => {
     // Allow new-tab/middle-click behavior to work normally.

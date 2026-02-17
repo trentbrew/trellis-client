@@ -6,12 +6,13 @@
  * events, and notes for a richly connected graph.
  *
  * Run: node packages/trellis-cli/scripts/seed-entities.mjs
- * Requires: dev server on http://localhost:4141
+ * Requires: dev server on http://localhost:$TRELLIS_PORT
  */
 
 import { TrellisClient } from '../src/client.mjs'
 
 const client = new TrellisClient({ agentId: 'cascade' })
+const DEV_URL = `http://localhost:${process.env.TRELLIS_PORT || '1414'}`
 
 const today = new Date().toISOString().split('T')[0]
 
@@ -656,7 +657,7 @@ async function run() {
     const h = await client.health()
     console.log(`Server healthy — ${h.factCount} facts, ${h.linkCount} links`)
   } catch {
-    console.error('Error: dev server not reachable at http://localhost:4141')
+    console.error(`Error: dev server not reachable at ${DEV_URL}`)
     process.exit(1)
   }
 

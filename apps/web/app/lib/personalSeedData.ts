@@ -153,11 +153,7 @@ export function getPersonalSeedItems(): SeedEntity[] {
       ],
       reminders: [],
       taskStatus: 'in-progress',
-      checklist: [
-        { id: 'cl-1', label: 'Draft outline', completed: true, order: 0 },
-        { id: 'cl-2', label: 'Add financial charts', completed: false, order: 1 },
-        { id: 'cl-3', label: 'Review with manager', completed: false, order: 2 },
-      ],
+      checklistContent: '<ul data-type="taskList"><li data-type="taskItem" data-checked="true"><label><input type="checkbox" checked="checked"><span></span></label><div><p>Draft outline</p></div></li><li data-type="taskItem" data-checked="false"><label><input type="checkbox"><span></span></label><div><p>Add financial charts</p></div></li><li data-type="taskItem" data-checked="false"><label><input type="checkbox"><span></span></label><div><p>Review with manager</p></div></li></ul>',
     },
     {
       id: 'task-2',
@@ -178,7 +174,7 @@ export function getPersonalSeedItems(): SeedEntity[] {
       references: [],
       reminders: [{ id: 'r1', timing: '1-hour-before', method: 'push' }],
       taskStatus: 'pending',
-      checklist: [],
+      checklistContent: '',
     },
     {
       id: 'task-3',
@@ -199,7 +195,7 @@ export function getPersonalSeedItems(): SeedEntity[] {
       references: [{ kind: 'file', id: 'ref-t3-f1', name: 'January_Receipts.xlsx', fileType: 'spreadsheet' }],
       reminders: [{ id: 'r2', timing: '1-day-before', method: 'push' }],
       taskStatus: 'pending',
-      checklist: [],
+      checklistContent: '',
     },
     {
       id: 'task-4',
@@ -229,7 +225,7 @@ export function getPersonalSeedItems(): SeedEntity[] {
       ],
       reminders: [],
       taskStatus: 'in-progress',
-      checklist: [],
+      checklistContent: '',
     },
     {
       id: 'task-5',
@@ -250,7 +246,7 @@ export function getPersonalSeedItems(): SeedEntity[] {
       reminders: [{ id: 'r3', timing: '1-day-before', method: 'push' }],
       recurrence: { frequency: 'weekly', weekdays: [1, 4] },
       taskStatus: 'completed',
-      checklist: [],
+      checklistContent: '',
     },
     {
       id: 'task-6',
@@ -271,7 +267,7 @@ export function getPersonalSeedItems(): SeedEntity[] {
       references: [],
       reminders: [],
       taskStatus: 'overdue',
-      checklist: [],
+      checklistContent: '',
     },
     {
       id: 'task-7',
@@ -291,7 +287,7 @@ export function getPersonalSeedItems(): SeedEntity[] {
       references: [],
       reminders: [{ id: 'r4', timing: '15-min-before', method: 'push' }],
       taskStatus: 'pending',
-      checklist: [],
+      checklistContent: '',
     },
     {
       id: 'task-8',
@@ -312,7 +308,7 @@ export function getPersonalSeedItems(): SeedEntity[] {
       references: [],
       reminders: [{ id: 'r5', timing: '2-days-before', method: 'push' }],
       taskStatus: 'pending',
-      checklist: [],
+      checklistContent: '',
     },
     {
       id: 'task-9',
@@ -333,7 +329,7 @@ export function getPersonalSeedItems(): SeedEntity[] {
       references: [],
       reminders: [],
       taskStatus: 'pending',
-      checklist: [],
+      checklistContent: '',
     },
     {
       id: 'task-10',
@@ -354,7 +350,7 @@ export function getPersonalSeedItems(): SeedEntity[] {
       references: [],
       reminders: [{ id: 'r6', timing: '1-week-before', method: 'push' }],
       taskStatus: 'pending',
-      checklist: [],
+      checklistContent: '',
     },
     {
       id: 'task-11',
@@ -375,7 +371,7 @@ export function getPersonalSeedItems(): SeedEntity[] {
       references: [],
       reminders: [],
       taskStatus: 'pending',
-      checklist: [],
+      checklistContent: '',
     },
 
     // Multi-day sprint
@@ -401,12 +397,7 @@ export function getPersonalSeedItems(): SeedEntity[] {
       sprintStatus: 'in-progress',
       sprintGoal: 'Refactor authentication endpoints and add rate limiting.',
       velocity: undefined,
-      checklist: [
-        { id: 'cl-s1', label: 'Audit existing auth endpoints', completed: true, order: 0 },
-        { id: 'cl-s2', label: 'Implement rate limiter middleware', completed: false, order: 1 },
-        { id: 'cl-s3', label: 'Write integration tests', completed: false, order: 2 },
-        { id: 'cl-s4', label: 'Deploy to staging', completed: false, order: 3 },
-      ],
+      checklistContent: '<ul data-type="taskList"><li data-type="taskItem" data-checked="true"><label><input type="checkbox" checked="checked"><span></span></label><div><p>Audit existing auth endpoints</p></div></li><li data-type="taskItem" data-checked="false"><label><input type="checkbox"><span></span></label><div><p>Implement rate limiter middleware</p></div></li><li data-type="taskItem" data-checked="false"><label><input type="checkbox"><span></span></label><div><p>Write integration tests</p></div></li><li data-type="taskItem" data-checked="false"><label><input type="checkbox"><span></span></label><div><p>Deploy to staging</p></div></li></ul>',
     },
     {
       id: 'task-13',
@@ -430,7 +421,7 @@ export function getPersonalSeedItems(): SeedEntity[] {
       reminders: [],
       recurrence: { frequency: 'weekdays' },
       taskStatus: 'pending',
-      checklist: [],
+      checklistContent: '',
     },
     {
       id: 'task-14',
@@ -451,7 +442,7 @@ export function getPersonalSeedItems(): SeedEntity[] {
       references: [],
       reminders: [],
       taskStatus: 'pending',
-      checklist: [],
+      checklistContent: '',
     },
     {
       id: 'task-15',
@@ -473,7 +464,7 @@ export function getPersonalSeedItems(): SeedEntity[] {
       reminders: [],
       recurrence: { frequency: 'weekly', weekdays: [0] },
       taskStatus: 'pending',
-      checklist: [],
+      checklistContent: '',
     },
     {
       id: 'task-16',
@@ -495,7 +486,7 @@ export function getPersonalSeedItems(): SeedEntity[] {
       references: [],
       reminders: [{ id: 'r-t16', timing: '1-day-before', method: 'push' }],
       taskStatus: 'pending',
-      checklist: [],
+      checklistContent: '',
     },
     {
       id: 'task-17',
@@ -519,7 +510,7 @@ export function getPersonalSeedItems(): SeedEntity[] {
       reminders: [],
       recurrence: { frequency: 'daily' },
       taskStatus: 'pending',
-      checklist: [],
+      checklistContent: '',
     },
     {
       id: 'task-18',
@@ -541,7 +532,7 @@ export function getPersonalSeedItems(): SeedEntity[] {
       references: [],
       reminders: [],
       taskStatus: 'pending',
-      checklist: [],
+      checklistContent: '',
     },
 
     // ── Events ─────────────────────────────────────────────────────────
@@ -1209,13 +1200,7 @@ export function getTrellisProjectTasks(): SeedEntity[] {
       references: [],
       reminders: [],
       taskStatus: 'in-progress',
-      checklist: [
-        { id: 'dt1-cl1', label: 'Parse JSON-LD content into sourceItems + derivedKeys', completed: false, order: 0 },
-        { id: 'dt1-cl2', label: 'updateCell(rowIndex, key, value) — mutate & emit', completed: false, order: 1 },
-        { id: 'dt1-cl3', label: 'addRow(defaults?) — append new record node', completed: false, order: 2 },
-        { id: 'dt1-cl4', label: 'deleteRows(indices[]) — remove record nodes', completed: false, order: 3 },
-        { id: 'dt1-cl5', label: 'Wire emit(update:modelValue) for persistence', completed: false, order: 4 },
-      ],
+      checklistContent: '<ul data-type="taskList"><li data-type="taskItem" data-checked="false"><label><input type="checkbox"><span></span></label><div><p>Parse JSON-LD content into sourceItems + derivedKeys</p></div></li><li data-type="taskItem" data-checked="false"><label><input type="checkbox"><span></span></label><div><p>updateCell(rowIndex, key, value) — mutate &amp; emit</p></div></li><li data-type="taskItem" data-checked="false"><label><input type="checkbox"><span></span></label><div><p>addRow(defaults?) — append new record node</p></div></li><li data-type="taskItem" data-checked="false"><label><input type="checkbox"><span></span></label><div><p>deleteRows(indices[]) — remove record nodes</p></div></li><li data-type="taskItem" data-checked="false"><label><input type="checkbox"><span></span></label><div><p>Wire emit(update:modelValue) for persistence</p></div></li></ul>',
     },
     {
       id: 'trellis-dt-2',
@@ -1249,12 +1234,7 @@ export function getTrellisProjectTasks(): SeedEntity[] {
       ],
       reminders: [],
       taskStatus: 'pending',
-      checklist: [
-        { id: 'dt2-cl1', label: 'Read mode: current type-aware rendering', completed: true, order: 0 },
-        { id: 'dt2-cl2', label: 'Edit mode: text, number, date, checkbox, select inputs', completed: false, order: 1 },
-        { id: 'dt2-cl3', label: 'Keyboard nav: Tab → next cell, Enter → cell below, Escape → cancel', completed: false, order: 2 },
-        { id: 'dt2-cl4', label: 'Inline validation feedback (red border + message)', completed: false, order: 3 },
-      ],
+      checklistContent: '<ul data-type="taskList"><li data-type="taskItem" data-checked="true"><label><input type="checkbox" checked="checked"><span></span></label><div><p>Read mode: current type-aware rendering</p></div></li><li data-type="taskItem" data-checked="false"><label><input type="checkbox"><span></span></label><div><p>Edit mode: text, number, date, checkbox, select inputs</p></div></li><li data-type="taskItem" data-checked="false"><label><input type="checkbox"><span></span></label><div><p>Keyboard nav: Tab → next cell, Enter → cell below, Escape → cancel</p></div></li><li data-type="taskItem" data-checked="false"><label><input type="checkbox"><span></span></label><div><p>Inline validation feedback (red border + message)</p></div></li></ul>',
     },
     {
       id: 'trellis-dt-3',
@@ -1278,12 +1258,7 @@ export function getTrellisProjectTasks(): SeedEntity[] {
       references: [],
       reminders: [],
       taskStatus: 'pending',
-      checklist: [
-        { id: 'dt3-cl1', label: 'Add schema prop to TableView.vue', completed: false, order: 0 },
-        { id: 'dt3-cl2', label: 'Add schema prop to CollectionDataTableProjection.vue', completed: false, order: 1 },
-        { id: 'dt3-cl3', label: 'Pass schema from [slug].vue template', completed: false, order: 2 },
-        { id: 'dt3-cl4', label: 'Use schema fields for column type info when available', completed: false, order: 3 },
-      ],
+      checklistContent: '<ul data-type="taskList"><li data-type="taskItem" data-checked="false"><label><input type="checkbox"><span></span></label><div><p>Add schema prop to TableView.vue</p></div></li><li data-type="taskItem" data-checked="false"><label><input type="checkbox"><span></span></label><div><p>Add schema prop to CollectionDataTableProjection.vue</p></div></li><li data-type="taskItem" data-checked="false"><label><input type="checkbox"><span></span></label><div><p>Pass schema from [slug].vue template</p></div></li><li data-type="taskItem" data-checked="false"><label><input type="checkbox"><span></span></label><div><p>Use schema fields for column type info when available</p></div></li></ul>',
     },
 
     // ── Phase 1 Milestone ───────────────────────────────────────────────
@@ -1313,7 +1288,7 @@ export function getTrellisProjectTasks(): SeedEntity[] {
       ],
       reminders: [{ id: 'r-m1', timing: '1-day-before', method: 'push' }],
       achieved: false,
-      checklist: [],
+      checklistContent: '',
     },
 
     // ── Phase 2: Column (Property) Management ───────────────────────────
@@ -1340,13 +1315,7 @@ export function getTrellisProjectTasks(): SeedEntity[] {
       references: [],
       reminders: [],
       taskStatus: 'pending',
-      checklist: [
-        { id: 'dt4-cl1', label: 'Create ColumnHeaderMenu.vue component', completed: false, order: 0 },
-        { id: 'dt4-cl2', label: 'Rename field inline', completed: false, order: 1 },
-        { id: 'dt4-cl3', label: 'Change field type with dropdown', completed: false, order: 2 },
-        { id: 'dt4-cl4', label: 'Sort ascending / descending toggle', completed: false, order: 3 },
-        { id: 'dt4-cl5', label: 'Delete column with confirmation dialog', completed: false, order: 4 },
-      ],
+      checklistContent: '<ul data-type="taskList"><li data-type="taskItem" data-checked="false"><label><input type="checkbox"><span></span></label><div><p>Create ColumnHeaderMenu.vue component</p></div></li><li data-type="taskItem" data-checked="false"><label><input type="checkbox"><span></span></label><div><p>Rename field inline</p></div></li><li data-type="taskItem" data-checked="false"><label><input type="checkbox"><span></span></label><div><p>Change field type with dropdown</p></div></li><li data-type="taskItem" data-checked="false"><label><input type="checkbox"><span></span></label><div><p>Sort ascending / descending toggle</p></div></li><li data-type="taskItem" data-checked="false"><label><input type="checkbox"><span></span></label><div><p>Delete column with confirmation dialog</p></div></li></ul>',
     },
     {
       id: 'trellis-dt-5',
@@ -1369,7 +1338,7 @@ export function getTrellisProjectTasks(): SeedEntity[] {
       references: [],
       reminders: [],
       taskStatus: 'pending',
-      checklist: [],
+      checklistContent: '',
     },
     {
       id: 'trellis-dt-6',
@@ -1393,7 +1362,7 @@ export function getTrellisProjectTasks(): SeedEntity[] {
       references: [],
       reminders: [],
       taskStatus: 'pending',
-      checklist: [],
+      checklistContent: '',
     },
 
     // ── Phase 3: Row Operations + Selection ─────────────────────────────
@@ -1418,7 +1387,7 @@ export function getTrellisProjectTasks(): SeedEntity[] {
       references: [],
       reminders: [],
       taskStatus: 'pending',
-      checklist: [],
+      checklistContent: '',
     },
     {
       id: 'trellis-dt-8',
@@ -1442,7 +1411,7 @@ export function getTrellisProjectTasks(): SeedEntity[] {
       references: [],
       reminders: [],
       taskStatus: 'pending',
-      checklist: [],
+      checklistContent: '',
     },
     {
       id: 'trellis-dt-9',
@@ -1465,7 +1434,7 @@ export function getTrellisProjectTasks(): SeedEntity[] {
       references: [],
       reminders: [],
       taskStatus: 'pending',
-      checklist: [],
+      checklistContent: '',
     },
 
     // ── Phase 4: Column Filtering ───────────────────────────────────────
@@ -1492,7 +1461,7 @@ export function getTrellisProjectTasks(): SeedEntity[] {
       references: [],
       reminders: [],
       taskStatus: 'pending',
-      checklist: [],
+      checklistContent: '',
     },
     {
       id: 'trellis-dt-11',
@@ -1516,7 +1485,7 @@ export function getTrellisProjectTasks(): SeedEntity[] {
       references: [],
       reminders: [],
       taskStatus: 'pending',
-      checklist: [],
+      checklistContent: '',
     },
 
     // ── Phase 5: Data Import ────────────────────────────────────────────
@@ -1543,14 +1512,7 @@ export function getTrellisProjectTasks(): SeedEntity[] {
       references: [],
       reminders: [],
       taskStatus: 'pending',
-      checklist: [
-        { id: 'dt12-cl1', label: 'Add papaparse + xlsx dependencies', completed: false, order: 0 },
-        { id: 'dt12-cl2', label: 'File upload tab with drag-and-drop', completed: false, order: 1 },
-        { id: 'dt12-cl3', label: 'Paste tab for CSV/JSON text', completed: false, order: 2 },
-        { id: 'dt12-cl4', label: 'URL tab with fetch + auto-detect format', completed: false, order: 3 },
-        { id: 'dt12-cl5', label: 'Column mapping step with preview', completed: false, order: 4 },
-        { id: 'dt12-cl6', label: 'Append vs replace import modes', completed: false, order: 5 },
-      ],
+      checklistContent: '<ul data-type="taskList"><li data-type="taskItem" data-checked="false"><label><input type="checkbox"><span></span></label><div><p>Add papaparse + xlsx dependencies</p></div></li><li data-type="taskItem" data-checked="false"><label><input type="checkbox"><span></span></label><div><p>File upload tab with drag-and-drop</p></div></li><li data-type="taskItem" data-checked="false"><label><input type="checkbox"><span></span></label><div><p>Paste tab for CSV/JSON text</p></div></li><li data-type="taskItem" data-checked="false"><label><input type="checkbox"><span></span></label><div><p>URL tab with fetch + auto-detect format</p></div></li><li data-type="taskItem" data-checked="false"><label><input type="checkbox"><span></span></label><div><p>Column mapping step with preview</p></div></li><li data-type="taskItem" data-checked="false"><label><input type="checkbox"><span></span></label><div><p>Append vs replace import modes</p></div></li></ul>',
     },
 
     // ── Phase 5 Milestone (all phases shipped) ──────────────────────────
@@ -1579,7 +1541,7 @@ export function getTrellisProjectTasks(): SeedEntity[] {
       ],
       reminders: [{ id: 'r-m2', timing: '1-day-before', method: 'push' }],
       achieved: false,
-      checklist: [],
+      checklistContent: '',
     },
 
     // ── Slide Decks ─────────────────────────────────────────────────────

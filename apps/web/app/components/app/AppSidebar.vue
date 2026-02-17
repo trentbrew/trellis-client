@@ -30,7 +30,7 @@
   const route = useRoute()
 
   // Admin UI controls
-  const { showBuilderUI, canCreatePages } = useAdminUI()
+  const { showBuilderUI, canCreatePages, canEditContent } = useAdminUI()
 
   // Pages CRUD
   const { createPage } = usePages()
@@ -422,7 +422,8 @@
         dataSource: 'all',
         layout: 'grid',
       })
-      await navigateTo(`/workspace/pages/${id}`)
+      const { wp } = useWorkspacePath()
+      await navigateTo(wp(`/workspace/pages/${id}`))
     } catch (e) {
       console.error('Failed to create page:', e)
     }
@@ -497,7 +498,7 @@
     return sidebarSectionMenu({
       isCollapsed: collapsed.isCollapsed(section.key),
       canResetOrder: isWorkspaceRoute.value || (isDatabaseRoute.value && section.key === 'database-custom'),
-      canCreate: isWorkspaceRoute.value || !!section.editable,
+      canCreate: canEditContent.value && (isWorkspaceRoute.value || !!section.editable),
     })
   }
 
@@ -792,7 +793,7 @@
                   v-model="sidebarFilter"
                   type="text"
                   placeholder="Search..."
-                  class="w-full bg-foreground/2 border border-sidebar-border/50 backdrop-blur-md text-sidebar-foreground text-xs rounded-md pl-8 pr-7 py-2 outline-none placeholder:text-sidebar-foreground/30 focus:ring-1 focus:ring-ring/50 transition-colors"
+                  class="w-full bg-transparent border border-border backdrop-blur-md text-sidebar-foreground text-xs rounded-md pl-8 pr-7 py-2 outline-none placeholder:text-sidebar-foreground/30 focus:ring-1 focus:ring-ring/50 transition-colors"
                   @keydown.escape="sidebarFilter = ''" />
                 <button
                   v-if="sidebarFilter"
@@ -808,10 +809,10 @@
                   <UiTooltipTrigger as-child>
                     <button
                       type="button"
-                      class="flex items-center justify-center h-[30px] w-[30px] shrink-0 rounded-md border border-sidebar-border/50 bg-foreground/2 text-sidebar-foreground/50 hover:text-sidebar-foreground hover:bg-foreground/5 transition-colors"
+                      class="flex items-center justify-center h-[32px] w-[32px] shrink-0 rounded-md border border-sidebar-border/50 bg-foreground/2 text-sidebar-foreground/50 hover:text-sidebar-foreground hover:bg-foreground/5 transition-colors"
                       :aria-label="isWorkspaceRoute ? 'Add page' : 'New type'"
                       @click="isWorkspaceRoute ? handleCreatePageInstant() : handleAddNew()">
-                      <Icon name="lucide:plus" class="h-3.5 w-3.5" />
+                      <Icon name="lucide:plus" class="h-4 w-4" />
                     </button>
                   </UiTooltipTrigger>
                   <UiTooltipContent side="bottom" :side-offset="4">
@@ -864,7 +865,7 @@
                     </div>
                     <div class="flex items-center gap-1">
                       <UiButton
-                        v-if="section.editable"
+                        v-if="section.editable && canEditContent"
                         variant="ghost"
                         size="icon-sm"
                         class="h-6 w-6 opacity-0 group-hover/section:opacity-100 transition-opacity"
@@ -885,7 +886,7 @@
                       </span>
                     </div>
                     <UiButton
-                      v-if="section.editable"
+                      v-if="section.editable && canEditContent"
                       variant="ghost"
                       size="icon-sm"
                       class="h-6 w-6 opacity-0 group-hover/section:opacity-100 transition-opacity"

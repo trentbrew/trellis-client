@@ -4,11 +4,7 @@
   const router = useRouter()
   const route = useRoute()
   const { organizations, currentOrg } = useInstantData()
-
-  const getPlanLabel = (plan: unknown) => {
-    const safe = typeof plan === 'string' && plan ? plan : 'free'
-    return safe.charAt(0).toUpperCase() + safe.slice(1) + ' plan'
-  }
+  const { getRoleInfo } = useOrgRoles()
 
   const getColorClass = (index: number) => {
     const colors = ['bg-primary text-primary-foreground', 'bg-sky-500 text-white', 'bg-emerald-500 text-white']
@@ -54,22 +50,32 @@
         <Icon name="lucide:chevrons-up-down" class="text-muted-foreground h-3.5 w-3.5 shrink-0" />
       </button>
     </UiDropdownMenuTrigger>
-    <UiDropdownMenuContent align="start" :side-offset="8" class="w-[232px]">
+    <UiDropdownMenuContent align="start" :side-offset="8" class="w-[340px]">
       <UiDropdownMenuLabel>Organizations</UiDropdownMenuLabel>
       <UiDropdownMenuSeparator />
-      <UiDropdownMenuItem v-for="(org, i) in organizations" :key="org.id" class="gap-3" @click="selectOrg(org)">
-        <div
-          class="flex h-6 w-6 shrink-0 items-center justify-center rounded text-xs font-semibold"
-          :class="getColorClass(i)">
-          <Icon v-if="org.avatar" :name="org.avatar" class="h-3 w-3" />
-          <Icon v-else name="lucide:building" class="h-3 w-3" />
-        </div>
-        <div class="flex flex-1 flex-col">
-          <span class="truncate">{{ org.name }}</span>
-          <span class="text-muted-foreground text-xs">{{ getPlanLabel(org.plan) }}</span>
-        </div>
-        <Icon v-if="org.id === currentOrg?.id" name="lucide:check" class="text-primary h-4 w-4 shrink-0" />
-      </UiDropdownMenuItem>
+      <div class="max-h-[300px] overflow-y-auto">
+        <UiDropdownMenuItem v-for="(org, i) in organizations" :key="org.id" class="gap-3" @click="selectOrg(org)">
+          <div
+            class="flex h-6 w-6 shrink-0 items-center justify-center rounded text-xs font-semibold"
+            :class="getColorClass(i)">
+            <Icon v-if="org.avatar" :name="org.avatar" class="h-3 w-3" />
+            <Icon v-else name="lucide:building" class="h-3 w-3" />
+          </div>
+          <div class="flex flex-1 flex-col min-w-0">
+            <span class="truncate">{{ org.name }}</span>
+          </div>
+          <div class="flex items-center gap-1.5 shrink-0">
+            <UiBadge
+              variant="secondary"
+              size="sm"
+              class="text-[9px] px-1.5 py-0 h-4"
+              :class="getRoleInfo(org.id).color">
+              {{ getRoleInfo(org.id).label }}
+            </UiBadge>
+            <Icon v-if="org.id === currentOrg?.id" name="lucide:check" class="text-primary h-4 w-4" />
+          </div>
+        </UiDropdownMenuItem>
+      </div>
       <UiDropdownMenuSeparator />
       <UiDropdownMenuItem icon="lucide:plus">Create organization</UiDropdownMenuItem>
     </UiDropdownMenuContent>

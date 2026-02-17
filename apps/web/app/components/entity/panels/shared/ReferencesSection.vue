@@ -1,6 +1,6 @@
 <script lang="ts" setup>
-  import type { Reference, EntityReference, EntityType } from '~/types/entity'
-  import { isEntityReference } from '~/types/entity'
+  import type { Reference, EntityReference, FileReference, EntityType } from '~/types/entity'
+  import { isEntityReference, isFileReference } from '~/types/entity'
   import { getEntityTypeConfig } from '~/config/entityRegistry'
 
   const props = withDefaults(defineProps<{
@@ -54,10 +54,10 @@
     const groups = new Map<string, { label: string; icon: string; refs: Reference[] }>()
 
     for (const ref of outgoingRefs.value) {
-      if (!isEntityReference(ref)) continue
-      const key = ref.entityType
-      if (!groups.has(key)) {
-        let label: string, icon: string
+      let key: string, label: string, icon: string
+
+      if (isEntityReference(ref)) {
+        key = ref.entityType
         try {
           const cfg = getEntityTypeConfig(ref.entityType)
           label = cfg.labelPlural || cfg.label + 's'
@@ -66,6 +66,15 @@
           label = ref.entityType
           icon = 'lucide:link'
         }
+      } else if (isFileReference(ref)) {
+        key = `__file_${ref.fileType}`
+        label = ref.fileType === 'image' ? 'Images' : 'Files'
+        icon = getFileIcon(ref)
+      } else {
+        continue
+      }
+
+      if (!groups.has(key)) {
         groups.set(key, { label, icon, refs: [] })
       }
       groups.get(key)!.refs.push(ref)
@@ -104,9 +113,52 @@
     }
   }
 
+  // ── File reference helpers ─────────────────────────────────────────
+  const FILE_TYPE_ICONS: Record<string, string> = {
+    image: 'lucide:image',
+    pdf: 'lucide:file-text',
+    spreadsheet: 'lucide:sheet',
+    document: 'lucide:file',
+    other: 'lucide:paperclip',
+  }
+
+  const getFileIcon = (ref: FileReference): string =>
+    FILE_TYPE_ICONS[ref.fileType] || 'lucide:paperclip'
+
+  const getFileLabel = (ref: FileReference): string => {
+    const labels: Record<string, string> = { image: 'Image', pdf: 'PDF', spreadsheet: 'Sheet', document: 'Doc', other: 'File' }
+    return labels[ref.fileType] || 'File'
+  }
+
+  const getRefName = (ref: Reference): string => {
+    if (isEntityReference(ref)) return ref.title
+    if (isFileReference(ref)) return ref.name || 'Untitled'
+    return ''
+  }
+
+  const getRefIcon = (ref: Reference): string => {
+    if (isEntityReference(ref)) return getEntityIcon(ref)
+    if (isFileReference(ref)) return getFileIcon(ref)
+    return 'lucide:link'
+  }
+
+  const getRefColor = (ref: Reference): string => {
+    if (isEntityReference(ref)) return getEntityColor(ref)
+    if (isFileReference(ref)) return 'text-sky-500 bg-sky-500/10'
+    return 'text-gray-500 bg-gray-500/10'
+  }
+
+  const getRefBadge = (ref: Reference): string | null => {
+    if (isEntityReference(ref)) return getEntityLabel(ref)
+    if (isFileReference(ref)) return getFileLabel(ref)
+    return null
+  }
+
   const handleCardClick = (ref: Reference) => {
     if (isEntityReference(ref)) {
       emit('openEntity', ref)
+    } else if (isFileReference(ref) && ref.url) {
+      window.open(ref.url, '_blank', 'noopener')
     }
   }
 </script>
@@ -149,14 +201,14 @@
             :key="ref.id"
             class="ref-pill group inline-flex items-center gap-1.5 pl-1.5 pr-2 py-1 rounded-lg bg-muted/60 hover:bg-muted transition-colors cursor-pointer"
             @click="handleCardClick(ref)">
-            <div :class="['w-5 h-5 rounded flex items-center justify-center shrink-0', isEntityReference(ref) ? getEntityColor(ref as EntityReference) : 'text-gray-500 bg-gray-500/10']">
-              <Icon :name="isEntityReference(ref) ? getEntityIcon(ref as EntityReference) : 'lucide:link'" class="h-3 w-3" />
+            <div :class="['w-5 h-5 rounded flex items-center justify-center shrink-0', getRefColor(ref)]">
+              <Icon :name="getRefIcon(ref)" class="h-3 w-3" />
             </div>
             <span class="text-[11px] font-medium truncate max-w-[140px]">
-              {{ isEntityReference(ref) ? (ref as EntityReference).title : '' }}
+              {{ getRefName(ref) }}
             </span>
-            <span v-if="isEntityReference(ref)" class="text-[9px] px-1.5 py-0.5 rounded bg-muted-foreground/10 text-muted-foreground capitalize shrink-0">
-              {{ getEntityLabel(ref as EntityReference) }}
+            <span v-if="getRefBadge(ref)" class="text-[9px] px-1.5 py-0.5 rounded bg-muted-foreground/10 text-muted-foreground capitalize shrink-0">
+              {{ getRefBadge(ref) }}
             </span>
             <Icon name="lucide:external-link" class="h-3 w-3 text-muted-foreground/50 shrink-0" />
             <button
@@ -177,14 +229,14 @@
         :key="ref.id"
         class="ref-pill group inline-flex items-center gap-1.5 pl-1.5 pr-2 py-1 rounded-lg bg-muted/60 hover:bg-muted transition-colors cursor-pointer"
         @click="handleCardClick(ref)">
-        <div :class="['w-5 h-5 rounded flex items-center justify-center shrink-0', isEntityReference(ref) ? getEntityColor(ref as EntityReference) : 'text-gray-500 bg-gray-500/10']">
-          <Icon :name="isEntityReference(ref) ? getEntityIcon(ref as EntityReference) : 'lucide:link'" class="h-3 w-3" />
+        <div :class="['w-5 h-5 rounded flex items-center justify-center shrink-0', getRefColor(ref)]">
+          <Icon :name="getRefIcon(ref)" class="h-3 w-3" />
         </div>
         <span class="text-[11px] font-medium truncate max-w-[140px]">
-          {{ isEntityReference(ref) ? (ref as EntityReference).title : '' }}
+          {{ getRefName(ref) }}
         </span>
-        <span v-if="isEntityReference(ref)" class="text-[9px] px-1.5 py-0.5 rounded bg-muted-foreground/10 text-muted-foreground capitalize shrink-0">
-          {{ getEntityLabel(ref as EntityReference) }}
+        <span v-if="getRefBadge(ref)" class="text-[9px] px-1.5 py-0.5 rounded bg-muted-foreground/10 text-muted-foreground capitalize shrink-0">
+          {{ getRefBadge(ref) }}
         </span>
         <Icon name="lucide:external-link" class="h-3 w-3 text-muted-foreground/50 shrink-0" />
         <button

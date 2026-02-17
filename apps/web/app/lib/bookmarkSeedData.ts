@@ -212,7 +212,6 @@ const BOOKMARKS: BookmarkInput[] = [
   { title: 'QvQ Max — FREE VISUAL REASONING AI MODEL', url: 'https://www.youtube.com/watch?v=QCk4rnf3LAg', cover: 'https://i.ytimg.com/vi/QCk4rnf3LAg/maxresdefault.jpg', folder: 'Unsorted', created: '2025-04-05T18:11:07.334Z' },
   { title: 'Manus AI', url: 'https://manus.im/login', folder: 'Unsorted', created: '2025-04-05T09:31:35.446Z' },
   { title: 'LLM Agents = Graphs!? — PocketFlow', url: 'https://www.youtube.com/watch?v=h3N1Lecptb0', cover: 'https://i.ytimg.com/vi/h3N1Lecptb0/maxresdefault.jpg', folder: 'Unsorted', created: '2025-04-03T09:53:54.224Z' },
-  { title: 'Tvguide', url: 'http://localhost:3000/tvguide', folder: 'Unsorted', created: '2025-01-19T05:37:56.787Z' },
   { title: 'Inkbase: Programmable Ink', url: 'https://www.inkandswitch.com/inkbase/', excerpt: 'What would be possible if hand-drawn sketches were programmable like spreadsheets?', cover: 'https://www.inkandswitch.com/inkbase/static/social-image--16x9--1024w.jpg', folder: 'Unsorted', created: '2024-03-22T16:50:22.905Z' },
   { title: 'LinkedIn Document', url: 'https://media.licdn.com/dms/document/media/D4D1FAQFW3fn6gMIUXw/feedshare-document-pdf-analyzed/0/1708625990256', folder: 'Unsorted', created: '2024-03-01T02:01:23.984Z' },
   { title: 'Notion — Projects', url: 'https://www.notion.so/trentbrew/Projects-c897348c92a24ae199f965653ef103c1', folder: 'Projects', created: '2024-01-18T23:03:16.623Z' },

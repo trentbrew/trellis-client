@@ -411,7 +411,8 @@ export function useTrellisConfig() {
    * Get the dev port from app metadata.
    */
   function getDevPort(): number {
-    return app.value?.devPort ?? 4141
+    const runtimePort = Number(useRuntimeConfig().public.trellisPort)
+    return app.value?.devPort ?? (Number.isFinite(runtimePort) ? runtimePort : 1414)
   }
 
   return {

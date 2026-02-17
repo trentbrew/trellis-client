@@ -91,6 +91,23 @@ trellis-watch:
 trellis-health:
     node packages/trellis-cli/bin/trellis.mjs health --pretty
 
-# E2E smoke test (requires running dev server on :4141)
+# E2E smoke test (requires running dev server on $TRELLIS_PORT)
 trellis-test:
     node packages/trellis-cli/test/e2e.mjs
+
+# ── InstantDB CLI ──────────────────────────────────────────────────────
+
+# Run any instant-cli command (pass arguments after --)
+instant *ARGS:
+    cd apps/web && pnpm exec instant-cli {{ARGS}} --app "$INSTANTDB_APP_ID"
+
+# Push schema to InstantDB cloud
+instant-push-schema:
+    cd apps/web && pnpm exec instant-cli push schema --app "$INSTANTDB_APP_ID"
+
+# Push permissions to InstantDB cloud
+instant-push-perms:
+    cd apps/web && pnpm exec instant-cli push perms --app "$INSTANTDB_APP_ID"
+
+# Push both schema and permissions
+instant-push: instant-push-schema instant-push-perms

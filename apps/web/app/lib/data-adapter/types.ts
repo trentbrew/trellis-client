@@ -84,16 +84,22 @@ export interface DataAdapter {
   /** Subscribe to auth state changes. Returns an unsubscribe function. */
   subscribeAuth(_callback: AuthCallback): () => void
 
-  /** Auth actions (sign out, sign in). */
+  /** Auth actions (sign out, sign in, magic codes). */
   readonly auth: {
     signOut(): Promise<void>
     signInWithIdToken(_args: any): Promise<void>
+    sendMagicCode(_args: any): Promise<void>
+    verifyMagicCode(_args: any): Promise<void>
   }
 
   /** Get current auth user (async). */
   getAuth(): Promise<AuthUser | null>
 
   // ── Internal / dev helpers ──────────────────────────────────────────
+
+  /** Raw underlying database instance — only available on CloudAdapter.
+   *  Used for features not in the DataAdapter interface (e.g. rooms/presence). */
+  readonly _rawDb?: any
 
   /** Internal store access — only available on LocalAdapter. */
   readonly _store?: any

@@ -1,7 +1,7 @@
 import { normalizeDatabaseSchema, parseCollectionIdFromSchemaSettingKey } from '~/lib/normalizeDatabaseSchema'
 import { normalizeProjections } from '~/lib/projections'
 
-export const CURRENT_DATA_VERSION = 2
+export const CURRENT_DATA_VERSION = 4
 
 export async function migrateUserToV1(instant: any, ownerId: string) {
   const tx = instant.tx as any
@@ -153,4 +153,101 @@ export async function migrateUserToV2(instant: any, ownerId: string) {
   if (chunks.length) {
     await instant.transact(chunks)
   }
+}
+
+/**
+ * V3: Backfill orgId + visibility on entities, and link them to their org.
+ *
+ * Finds all entities owned by the user that are missing orgId,
+ * stamps them with the user's current orgId and default visibility 'org',
+ * and creates the organizationEntities link for CEL permission traversal.
+ */
+export async function migrateUserToV3(instant: any, ownerId: string, orgId: string) {
+  if (!orgId) return
+
+  const tx = instant.tx as any
+
+  const resp = await instant.queryOnce({
+    entities: {
+      $: {
+        where: { ownerId },
+      },
+    },
+  })
+
+  const entities = (((resp.data as any)?.entities || []) as any[]).filter(
+    (e) => e && typeof e === 'object',
+  )
+
+  // Only backfill entities that are missing orgId
+  const needsBackfill = entities.filter((e) => !e.orgId)
+  if (needsBackfill.length === 0) return
+
+  // Batch in chunks of 50 to avoid transaction timeouts
+  const BATCH_SIZE = 50
+  for (let i = 0; i < needsBackfill.length; i += BATCH_SIZE) {
+    const batch = needsBackfill.slice(i, i + BATCH_SIZE)
+    const chunks: any[] = []
+
+    for (const entity of batch) {
+      chunks.push(
+        tx.entities[entity.id].update({
+          orgId,
+          visibility: entity.visibility || 'org',
+        }),
+        tx.entities[entity.id].link({ organization: orgId }),
+      )
+    }
+
+    await instant.transact(chunks)
+  }
+
+  console.log(`[migrateUserToV3] Backfilled orgId on ${needsBackfill.length} entities for org ${orgId}`)
+}
+
+/**
+ * V4: Ensure ALL entities with an orgId have the organizationEntities link.
+ *
+ * V3 only linked entities that were missing orgId. Entities that already had
+ * orgId set (e.g. created via createViaAdapter after the V3 migration ran)
+ * may be missing the link if the link transaction failed or was skipped.
+ * The link() call is idempotent — re-linking an already-linked entity is a no-op.
+ */
+export async function migrateUserToV4(instant: any, ownerId: string, orgId: string) {
+  if (!orgId) return
+
+  const tx = instant.tx as any
+
+  const resp = await instant.queryOnce({
+    entities: {
+      $: {
+        where: { ownerId },
+      },
+    },
+  })
+
+  const entities = (((resp.data as any)?.entities || []) as any[]).filter(
+    (e) => e && typeof e === 'object' && e.orgId,
+  )
+
+  if (entities.length === 0) return
+
+  // Batch in chunks of 50 to avoid transaction timeouts
+  const BATCH_SIZE = 50
+  let linked = 0
+  for (let i = 0; i < entities.length; i += BATCH_SIZE) {
+    const batch = entities.slice(i, i + BATCH_SIZE)
+    const chunks: any[] = []
+
+    for (const entity of batch) {
+      chunks.push(
+        tx.entities[entity.id].link({ organization: entity.orgId }),
+      )
+    }
+
+    await instant.transact(chunks)
+    linked += batch.length
+  }
+
+  console.log(`[migrateUserToV4] Ensured entity→org links for ${linked} entities in org ${orgId}`)
 }

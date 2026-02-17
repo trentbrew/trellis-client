@@ -6,7 +6,7 @@
  */
 
 export interface TrellisClientOptions {
-  /** Base URL of the Trellis API (default: http://localhost:4141) */
+  /** Base URL of the Trellis API (default: $TRELLIS_API_URL or http://localhost:$TRELLIS_PORT) */
   baseUrl?: string
   /** Agent identifier sent with mutations */
   agentId?: string
@@ -58,7 +58,8 @@ export class TrellisClient {
   private agentId: string
 
   constructor(options: TrellisClientOptions = {}) {
-    this.baseUrl = (options.baseUrl || process.env.TRELLIS_API_URL || 'http://localhost:4141').replace(/\/$/, '')
+    const defaultApiUrl = `http://localhost:${process.env.TRELLIS_PORT || '1414'}`
+    this.baseUrl = (options.baseUrl || process.env.TRELLIS_API_URL || defaultApiUrl).replace(/\/$/, '')
     this.agentId = options.agentId || process.env.TRELLIS_AGENT_ID || 'cli'
   }
 

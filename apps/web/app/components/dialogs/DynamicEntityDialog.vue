@@ -156,6 +156,7 @@
     :title="editableItem.title || ''"
     :description="editableItem.description || ''"
     :mode="mode"
+    :entity-id="editableItem.id || undefined"
     :type-badge="typeBadge"
     :title-placeholder="`New ${typeConfig.label}...`"
     :can-navigate-prev="canNavigatePrev"
@@ -248,7 +249,13 @@
               <UiRichTextEditor
                 v-if="!isViewMode"
                 v-model="editableItem[field.name]"
-                :placeholder="`Add ${titleCase(field.name).toLowerCase()}...`" />
+                :placeholder="`Add ${titleCase(field.name).toLowerCase()}...`"
+                mentions
+                tasklist
+                images
+                tables
+                mathematics
+                :entity-id="editableItem.id" />
               <div v-else-if="editableItem[field.name]" class="prose prose-sm max-w-none" v-html="editableItem[field.name]" />
               <p v-else class="text-sm text-muted-foreground/50 italic">No content</p>
             </div>

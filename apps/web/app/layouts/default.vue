@@ -2,8 +2,8 @@
   import { useAppNavigate } from '~/composables/useAppNavigate'
   import { getSidebarSection, getCleanPath } from '~/config/routes'
 
-  // Builder mode visual wrapper
-  const { isInEditMode: _isInEditMode } = useAdminUI()
+  // Builder mode visual wrapper + role checks
+  const { isInEditMode: _isInEditMode, isAdmin: showIconRail } = useAdminUI()
 
   // Layout preference toggle
   const { headerAboveSidebar } = useLayoutPreferences()
@@ -11,6 +11,7 @@
   const commandDialog = useCommandDialog()
   const routes = useRoutes()
   const appNavigate = useAppNavigate()
+  const { wp } = useWorkspacePath()
   const pageEl = ref<HTMLElement | null>(null)
   const route = useRoute()
   const router = useRouter()
@@ -89,13 +90,13 @@
 
       if (firstPinnedPath && (isOnSectionRoot || isOnSectionDefault)) {
         if (getCleanPath(router.currentRoute.value.path) !== firstPinnedPath) {
-          router.push(appNavigate.resolvePath(firstPinnedPath))
+          router.push(wp(firstPinnedPath))
         }
       } else if (isOnSectionRoot) {
         const allItems = [...pinnedItems, ...unpinnedItems]
         const firstItemPath = allItems[0]?.path
         if (firstItemPath && getCleanPath(router.currentRoute.value.path) !== firstItemPath) {
-          router.push(appNavigate.resolvePath(firstItemPath))
+          router.push(wp(firstItemPath))
         }
       }
     },
@@ -103,7 +104,7 @@
   )
 
   const navigateTo = async (path: string) => {
-    await appNavigate.navigate(path)
+    await appNavigate.navigate(wp(path))
     commandDialog.close()
   }
 
@@ -162,7 +163,7 @@
         </UiCommandList>
       </UiCommandDialog>
 
-      <IconRail />
+      <IconRail v-if="showIconRail" />
 
       <!-- Layout Mode A: Header above sidebar (spans sidebar + content) -->
       <template v-if="headerAboveSidebar">
@@ -200,7 +201,7 @@
       <EntityDetailSheet />
     </div>
 
-    <!-- Status Bar: full viewport width, always visible above dialogs -->
-    <StatusBar />
+    <!-- Status Bar: full viewport width, admin+ only -->
+    <StatusBar v-if="showIconRail" />
   </div>
 </template>
