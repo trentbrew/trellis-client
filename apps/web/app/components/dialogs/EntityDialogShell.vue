@@ -280,7 +280,7 @@
               class="opacity-50"
               @update:model-value="emit('update:description', $event)" />
             <p v-else-if="description" class="text-sm text-muted-foreground" v-html="description" />
-            <p v-else class="text-sm text-muted-foreground/50 italic">No description</p>
+            <p v-else class="text-sm text-muted-foreground italic">No description</p>
           </div>
           <div v-if="$slots['header-tags']" class="mt-2 px-1">
             <slot name="header-tags" />

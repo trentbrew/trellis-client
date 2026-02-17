@@ -57,8 +57,8 @@
 </script>
 
 <template>
-  <UiDialog :open="open" @update:open="(v) => !v && close()">
-    <UiDialogContent class="sm:max-w-md p-0 gap-0 overflow-hidden">
+  <UiDialog :open="open" @update:open="(v) => !v && close()" class="!p-0">
+    <UiDialogContent class="sm:max-w-md !p-0 gap-0 overflow-hidden">
       <UiDialogTitle class="sr-only">Link an entity</UiDialogTitle>
       <UiDialogDescription class="sr-only">Search for an entity to reference</UiDialogDescription>
 
