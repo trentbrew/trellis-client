@@ -2,8 +2,9 @@
  * InstantDBProvider — Custom Y.js provider that syncs document updates
  * via InstantDB Room Topics.
  *
- * Three topics are used:
+ * Four topics are used:
  *   - `yjs-update`         — incremental Y.js updates (broadcast)
+ *   - `yjs-awareness`      — awareness state (cursor positions, user info)
  *   - `yjs-state-request`  — new peer requests full document state
  *   - `yjs-state-response` — existing peer responds with encoded state
  *
@@ -11,6 +12,7 @@
  * HTML content in the database remains the durable source of truth.
  */
 import * as Y from 'yjs'
+import { Awareness, encodeAwarenessUpdate, applyAwarenessUpdate } from 'y-protocols/awareness'
 import { fromBase64, toBase64 } from 'lib0/buffer'
 
 export interface InstantDBProviderOptions {
@@ -20,6 +22,12 @@ export interface InstantDBProviderOptions {
   room: any
   /** Unique ID for this peer (e.g. `${peerId}-${random}`). */
   peerId: string
+  /** Optional user info for awareness (cursor labels). */
+  user?: {
+    name: string
+    color: string
+    avatar?: string
+  }
 }
 
 type TopicCleanup = () => void
@@ -27,6 +35,7 @@ type TopicCleanup = () => void
 export class InstantDBProvider {
   readonly ydoc: Y.Doc
   readonly peerId: string
+  readonly awareness: Awareness
 
   private room: any
   private cleanups: TopicCleanup[] = []
@@ -43,8 +52,19 @@ export class InstantDBProvider {
     this.room = opts.room
     this.peerId = opts.peerId
 
+    // Create awareness instance
+    this.awareness = new Awareness(this.ydoc)
+
+    // Set local user state if provided
+    if (opts.user) {
+      this.awareness.setLocalState({
+        user: opts.user,
+      })
+    }
+
     this._bindYjsUpdateHandler()
     this._subscribeTopics()
+    this._syncAwareness()
     this._requestState()
   }
 
@@ -65,8 +85,50 @@ export class InstantDBProvider {
       }
     }
 
-    this.ydoc.on('update', handler)
-    this.cleanups.push(() => this.ydoc.off('update', handler))
+    // Y.Doc has .on() at runtime but TypeScript doesn't expose it
+    ;(this.ydoc as any).on('update', handler)
+    this.cleanups.push(() => (this.ydoc as any).off('update', handler))
+  }
+
+  // ── Awareness sync via topic ─────────────────────────────────────────
+
+  private _syncAwareness() {
+    // Outbound: local awareness changes → broadcast via topic
+    const awarenessHandler = (
+      { added, updated, removed }: { added: number[]; updated: number[]; removed: number[] },
+      origin: any,
+    ) => {
+      if (this.destroyed || origin === 'remote') return
+
+      const changedClients = added.concat(updated).concat(removed)
+      try {
+        const encoded = encodeAwarenessUpdate(this.awareness, changedClients)
+        this.room.publishTopic('yjs-awareness', {
+          peerId: this.peerId,
+          update: toBase64(encoded),
+        })
+      } catch (err) {
+        console.warn('[InstantDBProvider] Failed to publish awareness:', err)
+      }
+    }
+
+    this.awareness.on('update', awarenessHandler)
+    this.cleanups.push(() => this.awareness.off('update', awarenessHandler))
+
+    // Inbound: remote awareness updates → apply locally
+    const unsubAwareness = this.room.subscribeTopic('yjs-awareness', (data: any, _peer: any) => {
+      if (this.destroyed) return
+      const { peerId, update } = data || {}
+      if (peerId === this.peerId || !update) return
+
+      try {
+        const decoded = fromBase64(update)
+        applyAwarenessUpdate(this.awareness, decoded, 'remote')
+      } catch (err) {
+        console.warn('[InstantDBProvider] Failed to apply awareness update:', err)
+      }
+    })
+    this.cleanups.push(unsubAwareness)
   }
 
   // ── Room → Y.js (inbound) ────────────────────────────────────────────
@@ -156,6 +218,9 @@ export class InstantDBProvider {
 
   destroy() {
     this.destroyed = true
+    // Remove local awareness state so remote peers see cursor disappear
+    this.awareness.setLocalState(null)
+    this.awareness.destroy()
     for (const cleanup of this.cleanups) {
       try { cleanup() } catch { /* noop */ }
     }
