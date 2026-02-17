@@ -94,8 +94,8 @@
 
 <style scoped>
   .slash-command-menu {
-    background: hsl(var(--popover));
-    border: 1px solid hsl(var(--border));
+    background: var(--popover);
+    border: 1px solid var(--border);
     border-radius: 0.5rem;
     box-shadow: 0 4px 24px rgb(0 0 0 / 0.12), 0 1px 4px rgb(0 0 0 / 0.08);
     max-height: 320px;
@@ -105,7 +105,7 @@
   }
 
   .slash-command-group-label {
-    color: hsl(var(--muted-foreground));
+    color: var(--muted-foreground);
     font-size: 0.65rem;
     font-weight: 600;
     letter-spacing: 0.05em;
@@ -129,14 +129,14 @@
 
   .slash-command-item:hover,
   .slash-command-item.is-selected {
-    background: hsl(var(--accent));
+    background: var(--accent);
   }
 
   .slash-command-icon {
     align-items: center;
-    background: hsl(var(--muted));
+    background: var(--muted);
     border-radius: 0.375rem;
-    color: hsl(var(--muted-foreground));
+    color: var(--muted-foreground);
     display: flex;
     flex-shrink: 0;
     height: 2rem;
@@ -152,20 +152,20 @@
   }
 
   .slash-command-label {
-    color: hsl(var(--foreground));
+    color: var(--foreground);
     font-size: 0.8125rem;
     font-weight: 500;
     line-height: 1.25;
   }
 
   .slash-command-description {
-    color: hsl(var(--muted-foreground));
+    color: var(--muted-foreground);
     font-size: 0.6875rem;
     line-height: 1.25;
   }
 
   .slash-command-empty {
-    color: hsl(var(--muted-foreground));
+    color: var(--muted-foreground);
     font-size: 0.75rem;
     padding: 0.75rem;
     text-align: center;

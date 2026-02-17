@@ -1150,54 +1150,131 @@
 
   /* Table extension styles */
   :deep(.ProseMirror .tableWrapper) {
-    margin: 0.75rem 0;
+    margin: 1rem 0;
     overflow-x: auto;
+    border-radius: calc(var(--radius) - 4px);
+    border: 1px solid var(--border);
+    background: var(--card);
   }
 
   :deep(.ProseMirror table) {
-    border-collapse: collapse;
+    border-collapse: separate;
+    border-spacing: 0;
     margin: 0;
     table-layout: fixed;
     width: 100%;
+    font-size: 0.875rem;
   }
 
-  :deep(.ProseMirror table td),
+  /* Header cells */
   :deep(.ProseMirror table th) {
-    border: 1px solid hsl(var(--border));
+    background: color-mix(in oklch, var(--muted) 80%, var(--background));
+    border-bottom: 1px solid var(--border);
+    border-right: 1px solid var(--border);
+    color: var(--foreground);
+    font-weight: 600;
+    font-size: 0.8rem;
+    letter-spacing: 0.02em;
     min-width: 6rem;
-    padding: 0.35rem 0.5rem;
+    padding: 0.5rem 0.75rem;
+    position: relative;
+    text-align: left;
+    text-transform: uppercase;
+  }
+
+  :deep(.ProseMirror table th:first-child) {
+    border-top-left-radius: calc(var(--radius) - 4px);
+  }
+
+  :deep(.ProseMirror table th:last-child) {
+    border-top-right-radius: calc(var(--radius) - 4px);
+    border-right: none;
+  }
+
+  /* Body cells */
+  :deep(.ProseMirror table td) {
+    border-bottom: 1px solid var(--border);
+    border-right: 1px solid var(--border);
+    min-width: 6rem;
+    padding: 0.5rem 0.75rem;
     position: relative;
     vertical-align: top;
+    transition: background-color 0.15s ease;
   }
 
-  :deep(.ProseMirror table th) {
-    background: hsl(var(--muted));
-    font-weight: 600;
-    text-align: left;
+  :deep(.ProseMirror table td:last-child) {
+    border-right: none;
   }
 
+  /* Zebra striping for rows */
+  :deep(.ProseMirror table tbody tr:nth-child(even)) {
+    background: color-mix(in oklch, var(--muted) 30%, transparent);
+  }
+
+  /* Hover effect for rows */
+  :deep(.ProseMirror table tbody tr:hover) {
+    background: color-mix(in oklch, var(--primary) 8%, var(--background));
+  }
+
+  /* Remove zebra striping on hover for cleaner interaction */
+  :deep(.ProseMirror table tbody tr:hover:nth-child(even)) {
+    background: color-mix(in oklch, var(--primary) 8%, var(--background));
+  }
+
+  /* Last row rounded corners */
+  :deep(.ProseMirror table tbody tr:last-child td:first-child) {
+    border-bottom-left-radius: calc(var(--radius) - 4px);
+  }
+
+  :deep(.ProseMirror table tbody tr:last-child td:last-child) {
+    border-bottom-right-radius: calc(var(--radius) - 4px);
+  }
+
+  /* Remove bottom border from last row */
+  :deep(.ProseMirror table tbody tr:last-child td) {
+    border-bottom: none;
+  }
+
+  /* Paragraph spacing in cells */
   :deep(.ProseMirror table td p),
   :deep(.ProseMirror table th p) {
     margin: 0;
+    line-height: 1.5;
   }
 
+  /* Selected cell highlight */
   :deep(.ProseMirror .selectedCell::after) {
-    background: color-mix(in oklch, var(--primary) 20%, transparent);
+    background: color-mix(in oklch, var(--primary) 15%, transparent);
     content: '';
     inset: 0;
     pointer-events: none;
     position: absolute;
     z-index: 1;
+    border-radius: 2px;
   }
 
+  /* Focus/selection ring for active cell editing */
+  :deep(.ProseMirror table td:focus-within),
+  :deep(.ProseMirror table th:focus-within) {
+    outline: 2px solid color-mix(in oklch, var(--primary) 40%, transparent);
+    outline-offset: -2px;
+  }
+
+  /* Column resize handle */
   :deep(.ProseMirror .column-resize-handle) {
-    background-color: hsl(var(--primary));
-    bottom: -2px;
+    background-color: var(--primary);
+    bottom: 0;
+    opacity: 0.8;
     pointer-events: none;
     position: absolute;
     right: -2px;
     top: 0;
     width: 3px;
+    transition: opacity 0.15s ease;
+  }
+
+  :deep(.ProseMirror .column-resize-handle:hover) {
+    opacity: 1;
   }
 
   /* Mathematics extension styles */

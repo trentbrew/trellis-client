@@ -49,10 +49,8 @@ export function useCollaborativeEditor(
     if (activeEntityId === id && provider.value) return
     cleanup()
 
-    console.log('[useCollaborativeEditor] setup()', { id, isCloudMode, hasRawDb: !!adapter._rawDb, userId: user.value?.id })
     if (!isCloudMode || !adapter._rawDb || !user.value?.id) return
     activeEntityId = id
-    console.log('[useCollaborativeEditor] setup proceeding — joining entity-collab room')
 
     peerId = `${user.value.id}-${Date.now().toString(36)}`
     connectionStatus.value = 'connecting'

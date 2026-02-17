@@ -73,20 +73,15 @@ export class InstantDBProvider {
 
   private _subscribeTopics() {
     // 1. Incremental updates from other peers
-    const unsubUpdate = this.room.subscribeTopic('yjs-update', (data: any, peer: any) => {
-      console.log('[InstantDBProvider] yjs-update received:', { data, peer, myPeerId: this.peerId, destroyed: this.destroyed })
+    const unsubUpdate = this.room.subscribeTopic('yjs-update', (data: any, _peer: any) => {
       if (this.destroyed) return
       const { peerId, update } = data || {}
-      if (peerId === this.peerId || !update) {
-        console.log('[InstantDBProvider] yjs-update filtered out:', { peerId, myPeerId: this.peerId, hasUpdate: !!update })
-        return
-      }
+      if (peerId === this.peerId || !update) return
 
       try {
         const decoded = fromBase64(update)
         Y.applyUpdate(this.ydoc, decoded, 'remote')
         this.lastRemoteUpdate = Date.now()
-        console.log('[InstantDBProvider] applied remote update, ydoc length:', this.ydoc.getText('default')?.length)
       } catch (err) {
         console.warn('[InstantDBProvider] Failed to apply remote update:', err)
       }
