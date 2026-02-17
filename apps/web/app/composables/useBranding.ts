@@ -1,8 +1,13 @@
 /**
- * Branding Composable
+ * @deprecated Use `useBrandConfig()` instead.
  *
- * Provides white-label customization for the self-building app.
- * Supports theme colors, typography, logos, and custom CSS.
+ * This composable is dormant — it was never persisted and uses an HSL color
+ * system incompatible with the active oklch theme pipeline. The replacement
+ * `useBrandConfig()` stores brand config per-world via `upsertAppSetting`
+ * and integrates with the existing `useThemeStore`.
+ *
+ * Legacy types are kept for backward compatibility with BrandingEditor.vue
+ * and BrandingManager.vue (also dormant). Safe to delete when those are removed.
  */
 
 // Color palette for theming

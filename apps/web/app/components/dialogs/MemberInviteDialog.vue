@@ -62,6 +62,30 @@
   const inviteEmails = ref<string[]>([])
   const inviteSending = ref(false)
   const inviteResults = ref<{ email: string; status: string; inviteUrl?: string }[]>([])
+  const inviteRole = ref<'owner' | 'admin' | 'member' | 'guest'>('member')
+  const selectedEntityIds = ref<string[]>([])
+  const entitySearchQuery = ref('')
+
+  // Entity list for guest sharing picker
+  const { items: allEntities } = useTrellisEntities()
+  const filteredEntities = computed(() => {
+    const q = entitySearchQuery.value.toLowerCase()
+    const list = allEntities.value || []
+    if (!q) return list.slice(0, 20)
+    return list.filter((e: any) => e.title?.toLowerCase().includes(q)).slice(0, 20)
+  })
+
+  const toggleEntitySelection = (id: string) => {
+    const idx = selectedEntityIds.value.indexOf(id)
+    if (idx >= 0) selectedEntityIds.value.splice(idx, 1)
+    else selectedEntityIds.value.push(id)
+  }
+
+  const inviteRoleOptions = [
+    { value: 'admin' as const, label: 'Admin', description: 'Manage members & content' },
+    { value: 'member' as const, label: 'Member', description: 'Create and edit content' },
+    { value: 'guest' as const, label: 'Guest', description: 'View shared content only' },
+  ]
 
   const addInviteEmail = () => {
     const raw = inviteInput.value.trim().toLowerCase()
@@ -100,6 +124,8 @@
           worldName: currentWorld.value?.name || '',
           inviterId: user.value?.id,
           inviterName: (user.value as any)?.name || (user.value as any)?.email,
+          role: inviteRole.value,
+          sharedEntityIds: inviteRole.value === 'guest' ? selectedEntityIds.value : undefined,
         },
       })
       const results = (resp as any)?.results || []
@@ -126,17 +152,60 @@
 
   const updateRole = async (member: any, newRole: string) => {
     try {
+      const oldRole = member.role || 'member'
       await db.transact([db.tx.members[member.id].update({ role: newRole })])
       $toast?.success(`Updated ${member.email || member.name} to ${newRole}`)
+
+      // Notify the affected member about their role change
+      if (member.userId && member.userId !== user.value?.id) {
+        $fetch('/api/notify', {
+          method: 'POST',
+          body: {
+            recipientId: member.userId,
+            orgId: currentOrg.value?.id,
+            orgName: currentOrg.value?.name || '',
+            type: 'role_changed',
+            title: 'Your role was updated',
+            message: `Your role was changed from ${oldRole} to ${newRole}.`,
+            actionUrl: '/members',
+            icon: 'lucide:shield',
+            variant: 'info',
+            actorId: user.value?.id,
+            actorName: (user.value as any)?.name || (user.value as any)?.email,
+            metadata: { oldRole, newRole },
+          },
+        }).catch(() => { /* non-fatal */ })
+      }
     } catch {
       $toast?.error('Failed to update role')
     }
   }
 
   const removeMember = async (member: any) => {
+    const memberName = member.email || member.name
+    const memberUserId = member.userId
     try {
       await db.transact([db.tx.members[member.id].delete()])
-      $toast?.success(`Removed ${member.email || member.name}`)
+      $toast?.success(`Removed ${memberName}`)
+
+      // Notify the removed member
+      if (memberUserId && memberUserId !== user.value?.id) {
+        $fetch('/api/notify', {
+          method: 'POST',
+          body: {
+            recipientId: memberUserId,
+            orgId: currentOrg.value?.id,
+            orgName: currentOrg.value?.name || '',
+            type: 'member_removed',
+            title: 'Removed from workspace',
+            message: `You were removed from ${currentOrg.value?.name || 'the workspace'}.`,
+            icon: 'lucide:user-x',
+            variant: 'warning',
+            actorId: user.value?.id,
+            actorName: (user.value as any)?.name || (user.value as any)?.email,
+          },
+        }).catch(() => { /* non-fatal */ })
+      }
     } catch {
       $toast?.error('Failed to remove member')
     }
@@ -193,6 +262,9 @@
     inviteEmails.value = []
     inviteResults.value = []
     inviteInput.value = ''
+    inviteRole.value = 'member'
+    selectedEntityIds.value = []
+    entitySearchQuery.value = ''
     showInviteForm.value = false
   }
 </script>
@@ -203,8 +275,8 @@
       <UiDialogHeader class="p-6 border-b shrink-0 bg-muted/5">
         <div class="flex items-center justify-between">
           <div class="space-y-1">
-            <UiDialogTitle class="text-xl font-bold tracking-tight">Workspace Members</UiDialogTitle>
-            <UiDialogDescription class="text-xs font-bold uppercase tracking-widest text-muted-foreground">
+            <UiDialogTitle class="text-xl font-medium tracking-tight">Workspace Members</UiDialogTitle>
+            <UiDialogDescription class="text-xs font-normal text-muted-foreground">
               Manage team members, roles, and permissions.
             </UiDialogDescription>
           </div>
@@ -219,7 +291,7 @@
         <!-- Invite form -->
         <div v-if="showInviteForm" class="space-y-6">
           <div class="space-y-3">
-            <UiLabel for="emails" class="text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground px-1">Invite by email</UiLabel>
+            <UiLabel for="emails" class="text-xs text-muted-foreground px-1">Invite by email</UiLabel>
             <div class="flex gap-2">
               <UiInput
                 id="emails"
@@ -249,6 +321,71 @@
                 <Icon name="lucide:x" class="h-3 w-3" />
               </button>
             </span>
+          </div>
+
+          <!-- Role selector -->
+          <div v-if="inviteEmails.length" class="space-y-2">
+            <UiLabel class="text-xs text-muted-foreground px-1">Invite as</UiLabel>
+            <div class="grid gap-1.5">
+              <button
+                v-for="opt in inviteRoleOptions"
+                :key="opt.value"
+                type="button"
+                class="flex items-center gap-3 rounded-lg border px-3 py-2.5 text-left transition-all"
+                :class="inviteRole === opt.value
+                  ? 'border-primary/50 bg-primary/5 ring-1 ring-primary/20'
+                  : 'border-border/50 hover:bg-muted/30'"
+                @click="inviteRole = opt.value"
+              >
+                <div
+                  class="flex h-4 w-4 shrink-0 items-center justify-center rounded-full border-2 transition-colors"
+                  :class="inviteRole === opt.value ? 'border-primary bg-primary' : 'border-muted-foreground/30'"
+                >
+                  <div v-if="inviteRole === opt.value" class="h-1.5 w-1.5 rounded-full bg-white" />
+                </div>
+                <div class="flex-1 min-w-0">
+                  <div class="text-sm font-semibold">{{ opt.label }}</div>
+                  <div class="text-[10px] text-muted-foreground">{{ opt.description }}</div>
+                </div>
+              </button>
+            </div>
+          </div>
+
+          <!-- Entity picker for guest invites -->
+          <div v-if="inviteRole === 'guest' && inviteEmails.length" class="space-y-2">
+            <UiLabel class="text-xs text-muted-foreground px-1">
+              Share specific content
+              <span class="text-muted-foreground/50">({{ selectedEntityIds.length }} selected)</span>
+            </UiLabel>
+            <UiInput
+              v-model="entitySearchQuery"
+              placeholder="Search entities..."
+              class="bg-muted/20 border-border/50 text-sm"
+            />
+            <div class="max-h-[160px] overflow-y-auto rounded-lg border border-border/50 divide-y divide-border/30">
+              <button
+                v-for="entity in filteredEntities"
+                :key="entity.id"
+                type="button"
+                class="flex items-center gap-2.5 w-full px-3 py-2 text-left text-sm transition-colors hover:bg-muted/30"
+                :class="selectedEntityIds.includes(entity.id) ? 'bg-primary/5' : ''"
+                @click="toggleEntitySelection(entity.id)"
+              >
+                <div
+                  class="flex h-4 w-4 shrink-0 items-center justify-center rounded border transition-colors"
+                  :class="selectedEntityIds.includes(entity.id)
+                    ? 'border-primary bg-primary text-white'
+                    : 'border-muted-foreground/30'"
+                >
+                  <Icon v-if="selectedEntityIds.includes(entity.id)" name="lucide:check" class="h-3 w-3" />
+                </div>
+                <span class="truncate">{{ entity.title || 'Untitled' }}</span>
+                <span class="ml-auto text-[10px] text-muted-foreground/50 capitalize shrink-0">{{ entity.type }}</span>
+              </button>
+              <div v-if="filteredEntities.length === 0" class="px-3 py-4 text-center text-xs text-muted-foreground">
+                No entities found
+              </div>
+            </div>
           </div>
 
           <!-- Invite results with copyable links -->
@@ -318,7 +455,7 @@
           <template v-else>
             <!-- Pending invites -->
             <div v-if="pendingMembers.length > 0" class="space-y-3">
-              <div class="text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground px-1 flex items-center gap-2">
+              <div class="text-xs font-normal text-muted-foreground px-1 flex items-center gap-2">
                 <Icon name="lucide:clock" class="h-3 w-3" />
                 Pending invites
               </div>
@@ -335,7 +472,7 @@
                   <!-- Info -->
                   <div class="flex-1 min-w-0">
                     <div class="text-sm font-bold text-foreground truncate">{{ member.email }}</div>
-                    <div class="text-[10px] text-muted-foreground uppercase tracking-wider font-bold opacity-80 group-hover:opacity-100 transition-opacity">
+                    <div class="text-[10px] text-muted-foreground uppercase  font-bold opacity-80 group-hover:opacity-100 transition-opacity">
                       Invited {{ member.invitedAt ? timeAgo(member.invitedAt) : '' }}
                     </div>
                   </div>
@@ -357,7 +494,7 @@
 
             <!-- Active members -->
             <div v-if="activeMembers.length > 0" class="space-y-3">
-              <div class="text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground px-1 flex items-center gap-2">
+              <div class="text-xs font-normal text-muted-foreground px-1 flex items-center gap-2">
                 <Icon name="lucide:shield-check" class="h-3 w-3" />
                 Active members
               </div>
@@ -384,7 +521,7 @@
                         you
                       </span>
                     </div>
-                    <div class="text-[10px] text-muted-foreground truncate uppercase tracking-wider font-bold opacity-80 group-hover:opacity-100 transition-opacity">
+                    <div class="text-[10px] text-muted-foreground truncate uppercase  font-bold opacity-80 group-hover:opacity-100 transition-opacity">
                       {{ member.email }} &middot; {{ member.role || 'member' }}
                     </div>
                   </div>
@@ -433,9 +570,9 @@
         </div>
       </div>
 
-      <UiDialogFooter class="p-4 border-t shrink-0 bg-muted/10">
+      <!-- <UiDialogFooter class="p-4 border-t shrink-0 bg-muted/10">
         <UiButton variant="outline" class="w-full font-bold shadow-sm hover:bg-muted" @click="closeDialog">Close</UiButton>
-      </UiDialogFooter>
+      </UiDialogFooter> -->
     </UiDialogContent>
   </UiDialog>
 </template>

@@ -1,12 +1,12 @@
 /**
- * Composable for managing user roles in Platform Sandbox
- * Hierarchy: guest < member < admin < superadmin
+ * Composable for managing user roles in Trellis
+ * Hierarchy: guest < member < admin < owner
  *
  * The role is resolved from the member record in the current org.
- * Org owners are mapped to 'superadmin'.
+ * Falls back to org.ownerId for pre-migration orgs without an owner member record.
  */
 
-export type UserRole = 'guest' | 'member' | 'admin' | 'superadmin'
+import type { UserRole } from '~/config/routes'
 
 export function useUserRole() {
   // SSR-safe shared state via useState
@@ -18,11 +18,11 @@ export function useUserRole() {
   const currentOrg = useState<any>('currentOrg')
   const db = useInstantDb()
 
-  // Map member DB roles → UserRole hierarchy
+  // Map member DB role string → UserRole
   const mapMemberRole = (dbRole: string | undefined, isOwner: boolean): UserRole => {
-    if (isOwner) return 'superadmin'
+    if (isOwner) return 'owner'
     switch (dbRole) {
-      case 'owner': return 'superadmin'
+      case 'owner': return 'owner'
       case 'admin': return 'admin'
       case 'member': return 'member'
       case 'guest': return 'guest'
@@ -30,7 +30,7 @@ export function useUserRole() {
     }
   }
 
-  // Check if the user is the org owner
+  // Check if the user is the org owner (fallback for pre-migration orgs)
   const isOrgOwner = computed(() => {
     if (!user.value?.id || !currentOrg.value) return false
     return currentOrg.value.ownerId === user.value.id
@@ -44,7 +44,6 @@ export function useUserRole() {
       _memberRole.value = null
       return
     }
-    // Avoid duplicate lookups for the same user+org
     if (_lastLookupKey.value === key) return
     _lastLookupKey.value = key
 
@@ -55,7 +54,7 @@ export function useUserRole() {
       return
     }
 
-    // Org owners are always superadmin — no need to query
+    // Org owners fallback — no need to query if ownerId matches
     if (isOrgOwner.value) {
       _memberRole.value = 'owner'
       return
@@ -90,7 +89,7 @@ export function useUserRole() {
 
   const roleConfig = computed(() => {
     const configs: Record<UserRole, { label: string; color: string; icon: string }> = {
-      superadmin: {
+      owner: {
         label: 'Owner',
         color: 'bg-primary/10 text-primary border-primary/20',
         icon: 'lucide:shield',

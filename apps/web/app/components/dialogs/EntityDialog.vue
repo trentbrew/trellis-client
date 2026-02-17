@@ -33,6 +33,9 @@
   const isDark = computed(() => colorMode.value === 'dark')
   const { user: currentUser } = useInstantAuth()
 
+  // Share dialog
+  const showShareDialog = ref(false)
+
   const props = withDefaults(
     defineProps<{
       open: boolean
@@ -2104,7 +2107,7 @@
             </UiButton>
           </UiDropdownMenuTrigger>
           <UiDropdownMenuContent align="end" class="w-40">
-            <UiDropdownMenuItem icon="lucide:share" title="Share" />
+            <UiDropdownMenuItem icon="lucide:share" title="Share" @click="showShareDialog = true" />
             <UiDropdownMenuSeparator />
             <UiDropdownMenuItem
               icon="lucide:trash-2"
@@ -2123,6 +2126,13 @@
 
   <!-- Entity Reference Picker -->
   <EntityReferencePicker v-model:open="entityPickerOpen" :exclude-id="editableItem.id" :filter-type="entityPickerFilterType" @select="handleAddEntityRef" @created="handleCreatedEntityRef" />
+
+  <!-- Share Dialog -->
+  <ShareDialog
+    v-model:open="showShareDialog"
+    :entity-id="editableItem.id"
+    entity-type="entity"
+    :entity-title="editableItem.title" />
 </template>
 
 <style scoped>

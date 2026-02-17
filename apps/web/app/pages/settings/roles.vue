@@ -22,9 +22,9 @@
 
   const DEFAULT_CONFIGS: RoleDisplayConfig[] = ROLE_HIERARCHY.map((role) => ({
     role,
-    label: role === 'superadmin' ? 'Super Admin' : role.charAt(0).toUpperCase() + role.slice(1),
+    label: role.charAt(0).toUpperCase() + role.slice(1),
     icon:
-      role === 'superadmin'
+      role === 'owner'
         ? 'lucide:shield'
         : role === 'admin'
           ? 'lucide:shield-check'
@@ -104,8 +104,8 @@
   const togglePermission = (role: UserRole, perm: keyof RolePermissions) => {
     const config = roleConfigs.value.find((c) => c.role === role)
     if (!config) return
-    // Superadmin permissions are immutable
-    if (role === 'superadmin') return
+    // Owner permissions are immutable
+    if (role === 'owner') return
     config.permissions[perm] = !config.permissions[perm]
     // Enforce hierarchy: admin implies write, write implies read
     if (perm === 'admin' && config.permissions.admin) {
@@ -178,7 +178,7 @@
                     <template v-else>
                       <span class="text-sm font-semibold">{{ config.label }}</span>
                       <button
-                        v-if="config.role !== 'superadmin'"
+                        v-if="config.role !== 'owner'"
                         class="text-muted-foreground hover:text-foreground transition-colors"
                         @click="editingRole = config.role">
                         <Icon name="lucide:pencil" class="h-3 w-3" />
@@ -220,7 +220,7 @@
                           ? 'bg-primary border-primary text-primary-foreground'
                           : 'border-border text-muted-foreground hover:border-muted-foreground'
                       "
-                      :disabled="config.role === 'superadmin'"
+                      :disabled="config.role === 'owner'"
                       @click="togglePermission(config.role, perm)">
                       <Icon
                         :name="config.permissions[perm] ? 'lucide:check' : 'lucide:minus'"

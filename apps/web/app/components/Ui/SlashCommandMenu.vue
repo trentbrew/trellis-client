@@ -7,6 +7,7 @@
   }>()
 
   const selectedIndex = ref(0)
+  const menuRef = ref<HTMLElement | null>(null)
 
   // Group items by their group field
   const groupedItems = computed(() => {
@@ -31,6 +32,19 @@
       selectedIndex.value = 0
     },
   )
+
+  // Scroll selected item into view
+  watch(selectedIndex, () => {
+    nextTick(() => {
+      const selectedElement = menuRef.value?.querySelector('.slash-command-item.is-selected')
+      if (selectedElement) {
+        selectedElement.scrollIntoView({
+          block: 'nearest',
+          behavior: 'auto',
+        })
+      }
+    })
+  })
 
   function selectItem(index: number) {
     const item = props.items[index]
@@ -65,7 +79,7 @@
 </script>
 
 <template>
-  <div class="slash-command-menu">
+  <div ref="menuRef" class="slash-command-menu">
     <template v-if="items.length">
       <template v-for="group in groupedItems" :key="group.label">
         <div class="slash-command-group-label">{{ group.label }}</div>
@@ -121,7 +135,6 @@
     gap: 0.625rem;
     padding: 0.375rem 0.5rem;
     text-align: left;
-    transition: background 100ms;
     width: 100%;
     border: none;
     background: none;

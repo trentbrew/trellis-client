@@ -201,6 +201,118 @@ export function sidebarSurfaceMenu(options: {
   ]
 }
 
+/** Context menu for a tree-driven sidebar section (graph-backed SidebarNode with nodeType 'section') */
+export function treeNodeSectionMenu(options: {
+  isCollapsed?: boolean
+  isLocked?: boolean
+  canCreate?: boolean
+}): ContextMenuAction[] {
+  const { isCollapsed = false, isLocked = false, canCreate = false } = options
+  return [
+    {
+      id: isCollapsed ? CONTEXT_ACTIONS.EXPAND : CONTEXT_ACTIONS.COLLAPSE,
+      label: isCollapsed ? 'Expand Section' : 'Collapse Section',
+      icon: isCollapsed ? 'lucide:chevrons-down' : 'lucide:chevrons-up',
+    },
+    {
+      id: CONTEXT_ACTIONS.CREATE,
+      label: 'New Item',
+      icon: 'lucide:plus',
+      separator: true,
+      visible: canCreate,
+    },
+    {
+      id: CONTEXT_ACTIONS.RENAME,
+      label: 'Rename Section',
+      icon: 'lucide:pencil',
+      separator: !canCreate,
+      visible: !isLocked,
+    },
+    {
+      id: CONTEXT_ACTIONS.CHANGE_ICON,
+      label: 'Change Icon',
+      icon: 'lucide:palette',
+      visible: !isLocked,
+    },
+    {
+      id: CONTEXT_ACTIONS.RESET_ORDER,
+      label: 'Reset Order',
+      icon: 'lucide:arrow-down-up',
+    },
+    {
+      id: CONTEXT_ACTIONS.DELETE,
+      label: 'Delete Section',
+      icon: 'lucide:trash-2',
+      variant: 'destructive',
+      separator: true,
+      visible: !isLocked,
+    },
+  ]
+}
+
+/** Context menu for a tree-driven sidebar item (graph-backed SidebarNode with nodeType 'item') */
+export function treeNodeItemMenu(options: {
+  isPinned?: boolean
+  canPin?: boolean
+  isLocked?: boolean
+  path?: string
+}): ContextMenuAction[] {
+  const { isPinned = false, canPin = true, isLocked = false, path } = options
+  return [
+    {
+      id: CONTEXT_ACTIONS.OPEN,
+      label: 'Open',
+      icon: 'lucide:arrow-right',
+    },
+    {
+      id: CONTEXT_ACTIONS.OPEN_NEW_TAB,
+      label: 'Open in New Tab',
+      icon: 'lucide:external-link',
+    },
+    {
+      id: CONTEXT_ACTIONS.COPY_LINK,
+      label: 'Copy Link',
+      icon: 'lucide:link',
+      shortcut: '⌘L',
+      visible: !!path,
+    },
+    {
+      id: isPinned ? CONTEXT_ACTIONS.UNPIN : CONTEXT_ACTIONS.PIN,
+      label: isPinned ? 'Unpin' : 'Pin to Top',
+      icon: isPinned ? 'lucide:pin-off' : 'lucide:pin',
+      separator: true,
+      visible: canPin,
+    },
+    {
+      id: CONTEXT_ACTIONS.RENAME,
+      label: 'Rename',
+      icon: 'lucide:pencil',
+      separator: true,
+      visible: !isLocked,
+    },
+    {
+      id: CONTEXT_ACTIONS.CHANGE_ICON,
+      label: 'Change Icon',
+      icon: 'lucide:palette',
+      visible: !isLocked,
+    },
+    {
+      id: CONTEXT_ACTIONS.MOVE_TO,
+      label: 'Move to Section...',
+      icon: 'lucide:move',
+      visible: !isLocked,
+    },
+    {
+      id: CONTEXT_ACTIONS.DELETE,
+      label: 'Remove from Sidebar',
+      icon: 'lucide:trash-2',
+      variant: 'destructive',
+      separator: true,
+      visible: !isLocked,
+    },
+  ]
+}
+
 /** Context menu for a projection/view mode (right-click within the view area) */
 export function projectionContextMenu(options: {
   projectionType?: string

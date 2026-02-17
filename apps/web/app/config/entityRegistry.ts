@@ -843,6 +843,26 @@ const ENTITY_TYPES: Record<EntityType, EntityTypeConfig> = {
     searchFields: ['title', 'url', 'description', 'siteName', 'excerpt'],
   },
 
+  diagram: {
+    type: 'diagram',
+    class: 'document',
+    label: 'Diagram',
+    labelPlural: 'Diagrams',
+    icon: 'lucide:workflow',
+    color: 'teal',
+    projections: ['card-grid', 'list', 'table'],
+    defaultProjection: 'card-grid',
+    dialogShell: 'document',
+    panels: {
+      properties: 'DiagramProperties',
+      content: 'DiagramContent',
+      footerActions: ['pin', 'duplicate', 'delete'],
+    },
+    propertyFields: fields('type', 'pin', 'category', 'owner', 'tags'),
+    defaultSortField: 'updatedAt',
+    searchFields: ['title', 'description', 'content'],
+  },
+
   // ── Actor ────────────────────────────────────────────────────────────────
 
   person: {

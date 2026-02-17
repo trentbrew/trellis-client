@@ -5,6 +5,7 @@
   import type { Entity, TaskItem } from '~/types/entity'
   import { createDefaultItem } from '~/types/entity'
   import { formatYmdLocal } from '~/utils/date'
+  import { useDialogUrl } from '~/composables/useDialogUrl'
 
   definePageMeta({ layout: 'default' })
   useHead({ title: 'Reminders | Personal' })
@@ -206,6 +207,8 @@
   function openDetail(item: TaskItem) {
     _viewingItemId.value = item.id
     viewOpen.value = true
+    const { setOriginHash } = useDialogUrl()
+    setOriginHash(item.id)
   }
 
   function toggleComplete(item: TaskItem, e: Event) {
@@ -228,17 +231,32 @@
     _pendingNewItem.value = { ...defaults, id: newId } as Entity
     _viewingItemId.value = newId
     viewOpen.value = true
+    const { setOriginHash } = useDialogUrl()
+    setOriginHash(newId)
   }
+
+  watch(viewOpen, (open) => {
+    if (!open) {
+      const { clearHash } = useDialogUrl()
+      clearHash()
+      _viewingItemId.value = null
+      _pendingNewItem.value = null
+    }
+  })
 
   function handleUpdate(item: Entity) {
     const idx = items.value.findIndex((i) => i.id === item.id)
     if (idx !== -1) items.value[idx] = { ...item } as TaskItem
     viewOpen.value = false
+    const { clearHash } = useDialogUrl()
+    clearHash()
   }
 
   function handleDelete(item: Entity) {
     items.value = items.value.filter((i) => i.id !== item.id)
     viewOpen.value = false
+    const { clearHash } = useDialogUrl()
+    clearHash()
   }
 </script>
 

@@ -1,4 +1,6 @@
 <script setup lang="ts">
+  import FlowEditor from '~/components/Flow/FlowEditor.vue'
+
   definePageMeta({
     title: 'Workflow',
     layout: 'fullscreen',
@@ -6,9 +8,10 @@
   })
 
   const route = useRoute()
+  const router = useRouter()
   const workflowId = computed(() => String(route.params.id || ''))
 
-  const { currentApp, workflows, updateWorkflow } = useInstantData()
+  const { currentApp, workflows, updateWorkflow, deleteWorkflow } = useInstantData()
 
   const workflow = computed(() => {
     const id = workflowId.value
@@ -17,62 +20,50 @@
   })
 
   const isLoading = computed(() => !currentApp.value)
-  const isSaving = ref(false)
 
-  const handleSave = async () => {
-    if (!workflow.value?.id) return
-    isSaving.value = true
-    try {
-      await updateWorkflow(workflow.value.id, {
-        name: workflow.value.name,
-        description: workflow.value.description,
-        icon: workflow.value.icon,
-        trigger: workflow.value.trigger,
-        active: workflow.value.active,
-      })
-    } finally {
-      isSaving.value = false
+  // Inline title editing
+  const isEditingTitle = ref(false)
+  const editTitle = ref('')
+
+  function startEditTitle() {
+    editTitle.value = workflow.value?.name || ''
+    isEditingTitle.value = true
+    nextTick(() => {
+      const input = document.querySelector('.workflow-title-input') as HTMLInputElement
+      input?.focus()
+      input?.select()
+    })
+  }
+
+  async function commitTitle() {
+    isEditingTitle.value = false
+    if (!workflow.value || !editTitle.value.trim()) return
+    if (editTitle.value.trim() !== workflow.value.name) {
+      await updateWorkflow(workflow.value.id, { name: editTitle.value.trim() })
     }
+  }
+
+  // Active toggle
+  async function toggleActive() {
+    if (!workflow.value) return
+    await updateWorkflow(workflow.value.id, { active: !workflow.value.active })
+  }
+
+  // Delete
+  async function handleDelete() {
+    if (!workflow.value) return
+    await deleteWorkflow(workflow.value.id)
+    await router.push('/workflows')
   }
 </script>
 
 <template>
-  <Page variant="canvas" :title="workflow?.name || 'Workflow'" show-back-button subtitle="Workflow Layer">
-    <template v-if="isLoading" #default>
-      <div class="flex items-center justify-center h-full">
-        <UiLoader />
-      </div>
-    </template>
-
-    <template v-else-if="workflow" #default>
-      <div class="space-y-6 p-6">
-        <div class="space-y-2">
-          <div class="flex items-center gap-2">
-            <Icon :name="workflow?.icon || 'lucide:workflow'" class="h-5 w-5" />
-            <h2 class="text-lg font-semibold">{{ workflow?.name }}</h2>
-          </div>
-          <p v-if="workflow?.description" class="text-muted-foreground text-sm">{{ workflow?.description }}</p>
-        </div>
-
-        <div class="border rounded p-4 text-center text-muted-foreground">
-          <p>Workflow editor coming soon...</p>
-        </div>
-
-        <div class="flex gap-2">
-          <UiButton :disabled="isSaving" @click="handleSave">
-            {{ isSaving ? 'Saving...' : 'Save Changes' }}
-          </UiButton>
-          <UiButton variant="outline" as-child>
-            <NuxtLink to="/workflows">Back to Workflows</NuxtLink>
-          </UiButton>
-        </div>
-      </div>
-    </template>
-
-    <template v-else #default>
-      <div class="flex items-center justify-center h-full">
+  <div class="flex h-full flex-col">
+    <!-- Not found state -->
+    <template v-if="!isLoading && !workflow">
+      <div class="flex flex-1 items-center justify-center">
         <div class="text-center">
-          <Icon name="lucide:alert-circle" class="text-muted-foreground mx-auto mb-4 h-16 w-16" />
+          <Icon name="lucide:alert-circle" class="mx-auto mb-4 h-16 w-16 text-muted-foreground" />
           <h2 class="mb-2 text-2xl font-bold">Workflow Not Found</h2>
           <UiButton as-child>
             <NuxtLink to="/workflows">Back to Workflows</NuxtLink>
@@ -80,5 +71,84 @@
         </div>
       </div>
     </template>
-  </Page>
+
+    <!-- Loading -->
+    <template v-else-if="isLoading">
+      <div class="flex flex-1 items-center justify-center">
+        <UiLoader />
+      </div>
+    </template>
+
+    <!-- Editor -->
+    <template v-else-if="workflow">
+      <!-- Header bar -->
+      <div class="flex h-11 shrink-0 items-center gap-2 border-b border-border bg-background px-3">
+        <UiButton variant="ghost" size="icon-sm" as-child>
+          <NuxtLink to="/workflows">
+            <Icon name="lucide:arrow-left" class="h-4 w-4" />
+          </NuxtLink>
+        </UiButton>
+
+        <div class="flex items-center gap-1.5">
+          <Icon :name="workflow.icon || 'lucide:workflow'" class="h-4 w-4 text-muted-foreground" />
+          <template v-if="isEditingTitle">
+            <input
+              v-model="editTitle"
+              class="workflow-title-input rounded border-none bg-transparent px-1 py-0.5 text-sm font-semibold focus:outline-none focus:ring-1 focus:ring-ring"
+              @blur="commitTitle"
+              @keydown.enter="commitTitle"
+              @keydown.escape="isEditingTitle = false" />
+          </template>
+          <template v-else>
+            <button
+              type="button"
+              class="rounded px-1 py-0.5 text-sm font-semibold hover:bg-muted"
+              @click="startEditTitle">
+              {{ workflow.name }}
+            </button>
+          </template>
+        </div>
+
+        <div class="flex-1" />
+
+        <!-- Active toggle -->
+        <div class="flex items-center gap-1.5">
+          <span class="text-xs text-muted-foreground">{{ workflow.active ? 'Active' : 'Inactive' }}</span>
+          <button
+            type="button"
+            :class="[
+              'relative inline-flex h-5 w-9 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors',
+              workflow.active ? 'bg-green-500' : 'bg-muted',
+            ]"
+            @click="toggleActive">
+            <span
+              :class="[
+                'pointer-events-none inline-block h-4 w-4 rounded-full bg-white shadow-sm transition-transform',
+                workflow.active ? 'translate-x-4' : 'translate-x-0',
+              ]" />
+          </button>
+        </div>
+
+        <!-- Menu -->
+        <UiDropdownMenu>
+          <UiDropdownMenuTrigger as-child>
+            <UiButton variant="ghost" size="icon-sm">
+              <Icon name="lucide:more-horizontal" class="h-4 w-4" />
+            </UiButton>
+          </UiDropdownMenuTrigger>
+          <UiDropdownMenuContent align="end">
+            <UiDropdownMenuItem class="text-destructive" @click="handleDelete">
+              <Icon name="lucide:trash-2" class="mr-2 h-4 w-4" />
+              Delete Workflow
+            </UiDropdownMenuItem>
+          </UiDropdownMenuContent>
+        </UiDropdownMenu>
+      </div>
+
+      <!-- Flow canvas -->
+      <div class="flex-1 overflow-hidden">
+        <FlowEditor :workflow-id="workflowId" />
+      </div>
+    </template>
+  </div>
 </template>

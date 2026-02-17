@@ -11,6 +11,7 @@ import { DIALOG_STACK_INDEX_KEY } from '~/composables/useDialogStack'
  */
 export function useDialogStackAware() {
   const dialogStack = useDialogStack()
+  const { rightSidebarWidth: sidebarWidth } = useRightSidebarWidth()
   const injectedIndex = inject(DIALOG_STACK_INDEX_KEY, ref(-1))
 
   const stackIndex = computed(() => injectedIndex.value)
@@ -58,18 +59,21 @@ export function useDialogStackAware() {
    * merging the shell's own sizing with stack transforms.
    */
   function buildContentStyle(dialogW: number, dialogH: number): string {
-    const w = effectiveW(dialogW)
-    const h = effectiveH(dialogH)
+    const sw = sidebarWidth.value
+    const w = Math.min(effectiveW(dialogW), window.innerWidth - sw - 64)
+    const h = Math.min(effectiveH(dialogH), window.innerHeight - 64)
     const t = stackTransform.value
     const baseTranslateY = -50 // percent (the normal centering offset)
     const offsetPx = t.offsetY // additional stack offset in px
+    // Shift left center point left by half the sidebar width so dialog centers in available space
+    const leftOffset = sw / 2
 
     // Combine translate + scale in a single transform property
     // translate is applied via the CSS `translate` property; scale via `transform`
     const parts = [
       `position:fixed !important`,
       `top:50% !important`,
-      `left:50% !important`,
+      `left:calc(50% - ${leftOffset}px) !important`,
       `translate:-50% calc(${baseTranslateY}% + ${offsetPx}px) !important`,
       `transform:scale(${t.scale}) !important`,
       `width:${w}px !important`,

@@ -1,10 +1,10 @@
 <script lang="ts" setup>
 /**
- * Wrapper component that only renders children for superadmin users
+ * Wrapper component that only renders children for owner-role users
  */
-const { isSuperAdmin } = useAdminUI()
+const { isOwnerRole } = useAdminUI()
 </script>
 
 <template>
-  <slot v-if="isSuperAdmin" />
+  <slot v-if="isOwnerRole" />
 </template>

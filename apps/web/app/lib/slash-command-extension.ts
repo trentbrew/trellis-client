@@ -133,6 +133,16 @@ function getBuiltInCommands(hasEmbeds: boolean): SlashCommandItem[] {
           // Handled by SlashCommandMenu emitting 'embed-query'
         },
       },
+      {
+        id: 'diagram',
+        label: 'Diagram',
+        description: 'Mermaid flowchart, sequence, Gantt, and more',
+        icon: 'lucide:workflow',
+        group: 'Embeds',
+        action: (_editor) => {
+          // Handled by onEmbedDiagram callback
+        },
+      },
     )
   }
 
@@ -143,10 +153,11 @@ export interface SlashCommandConfig {
   hasEmbeds?: boolean
   onEmbedEntity?: (editor: any) => void
   onEmbedQuery?: (editor: any) => void
+  onEmbedDiagram?: (editor: any) => void
 }
 
 export function createSlashCommandExtension(config: SlashCommandConfig = {}) {
-  const { hasEmbeds = false, onEmbedEntity, onEmbedQuery } = config
+  const { hasEmbeds = false, onEmbedEntity, onEmbedQuery, onEmbedDiagram } = config
 
   return Extension.create({
     name: 'slashCommand',
@@ -169,6 +180,10 @@ export function createSlashCommandExtension(config: SlashCommandConfig = {}) {
             }
             if (item.id === 'query-view' && onEmbedQuery) {
               onEmbedQuery(editor)
+              return
+            }
+            if (item.id === 'diagram' && onEmbedDiagram) {
+              onEmbedDiagram(editor)
               return
             }
 

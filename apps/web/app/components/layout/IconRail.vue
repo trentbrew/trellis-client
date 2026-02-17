@@ -9,7 +9,8 @@
 <template>
   <!-- Navigation Rail: Always visible with primary navigation routes -->
   <nav
-    class="flex w-16 flex-col items-center border-r px-2 py-0 pb-2 bg-transparent"
+    data-slot="icon-rail"
+    class="flex w-16 flex-col items-center border-r px-2 py-0 pb-2 bg-transparent relative"
     aria-label="Navigation rail">
 
 

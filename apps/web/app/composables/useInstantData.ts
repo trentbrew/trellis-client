@@ -1,4 +1,4 @@
-import type { Organization, Application, Collection, CustomType, Workflow, DatabaseSchema } from '~/types/database'
+import type { Organization, Application, Collection, CustomType, Workflow, WorkflowGraph, DatabaseSchema } from '~/types/database'
 import { pickOrgAndApp } from '~/lib/pickOrgAndApp'
 import { createCollectionGraph, serializeTrellisDocument } from '~/lib/trellis'
 import { createDefaultProjections } from '~/lib/projections'
@@ -947,6 +947,18 @@ export function useInstantData() {
     if (!appId) throw new Error('No application selected')
 
     const now = Date.now()
+    const defaultGraph: WorkflowGraph = {
+      nodes: [
+        {
+          id: 'start-1',
+          kind: 'start',
+          position: { x: 250, y: 250 },
+          label: 'Start',
+        },
+      ],
+      edges: [],
+      viewport: { x: 0, y: 0, zoom: 1 },
+    }
     const next: Workflow = {
       id: crypto.randomUUID(),
       appId,
@@ -955,6 +967,7 @@ export function useInstantData() {
       icon: data.icon,
       trigger: data.trigger,
       active: typeof data.active === 'boolean' ? data.active : true,
+      graph: data.graph || defaultGraph,
       createdAt: now,
       updatedAt: now,
     }
@@ -1051,6 +1064,9 @@ export function useInstantData() {
     createWorkflow,
     updateWorkflow,
     deleteWorkflow,
+
+    // Settings
+    upsertAppSetting,
 
     // Helpers
     getCollectionBySlug,

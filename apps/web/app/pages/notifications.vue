@@ -4,206 +4,203 @@
     icon: 'lucide:bell',
   })
 
-  const notifications = ref([
-    {
-      id: 1,
-      title: 'Security Breach Detected',
-      description:
-        'A suspicious login attempt was blocked from an unrecognized IP address in East Europe. Please review your security settings.',
-      time: '5m ago',
-      variant: 'destructive',
-      icon: 'lucide:shield-alert',
-      unread: true,
-      to: '/security/settings',
-    },
-    {
-      id: 2,
-      title: 'Storage Limit Approaching',
-      description:
-        'Your organization has used 85% of the allocated cloud storage. Consider upgrading your plan to avoid service interruption.',
-      time: '1h ago',
-      variant: 'warning',
-      icon: 'lucide:hard-drive',
-      unread: true,
-      to: '/settings/billing',
-    },
-    {
-      id: 3,
-      title: 'System Update Complete',
-      description:
-        'The v2.4.0 update has been successfully deployed to all production nodes. All services are operating within normal parameters.',
-      time: '3h ago',
-      variant: 'success',
-      icon: 'lucide:check-circle',
-      unread: false,
-      to: '/system/status',
-    },
-    {
-      id: 4,
-      title: 'New Feature Available',
-      description:
-        'The new Advanced Analytics dashboard is now available for your organization. Check out the documentation to get started.',
-      time: '5h ago',
-      variant: 'info',
-      icon: 'lucide:sparkles',
-      unread: false,
-      to: '/analytics',
-    },
-  ])
+  const {
+    notifications,
+    unreadCount,
+    markAsRead,
+    markAllAsRead,
+    dismiss,
+    timeAgo,
+    loading,
+  } = useNotifications()
 
-  const go = (to: string) => navigateTo(to)
+  // ── Org filter ──────────────────────────────────────────────────────
+  const selectedOrgId = ref<string | null>(null)
+
+  const orgOptions = computed(() => {
+    const orgs = new Map<string, string>()
+    for (const n of notifications.value) {
+      if (n.orgId && n.orgName) orgs.set(n.orgId, n.orgName)
+    }
+    return Array.from(orgs.entries()).map(([id, name]) => ({ id, name }))
+  })
+
+  const filteredNotifications = computed(() => {
+    if (!selectedOrgId.value) return notifications.value
+    return notifications.value.filter((n: any) => n.orgId === selectedOrgId.value)
+  })
+
+  const handleClick = (n: any) => {
+    if (!n.isRead) markAsRead(n.id)
+    if (n.actionUrl) navigateTo(n.actionUrl)
+  }
 </script>
 
 <template>
   <Page
     title="Notifications"
     subtitle="Activity"
-    description="View and manage your organization's activity and alerts"
+    description="View and manage your notifications"
     icon="lucide:bell"
     :hide-sidebar="true"
     :fill-height="true">
-    <div class="space-y-10 max-w-4xl">
-      <!-- Unread Section -->
-      <section>
-        <div class="flex items-center justify-between mb-6">
-          <div class="space-y-1">
-            <h3 class="text-sm font-bold uppercase tracking-[0.2em] text-muted-foreground/50">Recent Alerts</h3>
-            <p class="text-xs text-muted-foreground/40">
-              You have {{ notifications.filter((n) => n.unread).length }} unread notifications
-            </p>
-          </div>
-          <UiButton
-            variant="ghost"
-            size="xs"
-            class="text-[10px] font-black uppercase tracking-widest text-primary hover:bg-primary/5 transition-all">
-            Mark all as read
-          </UiButton>
+    <div class="space-y-6 max-w-3xl">
+      <!-- Header -->
+      <div class="flex items-center justify-between">
+        <div class="flex items-center gap-3">
+          <p class="text-sm text-muted-foreground">
+            {{ unreadCount > 0 ? `${unreadCount} unread` : 'No unread notifications' }}
+          </p>
+          <!-- Org filter -->
+          <UiDropdownMenu v-if="orgOptions.length > 1">
+            <UiDropdownMenuTrigger as-child>
+              <UiButton size="xs" variant="outline" class="h-7 text-[11px] gap-1.5">
+                <Icon name="lucide:building-2" class="h-3 w-3" />
+                {{ selectedOrgId ? orgOptions.find(o => o.id === selectedOrgId)?.name || 'Filter' : 'All workspaces' }}
+                <Icon name="lucide:chevron-down" class="h-3 w-3 ml-0.5" />
+              </UiButton>
+            </UiDropdownMenuTrigger>
+            <UiDropdownMenuContent align="start" class="w-48">
+              <UiDropdownMenuItem
+                :class="{ 'bg-accent': !selectedOrgId }"
+                @click="selectedOrgId = null">
+                All workspaces
+              </UiDropdownMenuItem>
+              <UiDropdownMenuSeparator />
+              <UiDropdownMenuItem
+                v-for="org in orgOptions"
+                :key="org.id"
+                :class="{ 'bg-accent': selectedOrgId === org.id }"
+                @click="selectedOrgId = org.id">
+                {{ org.name }}
+              </UiDropdownMenuItem>
+            </UiDropdownMenuContent>
+          </UiDropdownMenu>
         </div>
+        <UiButton
+          v-if="unreadCount > 0"
+          variant="ghost"
+          size="xs"
+          class="text-xs font-medium text-primary hover:bg-primary/5"
+          @click="markAllAsRead">
+          Mark all as read
+        </UiButton>
+      </div>
 
-        <div class="grid gap-4">
-          <Motion
-            v-for="(n, i) in notifications"
-            :key="n.id"
-            :initial="{ opacity: 0, y: 15, scale: 0.98 }"
-            :animate="{ opacity: 1, y: 0, scale: 1 }"
-            :transition="{ delay: i * 0.08, duration: 0.4, ease: [0.23, 1, 0.32, 1] }"
-            class="relative overflow-hidden rounded-2xl border border-border/40 transition-all duration-500 group"
+      <!-- Loading -->
+      <div v-if="loading" class="space-y-3">
+        <div v-for="i in 4" :key="i" class="flex items-start gap-4 p-4 rounded-xl border border-border/40">
+          <div class="h-10 w-10 rounded-xl bg-muted animate-pulse shrink-0" />
+          <div class="flex-1 space-y-2">
+            <div class="h-4 w-48 rounded bg-muted animate-pulse" />
+            <div class="h-3 w-full rounded bg-muted animate-pulse" />
+          </div>
+        </div>
+      </div>
+
+      <!-- Notifications list -->
+      <div v-else-if="filteredNotifications.length > 0" class="space-y-2">
+        <Motion
+          v-for="(n, i) in filteredNotifications"
+          :key="n.id"
+          :initial="{ opacity: 0, y: 10 }"
+          :animate="{ opacity: 1, y: 0 }"
+          :transition="{ delay: i * 0.04, duration: 0.3 }"
+          class="relative flex items-start gap-4 p-4 rounded-xl border border-border/40 transition-all duration-300 group cursor-pointer"
+          :class="[
+            !n.isRead
+              ? n.variant === 'destructive'
+                ? 'bg-destructive/4 border-destructive/15'
+                : n.variant === 'warning'
+                  ? 'bg-warning/4 border-warning/15'
+                  : n.variant === 'success'
+                    ? 'bg-success/4 border-success/15'
+                    : 'bg-primary/4 border-primary/15'
+              : 'hover:bg-muted/30',
+          ]"
+          @click="handleClick(n)">
+          <!-- Unread indicator -->
+          <div
+            v-if="!n.isRead"
+            class="absolute left-0 top-3 bottom-3 w-1 rounded-r-full"
             :class="[
-              n.unread
-                ? n.variant === 'destructive'
-                  ? 'bg-rose-500/[0.03] border-rose-500/10 shadow-[0_4px_20px_-4px_rgba(244,63,94,0.08)]'
-                  : n.variant === 'warning'
-                    ? 'bg-amber-500/[0.03] border-amber-500/10 shadow-[0_4px_20px_-4px_rgba(245,158,11,0.08)]'
-                    : n.variant === 'success'
-                      ? 'bg-emerald-500/[0.03] border-emerald-500/10 shadow-[0_4px_20px_-4px_rgba(16,185,129,0.08)]'
-                      : 'bg-primary/[0.03] border-primary/10 shadow-[0_4px_20px_-4px_rgba(var(--primary),0.08)]'
-                : 'bg-card/20 hover:bg-card/40',
+              n.variant === 'destructive' ? 'bg-destructive'
+                : n.variant === 'warning' ? 'bg-warning'
+                : n.variant === 'success' ? 'bg-success'
+                : 'bg-primary',
+            ]" />
+
+          <!-- Icon -->
+          <div
+            class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl ring-1 transition-transform group-hover:scale-105"
+            :class="[
+              n.variant === 'destructive' ? 'bg-destructive/15 text-destructive ring-destructive/20'
+                : n.variant === 'warning' ? 'bg-warning/15 text-warning ring-warning/20'
+                : n.variant === 'success' ? 'bg-success/15 text-success ring-success/20'
+                : 'bg-primary/15 text-primary ring-primary/20',
             ]">
-            <!-- Hover Gradient -->
-            <div
-              class="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-700 pointer-events-none bg-gradient-to-br from-white/[0.02] to-transparent"></div>
+            <Icon :name="n.icon || 'lucide:bell'" class="h-5 w-5" />
+          </div>
 
-            <div class="relative flex items-start gap-6 p-6">
-              <!-- Severity Indicator Bar -->
-              <div
-                v-if="n.unread"
-                class="absolute left-0 top-4 bottom-4 w-1.5 rounded-r-full transition-all duration-500 group-hover:w-2"
-                :class="[
-                  n.variant === 'destructive'
-                    ? 'bg-rose-500 shadow-[0_0_12px_rgba(244,63,94,0.4)]'
-                    : n.variant === 'warning'
-                      ? 'bg-amber-500 shadow-[0_0_12px_rgba(245,158,11,0.4)]'
-                      : n.variant === 'success'
-                        ? 'bg-emerald-500 shadow-[0_0_12px_rgba(16,185,129,0.4)]'
-                        : 'bg-primary shadow-[0_0_12px_rgba(var(--primary),0.4)]',
-                ]"></div>
-
-              <!-- Icon -->
-              <div
-                class="flex h-14 w-14 shrink-0 items-center justify-center rounded-[1.25rem] shadow-sm ring-1 transition-all duration-500 group-hover:scale-110 group-hover:-rotate-3"
-                :class="[
-                  n.variant === 'destructive'
-                    ? 'bg-rose-500/20 text-rose-500 ring-rose-500/30'
-                    : n.variant === 'warning'
-                      ? 'bg-amber-500/20 text-amber-500 ring-amber-500/30'
-                      : n.variant === 'success'
-                        ? 'bg-emerald-500/20 text-emerald-500 ring-emerald-500/30'
-                        : 'bg-primary/20 text-primary ring-primary/30',
-                ]">
-                <Icon :name="n.icon" class="h-7 w-7" />
-              </div>
-
-              <!-- Content -->
-              <div class="flex-1 min-w-0 space-y-2">
-                <div class="flex items-center justify-between">
-                  <h4
-                    class="text-lg font-bold tracking-tight text-foreground transition-colors group-hover:text-primary/90">
-                    {{ n.title }}
-                  </h4>
-                  <span class="text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground/40 tabular-nums">
-                    {{ n.time }}
-                  </span>
-                </div>
-                <p class="text-sm text-muted-foreground/70 leading-relaxed max-w-3xl font-medium">
-                  {{ n.description }}
-                </p>
-
-                <div class="pt-4 flex items-center justify-between">
-                  <div class="flex items-center gap-3">
-                    <span
-                      class="rounded-lg px-2.5 py-1 text-[9px] font-black uppercase tracking-[0.15em] shadow-xs ring-1 transition-all duration-300"
-                      :class="[
-                        n.variant === 'destructive'
-                          ? 'bg-rose-500/10 text-rose-500 ring-rose-500/20 group-hover:bg-rose-500/20'
-                          : n.variant === 'warning'
-                            ? 'bg-amber-500/10 text-amber-500 ring-amber-500/20 group-hover:bg-amber-500/20'
-                            : n.variant === 'success'
-                              ? 'bg-emerald-500/10 text-emerald-500 ring-emerald-500/20 group-hover:bg-emerald-500/20'
-                              : 'bg-muted text-muted-foreground ring-border/50 group-hover:bg-muted/80',
-                      ]">
-                      {{ n.variant }}
-                    </span>
-                    <span v-if="n.unread" class="flex h-2 w-2 rounded-full bg-primary animate-ping opacity-75"></span>
-                  </div>
-
-                  <UiButton
-                    v-if="n.to"
-                    variant="outline"
-                    size="sm"
-                    class="h-9 px-5 text-[11px] font-black uppercase tracking-[0.15em] bg-background border-border/50 hover:border-primary hover:bg-primary/5 hover:text-primary transition-all duration-500 group-hover:translate-x-0 translate-x-2 opacity-0 group-hover:opacity-100 shadow-xl shadow-primary/5"
-                    @click="go(n.to)">
-                    View Report
-                    <Icon
-                      name="lucide:arrow-right"
-                      class="ml-2 h-4 w-4 transition-transform duration-500 group-hover:translate-x-1" />
-                  </UiButton>
-                </div>
-              </div>
+          <!-- Content -->
+          <div class="flex-1 min-w-0 space-y-1">
+            <div class="flex items-center justify-between gap-2">
+              <span
+                class="text-sm font-semibold truncate"
+                :class="!n.isRead ? 'text-foreground' : 'text-muted-foreground'">
+                {{ n.title }}
+              </span>
+              <span class="text-[10px] text-muted-foreground/50 whitespace-nowrap tabular-nums">
+                {{ timeAgo(n.createdAt) }}
+              </span>
             </div>
-          </Motion>
-        </div>
-      </section>
-
-      <!-- Archive/Empty State -->
-      <section class="pt-12 border-t border-border/20">
-        <div class="flex flex-col items-center justify-center py-20 text-center space-y-6">
-          <div class="h-20 w-20 rounded-[2rem] bg-muted/10 flex items-center justify-center shadow-inner">
-            <Icon name="lucide:archive" class="h-10 w-10 text-muted-foreground/20" />
-          </div>
-          <div class="space-y-1">
-            <h4 class="text-sm font-black uppercase tracking-[0.2em] text-muted-foreground/40">Notification Archive</h4>
-            <p class="text-xs text-muted-foreground/30 font-medium tracking-tight">
-              Older activity will be automatically moved here after 30 days
+            <p class="text-xs text-muted-foreground line-clamp-2 leading-relaxed">
+              {{ n.message }}
             </p>
+            <div class="flex items-center gap-2 pt-1">
+              <span
+                v-if="n.orgName"
+                class="rounded-md px-1.5 py-0.5 text-[9px] font-semibold tracking-wide text-muted-foreground/60 bg-muted/50 ring-1 ring-border/30 truncate max-w-[140px]">
+                {{ n.orgName }}
+              </span>
+              <span
+                v-if="n.actorName"
+                class="text-[10px] text-muted-foreground/60">
+                by {{ n.actorName }}
+              </span>
+            </div>
           </div>
-          <UiButton
-            variant="ghost"
-            size="sm"
-            class="text-[10px] font-black uppercase tracking-widest opacity-40 hover:opacity-100 hover:bg-muted/20 transition-all">
-            Open History
-          </UiButton>
+
+          <!-- Actions -->
+          <div class="flex items-center gap-1 shrink-0 opacity-0 group-hover:opacity-100 transition-opacity">
+            <UiButton
+              v-if="n.actionUrl"
+              size="icon-xs"
+              variant="ghost"
+              class="h-7 w-7"
+              @click.stop="handleClick(n)">
+              <Icon name="lucide:external-link" class="h-3.5 w-3.5" />
+            </UiButton>
+            <UiButton
+              size="icon-xs"
+              variant="ghost"
+              class="h-7 w-7 text-muted-foreground hover:text-destructive"
+              @click.stop="dismiss(n.id)">
+              <Icon name="lucide:x" class="h-3.5 w-3.5" />
+            </UiButton>
+          </div>
+        </Motion>
+      </div>
+
+      <!-- Empty state -->
+      <div v-else class="flex flex-col items-center justify-center py-24 text-center">
+        <div class="relative mb-6">
+          <Icon name="lucide:bell" class="h-16 w-16 text-muted-foreground/10" />
+          <Icon name="lucide:check" class="absolute -bottom-1 -right-1 h-6 w-6 text-emerald-500/50" />
         </div>
-      </section>
+        <p class="text-sm font-medium text-muted-foreground">All caught up</p>
+        <p class="text-xs text-muted-foreground/50 mt-1">No notifications right now</p>
+      </div>
     </div>
   </Page>
 </template>

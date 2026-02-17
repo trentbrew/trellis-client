@@ -22,6 +22,8 @@ export interface Member {
   status: 'pending' | 'active' | 'suspended'
 }
 
+export type WorldAccessLevel = 'open' | 'closed' | 'private'
+
 export interface Application {
   id: string
   orgId: string
@@ -31,6 +33,7 @@ export interface Application {
   color: string
   description?: string
   isPublic?: boolean // Whether the app/workspace is publicly accessible
+  accessLevel?: WorldAccessLevel // 'open' (default) | 'closed' | 'private'
   ontologies?: string[] // Imported vertical ontologies (e.g., ['crm'])
   createdAt: number
   updatedAt: number
@@ -153,17 +156,96 @@ export interface Settings {
   updatedAt: number
 }
 
+export type NotificationType =
+  | 'invite_accepted'
+  | 'invite_sent'
+  | 'member_joined'
+  | 'member_removed'
+  | 'role_changed'
+  | 'mention'
+  | 'comment'
+  | 'entity_updated'
+  | 'system'
+
+export type NotificationVariant = 'default' | 'success' | 'warning' | 'destructive' | 'info'
+
 export interface Notification {
   id: string
-  userId: string
+  recipientId: string
   orgId: string
-  appId?: string
-  type: 'invite' | 'mention' | 'update' | 'system'
+  orgName?: string
+  type: NotificationType
   title: string
   message: string
   actionUrl?: string
+  icon?: string
+  variant?: NotificationVariant
   isRead: boolean
+  actorId?: string
+  actorName?: string
+  metadata?: Record<string, any>
   createdAt: number
+}
+
+export type SharePermission = 'view' | 'comment' | 'edit'
+
+export interface Share {
+  id: string
+  entityId: string
+  entityType: 'entity' | 'collection'
+  userId: string
+  orgId: string
+  permission: SharePermission
+  sharedBy: string
+  sharedByName?: string
+  createdAt: number
+}
+
+// ── Brand Engine ────────────────────────────────────────────────────────
+
+export interface BrandLogoConfig {
+  mark?: string // URL — square icon/mark (replaces AppLogo SVG)
+  wordmark?: string // URL — horizontal logo with text
+  favicon?: string // URL — browser tab icon
+  darkVariants?: {
+    mark?: string
+    wordmark?: string
+  }
+}
+
+export interface BrandIdentity {
+  name: string // Display brand name (may differ from Application.name)
+  tagline?: string
+  description?: string
+  mission?: string
+  vision?: string
+  values?: string[]
+}
+
+export interface BrandVoice {
+  tone?: string // e.g. "professional", "friendly", "technical"
+  personality?: string[] // Adjectives: ["warm", "direct", "knowledgeable"]
+  doVoice?: string[] // Writing guidelines — DO
+  dontVoice?: string[] // Writing guidelines — DON'T
+  audienceDescription?: string
+}
+
+export interface BrandLinks {
+  website?: string
+  email?: string
+  social?: { platform: string; url: string }[]
+}
+
+export interface BrandConfig {
+  logo: BrandLogoConfig
+  theme: {
+    presetId?: string // Built-in or custom ThemePresetId bound to this world
+  }
+  identity: BrandIdentity
+  voice: BrandVoice
+  links: BrandLinks
+  updatedAt: number
+  updatedBy?: string
 }
 
 export interface CustomType {
@@ -178,14 +260,52 @@ export interface CustomType {
   updatedAt: number
 }
 
+export type WorkflowNodeKind =
+  | 'start'
+  | 'agent'
+  | 'tool'
+  | 'router'
+  | 'guard'
+  | 'memory-read'
+  | 'memory-write'
+  | 'end'
+  | 'note'
+
+export interface WorkflowNodeDef {
+  id: string
+  kind: WorkflowNodeKind
+  position: { x: number; y: number }
+  label: string
+  data?: Record<string, unknown>
+}
+
+export interface WorkflowEdgeDef {
+  id: string
+  source: string
+  target: string
+  sourceHandle?: string
+  targetHandle?: string
+  label?: string
+  condition?: string
+}
+
+export interface WorkflowGraph {
+  nodes: WorkflowNodeDef[]
+  edges: WorkflowEdgeDef[]
+  viewport?: { x: number; y: number; zoom: number }
+}
+
+export type WorkflowTrigger = 'manual' | 'schedule' | 'webhook' | 'event'
+
 export interface Workflow {
   id: string
   appId: string
   name: string
   description?: string
   icon?: string
-  trigger?: string
+  trigger?: WorkflowTrigger
   active: boolean
+  graph?: WorkflowGraph
   createdAt: number
   updatedAt: number
 }

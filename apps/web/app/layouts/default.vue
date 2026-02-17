@@ -20,6 +20,42 @@
 
   const hasLoggedInstantAuth = useState<boolean>('debug:instantAuthLogged', () => false)
 
+  // Global adjacent sidebar state
+  const { setRightSidebarWidth } = useRightSidebarWidth()
+  const isRightSidebarOpen = ref(false)
+  const rightSidebarWidth = ref(320)
+  const isResizingRightSidebar = ref(false)
+  const MIN_RIGHT_SIDEBAR_WIDTH = 200
+  const MAX_RIGHT_SIDEBAR_WIDTH = 600
+
+  // Right sidebar tabs
+  const activeSidebarTab = ref<'schedule' | 'messages' | 'agent'>('schedule')
+  const sidebarTabs = [
+    { id: 'schedule', label: 'Schedule', icon: 'lucide:calendar' },
+    { id: 'messages', label: 'Messages', icon: 'lucide:message-square' },
+    { id: 'agent', label: 'Agent', icon: 'lucide:bot' },
+  ] as const
+
+  const startRightSidebarResize = (e: MouseEvent) => {
+    isResizingRightSidebar.value = true
+    const startX = e.clientX
+    const startWidth = rightSidebarWidth.value
+
+    const onMouseMove = (ev: MouseEvent) => {
+      const delta = startX - ev.clientX
+      rightSidebarWidth.value = Math.min(MAX_RIGHT_SIDEBAR_WIDTH, Math.max(MIN_RIGHT_SIDEBAR_WIDTH, startWidth + delta))
+    }
+
+    const onMouseUp = () => {
+      isResizingRightSidebar.value = false
+      window.removeEventListener('mousemove', onMouseMove)
+      window.removeEventListener('mouseup', onMouseUp)
+    }
+
+    window.addEventListener('mousemove', onMouseMove)
+    window.addEventListener('mouseup', onMouseUp)
+  }
+
   // Register the page element for transitions
   onMounted(() => {
     if (pageEl.value) {
@@ -108,6 +144,20 @@
     commandDialog.close()
   }
 
+  const toggleRightSidebar = () => {
+    isRightSidebarOpen.value = !isRightSidebarOpen.value
+  }
+
+  const rightSidebarCssWidth = computed(() =>
+    isRightSidebarOpen.value ? `${rightSidebarWidth.value}px` : '0px'
+  )
+
+  watch(
+    [isRightSidebarOpen, rightSidebarWidth],
+    ([open, w]) => setRightSidebarWidth(open ? w : 0),
+    { immediate: true },
+  )
+
   // Group command palette routes by section for better organization
   const commandPaletteGroups = computed(() => {
     const groups = new Map<string, typeof routes.commandPaletteRoutes.value>()
@@ -130,9 +180,11 @@
 </script>
 
 <template>
-  <!-- Root: full-height column so StatusBar spans full viewport width -->
-  <div class="bg-background text-foreground flex flex-col h-dvh overflow-hidden transition-shadow duration-300">
-    <!-- App body: icon rail + sidebar + content -->
+  <!-- Root: full-height row so right sidebar is adjacent to the entire layout -->
+  <div
+    class="bg-background text-foreground flex h-dvh overflow-hidden transition-shadow duration-300"
+    :style="{ '--right-sidebar-width': rightSidebarCssWidth }">
+    <!-- App body: icon rail + sidebar + content + right sidebar -->
     <div class="flex flex-1 min-h-0 overflow-hidden">
       <!-- Command Dialog -->
       <UiCommandDialog
@@ -140,7 +192,7 @@
         title="Command Palette"
         description="Search for pages and navigate quickly"
         @update:open="(val) => (commandDialog.isOpen.value = val)">
-        <UiCommandInput placeholder="Search pages..." />
+        <UiCommandInput placeholder="Run a command or search..." />
         <UiCommandList>
           <UiCommandEmpty>No results found.</UiCommandEmpty>
           <template v-for="group in commandPaletteGroups" :key="group.label">
@@ -163,13 +215,12 @@
         </UiCommandList>
       </UiCommandDialog>
 
-      <IconRail v-if="showIconRail" />
-
       <!-- Layout Mode A: Header above sidebar (spans sidebar + content) -->
       <template v-if="headerAboveSidebar">
         <div class="flex flex-1 flex-col min-w-0 overflow-hidden">
-          <AppHeader :above-sidebar="true" />
+          <AppHeader :above-sidebar="true" @toggle-right-sidebar="toggleRightSidebar" />
           <div class="flex flex-1 min-h-0 overflow-hidden">
+            <IconRail v-if="showIconRail" />
             <AppSidebar :header-above="true" />
             <div class="flex flex-1 flex-col min-w-0 overflow-hidden">
               <main
@@ -187,13 +238,27 @@
       <template v-else>
         <AppSidebar :header-above="false" />
         <div class="flex flex-1 flex-col min-w-0 overflow-hidden">
-          <AppHeader :above-sidebar="false" />
-          <main
-            ref="pageEl"
-            class="page-transition-wrapper bg-transparent flex-1 overflow-y-auto p-0 relative"
-            aria-label="Main content">
-            <slot />
-          </main>
+          <AppHeader :above-sidebar="false">
+            <!-- Right sidebar trigger in header -->
+            <template #actions>
+              <UiButton
+                variant="ghost"
+                size="icon"
+                :aria-expanded="isRightSidebarOpen"
+                aria-label="Toggle right sidebar"
+                @click="toggleRightSidebar">
+                <Icon name="lucide:panel-right" class="h-4 w-4" />
+              </UiButton>
+            </template>
+          </AppHeader>
+          <div class="flex flex-1 min-h-0 overflow-hidden">
+            <main
+              ref="pageEl"
+              class="page-transition-wrapper bg-transparent flex-1 overflow-y-auto p-0 relative"
+              aria-label="Main content">
+              <slot />
+            </main>
+          </div>
         </div>
       </template>
 
@@ -201,7 +266,90 @@
       <EntityDetailSheet />
     </div>
 
-    <!-- Status Bar: full viewport width, admin+ only -->
-    <StatusBar v-if="showIconRail" />
+    <!-- Global Right Sidebar: teleported to body to ensure it sits above portaled dialogs -->
+    <Teleport to="body">
+      <Transition name="sidebar-slide">
+        <aside
+          v-if="isRightSidebarOpen"
+          data-slot="right-sidebar"
+          class="fixed right-0 top-0 bottom-0 border-l border-border bg-card/50 shrink-0 overflow-y-auto flex flex-col z-999"
+          :style="{ width: `${rightSidebarWidth}px` }"
+          :class="{ 'select-none': isResizingRightSidebar }"
+          aria-label="Right sidebar">
+        <!-- Drag handle -->
+        <div
+          class="absolute left-0 top-0 bottom-0 w-1 cursor-col-resize hover:bg-primary/30 active:bg-primary/50 transition-colors z-10"
+          @mousedown.prevent="startRightSidebarResize"
+        />
+        <!-- Tabs Header - matches AppHeader h-14 height -->
+        <div class="h-14 shrink-0 border-b border-border bg-card/50 flex items-center px-2">
+          <UiTabs v-model="activeSidebarTab" class="w-full">
+            <UiTabsList class="w-full grid grid-cols-3 bg-transparent p-0 gap-1">
+              <UiTabsTrigger
+                v-for="tab in sidebarTabs"
+                :key="tab.id"
+                :value="tab.id"
+                class="flex items-center justify-center gap-1.5 py-2 text-xs font-medium data-[state=active]:bg-background data-[state=active]:shadow-sm rounded-md transition-all">
+                <Icon :name="tab.icon" class="h-3.5 w-3.5" />
+                <span>{{ tab.label }}</span>
+              </UiTabsTrigger>
+            </UiTabsList>
+          </UiTabs>
+        </div>
+        <div class="p-4 flex-1 overflow-y-auto">
+          <!-- Tab Content -->
+          <div v-if="activeSidebarTab === 'schedule'">
+            <slot name="right-sidebar" />
+          </div>
+          <div v-else-if="activeSidebarTab === 'messages'" class="text-sm text-muted-foreground text-center py-8">
+            Messages coming soon
+          </div>
+          <div v-else-if="activeSidebarTab === 'agent'" class="text-sm text-muted-foreground text-center py-8">
+            Agent coming soon
+          </div>
+        </div>
+        </aside>
+      </Transition>
+    </Teleport>
+
+    <!-- Layout Spacer: maintains flow when teleported sidebar is open -->
+    <Transition name="spacer-width">
+      <div
+        v-if="isRightSidebarOpen"
+        class="shrink-0"
+        :style="{ width: `${rightSidebarWidth}px` }"
+      />
+    </Transition>
   </div>
 </template>
+
+<style scoped>
+/* Sidebar slide-in animation */
+.sidebar-slide-enter-active,
+.sidebar-slide-leave-active {
+  transition: transform 0.25s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.4s ease;
+}
+
+.sidebar-slide-enter-from,
+.sidebar-slide-leave-to {
+  transform: translateX(100%);
+  opacity: 0;
+}
+
+.sidebar-slide-enter-to,
+.sidebar-slide-leave-from {
+  transform: translateX(0);
+  opacity: 1;
+}
+
+/* Spacer width animation - syncs with sidebar */
+.spacer-width-enter-active,
+.spacer-width-leave-active {
+  transition: width 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.spacer-width-enter-from,
+.spacer-width-leave-to {
+  width: 0 !important;
+}
+</style>

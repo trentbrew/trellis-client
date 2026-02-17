@@ -261,6 +261,9 @@
     await upsertInstantSetting(userId, 'user', userId, 'lastOrgId', org.id)
     await upsertInstantSetting(userId, 'user', userId, 'lastAppId', app.id)
 
+    // Create owner member record alongside the org
+    const ownerMemberId = crypto.randomUUID()
+
     const chunks: any[] = [
       tx.organizations[org.id].update({
         ownerId: userId,
@@ -271,6 +274,18 @@
         createdAt: org.createdAt,
         updatedAt: org.updatedAt,
       }),
+      tx.members[ownerMemberId].update({
+        ownerId: userId,
+        orgId: org.id,
+        userId,
+        name: org.name,
+        role: 'owner',
+        status: 'active',
+        invitedAt: org.createdAt,
+        joinedAt: org.createdAt,
+        orgName: org.name,
+      }),
+      tx.organizations[org.id].link({ members: ownerMemberId }),
       tx.applications[app.id].update({
         ownerId: userId,
         orgId: org.id,

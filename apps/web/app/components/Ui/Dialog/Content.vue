@@ -28,8 +28,30 @@
   )
 
   const styles = tv({
-    base: 'fixed top-1/2 left-1/2 z-50 grid max-h-[calc(100%-2rem)] w-full max-w-[calc(100%-2rem)] -translate-x-1/2 -translate-y-1/2 gap-4 overflow-y-auto rounded-xl border bg-background p-6 shadow-lg duration-200 data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=closed]:zoom-out-95 data-[state=open]:animate-in data-[state=open]:fade-in-0 data-[state=open]:zoom-in-[1.1] data-[state=open]:slide-in-from-bottom-2 sm:max-w-100',
+    base: 'fixed top-1/2 z-[52] grid max-h-[calc(100dvh-2rem)] w-full gap-4 overflow-y-auto rounded-xl border bg-background p-0 shadow-lg duration-200 data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=closed]:zoom-out-95 data-[state=open]:animate-in data-[state=open]:fade-in-0 data-[state=open]:zoom-in-[1.1] data-[state=open]:slide-in-from-bottom-2 sm:max-w-100',
   })
+
+  const { rightSidebarWidth: sidebarWidth } = useRightSidebarWidth()
+
+  const dialogStyle = computed(() => {
+    const sw = sidebarWidth.value
+    return {
+      left: `calc(50% - ${sw / 2}px)`,
+      transform: 'translate(-50%, -50%)',
+      maxWidth: `min(calc(100vw - ${sw}px - 2rem), 32rem)`,
+      width: `calc(100vw - ${sw}px - 2rem)`,
+    }
+  })
+  const preventNonOverlayClose = (e: any) => {
+    const target = (e.detail?.originalEvent?.target ?? e.target) as HTMLElement | null
+    // Don't close if clicking header, sidebars, or their children
+    if (target?.closest('[data-slot="app-header"]') ||
+        target?.closest('[data-slot="app-sidebar"]') ||
+        target?.closest('[data-slot="icon-rail"]') ||
+        target?.closest('[data-slot="right-sidebar"]')) {
+      e.preventDefault()
+    }
+  }
 </script>
 
 <template>
@@ -38,7 +60,10 @@
     <DialogContent
       data-slot="dialog-content"
       :class="styles({ class: props.class })"
+      :style="dialogStyle"
       v-bind="{ ...forwarded, ...$attrs }"
+      @pointer-down-outside="preventNonOverlayClose"
+      @interact-outside="preventNonOverlayClose"
     >
       <slot>
         <slot name="header">
@@ -55,13 +80,13 @@
         <slot name="footer" />
       </slot>
       <slot name="close" />
-      <UiDialogClose
+      <!-- <UiDialogClose
         v-if="!hideClose"
         class="absolute top-4 right-4 rounded-xs opacity-70 ring-offset-background transition-opacity hover:opacity-100 focus:ring-2 focus:ring-ring focus:ring-offset-2 focus:outline-hidden disabled:pointer-events-none data-[state=open]:bg-accent data-[state=open]:text-muted-foreground [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-4"
       >
         <Icon name="lucide:x" class="size-4" />
         <span class="sr-only">Close</span>
-      </UiDialogClose>
+      </UiDialogClose> -->
     </DialogContent>
   </UiDialogPortal>
 </template>

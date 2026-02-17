@@ -24,6 +24,7 @@
     urgency?: string
     description?: string
     isRecurringInstance?: boolean
+    recurrenceIndex?: number
   }
 
   const props = defineProps<{
@@ -1154,6 +1155,7 @@
             urgency: urgency?.toLowerCase(),
             description,
             isRecurringInstance: true,
+            recurrenceIndex: recurrenceIndex + 1,
           })
         })
       })
@@ -1459,7 +1461,7 @@
 
   const recurringItemClasses = (event: CalendarEvent) =>
     hasRecurringInstance(event)
-      ? 'ring-1 ring-primary/35 border border-dashed border-primary/35'
+      ? 'ring-1 ring-primary/20 border border-dashed border-primary/25'
       : ''
 
   // currentDate defaults to new Date() (today) — no auto-navigation needed
@@ -1651,7 +1653,6 @@
                       ? 'text-foreground hover:bg-muted'
                       : 'text-muted-foreground/40',
                   day.hasEvents && !day.isToday ? 'font-medium' : '',
-                  day.hasRecurring && day.isCurrentMonth && !day.isToday ? 'ring-1 ring-primary/35' : '',
                 ]"
                 @click="
                   () => {
@@ -1666,10 +1667,6 @@
                     'absolute bottom-0.5 left-1/2 -translate-x-1/2 w-1 h-1 rounded-full',
                     day.isToday ? 'bg-primary-foreground' : day.hasRecurring ? 'bg-violet-500' : 'bg-primary',
                   ]" />
-                <Icon
-                  v-if="day.hasRecurring && day.isCurrentMonth && !day.isToday"
-                  name="lucide:repeat"
-                  class="absolute top-0.5 right-0.5 h-2.5 w-2.5 text-violet-600/80 dark:text-violet-300/80" />
               </button>
             </div>
           </div>
@@ -1940,7 +1937,6 @@
                                 @click.stop="openEventDetail(slot.event)">
                                 <span v-if="slot.isStart || slot.isWrapStart" class="flex items-center gap-1">
                                   <Icon :name="slot.style.icon" class="h-3 w-3 shrink-0" />
-                                  <Icon v-if="hasRecurringInstance(slot.event)" name="lucide:repeat" class="h-3 w-3 shrink-0 opacity-80" />
                                   <span class="truncate">{{ slot.event.title }}</span>
                                 </span>
                               </button>
@@ -1950,7 +1946,6 @@
                                 <h4 class="text-sm font-semibold leading-tight truncate">{{ slot.event.title }}</h4>
                                 <div class="flex items-center gap-1.5">
                                   <Icon :name="slot.style.icon" :class="['h-3 w-3 shrink-0', slot.style.text]" />
-                                  <Icon v-if="hasRecurringInstance(slot.event)" name="lucide:repeat" class="h-3 w-3 opacity-70" />
                                   <span class="text-xs text-muted-foreground capitalize">{{ slot.event.typeLabel || 'Item' }}</span>
                                   <span class="text-xs text-muted-foreground">·</span>
                                   <Icon name="lucide:calendar-days" class="h-3 w-3 opacity-50" />
@@ -1997,7 +1992,8 @@
                             @dragend="onDragEnd"
                             @click.stop="openEventDetail(item)">
                             <Icon :name="getTypeStyle(item.typeLabel || '').icon" class="h-3 w-3 shrink-0" />
-                            <Icon v-if="hasRecurringInstance(item)" name="lucide:repeat" class="h-3 w-3 shrink-0 opacity-80" />
+                            <Icon v-if="hasRecurringInstance(item)" name="lucide:repeat" class="h-2.5 w-2.5 shrink-0 opacity-60" />
+                            <span v-if="item.recurrenceIndex" class="text-[9px] opacity-50 shrink-0">#{{ item.recurrenceIndex }}</span>
                             <span class="truncate">{{ item.title }}</span>
                           </button>
                         </UiHoverCardTrigger>
@@ -2006,8 +2002,12 @@
                             <h4 class="text-sm font-semibold leading-tight truncate">{{ item.title }}</h4>
                             <div class="flex items-center gap-1.5">
                               <Icon :name="getTypeStyle(item.typeLabel || '').icon" :class="['h-3 w-3 shrink-0', getTypeStyle(item.typeLabel || '').text]" />
-                              <Icon v-if="hasRecurringInstance(item)" name="lucide:repeat" class="h-3 w-3 opacity-70" />
                               <span class="text-xs text-muted-foreground capitalize">{{ item.typeLabel || 'Item' }}</span>
+                              <template v-if="hasRecurringInstance(item)">
+                                <span class="text-xs text-muted-foreground">·</span>
+                                <Icon name="lucide:repeat" class="h-3 w-3 opacity-60" />
+                                <span class="text-[11px] text-muted-foreground">Occurrence #{{ item.recurrenceIndex }}</span>
+                              </template>
                               <span class="text-xs text-muted-foreground">·</span>
                               <Icon name="lucide:calendar-days" class="h-3 w-3 opacity-50" />
                               <span class="text-[11px] text-muted-foreground">{{ formatEventDateRange(item) }}</span>
@@ -2169,7 +2169,6 @@
                                 @mouseleave="hoveredMultiDayEventId = null"
                                 @click.stop="openEventDetail(slot.event)">
                                 <Icon v-if="slot.isStart || slot.isWrapStart" :name="slot.style.icon" class="h-3 w-3 shrink-0" />
-                                <Icon v-if="(slot.isStart || slot.isWrapStart) && hasRecurringInstance(slot.event)" name="lucide:repeat" class="h-3 w-3 shrink-0 opacity-80" />
                                 <span v-if="slot.isStart || slot.isWrapStart" class="truncate">{{ slot.event.title }}</span>
                               </button>
                             </UiHoverCardTrigger>
@@ -2178,7 +2177,6 @@
                                 <h4 class="text-sm font-semibold leading-tight truncate">{{ slot.event.title }}</h4>
                                 <div class="flex items-center gap-1.5">
                                   <Icon :name="slot.style.icon" :class="['h-3 w-3 shrink-0', slot.style.text]" />
-                                  <Icon v-if="hasRecurringInstance(slot.event)" name="lucide:repeat" class="h-3 w-3 opacity-70" />
                                   <span class="text-xs text-muted-foreground capitalize">{{ slot.event.typeLabel || 'Item' }}</span>
                                   <span class="text-xs text-muted-foreground">·</span>
                                   <Icon name="lucide:calendar-days" class="h-3 w-3 opacity-50" />
@@ -2224,7 +2222,8 @@
                               @dragend="onDragEnd"
                               @click.stop="openEventDetail(item)">
                               <Icon :name="getTypeStyle(item.typeLabel || '').icon" class="h-3 w-3 shrink-0" />
-                              <Icon v-if="hasRecurringInstance(item)" name="lucide:repeat" class="h-3 w-3 shrink-0 opacity-80" />
+                              <Icon v-if="hasRecurringInstance(item)" name="lucide:repeat" class="h-2.5 w-2.5 shrink-0 opacity-60" />
+                              <span v-if="item.recurrenceIndex" class="text-[9px] opacity-50 shrink-0">#{{ item.recurrenceIndex }}</span>
                               <span class="truncate">{{ item.title }}</span>
                             </button>
                           </UiHoverCardTrigger>
@@ -2233,8 +2232,12 @@
                               <h4 class="text-sm font-semibold leading-tight truncate">{{ item.title }}</h4>
                               <div class="flex items-center gap-1.5">
                                 <Icon :name="getTypeStyle(item.typeLabel || '').icon" :class="['h-3 w-3 shrink-0', getTypeStyle(item.typeLabel || '').text]" />
-                                <Icon v-if="hasRecurringInstance(item)" name="lucide:repeat" class="h-3 w-3 opacity-70" />
                                 <span class="text-xs text-muted-foreground capitalize">{{ item.typeLabel || 'Item' }}</span>
+                                <template v-if="hasRecurringInstance(item)">
+                                  <span class="text-xs text-muted-foreground">·</span>
+                                  <Icon name="lucide:repeat" class="h-3 w-3 opacity-60" />
+                                  <span class="text-[11px] text-muted-foreground">Occurrence #{{ item.recurrenceIndex }}</span>
+                                </template>
                                 <span class="text-xs text-muted-foreground">·</span>
                                 <Icon name="lucide:calendar-days" class="h-3 w-3 opacity-50" />
                                 <span class="text-[11px] text-muted-foreground">{{ formatEventDateRange(item) }}</span>
@@ -2313,7 +2316,6 @@
                                     class="w-1.5 h-1.5 rounded-full mt-1.5 shrink-0" />
                                   <div class="flex-1 min-w-0">
                                     <p class="text-xs font-medium truncate group-hover/item:text-primary transition-colors">
-                                      <Icon v-if="hasRecurringInstance(event)" name="lucide:repeat" class="h-3 w-3 inline-block mr-1 opacity-70 align-[-1px]" />
                                       {{ event.title }}
                                     </p>
                                     <div class="flex items-center gap-2 mt-0.5">
@@ -2404,10 +2406,6 @@
                           'absolute -bottom-0.5 left-1/2 -translate-x-1/2 w-1 h-1 rounded-full',
                           day.hasRecurring ? 'bg-violet-500' : 'bg-primary',
                         ]" />
-                      <Icon
-                        v-if="day.hasRecurring && day.isCurrentMonth && !day.isToday"
-                        name="lucide:repeat"
-                        class="absolute top-0.5 right-0.5 h-2.5 w-2.5 text-violet-600/80 dark:text-violet-300/80" />
                     </div>
                   </div>
                 </div>

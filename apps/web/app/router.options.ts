@@ -22,6 +22,7 @@ export default <RouterConfig>{
       'database',
       'documents',
       'graph',
+      'marketplace',
       'members',
       'notifications',
       'settings',

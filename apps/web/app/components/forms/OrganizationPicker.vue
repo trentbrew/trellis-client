@@ -1,58 +1,30 @@
 <script lang="ts" setup>
   const { organizations, currentOrganization, selectOrganization } = useOrganizations()
-  const { getRoleInfo } = useOrgRoles()
+  const { getRoleInfo, isOwnedByMe, getMemberCount } = useOrgRoles()
 
   const searchQuery = ref('')
   const createOrgOpen = ref(false)
 
   const filteredOrganizations = computed(() => {
-    if (!searchQuery.value.trim()) return organizations.value
-
+    const all = organizations.value || []
+    if (!searchQuery.value.trim()) return all
     const query = searchQuery.value.toLowerCase()
-    return organizations.value.filter((org) => {
+    return all.filter((org) => {
       return org.name.toLowerCase().includes(query) || org.slug.toLowerCase().includes(query)
     })
   })
 
-  const getPlanLabel = (plan?: string) => {
-    switch (plan) {
-      case 'pro':
-      case 'enterprise':
-        return 'PRO'
-      case 'free':
-      default:
-        return 'FREE'
-    }
-  }
-
-  const getBadgeForOrg = (orgId: string) => {
-    const org = organizations.value.find((o) => o.id === orgId)
-    const roleInfo = getRoleInfo(orgId)
-    const isOrgAdmin = roleInfo.role === 'owner' || roleInfo.role === 'admin'
-
-    if (isOrgAdmin) {
-      const plan = org?.plan || 'free'
-      return {
-        label: getPlanLabel(plan),
-        color: 'bg-muted text-muted-foreground',
-      }
-    }
-
-    return {
-      label: 'Member',
-      color: 'bg-muted text-muted-foreground',
-    }
-  }
+  const ownedOrgs = computed(() => filteredOrganizations.value.filter((o) => isOwnedByMe(o.id)))
+  const sharedOrgs = computed(() => filteredOrganizations.value.filter((o) => !isOwnedByMe(o.id)))
 
   const currentOrgRole = computed(() => {
     if (!currentOrganization.value) return null
-    return getBadgeForOrg(currentOrganization.value.id)
+    return getRoleInfo(currentOrganization.value.id)
   })
 
   const handleSelect = (organizationId: string) => {
     const org = organizations.value.find((o) => o.id === organizationId)
     if (!org) return
-
     selectOrganization(organizationId)
     searchQuery.value = ''
   }
@@ -97,29 +69,75 @@
         </div>
         <UiDropdownMenuSeparator />
         <div class="max-h-[300px] overflow-y-auto">
-          <UiDropdownMenuItem
-            v-for="org in filteredOrganizations"
-            :key="org.id"
-            class="gap-3 rounded"
-            @click="handleSelect(org.id)">
-            <Icon name="lucide:boxes" class="text-muted-foreground h-4 w-4 shrink-0" />
-            <div class="flex-1 min-w-0">
-              <div class="font-medium truncate">{{ org.name }}</div>
-              <div v-if="org.description" class="text-xs text-muted-foreground truncate">
-                {{ org.description }}
+          <!-- Owned by me -->
+          <template v-if="ownedOrgs.length > 0">
+            <UiDropdownMenuLabel class="text-[10px] text-muted-foreground/70 uppercase tracking-wider font-semibold px-2 py-1">
+              Owned by me
+            </UiDropdownMenuLabel>
+            <UiDropdownMenuItem
+              v-for="org in ownedOrgs"
+              :key="org.id"
+              class="gap-3 rounded"
+              @click="handleSelect(org.id)">
+              <Icon name="lucide:boxes" class="text-muted-foreground h-4 w-4 shrink-0" />
+              <div class="flex-1 min-w-0">
+                <div class="font-medium truncate">{{ org.name }}</div>
+                <div v-if="org.description" class="text-xs text-muted-foreground truncate">
+                  {{ org.description }}
+                </div>
               </div>
-            </div>
-            <div class="flex items-center gap-1.5 shrink-0">
-              <UiBadge
-                variant="secondary"
-                size="sm"
-                class="text-[9px] px-1.5 py-0 h-4"
-                :class="getBadgeForOrg(org.id).color">
-                {{ getBadgeForOrg(org.id).label }}
-              </UiBadge>
-              <Icon v-if="org.id === currentOrganization?.id" name="lucide:check" class="text-primary h-4 w-4" />
-            </div>
-          </UiDropdownMenuItem>
+              <div class="flex items-center gap-1.5 shrink-0">
+                <span class="text-[10px] text-muted-foreground/60 tabular-nums flex items-center gap-0.5">
+                  <Icon name="lucide:users" class="h-3 w-3" />
+                  {{ getMemberCount(org.id) }}
+                </span>
+                <UiBadge
+                  variant="secondary"
+                  size="sm"
+                  class="text-[9px] px-1.5 py-0 h-4"
+                  :class="getRoleInfo(org.id).color">
+                  {{ getRoleInfo(org.id).label }}
+                </UiBadge>
+                <Icon v-if="org.id === currentOrganization?.id" name="lucide:check" class="text-primary h-4 w-4" />
+              </div>
+            </UiDropdownMenuItem>
+          </template>
+
+          <!-- Shared with me -->
+          <template v-if="sharedOrgs.length > 0">
+            <UiDropdownMenuSeparator v-if="ownedOrgs.length > 0" />
+            <UiDropdownMenuLabel class="text-[10px] text-muted-foreground/70 uppercase tracking-wider font-semibold px-2 py-1">
+              Shared with me
+            </UiDropdownMenuLabel>
+            <UiDropdownMenuItem
+              v-for="org in sharedOrgs"
+              :key="org.id"
+              class="gap-3 rounded"
+              @click="handleSelect(org.id)">
+              <Icon name="lucide:boxes" class="text-muted-foreground h-4 w-4 shrink-0" />
+              <div class="flex-1 min-w-0">
+                <div class="font-medium truncate">{{ org.name }}</div>
+                <div v-if="org.description" class="text-xs text-muted-foreground truncate">
+                  {{ org.description }}
+                </div>
+              </div>
+              <div class="flex items-center gap-1.5 shrink-0">
+                <span class="text-[10px] text-muted-foreground/60 tabular-nums flex items-center gap-0.5">
+                  <Icon name="lucide:users" class="h-3 w-3" />
+                  {{ getMemberCount(org.id) }}
+                </span>
+                <UiBadge
+                  variant="secondary"
+                  size="sm"
+                  class="text-[9px] px-1.5 py-0 h-4"
+                  :class="getRoleInfo(org.id).color">
+                  {{ getRoleInfo(org.id).label }}
+                </UiBadge>
+                <Icon v-if="org.id === currentOrganization?.id" name="lucide:check" class="text-primary h-4 w-4" />
+              </div>
+            </UiDropdownMenuItem>
+          </template>
+
           <div v-if="filteredOrganizations.length === 0" class="px-2 py-4 text-center text-sm text-muted-foreground">
             No organizations found
           </div>

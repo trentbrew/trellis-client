@@ -11,7 +11,9 @@
   import { TableKit } from '@tiptap/extension-table'
   import { Mathematics } from '@tiptap/extension-mathematics'
   import { common, createLowlight } from 'lowlight'
-  import { EditorContent, useEditor } from '@tiptap/vue-3'
+  import { EditorContent, useEditor, VueNodeViewRenderer } from '@tiptap/vue-3'
+  import { TextSelection } from 'prosemirror-state'
+  import CodeBlockComponent from './CodeBlockComponent.vue'
   import { createMentionExtension } from '~/lib/mention-extension'
   import { createSlashCommandExtension } from '~/lib/slash-command-extension'
   import { Callout } from '~/lib/callout-extension'
@@ -181,6 +183,18 @@
     queryPickerType.value = 'task'
   }
 
+  async function handleEmbedDiagram(_editor: any) {
+    const { create } = useTrellisEntities()
+    const STARTER = `graph TD\n    A[Start] --> B{Decision}\n    B -->|Yes| C[Do it]\n    B -->|No| D[Skip]\n    C --> E[End]\n    D --> E`
+    const id = await create({ type: 'diagram', title: 'Untitled Diagram', content: STARTER } as any)
+    if (!id) return
+    editor.value?.chain().focus().insertEntityEmbed({
+      entityId: id,
+      entityType: 'diagram',
+      title: 'Untitled Diagram',
+    }).run()
+  }
+
   function selectEntityForEmbed(item: EntitySearchItem) {
     editor.value?.chain().focus().insertEntityEmbed({
       entityId: item.id,
@@ -267,7 +281,11 @@
         // When collaborative, disable built-in history — Y.js handles undo/redo
         ...(collabEnabled.value ? { history: false } : {}),
       }),
-      CodeBlockLowlight.configure({ lowlight }),
+      CodeBlockLowlight.extend({
+        addNodeView() {
+          return VueNodeViewRenderer(CodeBlockComponent)
+        },
+      }).configure({ lowlight }),
       Placeholder.configure({
         placeholder: props.placeholder || '',
       }),
@@ -337,6 +355,7 @@
           hasEmbeds: true,
           onEmbedEntity: handleEmbedEntity,
           onEmbedQuery: handleEmbedQuery,
+          onEmbedDiagram: handleEmbedDiagram,
         }) as any,
         Callout as any,
         EntityEmbed as any,
@@ -489,6 +508,50 @@
         handleImageFiles(imageFiles)
         return true
       },
+      handleKeyDown: (view, event) => {
+        // Auto-indentation for code blocks: when Enter is pressed,
+        // copy the leading whitespace from the current line to the new line
+        if (event.key === 'Enter' && !event.shiftKey) {
+          const { state } = view
+          const { selection } = state
+          const { $from } = selection
+
+          // Check if we're inside a code block
+          const isInCodeBlock = $from.parent.type.name === 'codeBlock' ||
+            $from.node($from.depth - 1)?.type?.name === 'codeBlock'
+
+          if (isInCodeBlock) {
+            const lineStart = $from.start($from.depth)
+            const lineEnd = $from.pos
+            const currentLine = state.doc.textBetween(lineStart, lineEnd, '\n')
+
+            // Match leading whitespace (spaces or tabs)
+            const indentMatch = currentLine.match(/^[\t ]*/)
+            const currentIndent = indentMatch ? indentMatch[0] : ''
+
+            // Check if the line ends with opening brace/bracket/paren for extra indent
+            const shouldIncreaseIndent = /[{[(]\s*$/.test(currentLine)
+            const extraIndent = shouldIncreaseIndent ? '  ' : ''
+            const newIndent = currentIndent + extraIndent
+
+            if (newIndent) {
+              event.preventDefault()
+
+              // Insert newline + indentation
+              const tr = state.tr
+              tr.insertText('\n' + newIndent, $from.pos)
+
+              // Move cursor to after the inserted indentation
+              const newPos = $from.pos + 1 + newIndent.length
+              tr.setSelection(TextSelection.create(tr.doc, newPos))
+
+              view.dispatch(tr)
+              return true
+            }
+          }
+        }
+        return false
+      },
     },
     onUpdate: ({ editor: e }) => {
       // In collaborative mode, suppress emissions until Y.doc has been seeded
@@ -550,7 +613,7 @@
     </DragHandle>
 
     <!-- Compact Toolbar -->
-    <div v-if="!seamless" class="flex flex-wrap items-center gap-1 border-b bg-muted/30 px-1.5 py-1">
+    <div v-if="!seamless" class="flex flex-wrap items-center gap-1 border-b bg-muted/30 px-1.5 py-[2.5px]">
       <!-- Text Formatting -->
       <div class="flex items-center">
         <UiTooltip>
@@ -1089,12 +1152,12 @@
 
   :deep(.ProseMirror h1) {
     font-size: 1.75rem !important;
-    margin-top: 1.5rem !important;
+    margin-top: 1.75rem !important;
     color: var(--foreground);
   }
 
   :deep(.ProseMirror h2) {
-    font-size: 1.5rem !important;
+    font-size: 1.25rem !important;
     margin-top: 1.25rem !important;
     color: var(--foreground);
   }
@@ -1367,9 +1430,27 @@
 
   :deep(ul[data-type='taskList'] ul[data-type='taskList']) {
     margin: 0;
+    position: relative;
   }
 
-  :deep(ul[data-type='taskList'] li[data-checked='true'] > div p) {
+  /* Indentation guide lines for nested task lists */
+  :deep(ul[data-type='taskList'] ul[data-type='taskList'])::before {
+    content: '';
+    position: absolute;
+    left: -0.75rem;
+    top: 0;
+    bottom: 0;
+    width: 1px;
+    background: linear-gradient(
+      to bottom,
+      color-mix(in oklch, var(--border) 50%, transparent) 0%,
+      color-mix(in oklch, var(--border) 50%, transparent) 80%,
+      transparent 100%
+    );
+    pointer-events: none;
+  }
+
+  :deep(ul[data-type='taskList'] li[data-checked='true'] > div > p) {
     text-decoration: line-through;
     color: var(--muted-foreground);
   }

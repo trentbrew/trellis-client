@@ -1,6 +1,8 @@
 import type { Entity, EntityType } from '~/types/entity'
 import { createDefaultItem } from '~/types/entity'
 import { useBrowse, type BrowseState, type BrowseViewMode, type BrowseSortOption } from '~/composables/useBrowse'
+import { useDialogUrl } from '~/composables/useDialogUrl'
+import { useHashDialogRestore } from '~/composables/useHashDialogRestore'
 
 // ── Types ──────────────────────────────────────────────────────────────
 
@@ -159,7 +161,26 @@ export function useBrowsePage(options: UseBrowsePageOptions): UseBrowsePageRetur
   function openDetail(item: Entity) {
     _viewingItemId.value = item.id
     viewOpen.value = true
+    const { setOriginHash } = useDialogUrl()
+    setOriginHash(item.id)
   }
+
+  // Restore dialog from URL hash on page mount (deep-link support)
+  useHashDialogRestore(items, (entityId, item) => {
+    _viewingItemId.value = entityId
+    _pendingNewItem.value = item
+    viewOpen.value = true
+  })
+
+  // Clear hash when dialog closes by any means (X, Escape, outside click)
+  watch(viewOpen, (open) => {
+    if (!open) {
+      const { clearHash } = useDialogUrl()
+      clearHash()
+      _viewingItemId.value = null
+      _pendingNewItem.value = null
+    }
+  })
 
   // ---------------------------------------------------------------------------
   // Navigation within filtered list
@@ -208,16 +229,22 @@ export function useBrowsePage(options: UseBrowsePageOptions): UseBrowsePageRetur
     _pendingNewItem.value = { ...defaults, id: newId } as Entity
     _viewingItemId.value = newId
     viewOpen.value = true
+    const { setOriginHash } = useDialogUrl()
+    setOriginHash(newId)
   }
 
   async function handleUpdate(item: Entity) {
     await updateItem(item)
     viewOpen.value = false
+    const { clearHash } = useDialogUrl()
+    clearHash()
   }
 
   async function handleDelete(item: Entity) {
     await removeItem(item.id)
     viewOpen.value = false
+    const { clearHash } = useDialogUrl()
+    clearHash()
   }
 
   // ---------------------------------------------------------------------------

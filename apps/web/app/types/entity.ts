@@ -44,7 +44,7 @@ export type TemporalEntityType =
   | 'sprint'
   | 'budget'
 
-export type DocumentEntityType = 'note' | 'file' | 'page' | 'template' | 'slide_deck' | 'bookmark'
+export type DocumentEntityType = 'note' | 'file' | 'page' | 'template' | 'slide_deck' | 'bookmark' | 'diagram'
 
 export type ActorEntityType = 'person' | 'contact' | 'organization' | 'vendor'
 
@@ -467,6 +467,13 @@ export interface BookmarkItem extends EntityItemBase {
   thumbnail?: string
   siteName?: string
   excerpt?: string
+  pinned: boolean
+}
+
+export interface DiagramItem extends EntityItemBase {
+  type: 'diagram'
+  content?: string
+  diagramType?: 'flowchart' | 'sequence' | 'gantt' | 'class' | 'er' | 'mindmap' | 'other'
   pinned: boolean
 }
 

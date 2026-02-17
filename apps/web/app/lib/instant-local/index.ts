@@ -51,12 +51,12 @@ export function createLocalInstantDB(options: LocalInstantDBOptions = {}) {
   const authSubscribers = new Set<AuthCallback>()
 
   const demoUsers = {
-    superadmin: {
-      id: 'user-superadmin',
-      email: 'superadmin@platform-sandbox.local',
-      name: 'Super Admin',
+    owner: {
+      id: 'user-owner',
+      email: 'owner@trellis.local',
+      name: 'Workspace Owner',
       avatar: null,
-      role: 'superadmin' as const,
+      role: 'owner' as const,
     },
     admin: {
       id: 'user-demo-admin',

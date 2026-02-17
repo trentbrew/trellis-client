@@ -7,6 +7,8 @@
   import type { Entity, EntityType, TaskItem } from '~/types/entity'
   import { createDefaultItem, ENTITY_TYPE_OPTIONS } from '~/types/entity'
   import type { DashboardInsight, TimelineDay } from '~/composables/useDashboardInsights'
+  import { useDialogUrl } from '~/composables/useDialogUrl'
+  import { useHashDialogRestore } from '~/composables/useHashDialogRestore'
 
   definePageMeta({ layout: 'default' })
   useHead({ title: 'Today | Personal' })
@@ -77,6 +79,8 @@
     if (item) {
       _viewingItemId.value = item.id
       viewOpen.value = true
+      const { setOriginHash } = useDialogUrl()
+      setOriginHash(item.id)
     }
   }
 
@@ -93,16 +97,37 @@
     _pendingNewItem.value = { ...defaults, id: newId } as Entity
     _viewingItemId.value = newId
     viewOpen.value = true
+    const { setOriginHash } = useDialogUrl()
+    setOriginHash(newId)
   }
+
+  useHashDialogRestore(allItems, (entityId, item) => {
+    _viewingItemId.value = entityId
+    _pendingNewItem.value = item
+    viewOpen.value = true
+  })
+
+  watch(viewOpen, (open) => {
+    if (!open) {
+      const { clearHash } = useDialogUrl()
+      clearHash()
+      _viewingItemId.value = null
+      _pendingNewItem.value = null
+    }
+  })
 
   async function handleUpdate(item: Entity) {
     await update(item)
     viewOpen.value = false
+    const { clearHash } = useDialogUrl()
+    clearHash()
   }
 
   async function handleDelete(item: Entity) {
     await remove(item.id)
     viewOpen.value = false
+    const { clearHash } = useDialogUrl()
+    clearHash()
   }
 
   // ---------------------------------------------------------------------------

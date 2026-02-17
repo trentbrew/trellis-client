@@ -1,15 +1,18 @@
 /**
  * Permission system utilities for role-based access control
+ *
+ * Roles: owner > admin > member > guest
+ * Owner is a single, transferable role — not assignable via invite.
  */
 
 import type { UserRole, PermissionLevel, RolePermissions, RoutePermissions } from '~/config/routes'
 
 /**
- * Role permission matrix based on the permission matrix image
+ * Role permission matrix
  * Maps each role to their permission levels
  */
 export const ROLE_PERMISSIONS: Record<UserRole, RolePermissions> = {
-  superadmin: {
+  owner: {
     read: true,
     write: true,
     admin: true,
@@ -33,13 +36,13 @@ export const ROLE_PERMISSIONS: Record<UserRole, RolePermissions> = {
 
 /**
  * Role hierarchy for permission checking
- * Higher roles inherit permissions from lower roles
+ * Higher index = higher role
  */
 export const ROLE_HIERARCHY: UserRole[] = [
   'guest',
   'member',
   'admin',
-  'superadmin',
+  'owner',
 ]
 
 /**
@@ -65,6 +68,96 @@ export function hasPermissionLevel(userRole: UserRole, requiredLevel: Permission
 }
 
 /**
+ * Returns the RolePermissions for a given role.
+ */
+export function getMemberPermissions(role: UserRole): RolePermissions {
+  return { ...ROLE_PERMISSIONS[role] }
+}
+
+// ── Membership Logic (pure functions) ────────────────────────────────────────
+
+/**
+ * Can `actorRole` change `targetRole` to `newRole`?
+ *
+ * Rules:
+ * - No-op changes are rejected
+ * - Nobody can promote to owner (use transfer instead)
+ * - Owner can change any non-owner role to any non-owner role
+ * - Admin can change roles strictly below admin (member ↔ guest)
+ * - Member and guest cannot change any roles
+ */
+export function canChangeRole(
+  actorRole: UserRole,
+  targetRole: UserRole,
+  newRole: UserRole,
+): boolean {
+  if (targetRole === newRole) return false
+  if (newRole === 'owner') return false
+
+  const actorLevel = getRoleHierarchy(actorRole)
+  const targetLevel = getRoleHierarchy(targetRole)
+
+  if (actorRole === 'owner') {
+    return targetRole !== 'owner'
+  }
+
+  if (actorRole === 'admin') {
+    return targetLevel < actorLevel && getRoleHierarchy(newRole) < actorLevel
+  }
+
+  return false
+}
+
+/**
+ * Can `actorRole` remove a member with `targetRole`?
+ *
+ * Rules:
+ * - Sole owner cannot be removed
+ * - Owner can remove anyone except the sole owner (themselves)
+ * - Admin can remove member/guest (strictly below admin)
+ * - Member and guest cannot remove anyone
+ */
+export function canRemoveMember(
+  actorRole: UserRole,
+  targetRole: UserRole,
+  isSoleOwner: boolean,
+): boolean {
+  if (targetRole === 'owner' && isSoleOwner) return false
+
+  if (actorRole === 'owner') {
+    return targetRole !== 'owner'
+  }
+
+  if (actorRole === 'admin') {
+    return getRoleHierarchy(targetRole) < getRoleHierarchy('admin')
+  }
+
+  return false
+}
+
+/**
+ * Can this role initiate an ownership transfer?
+ * Only the current owner can transfer ownership.
+ */
+export function canTransferOwnership(actorRole: UserRole): boolean {
+  return actorRole === 'owner'
+}
+
+/**
+ * Is a direct role transition valid?
+ *
+ * Owner transitions are blocked — ownership changes must go
+ * through the explicit transfer flow, not role reassignment.
+ */
+export function isValidRoleTransition(from: UserRole, to: UserRole): boolean {
+  if (from === to) return false
+  if (from === 'owner' || to === 'owner') return false
+  return true
+}
+
+// ── Route Access ─────────────────────────────────────────────────────────────
+
+/**
  * Check if user can access a route based on permissions
  */
 export function canAccessRoute(
@@ -72,27 +165,22 @@ export function canAccessRoute(
   routePermissions: RoutePermissions | undefined,
   hasFacilityMembership: boolean = true,
 ): boolean {
-  // If no permissions are defined, allow access (backward compatibility)
   if (!routePermissions) {
     return true
   }
 
-  // Check facility membership requirement
   if (routePermissions.requiresFacilityMembership && !hasFacilityMembership) {
     return false
   }
 
-  // Check custom permission function first
   if (routePermissions.check) {
     return routePermissions.check(userRole, ROLE_PERMISSIONS[userRole])
   }
 
-  // Check minimum role requirement
   if (routePermissions.minRole && !hasMinimumRole(userRole, routePermissions.minRole)) {
     return false
   }
 
-  // Check permission level requirement
   if (routePermissions.permission && !hasPermissionLevel(userRole, routePermissions.permission)) {
     return false
   }
@@ -109,20 +197,16 @@ export function filterRoutesByPermissions(
   hasFacilityMembership: boolean = true,
 ): any[] {
   return routes.filter((route) => {
-    // Check if route itself is accessible
     if (!canAccessRoute(userRole, route.permissions, hasFacilityMembership)) {
       return false
     }
 
-    // Check if route has visible function that returns false
     if (route.visible && !route.visible()) {
       return false
     }
 
-    // Recursively filter children
     if (route.children && route.children.length > 0) {
       route.children = filterRoutesByPermissions(route.children, userRole, hasFacilityMembership)
-      // Keep parent if it has accessible children
       return route.children.length > 0
     }
 
@@ -139,17 +223,14 @@ export function filterSidebarSectionsByPermissions(
   hasFacilityMembership: boolean = true,
 ): any[] {
   return sections.filter((section) => {
-    // Handle special section types
     if (section.items === 'pinned' || section.items === 'unpinned') {
-      return true // These are handled separately
+      return true
     }
 
-    // Handle function-based items
     if (typeof section.items === 'function') {
-      return true // These are handled separately
+      return true
     }
 
-    // Filter static items
     if (Array.isArray(section.items)) {
       section.items = filterRoutesByPermissions(section.items, userRole, hasFacilityMembership)
       return section.items.length > 0
@@ -180,13 +261,9 @@ export function canPerformAction(
 ): boolean {
   const permissions = ROLE_PERMISSIONS[userRole]
 
-  // Basic permission check
   if (!permissions[action]) {
     return false
   }
-
-  // Additional resource-specific checks can be added here
-  // For example, sponsors might have limited write access to certain resources
 
   return true
 }
@@ -196,7 +273,7 @@ export function canPerformAction(
  */
 export function getPermissionDescription(role: UserRole): string {
   const descriptions: Record<UserRole, string> = {
-    superadmin: 'Full system access across all workspaces',
+    owner: 'Full workspace control — settings, billing, members, content',
     admin: 'Can manage workspace settings, members, and content',
     member: 'Can create, edit, and manage content',
     guest: 'Read-only access to shared content',

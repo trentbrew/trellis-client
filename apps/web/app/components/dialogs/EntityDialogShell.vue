@@ -155,6 +155,13 @@
 
   // Report dimensions to shared state so stacked dialogs can match
   watch([dialogW, dialogH], ([w, h]) => reportDimensions(w, h), { immediate: true })
+
+  const preventOutsideClose = (e: Event) => {
+    const target = ((e as any).detail?.originalEvent?.target ?? (e as any).target) as HTMLElement | null
+    if (isResizing.value || !stackTransform.value.interactive || target?.closest('[data-slot="right-sidebar"]')) {
+      e.preventDefault()
+    }
+  }
 </script>
 
 <template>
@@ -165,16 +172,8 @@
       :style="buildContentStyle(dialogW, dialogH)"
       :class="[isResizing ? 'select-none duration-0 transition-none' : '']"
       class="p-0! gap-0! overflow-hidden rounded-xl border border-border bg-card shadow-2xl flex! flex-col relative"
-      @pointer-down-outside="
-        (e: Event) => {
-          if (isResizing || !stackTransform.interactive) e.preventDefault()
-        }
-      "
-      @interact-outside="
-        (e: Event) => {
-          if (isResizing || !stackTransform.interactive) e.preventDefault()
-        }
-      ">
+      @pointer-down-outside="preventOutsideClose"
+      @interact-outside="preventOutsideClose">
       <!-- Resize handles -->
       <div class="absolute inset-x-2 top-0 h-1 cursor-ns-resize z-50" @pointerdown="startResize('n', $event)" />
       <div class="absolute inset-x-2 bottom-0 h-1 cursor-ns-resize z-50" @pointerdown="startResize('s', $event)" />

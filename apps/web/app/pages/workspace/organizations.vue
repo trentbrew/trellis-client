@@ -4,6 +4,8 @@
   import { createDefaultItem } from '~/types/entity'
   import { useBrowse, type BrowseViewMode } from '~/composables/useBrowse'
   import { useBrowseSelection } from '~/composables/useBrowseSelection'
+  import { useDialogUrl } from '~/composables/useDialogUrl'
+  import { useHashDialogRestore } from '~/composables/useHashDialogRestore'
 
   definePageMeta({ layout: 'default' })
   useHead({ title: 'Organizations | Personal' })
@@ -113,6 +115,8 @@
   function openDetail(item: any) {
     _viewingItemId.value = item.id
     viewOpen.value = true
+    const { setOriginHash } = useDialogUrl()
+    setOriginHash(item.id)
   }
 
   const viewingIndex = computed(() => viewingItem.value ? filteredItems.value.findIndex((i) => (i as Entity).id === viewingItem.value?.id) : -1)
@@ -127,16 +131,37 @@
     _pendingNewItem.value = { ...defaults, id: newId } as Entity
     _viewingItemId.value = newId
     viewOpen.value = true
+    const { setOriginHash } = useDialogUrl()
+    setOriginHash(newId)
   }
+
+  useHashDialogRestore(items as Ref<Entity[]>, (entityId, item) => {
+    _viewingItemId.value = entityId
+    _pendingNewItem.value = item
+    viewOpen.value = true
+  })
+
+  watch(viewOpen, (open) => {
+    if (!open) {
+      const { clearHash } = useDialogUrl()
+      clearHash()
+      _viewingItemId.value = null
+      _pendingNewItem.value = null
+    }
+  })
 
   async function handleUpdate(item: Entity) {
     await updateItem(item)
     viewOpen.value = false
+    const { clearHash } = useDialogUrl()
+    clearHash()
   }
 
   async function handleDelete(item: Entity) {
     await removeItem(item.id)
     viewOpen.value = false
+    const { clearHash } = useDialogUrl()
+    clearHash()
   }
 
   const {
