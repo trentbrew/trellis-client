@@ -385,6 +385,74 @@ const graphRoute: RouteDefinition = {
 }
 
 // ============================================================================
+// Marketplace Route — /marketplace
+// ============================================================================
+
+const marketplaceRoute: RouteDefinition = {
+  '@id': 'route:marketplace',
+  '@type': 'trellis:Route',
+  routePath: '/marketplace',
+  label: 'Marketplace',
+  icon: 'lucide:store',
+  order: 35,
+  inRail: true,
+  railPosition: 'primary',
+  inCommandPalette: true,
+  requiresAuth: true,
+  meta: {
+    title: 'Marketplace',
+    description: 'Browse and install workspace templates',
+  },
+  sidebarSections: [
+    {
+      label: 'BROWSE',
+      key: 'marketplace-browse',
+      icon: 'lucide:compass',
+      collapsible: true,
+      order: 10,
+      items: [
+        { routePath: '/marketplace', label: 'All Templates', icon: 'lucide:layout-grid' },
+        { routePath: '/marketplace/featured', label: 'Featured', icon: 'lucide:star' },
+      ],
+    },
+    {
+      label: 'CATEGORIES',
+      key: 'marketplace-categories',
+      icon: 'lucide:tag',
+      collapsible: true,
+      order: 20,
+      items: [
+        { routePath: '/marketplace/category/utilities', label: 'Utilities', icon: 'lucide:wrench' },
+        { routePath: '/marketplace/category/project-management', label: 'Project Management', icon: 'lucide:folder-kanban' },
+        { routePath: '/marketplace/category/finance', label: 'Finance', icon: 'lucide:wallet' },
+        { routePath: '/marketplace/category/education', label: 'Education', icon: 'lucide:graduation-cap' },
+        { routePath: '/marketplace/category/crm', label: 'CRM', icon: 'lucide:users' },
+      ],
+    },
+    {
+      label: 'INSTALLED',
+      key: 'marketplace-installed',
+      icon: 'lucide:check-circle',
+      collapsible: true,
+      order: 30,
+      items: [
+        { routePath: '/marketplace/installed', label: 'My Templates', icon: 'lucide:package-check' },
+      ],
+    },
+  ],
+  children: [
+    {
+      '@id': 'route:marketplace/index',
+      '@type': 'trellis:Route',
+      routePath: '/marketplace',
+      label: 'All Templates',
+      icon: 'lucide:layout-grid',
+      meta: { title: 'Marketplace', description: 'Browse workspace templates' },
+    },
+  ],
+}
+
+// ============================================================================
 // Members Route — /members
 // ============================================================================
 
@@ -467,6 +535,7 @@ export function getRouteDefinitions(): Record<string, RouteDefinition> {
     'route:workspace': workspaceRoute,
     'route:database': databaseRoute,
     'route:graph': graphRoute,
+    'route:marketplace': marketplaceRoute,
     'route:members': membersRoute,
     'route:settings': settingsRoute,
   }
@@ -476,6 +545,7 @@ export {
   workspaceRoute,
   databaseRoute,
   graphRoute,
+  marketplaceRoute,
   membersRoute,
   settingsRoute,
 }

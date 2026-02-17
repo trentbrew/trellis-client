@@ -215,6 +215,7 @@ const _schema = i.schema({
       color: i.string().optional(),
       description: i.string().optional(),
       isPublic: i.boolean().optional(),
+      accessLevel: i.string().optional(), // 'open' (default) | 'closed' | 'private'
       ontologies: i.json().optional(),
       createdAt: i.number().optional(),
       updatedAt: i.number().optional(),
@@ -244,9 +245,10 @@ const _schema = i.schema({
       userId: i.string().indexed(),
       email: i.string().optional(),
       name: i.string().optional(),
-      role: i.string().optional(),
-      status: i.string().optional(),
+      role: i.string().indexed().optional(), // owner | admin | member | guest
+      status: i.string().optional(), // pending | active | suspended
       invitedAt: i.number().optional(),
+      joinedAt: i.number().optional(),
       inviteToken: i.string().indexed().optional(),
       inviterName: i.string().optional(),
       orgName: i.string().optional(),
@@ -261,6 +263,34 @@ const _schema = i.schema({
       key: i.string().indexed(),
       value: i.json().optional(),
       updatedAt: i.number().optional(),
+    }),
+
+    shares: i.entity({
+      entityId: i.string().indexed(),     // entity or collection ID
+      entityType: i.string().indexed(),   // 'entity' | 'collection'
+      userId: i.string().indexed(),       // the guest's user ID
+      orgId: i.string().indexed(),        // workspace context
+      permission: i.string(),             // 'view' | 'comment' | 'edit'
+      sharedBy: i.string(),               // who shared it
+      sharedByName: i.string().optional(),
+      createdAt: i.number().indexed(),
+    }),
+
+    notifications: i.entity({
+      recipientId: i.string().indexed(),
+      orgId: i.string().indexed(),
+      orgName: i.string().optional(), // embedded for cross-org display
+      type: i.string().indexed(), // invite_accepted | member_joined | role_changed | member_removed | mention | comment | system
+      title: i.string(),
+      message: i.string(),
+      actionUrl: i.string().optional(),
+      icon: i.string().optional(),
+      variant: i.string().optional(), // default | success | warning | destructive | info
+      isRead: i.boolean().indexed(),
+      actorId: i.string().optional(),
+      actorName: i.string().optional(),
+      metadata: i.json().optional(),
+      createdAt: i.number().indexed(),
     }),
 
   },
@@ -305,6 +335,19 @@ const _schema = i.schema({
       },
     },
 
+    applicationMembers: {
+      forward: {
+        on: 'applications',
+        has: 'many',
+        label: 'members',
+      },
+      reverse: {
+        on: 'members',
+        has: 'many',
+        label: 'applications',
+      },
+    },
+
     applicationCollections: {
       forward: {
         on: 'applications',
@@ -345,6 +388,45 @@ const _schema = i.schema({
         on: 'comments',
         has: 'one',
         label: 'entity',
+      },
+    },
+
+    entityShares: {
+      forward: {
+        on: 'entities',
+        has: 'many',
+        label: 'shares',
+      },
+      reverse: {
+        on: 'shares',
+        has: 'one',
+        label: 'entity',
+      },
+    },
+
+    organizationShares: {
+      forward: {
+        on: 'organizations',
+        has: 'many',
+        label: 'shares',
+      },
+      reverse: {
+        on: 'shares',
+        has: 'one',
+        label: 'organization',
+      },
+    },
+
+    organizationNotifications: {
+      forward: {
+        on: 'organizations',
+        has: 'many',
+        label: 'notifications',
+      },
+      reverse: {
+        on: 'notifications',
+        has: 'one',
+        label: 'organization',
       },
     },
   },

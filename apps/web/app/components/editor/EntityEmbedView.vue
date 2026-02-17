@@ -3,6 +3,7 @@
   import { getEntityTypeConfig } from '~/config/entityRegistry'
   import type { EntityType, Entity } from '~/types/entity'
   import { DIALOG_ENTITY_CONTEXT_KEY, type DialogEntityContext } from '~/composables/useDialogStack'
+  import DiagramEmbedPreview from '~/components/editor/DiagramEmbedPreview.vue'
 
   const props = defineProps(nodeViewProps)
 
@@ -118,29 +119,38 @@
           <span class="entity-embed-type-badge">{{ typeConfig.label }}</span>
         </div>
 
-        <p v-if="description" class="entity-embed-description">
-          {{ description }}
-        </p>
+        <!-- Diagram preview (replaces description/meta for diagram entities) -->
+        <DiagramEmbedPreview
+          v-if="entityType === 'diagram' && (entity as any)?.content"
+          :source="(entity as any).content"
+          compact
+          class="mt-2" />
 
-        <!-- Meta row -->
-        <div v-if="statusDisplay || priorityDisplay || dateDisplay" class="entity-embed-meta">
-          <span
-            v-if="statusDisplay"
-            class="entity-embed-status"
-            :class="statusColors[statusDisplay] || 'bg-muted text-muted-foreground'">
-            {{ statusDisplay }}
-          </span>
-          <span
-            v-if="priorityDisplay"
-            class="entity-embed-priority"
-            :class="priorityColors[priorityDisplay] || 'text-muted-foreground'">
-            {{ priorityDisplay }}
-          </span>
-          <span v-if="dateDisplay" class="entity-embed-date">
-            <Icon name="lucide:calendar-days" class="h-3 w-3 opacity-50" />
-            {{ dateDisplay }}
-          </span>
-        </div>
+        <template v-else>
+          <p v-if="description" class="entity-embed-description">
+            {{ description }}
+          </p>
+
+          <!-- Meta row -->
+          <div v-if="statusDisplay || priorityDisplay || dateDisplay" class="entity-embed-meta">
+            <span
+              v-if="statusDisplay"
+              class="entity-embed-status"
+              :class="statusColors[statusDisplay] || 'bg-muted text-muted-foreground'">
+              {{ statusDisplay }}
+            </span>
+            <span
+              v-if="priorityDisplay"
+              class="entity-embed-priority"
+              :class="priorityColors[priorityDisplay] || 'text-muted-foreground'">
+              {{ priorityDisplay }}
+            </span>
+            <span v-if="dateDisplay" class="entity-embed-date">
+              <Icon name="lucide:calendar-days" class="h-3 w-3 opacity-50" />
+              {{ dateDisplay }}
+            </span>
+          </div>
+        </template>
       </div>
 
       <!-- Delete button -->

@@ -1,4 +1,6 @@
 <script setup lang="ts">
+  import { canChangeRole, canRemoveMember } from '~/lib/permissions'
+
   definePageMeta({
     title: 'Members',
     icon: 'lucide:users-round',
@@ -116,13 +118,26 @@
   }
 
   // ── Role management ────────────────────────────────────────────────
+  const { userRole } = useUserRole()
+
+  // Roles available for assignment (owner is not assignable — use transfer)
   const roleOptions = [
     { value: 'admin', label: 'Admin', description: 'Can manage workspace settings, members, and all content' },
     { value: 'member', label: 'Member', description: 'Can create, edit, and manage content' },
     { value: 'guest', label: 'Guest', description: 'Read-only access to shared content' },
   ] as const
 
+  // Sole owner detection — blocks self-removal / demotion
+  const isSoleOwner = computed(() => {
+    const owners = members.value.filter((m: any) => m.role === 'owner' && m.status === 'active')
+    return owners.length <= 1
+  })
+
   const updateRole = async (member: any, newRole: string) => {
+    if (!canChangeRole(userRole.value, member.role || 'member', newRole as any)) {
+      $toast?.error('You do not have permission to change this role')
+      return
+    }
     try {
       await db.transact([db.tx.members[member.id].update({ role: newRole })])
       $toast?.success(`Updated ${member.email || member.name} to ${newRole}`)
@@ -132,6 +147,10 @@
   }
 
   const removeMember = async (member: any) => {
+    if (!canRemoveMember(userRole.value, member.role || 'member', member.role === 'owner' && isSoleOwner.value)) {
+      $toast?.error('You do not have permission to remove this member')
+      return
+    }
     try {
       await db.transact([db.tx.members[member.id].delete()])
       $toast?.success(`Removed ${member.email || member.name}`)

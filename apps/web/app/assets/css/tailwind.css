@@ -285,7 +285,7 @@
 
 @layer base {
   * {
-    @apply border-border outline-ring/50;
+    @apply border-border;
   }
   * {
     scrollbar-width: thin;
@@ -297,6 +297,15 @@
   body {
     @apply bg-background text-foreground;
     letter-spacing: var(--tracking-normal);
+    user-select: none;
+  }
+  /* Re-enable text selection for interactive elements */
+  input,
+  textarea,
+  [contenteditable="true"],
+  .selectable,
+  [data-slot="dialog-content"] .ProseMirror {
+    user-select: text;
   }
   ::-webkit-scrollbar {
     width: 4px;
@@ -393,12 +402,40 @@ ul[data-type='taskList'] li[data-type='taskItem'] > div {
 ul[data-type='taskList'] li[data-type='taskItem'] > div p {
   margin: 0;
 }
-ul[data-type='taskList'] li[data-checked='true'] > div p {
+ul[data-type='taskList'] li[data-checked='true'] > div > p {
   text-decoration: line-through;
   color: var(--muted-foreground);
 }
 ul[data-type='taskList'] ul[data-type='taskList'] {
   margin-left: 1.25rem;
+  position: relative;
+}
+
+/* Indentation guide lines for nested task lists */
+ul[data-type='taskList'] ul[data-type='taskList']::before {
+  content: '';
+  position: absolute;
+  left: -1rem;
+  top: 0;
+  bottom: 0;
+  width: 1px;
+  background: linear-gradient(
+    to bottom,
+    color-mix(in oklch, var(--border) 50%, transparent) 0%,
+    color-mix(in oklch, var(--border) 50%, transparent) 80%,
+    transparent 100%
+  );
+  pointer-events: none;
+}
+
+/* Dark mode indentation guides */
+.dark ul[data-type='taskList'] ul[data-type='taskList']::before {
+  background: linear-gradient(
+    to bottom,
+    color-mix(in oklch, var(--border) 70%, transparent) 0%,
+    color-mix(in oklch, var(--border) 70%, transparent) 80%,
+    transparent 100%
+  );
 }
 
 /* Save-indicator fade transition (used in all dialog footers) */

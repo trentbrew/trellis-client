@@ -12,6 +12,8 @@ import { PLATFORM_TYPES } from '~/lib/systemTypes'
 import { filterRoutesByPermissions } from '~/lib/permissions'
 import { useOntologyRegistry } from '~/composables/useOntologyRegistry'
 import { useTrellisConfig } from '~/composables/useTrellisConfig'
+import { useSidebarTree } from '~/composables/useSidebarTree'
+import type { SidebarTreeNode } from '~/composables/useSidebarTree'
 
 type RailConfig = {
   primary: string[]
@@ -36,6 +38,7 @@ export const useRoutes = () => {
   const pinned = usePinnedItems()
   const sidebarOrder = useSidebarOrder()
   const { userRole } = useUserRole()
+  const sidebarTree = useSidebarTree('workspace')
 
   const currentOrg = useState<any>('currentOrg')
   const currentApp = useState<any>('currentApp')
@@ -603,19 +606,132 @@ export const useRoutes = () => {
     return currentRoute?.tabs
   })
 
+  // ── Tree-driven workspace sidebar resolver ─────────────────────────────
+
+  /**
+   * Convert SidebarTreeNode[] into the resolved section shape that AppSidebar expects.
+   * Each top-level node (nodeType === 'section') becomes a section; its children become items.
+   * Special items (pinned, pages) are resolved dynamically.
+   */
+  const resolveWorkspaceSidebarFromTree = (treeNodes: SidebarTreeNode[]): any[] | null => {
+    if (treeNodes.length === 0) return null // fallback to legacy
+
+    const pinnedPaths = new Set(pinned.getPinnedItems(currentSectionLinks.value).map((item) => item.path))
+
+    const sections = treeNodes
+      .filter((n) => n.nodeType === 'section')
+      .map((sectionNode) => {
+        let items: RouteConfig[] = []
+
+        // Resolve special items
+        if (sectionNode.specialItems === 'pinned') {
+          items = pinned.getPinnedItems(currentSectionLinks.value)
+        } else if (sectionNode.specialItems === 'pages') {
+          items = [...pagesChildren.value]
+        } else {
+          // Convert child tree nodes to RouteConfig items
+          items = sectionNode.children
+            .filter((child) => child.nodeType === 'item')
+            .map((child) => ({
+              path: child.routePath || '',
+              label: child.label,
+              icon: child.icon,
+              _treeNodeId: child.id,
+              _locked: child.locked,
+            }))
+        }
+
+        // Filter out pinned items from non-pinned sections
+        if (sectionNode.specialItems !== 'pinned') {
+          items = items.filter((item) => !pinnedPaths.has(item.path))
+        }
+
+        // Apply permission filtering
+        items = filterRoutesByPermissions(items, userRole.value, hasFacilityMembership.value)
+
+        // Apply app-scoped entity type filtering
+        items = items.filter((item) => !item?.path || isRouteEnabledForApp(item.path))
+
+        let resolvedItems = items.filter((item) => item?.path && item.visible?.() !== false)
+
+        // Apply user-defined item order
+        const key = sectionNode.sectionKey || sectionNode.id
+        resolvedItems = sidebarOrder.applyItemOrder(key, resolvedItems)
+
+        return {
+          label: sectionNode.label,
+          key: sectionNode.sectionKey || sectionNode.id,
+          icon: sectionNode.icon,
+          collapsible: sectionNode.nodeType === 'section',
+          defaultCollapsed: sectionNode.collapsed,
+          editable: sectionNode.editable,
+          order: sectionNode.order,
+          items: resolvedItems,
+          itemsMode: sectionNode.specialItems || undefined,
+          locked: sectionNode.locked,
+          _treeNodeId: sectionNode.id,
+          _locked: sectionNode.locked,
+        }
+      })
+
+    // Merge in user-created custom sections from localStorage
+    const customSections = sidebarOrder.getCustomSections('/workspace')
+    for (const cs of customSections) {
+      sections.push({
+        label: cs.label,
+        key: cs.key,
+        icon: cs.icon,
+        collapsible: true,
+        editable: true,
+        order: cs.order,
+        items: [],
+        itemsMode: undefined,
+        isCustom: true,
+      } as any)
+    }
+
+    // Filter empty sections
+    const filtered = sections.filter((s) => {
+      if ((s as any).isCustom) return true
+      if (s.editable) return true
+      return s.items.length > 0
+    })
+
+    // Apply user-defined section order
+    const ordered = sidebarOrder.applySectionOrder('/workspace', filtered)
+
+    // Pinned section always stays at the top
+    const pinnedIdx = ordered.findIndex((s) => s.key === 'personal-pinned')
+    if (pinnedIdx > 0) {
+      const pinnedSection = ordered[pinnedIdx]!
+      ordered.splice(pinnedIdx, 1)
+      ordered.unshift(pinnedSection)
+    }
+
+    return ordered
+  }
+
   /**
    * Get sidebar sections for the current route
-   * Returns sections defined in route config, with resolved items
+   * Returns sections defined in route config, with resolved items.
+   * For /workspace: uses graph-backed tree nodes when available, otherwise legacy.
    */
   const currentSidebarSections = computed(() => {
     const section = currentSidebarSection.value
     if (!section?.sidebarSections) return null
 
-    const pinnedPaths = new Set(pinned.getPinnedItems(currentSectionLinks.value).map((item) => item.path))
-
     // Route type flags
     const isDatabase = section.path === '/database'
     const isWorkspace = section.path === '/workspace'
+
+    // ── Tree-driven workspace sidebar ──────────────────────────────────
+    if (isWorkspace && sidebarTree.initialized.value) {
+      const treeResult = resolveWorkspaceSidebarFromTree(sidebarTree.tree.value)
+      if (treeResult) return treeResult
+    }
+
+    // ── Legacy fallback (hardcoded sections) ───────────────────────────
+    const pinnedPaths = new Set(pinned.getPinnedItems(currentSectionLinks.value).map((item) => item.path))
 
     const resolved = section.sidebarSections
       .map((sectionDef) => {
@@ -745,5 +861,8 @@ export const useRoutes = () => {
 
     // Rail configuration
     setRailSpaces,
+
+    // Sidebar tree (graph-backed)
+    sidebarTree,
   }
 }

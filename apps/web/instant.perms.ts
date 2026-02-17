@@ -13,6 +13,7 @@
 //   'org'     — visible to all org members (default)
 //   'private' — visible only to the creator (ownerId)
 //   'public'  — visible to any authenticated user
+//   guests    — can view entities with a matching share record (via entityShares link)
 
 type InstantRules = any
 
@@ -32,11 +33,13 @@ const rules = {
     ],
   },
 
-  // ── Applications ──────────────────────────────────────────────────────
-  // Viewable by the owner OR any member of the parent org.
+  // ── Applications (Worlds) ─────────────────────────────────────────────
+  // Access levels: 'open' (default/null) | 'closed' | 'private'
+  //   open/closed: visible to all org members (closed restricts content access client-side)
+  //   private: only visible to the owner or explicitly added world members
   applications: {
     allow: {
-      view: 'isOwner || isOrgMember',
+      view: 'isOwner || isOrgMemberNonPrivate || isWorldMember',
       create: 'auth.id != null',
       update: 'isOwner || isOrgMember',
       delete: 'isOwner',
@@ -44,6 +47,8 @@ const rules = {
     bind: [
       'isOwner', 'auth.id != null && auth.id == data.ownerId',
       'isOrgMember', 'auth.id in data.ref(\'organization.members.userId\')',
+      'isOrgMemberNonPrivate', 'auth.id in data.ref(\'organization.members.userId\') && data.accessLevel != \'private\'',
+      'isWorldMember', 'auth.id in data.ref(\'members.userId\')',
     ],
   },
 
@@ -96,9 +101,10 @@ const rules = {
   //   'org' (default) — visible to all org members
   //   'private'       — visible only to the creator
   //   'public'        — visible to any authenticated user
+  //   guests can view entities they have a share record for (via entityShares link)
   entities: {
     allow: {
-      view: 'isOwner || isOrgMember || isPublic',
+      view: 'isOwner || isOrgMember || isPublic || isSharedGuest',
       create: 'auth.id != null',
       update: 'isOwner || isOrgMember',
       delete: 'isOwner',
@@ -107,10 +113,42 @@ const rules = {
       'isOwner', 'auth.id != null && auth.id == data.ownerId',
       'isOrgMember', 'auth.id in data.ref(\'organization.members.userId\')',
       'isPublic', 'data.visibility == \'public\'',
+      'isSharedGuest', 'auth.id in data.ref(\'shares.userId\')',
     ],
   },
 
-  // ── Comments ──────────────────────────────────────────────────────────
+  // ── Shares ──────────────────────────────────────────────────────────
+  // Entity-level access grants for guests.
+  // Viewable by the recipient (userId) or the sharer.
+  // Any authenticated org member can create shares.
+  // Only the sharer or org admins can delete.
+  shares: {
+    allow: {
+      view: 'isRecipient || isSharer',
+      create: 'auth.id != null',
+      update: 'isSharer',
+      delete: 'isSharer',
+    },
+    bind: [
+      'isRecipient', 'auth.id != null && auth.id == data.userId',
+      'isSharer', 'auth.id != null && auth.id == data.sharedBy',
+    ],
+  },
+
+  // ── Notifications ────────────────────────────────────────────────
+  // Only the recipient can view, update (mark read), or delete their own notifications.
+  // Creation is done server-side via admin SDK.
+  notifications: {
+    allow: {
+      view: 'isRecipient',
+      create: 'auth.id != null',
+      update: 'isRecipient',
+      delete: 'isRecipient',
+    },
+    bind: ['isRecipient', 'auth.id != null && auth.id == data.recipientId'],
+  },
+
+  // ── Comments ──────────────────────────────────────────────────────
   // Publicly viewable within the app; only the author can edit/delete.
   comments: {
     allow: {

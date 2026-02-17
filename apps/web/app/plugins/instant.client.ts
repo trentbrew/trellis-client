@@ -27,7 +27,7 @@ export default defineNuxtPlugin(async () => {
       appId: instantAppId,
       schema,
       verbose: import.meta.dev,
-      devtool: import.meta.dev,
+      devtool: false,
     })
   } else {
     db = createLocalAdapter({

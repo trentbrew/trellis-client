@@ -28,6 +28,7 @@
     note: defineAsyncComponent(() => import('./document/NoteContent.vue')),
     file: defineAsyncComponent(() => import('./document/FileContent.vue')),
     bookmark: defineAsyncComponent(() => import('./document/BookmarkContent.vue')),
+    diagram: defineAsyncComponent(() => import('~/components/editor/DiagramContent.vue')),
     goal: defineAsyncComponent(() => import('./container/GoalContent.vue')),
     // trip, sprint, milestone, budget, payment — use summary fallback
   }

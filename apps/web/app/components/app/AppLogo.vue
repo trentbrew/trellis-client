@@ -2,16 +2,29 @@
   interface Props {
     size?: number | string
     colorClass?: string
+    brandMark?: string | null
   }
 
   withDefaults(defineProps<Props>(), {
     size: 24,
     colorClass: 'text-primary',
+    brandMark: null,
   })
 </script>
 
 <template>
+  <!-- Brand mark: custom uploaded logo -->
+  <img
+    v-if="brandMark"
+    :src="brandMark"
+    :width="size"
+    :height="size"
+    alt="Logo"
+    class="object-contain"
+  />
+  <!-- Default: Trellis diamond SVG -->
   <svg
+    v-else
     :width="size"
     :height="size"
     viewBox="0 0 376 500"

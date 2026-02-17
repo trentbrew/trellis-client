@@ -8,6 +8,8 @@
   import { getEntityTypeConfig } from '~/config/entityRegistry'
   import { useBrowse } from '~/composables/useBrowse'
   import { useBrowseSelection } from '~/composables/useBrowseSelection'
+  import { useDialogUrl } from '~/composables/useDialogUrl'
+  import { useHashDialogRestore } from '~/composables/useHashDialogRestore'
   import { useGridLayout } from '~/composables/useGridLayout'
   import EntityDialog from '~/components/dialogs/EntityDialog.vue'
   import GridEditor from '~/components/grid/GridEditor.vue'
@@ -228,7 +230,23 @@
   function openDetail(item: Entity) {
     _viewingItemId.value = item.id
     viewOpen.value = true
+    const { setOriginHash } = useDialogUrl()
+    setOriginHash(item.id)
   }
+
+  useHashDialogRestore(allItems, (entityId, item) => {
+    _viewingItemId.value = entityId
+    viewOpen.value = true
+    void item
+  })
+
+  watch(viewOpen, (open) => {
+    if (!open) {
+      const { clearHash } = useDialogUrl()
+      clearHash()
+      _viewingItemId.value = null
+    }
+  })
 
   function navPrev() {
     if (canPrev.value) _viewingItemId.value = filteredItems.value[viewingIndex.value - 1]!.id
@@ -240,10 +258,14 @@
   async function handleUpdate(item: Entity) {
     await updateItem(item)
     viewOpen.value = false
+    const { clearHash } = useDialogUrl()
+    clearHash()
   }
   async function handleDelete(item: Entity) {
     await removeItem(item.id)
     viewOpen.value = false
+    const { clearHash } = useDialogUrl()
+    clearHash()
   }
 
   const stats = computed<PageStat[]>(() => [

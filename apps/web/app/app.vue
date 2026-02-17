@@ -1,6 +1,8 @@
 <script lang="ts" setup>
   import { handleBrowserNavigation } from '~/composables/useAppNavigate'
   import { provideSheetStack } from '~/composables/useSheetStack'
+  import { restoreDialogsFromHash } from '~/composables/useDialogUrl'
+  import type { Entity, EntityType } from '~/types/entity'
 
   useHead({
     htmlAttrs: { lang: 'en' },
@@ -11,6 +13,42 @@
   const commandDialog = useCommandDialog()
   const { register } = useKeyboardShortcuts()
   provideSheetStack()
+
+  // ── Boot-time dialog restore from URL hash ──────────────────────────────────
+  // When the page loads with a hash like #entity:task-abc+entity:person-xyz,
+  // we open the originating dialog and push any stacked dialogs.
+  const { items: allEntities, loading: entitiesLoading } = useEntities()
+  const dialogStack = useDialogStack()
+  const _hashRestored = ref(false)
+
+  // We need a global "open origin dialog" function. Since the originating dialog
+  // is page-managed (not in DialogStackHost), we expose a global event bus so
+  // any page can register itself as the handler.
+  const _hashRestoreEntityId = useState<string | null>('dialog:restoreEntityId', () => null)
+
+  watch(
+    [entitiesLoading, allEntities],
+    ([loading, items]) => {
+      if (loading || _hashRestored.value) return
+      const hash = route.hash
+      if (!hash) return
+
+      _hashRestored.value = true
+
+      restoreDialogsFromHash(
+        hash,
+        items as Entity[],
+        (entityId: string, _item: Entity) => {
+          // Signal pages to open their dialog for this entity
+          _hashRestoreEntityId.value = entityId
+        },
+        (entityId: string, entityType: EntityType, item: Entity) => {
+          dialogStack.push(entityId, entityType, item)
+        },
+      )
+    },
+    { immediate: true },
+  )
 
   const previousPath = ref('')
   let isInitialMount = true

@@ -195,9 +195,41 @@ export function useTrellisEntities() {
   // Initialize the singleton store on first call
   _initStore()
 
+  // ── Guest filtering ──────────────────────────────────────────────────
+  // When the user is a guest, only show entities they have share records for.
+  // Non-guests see all org entities as before.
+  const { userRole } = useUserRole()
+  const _guestShareIds = ref<Set<string>>(new Set())
+
+  if (import.meta.client && adapter.entityBackend === 'adapter') {
+    watch(
+      () => [user.value?.id, userRole.value] as const,
+      ([userId, role]) => {
+        if (role !== 'guest' || !userId) {
+          _guestShareIds.value = new Set()
+          return
+        }
+        adapter.subscribeQuery(
+          { shares: { $: { where: { userId } } } },
+          (result: any) => {
+            const shares = (result.data?.shares || []) as Array<{ entityId: string }>
+            _guestShareIds.value = new Set(shares.map((s) => s.entityId))
+          },
+        )
+      },
+      { immediate: true },
+    )
+  }
+
+  // Items filtered for guest visibility
+  const items = computed(() => {
+    if (userRole.value !== 'guest') return _items.value
+    return _items.value.filter((item) => _guestShareIds.value.has(item.id))
+  })
+
   // Filtered view by type
   function byType(type: EntityType) {
-    return computed(() => _items.value.filter((i) => i.type === type))
+    return computed(() => items.value.filter((i) => i.type === type))
   }
 
   // ── CRUD: Adapter backend (cloud mode) ──────────────────────────────
@@ -337,7 +369,7 @@ export function useTrellisEntities() {
   const remove = useAdapter ? removeViaAdapter : removeViaTql
 
   return {
-    items: _items,
+    items,
     loading: _loading,
     byType,
     create,

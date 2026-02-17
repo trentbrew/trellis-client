@@ -231,7 +231,7 @@ export const useRouteBuilder = () => {
         railPosition: 'secondary',
         inCommandPalette: true,
         requiresAuth: true,
-        minRole: 'superadmin',
+        minRole: 'owner',
       },
     },
 
@@ -363,7 +363,7 @@ export const useRouteBuilder = () => {
     { value: 'guest', label: 'Guest' },
     { value: 'member', label: 'Member' },
     { value: 'admin', label: 'Admin' },
-    { value: 'superadmin', label: 'Super Admin' },
+    { value: 'owner', label: 'Owner' },
   ]
 
   // Layout type options

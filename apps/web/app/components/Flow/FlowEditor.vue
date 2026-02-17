@@ -5,464 +5,457 @@
   import { MiniMap } from '@vue-flow/minimap'
 
   import type { Node, Edge, Connection } from '@vue-flow/core'
+  import type { WorkflowNodeKind } from '~/types/database'
 
-  // Custom node components
-  import FlowCustomInputNode from '~/components/Flow/CustomInputNode.vue'
-  import FlowCustomOutputNode from '~/components/Flow/CustomOutputNode.vue'
-  import FlowCustomProcessNode from '~/components/Flow/CustomProcessNode.vue'
-  import FlowCustomDecisionNode from '~/components/Flow/CustomDecisionNode.vue'
-  import FlowCustomCardNode from '~/components/Flow/CustomCardNode.vue'
+  import FlowStartNode from '~/components/Flow/FlowStartNode.vue'
+  import FlowAgentNode from '~/components/Flow/FlowAgentNode.vue'
+  import FlowToolNode from '~/components/Flow/FlowToolNode.vue'
+  import FlowRouterNode from '~/components/Flow/FlowRouterNode.vue'
+  import FlowGuardNode from '~/components/Flow/FlowGuardNode.vue'
+  import FlowMemoryNode from '~/components/Flow/FlowMemoryNode.vue'
+  import FlowEndNode from '~/components/Flow/FlowEndNode.vue'
+  import FlowNoteNode from '~/components/Flow/FlowNoteNode.vue'
 
-  // Node types mapping - use markRaw to prevent reactive overhead
+  const props = defineProps<{
+    workflowId: string
+  }>()
+
+  const workflowIdRef = toRef(props, 'workflowId')
+
+  const {
+    nodes,
+    edges,
+    isDirty,
+    isSaving,
+    isLoaded,
+    markDirty,
+    addNode: editorAddNode,
+    updateNodeData,
+    removeNodes,
+  } = useWorkflowEditor(workflowIdRef)
+
   const nodeTypes = {
-    customInput: markRaw(FlowCustomInputNode) as any,
-    customOutput: markRaw(FlowCustomOutputNode) as any,
-    customProcess: markRaw(FlowCustomProcessNode) as any,
-    customDecision: markRaw(FlowCustomDecisionNode) as any,
-    customCard: markRaw(FlowCustomCardNode) as any,
+    flowStart: markRaw(FlowStartNode) as any,
+    flowAgent: markRaw(FlowAgentNode) as any,
+    flowTool: markRaw(FlowToolNode) as any,
+    flowRouter: markRaw(FlowRouterNode) as any,
+    flowGuard: markRaw(FlowGuardNode) as any,
+    flowMemoryRead: markRaw(FlowMemoryNode) as any,
+    flowMemoryWrite: markRaw(FlowMemoryNode) as any,
+    flowEnd: markRaw(FlowEndNode) as any,
+    flowNote: markRaw(FlowNoteNode) as any,
   }
 
-  // Theme-aware colors - use variables directly without hsl() wrapper
   const patternColor = 'color-mix(in srgb, var(--muted-foreground) 15%, transparent)'
   const minimapMaskColor = 'color-mix(in srgb, var(--background) 85%, transparent)'
 
-  // Minimap node color function - uses semantic colors
   function minimapNodeColor(node: Node): string {
-    // Check for success/error output nodes
-    if (node.type === 'customOutput') {
-      const label = ((node.data?.label as string) || '').toLowerCase()
-      if (label.includes('success')) return '#22c55e'
-      if (label.includes('error')) return '#ef4444'
-      return 'var(--chart-4)'
-    }
-
     const colors: Record<string, string> = {
-      customInput: '#22c55e',
-      customProcess: 'var(--chart-1)',
-      customDecision: 'var(--chart-3)',
-      customCard: 'var(--primary)',
+      flowStart: '#22c55e',
+      flowAgent: 'var(--chart-2)',
+      flowTool: 'var(--chart-1)',
+      flowRouter: 'var(--chart-3)',
+      flowGuard: 'var(--chart-5)',
+      flowMemoryRead: '#14b8a6',
+      flowMemoryWrite: '#14b8a6',
+      flowEnd: 'var(--muted-foreground)',
+      flowNote: '#eab308',
     }
     return colors[node.type || ''] || 'var(--muted-foreground)'
   }
 
-  // Initial nodes
-  const initialNodes: Node[] = [
-    {
-      id: '1',
-      type: 'customInput',
-      position: { x: 50, y: 200 },
-      data: { label: 'Start' },
-    },
-    {
-      id: '2',
-      type: 'customProcess',
-      position: { x: 300, y: 100 },
-      data: { label: 'Validate Data' },
-    },
-    {
-      id: '3',
-      type: 'customDecision',
-      position: { x: 550, y: 200 },
-      data: { label: 'Is Valid?' },
-    },
-    {
-      id: '4',
-      type: 'customProcess',
-      position: { x: 850, y: 100 },
-      data: { label: 'Process Request' },
-    },
-    {
-      id: '5',
-      type: 'customOutput',
-      position: { x: 1100, y: 100 },
-      data: { label: 'Success' },
-    },
-    {
-      id: '6',
-      type: 'customOutput',
-      position: { x: 850, y: 350 },
-      data: { label: 'Error' },
-    },
-    {
-      id: '7',
-      type: 'customCard',
-      position: { x: 50, y: 400 },
-      data: {
-        label: 'API Gateway',
-        type: 'Service',
-        icon: 'lucide:cloud',
-        iconBg: 'bg-blue-500/10',
-        status: 'Running',
-        description: 'Handles incoming API requests and routes them to appropriate services.',
-        metrics: {
-          Requests: '12.5k/s',
-          Latency: '45ms',
-        },
-      },
-    },
-  ]
+  const { fitView: vueFlowFitView, addEdges, getSelectedNodes } = useVueFlow()
 
-  // Initial edges
-  const initialEdges: Edge[] = [
-    {
-      id: 'e1-2',
-      source: '1',
-      target: '2',
-      animated: true,
-    },
-    {
-      id: 'e2-3',
-      source: '2',
-      target: '3',
-      animated: true,
-    },
-    {
-      id: 'e3-4',
-      source: '3',
-      sourceHandle: 'yes',
-      target: '4',
-      animated: true,
-      label: 'Valid',
-      style: { stroke: '#22c55e' },
-    },
-    {
-      id: 'e3-6',
-      source: '3',
-      sourceHandle: 'no',
-      target: '6',
-      animated: true,
-      label: 'Invalid',
-      style: { stroke: '#ef4444' },
-    },
-    {
-      id: 'e4-5',
-      source: '4',
-      target: '5',
-      animated: true,
-    },
-  ]
-
-  const nodes = ref<Node[]>(initialNodes)
-  const edges = ref<Edge[]>(initialEdges)
-
-  const { fitView: vueFlowFitView, addNodes, addEdges, getSelectedNodes, getSelectedEdges } = useVueFlow()
-
-  // Selection state - use VueFlow's getSelectedNodes/getSelectedEdges
   const selectedNodes = computed(() => getSelectedNodes.value)
-  const _selectedEdges = computed(() => getSelectedEdges.value)
   const showSidebar = computed(() => selectedNodes.value.length > 0)
 
-  // Node counter for unique IDs
-  const nodeId = ref(10)
-
-  // Add new node
-  function addNode(type: 'input' | 'process' | 'decision' | 'output' | 'card') {
-    const typeMap: Record<string, string> = {
-      input: 'customInput',
-      process: 'customProcess',
-      decision: 'customDecision',
-      output: 'customOutput',
-      card: 'customCard',
-    }
-
-    const labelMap: Record<string, string> = {
-      input: 'New Input',
-      process: 'New Process',
-      decision: 'New Decision',
-      output: 'New Output',
-      card: 'New Card',
-    }
-
-    const newNode: Node = {
-      id: `${nodeId.value++}`,
-      type: typeMap[type],
-      position: {
-        x: Math.random() * 400 + 100,
-        y: Math.random() * 300 + 100,
-      },
-      data:
-        type === 'card'
-          ? {
-              label: labelMap[type],
-              type: 'Service',
-              icon: 'lucide:box',
-              status: 'Pending',
-              description: 'A new card node.',
-            }
-          : { label: labelMap[type] },
-    }
-
-    addNodes([newNode])
+  const nodeKindIcon: Record<WorkflowNodeKind, string> = {
+    'start': 'lucide:play',
+    'agent': 'lucide:sparkles',
+    'tool': 'lucide:wrench',
+    'router': 'lucide:git-branch',
+    'guard': 'lucide:shield',
+    'memory-read': 'lucide:database',
+    'memory-write': 'lucide:database-zap',
+    'end': 'lucide:flag',
+    'note': 'lucide:sticky-note',
   }
 
-  // Handle edge connection
+  const paletteItems: { kind: WorkflowNodeKind; label: string; color: string; group: 'flow' | 'utility' }[] = [
+    { kind: 'start', label: 'Start', color: '#22c55e', group: 'flow' },
+    { kind: 'agent', label: 'Agent', color: 'var(--chart-2)', group: 'flow' },
+    { kind: 'tool', label: 'Tool', color: 'var(--chart-1)', group: 'flow' },
+    { kind: 'router', label: 'Router', color: 'var(--chart-3)', group: 'flow' },
+    { kind: 'guard', label: 'Guard', color: 'var(--chart-5)', group: 'flow' },
+    { kind: 'end', label: 'End', color: 'var(--muted-foreground)', group: 'flow' },
+    { kind: 'memory-read', label: 'Read', color: '#14b8a6', group: 'utility' },
+    { kind: 'memory-write', label: 'Write', color: '#14b8a6', group: 'utility' },
+    { kind: 'note', label: 'Note', color: '#eab308', group: 'utility' },
+  ]
+
+  function handleAddNode(kind: WorkflowNodeKind) {
+    editorAddNode(kind)
+  }
+
   function onConnect(connection: Connection) {
     addEdges([
       {
         ...connection,
-        id: `e${connection.source}-${connection.target}`,
+        id: `e-${connection.source}-${connection.target}-${Date.now()}`,
         animated: true,
       },
     ])
+    markDirty()
   }
 
-  // Handle edge click (delete)
-  function onEdgeClick(_: MouseEvent | VoidFunction, edge: Edge) {
+  function onEdgeClick(_evt: MouseEvent | VoidFunction, edge: Edge) {
     edges.value = edges.value.filter((e) => e.id !== edge.id)
+    markDirty()
   }
 
-  // Fit view
   function fitView() {
     vueFlowFitView({ padding: 0.2 })
   }
 
-  // Reset flow
-  function resetFlow() {
-    nodes.value = [...initialNodes]
-    edges.value = [...initialEdges]
-    nextTick(() => {
-      fitView()
-    })
-  }
-
-  // Clear selection
   function clearSelection() {
     nodes.value = nodes.value.map((n) => ({ ...n, selected: false }))
     edges.value = edges.value.map((e) => ({ ...e, selected: false }))
   }
 
-  // Group selected nodes (batch operation)
-  function groupSelectedNodes() {
-    // TODO: Implement grouping logic
-    console.log('Grouping nodes:', selectedNodes.value)
-  }
-
-  // Duplicate selected nodes (batch operation)
   function duplicateSelectedNodes() {
-    const duplicates = selectedNodes.value.map((node) => ({
-      ...node,
-      id: `${nodeId.value++}`,
-      position: {
-        x: node.position.x + 50,
-        y: node.position.y + 50,
-      },
-      selected: false,
-    }))
-    addNodes(duplicates)
+    for (const node of selectedNodes.value) {
+      const kind = (node.data?.kind as WorkflowNodeKind) || 'agent'
+      editorAddNode(kind, {
+        x: node.position.x + 60,
+        y: node.position.y + 60,
+      })
+    }
   }
 
-  // Delete selected nodes (batch operation)
   function deleteSelectedNodes() {
-    const selectedIds = new Set(selectedNodes.value.map((n) => n.id))
-    // Remove nodes
-    nodes.value = nodes.value.filter((n) => !selectedIds.has(n.id))
-    // Also remove edges connected to deleted nodes
-    edges.value = edges.value.filter((e) => !selectedIds.has(e.source) && !selectedIds.has(e.target))
+    removeNodes(selectedNodes.value.map((n) => n.id))
   }
+
+  function onNodeDragStop() {
+    markDirty()
+  }
+
+  // Sidebar: editing the selected node's label
+  const editingLabel = ref('')
+  watch(selectedNodes, (sel) => {
+    if (sel.length === 1) {
+      editingLabel.value = (sel[0].data?.label as string) || ''
+    }
+  })
+
+  function commitLabel() {
+    if (selectedNodes.value.length !== 1) return
+    updateNodeData(selectedNodes.value[0].id, { label: editingLabel.value })
+  }
+
+  // Keyboard shortcut: Backspace to delete selected
+  function onKeyDown(e: KeyboardEvent) {
+    if (e.key === 'Backspace' || e.key === 'Delete') {
+      const tag = (e.target as HTMLElement)?.tagName
+      if (tag === 'INPUT' || tag === 'TEXTAREA') return
+      if (selectedNodes.value.length > 0) {
+        e.preventDefault()
+        deleteSelectedNodes()
+      }
+    }
+  }
+
+  onMounted(() => {
+    document.addEventListener('keydown', onKeyDown)
+  })
+  onUnmounted(() => {
+    document.removeEventListener('keydown', onKeyDown)
+  })
 </script>
 
 <template>
   <div class="flow-container relative">
     <ClientOnly>
-      <VueFlow
-        v-model:nodes="nodes"
-        v-model:edges="edges"
-        :node-types="nodeTypes"
-        :default-viewport="{ x: 0, y: 0, zoom: 1 }"
-        :min-zoom="0.2"
-        :max-zoom="4"
-        :snap-to-grid="true"
-        :snap-grid="[15, 15]"
-        fit-view-on-init
-        pan-on-scroll
-        :pan-on-scroll-mode="PanOnScrollMode.Free"
-        :zoom-on-scroll="false"
-        :zoom-on-pinch="true"
-        :zoom-on-double-click="false"
-        :selection-key-code="null"
-        :multi-selection-key-code="'Shift'"
-        class="h-full w-full"
-        @connect="onConnect"
-        @edge-click="onEdgeClick as any">
-        <MiniMap
-          position="bottom-right"
-          pannable
-          zoomable
-          :node-color="minimapNodeColor"
-          :mask-color="minimapMaskColor"
-          class="m-3!" />
-        <Controls position="bottom-left" class="m-3!" />
-        <Background :pattern-color="patternColor" :gap="20" />
+      <template v-if="!isLoaded">
+        <div class="flex h-full items-center justify-center">
+          <UiLoader />
+        </div>
+      </template>
+      <template v-else>
+        <VueFlow
+          v-model:nodes="nodes"
+          v-model:edges="edges"
+          :node-types="nodeTypes"
+          :default-viewport="{ x: 0, y: 0, zoom: 1 }"
+          :min-zoom="0.2"
+          :max-zoom="4"
+          :snap-to-grid="true"
+          :snap-grid="[15, 15]"
+          fit-view-on-init
+          pan-on-scroll
+          :pan-on-scroll-mode="PanOnScrollMode.Free"
+          :zoom-on-scroll="false"
+          :zoom-on-pinch="true"
+          :zoom-on-double-click="false"
+          :selection-key-code="null"
+          :multi-selection-key-code="'Shift'"
+          class="h-full w-full"
+          @connect="onConnect"
+          @node-drag-stop="onNodeDragStop"
+          @edge-click="onEdgeClick as any">
+          <MiniMap
+            position="bottom-right"
+            pannable
+            zoomable
+            :node-color="minimapNodeColor"
+            :mask-color="minimapMaskColor"
+            class="m-3!" />
+          <Controls position="bottom-left" class="m-3!" />
+          <Background :pattern-color="patternColor" :gap="20" />
 
-        <!-- Toolbar Panel -->
-        <Panel position="top-left" class="flow-toolbar m-3 !bg-card !border !border-border">
-          <div class="flex items-center gap-1">
-            <UiButton variant="ghost" size="sm" class="flow-toolbar-btn" @click="addNode('input')">
-              <Icon name="lucide:play" class="h-4 w-4" style="color: #22c55e" />
-            </UiButton>
-            <UiButton variant="ghost" size="sm" class="flow-toolbar-btn" @click="addNode('process')">
-              <Icon name="lucide:cpu" class="h-4 w-4" style="color: var(--chart-1)" />
-            </UiButton>
-            <UiButton variant="ghost" size="sm" class="flow-toolbar-btn" @click="addNode('decision')">
-              <Icon name="lucide:git-branch" class="h-4 w-4" style="color: var(--chart-3)" />
-            </UiButton>
-            <UiButton variant="ghost" size="sm" class="flow-toolbar-btn" @click="addNode('output')">
-              <Icon name="lucide:flag" class="h-4 w-4" style="color: var(--chart-4)" />
-            </UiButton>
-            <UiButton variant="ghost" size="sm" class="flow-toolbar-btn" @click="addNode('card')">
-              <Icon name="lucide:layout" class="h-4 w-4 text-primary" />
-            </UiButton>
-            <div class="bg-border mx-1 h-6 w-px" />
-            <UiButton variant="ghost" size="sm" class="flow-toolbar-btn" @click="fitView">
-              <Icon name="lucide:maximize" class="h-4 w-4" />
-            </UiButton>
-            <UiButton variant="ghost" size="sm" class="flow-toolbar-btn" @click="resetFlow">
-              <Icon name="lucide:refresh-cw" class="h-4 w-4" />
-            </UiButton>
-          </div>
-        </Panel>
-
-        <!-- Stats Panel -->
-        <Panel position="top-right" class="flow-stats m-3 !bg-card !border !border-border">
-          <div class="flex items-center gap-3 text-xs">
-            <div class="flex items-center gap-1.5">
-              <Icon name="lucide:square" class="text-muted-foreground h-3.5 w-3.5" />
-              <span class="text-muted-foreground">{{ nodes.length }}</span>
+          <!-- Node Palette -->
+          <Panel position="top-left" class="flow-toolbar m-3 !bg-card !border !border-border">
+            <div class="flex items-center gap-1">
+              <template v-for="item in paletteItems" :key="item.kind">
+                <div v-if="item.kind === 'memory-read'" class="bg-border mx-0.5 h-6 w-px" />
+                <UiTooltip>
+                  <UiTooltipTrigger as-child>
+                    <UiButton variant="ghost" size="sm" class="flow-toolbar-btn" @click="handleAddNode(item.kind)">
+                      <Icon :name="nodeKindIcon[item.kind]" class="h-4 w-4" :style="{ color: item.color }" />
+                    </UiButton>
+                  </UiTooltipTrigger>
+                  <UiTooltipContent side="bottom">{{ item.label }}</UiTooltipContent>
+                </UiTooltip>
+              </template>
+              <div class="bg-border mx-0.5 h-6 w-px" />
+              <UiTooltip>
+                <UiTooltipTrigger as-child>
+                  <UiButton variant="ghost" size="sm" class="flow-toolbar-btn" @click="fitView">
+                    <Icon name="lucide:maximize" class="h-4 w-4" />
+                  </UiButton>
+                </UiTooltipTrigger>
+                <UiTooltipContent side="bottom">Fit View</UiTooltipContent>
+              </UiTooltip>
             </div>
-            <div class="flex items-center gap-1.5">
-              <Icon name="lucide:git-commit-horizontal" class="text-muted-foreground h-3.5 w-3.5" />
-              <span class="text-muted-foreground">{{ edges.length }}</span>
+          </Panel>
+
+          <!-- Stats + Save State -->
+          <Panel position="top-right" class="flow-stats m-3 !bg-card !border !border-border">
+            <div class="flex items-center gap-3 text-xs">
+              <div class="flex items-center gap-1.5">
+                <Icon name="lucide:square" class="h-3.5 w-3.5 text-muted-foreground" />
+                <span class="text-muted-foreground">{{ nodes.length }}</span>
+              </div>
+              <div class="flex items-center gap-1.5">
+                <Icon name="lucide:git-commit-horizontal" class="h-3.5 w-3.5 text-muted-foreground" />
+                <span class="text-muted-foreground">{{ edges.length }}</span>
+              </div>
+              <div v-if="isSaving" class="flex items-center gap-1 text-muted-foreground">
+                <Icon name="lucide:loader-2" class="h-3 w-3 animate-spin" />
+                <span>Saving</span>
+              </div>
+              <div v-else-if="isDirty" class="flex items-center gap-1 text-amber-500">
+                <Icon name="lucide:circle" class="h-2 w-2 fill-current" />
+                <span>Unsaved</span>
+              </div>
+              <div v-else class="flex items-center gap-1 text-green-500">
+                <Icon name="lucide:check" class="h-3 w-3" />
+                <span>Saved</span>
+              </div>
             </div>
-          </div>
-        </Panel>
+          </Panel>
 
-        <!-- Custom edge labels -->
-        <template #edge-label="{ edge }">
-          <div v-if="edge.label" class="!bg-card !border rounded border px-2 py-1 text-xs">
-            {{ edge.label }}
-          </div>
-        </template>
-      </VueFlow>
+          <!-- Edge labels -->
+          <template #edge-label="{ edge }">
+            <div v-if="edge.label" class="rounded border bg-card px-2 py-0.5 text-[11px]">
+              {{ edge.label }}
+            </div>
+          </template>
+        </VueFlow>
 
-      <!-- Details Sidebar -->
-      <Transition name="slide-left" class="z-50 bg-background">
-        <div v-if="showSidebar" class="absolute right-0 top-0 h-full w-80 border-l border-border bg-background z-50">
-          <div class="flex h-full flex-col">
-            <!-- Header -->
-            <div class="border-b border-border p-4">
-              <div class="flex items-center justify-between">
+        <!-- Config Sidebar -->
+        <Transition name="slide-left">
+          <div v-if="showSidebar" class="absolute right-0 top-0 z-50 h-full w-80 border-l border-border bg-background">
+            <div class="flex h-full flex-col">
+              <div class="flex items-center justify-between border-b border-border p-4">
                 <h3 class="text-sm font-semibold">
-                  {{ selectedNodes.length === 1 ? 'Node Details' : `${selectedNodes.length} Nodes Selected` }}
+                  {{ selectedNodes.length === 1 ? 'Node Config' : `${selectedNodes.length} Nodes` }}
                 </h3>
                 <button type="button" class="text-muted-foreground hover:text-foreground" @click="clearSelection">
                   <Icon name="lucide:x" class="h-4 w-4" />
                 </button>
               </div>
-            </div>
 
-            <!-- Content -->
-            <div class="flex-1 overflow-y-auto p-4">
-              <!-- Single node selected -->
-              <div v-if="selectedNodes.length === 1" class="space-y-4">
-                <div>
-                  <label class="text-muted-foreground text-xs font-medium uppercase">Type</label>
-                  <p class="text-foreground mt-1 text-sm">{{ selectedNodes[0].type?.replace('custom', '') }}</p>
-                </div>
-                <div>
-                  <label class="text-muted-foreground text-xs font-medium uppercase">Label</label>
-                  <p class="text-foreground mt-1 text-sm">{{ selectedNodes[0].data?.label }}</p>
-                </div>
-                <div>
-                  <label class="text-muted-foreground text-xs font-medium uppercase">Position</label>
-                  <p class="text-foreground mt-1 text-sm">
-                    X: {{ Math.round(selectedNodes[0].position.x) }}, Y: {{ Math.round(selectedNodes[0].position.y) }}
-                  </p>
-                </div>
-                <div>
-                  <label class="text-muted-foreground text-xs font-medium uppercase">ID</label>
-                  <p class="text-muted-foreground mt-1 font-mono text-xs">{{ selectedNodes[0].id }}</p>
-                </div>
-              </div>
-
-              <!-- Multiple nodes selected -->
-              <div v-else class="space-y-2">
-                <div
-                  v-for="node in selectedNodes"
-                  :key="node.id"
-                  class="border-border hover:bg-accent rounded-lg border p-3">
-                  <div class="flex items-center justify-between">
-                    <div>
-                      <p class="text-foreground text-sm font-medium">{{ node.data?.label }}</p>
-                      <p class="text-muted-foreground text-xs">{{ node.type?.replace('custom', '') }}</p>
-                    </div>
+              <div class="flex-1 overflow-y-auto p-4">
+                <!-- Single node config -->
+                <div v-if="selectedNodes.length === 1" class="space-y-4">
+                  <div class="flex items-center gap-2 rounded-lg bg-muted/50 p-2.5">
                     <Icon
-                      :name="
-                        node.type === 'customInput'
-                          ? 'lucide:play'
-                          : node.type === 'customProcess'
-                            ? 'lucide:cpu'
-                            : node.type === 'customDecision'
-                              ? 'lucide:git-branch'
-                              : node.type === 'customOutput'
-                                ? 'lucide:flag'
-                                : 'lucide:layout'
-                      "
-                      class="text-muted-foreground h-4 w-4" />
+                      :name="nodeKindIcon[(selectedNodes[0].data?.kind as WorkflowNodeKind) || 'start']"
+                      class="h-4 w-4 text-muted-foreground" />
+                    <span class="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                      {{ selectedNodes[0].data?.kind }}
+                    </span>
+                  </div>
+
+                  <div class="space-y-1.5">
+                    <label class="text-xs font-medium text-muted-foreground">Label</label>
+                    <input
+                      v-model="editingLabel"
+                      class="w-full rounded-md border border-border bg-transparent px-3 py-1.5 text-sm focus:outline-none focus:ring-1 focus:ring-ring"
+                      @blur="commitLabel"
+                      @keydown.enter="commitLabel" />
+                  </div>
+
+                  <!-- Agent-specific config -->
+                  <template v-if="selectedNodes[0].data?.kind === 'agent'">
+                    <div class="space-y-1.5">
+                      <label class="text-xs font-medium text-muted-foreground">Model</label>
+                      <select
+                        :value="selectedNodes[0].data?.model || 'gpt-4o'"
+                        class="w-full rounded-md border border-border bg-transparent px-3 py-1.5 text-sm focus:outline-none focus:ring-1 focus:ring-ring"
+                        @change="updateNodeData(selectedNodes[0].id, { model: ($event.target as HTMLSelectElement).value })">
+                        <option value="gpt-4o">GPT-4o</option>
+                        <option value="gpt-4o-mini">GPT-4o Mini</option>
+                        <option value="claude-3.5-sonnet">Claude 3.5 Sonnet</option>
+                        <option value="claude-3.5-haiku">Claude 3.5 Haiku</option>
+                      </select>
+                    </div>
+                    <div class="space-y-1.5">
+                      <label class="text-xs font-medium text-muted-foreground">System Prompt</label>
+                      <textarea
+                        :value="(selectedNodes[0].data?.system as string) || ''"
+                        rows="4"
+                        class="w-full rounded-md border border-border bg-transparent px-3 py-1.5 font-mono text-xs focus:outline-none focus:ring-1 focus:ring-ring"
+                        placeholder="You are a helpful assistant..."
+                        @blur="updateNodeData(selectedNodes[0].id, { system: ($event.target as HTMLTextAreaElement).value })" />
+                    </div>
+                  </template>
+
+                  <!-- Tool-specific config -->
+                  <template v-if="selectedNodes[0].data?.kind === 'tool'">
+                    <div class="space-y-1.5">
+                      <label class="text-xs font-medium text-muted-foreground">Tool Name</label>
+                      <select
+                        :value="selectedNodes[0].data?.toolName || ''"
+                        class="w-full rounded-md border border-border bg-transparent px-3 py-1.5 text-sm focus:outline-none focus:ring-1 focus:ring-ring"
+                        @change="updateNodeData(selectedNodes[0].id, { toolName: ($event.target as HTMLSelectElement).value })">
+                        <option value="">Select tool...</option>
+                        <option value="run_js">run_js</option>
+                        <option value="tql_query">tql_query</option>
+                        <option value="tql_load_data">tql_load_data</option>
+                      </select>
+                    </div>
+                  </template>
+
+                  <!-- Memory-specific config -->
+                  <template v-if="selectedNodes[0].data?.kind === 'memory-read' || selectedNodes[0].data?.kind === 'memory-write'">
+                    <div class="space-y-1.5">
+                      <label class="text-xs font-medium text-muted-foreground">Key</label>
+                      <input
+                        :value="(selectedNodes[0].data?.key as string) || ''"
+                        class="w-full rounded-md border border-border bg-transparent px-3 py-1.5 font-mono text-sm focus:outline-none focus:ring-1 focus:ring-ring"
+                        placeholder="memory_key"
+                        @blur="updateNodeData(selectedNodes[0].id, { key: ($event.target as HTMLInputElement).value })" />
+                    </div>
+                  </template>
+
+                  <!-- Guard-specific config -->
+                  <template v-if="selectedNodes[0].data?.kind === 'guard'">
+                    <div class="space-y-1.5">
+                      <label class="text-xs font-medium text-muted-foreground">Mode</label>
+                      <select
+                        :value="selectedNodes[0].data?.mode || 'allow'"
+                        class="w-full rounded-md border border-border bg-transparent px-3 py-1.5 text-sm focus:outline-none focus:ring-1 focus:ring-ring"
+                        @change="updateNodeData(selectedNodes[0].id, { mode: ($event.target as HTMLSelectElement).value })">
+                        <option value="allow">Allow if...</option>
+                        <option value="block">Block if...</option>
+                      </select>
+                    </div>
+                  </template>
+
+                  <!-- Note-specific config -->
+                  <template v-if="selectedNodes[0].data?.kind === 'note'">
+                    <div class="space-y-1.5">
+                      <label class="text-xs font-medium text-muted-foreground">Content</label>
+                      <textarea
+                        :value="(selectedNodes[0].data?.content as string) || ''"
+                        rows="6"
+                        class="w-full rounded-md border border-border bg-transparent px-3 py-1.5 text-sm focus:outline-none focus:ring-1 focus:ring-ring"
+                        placeholder="Add notes here..."
+                        @blur="updateNodeData(selectedNodes[0].id, { content: ($event.target as HTMLTextAreaElement).value })" />
+                    </div>
+                  </template>
+
+                  <div class="pt-2">
+                    <label class="text-xs font-medium text-muted-foreground">Position</label>
+                    <p class="mt-1 text-xs text-muted-foreground">
+                      {{ Math.round(selectedNodes[0].position.x) }}, {{ Math.round(selectedNodes[0].position.y) }}
+                    </p>
+                  </div>
+                  <div>
+                    <label class="text-xs font-medium text-muted-foreground">ID</label>
+                    <p class="mt-1 font-mono text-[11px] text-muted-foreground">{{ selectedNodes[0].id }}</p>
+                  </div>
+                </div>
+
+                <!-- Multi-select list -->
+                <div v-else class="space-y-2">
+                  <div
+                    v-for="node in selectedNodes"
+                    :key="node.id"
+                    class="flex items-center gap-2 rounded-lg border border-border p-3 hover:bg-accent">
+                    <Icon
+                      :name="nodeKindIcon[(node.data?.kind as WorkflowNodeKind) || 'start']"
+                      class="h-4 w-4 text-muted-foreground" />
+                    <div class="min-w-0 flex-1">
+                      <p class="truncate text-sm font-medium text-foreground">{{ node.data?.label }}</p>
+                      <p class="text-xs text-muted-foreground">{{ node.data?.kind }}</p>
+                    </div>
                   </div>
                 </div>
               </div>
-            </div>
 
-            <!-- Actions Footer -->
-            <div class="border-t border-border p-4">
-              <div class="space-y-2">
-                <UiButton
-                  variant="outline"
-                  size="sm"
-                  class="w-full"
-                  :disabled="selectedNodes.length < 2"
-                  @click="groupSelectedNodes">
-                  <Icon name="lucide:group" class="mr-2 h-4 w-4" />
-                  Group Nodes
-                </UiButton>
-                <UiButton
-                  variant="outline"
-                  size="sm"
-                  class="w-full"
-                  :disabled="selectedNodes.length === 0"
-                  @click="duplicateSelectedNodes">
-                  <Icon name="lucide:copy" class="mr-2 h-4 w-4" />
-                  Duplicate
-                </UiButton>
-                <UiButton
-                  variant="destructive"
-                  size="sm"
-                  class="w-full"
-                  :disabled="selectedNodes.length === 0"
-                  @click="deleteSelectedNodes">
-                  <Icon name="lucide:trash-2" class="mr-2 h-4 w-4" />
-                  Delete {{ selectedNodes.length > 1 ? `${selectedNodes.length} Nodes` : 'Node' }}
-                </UiButton>
+              <!-- Actions Footer -->
+              <div class="border-t border-border p-4">
+                <div class="space-y-2">
+                  <UiButton
+                    variant="outline"
+                    size="sm"
+                    class="w-full"
+                    :disabled="selectedNodes.length === 0"
+                    @click="duplicateSelectedNodes">
+                    <Icon name="lucide:copy" class="mr-2 h-4 w-4" />
+                    Duplicate
+                  </UiButton>
+                  <UiButton
+                    variant="destructive"
+                    size="sm"
+                    class="w-full"
+                    :disabled="selectedNodes.length === 0"
+                    @click="deleteSelectedNodes">
+                    <Icon name="lucide:trash-2" class="mr-2 h-4 w-4" />
+                    Delete {{ selectedNodes.length > 1 ? `${selectedNodes.length} Nodes` : 'Node' }}
+                  </UiButton>
+                </div>
               </div>
             </div>
           </div>
-        </div>
-      </Transition>
+        </Transition>
+      </template>
     </ClientOnly>
   </div>
 </template>
 
 <style>
-  /* Fill the content area - works with flex parent */
   .flow-container {
     display: flex;
     flex-direction: column;
     width: 100%;
-    height: calc(100dvh - 64px); /* Viewport minus header height */
+    height: calc(100dvh - 64px);
     background-color: hsl(var(--background));
   }
 
-  /* Node interaction */
   .vue-flow__node {
     cursor: grab;
   }
@@ -471,7 +464,10 @@
     cursor: grabbing;
   }
 
-  /* Toolbar styling */
+  .vue-flow__node.selected .flow-node {
+    box-shadow: 0 0 0 2px hsl(var(--ring));
+  }
+
   .flow-toolbar {
     background-color: hsl(var(--card));
     border-radius: 8px;
@@ -488,7 +484,6 @@
     padding: 0;
   }
 
-  /* Stats panel styling */
   .flow-stats {
     background-color: hsl(var(--card));
     border-radius: 8px;
@@ -499,7 +494,6 @@
       0 1px 2px -1px rgb(0 0 0 / 0.1);
   }
 
-  /* Sidebar slide transition */
   .slide-left-enter-active,
   .slide-left-leave-active {
     transition: transform 0.3s ease;

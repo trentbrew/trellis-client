@@ -8,12 +8,14 @@ const DEFAULT_PRESET_ID = 'graphite'
 interface ThemeStoreState {
   currentPresetId: ThemePresetId | null
   customPresets: ThemePresets
+  workspacePresetId: ThemePresetId | null
 }
 
 export const useThemeStore = defineStore('theme', {
   state: (): ThemeStoreState => ({
     currentPresetId: null,
     customPresets: {},
+    workspacePresetId: null,
   }),
 
   getters: {
@@ -103,15 +105,33 @@ export const useThemeStore = defineStore('theme', {
       }
     },
 
+    /**
+     * Set the workspace-level preset (from brand config).
+     * When set, this takes priority over the user's localStorage preference.
+     */
+    setWorkspacePreset(presetId: ThemePresetId | null, mode: 'light' | 'dark' = 'light') {
+      this.workspacePresetId = presetId
+      if (presetId && this.allPresets[presetId]) {
+        this.currentPresetId = presetId
+        applyThemePreset(this.allPresets[presetId]!, mode)
+      }
+    },
+
     initTheme() {
       if (!import.meta.client) return
 
       this.loadCustomPresets()
 
-      const savedPresetId = localStorage.getItem('theme-preset-id')
       const colorMode = localStorage.getItem('platform-sandbox-color-mode') || 'dark'
       const mode = colorMode as 'light' | 'dark'
 
+      // Priority: workspace preset → user localStorage → default
+      if (this.workspacePresetId && this.allPresets[this.workspacePresetId]) {
+        this.setPreset(this.workspacePresetId, mode)
+        return
+      }
+
+      const savedPresetId = localStorage.getItem('theme-preset-id')
       if (savedPresetId && this.allPresets[savedPresetId]) {
         this.setPreset(savedPresetId, mode)
       } else {

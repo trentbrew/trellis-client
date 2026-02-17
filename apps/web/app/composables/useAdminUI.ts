@@ -6,7 +6,7 @@
  */
 
 import { hasMinimumRole, canPerformAction } from '~/lib/permissions'
-import type { UserRole } from './useUserRole'
+import type { UserRole } from '~/config/routes'
 
 const EDIT_MODE_KEY = 'platform-sandbox-edit-mode'
 
@@ -73,7 +73,7 @@ export function useAdminUI() {
   // Minimum role checks
   const isAdmin = computed(() => hasMinimumRole(userRole.value, 'admin'))
 
-  const isSuperAdmin = computed(() => hasMinimumRole(userRole.value, 'superadmin'))
+  const isOwnerRole = computed(() => hasMinimumRole(userRole.value, 'owner'))
 
   // Specific capability flags for self-building features
   const canCreateCollections = computed(() => {
@@ -82,8 +82,8 @@ export function useAdminUI() {
   })
 
   const canCreatePages = computed(() => {
-    // Super admin+ can create pages
-    return isSuperAdmin.value
+    // Owner can create pages
+    return isOwnerRole.value
   })
 
   const canCreateRoutes = computed(() => {
@@ -97,8 +97,8 @@ export function useAdminUI() {
   })
 
   const canManageIntegrations = computed(() => {
-    // Owner or super admin can manage integrations
-    return isOwner.value || isSuperAdmin.value
+    // Owner can manage integrations
+    return isOwner.value
   })
 
   const canManageBrand = computed(() => {
@@ -142,7 +142,7 @@ export function useAdminUI() {
     // Role checks
     isOwner,
     isAdmin,
-    isSuperAdmin,
+    isOwnerRole,
 
     // Basic permissions
     canViewContent,

@@ -7,12 +7,17 @@
     aboveSidebar: false,
   })
 
+  const emit = defineEmits<{
+    (_e: 'toggleRightSidebar'): void
+  }>()
+
   const routes = useRoutes()
   const route = useRoute()
   const commandDialog = useCommandDialog()
   const pinnedItems = usePinnedItems()
   const sidebarCollapse = useSidebarCollapse()
   const { currentApp, updateCollection: updateCollectionData, getCollectionBySlug } = useInstantData()
+  const { logoMarkForMode } = useBrandConfig()
   const { userRole: _userRole, roleConfig } = useUserRole()
   const { isInEditMode, toggleEditMode, canToggleEditMode, canManageMembers, isAdmin: _isAdmin } = useAdminUI()
   const { onlineCount, totalMembers, members: workspaceMembers, isUserOnline } = usePresence()
@@ -159,74 +164,27 @@
 
   // No watch needed - currentCollection is reactive via computed()
 
-  // Mock notifications with sidebar-aligned ontology
-  const notifications = ref([
-    {
-      id: 1,
-      title: 'High Severity Alert',
-      message: 'Critical system update required for facility security.',
-      time: '5m ago',
-      variant: 'destructive',
-      icon: 'lucide:alert-triangle',
-      unread: true,
-      to: '/security/updates',
-    },
-    {
-      id: 2,
-      title: 'Maintenance Warning',
-      message: 'Scheduled maintenance for the data center tomorrow at 2 AM.',
-      time: '1h ago',
-      variant: 'warning',
-      icon: 'lucide:clock',
-      unread: true,
-      to: '/infrastructure/maintenance',
-    },
-    {
-      id: 3,
-      title: 'Successful Backup',
-      message: 'All facility records have been successfully backed up to the cloud.',
-      time: '3h ago',
-      variant: 'success',
-      icon: 'lucide:check-circle',
-      unread: false,
-      to: '/data/backups',
-    },
-    {
-      id: 4,
-      title: 'New User Onboarded',
-      message: 'A new staff member has been added to the system.',
-      time: '5h ago',
-      variant: 'default',
-      icon: 'lucide:user-plus',
-      unread: false,
-      to: '/users/management',
-    },
-  ])
-
-  const unreadCount = computed(() => notifications.value.filter((n) => n.unread).length)
-
-  const notificationBadgeVariant = computed(() => {
-    if (notifications.value.some((n) => n.unread && n.variant === 'destructive')) return 'destructive'
-    if (notifications.value.some((n) => n.unread && n.variant === 'warning')) return 'warning'
-    if (notifications.value.some((n) => n.unread && n.variant === 'success')) return 'success'
-    return 'default'
-  })
-
-  const markAllAsRead = () => {
-    notifications.value = notifications.value.map((n) => ({ ...n, unread: false }))
-  }
+  // Realtime notifications
+  const {
+    notifications,
+    unreadCount,
+    notificationBadgeVariant,
+    markAsRead,
+    markAllAsRead,
+    timeAgo: notifTimeAgo,
+  } = useNotifications()
 
   const handleNotificationClick = (notification: any) => {
-    notification.unread = false
-    if (notification.to) {
-      navigateTo(notification.to)
-    }
+    if (!notification.isRead) markAsRead(notification.id)
+    if (notification.actionUrl) navigateTo(notification.actionUrl)
   }
 </script>
 
 <template>
   <!-- App Header: Navigation shell (matches icon rail) -->
-  <header class="bg-card/0 border-b flex h-16 shrink-0 items-center gap-0 p-0 overflow-hidden sticky top-0 z-10">
+  <header
+    data-slot="app-header"
+    class="bg-card/0 backdrop-blur-sm border-b flex h-14 shrink-0 items-center gap-0 p-0 overflow-hidden sticky top-0">
     <!-- Year/Facility Pickers + Breadcrumbs (white area) -->
     <nav class="flex flex-1 items-center gap-0.5 text-xs px-4 bg-transparent">
       <!-- Sidebar Toggle -->
@@ -251,11 +209,11 @@
       <div
         class="flex h-9 w-9 items-center justify-center rounded-lg transition bg-transparent hover:bg-transparent"
         :class="isInEditMode ? 'bg-accent-foreground/10 hover:bg-accent-foreground/20' : 'bg-rail-foreground/10 hover:bg-rail-foreground/20'">
-        <AppLogo class="scale-80" />
+        <AppLogo class="scale-75" :brand-mark="logoMarkForMode" />
       </div>
     </div>
 
-      <span class="text-muted-foreground/50 mr-3 ml-2 rotate-10 text-lg">
+      <span class="text-muted-foreground/50 mr-3 ml-1 rotate-10 text-lg">
         /
       </span>
 
@@ -341,29 +299,32 @@
       <UiButton
         v-if="props.aboveSidebar"
         variant="ghost"
-        class="rounded-full text-muted-foreground/50 hover:text-foreground border border-border hover:bg-muted/40 bg-transparent gap-2 px-4 min-w-[250px] flex items-center justify-between"
+        class="rounded-full text-muted-foreground/50 hover:text-foreground border border-border hover:bg-muted/40 bg-transparent gap-2 pl-3 pr-2 min-w-[250px] flex items-center justify-between"
         @click="commandDialog.open()">
         <div class="flex items-center gap-2">
           <Icon name="lucide:search" class="h-4 w-4" />
-          <span class="text-xs font-semibold">Find...</span>
+          <span class="text-xs font-semibold">Find anything...</span>
         </div>
-        <UiKbd class="bg-muted/40 border-border/50 text-muted-foreground text-[12px] font-mono">⌘ K</UiKbd>
+        <UiKbd class="bg-muted/40 border-border/50 text-muted-foreground font-mono border rounded-full gap-0">
+          <Icon name="lucide:command" class="scale-75" />
+          <span class="text-[12px]">K</span>
+        </UiKbd>
       </UiButton>
 
       <!-- Workspace Members & Presence -->
       <div v-if="workspaceUsers.length > 0" class="flex items-center ml-auto mr-2">
-        <div class="flex items-center rounded-full border border-border bg-background/50 p-1 shadow-sm transition-colors hover:bg-background/80">
+        <div class="flex items-center rounded-full border border-border bg-transparent p-1 shadow-sm transition-colors hover:bg-background/80">
           <div class="flex -space-x-1.5 px-0.5">
-            <UiTooltip v-for="u in workspaceUsers" :key="u.id">
+            <UiTooltip v-for="(u, index) in workspaceUsers" :key="u.id">
               <UiTooltipTrigger as-child>
-                <div class="relative">
-                  <UiAvatar class="size-6 ring-2 ring-background grayscale-[0.3] transition-all hover:grayscale-0 hover:scale-110 cursor-pointer">
+                <div class="relative" :style="{ zIndex: workspaceUsers.length - index }">
+                  <UiAvatar class="size-6 ring-2 ring-card grayscale-[0.3] transition-all hover:grayscale-0 hover:scale-110 cursor-pointer">
                     <UiAvatarImage v-if="u.avatar" :src="u.avatar" :alt="u.name" />
                     <UiAvatarFallback class="text-[9px] font-bold">{{ u.initials }}</UiAvatarFallback>
                   </UiAvatar>
                   <span
                     v-if="u.isOnline"
-                    class="absolute bottom-0 right-0 h-2 w-2 rounded-full border border-background bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.5)]"
+                    class="absolute -top-0.5 -right-0.5 h-2 w-2 rounded-full border border-background bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.5)]"
                   />
                 </div>
               </UiTooltipTrigger>
@@ -374,21 +335,21 @@
             </UiTooltip>
           </div>
           <div class="px-3 border-l ml-1.5 flex flex-col justify-center h-5">
-            <p class="text-[10px] leading-none font-bold text-foreground/80">
-              {{ onlineCount }} <span class="text-muted-foreground font-medium uppercase tracking-tighter">Online</span>
+            <p class="text-[10px] leading-none font-bold text-foreground/80 tabular-nums">
+              {{ onlineCount }}<span class="text-muted-foreground font-medium uppercase tracking-tighter">/{{ totalMembers }} online</span>
             </p>
           </div>
-                <!-- Invite Button (admin+ only) -->
-      <UiButton
-        v-if="canManageMembers"
-        variant="outline"
-        size="xs"
-        class="text-muted-foreground hover:bg-primary/10 hover:text-primary gap-1.5 pl-2 pr-3 font-semibold transition-colors "
-        @click="inviteDialogOpen = true"
-      >
-        <Icon name="lucide:plus" class="h-4 w-4" />
-        <span>Invite</span>
-      </UiButton>
+          <!-- Invite Button (admin+ only) -->
+          <UiButton
+            v-if="canManageMembers"
+            variant="outline"
+            size="xs"
+            class="text-muted-foreground hover:bg-primary/10 hover:text-primary gap-1.5 pl-2 pr-4 font-semibold transition-colors !rounded-full"
+            @click="inviteDialogOpen = true"
+          >
+            <Icon name="lucide:plus" class="h-4 w-4" />
+            <span>Invite</span>
+          </UiButton>
         </div>
       </div>
 
@@ -442,7 +403,7 @@
                 :key="notification.id"
                 class="relative flex cursor-pointer gap-4 border-b p-4 transition-all duration-300 group last:border-0"
                 :class="[
-                  notification.unread
+                  !notification.isRead
                     ? notification.variant === 'destructive'
                       ? 'bg-destructive/6 hover:bg-destructive/8'
                       : notification.variant === 'warning'
@@ -455,7 +416,7 @@
                 @click="handleNotificationClick(notification)">
                 <!-- Indicator Bar -->
                 <div
-                  v-if="notification.unread"
+                  v-if="!notification.isRead"
                   class="absolute left-0 top-2 bottom-2 w-1 rounded-r-full transition-all duration-300 group-hover:w-1.5"
                   :class="[
                     notification.variant === 'destructive'
@@ -479,19 +440,19 @@
                           ? 'bg-success/20 text-success ring-success/30 shadow-success/10'
                           : 'bg-primary/20 text-primary ring-primary/30 shadow-primary/10',
                   ]">
-                  <Icon :name="notification.icon" class="h-5 w-5" />
+                  <Icon :name="notification.icon || 'lucide:bell'" class="h-5 w-5" />
                 </div>
 
                 <div class="flex-1 min-w-0 space-y-1.5">
                   <div class="flex items-center justify-between">
                     <span
                       class="text-sm font-semibold tracking-tight truncate transition-colors duration-300"
-                      :class="notification.unread ? 'text-foreground' : 'text-muted-foreground/80'">
+                      :class="!notification.isRead ? 'text-foreground' : 'text-muted-foreground/80'">
                       {{ notification.title }}
                     </span>
                     <span
                       class="text-[10px] font-bold text-muted-foreground/60 uppercase tracking-widest tabular-nums whitespace-nowrap ml-2">
-                      {{ notification.time }}
+                      {{ notifTimeAgo(notification.createdAt) }}
                     </span>
                   </div>
                   <p
@@ -501,6 +462,11 @@
 
                   <div class="pt-1 flex items-center justify-between">
                     <div class="flex items-center gap-2">
+                      <span
+                        v-if="notification.orgName"
+                        class="rounded-md px-1.5 py-0.5 text-[9px] font-semibold tracking-wide text-muted-foreground/70 bg-muted/50 ring-1 ring-border/30 truncate max-w-[140px]">
+                        {{ notification.orgName }}
+                      </span>
                       <span
                         class="rounded-md px-1.5 py-0.5 text-[9px] font-black uppercase tracking-[0.1em] shadow-xs ring-1"
                         :class="[
@@ -517,7 +483,7 @@
                     </div>
 
                     <UiButton
-                      v-if="notification.to"
+                      v-if="notification.actionUrl"
                       variant="ghost"
                       size="xs"
                       class="h-7 px-2.5 text-[10px] font-black uppercase tracking-wider text-primary hover:bg-primary/10 opacity-0 group-hover:opacity-100 translate-x-2 group-hover:translate-x-0 transition-all duration-300 active:scale-95"
@@ -620,6 +586,20 @@
           </div>
         </template>
       </ClientOnly>
+
+      <!-- Right Sidebar Toggle -->
+      <UiTooltip v-if="props.aboveSidebar">
+        <UiTooltipTrigger as-child>
+          <UiButton
+            variant="ghost"
+            size="icon-sm"
+            class="text-muted-foreground hover:text-foreground transition-transform active:scale-95 ml-1"
+            @click="emit('toggleRightSidebar')">
+            <Icon name="lucide:panel-right" class="h-4 w-4" />
+          </UiButton>
+        </UiTooltipTrigger>
+        <UiTooltipContent side="bottom">Toggle details panel</UiTooltipContent>
+      </UiTooltip>
 
       <!-- Member Invite Dialog -->
       <MemberInviteDialog v-model:open="inviteDialogOpen" />

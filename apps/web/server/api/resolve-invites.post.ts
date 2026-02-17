@@ -73,6 +73,84 @@ export default defineEventHandler(async (event) => {
       }
     }
 
+    // Send notifications for each resolved membership
+    for (const member of pendingMembers) {
+      if (!member.orgId) continue
+      try {
+        const orgName = member.orgName || 'your workspace'
+        const inviteeName = body.email.split('@')[0] || body.email
+
+        // Notify the inviter that their invite was accepted
+        if (member.ownerId) {
+          const notifId = crypto.randomUUID()
+          await db.transact(
+            db.tx.notifications[notifId].update({
+              recipientId: member.ownerId,
+              orgId: member.orgId,
+              orgName,
+              type: 'invite_accepted',
+              title: 'Invite accepted',
+              message: `${inviteeName} accepted your invitation to ${orgName}.`,
+              actionUrl: '/members',
+              icon: 'lucide:user-check',
+              variant: 'success',
+              isRead: false,
+              actorId: body.userId,
+              actorName: inviteeName,
+              metadata: { memberEmail: body.email },
+              createdAt: Date.now(),
+            }),
+          )
+          // Link notification to org (non-fatal)
+          try {
+            await db.transact(db.tx.organizations[member.orgId].link({ notifications: notifId }))
+          } catch { /* non-fatal */ }
+        }
+
+        // Notify other admins (member_joined)
+        const adminsResult = await db.query({
+          members: {
+            $: {
+              where: {
+                orgId: member.orgId,
+                status: 'active',
+                role: 'admin',
+              },
+            },
+          },
+        })
+        const admins = ((adminsResult as any)?.members || [])
+          .filter((a: any) => a.userId && a.userId !== body.userId && a.userId !== member.ownerId)
+
+        for (const admin of admins) {
+          const adminNotifId = crypto.randomUUID()
+          await db.transact(
+            db.tx.notifications[adminNotifId].update({
+              recipientId: admin.userId,
+              orgId: member.orgId,
+              orgName,
+              type: 'member_joined',
+              title: 'New member joined',
+              message: `${inviteeName} joined ${orgName}.`,
+              actionUrl: '/members',
+              icon: 'lucide:user-plus',
+              variant: 'default',
+              isRead: false,
+              actorId: body.userId,
+              actorName: inviteeName,
+              metadata: { memberEmail: body.email },
+              createdAt: Date.now(),
+            }),
+          )
+          try {
+            await db.transact(db.tx.organizations[member.orgId].link({ notifications: adminNotifId }))
+          } catch { /* non-fatal */ }
+        }
+      } catch (notifErr: any) {
+        console.warn('[resolve-invites] Notification creation failed (non-fatal):', notifErr?.message)
+      }
+    }
+
     // If the user was successfully linked to at least one org, set up their
     // workspace context so the auth middleware lands them in the right place
     // instead of sending them through onboarding (which creates a new org).

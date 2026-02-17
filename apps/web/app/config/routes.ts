@@ -220,9 +220,9 @@ const docsSidebarSections = Object.entries(docCategories).map(([key, cat]) => ({
 
 /**
  * User roles for permission checking
- * Hierarchy: guest < member < admin < superadmin
+ * Hierarchy: guest < member < admin < owner
  */
-export type UserRole = 'guest' | 'member' | 'admin' | 'superadmin'
+export type UserRole = 'guest' | 'member' | 'admin' | 'owner'
 
 /**
  * Permission levels for routes
@@ -297,6 +297,11 @@ export const ROUTE_PATHS = {
     documents: '/workspace/documents',
     bookmarks: '/workspace/bookmarks',
     places: '/workspace/places',
+  },
+  marketplace: {
+    root: '/marketplace',
+    featured: '/marketplace/featured',
+    installed: '/marketplace/installed',
   },
   app: {
     root: '/app',

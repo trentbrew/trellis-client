@@ -1,6 +1,6 @@
 import type { InjectionKey } from 'vue'
-import type { EntityType } from '~/types/entity'
-import type { Entity } from '~/types/entity'
+import type { Entity, EntityType } from '~/types/entity'
+import { useDialogUrl } from '~/composables/useDialogUrl'
 
 // ============================================================================
 // Dialog Stack — Global singleton for stacked entity dialog management
@@ -60,6 +60,8 @@ const originEntityId = ref('')
  * dialogs below it are scaled down, nudged upward, and non-interactive.
  */
 export function useDialogStack() {
+  const { pushHash, popHash, clearHash, hashIds } = useDialogUrl()
+
   /** Push a new entity dialog onto the stack */
   function push(entityId: string, entityType: EntityType, item: Entity) {
     // Prevent duplicate top-of-stack
@@ -72,6 +74,11 @@ export function useDialogStack() {
       entityType,
       item,
     })
+
+    // Sync to URL — only append if origin is already in hash
+    if (hashIds.value.length > 0) {
+      pushHash(entityId)
+    }
   }
 
   /** Set the title and entity ID of the originating dialog (call from useEntityReferences before pushing) */
@@ -83,12 +90,22 @@ export function useDialogStack() {
   /** Pop the topmost dialog off the stack */
   function pop() {
     stack.value.pop()
+    popHash()
   }
 
   /** Clear the entire stack */
   function clear() {
+    // Capture origin before clearing
+    const firstId = hashIds.value[0]
     stack.value.splice(0)
     originEntityId.value = ''
+    // Restore hash to just the origin entity if one was open, otherwise clear
+    if (firstId) {
+      const { setOriginHash } = useDialogUrl()
+      setOriginHash(firstId)
+    } else {
+      clearHash()
+    }
   }
 
   /** Number of dialogs in the stack */

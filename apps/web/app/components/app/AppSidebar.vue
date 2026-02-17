@@ -10,6 +10,8 @@
     collectionItemMenu,
     customSectionMenu,
     sidebarSurfaceMenu,
+    treeNodeSectionMenu,
+    treeNodeItemMenu,
   } from '~/composables/useContextMenu'
 
   const props = withDefaults(defineProps<{
@@ -28,6 +30,12 @@
   const { copyLink } = useContextMenu()
   const nuxtApp = useNuxtApp()
   const route = useRoute()
+
+  // Tree-driven sidebar state
+  const { sidebarTree } = routes
+  const isTreeDriven = computed(() => {
+    return isWorkspaceRoute.value && sidebarTree.initialized.value && sidebarTree.tree.value.length > 0
+  })
 
   // Admin UI controls
   const { showBuilderUI, canCreatePages, canEditContent } = useAdminUI()
@@ -446,6 +454,15 @@
     if (isCollectionItem(item.path)) {
       return collectionItemMenu()
     }
+    // Tree-driven items get rename/changeIcon/move/delete options
+    if (isTreeDriven.value && item._treeNodeId) {
+      return treeNodeItemMenu({
+        isPinned: pinned.isPinned(item.path),
+        canPin: sectionKey !== 'personal-pinned',
+        isLocked: !!item._locked,
+        path: item.path,
+      })
+    }
     return sidebarItemMenu({
       isPinned: pinned.isPinned(item.path),
       canPin: sectionKey !== 'personal-pinned',
@@ -495,6 +512,14 @@
     if ((section as any).isCustom) {
       return customSectionMenu({ isCollapsed: collapsed.isCollapsed(section.key) })
     }
+    // Tree-driven sections get rename/changeIcon/delete options
+    if (isTreeDriven.value && section._treeNodeId) {
+      return treeNodeSectionMenu({
+        isCollapsed: collapsed.isCollapsed(section.key),
+        isLocked: !!section._locked,
+        canCreate: canEditContent.value,
+      })
+    }
     return sidebarSectionMenu({
       isCollapsed: collapsed.isCollapsed(section.key),
       canResetOrder: isWorkspaceRoute.value || (isDatabaseRoute.value && section.key === 'database-custom'),
@@ -540,16 +565,22 @@
         if (context?.key) sidebarOrder.resetSection(context.key)
         break
 
-      // Collection CRUD
+      // Collection & Tree Node CRUD
       case CONTEXT_ACTIONS.RENAME:
-        if (context?.isCustomSection) {
+        if (context?._treeNodeId) {
+          handleRenameTreeNode(context._treeNodeId, context.label)
+        } else if (context?.isCustomSection) {
           handleRenameCustomSection(context.key)
         } else if (context?.path) {
           handleRename(context.path)
         }
         break
       case CONTEXT_ACTIONS.CHANGE_ICON:
-        if (context?.path) handleChangeIcon(context.path)
+        if (context?._treeNodeId) {
+          handleChangeTreeNodeIcon(context._treeNodeId, context.icon)
+        } else if (context?.path) {
+          handleChangeIcon(context.path)
+        }
         break
       case CONTEXT_ACTIONS.DUPLICATE:
         // TODO: implement duplicate
@@ -557,8 +588,13 @@
       case CONTEXT_ACTIONS.EXPORT:
         if (context?.path) handleExportTrellis(context.path)
         break
+      case CONTEXT_ACTIONS.MOVE_TO:
+        // TODO: implement move-to-section picker for tree nodes
+        break
       case CONTEXT_ACTIONS.DELETE:
-        if (context?.isCustomSection) {
+        if (context?._treeNodeId) {
+          handleDeleteTreeNode(context._treeNodeId, context.label)
+        } else if (context?.isCustomSection) {
           handleDeleteCustomSection(context.key)
         } else if (context?.path) {
           if (isTypesSection.value && context.typeId) {
@@ -636,6 +672,17 @@
             const items = Array.from(list.querySelectorAll<HTMLElement>('[data-item-path]'))
             const newOrder = items.map((el) => el.dataset.itemPath!).filter(Boolean)
             sidebarOrder.setItemOrder(sectionKey, newOrder)
+
+            // Sync order to TQL graph nodes when tree-driven
+            if (isTreeDriven.value) {
+              const flatNodes = sidebarTree.flatNodes.value
+              newOrder.forEach((path, idx) => {
+                const node = flatNodes.find((n) => n.routePath === path)
+                if (node && node.order !== idx + 1) {
+                  sidebarTree.updateNode(node.id, { order: idx + 1 })
+                }
+              })
+            }
           },
         })
         sortableInstances.value.push(instance)
@@ -659,6 +706,17 @@
             )
             const newOrder = sectionEls.map((el) => el.dataset.sectionKey!).filter(Boolean)
             sidebarOrder.setSectionOrder('/workspace', newOrder)
+
+            // Sync section order to TQL graph nodes when tree-driven
+            if (isTreeDriven.value) {
+              const treeNodes = sidebarTree.tree.value
+              newOrder.forEach((key, idx) => {
+                const node = treeNodes.find((n) => (n.sectionKey || n.id) === key)
+                if (node && node.order !== (idx + 1) * 10) {
+                  sidebarTree.updateNode(node.id, { order: (idx + 1) * 10 })
+                }
+              })
+            }
           },
         })
         sortableInstances.value.push(instance)
@@ -690,10 +748,28 @@
   const newSectionName = ref('')
   const isCreatingSection = ref(false)
 
-  const handleCreateSection = () => {
+  const handleCreateSection = async () => {
     const name = newSectionName.value.trim()
     if (!name) return
-    sidebarOrder.createSection('/workspace', name)
+
+    if (isTreeDriven.value) {
+      // Create a SidebarNode entity for the new section
+      const slug = `custom-${name.toLowerCase().replace(/\s+/g, '-')}-${Date.now().toString(36)}`
+      const maxOrder = Math.max(0, ...sidebarTree.tree.value.map((n) => n.order))
+      await sidebarTree.createNode(slug, {
+        label: name.toUpperCase(),
+        icon: 'lucide:folder',
+        scope: 'workspace',
+        nodeType: 'section',
+        locked: false,
+        collapsed: false,
+        order: maxOrder + 10,
+        editable: true,
+      })
+    } else {
+      sidebarOrder.createSection('/workspace', name)
+    }
+
     newSectionName.value = ''
     isCreatingSection.value = false
   }
@@ -720,11 +796,36 @@
       sidebarOrder.renameSection(key, newName.trim())
     }
   }
+
+  // ── Tree node mutation handlers ─────────────────────────────
+
+  const handleRenameTreeNode = (nodeId: string, currentLabel?: string) => {
+    const newLabel = prompt('Rename:', currentLabel || '')
+    if (newLabel && newLabel.trim()) {
+      sidebarTree.updateNode(nodeId, { label: newLabel.trim() })
+    }
+  }
+
+  const handleChangeTreeNodeIcon = (nodeId: string, currentIcon?: string) => {
+    const newIcon = prompt('Icon name (e.g. lucide:star):', currentIcon || 'lucide:circle')
+    if (newIcon && newIcon.trim()) {
+      sidebarTree.updateNode(nodeId, { icon: newIcon.trim() })
+    }
+  }
+
+  const handleDeleteTreeNode = (nodeId: string, label?: string) => {
+    const name = label || 'this item'
+    const confirmed = window.confirm(`Remove "${name}" from the sidebar?`)
+    if (confirmed) {
+      sidebarTree.deleteNode(nodeId)
+    }
+  }
 </script>
 
 <template>
   <!-- Sidebar: Content frame (matches page header) -->
   <aside
+    data-slot="app-sidebar"
     class="border-sidebar-border/75 bg-transparent text-sidebar-foreground hidden flex-col border-r px-0 pb-0 lg:flex relative overflow-hidden"
     :style="{
       width: sidebarCollapse.isCollapsed.value ? '0px' : `${sidebarWidth}px`,
@@ -785,34 +886,24 @@
         <div class="flex min-h-0 flex-1 flex-col overflow-y-auto overflow-x-hidden ">
           <!-- Sticky sidebar filter -->
           <div class="sticky top-0 z-10 px-3 pt-4 pb-3" style="background: linear-gradient(to bottom, var(--background) 70%, transparent 100%)">
-            <div class="flex items-center gap-1.5">
-              <div class="relative flex-1">
-                <Icon name="lucide:search" class="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-sidebar-foreground/60 z-10" />
-                <input
-                  ref="sidebarFilterInputRef"
-                  v-model="sidebarFilter"
-                  type="text"
-                  placeholder="Search..."
-                  class="w-full bg-transparent border border-border backdrop-blur-md text-sidebar-foreground text-xs rounded-md pl-8 pr-7 py-2 outline-none placeholder:text-sidebar-foreground/30 focus:ring-1 focus:ring-ring/50 transition-colors"
-                  @keydown.escape="sidebarFilter = ''" />
-                <button
-                  v-if="sidebarFilter"
-                  type="button"
-                  class="absolute right-2 top-1/2 -translate-y-1/2 text-sidebar-foreground/40 hover:text-sidebar-foreground transition-colors"
-                  aria-label="Clear filter"
-                  @click="sidebarFilter = ''">
-                  <Icon name="lucide:x" class="h-3.5 w-3.5" />
-                </button>
-              </div>
+            <div class="relative flex items-center">
+              <Icon name="lucide:search" class="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-sidebar-foreground/60 z-10" />
+              <input
+                ref="sidebarFilterInputRef"
+                v-model="sidebarFilter"
+                type="text"
+                placeholder="Search..."
+                class="w-full bg-transparent border border-border backdrop-blur-md text-sidebar-foreground text-xs rounded-full pl-8 pr-10 py-2 outline-none placeholder:text-sidebar-foreground/30 focus:ring-1 focus:ring-ring/50 transition-colors"
+                @keydown.escape="sidebarFilter = ''" />
               <UiTooltipProvider v-if="isWorkspaceRoute || routes.currentSidebarSection.value?.path === '/database'">
                 <UiTooltip>
                   <UiTooltipTrigger as-child>
                     <button
                       type="button"
-                      class="flex items-center justify-center h-[32px] w-[32px] shrink-0 rounded-md border border-sidebar-border/50 bg-foreground/2 text-sidebar-foreground/50 hover:text-sidebar-foreground hover:bg-foreground/5 transition-colors"
+                      class="absolute right-1.5 top-1/2 -translate-y-1/2 flex items-center justify-center h-6 w-6 shrink-0 rounded-full bg-foreground/2 text-sidebar-foreground/50 hover:text-sidebar-foreground hover:bg-foreground/5 transition-colors"
                       :aria-label="isWorkspaceRoute ? 'Add page' : 'New type'"
                       @click="isWorkspaceRoute ? handleCreatePageInstant() : handleAddNew()">
-                      <Icon name="lucide:plus" class="h-4 w-4" />
+                      <Icon name="lucide:plus" class="h-3.5 w-3.5" />
                     </button>
                   </UiTooltipTrigger>
                   <UiTooltipContent side="bottom" :side-offset="4">
@@ -836,7 +927,7 @@
                 <div v-for="(section, idx) in filteredDynamicSidebarSections" :key="section.key" :data-section-key="section.key" :data-section-pinned="section.key === 'personal-pinned' ? '' : undefined" :class="idx > 0 ? 'mt-6' : ''">
                   <AppContextMenu
                     :actions="getSectionContextMenu(section)"
-                    :context="{ key: section.key, label: section.label, isCustomSection: !!(section as any).isCustom }"
+                    :context="{ key: section.key, label: section.label, icon: section.icon, isCustomSection: !!(section as any).isCustom, _treeNodeId: (section as any)._treeNodeId, _locked: (section as any)._locked }"
                     @action="handleContextAction">
                     <template #trigger>
                   <button
@@ -930,7 +1021,7 @@
                             :layout="!transitionsDisabled">
                             <AppContextMenu
                               :actions="isTypesSection ? typeItemMenu(item) : getItemContextMenu(item, section.key)"
-                              :context="isTypesSection ? { path: item.path, typeId: item.id } : { path: item.path, sectionKey: section.key }"
+                              :context="isTypesSection ? { path: item.path, typeId: item.id } : { path: item.path, sectionKey: section.key, label: item.label, icon: item.icon, _treeNodeId: item._treeNodeId, _locked: item._locked }"
                               @action="handleContextAction">
                               <template #trigger>
                             <div class="group relative elbow-connector">

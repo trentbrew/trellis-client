@@ -17,6 +17,8 @@ interface InviteBody {
   worldName?: string
   inviterId: string
   inviterName?: string
+  role?: 'owner' | 'admin' | 'member' | 'guest'
+  sharedEntityIds?: string[] // entity IDs to share with guest invitees
 }
 
 interface InviteResult {
@@ -98,7 +100,7 @@ export default defineEventHandler(async (event) => {
           userId: '', // Will be filled when they accept
           email,
           name: '',
-          role: 'member',
+          role: body.role || 'member',
           status: 'pending',
           invitedAt: now,
           inviteToken,
@@ -115,6 +117,33 @@ export default defineEventHandler(async (event) => {
         )
       } catch (linkErr: any) {
         console.warn(`[invite] Org link failed for ${email} (non-fatal):`, linkErr?.message)
+      }
+
+      // For guest invites, pre-create share records for the selected entities.
+      // The shares use memberId as a placeholder userId — resolve-invites will
+      // update them with the real userId once the guest accepts.
+      if ((body.role === 'guest') && body.sharedEntityIds?.length) {
+        for (const entityId of body.sharedEntityIds) {
+          try {
+            const shareId = crypto.randomUUID()
+            await db.transact([
+              db.tx.shares[shareId].update({
+                entityId,
+                entityType: 'entity',
+                userId: memberId, // placeholder — updated on accept
+                orgId: body.orgId,
+                permission: 'view',
+                sharedBy: body.inviterId,
+                sharedByName: body.inviterName || '',
+                createdAt: now,
+              }),
+              db.tx.entities[entityId].link({ shares: shareId }),
+              db.tx.organizations[body.orgId].link({ shares: shareId }),
+            ])
+          } catch (shareErr: any) {
+            console.warn(`[invite] Share creation failed for entity ${entityId} (non-fatal):`, shareErr?.message)
+          }
+        }
       }
 
       // Build the invite URL — the accept page will send the magic code

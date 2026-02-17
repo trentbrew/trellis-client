@@ -364,6 +364,23 @@ const slideDeckOntology: SchemaDefinition = {
   fields: [...baseFields(), ...documentFields()],
 }
 
+const diagramOntology: SchemaDefinition = {
+  '@id': 'trellis:schema/diagram', '@type': 'trellis:Schema', version: '1.0.0', tier: 'system',
+  entityClass: 'document', label: 'Diagram', labelPlural: 'Diagrams',
+  icon: 'lucide:workflow', color: 'teal',
+  projections: ['card-grid', 'list', 'table'],
+  defaultProjection: 'card-grid',
+  dialogShell: 'document',
+  panels: { properties: 'DiagramProperties', content: 'DiagramContent', footerActions: ['pin', 'duplicate', 'delete'] },
+  propertyFieldIds: ['type', 'pin', 'category', 'owner', 'tags'],
+  defaultSortField: 'updatedAt',
+  searchFields: ['title', 'description', 'content'],
+  fields: [
+    ...baseFields(), ...documentFields(),
+    f('diagramType', 'select', { selectOptions: ['flowchart', 'sequence', 'gantt', 'class', 'er', 'mindmap', 'other'] }),
+  ],
+}
+
 const bookmarkOntology: SchemaDefinition = {
   '@id': 'trellis:schema/bookmark', '@type': 'trellis:Schema', version: '1.0.0', tier: 'system',
   entityClass: 'document', label: 'Bookmark', labelPlural: 'Bookmarks',
@@ -543,6 +560,34 @@ const goalOntology: SchemaDefinition = {
 }
 
 // ============================================================================
+// SidebarNode — navigation tree nodes (core, own TQL namespace)
+// ============================================================================
+
+export const SIDEBAR_NODE_NAMESPACE = 'sidebar_node'
+
+const sidebarNodeOntology: SchemaDefinition = {
+  '@id': `trellis:schema/${SIDEBAR_NODE_NAMESPACE}`,
+  '@type': 'trellis:Schema',
+  version: '1.0.0',
+  tier: 'core',
+  fields: [
+    f('label', 'title', { required: true }),
+    f('icon', 'rich_text'),
+    f('routePath', 'rich_text'),
+    f('entityType', 'rich_text'),
+    f('scope', 'select', { required: true, selectOptions: ['workspace', 'database', 'settings', 'graph'] }),
+    f('nodeType', 'select', { required: true, selectOptions: ['section', 'item', 'separator'] }),
+    f('locked', 'checkbox'),
+    f('collapsed', 'checkbox'),
+    f('order', 'number'),
+    f('worldId', 'rich_text'),
+    f('sectionKey', 'rich_text'),
+    f('specialItems', 'rich_text'),
+    f('editable', 'checkbox'),
+  ],
+}
+
+// ============================================================================
 // Polymorphic Entity Ontology — covers all entity types in one schema
 // Used by TQL queries: FIND <ENTITY_NAMESPACE> AS ?t ...
 // ============================================================================
@@ -553,7 +598,7 @@ const entityOntology: SchemaDefinition = {
   version: '1.0.0',
   tier: 'system',
   fields: [
-    f('type', 'select', { required: true, selectOptions: ['task', 'event', 'trip', 'payment', 'note', 'appointment', 'reminder', 'deadline', 'milestone', 'sprint', 'budget', 'bookmark', 'file', 'page', 'template', 'slide_deck', 'person', 'contact', 'organization', 'vendor', 'project', 'folder', 'collection', 'goal'] }),
+    f('type', 'select', { required: true, selectOptions: ['task', 'event', 'trip', 'payment', 'note', 'appointment', 'reminder', 'deadline', 'milestone', 'sprint', 'budget', 'bookmark', 'file', 'page', 'template', 'slide_deck', 'diagram', 'person', 'contact', 'organization', 'vendor', 'project', 'folder', 'collection', 'goal'] }),
     f('title', 'title', { required: true }),
     f('description', 'rich_text'),
     f('startDate', 'date'),
@@ -637,6 +682,7 @@ const entityTypeOntologies: Record<string, SchemaDefinition> = {
   'trellis:schema/page': pageOntology,
   'trellis:schema/template': templateOntology,
   'trellis:schema/slide_deck': slideDeckOntology,
+  'trellis:schema/diagram': diagramOntology,
   'trellis:schema/bookmark': bookmarkOntology,
   'trellis:schema/person': personOntology,
   'trellis:schema/contact': contactOntology,
@@ -661,6 +707,7 @@ export function createWorkspaceConfig(): WorkspaceConfig {
         // System ontologies
         [`trellis:schema/${ENTITY_NAMESPACE}`]: entityOntology,
         'trellis:schema/comment': commentOntology,
+        [`trellis:schema/${SIDEBAR_NODE_NAMESPACE}`]: sidebarNodeOntology,
         // Per-type ontologies (all 22 entity types)
         ...entityTypeOntologies,
       },
@@ -710,6 +757,7 @@ export function createWorkspaceConfig(): WorkspaceConfig {
 export {
   entityOntology,
   commentOntology,
+  sidebarNodeOntology,
   entityTypeOntologies,
   taskOntology,
   eventOntology,
@@ -735,4 +783,5 @@ export {
   goalOntology,
   sprintOntology,
   budgetOntology,
+  diagramOntology,
 }

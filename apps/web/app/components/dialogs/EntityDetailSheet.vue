@@ -27,7 +27,7 @@
 
   // Determine if user can edit (admin only by default)
   const canEdit = computed(() => {
-    return state.value.canEdit && ['admin', 'superadmin'].includes(userRole.value)
+    return state.value.canEdit && ['admin', 'owner'].includes(userRole.value)
   })
 
   // Get schema for current entity type

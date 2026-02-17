@@ -180,6 +180,9 @@ const app: SchemaDefinition = {
 
 /**
  * core:Member — User within a workspace.
+ *
+ * Canonical contract for the membership system. Role and status enums
+ * are constrained here — tests validate InstantDB records against these.
  */
 const member: SchemaDefinition = {
   '@id': 'core:Member',
@@ -193,8 +196,84 @@ const member: SchemaDefinition = {
     f('name', 'title', { required: true }),
     f('email', 'email'),
     f('avatar', 'files'),
-    f('role', 'select'),
-    f('status', 'select'),
+    f('role', 'select', {
+      required: true,
+      selectOptions: ['owner', 'admin', 'member', 'guest'],
+      defaultValue: 'member',
+    }),
+    f('status', 'select', {
+      required: true,
+      selectOptions: ['pending', 'active', 'suspended'],
+      defaultValue: 'pending',
+    }),
+    f('orgId', 'relation', { required: true, relation: { targetSchema: 'core:Workspace', cardinality: 'one' } }),
+    f('userId', 'relation', { relation: { targetSchema: 'core:Person', cardinality: 'one' } }),
+    f('invitedAt', 'date'),
+    f('joinedAt', 'date'),
+  ],
+};
+
+/**
+ * core:Notification — In-app notification record.
+ *
+ * Scoped to a recipient user. orgId/orgName provide workspace attribution
+ * but notifications are queried user-wide, not org-scoped.
+ */
+const notification: SchemaDefinition = {
+  '@id': 'core:Notification',
+  '@type': 'trellis:Schema',
+  version: CORE_VERSION,
+  tier: 'core',
+  subClassOf: 'core:Thing',
+  label: 'Notification',
+  icon: 'lucide:bell',
+  fields: [
+    f('recipientId', 'relation', { required: true, relation: { targetSchema: 'core:Person', cardinality: 'one' } }),
+    f('orgId', 'relation', { relation: { targetSchema: 'core:Workspace', cardinality: 'one' } }),
+    f('orgName', 'rich_text'),
+    f('type', 'select', {
+      required: true,
+      selectOptions: [
+        'invite_accepted', 'invite_sent', 'member_joined',
+        'member_removed', 'role_changed', 'mention',
+        'comment', 'entity_updated', 'system',
+      ],
+    }),
+    f('title', 'title', { required: true }),
+    f('message', 'rich_text', { required: true }),
+    f('actionUrl', 'url'),
+    f('icon', 'rich_text'),
+    f('variant', 'select', { selectOptions: ['default', 'success', 'warning', 'destructive', 'info'] }),
+    f('isRead', 'checkbox', { defaultValue: false }),
+    f('actorId', 'relation', { relation: { targetSchema: 'core:Person', cardinality: 'one' } }),
+    f('actorName', 'rich_text'),
+    f('metadata', 'rich_text'),
+    f('createdAt', 'date', { required: true }),
+  ],
+};
+
+/**
+ * core:Share — Entity-level access grant (for guest sharing).
+ *
+ * Phase C placeholder — defines the contract for entity-level sharing.
+ * A share record grants a specific user access to a specific entity.
+ */
+const share: SchemaDefinition = {
+  '@id': 'core:Share',
+  '@type': 'trellis:Schema',
+  version: CORE_VERSION,
+  tier: 'core',
+  subClassOf: 'core:Thing',
+  label: 'Share',
+  icon: 'lucide:share-2',
+  fields: [
+    f('entityId', 'relation', { required: true }),
+    f('entityType', 'select', { selectOptions: ['entity', 'collection'] }),
+    f('userId', 'relation', { required: true, relation: { targetSchema: 'core:Person', cardinality: 'one' } }),
+    f('orgId', 'relation', { relation: { targetSchema: 'core:Workspace', cardinality: 'one' } }),
+    f('permission', 'select', { required: true, selectOptions: ['view', 'comment', 'edit'], defaultValue: 'view' }),
+    f('sharedBy', 'relation', { relation: { targetSchema: 'core:Person', cardinality: 'one' } }),
+    f('createdAt', 'date', { required: true }),
   ],
 };
 
@@ -249,6 +328,8 @@ export const CORE_ONTOLOGY: SchemaDefinition[] = [
   workspace,
   app,
   member,
+  notification,
+  share,
   person,
   workflow,
 ];

@@ -2,6 +2,8 @@
   import EntityDialog from '~/components/dialogs/EntityDialog.vue'
   import type { Entity, EntityType, TaskItem } from '~/types/entity'
   import { ENTITY_TYPE_OPTIONS } from '~/types/entity'
+  import { useDialogUrl } from '~/composables/useDialogUrl'
+  import { useHashDialogRestore } from '~/composables/useHashDialogRestore'
 
   definePageMeta({ layout: 'default' })
   useHead({ title: 'Feed | Personal' })
@@ -139,16 +141,34 @@
   function openDetail(item: Entity) {
     viewingItem.value = item
     viewOpen.value = true
+    const { setOriginHash } = useDialogUrl()
+    setOriginHash(item.id)
   }
+
+  useHashDialogRestore(allItems, (entityId, item) => {
+    viewingItem.value = item
+    viewOpen.value = true
+  })
+
+  watch(viewOpen, (open) => {
+    if (!open) {
+      const { clearHash } = useDialogUrl()
+      clearHash()
+    }
+  })
 
   async function handleUpdate(item: Entity) {
     await update(item)
     viewOpen.value = false
+    const { clearHash } = useDialogUrl()
+    clearHash()
   }
 
   async function handleDelete(item: Entity) {
     await remove(item.id)
     viewOpen.value = false
+    const { clearHash } = useDialogUrl()
+    clearHash()
   }
 
   // ---------------------------------------------------------------------------

@@ -1,4 +1,5 @@
-import crypto from 'node:crypto';
+// Use globalThis.crypto for browser + Node.js compatibility
+const _crypto = globalThis.crypto;
 import type {
   EngineOptions,
   EngineState,
@@ -64,7 +65,7 @@ export class Engine {
 
     let steps = 0;
     const runId =
-      crypto.randomUUID?.() ||
+      _crypto.randomUUID?.() ||
       `${Date.now()}-${Math.random().toString(36).slice(2)}`;
     const traces: Trace[] = [];
     const journal: JournalEntry[] = [];
