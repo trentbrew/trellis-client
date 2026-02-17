@@ -31,9 +31,10 @@ export function useCollaborativeEditor(
   const ydoc = shallowRef<Y.Doc | null>(null)
   const provider = shallowRef<InstantDBProvider | null>(null)
   const connectionStatus = ref<CollabConnectionStatus>('disconnected')
-  const collabExtensions = shallowRef<Extension[]>([])
+  const collabExtensions = shallowRef<any[]>([])
 
   let activeRoom: any = null
+  let activeEntityId: string | null = null
   let peerId = ''
 
   /**
@@ -44,9 +45,14 @@ export function useCollaborativeEditor(
   const isLeader = ref(false)
 
   function setup(id: string) {
+    // Skip if already connected to the same entity
+    if (activeEntityId === id && provider.value) return
     cleanup()
 
+    console.log('[useCollaborativeEditor] setup()', { id, isCloudMode, hasRawDb: !!adapter._rawDb, userId: user.value?.id })
     if (!isCloudMode || !adapter._rawDb || !user.value?.id) return
+    activeEntityId = id
+    console.log('[useCollaborativeEditor] setup proceeding — joining entity-collab room')
 
     peerId = `${user.value.id}-${Date.now().toString(36)}`
     connectionStatus.value = 'connecting'
@@ -98,13 +104,16 @@ export function useCollaborativeEditor(
     collabExtensions.value = []
     connectionStatus.value = 'disconnected'
     isLeader.value = false
+    activeEntityId = null
   }
 
-  // Watch for entityId + enabled changes
+  // Watch for entityId + enabled + user auth changes.
+  // user.value?.id is included so setup() re-fires when auth resolves
+  // (the watcher fires immediately but user may still be null).
   if (import.meta.client) {
     watch(
-      [() => unref(entityId), () => unref(options.enabled)],
-      ([id, enabled]) => {
+      [() => unref(entityId), () => unref(options.enabled), () => user.value?.id],
+      ([id, enabled, _uid]) => {
         if (id && enabled && isCloudMode) {
           setup(id)
         } else {

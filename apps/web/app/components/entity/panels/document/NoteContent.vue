@@ -37,6 +37,7 @@
       embeds
       tables
       mathematics
+      collaborative
       :entity-id="item.id" />
     <div
       v-else

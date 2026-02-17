@@ -61,6 +61,7 @@
     mathematics?: boolean
     draghandle?: boolean
     embeds?: boolean
+    collaborative?: boolean
     entityId?: string
   }>()
 
@@ -144,6 +145,15 @@
   const entitySearch = (props.mentions || props.embeds) ? useEntitySearch() : null
   const tablesEnabled = props.tables !== false
   const mathematicsEnabled = props.mathematics !== false
+
+  // ── Collaborative editing ───────────────────────────────────────────
+  const collabEntityId = computed(() => props.entityId)
+  const collabEnabled = computed(() => !!props.collaborative && !!props.entityId)
+  const initialContent = computed(() => props.modelValue || '')
+  const { ydoc: _ydoc, collabExtensions, connectionStatus: _connectionStatus, isLeader: _isLeader, destroy: destroyCollab } = useCollaborativeEditor(
+    collabEntityId,
+    { initialContent, enabled: collabEnabled },
+  )
 
   // ── Embed picker state ──────────────────────────────────────────────
   const showEntityPicker = ref(false)
@@ -254,6 +264,8 @@
     const exts = [
       StarterKit.configure({
         codeBlock: false, // replaced by CodeBlockLowlight
+        // When collaborative, disable built-in history — Y.js handles undo/redo
+        ...(collabEnabled.value ? { history: false } : {}),
       }),
       CodeBlockLowlight.configure({ lowlight }),
       Placeholder.configure({
@@ -330,6 +342,10 @@
         EntityEmbed as any,
         QueryView as any,
       )
+    }
+    // Inject Y.js Collaboration extension when collaborative mode is active
+    if (collabEnabled.value && collabExtensions.value.length) {
+      exts.push(...collabExtensions.value)
     }
     return exts
   }
@@ -475,13 +491,37 @@
       },
     },
     onUpdate: ({ editor: e }) => {
+      // In collaborative mode, suppress emissions until Y.doc has been seeded
+      // to prevent the empty Y.doc from overwriting persisted content.
+      if (collabEnabled.value && !collabSeeded) return
       emit('update:modelValue', e.getHTML())
     },
   })
 
+  // Seed Y.doc with initial HTML when collaborative mode is active.
+  // The Collaboration extension ignores the `content` editor option,
+  // so we populate via setContent after the editor is created. If a peer
+  // sends full state later, Y.js CRDT merges cleanly (identical content = no-op).
+  // useEditor() creates the editor asynchronously, so we must watch for it.
+  let collabSeeded = false
+  watch(
+    () => editor.value,
+    (e) => {
+      if (!e || collabSeeded || !collabEnabled.value) return
+      collabSeeded = true
+      const html = markdownToHtml(props.modelValue || '')
+      if (html && html !== '<p></p>') {
+        e.commands.setContent(html)
+      }
+    },
+    { immediate: true },
+  )
+
+  // External modelValue sync — suppressed when collaborative (Y.js doc is authoritative)
   watch(
     () => props.modelValue,
     (val) => {
+      if (collabEnabled.value) return // Y.js doc is authoritative in collab mode
       if (editor.value && val !== editor.value.getHTML()) {
         editor.value.commands.setContent(markdownToHtml(val || ''))
       }
@@ -489,6 +529,7 @@
   )
 
   onBeforeUnmount(() => {
+    destroyCollab()
     editor.value?.destroy()
   })
 </script>
@@ -957,7 +998,7 @@
       :editor="editor"
       class="prose prose-sm max-w-none text-sm text-foreground"
       :class="[
-        seamless ? 'px-0 py-0' : 'px-24 py-8',
+        seamless ? 'px-0 py-0' : 'px-8 py-8',
         seamless ? 'min-h-[24px]' : compact ? 'min-h-[60px]' : 'min-h-[100px]',
         fillHeight ? 'flex-1 min-h-0 overflow-y-auto' : '',
       ]" />
@@ -1066,6 +1107,7 @@
 
   :deep(.ProseMirror p.is-editor-empty:first-child::before) {
     color: hsl(var(--muted-foreground));
+    opacity: 0.5;
     content: attr(data-placeholder);
     float: left;
     height: 0;
@@ -1404,5 +1446,14 @@
     opacity: 0.5;
     background: hsl(var(--muted) / 0.5);
     border-radius: 0.25rem;
+  }
+
+  :deep(#tippy-1 > div) {
+    background-color: var(--color-card) !important;
+    color: var(--color-foreground) !important;
+    border-radius: 0.25rem !important;
+    box-shadow: 0 0 0.5rem rgba(0, 0, 0, 0.1) !important;
+    font-size: 0.75rem !important;
+    padding: 0.5rem !important;
   }
 </style>
