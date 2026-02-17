@@ -22,7 +22,6 @@
       canNavigateNext?: boolean
       dialogTitle?: string
       dialogDescription?: string
-      avatar?: string
     }>(),
     {
       mode: 'edit',
@@ -48,21 +47,44 @@
     emit('close')
   }
 
+  // ── Stack-aware positioning ─────────────────────────────────────────
+  const { buildContentStyle, overlayClass: stackOverlayClass, stackTransform, isStacked, parentTitle, hideNavigation, onBack, reportDimensions } = useDialogStackAware()
+
   // ── Resize logic ──────────────────────────────────────────────────────
   const MIN_W = 480
   const MIN_H = 420
   const MAX_W = computed(() => window.innerWidth - 64)
   const MAX_H = computed(() => window.innerHeight - 64)
-  const DEFAULT_W = 720
-  const DEFAULT_H = 640
+  const defaultSize = computed(() => {
+    const vpW = window.innerWidth
+    const vpH = window.innerHeight
+    const aspect = vpW / vpH
+    const scale = 0.82
+    let w = Math.round(vpW * scale)
+    let h = Math.round(vpH * scale)
+    // Apply max caps while preserving viewport aspect ratio
+    if (w > 1400) {
+      w = 1400
+      h = Math.round(w / aspect)
+    }
+    if (h > 1000) {
+      h = 1000
+      w = Math.round(h * aspect)
+    }
+    return { w, h }
+  })
+  const DEFAULT_W = computed(() => defaultSize.value.w)
+  const DEFAULT_H = computed(() => defaultSize.value.h)
 
-  const dialogW = ref(DEFAULT_W)
-  const dialogH = ref(DEFAULT_H)
+  const dialogW = ref(DEFAULT_W.value)
+  const dialogH = ref(DEFAULT_H.value)
 
   watch(() => props.open, (val) => {
     if (val) {
-      dialogW.value = Math.min(DEFAULT_W, MAX_W.value)
-      dialogH.value = Math.min(DEFAULT_H, MAX_H.value)
+      dialogW.value = Math.min(DEFAULT_W.value, MAX_W.value)
+      dialogH.value = Math.min(DEFAULT_H.value, MAX_H.value)
+      propsExpanded.value = false
+      nextTick(checkPropsOverflow)
     }
   })
 
@@ -105,17 +127,42 @@
     el.addEventListener('pointermove', onMove)
     el.addEventListener('pointerup', onUp)
   }
+
+  // Report dimensions to shared state so stacked dialogs can match
+  watch([dialogW, dialogH], ([w, h]) => reportDimensions(w, h), { immediate: true })
+
+  // ── Properties overflow detection ───────────────────────────────────
+  const propsRowRef = ref<HTMLElement | null>(null)
+  const propsOverflowing = ref(false)
+  const propsExpanded = ref(false)
+
+  const checkPropsOverflow = () => {
+    if (!propsRowRef.value || propsExpanded.value) return
+    propsOverflowing.value = propsRowRef.value.scrollWidth > propsRowRef.value.clientWidth + 1
+  }
+
+  let _resizeObserver: ResizeObserver | undefined
+  onMounted(() => {
+    _resizeObserver = new ResizeObserver(checkPropsOverflow)
+    if (propsRowRef.value) _resizeObserver.observe(propsRowRef.value)
+  })
+  watch(propsRowRef, (el, oldEl) => {
+    if (oldEl && _resizeObserver) _resizeObserver.unobserve(oldEl)
+    if (el && _resizeObserver) _resizeObserver.observe(el)
+  })
+  onBeforeUnmount(() => _resizeObserver?.disconnect())
 </script>
 
 <template>
   <UiDialog :open="open" @update:open="emit('update:open', $event)">
     <UiDialogContent
       :hide-close="true"
-      :style="`position:fixed !important; top:50% !important; left:50% !important; translate:-50% -50% !important; width:${dialogW}px !important; max-width:${dialogW}px !important; height:${dialogH}px !important; max-height:${dialogH}px !important;`"
+      :overlay-class="stackOverlayClass"
+      :style="buildContentStyle(dialogW, dialogH)"
       :class="[isResizing ? 'select-none duration-0 transition-none' : '']"
       class="p-0! gap-0! overflow-hidden rounded-xl border border-border bg-card shadow-2xl flex! flex-col relative"
-      @pointer-down-outside="(e: Event) => { if (isResizing) e.preventDefault() }"
-      @interact-outside="(e: Event) => { if (isResizing) e.preventDefault() }">
+      @pointer-down-outside="(e: Event) => { if (isResizing || !stackTransform.interactive) e.preventDefault() }"
+      @interact-outside="(e: Event) => { if (isResizing || !stackTransform.interactive) e.preventDefault() }">
 
       <!-- Resize handles -->
       <div class="absolute inset-x-2 top-0 h-1 cursor-ns-resize z-50" @pointerdown="startResize('n', $event)" />
@@ -132,26 +179,26 @@
 
       <!-- Header — profile-oriented with avatar -->
       <div class="shrink-0 border-b border-border">
-        <div class="px-4 pt-4 pb-3">
+        <!-- Back button for stacked dialogs -->
+        <div v-if="isStacked && parentTitle" class="px-4 pt-2 pb-0">
+          <button
+            class="inline-flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground transition-colors -ml-1 px-1 py-0.5 rounded-md hover:bg-muted/50"
+            @click="onBack">
+            <Icon name="lucide:arrow-left" class="h-3.5 w-3.5" />
+            <span class="truncate max-w-[240px]">{{ parentTitle }}</span>
+          </button>
+        </div>
+        <div :class="isStacked && parentTitle ? 'px-4 pt-2 pb-3' : 'px-4 pt-4 pb-3'">
           <div class="flex items-center justify-between gap-3 mb-3">
-            <div class="flex items-center gap-3 min-w-0">
-              <!-- Avatar -->
-              <slot name="avatar">
-                <div class="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
-                  <img v-if="avatar" :src="avatar" :alt="title" class="h-10 w-10 rounded-full object-cover" />
-                  <Icon v-else name="lucide:user" class="h-5 w-5 text-primary" />
-                </div>
-              </slot>
-              <div class="min-w-0">
-                <span v-if="typeBadge" class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-medium bg-primary/10 text-primary mb-1">
-                  <Icon :name="typeBadge.icon" class="h-3 w-3" />
-                  {{ typeBadge.label }}
-                </span>
-                <slot name="header-badges" />
-              </div>
+            <div class="flex items-center gap-2 min-w-0">
+              <span v-if="typeBadge" class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-medium bg-primary/10 text-primary">
+                <Icon :name="typeBadge.icon" class="h-3 w-3" />
+                {{ typeBadge.label }}
+              </span>
+              <slot name="header-badges" />
             </div>
             <div class="flex items-center gap-1 shrink-0">
-              <template v-if="!isCreateMode">
+              <template v-if="!isCreateMode && !hideNavigation">
                 <UiButton variant="ghost" size="icon" class="h-7 w-7" :disabled="!canNavigatePrev" @click="emit('navigatePrev')">
                   <Icon name="lucide:chevron-up" class="h-4 w-4" />
                 </UiButton>
@@ -159,7 +206,7 @@
                   <Icon name="lucide:chevron-down" class="h-4 w-4" />
                 </UiButton>
               </template>
-              <UiButton variant="ghost" size="icon" class="h-7 w-7" @click="closeDialog">
+              <UiButton v-if="!isStacked" variant="ghost" size="icon" class="h-7 w-7" @click="closeDialog">
                 <Icon name="lucide:x" class="h-4 w-4" />
               </UiButton>
             </div>
@@ -177,13 +224,30 @@
             <p v-else-if="description" class="text-sm text-muted-foreground" v-html="description" />
             <p v-else class="text-sm text-muted-foreground/50 italic">No description</p>
           </div>
+          <div v-if="$slots['header-tags']" class="mt-2 px-1">
+            <slot name="header-tags" />
+          </div>
         </div>
       </div>
 
       <!-- Properties Row -->
       <div v-if="$slots.properties" class="sticky top-0 z-10 bg-card px-4 py-2.5 border-b border-border">
-        <div class="flex items-center gap-1.5 text-xs overflow-x-auto scrollbar-none whitespace-nowrap">
-          <slot name="properties" />
+        <div class="flex items-center gap-1.5 text-xs">
+          <div
+            ref="propsRowRef"
+            :class="[
+              'flex items-center gap-1.5 flex-1 min-w-0',
+              propsExpanded ? 'flex-wrap gap-y-1.5' : 'overflow-hidden',
+            ]">
+            <slot name="properties" />
+          </div>
+          <button
+            v-if="propsOverflowing || propsExpanded"
+            class="inline-flex items-center justify-center h-6 w-6 rounded-md bg-muted/50 hover:bg-muted transition-colors shrink-0 ml-0.5"
+            :title="propsExpanded ? 'Show less' : 'Show all properties'"
+            @click="propsExpanded = !propsExpanded">
+            <Icon :name="propsExpanded ? 'lucide:chevron-up' : 'lucide:more-horizontal'" class="h-3.5 w-3.5 text-muted-foreground" />
+          </button>
         </div>
       </div>
 

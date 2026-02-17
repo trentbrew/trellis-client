@@ -111,11 +111,22 @@ export class EAVStore {
   addFacts(facts: Fact[]): void {
     for (let i = 0; i < facts.length; i++) {
       const fact = facts[i];
-      if (fact) {
-        this.facts.push(fact);
-        this.updateIndexes(fact, this.facts.length - 1);
-        this.updateCatalog(fact);
+      if (!fact) continue;
+
+      // Dedup: skip if identical (e, a, v) triple already exists
+      const attrIndices = this.eavIndex.get(fact.e)?.get(fact.a);
+      if (attrIndices) {
+        let isDupe = false;
+        for (const idx of attrIndices) {
+          const existing = this.facts[idx];
+          if (existing && existing.v === fact.v) { isDupe = true; break; }
+        }
+        if (isDupe) continue;
       }
+
+      this.facts.push(fact);
+      this.updateIndexes(fact, this.facts.length - 1);
+      this.updateCatalog(fact);
     }
   }
 
@@ -356,7 +367,7 @@ export class EAVStore {
 
   // Statistics
   getAllFacts(): Fact[] {
-    return [...this.facts];
+    return this.facts.filter((f): f is Fact => f != null);
   }
 
   getAllLinks(): Link[] {

@@ -1,6 +1,7 @@
 <script setup lang="ts">
   import { useBrowse } from '~/composables/useBrowse'
   import { useGlobalDetailSheet } from '~/composables/useGlobalDetailSheet'
+  import { entityQuery } from '~/lib/tql-namespace'
 
   interface GraphEntity {
     '@id': string
@@ -29,7 +30,7 @@
   const fetchEntities = async () => {
     loading.value = true
     try {
-      const result = await graph.queryOnce('FIND calendaritem AS ?e')
+      const result = await graph.queryOnce(entityQuery('?e'))
       const ids = result.data.map((row) => String((row as any)['?e']))
 
       if (ids.length > 0) {

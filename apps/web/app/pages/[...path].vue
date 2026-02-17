@@ -39,7 +39,7 @@
           </div>
           <div class="pt-2">
             <UiButton variant="outline" as-child>
-              <NuxtLink to="/personal/tasks">Go to My Tasks</NuxtLink>
+              <NuxtLink to="/workspace/tasks">Go to My Tasks</NuxtLink>
             </UiButton>
           </div>
         </div>

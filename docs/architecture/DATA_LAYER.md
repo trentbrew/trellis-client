@@ -35,8 +35,8 @@ The application uses a **local-first InstantDB adapter** (`instant-local`) durin
 | `app/lib/instant-local/tx.ts`         | Proxy-based transaction builder matching `db.tx.NS[id].action(data)` pattern, plus `processTransactions` for `create`/`update`/`merge`/`delete`/`link`/`unlink`            |
 | `app/lib/instant-local/index.ts`      | `createLocalInstantDB()` factory — the public API entry point                                                                                                              |
 | `app/plugins/instant.client.ts`       | Nuxt plugin that initializes the adapter and seeds ECMS + personal data                                                                                                    |
-| `app/composables/useCalendarItems.ts` | Reactive composable for personal calendar items — `items`, `byType()`, `create()`, `update()`, `remove()`                                                                  |
-| `app/lib/personalSeedData.ts`         | 25 seed calendar items (tasks, events, payments, notes) with relative dates                                                                                                |
+| `app/composables/useEntities.ts`      | Reactive composable for all entities — `items`, `byType()`, `create()`, `update()`, `remove()`                                                                              |
+| `app/lib/personalSeedData.ts`         | 25 seed entities (tasks, events, payments, notes) with relative dates                                                                                                      |
 | `instant.schema.ts`                   | Entity + link definitions (shared with future real InstantDB)                                                                                                              |
 
 ## API Contract
@@ -81,7 +81,7 @@ Entity definitions live in `instant.schema.ts` at the project root. The schema u
 - **settings** — Key-value settings (user prefs, app config, schemas)
 - **facilities** — ECMS physical locations
 - **facilityMembers** — User ↔ facility role assignments
-- **calendarItems** — Tasks, events, payments, notes (polymorphic)
+- **entities** — Tasks, events, payments, notes, people, projects (polymorphic entity namespace)
 
 ## Migration Path
 

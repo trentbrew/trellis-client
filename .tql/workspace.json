@@ -1,0 +1,42 @@
+{
+  "workspace": {
+    "name": "trellis-app-builder",
+    "description": "Project brain for the Trellis app builder monorepo. Tracks sessions, actions, files, dependencies, tasks, and decision traces.",
+    "ontologies": {
+      "hq": {
+        "@id": "hq",
+        "@type": "trellis:Schema",
+        "version": "0.1.0",
+        "fields": [
+          { "name": "title", "valueType": "title" },
+          { "name": "description", "valueType": "rich_text" },
+          { "name": "status", "valueType": "select", "selectOptions": ["active", "completed", "blocked", "archived"] },
+          { "name": "priority", "valueType": "number" },
+          { "name": "createdAt", "valueType": "date" },
+          { "name": "updatedAt", "valueType": "date" },
+          { "name": "dueDate", "valueType": "date" },
+          { "name": "tags", "valueType": "multi_select" },
+          { "name": "owner", "valueType": "people" },
+          { "name": "severity", "valueType": "select", "selectOptions": ["info", "warning", "critical"] },
+          { "name": "category", "valueType": "select" },
+          { "name": "path", "valueType": "url" },
+          { "name": "language", "valueType": "select" },
+          { "name": "version", "valueType": "rich_text" },
+          { "name": "actionType", "valueType": "select" },
+          { "name": "data", "valueType": "rich_text" },
+          { "name": "hash", "valueType": "rich_text" },
+          { "name": "message", "valueType": "rich_text" },
+          { "name": "author", "valueType": "rich_text" },
+          { "name": "port", "valueType": "number" },
+          { "name": "userManaged", "valueType": "checkbox" },
+          { "name": "patternType", "valueType": "select" },
+          { "name": "occurrences", "valueType": "number" },
+          { "name": "rationale", "valueType": "rich_text" },
+          { "name": "rule", "valueType": "rich_text" },
+          { "name": "repairAction", "valueType": "rich_text" },
+          { "name": "result", "valueType": "rich_text" }
+        ]
+      }
+    }
+  }
+}

@@ -1,4 +1,5 @@
 <script lang="ts" setup>
+  const { isAdmin: showIconRail } = useAdminUI()
   const commandDialog = useCommandDialog()
   const routes = useRoutes()
   const appNavigate = useAppNavigate()
@@ -65,7 +66,7 @@
                 v-if="routeItem?.path"
                 :value="`${group.label} ${routeItem.label}`"
                 @select="() => navigateTo(routeItem.path)">
-                <Icon :name="routeItem.icon" class="h-4 w-4" />
+                <Icon :name="routeItem.icon || 'lucide:circle'" class="h-4 w-4" />
                 <span>{{ routeItem.label }}</span>
                 <span class="sr-only">{{ group.label }} {{ routeItem.searchKeywords?.join(' ') }}</span>
                 <UiCommandShortcut v-if="routes.getRouteBadge(routeItem)">
@@ -79,7 +80,7 @@
     </UiCommandDialog>
 
     <div class="flex flex-1 overflow-hidden">
-      <IconRail />
+      <IconRail v-if="showIconRail" />
 
       <!-- Conditional sidebar slot - pages can choose to render sidebar or not -->
       <slot name="sidebar">

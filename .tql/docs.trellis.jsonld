@@ -1,0 +1,257 @@
+{
+  "@context": {
+    "trellis": "https://trellis.dev/ns/",
+    "schema": "https://schema.org/",
+    "doc": "trellis:doc/",
+    "DocModule": "trellis:DocModule",
+    "DocSection": "trellis:DocSection",
+    "sourceGlobs": "trellis:sourceGlobs",
+    "outputPath": "trellis:outputPath",
+    "sections": "trellis:sections",
+    "heading": "schema:name",
+    "mode": "trellis:mode",
+    "sourceHint": "trellis:sourceHint",
+    "template": "trellis:template",
+    "title": "schema:name",
+    "description": "schema:description",
+    "status": "trellis:status"
+  },
+  "@graph": [
+    {
+      "@id": "doc:changelog",
+      "@type": "DocModule",
+      "title": "Changelog",
+      "description": "All notable changes tracked from commits and code modifications.",
+      "sourceGlobs": ["**/*"],
+      "outputPath": "living-docs/CHANGELOG.md",
+      "status": "active",
+      "sections": [
+        {
+          "heading": "Commits",
+          "mode": "auto",
+          "template": "commits-table",
+          "sourceHint": ".tql/ops.jsonl"
+        },
+        {
+          "heading": "Code Changes",
+          "mode": "auto",
+          "template": "changes-table",
+          "sourceHint": ".tql/ops.jsonl"
+        }
+      ]
+    },
+    {
+      "@id": "doc:decisions",
+      "@type": "DocModule",
+      "title": "Architecture Decision Records",
+      "description": "Decisions tracked from Cascade sessions and commit history.",
+      "sourceGlobs": ["**/*"],
+      "outputPath": "living-docs/DECISIONS.md",
+      "status": "active",
+      "sections": [
+        {
+          "heading": "Decisions",
+          "mode": "auto",
+          "template": "adr-list",
+          "sourceHint": ".tql/cascade-archive/"
+        }
+      ]
+    },
+    {
+      "@id": "doc:roadmap",
+      "@type": "DocModule",
+      "title": "Roadmap",
+      "description": "Project milestones and feature tracking.",
+      "sourceGlobs": ["**/*"],
+      "outputPath": "living-docs/ROADMAP.md",
+      "status": "active",
+      "sections": [
+        {
+          "heading": "Milestones",
+          "mode": "auto",
+          "template": "milestones-progress"
+        },
+        {
+          "heading": "Features",
+          "mode": "auto",
+          "template": "features-checklist"
+        }
+      ]
+    },
+    {
+      "@id": "doc:spec",
+      "@type": "DocModule",
+      "title": "Project Specification",
+      "description": "Canonical spec derived from the knowledge graph.",
+      "sourceGlobs": ["**/*"],
+      "outputPath": "living-docs/SPEC.md",
+      "status": "active",
+      "sections": [
+        {
+          "heading": "Features",
+          "mode": "auto",
+          "template": "features-by-scope"
+        },
+        {
+          "heading": "Dependencies",
+          "mode": "auto",
+          "template": "deps-table"
+        }
+      ]
+    },
+    {
+      "@id": "doc:conventions",
+      "@type": "DocModule",
+      "title": "Coding Conventions",
+      "description": "Project conventions tracked by TQL.",
+      "sourceGlobs": ["**/*"],
+      "outputPath": "living-docs/CONVENTIONS.md",
+      "status": "active",
+      "sections": [
+        {
+          "heading": "Conventions",
+          "mode": "auto",
+          "template": "conventions-list"
+        }
+      ]
+    },
+    {
+      "@id": "doc:tql-hooks",
+      "@type": "DocModule",
+      "title": "TQL Hooks Infrastructure",
+      "description": "The hooks pipeline that feeds data into and out of the TQL knowledge graph.",
+      "sourceGlobs": ["hooks/*.ts", "hooks/__tests__/*.ts", ".windsurf/hooks.json"],
+      "outputPath": "living-docs/TQL_HOOKS.md",
+      "status": "active",
+      "sections": [
+        {
+          "heading": "Overview",
+          "mode": "manual"
+        },
+        {
+          "heading": "Registered Hooks",
+          "mode": "auto",
+          "template": "hooks-registry",
+          "sourceHint": ".windsurf/hooks.json"
+        },
+        {
+          "heading": "Guard Rules",
+          "mode": "auto",
+          "template": "file-summary",
+          "sourceHint": "hooks/tql-guard.ts"
+        },
+        {
+          "heading": "Self-Healing",
+          "mode": "auto",
+          "template": "file-summary",
+          "sourceHint": "hooks/tql-heal.ts"
+        },
+        {
+          "heading": "Test Coverage",
+          "mode": "auto",
+          "template": "test-list",
+          "sourceHint": "hooks/__tests__/"
+        }
+      ]
+    },
+    {
+      "@id": "doc:entity-system",
+      "@type": "DocModule",
+      "title": "Entity System",
+      "description": "Two-axis entity class/type architecture, registry, and composables.",
+      "sourceGlobs": [
+        "apps/web/app/types/entity.ts",
+        "apps/web/app/types/calendarItem.ts",
+        "apps/web/app/config/entityRegistry.ts",
+        "apps/web/app/composables/useEntityRegistry.ts"
+      ],
+      "outputPath": "living-docs/ENTITY_SYSTEM.md",
+      "status": "active",
+      "sections": [
+        {
+          "heading": "Overview",
+          "mode": "manual"
+        },
+        {
+          "heading": "Entity Classes",
+          "mode": "auto",
+          "template": "file-summary",
+          "sourceHint": "apps/web/app/types/entity.ts"
+        },
+        {
+          "heading": "Entity Registry",
+          "mode": "auto",
+          "template": "file-summary",
+          "sourceHint": "apps/web/app/config/entityRegistry.ts"
+        },
+        {
+          "heading": "Recent Changes",
+          "mode": "auto",
+          "template": "recent-changes"
+        }
+      ]
+    },
+    {
+      "@id": "doc:data-layer",
+      "@type": "DocModule",
+      "title": "Data Layer",
+      "description": "InstantDB adapter, composables, and persistence strategy.",
+      "sourceGlobs": [
+        "apps/web/app/lib/instant-local/**",
+        "apps/web/app/composables/useCalendarItems.ts",
+        "apps/web/instant.schema.ts"
+      ],
+      "outputPath": "living-docs/DATA_LAYER.md",
+      "status": "active",
+      "sections": [
+        {
+          "heading": "Overview",
+          "mode": "manual"
+        },
+        {
+          "heading": "Local Adapter",
+          "mode": "auto",
+          "template": "file-summary",
+          "sourceHint": "apps/web/app/lib/instant-local/"
+        },
+        {
+          "heading": "Recent Changes",
+          "mode": "auto",
+          "template": "recent-changes"
+        }
+      ]
+    },
+    {
+      "@id": "doc:theme",
+      "@type": "DocModule",
+      "title": "Theme Pipeline",
+      "description": "CSS variable theming, presets, and branding.",
+      "sourceGlobs": [
+        "apps/web/app/assets/css/tailwind.css",
+        "apps/web/app/config/theme-presets.ts",
+        "apps/web/app/stores/theme.ts",
+        "apps/web/app/composables/useTheme.ts",
+        "apps/web/app/utils/theme.ts",
+        "apps/web/app/plugins/theme.client.ts"
+      ],
+      "outputPath": "living-docs/THEME.md",
+      "status": "active",
+      "sections": [
+        {
+          "heading": "Overview",
+          "mode": "manual"
+        },
+        {
+          "heading": "File Roles",
+          "mode": "auto",
+          "template": "file-summary"
+        },
+        {
+          "heading": "Recent Changes",
+          "mode": "auto",
+          "template": "recent-changes"
+        }
+      ]
+    }
+  ]
+}

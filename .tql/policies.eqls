@@ -1,0 +1,18 @@
+-- HQ Guard Policies
+-- These EQL-S queries are evaluated by tql-guard.ts on pre_write_code and pre_run_command.
+-- If a query returns rows, the action is BLOCKED with the policy message.
+
+-- Block writes to critical config files without explicit override
+-- POLICY: protect-config
+-- MESSAGE: Cannot modify core config files directly. Use the appropriate hook or tool.
+-- FIND File AS f WHERE f.path LIKE '%.tql/workspace.json' RETURN f.path LIMIT 1
+
+-- Block deleting entities that have downstream references
+-- POLICY: protect-referenced
+-- MESSAGE: This entity is referenced by other entities. Remove references first.
+-- FIND Action AS a WHERE a.actionType = 'delete' RETURN a.data LIMIT 1
+
+-- Warn on high-frequency file modifications (possible thrashing)
+-- POLICY: thrash-detection
+-- MESSAGE: High-frequency modifications detected on the same file. Consider a different approach.
+-- FIND Action AS a WHERE a.actionType = 'file_write' RETURN a.data ORDER BY a.timestamp DESC LIMIT 10

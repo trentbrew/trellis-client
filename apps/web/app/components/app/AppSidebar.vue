@@ -1,21 +1,90 @@
 <script lang="ts" setup>
   import { AnimatePresence, motion } from 'motion-v'
+  import Sortable from 'sortablejs'
   import { SYSTEM_TYPES } from '~/lib/systemTypes'
+  import type { ContextMenuEvent } from '~/types/contextMenu'
+  import { CONTEXT_ACTIONS } from '~/types/contextMenu'
+  import {
+    sidebarItemMenu,
+    sidebarSectionMenu,
+    collectionItemMenu,
+    customSectionMenu,
+    sidebarSurfaceMenu,
+  } from '~/composables/useContextMenu'
+
+  const props = withDefaults(defineProps<{
+    headerAbove?: boolean
+  }>(), {
+    headerAbove: false,
+  })
 
   const BADGE_LABEL_THRESHOLD = 300
 
   const routes = useRoutes()
   const pinned = usePinnedItems()
+  const sidebarOrder = useSidebarOrder()
   const collapsed = useCollapsedSections()
   const sidebarCollapse = useSidebarCollapse()
+  const { copyLink } = useContextMenu()
   const nuxtApp = useNuxtApp()
   const route = useRoute()
 
   // Admin UI controls
-  const { showBuilderUI, canCreatePages } = useAdminUI()
+  const { showBuilderUI, canCreatePages, canEditContent } = useAdminUI()
+
+  // Pages CRUD
+  const { createPage } = usePages()
 
   // Page Builder dialog state
   const pageBuilderOpen = ref(false)
+
+  // Ontology create dialog state
+  const ontologyCreateOpen = ref(false)
+
+  // ── Sidebar filter ─────────────────────────────────────────
+  const sidebarFilter = ref('')
+  const sidebarFilterInputRef = ref<HTMLInputElement | null>(null)
+
+  const matchesFilter = (label: string) => {
+    if (!sidebarFilter.value) return true
+    return label.toLowerCase().includes(sidebarFilter.value.toLowerCase())
+  }
+
+  const filteredDynamicSidebarSections = computed(() => {
+    const sections = dynamicSidebarSections.value
+    if (!sections || !sidebarFilter.value) return sections
+    return sections
+      .map((section: any) => ({
+        ...section,
+        items: section.items?.filter((item: any) => matchesFilter(item?.label || '')) || [],
+      }))
+      .filter((section: any) => section.items.length > 0)
+  })
+
+  const filteredPinnedItems = computed(() => {
+    if (!sidebarFilter.value) return pinnedItems.value
+    return pinnedItems.value.filter((item: any) => matchesFilter(item?.label || ''))
+  })
+
+  const filteredUnpinnedItems = computed(() => {
+    if (!sidebarFilter.value) return unpinnedItems.value
+    return unpinnedItems.value.filter((item: any) => matchesFilter(item?.label || ''))
+  })
+
+  const filteredSystemUnpinnedItems = computed(() => {
+    if (!sidebarFilter.value) return systemUnpinnedItems.value
+    return systemUnpinnedItems.value.filter((item: any) => matchesFilter(item?.label || ''))
+  })
+
+  const filteredCustomUnpinnedItems = computed(() => {
+    if (!sidebarFilter.value) return customUnpinnedItems.value
+    return customUnpinnedItems.value.filter((item: any) => matchesFilter(item?.label || ''))
+  })
+
+  // Clear filter when switching sidebar sections
+  watch(() => routes.currentSectionLabel.value, () => {
+    sidebarFilter.value = ''
+  })
 
   const sidebarSectionKey = computed(() => routes.currentSectionLabel.value)
 
@@ -241,16 +310,25 @@
     return { count: totalCount, variant }
   }
 
-  // Handle Add New button click - create collection immediately
-  const { collections, currentApp, createCollection, updateCollection, deleteCollection } = useInstantData()
+  // Handle Add New button click - opens ontology create dialog
+  const {
+    collections,
+    currentApp: _currentApp,
+    createCollection: _createCollection,
+    updateCollection,
+    deleteCollection,
+    deleteCustomType,
+  } = useInstantData()
   const { downloadCollectionAsTrellis } = useTrellisAdapter()
 
   const deleteDialogOpen = ref(false)
   const pendingDeleteCollectionId = ref<string | null>(null)
   const pendingDeleteCollectionTitle = ref<string>('')
+  const skipDeleteConfirm = ref(localStorage.getItem('trellis:skipDeleteCollectionConfirm') === 'true')
+  const dontAskAgain = ref(false)
 
   const handleRename = (collectionSlug: string) => {
-    const collection = collections.value.find((c) => `/collections/${c.slug}` === collectionSlug)
+    const collection = collections.value.find((c) => `/database/collections/${c.slug}` === collectionSlug)
     if (!collection) return
 
     const newTitle = prompt('Rename collection:', collection.title)
@@ -260,7 +338,7 @@
   }
 
   const handleChangeIcon = async (collectionSlug: string) => {
-    const collection = collections.value.find((c) => `/collections/${c.slug}` === collectionSlug)
+    const collection = collections.value.find((c) => `/database/collections/${c.slug}` === collectionSlug)
     if (!collection) return
 
     // Navigate to collection page where icon picker is available
@@ -268,16 +346,22 @@
   }
 
   const handleDelete = async (collectionSlug: string) => {
-    const collection = collections.value.find((c) => `/collections/${c.slug}` === collectionSlug)
+    const collection = collections.value.find((c) => `/database/collections/${c.slug}` === collectionSlug)
     if (!collection) return
 
     pendingDeleteCollectionId.value = collection.id
     pendingDeleteCollectionTitle.value = collection.title
+
+    if (skipDeleteConfirm.value) {
+      await confirmDelete()
+      return
+    }
+
     deleteDialogOpen.value = true
   }
 
   const handleExportTrellis = async (collectionSlug: string) => {
-    const collection = collections.value.find((c) => `/collections/${c.slug}` === collectionSlug)
+    const collection = collections.value.find((c) => `/database/collections/${c.slug}` === collectionSlug)
     if (!collection) return
 
     try {
@@ -295,64 +379,353 @@
 
     await deleteCollection(id)
     deleteDialogOpen.value = false
-    navigateTo('/collections')
+    navigateTo('/database')
   }
 
   watch(deleteDialogOpen, (open) => {
     if (open) return
+    if (dontAskAgain.value) {
+      skipDeleteConfirm.value = true
+      localStorage.setItem('trellis:skipDeleteCollectionConfirm', 'true')
+    }
+    dontAskAgain.value = false
     pendingDeleteCollectionId.value = null
     pendingDeleteCollectionTitle.value = ''
   })
 
   const isCollectionItem = (path: string) => {
-    return path.startsWith('/collections/') && path !== '/collections'
+    return path.startsWith('/database/collections/') && path !== '/database'
   }
 
   const goTo = async (path: string) => {
     await navigateTo(path)
   }
 
-  const handleAddNew = async () => {
+  const handleAddNew = async (sectionKey?: string) => {
+    // Route based on which section's + was clicked
+    if (sectionKey === 'personal-pages') {
+      await handleCreatePageInstant()
+      return
+    }
+
     const section = routes.currentSidebarSection.value
-    if (section?.path === '/collections') {
-      if (!currentApp.value) return
-
-      // Create new collection with defaults
-      const slug = `untitled-${Date.now()}`
-      await createCollection({
-        appId: currentApp.value.id,
-        title: 'Untitled',
-        icon: 'lucide:database',
-        slug,
-        type: 'database',
-        order: collections.value.length,
-        isPublished: false,
-        createdBy: 'current-user',
-      })
-
-      // UI updates automatically - no manual reload needed
-      // Navigate to new collection
-      navigateTo(`/collections/${slug}`)
+    if (section?.path === '/database') {
+      ontologyCreateOpen.value = true
     }
   }
 
-  // Create new page - opens the page builder dialog
+  // Instant page creation — creates a grid page and navigates to it
+  const handleCreatePageInstant = async () => {
+    try {
+      const id = await createPage({
+        title: 'Untitled',
+        dataSource: 'all',
+        layout: 'grid',
+      })
+      const { wp } = useWorkspacePath()
+      await navigateTo(wp(`/workspace/pages/${id}`))
+    } catch (e) {
+      console.error('Failed to create page:', e)
+    }
+  }
+
+  // Create new page - opens the page builder dialog (kept as fallback)
   const handleCreatePage = () => {
     pageBuilderOpen.value = true
   }
 
-  // Handle page save from builder
-  const handlePageSave = (page: any) => {
-    // TODO: Save page to database
+  // Handle page created from dialog
+  const handlePageCreated = (page: { id: string; title: string }) => {
     ;(nuxtApp as any).$toast?.success(`Page "${page.title}" created!`)
     pageBuilderOpen.value = false
+  }
+
+  // ── Context menu action dispatch ─────────────────────────────
+
+  const getItemContextMenu = (item: any, sectionKey: string) => {
+    if (isCollectionItem(item.path)) {
+      return collectionItemMenu()
+    }
+    return sidebarItemMenu({
+      isPinned: pinned.isPinned(item.path),
+      canPin: sectionKey !== 'personal-pinned',
+      path: item.path,
+    })
+  }
+
+  const typeItemMenu = (item: any) => {
+    return [
+      {
+        id: CONTEXT_ACTIONS.OPEN,
+        label: 'Open',
+        icon: 'lucide:arrow-right',
+      },
+      {
+        id: CONTEXT_ACTIONS.OPEN_NEW_TAB,
+        label: 'Open in New Tab',
+        icon: 'lucide:external-link',
+      },
+      {
+        id: CONTEXT_ACTIONS.COPY_LINK,
+        label: 'Copy Link',
+        icon: 'lucide:link',
+      },
+      {
+        id: CONTEXT_ACTIONS.DELETE,
+        label: 'Delete Type',
+        icon: 'lucide:trash-2',
+        variant: 'destructive' as const,
+        separator: true,
+        visible: !!item?.isCustom,
+      },
+    ]
+  }
+
+  const getSidebarSurfaceMenu = () => {
+    const sections = dynamicSidebarSections.value || []
+    const hasCollapsed = sections.some((s: any) => collapsed.isCollapsed(s.key))
+    return sidebarSurfaceMenu({
+      isWorkspace: isWorkspaceRoute.value,
+      canCreateSection: isWorkspaceRoute.value,
+      hasCollapsedSections: hasCollapsed,
+    })
+  }
+
+  const getSectionContextMenu = (section: any) => {
+    if ((section as any).isCustom) {
+      return customSectionMenu({ isCollapsed: collapsed.isCollapsed(section.key) })
+    }
+    return sidebarSectionMenu({
+      isCollapsed: collapsed.isCollapsed(section.key),
+      canResetOrder: isWorkspaceRoute.value || (isDatabaseRoute.value && section.key === 'database-custom'),
+      canCreate: canEditContent.value && (isWorkspaceRoute.value || !!section.editable),
+    })
+  }
+
+  const handleContextAction = async (event: ContextMenuEvent) => {
+    const { actionId, context } = event
+    switch (actionId) {
+      // Navigation
+      case CONTEXT_ACTIONS.OPEN:
+        if (context?.path) goTo(context.path)
+        break
+      case CONTEXT_ACTIONS.OPEN_NEW_TAB:
+        if (context?.path && import.meta.client) {
+          window.open(context.path, '_blank')
+        }
+        break
+      case CONTEXT_ACTIONS.COPY_LINK:
+        if (context?.path) copyLink(context.path)
+        break
+
+      // Pin
+      case CONTEXT_ACTIONS.PIN:
+      case CONTEXT_ACTIONS.UNPIN:
+        if (context?.path) pinned.togglePin(context.path)
+        break
+
+      // Section collapse
+      case CONTEXT_ACTIONS.COLLAPSE:
+      case CONTEXT_ACTIONS.EXPAND:
+        if (context?.key) collapsed.toggleSection(context.key)
+        break
+
+      // Create
+      case CONTEXT_ACTIONS.CREATE:
+        handleAddNew(context?.key)
+        break
+
+      // Reset order
+      case CONTEXT_ACTIONS.RESET_ORDER:
+        if (context?.key) sidebarOrder.resetSection(context.key)
+        break
+
+      // Collection CRUD
+      case CONTEXT_ACTIONS.RENAME:
+        if (context?.isCustomSection) {
+          handleRenameCustomSection(context.key)
+        } else if (context?.path) {
+          handleRename(context.path)
+        }
+        break
+      case CONTEXT_ACTIONS.CHANGE_ICON:
+        if (context?.path) handleChangeIcon(context.path)
+        break
+      case CONTEXT_ACTIONS.DUPLICATE:
+        // TODO: implement duplicate
+        break
+      case CONTEXT_ACTIONS.EXPORT:
+        if (context?.path) handleExportTrellis(context.path)
+        break
+      case CONTEXT_ACTIONS.DELETE:
+        if (context?.isCustomSection) {
+          handleDeleteCustomSection(context.key)
+        } else if (context?.path) {
+          if (isTypesSection.value && context.typeId) {
+            const label = context.typeLabel || 'this type'
+            const confirmed = window.confirm(`Delete ${label}? This action cannot be undone.`)
+            if (!confirmed) break
+            await handleDeleteType(context.typeId)
+          } else {
+            handleDelete(context.path)
+          }
+        }
+        break
+
+      // Sidebar surface actions
+      case 'expand-all': {
+        const sections = dynamicSidebarSections.value || []
+        sections.forEach((s: any) => {
+          if (collapsed.isCollapsed(s.key)) collapsed.toggleSection(s.key)
+        })
+        break
+      }
+      case 'collapse-all': {
+        const sections = dynamicSidebarSections.value || []
+        sections.forEach((s: any) => {
+          if (!collapsed.isCollapsed(s.key)) collapsed.toggleSection(s.key)
+        })
+        break
+      }
+      case 'create-section':
+        isCreatingSection.value = true
+        break
+    }
+  }
+
+  // ── Drag-and-drop reordering ─────────────────────────────────
+
+  const isWorkspaceRoute = computed(() => routes.currentSidebarSection.value?.path === '/workspace')
+  const isDatabaseRoute = computed(() => routes.currentSidebarSection.value?.path === '/database')
+
+  const sectionsContainerRef = ref<HTMLElement | null>(null)
+  const sortableInstances = ref<Sortable[]>([])
+
+  const destroySortables = () => {
+    sortableInstances.value.forEach((s) => s.destroy())
+    sortableInstances.value = []
+  }
+
+  const initSortables = () => {
+    destroySortables()
+    if (!import.meta.client) return
+
+    // Item reorder within sections
+    nextTick(() => {
+      const lists = document.querySelectorAll<HTMLElement>('[data-sortable-section]')
+      lists.forEach((list) => {
+        const sectionKey = list.dataset.sortableSection
+        if (!sectionKey) return
+
+        // Only enable for workspace sections + database-custom
+        const canReorder = isWorkspaceRoute.value || (isDatabaseRoute.value && sectionKey === 'database-custom')
+        if (!canReorder) return
+
+        const instance = Sortable.create(list, {
+          animation: 150,
+          ghostClass: 'sortable-ghost',
+          chosenClass: 'sortable-chosen',
+          dragClass: 'sortable-drag',
+          forceFallback: true,
+          fallbackClass: 'sortable-fallback',
+          fallbackOnBody: true,
+          delay: 100,
+          delayOnTouchOnly: false,
+          group: { name: sectionKey, pull: false, put: false },
+          onEnd: () => {
+            const items = Array.from(list.querySelectorAll<HTMLElement>('[data-item-path]'))
+            const newOrder = items.map((el) => el.dataset.itemPath!).filter(Boolean)
+            sidebarOrder.setItemOrder(sectionKey, newOrder)
+          },
+        })
+        sortableInstances.value.push(instance)
+      })
+
+      // Section reorder (workspace only)
+      if (isWorkspaceRoute.value && sectionsContainerRef.value) {
+        const instance = Sortable.create(sectionsContainerRef.value, {
+          animation: 150,
+          ghostClass: 'sortable-ghost',
+          forceFallback: true,
+          fallbackClass: 'sortable-fallback',
+          fallbackOnBody: true,
+          delay: 100,
+          delayOnTouchOnly: false,
+          draggable: '[data-section-key]',
+          filter: '[data-section-pinned]',
+          onEnd: () => {
+            const sectionEls = Array.from(
+              sectionsContainerRef.value!.querySelectorAll<HTMLElement>('[data-section-key]'),
+            )
+            const newOrder = sectionEls.map((el) => el.dataset.sectionKey!).filter(Boolean)
+            sidebarOrder.setSectionOrder('/workspace', newOrder)
+          },
+        })
+        sortableInstances.value.push(instance)
+      }
+    })
+  }
+
+  // Re-init when sidebar sections change or collapse state changes
+  watch(
+    [() => dynamicSidebarSections.value, () => collapsed.collapsedSections.value],
+    () => {
+      if (import.meta.client) {
+        nextTick(() => initSortables())
+      }
+    },
+    { flush: 'post' },
+  )
+
+  onMounted(() => {
+    nextTick(() => initSortables())
+  })
+
+  onUnmounted(() => {
+    destroySortables()
+  })
+
+  // ── Create Section (workspace only) ──────────────────────────
+
+  const newSectionName = ref('')
+  const isCreatingSection = ref(false)
+
+  const handleCreateSection = () => {
+    const name = newSectionName.value.trim()
+    if (!name) return
+    sidebarOrder.createSection('/workspace', name)
+    newSectionName.value = ''
+    isCreatingSection.value = false
+  }
+
+  const handleDeleteCustomSection = (key: string) => {
+    sidebarOrder.deleteSection(key)
+  }
+
+  const handleDeleteType = async (typeId: string) => {
+    try {
+      await deleteCustomType(typeId)
+      ;(nuxtApp as any).$toast?.success('Type deleted')
+    } catch (e) {
+      const message = e instanceof Error ? e.message : 'Failed to delete type'
+      ;(nuxtApp as any).$toast?.error(message)
+    }
+  }
+
+  const handleRenameCustomSection = (key: string) => {
+    const section = sidebarOrder.getCustomSections('/workspace').find((s) => s.key === key)
+    if (!section) return
+    const newName = prompt('Rename section:', section.label)
+    if (newName && newName.trim()) {
+      sidebarOrder.renameSection(key, newName.trim())
+    }
   }
 </script>
 
 <template>
   <!-- Sidebar: Content frame (matches page header) -->
   <aside
-    class="border-sidebar-border bg-transparent text-sidebar-foreground hidden flex-col border-r px-0 pb-0 lg:flex relative"
+    class="border-sidebar-border/75 bg-transparent text-sidebar-foreground hidden flex-col border-r px-0 pb-0 lg:flex relative overflow-hidden"
     :style="{
       width: sidebarCollapse.isCollapsed.value ? '0px' : `${sidebarWidth}px`,
       transition: transitionsDisabled ? 'none' : 'width 0.3s ease',
@@ -385,8 +758,9 @@
       </UiButton>
     </div>
 
-    <!-- Global Search Button -->
+    <!-- Global Search Button (hidden when header is above sidebar — search moves to header) -->
       <UiButton
+        v-if="!props.headerAbove"
         variant="ghost"
         size="sm"
         class="w-full text-sidebar-foreground/50 hover:text-sidebar-foreground hover:bg-white/10 rounded-none justify-between group px-6 border-b h-16 bg-transparent"
@@ -403,7 +777,51 @@
     <!-- Sidebar section items animate per rail route (client-only to avoid hydration mismatches from localStorage/pins) -->
     <ClientOnly>
       <template v-if="!sidebarCollapse.isCollapsed.value">
-        <div class="flex min-h-0 flex-1 flex-col pt-6">
+        <AppContextMenu
+          :actions="getSidebarSurfaceMenu()"
+          :context="{ surface: true }"
+          @action="handleContextAction">
+          <template #trigger>
+        <div class="flex min-h-0 flex-1 flex-col overflow-y-auto overflow-x-hidden ">
+          <!-- Sticky sidebar filter -->
+          <div class="sticky top-0 z-10 px-3 pt-4 pb-3" style="background: linear-gradient(to bottom, var(--background) 70%, transparent 100%)">
+            <div class="flex items-center gap-1.5">
+              <div class="relative flex-1">
+                <Icon name="lucide:search" class="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-sidebar-foreground/60 z-10" />
+                <input
+                  ref="sidebarFilterInputRef"
+                  v-model="sidebarFilter"
+                  type="text"
+                  placeholder="Search..."
+                  class="w-full bg-transparent border border-border backdrop-blur-md text-sidebar-foreground text-xs rounded-md pl-8 pr-7 py-2 outline-none placeholder:text-sidebar-foreground/30 focus:ring-1 focus:ring-ring/50 transition-colors"
+                  @keydown.escape="sidebarFilter = ''" />
+                <button
+                  v-if="sidebarFilter"
+                  type="button"
+                  class="absolute right-2 top-1/2 -translate-y-1/2 text-sidebar-foreground/40 hover:text-sidebar-foreground transition-colors"
+                  aria-label="Clear filter"
+                  @click="sidebarFilter = ''">
+                  <Icon name="lucide:x" class="h-3.5 w-3.5" />
+                </button>
+              </div>
+              <UiTooltipProvider v-if="isWorkspaceRoute || routes.currentSidebarSection.value?.path === '/database'">
+                <UiTooltip>
+                  <UiTooltipTrigger as-child>
+                    <button
+                      type="button"
+                      class="flex items-center justify-center h-[32px] w-[32px] shrink-0 rounded-md border border-sidebar-border/50 bg-foreground/2 text-sidebar-foreground/50 hover:text-sidebar-foreground hover:bg-foreground/5 transition-colors"
+                      :aria-label="isWorkspaceRoute ? 'Add page' : 'New type'"
+                      @click="isWorkspaceRoute ? handleCreatePageInstant() : handleAddNew()">
+                      <Icon name="lucide:plus" class="h-4 w-4" />
+                    </button>
+                  </UiTooltipTrigger>
+                  <UiTooltipContent side="bottom" :side-offset="4">
+                    <p>{{ isWorkspaceRoute ? 'Add page' : 'New type' }}</p>
+                  </UiTooltipContent>
+                </UiTooltip>
+              </UiTooltipProvider>
+            </div>
+          </div>
           <AnimatePresence mode="wait">
             <motion.div
               :key="sidebarSectionKey"
@@ -411,14 +829,21 @@
               :animate="{ opacity: 1, x: 0 }"
               :exit="{ opacity: 0, x: -8 }"
               :transition="transitionsDisabled ? { duration: 0 } : { duration: 0.22, ease: 'easeOut' }"
-              class="flex min-h-0 flex-1 flex-col p-3 pl-2 pt-0">
+              class="flex min-h-0 flex-1 flex-col p-3 pl-2 pt-0 pb-24">
               <!-- Dynamic Sidebar Sections (if configured in route) -->
-              <template v-if="dynamicSidebarSections">
-                <div v-for="(section, idx) in dynamicSidebarSections" :key="section.key" :class="idx > 0 ? 'mt-6' : ''">
+              <template v-if="filteredDynamicSidebarSections">
+                <div ref="sectionsContainerRef" class="py-4">
+                <div v-for="(section, idx) in filteredDynamicSidebarSections" :key="section.key" :data-section-key="section.key" :data-section-pinned="section.key === 'personal-pinned' ? '' : undefined" :class="idx > 0 ? 'mt-6' : ''">
+                  <AppContextMenu
+                    :actions="getSectionContextMenu(section)"
+                    :context="{ key: section.key, label: section.label, isCustomSection: !!(section as any).isCustom }"
+                    @action="handleContextAction">
+                    <template #trigger>
                   <button
                     v-if="section.collapsible !== false"
                     type="button"
-                    class="text-muted-foreground hover:text-sidebar-foreground flex w-full items-center justify-start text-xs tracking-wide uppercase transition-colors px-3"
+                    class="text-muted-foreground hover:text-sidebar-foreground flex w-full items-center justify-between text-xs tracking-wide uppercase transition-colors px-3 group/section"
+                    :class="{ 'cursor-grab': isWorkspaceRoute && section.key !== 'personal-pinned' }"
                     @click="collapsed.toggleSection(section.key)">
                     <div class="flex items-center">
                       <Icon v-if="section.icon" :name="section.icon" class="mr-2 h-4 w-4 opacity-70" />
@@ -440,11 +865,11 @@
                     </div>
                     <div class="flex items-center gap-1">
                       <UiButton
-                        v-if="section.editable"
+                        v-if="section.editable && canEditContent"
                         variant="ghost"
                         size="icon-sm"
-                        class="h-6 w-6"
-                        @click.stop="handleAddNew">
+                        class="h-6 w-6 opacity-0 group-hover/section:opacity-100 transition-opacity"
+                        @click.stop="handleAddNew(section.key)">
                         <Icon name="lucide:plus" class="h-3.5 w-3.5" />
                       </UiButton>
                       <Icon
@@ -453,7 +878,7 @@
                         :class="{ '-rotate-90': collapsed.isCollapsed(section.key) }" />
                     </div>
                   </button>
-                  <div v-else class="flex items-center justify-between mb-3 px-3">
+                  <div v-else class="flex items-center justify-between mb-3 px-3 group/section">
                     <div class="flex items-center">
                       <Icon v-if="section.icon" :name="section.icon" class="mr-2 h-4 w-4 opacity-70" />
                       <span class="text-muted-foreground text-xs tracking-wide uppercase font-medium">
@@ -461,14 +886,16 @@
                       </span>
                     </div>
                     <UiButton
-                      v-if="section.editable"
+                      v-if="section.editable && canEditContent"
                       variant="ghost"
                       size="icon-sm"
-                      class="h-6 w-6"
-                      @click.stop="handleAddNew">
+                      class="h-6 w-6 opacity-0 group-hover/section:opacity-100 transition-opacity"
+                      @click.stop="handleAddNew(section.key)">
                       <Icon name="lucide:plus" class="h-3.5 w-3.5" />
                     </UiButton>
                   </div>
+                    </template>
+                  </AppContextMenu>
 
                   <AnimatePresence>
                     <motion.div
@@ -485,11 +912,13 @@
                           class="absolute ml-[18px] top-0 bottom-[18px] w-px bg-sidebar-border/15 translate-y-2" />
                         <motion.ul
                           class="space-y-1 text-sm"
+                          :data-sortable-section="section.key"
                           :transition="transitionsDisabled ? { duration: 0 } : undefined"
                           :layout="!transitionsDisabled">
                           <motion.li
                             v-for="(item, i) in section.items"
                             :key="item?.path || ''"
+                            :data-item-path="item?.path || ''"
                             :initial="{ opacity: 0, x: -10 }"
                             :animate="{ opacity: 1, x: 0 }"
                             :exit="{ opacity: 0, x: -10 }"
@@ -499,6 +928,11 @@
                                 : { duration: 0.28, ease: 'easeOut', delay: i * 0.035 }
                             "
                             :layout="!transitionsDisabled">
+                            <AppContextMenu
+                              :actions="isTypesSection ? typeItemMenu(item) : getItemContextMenu(item, section.key)"
+                              :context="isTypesSection ? { path: item.path, typeId: item.id } : { path: item.path, sectionKey: section.key }"
+                              @action="handleContextAction">
+                              <template #trigger>
                             <div class="group relative elbow-connector">
                               <AppNavLink
                                 v-if="item?.path"
@@ -506,7 +940,7 @@
                                 class="text-sidebar-foreground hover:bg-foreground/5 hover:text-sidebar-foreground flex items-center gap-3 rounded-lg px-3 py-2 transition ml-8"
                                 :class="[
                                   {
-                                    'bg-foreground/5 text-sidebar-foreground': routes.isRouteExactlyActive(item.path),
+                                    'bg-foreground/5 text-foreground': routes.isRouteExactlyActive(item.path),
                                   },
                                   isCollectionItem(item.path) ? 'pr-16' : 'pr-8',
                                 ]">
@@ -602,16 +1036,52 @@
                                 </button>
                               </div>
                             </div>
+                              </template>
+                            </AppContextMenu>
                           </motion.li>
                         </motion.ul>
                       </div>
                     </motion.div>
                   </AnimatePresence>
                 </div>
+
+                <!-- + New Section button (workspace only) -->
+                <div v-if="isWorkspaceRoute" class="mt-4 px-3">
+                  <div v-if="isCreatingSection" class="flex items-center gap-1.5">
+                    <input
+                      v-model="newSectionName"
+                      type="text"
+                      placeholder="Section name..."
+                      class="flex-1 bg-transparent border border-border rounded px-2 py-1 text-xs outline-none focus:ring-1 focus:ring-ring"
+                      @keydown.enter="handleCreateSection"
+                      @keydown.escape="isCreatingSection = false" />
+                    <button
+                      type="button"
+                      class="text-muted-foreground hover:text-foreground p-1 rounded hover:bg-white/10"
+                      @click="handleCreateSection">
+                      <Icon name="lucide:check" class="h-3.5 w-3.5" />
+                    </button>
+                    <button
+                      type="button"
+                      class="text-muted-foreground hover:text-foreground p-1 rounded hover:bg-white/10"
+                      @click="isCreatingSection = false">
+                      <Icon name="lucide:x" class="h-3.5 w-3.5" />
+                    </button>
+                  </div>
+                  <button
+                    v-else
+                    type="button"
+                    class="flex items-center gap-1.5 text-xs text-muted-foreground/60 hover:text-muted-foreground transition-colors"
+                    @click="isCreatingSection = true">
+                    <Icon name="lucide:plus" class="h-3.5 w-3.5" />
+                    <span>New Section</span>
+                  </button>
+                </div>
+                </div>
               </template>
 
               <div
-                v-else-if="!dynamicSidebarSections && pinnedItems.length === 0 && !isTypesSection"
+                v-else-if="!filteredDynamicSidebarSections && filteredPinnedItems.length === 0 && !isTypesSection"
                 class="flex flex-col items-center justify-center py-8 text-center">
                 <Icon name="lucide:inbox" class="w-8 h-8 text-sidebar-foreground/50 mb-3" />
                 <p class="text-sm text-sidebar-foreground/70">No available sections</p>
@@ -619,7 +1089,7 @@
               </div>
 
               <!-- Fallback: Legacy Pinned Section (if no dynamic sections configured) -->
-              <div v-else-if="pinnedItems.length > 0" class="mb-6">
+              <div v-else-if="filteredPinnedItems.length > 0" class="mb-6">
                 <button
                   type="button"
                   class="text-muted-foreground hover:text-sidebar-foreground flex w-full items-center justify-start text-xs tracking-wide uppercase transition-colors"
@@ -663,7 +1133,7 @@
                         :transition="transitionsDisabled ? { duration: 0 } : undefined"
                         :layout="!transitionsDisabled">
                         <motion.li
-                          v-for="(item, i) in pinnedItems"
+                          v-for="(item, i) in filteredPinnedItems"
                           :key="item?.path || ''"
                           :initial="{ opacity: 0, x: -10 }"
                           :animate="{ opacity: 1, x: 0 }"
@@ -680,7 +1150,7 @@
                               :to="item.path"
                               class="text-sidebar-foreground/70 hover:bg-white/10 hover:text-sidebar-foreground flex items-center gap-3 rounded-lg px-3 py-2 transition ml-7"
                               :class="[
-                                { 'bg-white/10 text-sidebar-foreground': routes.isRouteExactlyActive(item.path) },
+                                { 'bg-white/10 text-foreground': routes.isRouteExactlyActive(item.path) },
                                 isCollectionItem(item.path) ? 'pr-16' : 'pr-8',
                               ]">
                               <Icon :name="item.icon" class="h-4 w-4 shrink-0 opacity-50" />
@@ -779,7 +1249,7 @@
               </div>
 
               <!-- Regular Section (legacy fallback - only show if no dynamic sections) -->
-              <div v-if="!dynamicSidebarSections && !isTypesSection && unpinnedItems.length > 0">
+              <div v-if="!filteredDynamicSidebarSections && !isTypesSection && filteredUnpinnedItems.length > 0">
                 <button
                   type="button"
                   class="text-muted-foreground hover:text-sidebar-foreground flex w-full items-center justify-start text-xs tracking-wide uppercase transition-colors"
@@ -821,7 +1291,7 @@
                         :transition="transitionsDisabled ? { duration: 0 } : undefined"
                         :layout="!transitionsDisabled">
                         <motion.li
-                          v-for="(item, i) in unpinnedItems"
+                          v-for="(item, i) in filteredUnpinnedItems"
                           :key="item?.path || ''"
                           :initial="{ opacity: 0, x: -10 }"
                           :animate="{ opacity: 1, x: 0 }"
@@ -838,7 +1308,7 @@
                               :to="item.path"
                               class="text-sidebar-foreground/70 hover:bg-white/10 hover:text-sidebar-foreground flex items-center gap-3 rounded-lg px-3 py-2 transition ml-8"
                               :class="[
-                                { 'bg-white/15 text-sidebar-foreground': routes.isRouteExactlyActive(item.path) },
+                                { 'bg-white/15 text-foreground': routes.isRouteExactlyActive(item.path) },
                                 isCollectionItem(item.path) ? 'pr-16' : 'pr-8',
                               ]">
                               <Icon :name="item.icon" class="h-4 w-4 shrink-0 opacity-50" />
@@ -1074,7 +1544,7 @@
                           :transition="transitionsDisabled ? { duration: 0 } : undefined"
                           :layout="!transitionsDisabled">
                           <motion.li
-                            v-for="(item, i) in systemUnpinnedItems"
+                            v-for="(item, i) in filteredSystemUnpinnedItems"
                             :key="item?.path || ''"
                             :initial="{ opacity: 0, x: -10 }"
                             :animate="{ opacity: 1, x: 0 }"
@@ -1091,7 +1561,7 @@
                                 :to="item.path"
                                 class="text-sidebar-foreground/70 hover:bg-white/10 hover:text-sidebar-foreground flex items-center gap-3 rounded-lg px-3 py-2 transition ml-7"
                                 :class="[
-                                  { 'bg-white/15 text-sidebar-foreground': routes.isRouteExactlyActive(item.path) },
+                                  { 'bg-white/15 text-foreground': routes.isRouteExactlyActive(item.path) },
                                   'pr-8',
                                 ]">
                                 <Icon :name="item.icon" class="h-4 w-4 shrink-0 opacity-50" />
@@ -1152,7 +1622,7 @@
                   </AnimatePresence>
                 </div>
 
-                <div v-if="customUnpinnedItems.length > 0" class="mt-6">
+                <div v-if="filteredCustomUnpinnedItems.length > 0" class="mt-6">
                   <button
                     type="button"
                     class="text-muted-foreground hover:text-sidebar-foreground flex w-full items-center justify-start text-xs tracking-wide uppercase transition-colors"
@@ -1194,7 +1664,7 @@
                           :transition="transitionsDisabled ? { duration: 0 } : undefined"
                           :layout="!transitionsDisabled">
                           <motion.li
-                            v-for="(item, i) in customUnpinnedItems"
+                            v-for="(item, i) in filteredCustomUnpinnedItems"
                             :key="item?.path || ''"
                             :initial="{ opacity: 0, x: -10 }"
                             :animate="{ opacity: 1, x: 0 }"
@@ -1205,66 +1675,73 @@
                                 : { duration: 0.28, ease: 'easeOut', delay: i * 0.035 }
                             "
                             :layout="!transitionsDisabled">
-                            <div class="group relative elbow-connector">
-                              <AppNavLink
-                                v-if="item?.path"
-                                :to="item.path"
-                                class="text-sidebar-foreground/70 hover:bg-white/10 hover:text-sidebar-foreground flex items-center gap-3 rounded-lg px-3 py-2 transition ml-7"
-                                :class="[
-                                  { 'bg-white/15 text-sidebar-foreground': routes.isRouteExactlyActive(item.path) },
-                                  'pr-8',
-                                ]">
-                                <Icon :name="item.icon" class="h-4 w-4 shrink-0 opacity-50" />
-                                <span class="flex-1 truncate min-w-0 overflow-hidden text-ellipsis whitespace-nowrap">
-                                  {{ item.label }}
-                                </span>
-                                <template v-if="routes.getRouteBadge(item)">
-                                  <template v-if="typeof routes.getRouteBadge(item) === 'object'">
-                                    <span
-                                      class="rounded-full px-2 py-0.5 text-[10px] font-semibold shrink-0"
-                                      :class="[
-                                        (routes.getRouteBadge(item) as any).variant === 'success'
-                                          ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/20'
-                                          : (routes.getRouteBadge(item) as any).variant === 'warning'
-                                            ? 'bg-amber-500/20 text-amber-400 border border-amber-500/20'
-                                            : (routes.getRouteBadge(item) as any).variant === 'destructive'
-                                              ? 'bg-rose-500/20 text-rose-400 border border-rose-500/20'
-                                              : (routes.getRouteBadge(item) as any).variant === 'accent'
-                                                ? 'bg-accent text-accent-foreground'
-                                                : 'bg-white/10 text-sidebar-foreground/70',
-                                      ]"
-                                      :style="
-                                        (routes.getRouteBadge(item) as any).color
-                                          ? { color: (routes.getRouteBadge(item) as any).color }
-                                          : {}
-                                      ">
-                                      {{
-                                        sidebarWidth >= BADGE_LABEL_THRESHOLD
-                                          ? (routes.getRouteBadge(item) as any).label
-                                          : (routes.getRouteBadge(item) as any).label.match(/\d+/)?.[0] ||
-                                            (routes.getRouteBadge(item) as any).label
-                                      }}
+                            <AppContextMenu
+                              :actions="typeItemMenu(item)"
+                              :context="{ path: item.path, typeId: item.id, typeLabel: item.label, isCustom: true }"
+                              @action="handleContextAction">
+                              <template #trigger>
+                                <div class="group relative elbow-connector">
+                                  <AppNavLink
+                                    v-if="item?.path"
+                                    :to="item.path"
+                                    class="text-sidebar-foreground/70 hover:bg-white/10 hover:text-sidebar-foreground flex items-center gap-3 rounded-lg px-3 py-2 transition ml-7"
+                                    :class="[
+                                      { 'bg-white/15 text-foreground': routes.isRouteExactlyActive(item.path) },
+                                      'pr-8',
+                                    ]">
+                                    <Icon :name="item.icon" class="h-4 w-4 shrink-0 opacity-50" />
+                                    <span class="flex-1 truncate min-w-0 overflow-hidden text-ellipsis whitespace-nowrap">
+                                      {{ item.label }}
                                     </span>
-                                  </template>
-                                  <template v-else>
-                                    <span
-                                      class="bg-accent text-accent-foreground rounded-full px-2 py-0.5 text-[10px] font-semibold shrink-0">
-                                      {{ routes.getRouteBadge(item) }}
-                                    </span>
-                                  </template>
-                                </template>
-                              </AppNavLink>
-                              <div
-                                class="absolute right-2 top-1/2 flex -translate-y-1/2 items-center gap-1 opacity-0 transition-opacity group-hover:opacity-100">
-                                <button
-                                  type="button"
-                                  class="text-sidebar-foreground/60 hover:text-sidebar-foreground rounded p-0.5 hover:bg-white/10"
-                                  aria-label="Pin"
-                                  @click.stop="pinned.togglePin(item.path)">
-                                  <Icon name="lucide:pin" class="h-3.5 w-3.5" />
-                                </button>
-                              </div>
-                            </div>
+                                    <template v-if="routes.getRouteBadge(item)">
+                                      <template v-if="typeof routes.getRouteBadge(item) === 'object'">
+                                        <span
+                                          class="rounded-full px-2 py-0.5 text-[10px] font-semibold shrink-0"
+                                          :class="[
+                                            (routes.getRouteBadge(item) as any).variant === 'success'
+                                              ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/20'
+                                              : (routes.getRouteBadge(item) as any).variant === 'warning'
+                                                ? 'bg-amber-500/20 text-amber-400 border border-amber-500/20'
+                                                : (routes.getRouteBadge(item) as any).variant === 'destructive'
+                                                  ? 'bg-rose-500/20 text-rose-400 border border-rose-500/20'
+                                                  : (routes.getRouteBadge(item) as any).variant === 'accent'
+                                                    ? 'bg-accent text-accent-foreground'
+                                                    : 'bg-white/10 text-sidebar-foreground/70',
+                                          ]"
+                                          :style="
+                                            (routes.getRouteBadge(item) as any).color
+                                              ? { color: (routes.getRouteBadge(item) as any).color }
+                                              : {}
+                                          ">
+                                          {{
+                                            sidebarWidth >= BADGE_LABEL_THRESHOLD
+                                              ? (routes.getRouteBadge(item) as any).label
+                                              : (routes.getRouteBadge(item) as any).label.match(/\d+/)?.[0] ||
+                                                (routes.getRouteBadge(item) as any).label
+                                          }}
+                                        </span>
+                                      </template>
+                                      <template v-else>
+                                        <span
+                                          class="bg-accent text-accent-foreground rounded-full px-2 py-0.5 text-[10px] font-semibold shrink-0">
+                                          {{ routes.getRouteBadge(item) }}
+                                        </span>
+                                      </template>
+                                    </template>
+                                  </AppNavLink>
+                                  <div
+                                    class="absolute right-2 top-1/2 flex -translate-y-1/2 items-center gap-1 opacity-0 transition-opacity group-hover:opacity-100">
+                                    <button
+                                      type="button"
+                                      class="text-sidebar-foreground/60 hover:text-sidebar-foreground rounded p-0.5 hover:bg-white/10"
+                                      aria-label="Pin"
+                                      @click.stop="pinned.togglePin(item.path)">
+                                      <Icon name="lucide:pin" class="h-3.5 w-3.5" />
+                                    </button>
+                                  </div>
+                                </div>
+                              </template>
+                            </AppContextMenu>
                           </motion.li>
                         </motion.ul>
                       </div>
@@ -1275,9 +1752,11 @@
             </motion.div>
           </AnimatePresence>
         </div>
+          </template>
+        </AppContextMenu>
       </template>
       <template #fallback>
-        <div v-if="!sidebarCollapse.isCollapsed.value" class="min-h-0 flex-1">
+        <div v-if="!sidebarCollapse.isCollapsed.value" class="min-h-0 flex-1 overflow-y-auto overflow-x-hidden">
           <div>
             <template v-if="routes.currentSectionLinks.value.length > 0">
               <button
@@ -1292,7 +1771,7 @@
                     v-if="item?.path"
                     :to="item.path"
                     class="text-sidebar-foreground/70 hover:bg-white/10 hover:text-sidebar-foreground flex items-center gap-3 rounded-lg px-3 py-2 pr-8 transition w-full"
-                    :class="{ 'bg-white/15 text-sidebar-foreground': routes.isRouteExactlyActive(item.path) }">
+                    :class="{ 'bg-white/15 text-foreground': routes.isRouteExactlyActive(item.path) }">
                     <Icon :name="item.icon" class="h-4 w-4 shrink-0" />
                     <span class="flex-1 truncate min-w-0 overflow-hidden text-ellipsis whitespace-nowrap">
                       {{ item.label }}
@@ -1306,20 +1785,8 @@
       </template>
     </ClientOnly>
 
-    <!-- Sidebar content -->
-    <div
-      v-if="!sidebarCollapse.isCollapsed.value && routes.currentSidebarSection.value?.path === '/collections'"
-      class="border-border bg-transparent rounded-xl border-none p-4 pt-0">
-      <UiButton
-        class="w-full justify-center bg-white/10 border border-white/20 text-sidebar-foreground hover:bg-white/20 hover:text-sidebar-foreground"
-        variant="default"
-        @click="handleAddNew">
-        <Icon name="lucide:plus" class="mr-2 h-4 w-4" />
-        New collection
-      </UiButton>
-    </div>
 
-    <UiAlertDialog v-model:open="deleteDialogOpen">
+    <UiAlertDialog v-model:open="deleteDialogOpen" >
       <UiAlertDialogContent>
         <UiAlertDialogHeader>
           <UiAlertDialogTitle>Delete collection?</UiAlertDialogTitle>
@@ -1330,6 +1797,10 @@
             </template>
           </UiAlertDialogDescription>
         </UiAlertDialogHeader>
+        <label class="flex items-center gap-2 text-sm text-muted-foreground cursor-pointer select-none">
+          <UiCheckbox v-model:checked="dontAskAgain" />
+          Don't ask me again
+        </label>
         <UiAlertDialogFooter>
           <UiAlertDialogCancel>Cancel</UiAlertDialogCancel>
           <UiAlertDialogAction class="bg-destructive text-white hover:bg-destructive/90" @click="confirmDelete">
@@ -1339,11 +1810,14 @@
       </UiAlertDialogContent>
     </UiAlertDialog>
 
-    <!-- Page Builder Dialog -->
-    <PageBuilder
+    <!-- Ontology Create Dialog -->
+    <OntologyCreateDialog v-model:open="ontologyCreateOpen" />
+
+    <!-- Create Page Dialog -->
+    <CreatePageDialog
       :open="pageBuilderOpen"
       @update:open="pageBuilderOpen = $event"
-      @save="handlePageSave" />
+      @created="handlePageCreated" />
   </aside>
 </template>
 
@@ -1375,5 +1849,22 @@
   .transitions-disabled :deep(*) {
     transition: none !important;
     animation: none !important;
+  }
+
+  /* SortableJS drag-and-drop feedback */
+  :deep(.sortable-ghost) {
+    opacity: 0.3;
+  }
+
+  :deep(.sortable-chosen) {
+    background: hsl(var(--accent) / 0.15);
+    border-radius: 0.5rem;
+  }
+
+  :deep(.sortable-fallback) {
+    opacity: 0.85;
+    background: hsl(var(--sidebar-background));
+    border-radius: 0.5rem;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
   }
 </style>

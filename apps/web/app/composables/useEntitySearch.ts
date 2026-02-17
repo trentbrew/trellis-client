@@ -1,6 +1,6 @@
 import type { EntityReference, EntityType } from '~/types/entity'
 import { getEntityTypeConfig } from '~/config/entityRegistry'
-import { useCalendarItems } from '~/composables/useCalendarItems'
+import { useEntities } from '~/composables/useEntities'
 
 export interface EntitySearchItem {
   id: string
@@ -9,8 +9,8 @@ export interface EntitySearchItem {
   description?: string
 }
 
-export function useEntitySearch(options?: { excludeId?: Ref<string | undefined> }) {
-  const { items } = useCalendarItems()
+export function useEntitySearch(options?: { excludeId?: Ref<string | undefined>; filterType?: Ref<string | undefined> }) {
+  const { items } = useEntities()
 
   const search = ref('')
 
@@ -23,8 +23,13 @@ export function useEntitySearch(options?: { excludeId?: Ref<string | undefined> 
       list = list.filter((i) => i.id !== exclude)
     }
 
+    const typeFilter = options?.filterType?.value
+    if (typeFilter) {
+      list = list.filter((i) => i.type === typeFilter)
+    }
+
     if (!q) return list.slice(0, 20)
-    return list.filter((i) => i.title?.toLowerCase().includes(q) || i.type?.toLowerCase().includes(q)).slice(0, 20)
+    return list.filter((i) => i.title?.toLowerCase().includes(q) || i.type?.toLowerCase().includes(q) || (i as any).url?.toLowerCase().includes(q)).slice(0, 20)
   })
 
   const getIcon = (type: string) => {

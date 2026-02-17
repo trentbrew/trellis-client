@@ -1,25 +1,126 @@
 /**
- * Seed data for personal calendar items.
+ * Seed data for personal entities.
  *
- * Used by instant.client.ts to populate the calendarItems namespace
+ * Used by the seed pipeline to populate the entity namespace
  * on first boot. Dates are relative to "today" so the data always
  * looks fresh.
  */
 
+import { formatYmdLocal } from '~/utils/date'
+
 const today = new Date()
-const fmt = (d: Date) => d.toISOString().split('T')[0]!
+const fmt = (d: Date) => formatYmdLocal(d)
 const daysFromNow = (n: number) => {
   const d = new Date(today)
   d.setDate(d.getDate() + n)
   return fmt(d)
 }
 
-export interface SeedCalendarItem {
+export interface SeedEntity {
   id: string
   [key: string]: any
 }
 
-export function getPersonalSeedItems(): SeedCalendarItem[] {
+function buildPitchDeckSlides() {
+  return [
+    {
+      id: 'slide-cover',
+      fields: {
+        order: 0,
+        title: 'Trellis',
+        subtitle: 'A semantic operating system for knowledge work.',
+        body: '',
+        layout: 'title',
+        background: '',
+        media: '',
+        speakerNotes: 'Opening slide.',
+      },
+    },
+    {
+      id: 'slide-problem',
+      fields: {
+        order: 1,
+        title: 'The Problem',
+        subtitle: 'Your work is trapped in silos.',
+        body: [
+          '- The average knowledge worker uses **9+ apps** daily',
+          '- Data is **locked in proprietary formats**',
+          '- AI assistants cannot reason across tools',
+          '- Context switching costs **$450B/year**',
+        ].join('\n'),
+        layout: 'content',
+        background: '',
+        media: '',
+        speakerNotes: '',
+      },
+    },
+    {
+      id: 'slide-insight',
+      fields: {
+        order: 2,
+        title: 'The Insight',
+        subtitle: '',
+        body: '"The next trillion-dollar platforms are systems of record for **decisions**, not just objects."',
+        layout: 'quote',
+        background: '',
+        media: '',
+        speakerNotes: '',
+      },
+    },
+    {
+      id: 'slide-intro',
+      fields: {
+        order: 3,
+        title: 'Introducing Trellis',
+        subtitle: 'NixOS for knowledge work',
+        body: [
+          '| Concept | Traditional | Trellis |',
+          '|---------|------------|---------|',
+          '| Data | Locked | Open JSON-LD graph |',
+          '| Views | Hard-coded | Declarative projections |',
+          '| AI | Bolted-on | First-class citizen |',
+        ].join('\n'),
+        layout: 'content',
+        background: '',
+        media: '',
+        speakerNotes: '',
+      },
+    },
+    {
+      id: 'slide-entity',
+      fields: {
+        order: 4,
+        title: 'Entity System',
+        subtitle: 'Four classes cover all knowledge work.',
+        body: [
+          '**Temporal** — task, event, trip, payment',
+          '**Document** — note, file, page, slide deck',
+          '**Actor** — person, contact, organization',
+          '**Container** — project, folder, collection',
+        ].join('\n'),
+        layout: 'content',
+        background: '',
+        media: '',
+        speakerNotes: '',
+      },
+    },
+    {
+      id: 'slide-vision',
+      fields: {
+        order: 5,
+        title: 'The Vision',
+        subtitle: '',
+        body: 'Same `.trellis` config = same workspace, anywhere.\n\n**Data you own. Views that adapt. AI that understands.**',
+        layout: 'quote',
+        background: '',
+        media: '',
+        speakerNotes: '',
+      },
+    },
+  ]
+}
+
+export function getPersonalSeedItems(): SeedEntity[] {
   return [
     // ── Tasks ──────────────────────────────────────────────────────────
     {
@@ -52,11 +153,7 @@ export function getPersonalSeedItems(): SeedCalendarItem[] {
       ],
       reminders: [],
       taskStatus: 'in-progress',
-      checklist: [
-        { id: 'cl-1', label: 'Draft outline', completed: true, order: 0 },
-        { id: 'cl-2', label: 'Add financial charts', completed: false, order: 1 },
-        { id: 'cl-3', label: 'Review with manager', completed: false, order: 2 },
-      ],
+      checklistContent: '<ul data-type="taskList"><li data-type="taskItem" data-checked="true"><label><input type="checkbox" checked="checked"><span></span></label><div><p>Draft outline</p></div></li><li data-type="taskItem" data-checked="false"><label><input type="checkbox"><span></span></label><div><p>Add financial charts</p></div></li><li data-type="taskItem" data-checked="false"><label><input type="checkbox"><span></span></label><div><p>Review with manager</p></div></li></ul>',
     },
     {
       id: 'task-2',
@@ -77,7 +174,7 @@ export function getPersonalSeedItems(): SeedCalendarItem[] {
       references: [],
       reminders: [{ id: 'r1', timing: '1-hour-before', method: 'push' }],
       taskStatus: 'pending',
-      checklist: [],
+      checklistContent: '',
     },
     {
       id: 'task-3',
@@ -98,7 +195,7 @@ export function getPersonalSeedItems(): SeedCalendarItem[] {
       references: [{ kind: 'file', id: 'ref-t3-f1', name: 'January_Receipts.xlsx', fileType: 'spreadsheet' }],
       reminders: [{ id: 'r2', timing: '1-day-before', method: 'push' }],
       taskStatus: 'pending',
-      checklist: [],
+      checklistContent: '',
     },
     {
       id: 'task-4',
@@ -128,7 +225,7 @@ export function getPersonalSeedItems(): SeedCalendarItem[] {
       ],
       reminders: [],
       taskStatus: 'in-progress',
-      checklist: [],
+      checklistContent: '',
     },
     {
       id: 'task-5',
@@ -149,7 +246,7 @@ export function getPersonalSeedItems(): SeedCalendarItem[] {
       reminders: [{ id: 'r3', timing: '1-day-before', method: 'push' }],
       recurrence: { frequency: 'weekly', weekdays: [1, 4] },
       taskStatus: 'completed',
-      checklist: [],
+      checklistContent: '',
     },
     {
       id: 'task-6',
@@ -170,7 +267,7 @@ export function getPersonalSeedItems(): SeedCalendarItem[] {
       references: [],
       reminders: [],
       taskStatus: 'overdue',
-      checklist: [],
+      checklistContent: '',
     },
     {
       id: 'task-7',
@@ -190,7 +287,7 @@ export function getPersonalSeedItems(): SeedCalendarItem[] {
       references: [],
       reminders: [{ id: 'r4', timing: '15-min-before', method: 'push' }],
       taskStatus: 'pending',
-      checklist: [],
+      checklistContent: '',
     },
     {
       id: 'task-8',
@@ -211,7 +308,7 @@ export function getPersonalSeedItems(): SeedCalendarItem[] {
       references: [],
       reminders: [{ id: 'r5', timing: '2-days-before', method: 'push' }],
       taskStatus: 'pending',
-      checklist: [],
+      checklistContent: '',
     },
     {
       id: 'task-9',
@@ -232,7 +329,7 @@ export function getPersonalSeedItems(): SeedCalendarItem[] {
       references: [],
       reminders: [],
       taskStatus: 'pending',
-      checklist: [],
+      checklistContent: '',
     },
     {
       id: 'task-10',
@@ -253,7 +350,7 @@ export function getPersonalSeedItems(): SeedCalendarItem[] {
       references: [],
       reminders: [{ id: 'r6', timing: '1-week-before', method: 'push' }],
       taskStatus: 'pending',
-      checklist: [],
+      checklistContent: '',
     },
     {
       id: 'task-11',
@@ -274,13 +371,13 @@ export function getPersonalSeedItems(): SeedCalendarItem[] {
       references: [],
       reminders: [],
       taskStatus: 'pending',
-      checklist: [],
+      checklistContent: '',
     },
 
-    // Multi-day task: sprint
+    // Multi-day sprint
     {
       id: 'task-12',
-      type: 'task',
+      type: 'sprint',
       title: 'Sprint 14 — API refactor',
       description: 'Refactor authentication endpoints and add rate limiting.',
       startDate: daysFromNow(-1),
@@ -297,13 +394,10 @@ export function getPersonalSeedItems(): SeedCalendarItem[] {
       attachments: [],
       references: [],
       reminders: [],
-      taskStatus: 'in-progress',
-      checklist: [
-        { id: 'cl-s1', label: 'Audit existing auth endpoints', completed: true, order: 0 },
-        { id: 'cl-s2', label: 'Implement rate limiter middleware', completed: false, order: 1 },
-        { id: 'cl-s3', label: 'Write integration tests', completed: false, order: 2 },
-        { id: 'cl-s4', label: 'Deploy to staging', completed: false, order: 3 },
-      ],
+      sprintStatus: 'in-progress',
+      sprintGoal: 'Refactor authentication endpoints and add rate limiting.',
+      velocity: undefined,
+      checklistContent: '<ul data-type="taskList"><li data-type="taskItem" data-checked="true"><label><input type="checkbox" checked="checked"><span></span></label><div><p>Audit existing auth endpoints</p></div></li><li data-type="taskItem" data-checked="false"><label><input type="checkbox"><span></span></label><div><p>Implement rate limiter middleware</p></div></li><li data-type="taskItem" data-checked="false"><label><input type="checkbox"><span></span></label><div><p>Write integration tests</p></div></li><li data-type="taskItem" data-checked="false"><label><input type="checkbox"><span></span></label><div><p>Deploy to staging</p></div></li></ul>',
     },
     {
       id: 'task-13',
@@ -327,7 +421,7 @@ export function getPersonalSeedItems(): SeedCalendarItem[] {
       reminders: [],
       recurrence: { frequency: 'weekdays' },
       taskStatus: 'pending',
-      checklist: [],
+      checklistContent: '',
     },
     {
       id: 'task-14',
@@ -348,7 +442,7 @@ export function getPersonalSeedItems(): SeedCalendarItem[] {
       references: [],
       reminders: [],
       taskStatus: 'pending',
-      checklist: [],
+      checklistContent: '',
     },
     {
       id: 'task-15',
@@ -370,7 +464,7 @@ export function getPersonalSeedItems(): SeedCalendarItem[] {
       reminders: [],
       recurrence: { frequency: 'weekly', weekdays: [0] },
       taskStatus: 'pending',
-      checklist: [],
+      checklistContent: '',
     },
     {
       id: 'task-16',
@@ -392,7 +486,7 @@ export function getPersonalSeedItems(): SeedCalendarItem[] {
       references: [],
       reminders: [{ id: 'r-t16', timing: '1-day-before', method: 'push' }],
       taskStatus: 'pending',
-      checklist: [],
+      checklistContent: '',
     },
     {
       id: 'task-17',
@@ -416,7 +510,7 @@ export function getPersonalSeedItems(): SeedCalendarItem[] {
       reminders: [],
       recurrence: { frequency: 'daily' },
       taskStatus: 'pending',
-      checklist: [],
+      checklistContent: '',
     },
     {
       id: 'task-18',
@@ -438,7 +532,7 @@ export function getPersonalSeedItems(): SeedCalendarItem[] {
       references: [],
       reminders: [],
       taskStatus: 'pending',
-      checklist: [],
+      checklistContent: '',
     },
 
     // ── Events ─────────────────────────────────────────────────────────
@@ -1029,7 +1123,7 @@ export function getPersonalSeedItems(): SeedCalendarItem[] {
           kind: 'entity',
           id: 'ref-n7-t12',
           entityId: 'task-12',
-          entityType: 'task',
+          entityType: 'sprint',
           title: 'Sprint 14 — API refactor',
           direction: 'outgoing',
         },
@@ -1070,6 +1164,409 @@ export function getPersonalSeedItems(): SeedCalendarItem[] {
       content: '- Hiking boots + wool socks\n- Rain shell\n- Binoculars\n- Cooler for road snacks\n- AirTag in luggage',
       pinned: false,
       linkedItems: [],
+    },
+
+    // ── Bookmarks are seeded separately via instant.client.ts migration ──
+    // ── People & Organizations are seeded via entitySeedData.ts ──
+  ]
+}
+
+// ============================================================================
+// Trellis Project Tasks — dogfooding the app with real dev work
+// ============================================================================
+
+export function getTrellisProjectTasks(): SeedEntity[] {
+  return [
+    // ── Phase 1: Inline Editing + Mutation Pipeline ─────────────────────
+    {
+      id: 'trellis-dt-1',
+      type: 'task',
+      title: 'Build useCollectionTableData composable',
+      description:
+        'Extract data parsing, mutation, and serialization logic into a shared composable. Provides updateCell, addRow, deleteRows, and reorderColumns.',
+      startDate: daysFromNow(0),
+      endDate: daysFromNow(2),
+      allDay: true,
+      priority: 'high',
+      urgency: 'urgent',
+      priorityOverride: false,
+      urgencyOverride: false,
+      category: 'work',
+      tags: ['trellis', 'datatable', 'phase-1', 'composable'],
+      owner: 'you',
+      involved: [],
+      folder: 'Trellis',
+      attachments: [],
+      references: [],
+      reminders: [],
+      taskStatus: 'in-progress',
+      checklistContent: '<ul data-type="taskList"><li data-type="taskItem" data-checked="false"><label><input type="checkbox"><span></span></label><div><p>Parse JSON-LD content into sourceItems + derivedKeys</p></div></li><li data-type="taskItem" data-checked="false"><label><input type="checkbox"><span></span></label><div><p>updateCell(rowIndex, key, value) — mutate &amp; emit</p></div></li><li data-type="taskItem" data-checked="false"><label><input type="checkbox"><span></span></label><div><p>addRow(defaults?) — append new record node</p></div></li><li data-type="taskItem" data-checked="false"><label><input type="checkbox"><span></span></label><div><p>deleteRows(indices[]) — remove record nodes</p></div></li><li data-type="taskItem" data-checked="false"><label><input type="checkbox"><span></span></label><div><p>Wire emit(update:modelValue) for persistence</p></div></li></ul>',
+    },
+    {
+      id: 'trellis-dt-2',
+      type: 'task',
+      title: 'Dual-mode CellRenderer (read + edit)',
+      description:
+        'Evolve CellRenderer.vue into a component that supports both read mode (type-aware display) and edit mode (inline inputs). Click to edit, Enter/Tab to save, Escape to cancel.',
+      startDate: daysFromNow(1),
+      endDate: daysFromNow(3),
+      allDay: true,
+      priority: 'high',
+      urgency: 'urgent',
+      dependsOn: ['trellis-dt-1'],
+      priorityOverride: false,
+      urgencyOverride: false,
+      category: 'work',
+      tags: ['trellis', 'datatable', 'phase-1', 'component'],
+      owner: 'you',
+      involved: [],
+      folder: 'Trellis',
+      attachments: [],
+      references: [
+        {
+          kind: 'entity',
+          id: 'ref-dt2-dt1',
+          entityId: 'trellis-dt-1',
+          entityType: 'task',
+          title: 'Build useCollectionTableData composable',
+          direction: 'outgoing',
+        },
+      ],
+      reminders: [],
+      taskStatus: 'pending',
+      checklistContent: '<ul data-type="taskList"><li data-type="taskItem" data-checked="true"><label><input type="checkbox" checked="checked"><span></span></label><div><p>Read mode: current type-aware rendering</p></div></li><li data-type="taskItem" data-checked="false"><label><input type="checkbox"><span></span></label><div><p>Edit mode: text, number, date, checkbox, select inputs</p></div></li><li data-type="taskItem" data-checked="false"><label><input type="checkbox"><span></span></label><div><p>Keyboard nav: Tab → next cell, Enter → cell below, Escape → cancel</p></div></li><li data-type="taskItem" data-checked="false"><label><input type="checkbox"><span></span></label><div><p>Inline validation feedback (red border + message)</p></div></li></ul>',
+    },
+    {
+      id: 'trellis-dt-3',
+      type: 'task',
+      title: 'Wire schema prop through TableView → DataTable',
+      description:
+        'Pass DatabaseSchema from [slug].vue → TableView → CollectionDataTableProjection so columns use typed field definitions when available.',
+      startDate: daysFromNow(2),
+      allDay: true,
+      priority: 'medium',
+      urgency: 'not-urgent',
+      dependsOn: ['trellis-dt-1'],
+      priorityOverride: false,
+      urgencyOverride: false,
+      category: 'work',
+      tags: ['trellis', 'datatable', 'phase-1', 'wiring'],
+      owner: 'you',
+      involved: [],
+      folder: 'Trellis',
+      attachments: [],
+      references: [],
+      reminders: [],
+      taskStatus: 'pending',
+      checklistContent: '<ul data-type="taskList"><li data-type="taskItem" data-checked="false"><label><input type="checkbox"><span></span></label><div><p>Add schema prop to TableView.vue</p></div></li><li data-type="taskItem" data-checked="false"><label><input type="checkbox"><span></span></label><div><p>Add schema prop to CollectionDataTableProjection.vue</p></div></li><li data-type="taskItem" data-checked="false"><label><input type="checkbox"><span></span></label><div><p>Pass schema from [slug].vue template</p></div></li><li data-type="taskItem" data-checked="false"><label><input type="checkbox"><span></span></label><div><p>Use schema fields for column type info when available</p></div></li></ul>',
+    },
+
+    // ── Phase 1 Milestone ───────────────────────────────────────────────
+    {
+      id: 'trellis-dt-m1',
+      type: 'milestone',
+      title: '🏁 Milestone: Cells are editable end-to-end',
+      dependsOn: ['trellis-dt-1', 'trellis-dt-2', 'trellis-dt-3'],
+      description:
+        'Phase 1 complete — every cell in the datatable supports click-to-edit with type-aware inputs, changes persist to JSON-LD and auto-save to InstantDB.',
+      startDate: daysFromNow(4),
+      allDay: true,
+      priority: 'critical',
+      urgency: 'urgent',
+      priorityOverride: true,
+      urgencyOverride: false,
+      category: 'work',
+      tags: ['trellis', 'datatable', 'milestone'],
+      owner: 'you',
+      involved: [],
+      folder: 'Trellis',
+      attachments: [],
+      references: [
+        { kind: 'entity', id: 'ref-m1-dt1', entityId: 'trellis-dt-1', entityType: 'task', title: 'Build useCollectionTableData composable', direction: 'outgoing' },
+        { kind: 'entity', id: 'ref-m1-dt2', entityId: 'trellis-dt-2', entityType: 'task', title: 'Dual-mode CellRenderer (read + edit)', direction: 'outgoing' },
+        { kind: 'entity', id: 'ref-m1-dt3', entityId: 'trellis-dt-3', entityType: 'task', title: 'Wire schema prop through TableView', direction: 'outgoing' },
+      ],
+      reminders: [{ id: 'r-m1', timing: '1-day-before', method: 'push' }],
+      achieved: false,
+      checklistContent: '',
+    },
+
+    // ── Phase 2: Column (Property) Management ───────────────────────────
+    {
+      id: 'trellis-dt-4',
+      type: 'task',
+      title: 'Column header context menu',
+      description:
+        'Right-click or chevron dropdown on column headers with: rename, change type, sort asc/desc, filter, hide, delete (with confirmation).',
+      startDate: daysFromNow(5),
+      endDate: daysFromNow(7),
+      allDay: true,
+      priority: 'high',
+      urgency: 'not-urgent',
+      dependsOn: ['trellis-dt-m1'],
+      priorityOverride: false,
+      urgencyOverride: false,
+      category: 'work',
+      tags: ['trellis', 'datatable', 'phase-2', 'component'],
+      owner: 'you',
+      involved: [],
+      folder: 'Trellis',
+      attachments: [],
+      references: [],
+      reminders: [],
+      taskStatus: 'pending',
+      checklistContent: '<ul data-type="taskList"><li data-type="taskItem" data-checked="false"><label><input type="checkbox"><span></span></label><div><p>Create ColumnHeaderMenu.vue component</p></div></li><li data-type="taskItem" data-checked="false"><label><input type="checkbox"><span></span></label><div><p>Rename field inline</p></div></li><li data-type="taskItem" data-checked="false"><label><input type="checkbox"><span></span></label><div><p>Change field type with dropdown</p></div></li><li data-type="taskItem" data-checked="false"><label><input type="checkbox"><span></span></label><div><p>Sort ascending / descending toggle</p></div></li><li data-type="taskItem" data-checked="false"><label><input type="checkbox"><span></span></label><div><p>Delete column with confirmation dialog</p></div></li></ul>',
+    },
+    {
+      id: 'trellis-dt-5',
+      type: 'task',
+      title: '"+ " column button — add new properties',
+      description: 'Add a "+" button at the end of column headers that opens a popover with name input + type selector to create a new field.',
+      startDate: daysFromNow(7),
+      allDay: true,
+      priority: 'medium',
+      urgency: 'not-urgent',
+      dependsOn: ['trellis-dt-4'],
+      priorityOverride: false,
+      urgencyOverride: false,
+      category: 'work',
+      tags: ['trellis', 'datatable', 'phase-2'],
+      owner: 'you',
+      involved: [],
+      folder: 'Trellis',
+      attachments: [],
+      references: [],
+      reminders: [],
+      taskStatus: 'pending',
+      checklistContent: '',
+    },
+    {
+      id: 'trellis-dt-6',
+      type: 'task',
+      title: 'Column reorder + schema auto-sync',
+      description: 'Drag-to-reorder columns via header handles. Auto-sync renames, type changes, and additions back to DatabaseSchema in InstantDB.',
+      startDate: daysFromNow(8),
+      endDate: daysFromNow(9),
+      allDay: true,
+      priority: 'medium',
+      urgency: 'not-urgent',
+      dependsOn: ['trellis-dt-4'],
+      priorityOverride: false,
+      urgencyOverride: false,
+      category: 'work',
+      tags: ['trellis', 'datatable', 'phase-2', 'schema'],
+      owner: 'you',
+      involved: [],
+      folder: 'Trellis',
+      attachments: [],
+      references: [],
+      reminders: [],
+      taskStatus: 'pending',
+      checklistContent: '',
+    },
+
+    // ── Phase 3: Row Operations + Selection ─────────────────────────────
+    {
+      id: 'trellis-dt-7',
+      type: 'task',
+      title: 'Checkbox selection column + select-all',
+      description: 'Add a leftmost checkbox column with header checkbox for select-all. Track selectedRows as Set<number>.',
+      startDate: daysFromNow(10),
+      allDay: true,
+      priority: 'medium',
+      urgency: 'not-urgent',
+      dependsOn: ['trellis-dt-5', 'trellis-dt-6'],
+      priorityOverride: false,
+      urgencyOverride: false,
+      category: 'work',
+      tags: ['trellis', 'datatable', 'phase-3'],
+      owner: 'you',
+      involved: [],
+      folder: 'Trellis',
+      attachments: [],
+      references: [],
+      reminders: [],
+      taskStatus: 'pending',
+      checklistContent: '',
+    },
+    {
+      id: 'trellis-dt-8',
+      type: 'task',
+      title: 'Add / delete / duplicate rows',
+      description: 'Bottom-of-table "+ New" row, delete selected rows, duplicate selected rows. Context menu on right-click.',
+      startDate: daysFromNow(11),
+      endDate: daysFromNow(12),
+      allDay: true,
+      priority: 'high',
+      urgency: 'not-urgent',
+      dependsOn: ['trellis-dt-7'],
+      priorityOverride: false,
+      urgencyOverride: false,
+      category: 'work',
+      tags: ['trellis', 'datatable', 'phase-3'],
+      owner: 'you',
+      involved: [],
+      folder: 'Trellis',
+      attachments: [],
+      references: [],
+      reminders: [],
+      taskStatus: 'pending',
+      checklistContent: '',
+    },
+    {
+      id: 'trellis-dt-9',
+      type: 'task',
+      title: 'Batch operations toolbar',
+      description: 'Toolbar actions that appear when rows are selected: delete selected (with count), duplicate selected, bulk update field value.',
+      startDate: daysFromNow(13),
+      allDay: true,
+      priority: 'medium',
+      urgency: 'not-urgent',
+      dependsOn: ['trellis-dt-7', 'trellis-dt-8'],
+      priorityOverride: false,
+      urgencyOverride: false,
+      category: 'work',
+      tags: ['trellis', 'datatable', 'phase-3'],
+      owner: 'you',
+      involved: [],
+      folder: 'Trellis',
+      attachments: [],
+      references: [],
+      reminders: [],
+      taskStatus: 'pending',
+      checklistContent: '',
+    },
+
+    // ── Phase 4: Column Filtering ───────────────────────────────────────
+    {
+      id: 'trellis-dt-10',
+      type: 'task',
+      title: 'Per-column filter dropdowns',
+      description:
+        'Type-aware filter controls per column: text contains/equals, number comparisons, date ranges, select is/is-not, checkbox checked/unchecked.',
+      startDate: daysFromNow(14),
+      endDate: daysFromNow(16),
+      allDay: true,
+      priority: 'medium',
+      urgency: 'not-urgent',
+      dependsOn: ['trellis-dt-8', 'trellis-dt-9'],
+      priorityOverride: false,
+      urgencyOverride: false,
+      category: 'work',
+      tags: ['trellis', 'datatable', 'phase-4', 'filtering'],
+      owner: 'you',
+      involved: [],
+      folder: 'Trellis',
+      attachments: [],
+      references: [],
+      reminders: [],
+      taskStatus: 'pending',
+      checklistContent: '',
+    },
+    {
+      id: 'trellis-dt-11',
+      type: 'task',
+      title: 'Filter bar with active filter pills',
+      description: 'Toolbar filter bar showing removable pills for each active filter. Add filter button to pick column → operator → value.',
+      startDate: daysFromNow(16),
+      endDate: daysFromNow(17),
+      allDay: true,
+      priority: 'medium',
+      urgency: 'not-urgent',
+      dependsOn: ['trellis-dt-10'],
+      priorityOverride: false,
+      urgencyOverride: false,
+      category: 'work',
+      tags: ['trellis', 'datatable', 'phase-4', 'filtering'],
+      owner: 'you',
+      involved: [],
+      folder: 'Trellis',
+      attachments: [],
+      references: [],
+      reminders: [],
+      taskStatus: 'pending',
+      checklistContent: '',
+    },
+
+    // ── Phase 5: Data Import ────────────────────────────────────────────
+    {
+      id: 'trellis-dt-12',
+      type: 'task',
+      title: 'Import dialog — CSV / Excel / JSON / URL',
+      description:
+        'Import dialog with tabs: file upload (CSV, Excel, JSON), paste textarea, URL fetch. Column mapping step with preview. Append or replace modes.',
+      startDate: daysFromNow(18),
+      endDate: daysFromNow(21),
+      allDay: true,
+      priority: 'medium',
+      urgency: 'not-urgent',
+      dependsOn: ['trellis-dt-11'],
+      priorityOverride: false,
+      urgencyOverride: false,
+      category: 'work',
+      tags: ['trellis', 'datatable', 'phase-5', 'import'],
+      owner: 'you',
+      involved: [],
+      folder: 'Trellis',
+      attachments: [],
+      references: [],
+      reminders: [],
+      taskStatus: 'pending',
+      checklistContent: '<ul data-type="taskList"><li data-type="taskItem" data-checked="false"><label><input type="checkbox"><span></span></label><div><p>Add papaparse + xlsx dependencies</p></div></li><li data-type="taskItem" data-checked="false"><label><input type="checkbox"><span></span></label><div><p>File upload tab with drag-and-drop</p></div></li><li data-type="taskItem" data-checked="false"><label><input type="checkbox"><span></span></label><div><p>Paste tab for CSV/JSON text</p></div></li><li data-type="taskItem" data-checked="false"><label><input type="checkbox"><span></span></label><div><p>URL tab with fetch + auto-detect format</p></div></li><li data-type="taskItem" data-checked="false"><label><input type="checkbox"><span></span></label><div><p>Column mapping step with preview</p></div></li><li data-type="taskItem" data-checked="false"><label><input type="checkbox"><span></span></label><div><p>Append vs replace import modes</p></div></li></ul>',
+    },
+
+    // ── Phase 5 Milestone (all phases shipped) ──────────────────────────
+    {
+      id: 'trellis-dt-m2',
+      type: 'milestone',
+      title: '🏁 Milestone: Interactive DataTable v1 shipped',
+      dependsOn: ['trellis-dt-12'],
+      description:
+        'All 5 phases complete — inline editing, column management, row operations, filtering, and data import are live. The collection datatable is a full Notion/Airtable-style experience.',
+      startDate: daysFromNow(22),
+      allDay: true,
+      priority: 'critical',
+      urgency: 'not-urgent',
+      priorityOverride: true,
+      urgencyOverride: false,
+      category: 'work',
+      tags: ['trellis', 'datatable', 'milestone'],
+      owner: 'you',
+      involved: [],
+      folder: 'Trellis',
+      attachments: [],
+      references: [
+        { kind: 'entity', id: 'ref-m2-m1', entityId: 'trellis-dt-m1', entityType: 'milestone', title: 'Milestone: Cells are editable end-to-end', direction: 'outgoing' },
+        { kind: 'entity', id: 'ref-m2-dt12', entityId: 'trellis-dt-12', entityType: 'task', title: 'Import dialog — CSV / Excel / JSON / URL', direction: 'outgoing' },
+      ],
+      reminders: [{ id: 'r-m2', timing: '1-day-before', method: 'push' }],
+      achieved: false,
+      checklistContent: '',
+    },
+
+    // ── Slide Decks ─────────────────────────────────────────────────────
+    {
+      id: 'slide-deck-1',
+      type: 'slide_deck',
+      title: 'Trellis Pitch Deck',
+      description: 'Investor pitch deck for Trellis — a semantic operating system for knowledge work.',
+      startDate: daysFromNow(0),
+      allDay: true,
+      priority: 'medium',
+      urgency: 'not-urgent',
+      priorityOverride: false,
+      urgencyOverride: false,
+      category: 'work',
+      tags: ['trellis', 'pitch', 'presentation'],
+      owner: 'you',
+      involved: [],
+      attachments: [],
+      references: [],
+      reminders: [],
+      pinned: true,
+      slides: JSON.stringify(buildPitchDeckSlides()),
+      slideTheme: 'dark',
+      slideTransition: 'fade',
     },
   ]
 }

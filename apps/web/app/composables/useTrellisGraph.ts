@@ -7,7 +7,7 @@
  * - `projection(id)`    — execute a named projection, returns reactive ref
  * - `fetchNode(id)`     — fetch a single node by entity ID
  * - `mutate(action, payload)` — create/update/delete nodes, link/unlink
- * - Automatic polling for reactivity (SSE upgrade path in Phase 3)
+ * - Realtime SSE connection — auto-refreshes queries when any client mutates
  */
 
 type GraphQueryResult = {
@@ -38,6 +38,7 @@ type MutatePayload =
   | { action: 'updateNode'; entityId: string; type: string; data?: Record<string, any> }
   | { action: 'deleteNode'; entityId: string }
   | { action: 'link'; e1: string; relation: string; e2: string }
+  | { action: 'unlink'; e1: string; relation: string; e2: string }
 
 const API_BASE = '/api/graph'
 
@@ -52,10 +53,44 @@ async function graphFetch<T>(path: string, opts?: { method?: string; body?: Reco
 // Version counter — bumped on every mutation so reactive queries re-fetch
 const _graphVersion = ref(0)
 
+// ── SSE connection (singleton, client-only) ─────────────────────────────
+let _sseConnected = false
+
+function initSSE() {
+  if (_sseConnected || typeof window === 'undefined' || typeof EventSource === 'undefined') return
+  _sseConnected = true
+
+  let retryMs = 1000
+
+  function connect() {
+    const es = new EventSource(`${API_BASE}/events`)
+
+    es.addEventListener('mutation', () => {
+      // Bump version so all reactive queries re-fetch
+      _graphVersion.value++
+    })
+
+    es.addEventListener('connected', () => {
+      retryMs = 1000 // Reset backoff on successful connection
+    })
+
+    es.onerror = () => {
+      es.close()
+      // Exponential backoff with cap at 30s
+      setTimeout(connect, retryMs)
+      retryMs = Math.min(retryMs * 2, 30_000)
+    }
+  }
+
+  connect()
+}
+
 /**
  * Core composable for interacting with the TQL graph from Vue components.
  */
 export function useTrellisGraph() {
+  // Start SSE listener on first use (client-only)
+  initSSE()
 
   /**
    * Execute an EQL-S query with automatic reactivity.
@@ -161,15 +196,16 @@ export function useTrellisGraph() {
 
   /**
    * Execute a mutation (create/update/delete/link).
-   * Bumps the graph version so all reactive queries re-fetch.
+   * Reactivity is handled by the SSE event listener bumping _graphVersion.
    */
   async function mutate(payload: MutatePayload): Promise<{ ok: boolean }> {
     const result = await graphFetch<{ ok: boolean }>('mutate', {
       method: 'POST',
       body: payload as Record<string, any>,
     })
-    // Bump version to trigger reactive re-fetch in all watchers
-    _graphVersion.value++
+    // NOTE: Don't bump _graphVersion here — the SSE 'mutation' event from the
+    // server will bump it once, which is the authoritative notification.
+    // Bumping here AND on SSE caused every reactive query to fire twice.
     return result
   }
 

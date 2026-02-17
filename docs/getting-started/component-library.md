@@ -1,8 +1,8 @@
-# @toolkit/ui
+# Trellis UI
 
 <img width="1178" height="743" alt="image" src="https://github.com/user-attachments/assets/8d538088-343c-465c-aee6-378d1c7b83e3" />
 
-Toolkit's internal Vue 3 component library built on [Reka UI](https://reka-ui.com/) and [Tailwind CSS v4](https://tailwindcss.com/).
+Trellis's internal Vue 3 component library built on [Reka UI](https://reka-ui.com/) and [Tailwind CSS v4](https://tailwindcss.com/).
 
 ## Features
 

@@ -15,16 +15,25 @@ import { mkdirSync, existsSync } from 'node:fs'
 import { TrellisKernel } from '@toolkit/tql'
 import { BetterSqliteBackend } from '@toolkit/tql/persist/better-sqlite'
 import { createWorkspaceConfig } from '../utils/tql-ontologies'
-import { getPersonalSeedItems } from '../utils/tql-seed'
+
+import type { WorkspaceConfig } from '@toolkit/tql'
 
 // Module-level singleton — accessible from API routes via useTqlKernel()
 let _kernel: TrellisKernel | null = null
+let _workspaceConfig: WorkspaceConfig | null = null
 
 export function useTqlKernel(): TrellisKernel {
   if (!_kernel) {
     throw new Error('[tql] Kernel not initialized — server plugin has not run yet')
   }
   return _kernel
+}
+
+export function useWorkspaceConfig(): WorkspaceConfig {
+  if (!_workspaceConfig) {
+    throw new Error('[tql] Workspace config not initialized — server plugin has not run yet')
+  }
+  return _workspaceConfig
 }
 
 // Mutation log ring buffer
@@ -64,34 +73,12 @@ export default defineNitroPlugin(async (nitro) => {
     autoReplay: true,
   })
 
-  // Boot with workspace config (ontologies + projections)
+  // Boot with workspace config (ontologies + projections + routes + app)
   const workspaceConfig = createWorkspaceConfig()
+  _workspaceConfig = workspaceConfig
   await kernel.boot(workspaceConfig)
 
-  // Seed data on first boot (if the store is empty)
-  const store = kernel.getStore()
-  const existingFacts = store.getAllFacts()
-  let factCount = 0
-  for (const _ of existingFacts) {
-    factCount++
-    if (factCount > 0) break
-  }
-
-  if (factCount === 0) {
-    console.log('[tql] First boot — seeding personal calendar items...')
-    const seedItems = getPersonalSeedItems()
-
-    for (const item of seedItems) {
-      const entityId = `calendaritem:${item.id}`
-      const { id: _id, ...data } = item
-      await kernel.createNode(entityId, data, 'calendaritem')
-    }
-
-    console.log(`[tql] Seeded ${seedItems.length} calendar items`)
-    await kernel.checkpoint()
-  } else {
-    console.log('[tql] Kernel restored from existing data')
-  }
+  console.log('[tql] Kernel booted (no seed data)')
 
   // Store in module singleton
   _kernel = kernel
@@ -103,5 +90,5 @@ export default defineNitroPlugin(async (nitro) => {
     console.log('[tql] Kernel closed')
   })
 
-  console.log('[tql] TrellisKernel ready (v2 — expanded seed)')
+  console.log('[tql] TrellisKernel ready')
 })

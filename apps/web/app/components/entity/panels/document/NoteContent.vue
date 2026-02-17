@@ -1,4 +1,6 @@
 <script lang="ts" setup>
+  import { markdownToHtml } from '~/utils/markdown'
+
   const props = defineProps<{
     modelValue: any
     mode: 'view' | 'create' | 'edit'
@@ -14,6 +16,11 @@
   })
 
   const isViewMode = computed(() => props.mode === 'view')
+
+  const renderedContent = computed(() => {
+    if (!item.value?.content) return '<span class="text-muted-foreground/50 italic">Empty note.</span>'
+    return markdownToHtml(item.value.content)
+  })
 </script>
 
 <template>
@@ -24,10 +31,17 @@
       placeholder="Write your note..."
       class="flex-1 min-h-0 border-none! rounded-none!"
       fill-height
-      mentions />
+      mentions
+      tasklist
+      images
+      embeds
+      tables
+      mathematics
+      collaborative
+      :entity-id="item.id" />
     <div
       v-else
-      class="text-sm text-foreground whitespace-pre-wrap flex-1 p-4"
-      v-html="item.content || '<span class=\'text-muted-foreground/50 italic\'>Empty note.</span>'" />
+      class="prose prose-sm max-w-none text-sm text-foreground flex-1 p-4"
+      v-html="renderedContent" />
   </div>
 </template>

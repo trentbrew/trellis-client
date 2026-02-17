@@ -1,7 +1,10 @@
-# Toolkit UI Monorepo
+# Trellis Monorepo
 # Run `just` to see available commands
 
 set dotenv-load
+
+run:
+  @just dev
 
 # Default: show help
 default:
@@ -11,37 +14,18 @@ default:
 install:
     pnpm install
 
-# Start v1 (component library) dev server
-dev-v1:
-    pnpm --filter @toolkit/ui dev
-
-# Start v2 (Nuxt sandbox) dev server
-dev-v2:
-    pnpm --filter @toolkit/sandbox dev
-
-# Start both dev servers (requires tmux or similar)
-dev-all:
-    @echo "Starting both dev servers..."
-    @echo "  v1: http://localhost:5173"
-    @echo "  v2: http://localhost:5151"
-    pnpm --filter @toolkit/ui dev & pnpm --filter @toolkit/sandbox dev
-
-# Start v2 dev server
-dev-v2-safe:
-    @echo "🚀 Starting v2 dev server..."
-    pnpm --filter @toolkit/sandbox dev
+# Start Trellis web app dev server
+dev:
+    @echo "🚀 Starting Trellis dev server..."
+    pnpm --filter ./apps/web dev
 
 # Build all packages
 build:
     pnpm -r build
 
-# Build v1 only
-build-v1:
-    pnpm --filter @toolkit/ui build
-
-# Build v2 only
-build-v2:
-    pnpm --filter @toolkit/sandbox build
+# Build Trellis web app only
+build-web:
+    pnpm --filter ./apps/web build
 
 # Run linting across all packages
 lint:
@@ -88,3 +72,42 @@ nix-shell:
 # Auto-commit changes every minute (useful for backup)
 auto-commit interval="60":
     ./.scripts/auto-commit.sh {{interval}}
+
+# ── Trellis CLI ──────────────────────────────────────────────────────────
+
+# Run the trellis CLI (pass arguments after --)
+trellis *ARGS:
+    node packages/trellis-cli/bin/trellis.mjs {{ARGS}}
+
+# Quick: query the graph
+trellis-query *EQLS:
+    node packages/trellis-cli/bin/trellis.mjs query {{EQLS}}
+
+# Quick: watch for realtime mutations
+trellis-watch:
+    node packages/trellis-cli/bin/trellis.mjs watch --pretty
+
+# Quick: health check
+trellis-health:
+    node packages/trellis-cli/bin/trellis.mjs health --pretty
+
+# E2E smoke test (requires running dev server on $TRELLIS_PORT)
+trellis-test:
+    node packages/trellis-cli/test/e2e.mjs
+
+# ── InstantDB CLI ──────────────────────────────────────────────────────
+
+# Run any instant-cli command (pass arguments after --)
+instant *ARGS:
+    cd apps/web && pnpm exec instant-cli {{ARGS}} --app "$INSTANTDB_APP_ID"
+
+# Push schema to InstantDB cloud
+instant-push-schema:
+    cd apps/web && pnpm exec instant-cli push schema --app "$INSTANTDB_APP_ID"
+
+# Push permissions to InstantDB cloud
+instant-push-perms:
+    cd apps/web && pnpm exec instant-cli push perms --app "$INSTANTDB_APP_ID"
+
+# Push both schema and permissions
+instant-push: instant-push-schema instant-push-perms

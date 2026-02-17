@@ -16,7 +16,7 @@ export interface Member {
   email: string
   name: string
   avatar?: string
-  role: 'owner' | 'admin' | 'member' | 'viewer'
+  role: 'owner' | 'admin' | 'member' | 'guest'
   invitedAt: number
   joinedAt?: number
   status: 'pending' | 'active' | 'suspended'
@@ -31,7 +31,7 @@ export interface Application {
   color: string
   description?: string
   isPublic?: boolean // Whether the app/workspace is publicly accessible
-  ontologies?: string[] // Imported vertical ontologies (e.g., ['ecms', 'crm'])
+  ontologies?: string[] // Imported vertical ontologies (e.g., ['crm'])
   createdAt: number
   updatedAt: number
 }
@@ -204,6 +204,24 @@ export type ProjectionType =
   | 'sankey'
   | 'timeline'
   | 'dashboard'
+  | 'chart'
+  | 'slide-deck'
+  | 'moodboard'
+  | 'entity-detail'
+
+export type ChartType =
+  | 'bar'
+  | 'line'
+  | 'area'
+  | 'pie'
+  | 'donut'
+  | 'radialBar'
+  | 'scatter'
+  | 'radar'
+  | 'heatmap'
+  | 'treemap'
+
+export type AggregationFn = 'count' | 'sum' | 'avg' | 'min' | 'max'
 
 export interface ProjectionSchemaRequirements {
   fieldTypes?: Array<DatabaseField['type']>
@@ -223,6 +241,7 @@ export interface Projection {
   requirements?: ProjectionRequirements
   isDefault?: boolean
   order?: number
+  contextMenu?: import('~/types/contextMenu').ContextMenuConfig
 }
 
 export interface ProjectionConfig {
@@ -253,6 +272,22 @@ export interface ProjectionConfig {
   dateField?: string
   endDateField?: string
   labelField?: string
+
+  // Chart specific
+  chartType?: ChartType
+  dimension?: string // field mapped to x-axis or segments
+  measure?: string // field mapped to y-axis or values
+  aggregation?: AggregationFn
+  colorField?: string // field to derive colors from
+  stacked?: boolean
+  showLegend?: boolean
+  showLabels?: boolean
+  sparkline?: boolean // minimal chart without axes (for dashboard widgets)
+
+  // Slide-deck specific
+  slideTheme?: 'dark' | 'light' | 'auto'
+  slideTransition?: 'fade' | 'slide' | 'none'
+  slideOrderField?: string // field used to sort slides (default: 'order')
 
   // Extensible for custom projection types
   [key: string]: any

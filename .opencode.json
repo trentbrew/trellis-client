@@ -1,0 +1,12 @@
+{
+  "mcp": {
+    "trellis": {
+      "command": "node",
+      "args": ["packages/trellis-mcp/bin/serve.mjs"],
+      "env": {
+        "TRELLIS_PORT": "1414",
+        "TRELLIS_AGENT_ID": "opencode"
+      }
+    }
+  }
+}

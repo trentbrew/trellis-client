@@ -97,6 +97,22 @@
         { name: 'Content', type: 'text' },
       ],
     },
+    {
+      id: 'slide-deck',
+      name: 'Slide Deck',
+      description: 'Presentation slides — edit as data, present as slides',
+      icon: 'lucide:presentation',
+      fields: [
+        { name: 'order', type: 'number', required: true },
+        { name: 'title', type: 'text' },
+        { name: 'subtitle', type: 'text' },
+        { name: 'body', type: 'text' },
+        { name: 'layout', type: 'select', required: true },
+        { name: 'background', type: 'text' },
+        { name: 'media', type: 'url' },
+        { name: 'speakerNotes', type: 'text' },
+      ],
+    },
   ]
 
   const selectedTemplate = computed(() => templateOptions.find((t) => t.id === selectedTemplateId.value) || null)
@@ -220,7 +236,7 @@
       if (collection) {
         emit('created', collection)
         // Navigate to the new collection
-        await navigateTo(`/collections/${collection.slug}`)
+        await navigateTo(`/database/collections/${collection.slug}`)
       }
 
       form.value = {

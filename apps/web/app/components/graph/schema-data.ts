@@ -1,13 +1,17 @@
+import { ENTITY_NAMESPACE } from '~/lib/tql-namespace'
+
 /**
  * Schema data for the Ontology Visualizer.
  *
- * Two datasets:
- * A) Core Ontology — system types from core.jsonld (read-only)
- * B) Entity Registry — app-level entity types from entityRegistry.ts
+ * Derives Vue Flow nodes and edges dynamically from server ontologies.
+ * Uses the `tier` field to split into tabs:
+ *   - Core Ontology (tier: 'core') — structural types from the TQL kernel
+ *   - Entity Types (tier: 'system') — app entity types
+ *
+ * Uses `subClassOf` for inheritance edges and `relation` valueType for FK edges.
  */
 
 import type { Edge, Node } from '@vue-flow/core'
-import { getAllEntityTypes } from '~/config/entityRegistry'
 
 // ── Shared Types ─────────────────────────────────────────────────────────────
 
@@ -23,252 +27,125 @@ export interface OntologyNodeData {
   icon?: string
   subtitle?: string
   fields: OntologyField[]
-  className?: string // entity class for color coding
+  className?: string
+  tier?: string
 }
 
 export type OntologyNode = Node<OntologyNodeData>
 
-// ── A) Core Ontology ─────────────────────────────────────────────────────────
+// ── Schema → OntologyField mapping ──────────────────────────────────────────
 
-export const coreOntologyNodes: OntologyNode[] = [
-  {
-    id: 'core:Thing',
-    type: 'ontologyTable',
-    position: { x: 500, y: 0 },
-    data: {
-      label: 'Thing',
-      icon: 'lucide:box',
-      subtitle: 'Root type',
-      fields: [
-        { name: 'id', type: 'string', isPrimary: true },
-        { name: 'createdAt', type: 'datetime' },
-        { name: 'updatedAt', type: 'datetime' },
-        { name: 'createdBy', type: 'relation', isRelation: true },
-        { name: 'tags', type: 'multiselect' },
-      ],
-    },
-  },
-  {
-    id: 'core:Record',
-    type: 'ontologyTable',
-    position: { x: 500, y: 280 },
-    data: {
-      label: 'Record',
-      icon: 'lucide:file',
-      subtitle: 'extends Thing',
-      fields: [
-        { name: 'id', type: 'string', isPrimary: true },
-        { name: 'title', type: 'text' },
-        { name: 'description', type: 'textarea' },
-        { name: 'status', type: 'select' },
-        { name: 'tags', type: 'multiselect' },
-      ],
-    },
-  },
-  {
-    id: 'core:Collection',
-    type: 'ontologyTable',
-    position: { x: 100, y: 280 },
-    data: {
-      label: 'Collection',
-      icon: 'lucide:database',
-      subtitle: 'extends Thing',
-      fields: [
-        { name: 'id', type: 'string', isPrimary: true },
-        { name: 'title', type: 'text' },
-        { name: 'description', type: 'textarea' },
-        { name: 'icon', type: 'icon' },
-        { name: 'schema', type: 'json' },
-        { name: 'recordType', type: 'relation', isRelation: true },
-      ],
-    },
-  },
-  {
-    id: 'core:Tag',
-    type: 'ontologyTable',
-    position: { x: 900, y: 280 },
-    data: {
-      label: 'Tag',
-      icon: 'lucide:tag',
-      subtitle: 'extends Thing',
-      fields: [
-        { name: 'id', type: 'string', isPrimary: true },
-        { name: 'name', type: 'text' },
-        { name: 'slug', type: 'text' },
-        { name: 'color', type: 'color' },
-        { name: 'icon', type: 'icon' },
-        { name: 'parentTag', type: 'relation', isRelation: true },
-      ],
-    },
-  },
-  {
-    id: 'core:Document',
-    type: 'ontologyTable',
-    position: { x: 300, y: 580 },
-    data: {
-      label: 'Document',
-      icon: 'lucide:file-text',
-      subtitle: 'extends Record',
-      fields: [
-        { name: 'id', type: 'string', isPrimary: true },
-        { name: 'content', type: 'richtext' },
-        { name: 'mimeType', type: 'text' },
-        { name: 'fileUrl', type: 'text' },
-      ],
-    },
-  },
-  {
-    id: 'core:Event',
-    type: 'ontologyTable',
-    position: { x: 700, y: 580 },
-    data: {
-      label: 'Event',
-      icon: 'lucide:calendar',
-      subtitle: 'extends Record',
-      fields: [
-        { name: 'id', type: 'string', isPrimary: true },
-        { name: 'startDate', type: 'datetime' },
-        { name: 'endDate', type: 'datetime' },
-        { name: 'location', type: 'text' },
-        { name: 'allDay', type: 'boolean' },
-      ],
-    },
-  },
-  {
-    id: 'core:Workspace',
-    type: 'ontologyTable',
-    position: { x: -300, y: 280 },
-    data: {
-      label: 'Workspace',
-      icon: 'lucide:building-2',
-      subtitle: 'extends Thing',
-      fields: [
-        { name: 'id', type: 'string', isPrimary: true },
-        { name: 'name', type: 'text' },
-        { name: 'slug', type: 'text' },
-        { name: 'avatar', type: 'image' },
-        { name: 'plan', type: 'select' },
-      ],
-    },
-  },
-  {
-    id: 'core:App',
-    type: 'ontologyTable',
-    position: { x: -300, y: 580 },
-    data: {
-      label: 'App',
-      icon: 'lucide:layout-grid',
-      subtitle: 'extends Thing',
-      fields: [
-        { name: 'id', type: 'string', isPrimary: true },
-        { name: 'name', type: 'text' },
-        { name: 'slug', type: 'text' },
-        { name: 'icon', type: 'icon' },
-        { name: 'color', type: 'color' },
-        { name: 'description', type: 'textarea' },
-        { name: 'ontologies', type: 'array' },
-      ],
-    },
-  },
-  {
-    id: 'core:Member',
-    type: 'ontologyTable',
-    position: { x: 1250, y: 280 },
-    data: {
-      label: 'Member',
-      icon: 'lucide:user',
-      subtitle: 'extends Thing',
-      fields: [
-        { name: 'id', type: 'string', isPrimary: true },
-        { name: 'name', type: 'text' },
-        { name: 'email', type: 'email' },
-        { name: 'avatar', type: 'image' },
-        { name: 'role', type: 'select' },
-        { name: 'status', type: 'select' },
-      ],
-    },
-  },
-  {
-    id: 'core:Person',
-    type: 'ontologyTable',
-    position: { x: 1250, y: 0 },
-    data: {
-      label: 'Person',
-      icon: 'lucide:user',
-      subtitle: 'extends Thing',
-      fields: [
-        { name: 'id', type: 'string', isPrimary: true },
-      ],
-    },
-  },
-  {
-    id: 'core:Workflow',
-    type: 'ontologyTable',
-    position: { x: -300, y: 0 },
-    data: {
-      label: 'Workflow',
-      icon: 'lucide:git-branch',
-      subtitle: 'extends Thing',
-      fields: [
-        { name: 'id', type: 'string', isPrimary: true },
-        { name: 'name', type: 'text' },
-        { name: 'trigger', type: 'text' },
-        { name: 'steps', type: 'array' },
-        { name: 'active', type: 'boolean' },
-      ],
-    },
-  },
-]
+const RELATION_VALUE_TYPES = new Set(['relation', 'people'])
 
-export const coreOntologyEdges: Edge[] = [
-  // subClassOf → Thing
-  { id: 'record-thing', source: 'core:Record', target: 'core:Thing', sourceHandle: 'id', targetHandle: 'id', type: 'default', animated: true, label: 'extends' },
-  { id: 'collection-thing', source: 'core:Collection', target: 'core:Thing', sourceHandle: 'id', targetHandle: 'id', type: 'default', animated: true, label: 'extends' },
-  { id: 'tag-thing', source: 'core:Tag', target: 'core:Thing', sourceHandle: 'id', targetHandle: 'id', type: 'default', animated: true, label: 'extends' },
-  { id: 'workspace-thing', source: 'core:Workspace', target: 'core:Thing', sourceHandle: 'id', targetHandle: 'id', type: 'default', animated: true, label: 'extends' },
-  { id: 'app-thing', source: 'core:App', target: 'core:Thing', sourceHandle: 'id', targetHandle: 'id', type: 'default', animated: true, label: 'extends' },
-  { id: 'member-thing', source: 'core:Member', target: 'core:Thing', sourceHandle: 'id', targetHandle: 'id', type: 'default', animated: true, label: 'extends' },
-  { id: 'person-thing', source: 'core:Person', target: 'core:Thing', sourceHandle: 'id', targetHandle: 'id', type: 'default', animated: true, label: 'extends' },
-  { id: 'workflow-thing', source: 'core:Workflow', target: 'core:Thing', sourceHandle: 'id', targetHandle: 'id', type: 'default', animated: true, label: 'extends' },
-
-  // subClassOf → Record
-  { id: 'document-record', source: 'core:Document', target: 'core:Record', sourceHandle: 'id', targetHandle: 'id', type: 'default', animated: true, label: 'extends' },
-  { id: 'event-record', source: 'core:Event', target: 'core:Record', sourceHandle: 'id', targetHandle: 'id', type: 'default', animated: true, label: 'extends' },
-
-  // Relation edges
-  { id: 'tag-self', source: 'core:Tag', target: 'core:Tag', sourceHandle: 'parentTag', targetHandle: 'id', type: 'default', animated: true, label: 'parentTag' },
-  { id: 'collection-record', source: 'core:Collection', target: 'core:Record', sourceHandle: 'recordType', targetHandle: 'id', type: 'default', animated: true, label: 'recordType' },
-]
-
-// ── B) Entity Registry (derived dynamically from entityRegistry.ts) ──────────
-
-const FIELD_TYPE_MAP: Record<string, string> = {
-  type: 'identity',
-  status: 'select',
-  startDate: 'datetime',
-  endDate: 'datetime',
-  allDay: 'boolean',
-  timeRange: 'timerange',
-  priority: 'computed',
-  urgency: 'computed',
-  category: 'select',
-  owner: 'relation',
-  involved: 'relation[]',
-  folder: 'relation',
-  pin: 'boolean',
-  tags: 'multiselect',
+interface SchemaField {
+  name: string
+  valueType: string
+  required?: boolean
+  relation?: { targetSchema?: string; cardinality?: string }
 }
 
-const RELATION_FIELD_IDS = new Set(['owner', 'involved', 'folder'])
+interface SchemaDefinitionLike {
+  '@id': string
+  tier?: string
+  subClassOf?: string
+  label?: string
+  icon?: string
+  entityClass?: string
+  fields: SchemaField[]
+}
 
-function buildRegistryNodes(): OntologyNode[] {
-  const allTypes = getAllEntityTypes()
+function schemaFieldToOntologyField(f: SchemaField): OntologyField {
+  return {
+    name: f.name,
+    type: f.valueType,
+    isPrimary: f.name === 'id' || (f.name === 'title' && f.valueType === 'title'),
+    isRelation: RELATION_VALUE_TYPES.has(f.valueType) || !!f.relation,
+  }
+}
+
+// ── Layout helpers ──────────────────────────────────────────────────────────
+
+function estimateNodeHeight(fieldCount: number): number {
+  return 68 + fieldCount * 28 + 24
+}
+
+// ── Build nodes + edges from SchemaDefinition[] ─────────────────────────────
+
+/**
+ * Build Vue Flow nodes from an array of ontology schemas.
+ * Auto-layouts in columns grouped by entityClass (for system) or by inheritance depth (for core).
+ */
+export function buildNodesFromSchemas(schemas: SchemaDefinitionLike[]): OntologyNode[] {
+  const tier = schemas[0]?.tier
+
+  if (tier === 'core') {
+    return buildCoreNodes(schemas)
+  }
+  return buildSystemNodes(schemas)
+}
+
+function buildCoreNodes(schemas: SchemaDefinitionLike[]): OntologyNode[] {
+  // Group by depth in inheritance tree
+  const parentMap = new Map<string, string>()
+  for (const s of schemas) {
+    if (s.subClassOf) parentMap.set(s['@id'], s.subClassOf)
+  }
+
+  function depth(id: string): number {
+    const parent = parentMap.get(id)
+    return parent ? depth(parent) + 1 : 0
+  }
+
+  const byDepth = new Map<number, SchemaDefinitionLike[]>()
+  for (const s of schemas) {
+    const d = depth(s['@id'])
+    if (!byDepth.has(d)) byDepth.set(d, [])
+    byDepth.get(d)!.push(s)
+  }
+
+  const nodes: OntologyNode[] = []
+  const depths = [...byDepth.keys()].sort()
+
+  for (const d of depths) {
+    const entries = byDepth.get(d) || []
+    const colX = 0
+    entries.forEach((s, i) => {
+      nodes.push({
+        id: s['@id'],
+        type: 'ontologyTable',
+        position: { x: colX + i * 340, y: d * 320 },
+        data: {
+          label: s.label || s['@id'].split(':').pop() || s['@id'],
+          icon: s.icon,
+          subtitle: s.subClassOf ? `extends ${s.subClassOf.split(':').pop()}` : 'Root type',
+          tier: s.tier,
+          fields: s.fields.map(schemaFieldToOntologyField),
+        },
+      })
+    })
+  }
+
+  return nodes
+}
+
+function buildSystemNodes(schemas: SchemaDefinitionLike[]): OntologyNode[] {
+  // Skip storage-level schemas (internal/legacy)
+  const filtered = schemas.filter(s =>
+    !s['@id'].endsWith(`/${ENTITY_NAMESPACE}`) && !s['@id'].endsWith('/comment'),
+  )
+
   const classOrder = ['temporal', 'document', 'actor', 'container']
-
-  const byClass = new Map<string, typeof allTypes>()
+  const byClass = new Map<string, SchemaDefinitionLike[]>()
   for (const cls of classOrder) byClass.set(cls, [])
-  for (const cfg of allTypes) {
-    byClass.get(cfg.class)?.push(cfg)
+  const uncategorized: SchemaDefinitionLike[] = []
+
+  for (const s of filtered) {
+    const cls = s.entityClass
+    if (cls && byClass.has(cls)) {
+      byClass.get(cls)!.push(s)
+    } else {
+      uncategorized.push(s)
+    }
   }
 
   const nodes: OntologyNode[] = []
@@ -277,54 +154,91 @@ function buildRegistryNodes(): OntologyNode[] {
   for (const cls of classOrder) {
     const entries = byClass.get(cls) || []
     let rowY = 0
-    for (const cfg of entries) {
+    for (const s of entries) {
+      const slug = s['@id'].split('/').pop() || s['@id']
       nodes.push({
-        id: `entity:${cfg.type}`,
+        id: s['@id'],
         type: 'ontologyTable',
         position: { x: colX, y: rowY },
         data: {
-          label: cfg.label,
-          icon: cfg.icon,
-          subtitle: cfg.class,
-          className: cfg.class,
-          fields: cfg.propertyFields.map(f => ({
-            name: f.id,
-            type: FIELD_TYPE_MAP[f.id] || f.display || f.group,
-            isPrimary: f.id === 'type',
-            isRelation: RELATION_FIELD_IDS.has(f.id),
-          })),
+          label: s.label || slug,
+          icon: s.icon,
+          subtitle: cls,
+          className: cls,
+          tier: s.tier,
+          fields: s.fields.slice(0, 12).map(schemaFieldToOntologyField),
         },
       })
-      // Estimate node height: header(52) + fields(28 each) + padding(16)
-      rowY += 68 + cfg.propertyFields.length * 28 + 24
+      rowY += estimateNodeHeight(Math.min(s.fields.length, 12))
     }
     colX += 340
+  }
+
+  // Uncategorized at the end
+  if (uncategorized.length) {
+    let rowY = 0
+    for (const s of uncategorized) {
+      const slug = s['@id'].split('/').pop() || s['@id']
+      nodes.push({
+        id: s['@id'],
+        type: 'ontologyTable',
+        position: { x: colX, y: rowY },
+        data: {
+          label: s.label || slug,
+          icon: s.icon,
+          subtitle: 'other',
+          tier: s.tier,
+          fields: s.fields.slice(0, 12).map(schemaFieldToOntologyField),
+        },
+      })
+      rowY += estimateNodeHeight(Math.min(s.fields.length, 12))
+    }
   }
 
   return nodes
 }
 
-function buildRegistryEdges(): Edge[] {
-  const allTypes = getAllEntityTypes()
+/**
+ * Build Vue Flow edges from an array of ontology schemas.
+ * Derives edges from `subClassOf` (inheritance) and `relation` fields (FK).
+ */
+export function buildEdgesFromSchemas(schemas: SchemaDefinitionLike[]): Edge[] {
+  const schemaIds = new Set(schemas.map(s => s['@id']))
   const edges: Edge[] = []
 
-  for (const cfg of allTypes) {
-    if (cfg.propertyFields.some(f => f.id === 'folder')) {
+  for (const s of schemas) {
+    // Inheritance edge from subClassOf
+    if (s.subClassOf && schemaIds.has(s.subClassOf)) {
+      const sourceSlug = s['@id'].split(/[:/]/).pop() || s['@id']
+      const targetSlug = s.subClassOf.split(/[:/]/).pop() || s.subClassOf
       edges.push({
-        id: `${cfg.type}-folder`,
-        source: `entity:${cfg.type}`,
-        target: 'entity:folder',
-        sourceHandle: 'folder',
-        targetHandle: 'type',
+        id: `${sourceSlug}-extends-${targetSlug}`,
+        source: s['@id'],
+        target: s.subClassOf,
+        sourceHandle: s.fields.find(f => f.name === 'id' || f.valueType === 'title')?.name || 'id',
+        targetHandle: 'id',
         type: 'default',
         animated: true,
-        label: 'folder',
+        label: 'extends',
       })
+    }
+
+    // Relation edges
+    for (const field of s.fields) {
+      if (field.relation?.targetSchema && schemaIds.has(field.relation.targetSchema)) {
+        edges.push({
+          id: `${s['@id']}-${field.name}-${field.relation.targetSchema}`,
+          source: s['@id'],
+          target: field.relation.targetSchema,
+          sourceHandle: field.name,
+          targetHandle: 'id',
+          type: 'default',
+          animated: true,
+          label: field.name,
+        })
+      }
     }
   }
 
   return edges
 }
-
-export const entityRegistryNodes: OntologyNode[] = buildRegistryNodes()
-export const entityRegistryEdges: Edge[] = buildRegistryEdges()

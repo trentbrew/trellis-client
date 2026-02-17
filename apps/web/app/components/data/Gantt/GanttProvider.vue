@@ -242,7 +242,7 @@
   }
 
   const setZoomAtClientX = (nextZoom: number, clientX: number) => {
-    const clamped = Math.max(100, Math.min(999, Math.round(nextZoom)))
+    const clamped = Math.max(100, Math.min(5000, Math.round(nextZoom)))
     if (clamped === zoom.value) {
       return
     }
@@ -257,7 +257,7 @@
   }
 
   const setZoom = (nextZoom: number) => {
-    const clamped = Math.max(100, Math.min(999, Math.round(nextZoom)))
+    const clamped = Math.max(100, Math.min(5000, Math.round(nextZoom)))
     if (clamped === zoom.value) {
       return
     }

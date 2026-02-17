@@ -1,21 +1,8 @@
 import { defineConfig, devices } from '@playwright/test'
-import fs from 'node:fs'
-import path from 'node:path'
 
-// Function to extract port from JSON-LD graph
-const getPortFromGraph = () => {
-  try {
-    const configPath = path.resolve(__dirname, 'app/config/app-config.jsonld')
-    const configRaw = fs.readFileSync(configPath, 'utf8')
-    const config = JSON.parse(configRaw)
-    const appNode = config['@graph']?.find((n: any) => n['@type'] === 'app:Application')
-    return appNode?.devPort || 4141
-  } catch {
-    return 4141
-  }
-}
-
-const DEV_PORT = getPortFromGraph()
+const DEFAULT_DEV_PORT = 1414
+const parsedDevPort = Number.parseInt(process.env.TRELLIS_PORT || '', 10)
+const DEV_PORT = Number.isFinite(parsedDevPort) ? parsedDevPort : DEFAULT_DEV_PORT
 
 /**
  * @see https://playwright.dev/docs/test-configuration

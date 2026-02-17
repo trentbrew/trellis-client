@@ -8,8 +8,10 @@ import {
   routeConfig,
 } from '~/config/routes'
 import type { BadgeConfig, RouteConfig } from '~/config/routes'
-import { SYSTEM_TYPES } from '~/lib/systemTypes'
+import { PLATFORM_TYPES } from '~/lib/systemTypes'
 import { filterRoutesByPermissions } from '~/lib/permissions'
+import { useOntologyRegistry } from '~/composables/useOntologyRegistry'
+import { useTrellisConfig } from '~/composables/useTrellisConfig'
 
 type RailConfig = {
   primary: string[]
@@ -18,7 +20,7 @@ type RailConfig = {
 
 const MAX_RAIL_ITEMS_TOTAL = 12
 
-const sanitizeRailConfig = (config: RailConfig): RailConfig => {
+const _sanitizeRailConfig = (config: RailConfig): RailConfig => {
   return {
     primary: Array.isArray(config?.primary) ? [...config.primary] : [],
     secondary: Array.isArray(config?.secondary) ? [...config.secondary] : [],
@@ -32,18 +34,51 @@ export const useRoutes = () => {
   const route = useRoute()
 
   const pinned = usePinnedItems()
-  const { userRole, membership } = useUserRole()
+  const sidebarOrder = useSidebarOrder()
+  const { userRole } = useUserRole()
 
   const currentOrg = useState<any>('currentOrg')
   const currentApp = useState<any>('currentApp')
 
   const railConfig = ref<RailConfig | null>(null)
 
-  // Check if user has facility membership
-  const hasFacilityMembership = computed(() => !!membership.value)
+  // Server-sourced routes (primary) with static fallback
+  const { routeConfigTree: serverRoutes } = useTrellisConfig()
+
+  // Merge server routes with static routes — docs route is static-only
+  const effectiveRouteConfig = computed<RouteConfig[]>(() => {
+    const server = serverRoutes.value
+    if (server.length > 0) {
+      // Server routes replace the app-config.jsonld routes; keep static-only routes (docs)
+      const staticOnly = routeConfig.filter(r =>
+        !server.some(s => s.path === r.path),
+      )
+      return [...server, ...staticOnly]
+    }
+    return routeConfig
+  })
+
+  // All users have access (facility membership check removed)
+  const hasFacilityMembership = computed(() => true)
 
   // Get collections reactively from InstantDB
   const { collections: instantCollections, customTypes, workflows } = useInstantData()
+
+  // Get user-created pages
+  const { pages } = usePages()
+
+  const pagesChildren = computed<RouteConfig[]>(() => {
+    return (pages.value || []).map((p) => ({
+      path: `/workspace/pages/${p.id}`,
+      label: p.title,
+      icon: p.icon || 'lucide:file-text',
+      tint: 'text-emerald-300',
+      meta: {
+        title: p.title,
+        subtitle: 'Page',
+      },
+    }))
+  })
 
   const collectionsChildren = computed<RouteConfig[]>(() => {
     if (!instantCollections.value) return []
@@ -51,7 +86,7 @@ export const useRoutes = () => {
     return instantCollections.value
       .filter((c) => !c.parentId)
       .map((col) => ({
-        path: `/collections/${col.slug}`,
+        path: `/database/collections/${col.slug}`,
         label: col.title,
         icon: col.icon || 'lucide:database',
         tint: 'text-blue-300',
@@ -79,20 +114,41 @@ export const useRoutes = () => {
     }))
   })
 
-  const systemTypesChildren = computed<RouteConfig[]>(() => {
-    return SYSTEM_TYPES.map((t) => ({
-      path: `/types/system/${t.id}`,
+  const platformTypeIds = new Set(PLATFORM_TYPES.map((t) => t.id.toLowerCase()))
+
+  const entityTypesChildren = computed<RouteConfig[]>(() => {
+    return serverOntologyTypes.value
+      .filter((t) => t.tier === 'system' && !isDynamicType(t.type) && !platformTypeIds.has(t.type.toLowerCase()))
+      .sort((a, b) => a.label.localeCompare(b.label))
+      .map((t) => ({
+        path: `/database/${t.type}`,
+        label: t.label,
+        icon: t.icon || 'lucide:box',
+        tint: `text-${t.color}-300`,
+        order: -100,
+        meta: {
+          title: t.label,
+          subtitle: t.class,
+        },
+      }))
+  })
+
+  const platformTypesChildren = computed<RouteConfig[]>(() => {
+    return PLATFORM_TYPES.map((t) => ({
+      path: `/database/${t.id.toLowerCase()}`,
       label: t.name,
-      icon: t.icon || 'lucide:network',
-      tint: 'text-violet-300',
-      order: -100,
+      icon: t.icon || 'lucide:cog',
+      tint: 'text-muted-foreground',
+      order: 100,
       meta: {
         title: t.name,
-        subtitle: 'System Types',
-        showBackButton: true,
+        subtitle: 'System',
       },
     }))
   })
+
+  // Keep backward compat alias
+  const systemTypesChildren = entityTypesChildren
 
   const workflowsChildren = computed<RouteConfig[]>(() => {
     return (workflows.value || []).map((w) => ({
@@ -107,11 +163,56 @@ export const useRoutes = () => {
     }))
   })
 
+  /**
+   * Dynamic children from ontology-derived entity types.
+   * These are types created at runtime via CLI or MCP that auto-appear in the sidebar.
+   */
+  const { serverTypes: serverOntologyTypes, filteredDynamicTypes: ontologyTypes, isDynamicType } = useOntologyRegistry()
+
+  // ── App-scoped sidebar filtering ──────────────────────────────────────
+  // Maps sidebar route paths to the entity type slugs they depend on.
+  // A sidebar item shows if ANY of its mapped types is in the app's enabled list.
+  // Items with no mapping (e.g. Overview, Feed) always show.
+  // Empty/null currentApp.ontologies → show ALL (backward compat for default Workspace app).
+  const ROUTE_ENTITY_TYPES: Record<string, string[]> = {
+    '/workspace/calendar': ['task', 'event', 'trip', 'payment', 'appointment', 'reminder', 'deadline', 'milestone'],
+    '/workspace/tasks': ['task'],
+    '/workspace/notes': ['note'],
+    '/workspace/projects': ['project'],
+    '/workspace/people': ['person', 'contact', 'organization', 'vendor'],
+    '/workspace/documents': ['note', 'file', 'page', 'template', 'slide_deck'],
+    '/workspace/bookmarks': ['bookmark'],
+  }
+
+  const isRouteEnabledForApp = (path: string): boolean => {
+    const enabledTypes = currentApp.value?.ontologies
+    // No filtering if ontologies is empty/null/undefined
+    if (!enabledTypes || enabledTypes.length === 0) return true
+    const requiredTypes = ROUTE_ENTITY_TYPES[path]
+    // No mapping → always show (meta pages like Overview, Feed, Places)
+    if (!requiredTypes) return true
+    const enabledSet = new Set(enabledTypes)
+    return requiredTypes.some((t) => enabledSet.has(t))
+  }
+
+  const ontologyTypeChildren = computed<RouteConfig[]>(() => {
+    return (ontologyTypes.value || []).map((t) => ({
+      path: `/database/${t.type}`,
+      label: t.label,
+      icon: t.icon || 'lucide:database',
+      tint: `text-${t.color}-300`,
+      meta: {
+        title: t.label,
+        subtitle: 'Custom',
+      },
+    }))
+  })
+
   const railRoutesByPath = computed(() => {
     const map = new Map<string, RouteConfig>()
 
     // Filter and keep section roots as rail items
-    const filteredSections = filterRoutesByPermissions(routeConfig, userRole.value, hasFacilityMembership.value)
+    const filteredSections = filterRoutesByPermissions(effectiveRouteConfig.value, userRole.value, hasFacilityMembership.value)
     filteredSections.forEach((section) => {
       if (section?.path) map.set(section.path, section)
     })
@@ -140,16 +241,16 @@ export const useRoutes = () => {
   })
 
   const isStaticSectionPath = (path: string) => {
-    return routeConfig.some((section) => section?.path === path)
+    return effectiveRouteConfig.value.some((section) => section?.path === path)
   }
 
   const getCollectionSlugFromPath = (path: string): string | null => {
-    const match = /^\/collections\/([^/]+)$/.exec(path)
+    const match = /^\/database\/collections\/([^/]+)$/.exec(path)
     return match?.[1] || null
   }
 
   const getCollectionSlugFromRoutePath = (path: string): string | null => {
-    const match = /^\/collections\/([^/]+)(?:\/|$)/.exec(path)
+    const match = /^\/database\/collections\/([^/]+)(?:\/|$)/.exec(path)
     return match?.[1] || null
   }
 
@@ -218,63 +319,6 @@ export const useRoutes = () => {
     // Rail is currently code-driven (not user-editable). Keep the function for forward compatibility,
     // but do not persist anything.
     void config
-    return
-
-    try {
-      const instantDb = useInstantDb()
-      const tx = instantDb.tx as any
-      const key = getRailSettingsKey()
-      const appId = currentApp.value?.id
-      if (!appId) return
-
-      const authUser = await instantDb.getAuth()
-      const ownerId = authUser?.id
-      if (!ownerId) return
-
-      const safeConfig = sanitizeRailConfig(config)
-      const settingId = `app-${appId}-${key}`
-
-      const existing = await instantDb.queryOnce({
-        settings: {
-          $: {
-            where: {
-              settingKey: settingId,
-            },
-          },
-        },
-      })
-
-      const found = (existing.data as any)?.settings?.[0]
-      const now = Date.now()
-
-      if (found?.id) {
-        await instantDb.transact([
-          tx.settings[found.id].update({
-            ownerId,
-            entityType: 'app',
-            entityId: appId,
-            key,
-            value: safeConfig,
-            updatedAt: now,
-          }),
-        ])
-      } else {
-        const id = crypto.randomUUID()
-        await instantDb.transact([
-          tx.settings[id].create({
-            ownerId,
-            settingKey: settingId,
-            entityType: 'app',
-            entityId: appId,
-            key,
-            value: safeConfig,
-            updatedAt: now,
-          }),
-        ])
-      }
-    } catch (error) {
-      console.error('Failed to save rail config:', error)
-    }
   }
 
   const setRailSpaces = async (position: 'primary' | 'secondary', spacePaths: string[]) => {
@@ -290,7 +334,7 @@ export const useRoutes = () => {
     await saveRailConfig(enforced)
   }
 
-  const getRailSettingsKey = () => {
+  const _getRailSettingsKey = () => {
     // Rail is configured per org+app. A "space" is the first path segment (e.g. /forms).
     // Keeping the key structured makes it easy to evolve without breaking storage.
     const orgId = currentOrg.value?.id || 'unknown-org'
@@ -309,7 +353,7 @@ export const useRoutes = () => {
     // - If any child is inRail, the parent section becomes the rail "space".
     const spaces: Array<{ path: string; order: number }> = []
 
-    routeConfig.forEach((section) => {
+    effectiveRouteConfig.value.forEach((section) => {
       if (!section?.path) return
 
       const isSpaceInRail = section.inRail && section.railPosition === position
@@ -349,7 +393,7 @@ export const useRoutes = () => {
         }
 
         // If it's already a space path (matches a top-level section), keep it.
-        const directMatch = routeConfig.some((s) => s?.path === p)
+        const directMatch = effectiveRouteConfig.value.some((s) => s?.path === p)
         const spacePath = directMatch ? p : getSpaceForPath(p)
         if (!spacePath) return
 
@@ -379,7 +423,7 @@ export const useRoutes = () => {
    * Get all routes for command palette
    */
   const commandPaletteRoutes = computed(() => {
-    const routes = getCommandPaletteRoutes()
+    const routes = getCommandPaletteRoutes(effectiveRouteConfig.value)
     return filterRoutesByPermissions(routes, userRole.value, hasFacilityMembership.value)
   })
 
@@ -412,12 +456,13 @@ export const useRoutes = () => {
   /**
    * Get current sidebar section
    */
-  const currentSidebarSection = computed(() => getSidebarSection(route.path))
+  const currentSidebarSection = computed(() => getSidebarSection(route.path, effectiveRouteConfig.value))
 
   /**
    * Dynamic children for collections - now reactive via InstantDB
    */
-  watch([currentOrg, currentApp], loadRailConfig, { immediate: true })
+  // Re-seed rail when org/app changes OR when server routes arrive
+  watch([currentOrg, currentApp, serverRoutes], loadRailConfig, { immediate: true })
 
   /**
    * Get current section's children (for sidebar)
@@ -431,11 +476,11 @@ export const useRoutes = () => {
 
     // Get dynamic children based on section
     switch (section.path) {
-      case '/collections':
-        dynamicChildren = collectionsChildren.value
+      case '/workspace':
+        dynamicChildren = [...pagesChildren.value]
         break
-      case '/types':
-        dynamicChildren = [...systemTypesChildren.value, ...typesChildren.value]
+      case '/database':
+        dynamicChildren = [...systemTypesChildren.value, ...collectionsChildren.value, ...typesChildren.value, ...ontologyTypeChildren.value]
         break
       case '/workflows':
         dynamicChildren = workflowsChildren.value
@@ -443,7 +488,7 @@ export const useRoutes = () => {
     }
 
     // Merge static children (from config) with dynamic children
-    const adopted = flattenRoutes(routeConfig).filter((r) => r?.path && r.meta?.sidebarSectionPath === section.path)
+    const adopted = flattenRoutes(effectiveRouteConfig.value).filter((r) => r?.path && r.meta?.sidebarSectionPath === section.path)
 
     const allChildren = [...dynamicChildren, ...(section.children || []), ...adopted]
 
@@ -472,8 +517,24 @@ export const useRoutes = () => {
   /**
    * Get breadcrumbs for current route
    */
+  const { pages: _breadcrumbPages } = usePages()
   const breadcrumbs = computed(() => {
-    const base = getBreadcrumbs(route.path)
+    const base = getBreadcrumbs(route.path, effectiveRouteConfig.value)
+
+    // Custom pages: /workspace/pages/:pageId → append page title
+    const cleanPath = getCleanPath(route.path)
+    const pageMatch = cleanPath.match(/^\/workspace\/pages\/(.+)$/)
+    if (pageMatch) {
+      const pageId = pageMatch[1]
+      const page = (_breadcrumbPages.value || []).find((p: any) => p.id === pageId)
+      const pagesBase = [
+        { label: 'Workspace', path: '/workspace' },
+        { label: 'Pages', path: '/workspace' },
+        { label: page?.title || 'Untitled' },
+      ]
+      return pagesBase
+    }
+
     const slug = getCollectionSlugFromRoutePath(route.path)
     if (!slug) return base
 
@@ -486,7 +547,7 @@ export const useRoutes = () => {
   /**
    * Get metadata for current route
    */
-  const currentRouteMeta = computed(() => getRouteMeta(route.path))
+  const currentRouteMeta = computed(() => getRouteMeta(route.path, effectiveRouteConfig.value))
 
   /**
    * Check if a route is active
@@ -496,7 +557,7 @@ export const useRoutes = () => {
     if (currentClean === path || currentClean.startsWith(path + '/')) return true
 
     // Check if the current route has a sidebarSectionPath that matches
-    const meta = getRouteMeta(route.path)
+    const meta = getRouteMeta(route.path, effectiveRouteConfig.value)
     if (meta?.sidebarSectionPath === path) return true
 
     return false
@@ -522,7 +583,7 @@ export const useRoutes = () => {
    * Get all routes (flattened) with permission filtering
    */
   const allRoutes = computed(() => {
-    const routes = flattenRoutes(routeConfig)
+    const routes = flattenRoutes(effectiveRouteConfig.value)
     return filterRoutesByPermissions(routes, userRole.value, hasFacilityMembership.value)
   })
 
@@ -552,12 +613,29 @@ export const useRoutes = () => {
 
     const pinnedPaths = new Set(pinned.getPinnedItems(currentSectionLinks.value).map((item) => item.path))
 
-    return section.sidebarSections
+    // Route type flags
+    const isDatabase = section.path === '/database'
+    const isWorkspace = section.path === '/workspace'
+
+    const resolved = section.sidebarSections
       .map((sectionDef) => {
         let items: RouteConfig[] = []
 
+        if (isDatabase && sectionDef.key === 'database-entities') {
+          // ENTITIES section gets schema.org-derived entity types
+          items = [...entityTypesChildren.value]
+        } else if (isDatabase && sectionDef.key === 'database-system') {
+          // SYSTEM section gets platform constructs
+          items = [...platformTypesChildren.value]
+        } else if (isDatabase && sectionDef.key === 'database-custom') {
+          // CUSTOM section gets collections + custom types + ontology types
+          items = [...collectionsChildren.value, ...typesChildren.value, ...ontologyTypeChildren.value]
+        } else if (sectionDef.key === 'personal-pages') {
+          // PAGES section gets user-created pages
+          items = [...pagesChildren.value]
+        }
         // Handle special keywords
-        if (sectionDef.items === 'pinned') {
+        else if (sectionDef.items === 'pinned') {
           items = pinned.getPinnedItems(currentSectionLinks.value)
         } else if (sectionDef.items === 'unpinned') {
           items = pinned.getUnpinnedItems(currentSectionLinks.value)
@@ -571,7 +649,7 @@ export const useRoutes = () => {
         }
 
         // Filter out pinned items from non-pinned sections
-        if (sectionDef.items !== 'pinned') {
+        if (sectionDef.items !== 'pinned' && !isDatabase) {
           items = items.filter((item) => !pinnedPaths.has(item.path))
         }
 
@@ -580,7 +658,17 @@ export const useRoutes = () => {
           items = filterRoutesByPermissions(items, userRole.value, hasFacilityMembership.value)
         }
 
-        const resolvedItems = items.filter((item) => item?.path && item.visible?.() !== false)
+        // Apply app-scoped entity type filtering
+        items = items.filter((item) => !item?.path || isRouteEnabledForApp(item.path))
+
+        let resolvedItems = items.filter((item) => item?.path && item.visible?.() !== false)
+
+        // Apply user-defined item order within this section
+        // Only for: workspace sections (all) + database-custom
+        const canReorderItems = isWorkspace || (isDatabase && sectionDef.key === 'database-custom')
+        if (canReorderItems) {
+          resolvedItems = sidebarOrder.applyItemOrder(sectionDef.key, resolvedItems)
+        }
 
         return {
           ...sectionDef,
@@ -588,11 +676,51 @@ export const useRoutes = () => {
           itemsMode: sectionDef.items,
         }
       })
-      .filter((resolvedSection) => {
-        // Hide empty sections completely (no header, no spacing)
-        return resolvedSection.items.length > 0
-      })
-      .sort((a, b) => (a.order ?? 999) - (b.order ?? 999))
+
+    // Merge in user-created custom sections (workspace only)
+    if (isWorkspace) {
+      const customSections = sidebarOrder.getCustomSections('/workspace')
+      for (const cs of customSections) {
+        resolved.push({
+          label: cs.label,
+          key: cs.key,
+          icon: cs.icon,
+          collapsible: true,
+          editable: true,
+          order: cs.order,
+          items: [], // custom sections start empty — items added via drag
+          itemsMode: undefined,
+          isCustom: true,
+        } as any)
+      }
+    }
+
+    // Filter empty sections, then apply ordering
+    const filtered = resolved.filter((resolvedSection) => {
+      // Always show custom sections (even if empty) so user can drag items in
+      if ((resolvedSection as any).isCustom) return true
+      // Always show editable sections (e.g. PAGES) so the + button is accessible
+      if (resolvedSection.editable) return true
+      // Hide empty built-in sections
+      return resolvedSection.items.length > 0
+    })
+
+    // Apply user-defined section order (workspace only), else use config order
+    const ordered = isWorkspace
+      ? sidebarOrder.applySectionOrder('/workspace', filtered)
+      : filtered.sort((a, b) => (a.order ?? 999) - (b.order ?? 999))
+
+    // Pinned section always stays at the top regardless of user reordering
+    if (isWorkspace) {
+      const pinnedIdx = ordered.findIndex((s) => s.key === 'personal-pinned')
+      if (pinnedIdx > 0) {
+        const pinnedSection = ordered[pinnedIdx]!
+        ordered.splice(pinnedIdx, 1)
+        ordered.unshift(pinnedSection)
+      }
+    }
+
+    return ordered
   })
 
   return {
