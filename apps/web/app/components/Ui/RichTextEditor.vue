@@ -1525,4 +1525,36 @@
     border-radius: 0.25rem;
   }
 
+  /* Collaborative cursor styles (y-prosemirror defaults) */
+  :deep(.ProseMirror-yjs-cursor) {
+    position: relative;
+    margin-left: -1px;
+    margin-right: -1px;
+    border-left: 1px solid;
+    border-right: 1px solid;
+    word-break: normal;
+    pointer-events: none;
+  }
+
+  :deep(.ProseMirror-yjs-cursor > div) {
+    position: absolute;
+    top: -1.4em;
+    left: -1px;
+    font-size: 0.75rem;
+    font-weight: 600;
+    line-height: 1.2;
+    padding: 0.125rem 0.375rem;
+    border-radius: 0.25rem;
+    color: white;
+    white-space: nowrap;
+    pointer-events: none;
+    user-select: none;
+    z-index: 10;
+  }
+
+  :deep(.ProseMirror-yjs-selection) {
+    background-color: currentColor;
+    opacity: 0.2;
+  }
+
 </style>

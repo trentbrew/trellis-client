@@ -10,10 +10,26 @@
  *     useCollaborativeEditor(entityId, { initialContent, enabled })
  */
 import * as Y from 'yjs'
+import { Extension } from '@tiptap/core'
 import Collaboration from '@tiptap/extension-collaboration'
+import { yCursorPlugin } from '@tiptap/y-tiptap'
 import { InstantDBProvider } from '~/lib/yjs-instant-provider'
 
 export type CollabConnectionStatus = 'disconnected' | 'connecting' | 'connected'
+
+// Helper to generate consistent color per user ID
+function generateUserColor(userId: string): string {
+  const colors = [
+    '#FF6B6B', '#4ECDC4', '#45B7D1', '#FFA07A',
+    '#98D8C8', '#F7DC6F', '#BB8FCE', '#85C1E2',
+  ]
+  let hash = 0
+  for (let i = 0; i < userId.length; i++) {
+    const code = userId.charCodeAt(i)
+    hash = code + ((hash << 5) - hash)
+  }
+  return colors[Math.abs(hash) % colors.length]
+}
 
 export function useCollaborativeEditor(
   entityId: Ref<string | undefined> | ComputedRef<string | undefined>,
@@ -64,15 +80,44 @@ export function useCollaborativeEditor(
     const room = db.joinRoom('entity-collab', id)
     activeRoom = room
 
-    // 3. Create provider
-    const p = new InstantDBProvider({ ydoc: doc, room, peerId })
+    // 3. Generate consistent color for this user
+    const userColor = generateUserColor(user.value.id!)
+    const userName = user.value.name || user.value.email || 'Anonymous'
+
+    // 4. Create provider with user info for awareness
+    const p = new InstantDBProvider({
+      ydoc: doc,
+      room,
+      peerId,
+      user: {
+        name: userName,
+        color: userColor,
+        avatar: user.value.avatar || undefined,
+      },
+    })
     provider.value = p
 
-    // 4. Build TipTap Collaboration extension bound to our Y.doc
+    // 5. Build TipTap extensions with collaboration and cursor tracking
+    // We use a custom extension wrapping yCursorPlugin from @tiptap/y-tiptap
+    // (same package the Collaboration v3 extension uses) so the ySyncPluginKey
+    // matches. The v2 @tiptap/extension-collaboration-cursor uses y-prosemirror
+    // which has a different ySyncPluginKey, causing "Cannot read 'doc'" errors.
+    const awareness = p.awareness
+    awareness.setLocalStateField('user', { name: userName, color: userColor })
+
+    const cursorExtension = Extension.create({
+      name: 'collaborationCursor',
+      priority: 999,
+      addProseMirrorPlugins() {
+        return [yCursorPlugin(awareness)]
+      },
+    })
+
     collabExtensions.value = [
       Collaboration.configure({
         document: doc,
       }),
+      cursorExtension,
     ]
 
     connectionStatus.value = 'connected'
@@ -92,7 +137,8 @@ export function useCollaborativeEditor(
       provider.value = null
     }
     if (ydoc.value) {
-      ydoc.value.destroy()
+      // Y.Doc has .destroy() at runtime but TypeScript doesn't expose it
+      ;(ydoc.value as any).destroy()
       ydoc.value = null
     }
     if (activeRoom) {
