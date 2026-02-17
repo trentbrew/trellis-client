@@ -235,7 +235,7 @@
           <UiButton
             variant="ghost"
             size="icon-sm"
-            class="text-muted-foreground hover:text-foreground mr-2 ml-1"
+            class="text-muted-foreground hover:text-foreground mr-0 ml-1"
             :aria-label="sidebarCollapse.isCollapsed.value ? 'Expand sidebar' : 'Collapse sidebar'"
             @click="sidebarCollapse.toggle()">
             <Icon name="lucide:menu" class="h-4 w-4" />
@@ -246,12 +246,25 @@
         </UiTooltipContent>
       </UiTooltip>
 
+    <!-- Logo / Home -->
+    <div class="flex h-16 w-12 items-center justify-center shrink-0 border-b bg-transparent">
+      <div
+        class="flex h-9 w-9 items-center justify-center rounded-lg transition bg-transparent hover:bg-transparent"
+        :class="isInEditMode ? 'bg-accent-foreground/10 hover:bg-accent-foreground/20' : 'bg-rail-foreground/10 hover:bg-rail-foreground/20'">
+        <AppLogo class="scale-80" />
+      </div>
+    </div>
+
+      <span class="text-muted-foreground/50 mr-3 ml-2 rotate-10 text-lg">
+        /
+      </span>
+
       <!-- Organization Picker (all authenticated users) -->
       <ClientOnly>
         <OrganizationPicker />
       </ClientOnly>
 
-      <span class="text-muted-foreground/30 mx-1">
+      <span class="text-muted-foreground/50 mx-3 rotate-10 text-lg">
         /
       </span>
 
@@ -263,7 +276,7 @@
       <!-- Path breadcrumbs -->
       <template v-for="(item, i) in routes.breadcrumbs.value" :key="i">
         <template v-if="item?.label">
-          <span class="text-muted-foreground/50 mx-3">/</span>
+          <span class="text-muted-foreground/50 mx-3 rotate-10 text-lg">/</span>
           <AppNavLink
             v-if="item.path && i !== routes.breadcrumbs.value.length - 1"
             :to="item.path"
