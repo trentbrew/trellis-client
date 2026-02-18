@@ -1,5 +1,7 @@
 <script setup lang="ts">
   import FlowEditor from '~/components/Flow/FlowEditor.vue'
+  import FlowExecutionPanel from '~/components/Flow/FlowExecutionPanel.vue'
+  import type { WorkflowNodeKind } from '~/types/database'
 
   definePageMeta({
     title: 'Workflow',
@@ -21,7 +23,7 @@
 
   const isLoading = computed(() => !currentApp.value)
 
-  // Inline title editing
+  // ── Inline title editing ───────────────────────────────────────────────────
   const isEditingTitle = ref(false)
   const editTitle = ref('')
 
@@ -43,23 +45,98 @@
     }
   }
 
-  // Active toggle
+  // ── Active toggle ──────────────────────────────────────────────────────────
   async function toggleActive() {
     if (!workflow.value) return
     await updateWorkflow(workflow.value.id, { active: !workflow.value.active })
   }
 
-  // Delete
+  // ── Delete ─────────────────────────────────────────────────────────────────
   async function handleDelete() {
     if (!workflow.value) return
     await deleteWorkflow(workflow.value.id)
     await router.push('/workflows')
   }
+
+  // ── Execution ──────────────────────────────────────────────────────────────
+  const execution = useWorkflowExecution()
+
+  const hasStartNode = computed<boolean>(() =>
+    (workflow.value?.graph?.nodes ?? []).some((n) => n.kind === 'start'),
+  )
+
+  const canRun = computed<boolean>(() =>
+    hasStartNode.value && execution.status.value !== 'running',
+  )
+
+  /** Map nodeId → { label, kind } for the execution panel's display. */
+  const nodeMap = computed(() => {
+    const map: Record<string, { label: string; kind: WorkflowNodeKind }> = {}
+    for (const n of workflow.value?.graph?.nodes ?? []) {
+      map[n.id] = { label: n.label, kind: n.kind }
+    }
+    return map
+  })
+
+  async function handleRun() {
+    if (!workflow.value?.graph || !canRun.value) return
+    await execution.run(workflow.value.graph, {})
+  }
+
+  // ── Graph validation ─────────────────────────────────────────────────
+  const validationWarnings = computed<string[]>(() => {
+    const graph = workflow.value?.graph
+    if (!graph || graph.nodes.length === 0) return []
+    const w: string[] = []
+    if (!graph.nodes.some((n) => n.kind === 'start')) w.push('No Start node')
+    if (!graph.nodes.some((n) => n.kind === 'end')) w.push('No End node')
+    if (graph.nodes.length > 1) {
+      const connected = new Set<string>()
+      for (const e of graph.edges) { connected.add(e.source); connected.add(e.target) }
+      const isolated = graph.nodes.filter((n) => !connected.has(n.id))
+      if (isolated.length > 0) w.push(`${isolated.length} isolated node${isolated.length > 1 ? 's' : ''}`)
+    }
+    return w
+  })
+
+  // ── Export / Import ───────────────────────────────────────────────────
+  function exportGraph() {
+    const graph = workflow.value?.graph
+    if (!graph) return
+    const slug = (workflow.value?.name || 'workflow').replace(/\s+/g, '-').toLowerCase()
+    const blob = new Blob([JSON.stringify(graph, null, 2)], { type: 'application/json' })
+    const url = URL.createObjectURL(blob)
+    const a = document.createElement('a')
+    a.href = url
+    a.download = `${slug}.json`
+    a.click()
+    URL.revokeObjectURL(url)
+  }
+
+  const importInputRef = ref<HTMLInputElement | null>(null)
+
+  function triggerImport() {
+    importInputRef.value?.click()
+  }
+
+  async function handleImport(event: Event) {
+    const file = (event.target as HTMLInputElement).files?.[0]
+    if (!file || !workflow.value) return
+    try {
+      const text = await file.text()
+      const graph = JSON.parse(text)
+      await updateWorkflow(workflow.value.id, { graph })
+    } catch {
+      // malformed JSON — silently ignore for now
+    } finally {
+      if (importInputRef.value) importInputRef.value.value = ''
+    }
+  }
 </script>
 
 <template>
   <div class="flex h-full flex-col">
-    <!-- Not found state -->
+    <!-- Not found -->
     <template v-if="!isLoading && !workflow">
       <div class="flex flex-1 items-center justify-center">
         <div class="text-center">
@@ -111,6 +188,25 @@
 
         <div class="flex-1" />
 
+        <!-- Run button -->
+        <UiTooltip>
+          <UiTooltipTrigger as-child>
+            <UiButton
+              size="sm"
+              :disabled="!canRun"
+              class="h-7 gap-1.5 bg-green-600 px-3 text-white hover:bg-green-500 disabled:opacity-40"
+              @click="handleRun">
+              <Icon
+                :name="execution.status.value === 'running' ? 'lucide:loader-circle' : 'lucide:play'"
+                :class="['h-3.5 w-3.5', execution.status.value === 'running' && 'animate-spin']" />
+              <span>{{ execution.status.value === 'running' ? 'Running' : 'Run' }}</span>
+            </UiButton>
+          </UiTooltipTrigger>
+          <UiTooltipContent v-if="!hasStartNode" side="bottom">
+            Add a Start node to run this workflow
+          </UiTooltipContent>
+        </UiTooltip>
+
         <!-- Active toggle -->
         <div class="flex items-center gap-1.5">
           <span class="text-xs text-muted-foreground">{{ workflow.active ? 'Active' : 'Inactive' }}</span>
@@ -129,7 +225,23 @@
           </button>
         </div>
 
+        <!-- Validation warnings badge -->
+        <UiTooltip v-if="validationWarnings.length > 0">
+          <UiTooltipTrigger as-child>
+            <div class="flex cursor-default items-center gap-1 rounded-md bg-amber-500/10 px-2 py-1 text-xs text-amber-500">
+              <Icon name="lucide:triangle-alert" class="h-3 w-3" />
+              <span>{{ validationWarnings.length }}</span>
+            </div>
+          </UiTooltipTrigger>
+          <UiTooltipContent side="bottom" class="max-w-48">
+            <ul class="space-y-0.5">
+              <li v-for="w in validationWarnings" :key="w">{{ w }}</li>
+            </ul>
+          </UiTooltipContent>
+        </UiTooltip>
+
         <!-- Menu -->
+        <input ref="importInputRef" type="file" accept=".json" class="hidden" @change="handleImport" />
         <UiDropdownMenu>
           <UiDropdownMenuTrigger as-child>
             <UiButton variant="ghost" size="icon-sm">
@@ -137,6 +249,15 @@
             </UiButton>
           </UiDropdownMenuTrigger>
           <UiDropdownMenuContent align="end">
+            <UiDropdownMenuItem @click="exportGraph">
+              <Icon name="lucide:download" class="mr-2 h-4 w-4" />
+              Export Graph JSON
+            </UiDropdownMenuItem>
+            <UiDropdownMenuItem @click="triggerImport">
+              <Icon name="lucide:upload" class="mr-2 h-4 w-4" />
+              Import Graph JSON
+            </UiDropdownMenuItem>
+            <UiDropdownMenuSeparator />
             <UiDropdownMenuItem class="text-destructive" @click="handleDelete">
               <Icon name="lucide:trash-2" class="mr-2 h-4 w-4" />
               Delete Workflow
@@ -145,9 +266,24 @@
         </UiDropdownMenu>
       </div>
 
-      <!-- Flow canvas -->
-      <div class="flex-1 overflow-hidden">
-        <FlowEditor :workflow-id="workflowId" />
+      <!-- Canvas + Execution panel -->
+      <div class="flex min-h-0 flex-1 flex-col overflow-hidden">
+        <FlowEditor
+          :workflow-id="workflowId"
+          :execution-node-states="execution.nodeStates.value"
+          class="min-h-0 flex-1" />
+
+        <FlowExecutionPanel
+          :status="execution.status.value"
+          :error="execution.error.value"
+          :traces="execution.traces.value"
+          :step-outputs="execution.stepOutputs.value"
+          :node-states="execution.nodeStates.value"
+          :active-node-id="execution.activeNodeId.value"
+          :total-duration-ms="execution.totalDurationMs.value"
+          :node-map="nodeMap"
+          :can-run="canRun"
+          @run="handleRun" />
       </div>
     </template>
   </div>

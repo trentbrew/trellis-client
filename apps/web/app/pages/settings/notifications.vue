@@ -2,6 +2,7 @@
   import type { NotificationType } from '~/types/database'
 
   const { notificationPrefs, updatePrefs, NOTIFICATION_META } = useNotifications()
+  const { globalPref, updatePref: updateChatPref } = useChatNotifications()
 
   const notificationTypes: { type: NotificationType; label: string; description: string }[] = [
     { type: 'invite_accepted', label: 'Invite accepted', description: 'When someone accepts your workspace invitation' },
@@ -71,6 +72,39 @@
               :checked="notificationPrefs.soundEnabled"
               @update:checked="toggleSound"
             />
+          </div>
+        </div>
+      </section>
+
+      <!-- Chat notifications -->
+      <section class="space-y-4">
+        <div>
+          <h3 class="text-sm font-semibold">Chat messages</h3>
+          <p class="text-xs text-muted-foreground mt-0.5">Control when you're notified about new messages.</p>
+        </div>
+        <div class="rounded-lg border border-border/50 divide-y divide-border/50 overflow-hidden">
+          <div
+            v-for="opt in [
+              { value: 'all', label: 'All messages', description: 'Notify on every new message in any channel' },
+              { value: 'mentions', label: 'Mentions only', description: 'Only notify when you are @mentioned' },
+              { value: 'none', label: 'Nothing', description: 'Mute all chat notifications' },
+            ]"
+            :key="opt.value"
+            class="flex items-center justify-between p-4 hover:bg-muted/20 transition-colors cursor-pointer"
+            @click="updateChatPref({ level: opt.value as any })"
+          >
+            <div>
+              <div class="text-sm font-medium">{{ opt.label }}</div>
+              <div class="text-xs text-muted-foreground">{{ opt.description }}</div>
+            </div>
+            <div
+              class="h-4 w-4 rounded-full border-2 flex items-center justify-center shrink-0"
+              :class="(globalPref?.level ?? 'mentions') === opt.value
+                ? 'border-primary bg-primary'
+                : 'border-border'"
+            >
+              <div v-if="(globalPref?.level ?? 'mentions') === opt.value" class="h-1.5 w-1.5 rounded-full bg-primary-foreground" />
+            </div>
           </div>
         </div>
       </section>

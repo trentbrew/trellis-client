@@ -792,7 +792,7 @@
                   <div
                     v-for="stat in stats"
                     :key="stat.label"
-                    class="flex flex-col justify-between gap-1 rounded-lg border border-border/60 bg-card/10 backdrop-blur-sm px-5 py-3 h-[92px] min-w-36">
+                    class="flex flex-col justify-between gap-1 rounded-lg border border-border bg-card/20 backdrop-blur-sm px-5 py-3 h-[92px] min-w-36">
                     <div
                       class="flex items-center gap-1.5 text-[10px] font-medium text-muted-foreground uppercase tracking-wider">
                       <Icon
@@ -917,7 +917,7 @@
           class="sticky -top-px z-40 transition-all duration-0"
           :class="[
             isStuck
-              ? 'bg-background/60 border-b border-border backdrop-blur-lg'
+              ? 'bg-transparent border-b border-border/0 backdrop-blur-lg'
               : 'bg-transparent border-b-transparent',
             transparent ? 'bg-transparent backdrop-blur-none' : '',
           ]">
@@ -935,8 +935,8 @@
                     class="relative flex h-8 items-center justify-center gap-1.5 rounded-md px-3 text-sm font-medium transition-colors"
                     :class="[
                       browse?.viewMode.value === option.mode
-                        ? 'bg-sidebar-background/10 text-foreground hover:bg-sidebar-background/15 '
-                        : 'text-muted-foreground hover:bg-transparent hover:text-foreground',
+                        ? 'bg-foreground/8 text-foreground hover:bg-sidebar-background/15 '
+                        : 'text-muted-foreground/50 hover:bg-transparent hover:text-foreground',
                       option.disabled
                         ? 'cursor-not-allowed opacity-50 hover:bg-transparent hover:text-muted-foreground'
                         : '',
@@ -945,7 +945,7 @@
                     :disabled="option.disabled"
                     @click="setViewMode(option.mode, option.disabled)">
                     <Icon :name="option.icon" class="h-4 w-4" />
-                    <span class="hidden sm:inline">{{ option.label }}</span>
+                    <span v-if="browse?.viewMode.value === option.mode" class="hidden sm:inline">{{ option.label }}</span>
                     <span
                       v-if="option.suggested && browse?.viewMode.value !== option.mode"
                       class="h-1.5 w-1.5 rounded-full bg-primary/60 absolute -top-0.5 -right-0.5" />

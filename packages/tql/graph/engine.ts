@@ -1,5 +1,3 @@
-// Use globalThis.crypto for browser + Node.js compatibility
-const _crypto = globalThis.crypto;
 import type {
   EngineOptions,
   EngineState,
@@ -14,6 +12,9 @@ import type {
 } from './types.js';
 import { Graph } from './graph.js';
 import { makeDefaultExecutors } from './executors.js';
+
+// Use globalThis.crypto for browser + Node.js compatibility
+const _crypto = globalThis.crypto;
 
 export class Engine {
   private g: Graph;

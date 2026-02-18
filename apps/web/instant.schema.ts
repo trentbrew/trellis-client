@@ -293,6 +293,47 @@ const _schema = i.schema({
       createdAt: i.number().indexed(),
     }),
 
+    // ========================================================================
+    // Chat — Channels, Messages, Notification Prefs
+    // ========================================================================
+
+    channels: i.entity({
+      orgId: i.string().indexed(),
+      type: i.string().indexed(),           // 'public' | 'private' | 'dm' | 'thread'
+      title: i.string(),
+      slug: i.string().indexed().optional(),
+      description: i.string().optional(),
+      icon: i.string().optional(),
+      memberIds: i.json().optional(),       // string[] — for DMs and private channels
+      entityId: i.string().indexed().optional(), // for entity-scoped threads
+      lastMessageAt: i.number().indexed().optional(),
+      createdBy: i.string(),
+      createdAt: i.number().indexed(),
+    }),
+
+    messages: i.entity({
+      channelId: i.string().indexed(),
+      authorId: i.string().indexed(),
+      authorName: i.string(),
+      authorAvatar: i.string().optional(),
+      content: i.string(),
+      replyToId: i.string().indexed().optional(),
+      reactions: i.json().optional(),       // { [emoji]: string[] }
+      entityRefs: i.json().optional(),      // EntityReference[] — linked entities
+      edited: i.boolean().optional(),
+      editedAt: i.number().optional(),
+      deletedAt: i.number().optional(),
+      createdAt: i.number().indexed(),
+    }),
+
+    chatNotificationPrefs: i.entity({
+      userId: i.string().indexed(),
+      channelId: i.string().indexed().optional(), // null = global default
+      level: i.string(),                    // 'all' | 'mentions' | 'none'
+      soundEnabled: i.boolean().optional(),
+      desktopEnabled: i.boolean().optional(),
+    }),
+
   },
   links: {
     $usersLinkedPrimaryUser: {
@@ -429,6 +470,32 @@ const _schema = i.schema({
         label: 'organization',
       },
     },
+
+    channelMessages: {
+      forward: {
+        on: 'channels',
+        has: 'many',
+        label: 'messages',
+      },
+      reverse: {
+        on: 'messages',
+        has: 'one',
+        label: 'channel',
+      },
+    },
+
+    organizationChannels: {
+      forward: {
+        on: 'organizations',
+        has: 'many',
+        label: 'channels',
+      },
+      reverse: {
+        on: 'channels',
+        has: 'one',
+        label: 'organization',
+      },
+    },
   },
   rooms: {
     // Workspace-level presence (who's online)
@@ -447,6 +514,15 @@ const _schema = i.schema({
         avatar: i.string(),
         editingField: i.string(),
         openedAt: i.number(),
+      }),
+    },
+    // Per-channel chat presence (typing indicators, last seen)
+    chat: {
+      presence: i.entity({
+        userId: i.string(),
+        channelId: i.string(),
+        isTyping: i.boolean(),
+        lastSeen: i.number(),
       }),
     },
   },

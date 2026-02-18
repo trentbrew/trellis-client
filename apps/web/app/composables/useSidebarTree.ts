@@ -12,7 +12,7 @@
 // ── Types ──────────────────────────────────────────────────────────────
 
 export type SidebarScope = 'workspace' | 'database' | 'settings' | 'graph'
-export type SidebarNodeType = 'section' | 'item' | 'separator'
+export type SidebarNodeType = 'section' | 'group' | 'item' | 'separator'
 
 export interface SidebarTreeNode {
   /** TQL entity ID, e.g. `sidebar_node:workspace-pinned` */
@@ -197,10 +197,22 @@ function subscribeToSSE(): void {
 function buildTree(scope: SidebarScope, worldId?: string): SidebarTreeNode[] {
   const nodes = Array.from(_nodes.value.values())
 
-  // Filter by scope (and optionally worldId)
+  // Filter by scope and worldId.
+  // Nodes seeded by the default workspace seeder have worldId === scope (e.g. 'workspace').
+  // Nodes seeded by the template installer have worldId === actual world UUID.
+  // When no explicit worldId is given, only include nodes whose worldId matches
+  // the scope string (default nodes). This prevents template-installed nodes from
+  // orphaned/deleted worlds from leaking into the sidebar.
   const scopeNodes = nodes.filter((n) => {
     if (n.scope !== scope) return false
-    if (worldId && n.worldId && n.worldId !== worldId) return false
+    if (worldId) {
+      // Explicit filter: include nodes for this world OR default scope nodes
+      if (n.worldId && n.worldId !== worldId && n.worldId !== scope) return false
+    } else {
+      // No worldId given: only include nodes whose worldId is the scope string
+      // (i.e., default seed nodes). Exclude world-specific UUID nodes.
+      if (n.worldId && n.worldId !== scope) return false
+    }
     return true
   })
 

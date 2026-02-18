@@ -3,8 +3,10 @@
 
   const props = withDefaults(defineProps<{
     aboveSidebar?: boolean
+    hidePresenceControls?: boolean
   }>(), {
     aboveSidebar: false,
+    hidePresenceControls: false,
   })
 
   const emit = defineEmits<{
@@ -184,7 +186,7 @@
   <!-- App Header: Navigation shell (matches icon rail) -->
   <header
     data-slot="app-header"
-    class="bg-card/0 backdrop-blur-sm border-b flex h-14 shrink-0 items-center gap-0 p-0 overflow-hidden sticky top-0">
+    class="bg-card/0 backdrop-blur-sm border-b-none flex h-12 shrink-0 items-center gap-0 p-0 overflow-hidden sticky top-0">
     <!-- Year/Facility Pickers + Breadcrumbs (white area) -->
     <nav class="flex flex-1 items-center gap-0.5 text-xs px-4 bg-transparent">
       <!-- Sidebar Toggle -->
@@ -193,14 +195,18 @@
           <UiButton
             variant="ghost"
             size="icon-sm"
-            class="text-muted-foreground hover:text-foreground mr-0 ml-1"
+            class="mr-0 ml-1 transition-opacity"
+            :class="sidebarCollapse.isForcedCollapsed.value
+              ? 'text-muted-foreground/30 cursor-not-allowed pointer-events-none'
+              : 'text-muted-foreground hover:text-foreground'"
+            :disabled="sidebarCollapse.isForcedCollapsed.value"
             :aria-label="sidebarCollapse.isCollapsed.value ? 'Expand sidebar' : 'Collapse sidebar'"
             @click="sidebarCollapse.toggle()">
             <Icon name="lucide:menu" class="h-4 w-4" />
           </UiButton>
         </UiTooltipTrigger>
         <UiTooltipContent side="bottom">
-          {{ sidebarCollapse.isCollapsed.value ? 'Expand sidebar' : 'Collapse sidebar' }}
+          {{ sidebarCollapse.isForcedCollapsed.value ? 'Sidebar hidden on this page' : sidebarCollapse.isCollapsed.value ? 'Expand sidebar' : 'Collapse sidebar' }}
         </UiTooltipContent>
       </UiTooltip>
 
@@ -299,11 +305,11 @@
       <UiButton
         v-if="props.aboveSidebar"
         variant="ghost"
-        class="rounded-full text-muted-foreground/50 hover:text-foreground border border-border hover:bg-muted/40 bg-transparent gap-2 pl-3 pr-2 min-w-[250px] flex items-center justify-between"
+        class="rounded-full text-muted-foreground hover:text-foreground border border-border hover:bg-muted/40 bg-transparent gap-2 pl-3 pr-2 min-w-[200px] flex items-center justify-between"
         @click="commandDialog.open()">
         <div class="flex items-center gap-2">
           <Icon name="lucide:search" class="h-4 w-4" />
-          <span class="text-xs font-semibold">Find anything...</span>
+          <span class="text-xs font-semibold opacity-50">Find...</span>
         </div>
         <UiKbd class="bg-muted/40 border-border/50 text-muted-foreground font-mono border rounded-full gap-0">
           <Icon name="lucide:command" class="scale-75" />
@@ -312,39 +318,41 @@
       </UiButton>
 
       <!-- Workspace Members & Presence -->
-      <div v-if="workspaceUsers.length > 0" class="flex items-center ml-auto mr-2">
+      <div v-if="!props.hidePresenceControls && workspaceUsers.length > 0" class="flex items-center ml-2 mr-2">
         <div class="flex items-center rounded-full border border-border bg-transparent p-1 shadow-sm transition-colors hover:bg-background/80">
-          <div class="flex -space-x-1.5 px-0.5">
-            <UiTooltip v-for="(u, index) in workspaceUsers" :key="u.id">
-              <UiTooltipTrigger as-child>
-                <div class="relative" :style="{ zIndex: workspaceUsers.length - index }">
-                  <UiAvatar class="size-6 ring-2 ring-card grayscale-[0.3] transition-all hover:grayscale-0 hover:scale-110 cursor-pointer">
-                    <UiAvatarImage v-if="u.avatar" :src="u.avatar" :alt="u.name" />
-                    <UiAvatarFallback class="text-[9px] font-bold">{{ u.initials }}</UiAvatarFallback>
-                  </UiAvatar>
-                  <span
-                    v-if="u.isOnline"
-                    class="absolute -top-0.5 -right-0.5 h-2 w-2 rounded-full border border-background bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.5)]"
-                  />
-                </div>
-              </UiTooltipTrigger>
-              <UiTooltipContent side="bottom" class="flex flex-col gap-0.5">
-                <span class="font-bold text-xs">{{ u.name }}</span>
-                <span class="text-[10px] text-muted-foreground">{{ u.isOnline ? 'Online now' : 'Away' }} {{ u.isMe ? '(You)' : '' }}</span>
-              </UiTooltipContent>
-            </UiTooltip>
-          </div>
-          <div class="px-3 border-l ml-1.5 flex flex-col justify-center h-5">
-            <p class="text-[10px] leading-none font-bold text-foreground/80 tabular-nums">
-              {{ onlineCount }}<span class="text-muted-foreground font-medium uppercase tracking-tighter">/{{ totalMembers }} online</span>
-            </p>
-          </div>
+          <template v-if="onlineCount > 1 || workspaceUsers.some(u => u.isOnline && !u.isMe)">
+            <div class="flex -space-x-1.5 px-0.5">
+              <UiTooltip v-for="(u, index) in workspaceUsers" :key="u.id">
+                <UiTooltipTrigger as-child>
+                  <div class="relative" :style="{ zIndex: workspaceUsers.length - index }">
+                    <UiAvatar class="size-6 ring-2 ring-card grayscale-[0.3] transition-all hover:grayscale-0 hover:scale-110 cursor-pointer">
+                      <UiAvatarImage v-if="u.avatar" :src="u.avatar" :alt="u.name" />
+                      <UiAvatarFallback class="text-[9px] font-bold">{{ u.initials }}</UiAvatarFallback>
+                    </UiAvatar>
+                    <span
+                      v-if="u.isOnline"
+                      class="absolute -top-0.5 -right-0.5 h-2 w-2 rounded-full border border-background bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.5)]"
+                    />
+                  </div>
+                </UiTooltipTrigger>
+                <UiTooltipContent side="bottom" class="flex flex-col gap-0.5">
+                  <span class="font-bold text-xs">{{ u.name }}</span>
+                  <span class="text-[10px] text-muted-foreground">{{ u.isOnline ? 'Online now' : 'Away' }} {{ u.isMe ? '(You)' : '' }}</span>
+                </UiTooltipContent>
+              </UiTooltip>
+            </div>
+            <div class="px-3 border-l ml-1.5 flex flex-col justify-center h-5">
+              <p class="text-[10px] leading-none font-bold text-foreground/80 tabular-nums">
+                {{ onlineCount }}<span class="text-muted-foreground font-medium uppercase tracking-tighter">/{{ totalMembers }} online</span>
+              </p>
+            </div>
+          </template>
           <!-- Invite Button (admin+ only) -->
           <UiButton
             v-if="canManageMembers"
-            variant="outline"
+            :variant="onlineCount == 1 ? 'ghost' : 'outline'"
             size="xs"
-            class="text-muted-foreground hover:bg-primary/10 hover:text-primary gap-1.5 pl-2 pr-4 font-semibold transition-colors !rounded-full"
+            class="text-muted-foreground hover:bg-primary/10 hover:text-primary gap-1.5 pl-2 pr-6 font-semibold transition-colors !rounded-full"
             @click="inviteDialogOpen = true"
           >
             <Icon name="lucide:plus" class="h-4 w-4" />
@@ -353,13 +361,14 @@
         </div>
       </div>
 
+
       <!-- Notifications Button -->
       <UiDropdownMenu>
         <UiDropdownMenuTrigger as-child>
           <UiButton
-            variant="ghost"
+            variant="outline"
             size="icon-sm"
-            class="text-muted-foreground hover:text-foreground relative transition-transform active:scale-95 mr-3">
+            class="text-muted-foreground hover:text-foreground relative transition-transform active:scale-95 mr-1 !rounded-full">
             <Icon name="lucide:bell" class="h-4 w-4" />
             <Motion
               v-if="unreadCount > 0"
@@ -523,7 +532,7 @@
           <UiDropdownMenuTrigger as-child>
             <button
               type="button"
-              class="relative flex h-8 w-8 shrink-0 items-center justify-center overflow-hidden rounded-full border border-border/50 bg-muted/50 text-xs font-semibold transition-all hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring active:scale-95"
+              class="relative flex h-8 w-8 shrink-0 items-center justify-center overflow-hidden rounded-full border border-border bg-muted/50 text-xs font-semibold transition-all hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring active:scale-95"
               aria-label="User menu"
             >
               <img

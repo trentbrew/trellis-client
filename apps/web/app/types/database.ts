@@ -428,3 +428,57 @@ export interface QueryCondition {
   value: any
   type?: 'and' | 'or' // How to combine with next condition
 }
+
+// ============================================================================
+// Chat
+// ============================================================================
+
+export type ChannelType = 'public' | 'private' | 'dm' | 'thread'
+export type ChatNotificationLevel = 'all' | 'mentions' | 'none'
+
+export interface Channel {
+  id: string
+  orgId: string
+  type: ChannelType
+  title: string
+  slug?: string
+  description?: string
+  icon?: string
+  memberIds?: string[]
+  entityId?: string
+  lastMessageAt?: number
+  createdBy: string
+  createdAt: number
+}
+
+export interface EntityRef {
+  id: string
+  type: string
+  title: string
+  icon?: string
+}
+
+export interface Message {
+  id: string
+  channelId: string
+  authorId: string
+  authorName: string
+  authorAvatar?: string
+  content: string
+  replyToId?: string
+  reactions?: Record<string, string[]>
+  entityRefs?: EntityRef[]
+  edited?: boolean
+  editedAt?: number
+  deletedAt?: number
+  createdAt: number
+}
+
+export interface ChatNotificationPref {
+  id: string
+  userId: string
+  channelId?: string
+  level: ChatNotificationLevel
+  soundEnabled?: boolean
+  desktopEnabled?: boolean
+}

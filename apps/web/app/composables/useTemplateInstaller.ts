@@ -237,6 +237,22 @@ export function useTemplateInstaller() {
       result.worldId = worldId
       result.worldName = worldName
       progress.value = 'Installation complete!'
+
+      // Auto-navigate to the new world's welcome page
+      if (options.mode === 'new-world' && worldId) {
+        const { applications, currentApp } = useInstantData()
+        const { wp } = useWorkspacePath()
+
+        // Wait a tick for InstantDB subscription to pick up the new app
+        await new Promise((r) => setTimeout(r, 500))
+
+        const newApp = applications.value.find((a) => a.id === worldId)
+        if (newApp) {
+          currentApp.value = newApp
+          await nextTick()
+          await navigateTo(wp('/workspace/welcome'))
+        }
+      }
     } catch (err: any) {
       error.value = err.message || 'Installation failed'
       result.error = error.value || undefined

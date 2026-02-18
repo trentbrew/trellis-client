@@ -15,9 +15,12 @@
   import FlowMemoryNode from '~/components/Flow/FlowMemoryNode.vue'
   import FlowEndNode from '~/components/Flow/FlowEndNode.vue'
   import FlowNoteNode from '~/components/Flow/FlowNoteNode.vue'
+  import FlowNodeConfig from '~/components/Flow/FlowNodeConfig.vue'
+  import type { NodeExecutionState } from '~/composables/useWorkflowExecution'
 
   const props = defineProps<{
     workflowId: string
+    executionNodeStates?: Record<string, NodeExecutionState>
   }>()
 
   const workflowIdRef = toRef(props, 'workflowId')
@@ -32,6 +35,12 @@
     addNode: editorAddNode,
     updateNodeData,
     removeNodes,
+    pushHistory,
+    undo,
+    redo,
+    canUndo,
+    canRedo,
+    applyAutoLayout,
   } = useWorkflowEditor(workflowIdRef)
 
   const nodeTypes = {
@@ -98,6 +107,7 @@
   }
 
   function onConnect(connection: Connection) {
+    pushHistory()
     addEdges([
       {
         ...connection,
@@ -109,12 +119,18 @@
   }
 
   function onEdgeClick(_evt: MouseEvent | VoidFunction, edge: Edge) {
+    pushHistory()
     edges.value = edges.value.filter((e) => e.id !== edge.id)
     markDirty()
   }
 
   function fitView() {
     vueFlowFitView({ padding: 0.2 })
+  }
+
+  function autoLayoutAndFit() {
+    applyAutoLayout()
+    nextTick(() => fitView())
   }
 
   function clearSelection() {
@@ -140,28 +156,56 @@
     markDirty()
   }
 
-  // Sidebar: editing the selected node's label
-  const editingLabel = ref('')
-  watch(selectedNodes, (sel) => {
-    if (sel.length === 1) {
-      editingLabel.value = (sel[0].data?.label as string) || ''
-    }
-  })
+  // Apply execution CSS classes to node wrappers without triggering saves
+  watch(
+    () => props.executionNodeStates,
+    (states) => {
+      nodes.value = nodes.value.map((n) => ({
+        ...n,
+        class: states?.[n.id]
+          ? ({ running: 'flow-exec--running', completed: 'flow-exec--completed', error: 'flow-exec--errored' }[states[n.id]!.status] ?? undefined)
+          : undefined,
+      }))
+    },
+    { deep: true },
+  )
 
-  function commitLabel() {
-    if (selectedNodes.value.length !== 1) return
-    updateNodeData(selectedNodes.value[0].id, { label: editingLabel.value })
-  }
-
-  // Keyboard shortcut: Backspace to delete selected
+  // Keyboard shortcuts
   function onKeyDown(e: KeyboardEvent) {
+    const meta = e.metaKey || e.ctrlKey
+    const el = e.target as HTMLElement
+    const inInput = el?.tagName === 'INPUT' || el?.tagName === 'TEXTAREA' || el?.isContentEditable
+
     if (e.key === 'Backspace' || e.key === 'Delete') {
-      const tag = (e.target as HTMLElement)?.tagName
-      if (tag === 'INPUT' || tag === 'TEXTAREA') return
+      if (inInput) return
       if (selectedNodes.value.length > 0) {
         e.preventDefault()
         deleteSelectedNodes()
       }
+    }
+
+    if (meta && !e.shiftKey && e.key === 'z') {
+      if (inInput) return
+      e.preventDefault()
+      undo()
+    }
+
+    if (meta && (e.key === 'y' || (e.shiftKey && e.key === 'z'))) {
+      if (inInput) return
+      e.preventDefault()
+      redo()
+    }
+
+    if (meta && e.key === 'a') {
+      if (inInput) return
+      e.preventDefault()
+      nodes.value = nodes.value.map((n) => ({ ...n, selected: true }))
+    }
+
+    if (meta && e.key === 'l') {
+      if (inInput) return
+      e.preventDefault()
+      autoLayoutAndFit()
     }
   }
 
@@ -214,7 +258,7 @@
           <Background :pattern-color="patternColor" :gap="20" />
 
           <!-- Node Palette -->
-          <Panel position="top-left" class="flow-toolbar m-3 !bg-card !border !border-border">
+          <Panel position="top-left" class="flow-toolbar m-3 bg-card! border! border-border!">
             <div class="flex items-center gap-1">
               <template v-for="item in paletteItems" :key="item.kind">
                 <div v-if="item.kind === 'memory-read'" class="bg-border mx-0.5 h-6 w-px" />
@@ -230,6 +274,31 @@
               <div class="bg-border mx-0.5 h-6 w-px" />
               <UiTooltip>
                 <UiTooltipTrigger as-child>
+                  <UiButton variant="ghost" size="sm" class="flow-toolbar-btn" :disabled="!canUndo" @click="undo">
+                    <Icon name="lucide:undo-2" class="h-4 w-4" />
+                  </UiButton>
+                </UiTooltipTrigger>
+                <UiTooltipContent side="bottom">Undo (⌘Z)</UiTooltipContent>
+              </UiTooltip>
+              <UiTooltip>
+                <UiTooltipTrigger as-child>
+                  <UiButton variant="ghost" size="sm" class="flow-toolbar-btn" :disabled="!canRedo" @click="redo">
+                    <Icon name="lucide:redo-2" class="h-4 w-4" />
+                  </UiButton>
+                </UiTooltipTrigger>
+                <UiTooltipContent side="bottom">Redo (⌘Y)</UiTooltipContent>
+              </UiTooltip>
+              <div class="bg-border mx-0.5 h-6 w-px" />
+              <UiTooltip>
+                <UiTooltipTrigger as-child>
+                  <UiButton variant="ghost" size="sm" class="flow-toolbar-btn" @click="autoLayoutAndFit">
+                    <Icon name="lucide:layout-dashboard" class="h-4 w-4" />
+                  </UiButton>
+                </UiTooltipTrigger>
+                <UiTooltipContent side="bottom">Auto Layout (⌘L)</UiTooltipContent>
+              </UiTooltip>
+              <UiTooltip>
+                <UiTooltipTrigger as-child>
                   <UiButton variant="ghost" size="sm" class="flow-toolbar-btn" @click="fitView">
                     <Icon name="lucide:maximize" class="h-4 w-4" />
                   </UiButton>
@@ -240,7 +309,7 @@
           </Panel>
 
           <!-- Stats + Save State -->
-          <Panel position="top-right" class="flow-stats m-3 !bg-card !border !border-border">
+          <Panel position="top-right" class="flow-stats m-3 bg-card! border! border-border!">
             <div class="flex items-center gap-3 text-xs">
               <div class="flex items-center gap-1.5">
                 <Icon name="lucide:square" class="h-3.5 w-3.5 text-muted-foreground" />
@@ -288,116 +357,10 @@
 
               <div class="flex-1 overflow-y-auto p-4">
                 <!-- Single node config -->
-                <div v-if="selectedNodes.length === 1" class="space-y-4">
-                  <div class="flex items-center gap-2 rounded-lg bg-muted/50 p-2.5">
-                    <Icon
-                      :name="nodeKindIcon[(selectedNodes[0].data?.kind as WorkflowNodeKind) || 'start']"
-                      class="h-4 w-4 text-muted-foreground" />
-                    <span class="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-                      {{ selectedNodes[0].data?.kind }}
-                    </span>
-                  </div>
-
-                  <div class="space-y-1.5">
-                    <label class="text-xs font-medium text-muted-foreground">Label</label>
-                    <input
-                      v-model="editingLabel"
-                      class="w-full rounded-md border border-border bg-transparent px-3 py-1.5 text-sm focus:outline-none focus:ring-1 focus:ring-ring"
-                      @blur="commitLabel"
-                      @keydown.enter="commitLabel" />
-                  </div>
-
-                  <!-- Agent-specific config -->
-                  <template v-if="selectedNodes[0].data?.kind === 'agent'">
-                    <div class="space-y-1.5">
-                      <label class="text-xs font-medium text-muted-foreground">Model</label>
-                      <select
-                        :value="selectedNodes[0].data?.model || 'gpt-4o'"
-                        class="w-full rounded-md border border-border bg-transparent px-3 py-1.5 text-sm focus:outline-none focus:ring-1 focus:ring-ring"
-                        @change="updateNodeData(selectedNodes[0].id, { model: ($event.target as HTMLSelectElement).value })">
-                        <option value="gpt-4o">GPT-4o</option>
-                        <option value="gpt-4o-mini">GPT-4o Mini</option>
-                        <option value="claude-3.5-sonnet">Claude 3.5 Sonnet</option>
-                        <option value="claude-3.5-haiku">Claude 3.5 Haiku</option>
-                      </select>
-                    </div>
-                    <div class="space-y-1.5">
-                      <label class="text-xs font-medium text-muted-foreground">System Prompt</label>
-                      <textarea
-                        :value="(selectedNodes[0].data?.system as string) || ''"
-                        rows="4"
-                        class="w-full rounded-md border border-border bg-transparent px-3 py-1.5 font-mono text-xs focus:outline-none focus:ring-1 focus:ring-ring"
-                        placeholder="You are a helpful assistant..."
-                        @blur="updateNodeData(selectedNodes[0].id, { system: ($event.target as HTMLTextAreaElement).value })" />
-                    </div>
-                  </template>
-
-                  <!-- Tool-specific config -->
-                  <template v-if="selectedNodes[0].data?.kind === 'tool'">
-                    <div class="space-y-1.5">
-                      <label class="text-xs font-medium text-muted-foreground">Tool Name</label>
-                      <select
-                        :value="selectedNodes[0].data?.toolName || ''"
-                        class="w-full rounded-md border border-border bg-transparent px-3 py-1.5 text-sm focus:outline-none focus:ring-1 focus:ring-ring"
-                        @change="updateNodeData(selectedNodes[0].id, { toolName: ($event.target as HTMLSelectElement).value })">
-                        <option value="">Select tool...</option>
-                        <option value="run_js">run_js</option>
-                        <option value="tql_query">tql_query</option>
-                        <option value="tql_load_data">tql_load_data</option>
-                      </select>
-                    </div>
-                  </template>
-
-                  <!-- Memory-specific config -->
-                  <template v-if="selectedNodes[0].data?.kind === 'memory-read' || selectedNodes[0].data?.kind === 'memory-write'">
-                    <div class="space-y-1.5">
-                      <label class="text-xs font-medium text-muted-foreground">Key</label>
-                      <input
-                        :value="(selectedNodes[0].data?.key as string) || ''"
-                        class="w-full rounded-md border border-border bg-transparent px-3 py-1.5 font-mono text-sm focus:outline-none focus:ring-1 focus:ring-ring"
-                        placeholder="memory_key"
-                        @blur="updateNodeData(selectedNodes[0].id, { key: ($event.target as HTMLInputElement).value })" />
-                    </div>
-                  </template>
-
-                  <!-- Guard-specific config -->
-                  <template v-if="selectedNodes[0].data?.kind === 'guard'">
-                    <div class="space-y-1.5">
-                      <label class="text-xs font-medium text-muted-foreground">Mode</label>
-                      <select
-                        :value="selectedNodes[0].data?.mode || 'allow'"
-                        class="w-full rounded-md border border-border bg-transparent px-3 py-1.5 text-sm focus:outline-none focus:ring-1 focus:ring-ring"
-                        @change="updateNodeData(selectedNodes[0].id, { mode: ($event.target as HTMLSelectElement).value })">
-                        <option value="allow">Allow if...</option>
-                        <option value="block">Block if...</option>
-                      </select>
-                    </div>
-                  </template>
-
-                  <!-- Note-specific config -->
-                  <template v-if="selectedNodes[0].data?.kind === 'note'">
-                    <div class="space-y-1.5">
-                      <label class="text-xs font-medium text-muted-foreground">Content</label>
-                      <textarea
-                        :value="(selectedNodes[0].data?.content as string) || ''"
-                        rows="6"
-                        class="w-full rounded-md border border-border bg-transparent px-3 py-1.5 text-sm focus:outline-none focus:ring-1 focus:ring-ring"
-                        placeholder="Add notes here..."
-                        @blur="updateNodeData(selectedNodes[0].id, { content: ($event.target as HTMLTextAreaElement).value })" />
-                    </div>
-                  </template>
-
-                  <div class="pt-2">
-                    <label class="text-xs font-medium text-muted-foreground">Position</label>
-                    <p class="mt-1 text-xs text-muted-foreground">
-                      {{ Math.round(selectedNodes[0].position.x) }}, {{ Math.round(selectedNodes[0].position.y) }}
-                    </p>
-                  </div>
-                  <div>
-                    <label class="text-xs font-medium text-muted-foreground">ID</label>
-                    <p class="mt-1 font-mono text-[11px] text-muted-foreground">{{ selectedNodes[0].id }}</p>
-                  </div>
-                </div>
+                <FlowNodeConfig
+                  v-if="selectedNodes.length === 1"
+                  :node="selectedNodes[0]"
+                  :update-node-data="updateNodeData" />
 
                 <!-- Multi-select list -->
                 <div v-else class="space-y-2">
@@ -447,31 +410,31 @@
   </div>
 </template>
 
-<style>
+<style scoped>
   .flow-container {
     display: flex;
     flex-direction: column;
     width: 100%;
-    height: calc(100dvh - 64px);
-    background-color: hsl(var(--background));
+    height: 100%;
+    background-color: var(--background);
   }
 
-  .vue-flow__node {
+  :deep(.vue-flow__node) {
     cursor: grab;
   }
 
-  .vue-flow__node:active {
+  :deep(.vue-flow__node:active) {
     cursor: grabbing;
   }
 
-  .vue-flow__node.selected .flow-node {
-    box-shadow: 0 0 0 2px hsl(var(--ring));
+  :deep(.vue-flow__node.selected .flow-node) {
+    box-shadow: 0 0 0 2px var(--ring);
   }
 
   .flow-toolbar {
-    background-color: hsl(var(--card));
+    background-color: var(--card);
     border-radius: 8px;
-    border: 1px solid hsl(var(--border));
+    border: 1px solid var(--border);
     padding: 4px;
     box-shadow:
       0 1px 3px 0 rgb(0 0 0 / 0.1),
@@ -485,9 +448,9 @@
   }
 
   .flow-stats {
-    background-color: hsl(var(--card));
+    background-color: var(--card);
     border-radius: 8px;
-    border: 1px solid hsl(var(--border));
+    border: 1px solid var(--border);
     padding: 8px 12px;
     box-shadow:
       0 1px 3px 0 rgb(0 0 0 / 0.1),
@@ -502,5 +465,24 @@
   .slide-left-enter-from,
   .slide-left-leave-to {
     transform: translateX(100%);
+  }
+
+  /* Execution animation states — applied to the Vue Flow node wrapper */
+  :deep(.flow-exec--running .flow-node) {
+    animation: flow-pulse 1.4s ease-in-out infinite;
+  }
+
+  :deep(.flow-exec--completed .flow-node) {
+    box-shadow: 0 0 0 2px #22c55e80;
+    opacity: 0.9;
+  }
+
+  :deep(.flow-exec--errored .flow-node) {
+    box-shadow: 0 0 0 2px var(--destructive);
+  }
+
+  @keyframes flow-pulse {
+    0%, 100% { box-shadow: 0 0 0 2px color-mix(in oklch, var(--primary) 60%, transparent); }
+    50%       { box-shadow: 0 0 0 4px color-mix(in oklch, var(--primary) 30%, transparent), 0 0 18px color-mix(in oklch, var(--primary) 20%, transparent); }
   }
 </style>

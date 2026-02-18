@@ -21,6 +21,7 @@ export const PropertyTypeSchema = z.enum([
   'rollup',
   'formula',
   'ai_generated',
+  'json',
 ]);
 
 export type PropertyType = z.infer<typeof PropertyTypeSchema>;
@@ -187,6 +188,8 @@ export const RouteDefinitionSchema = z.object({
     subtitle: z.string().optional(),
     showBackButton: z.boolean().optional(),
     fullWidth: z.boolean().optional(),
+    hideSidebar: z.boolean().optional(),
+    sidebarSectionPath: z.string().optional(),
   }).optional(),
   sidebarSections: z.array(z.any()).optional(),
   children: z.array(z.any()).optional(),

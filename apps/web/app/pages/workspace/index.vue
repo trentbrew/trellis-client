@@ -6,7 +6,7 @@
   const { wp } = useWorkspacePath()
 
   onMounted(() => {
-    navigateTo(wp('/workspace/today'))
+    navigateTo(wp('/workspace/welcome'))
   })
 </script>
 

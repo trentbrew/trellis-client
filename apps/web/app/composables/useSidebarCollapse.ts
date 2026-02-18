@@ -8,6 +8,9 @@ export const useSidebarCollapse = () => {
   // Shared state so AppHeader + AppSidebar always see the same collapse value
   const isCollapsed = useState<boolean>('sidebarCollapsed', () => false)
 
+  // True when the current route forces the sidebar closed (user cannot reopen)
+  const isForcedCollapsed = useState<boolean>('sidebarForcedCollapsed', () => false)
+
   const loadCollapsedState = () => {
     if (!import.meta.client) return
 
@@ -20,7 +23,6 @@ export const useSidebarCollapse = () => {
 
       const stored = localStorage.getItem(storageKey)
       if (stored === null) {
-        // No stored state for this route; default to expanded
         isCollapsed.value = false
         return
       }
@@ -34,6 +36,7 @@ export const useSidebarCollapse = () => {
     }
   }
 
+  // Persist user's explicit choice to localStorage
   const setCollapsed = (collapsed: boolean) => {
     isCollapsed.value = collapsed
 
@@ -47,7 +50,14 @@ export const useSidebarCollapse = () => {
     }
   }
 
+  // Force-collapse without touching localStorage (route-driven, not user-driven)
+  const forceCollapsed = (collapsed: boolean) => {
+    isCollapsed.value = collapsed
+    isForcedCollapsed.value = collapsed
+  }
+
   const toggle = () => {
+    if (isForcedCollapsed.value) return
     setCollapsed(!isCollapsed.value)
   }
 
@@ -58,29 +68,33 @@ export const useSidebarCollapse = () => {
     const route = useRoute()
     const { findRoute } = useRoutes()
 
-    // Find the route configuration for the current path
     const routeConfig = findRoute(route.path)
 
     if (routeConfig?.collapseSidebar === true) {
-      // Route explicitly requests collapsed sidebar
-      setCollapsed(true)
-    } else if (routeConfig?.collapseSidebar === false) {
-      // Route explicitly requests expanded sidebar
-      setCollapsed(false)
+      // Route forces sidebar closed — do NOT write to localStorage
+      forceCollapsed(true)
     } else {
-      // No explicit preference - use user's last choice if they've made one
-      const explicit = localStorage.getItem(explicitKey)
-      if (explicit !== 'true') {
-        // User hasn't explicitly set a preference, default to expanded
+      // Leaving a forced-collapse route: clear the force flag and restore
+      isForcedCollapsed.value = false
+
+      if (routeConfig?.collapseSidebar === false) {
+        // Route explicitly requests expanded sidebar
         setCollapsed(false)
+      } else {
+        // No route preference — restore user's last explicit choice, default expanded
+        const explicit = localStorage.getItem(explicitKey)
+        if (explicit !== 'true') {
+          isCollapsed.value = false
+        } else {
+          const stored = localStorage.getItem(storageKey)
+          isCollapsed.value = stored ? JSON.parse(stored) : false
+        }
       }
-      // Otherwise, keep their last explicit choice
     }
   }
 
   onMounted(() => {
     loadCollapsedState()
-    // Apply route-based behavior after initial load
     nextTick(() => {
       applyRouteCollapseBehavior()
     })
@@ -98,7 +112,9 @@ export const useSidebarCollapse = () => {
 
   return {
     isCollapsed,
+    isForcedCollapsed,
     toggle,
     setCollapsed,
+    forceCollapsed,
   }
 }

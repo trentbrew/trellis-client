@@ -35,8 +35,8 @@
       "import": "./query/index.ts"
     },
     "./graph": {
-      "types": "./graph/types.ts",
-      "import": "./graph/types.ts"
+      "types": "./graph/index.ts",
+      "import": "./graph/index.ts"
     }
   },
   "files": [

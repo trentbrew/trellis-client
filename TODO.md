@@ -1,25 +1,49 @@
-General
-
-- [ ] Format markdown on paste
-- [ ]
-
-Dialogs
-
-General
-
-- [ ] Add ability to include custom fields
-- [ ] Make props responsive
-
-Temporal
-
-- [ ] Add pre-popup on calendar '+add' click to select temporal entity type before opening create dialog
-- [ ] Remove 'schedule' header from sidebar
-- [ ] Use @Datepicker.vue for inputs underneath the mini cal
-- [ ] Progressive disclosure for date picker sidebar:
-  - [ ] Hide end date field by default, toggle to show
-  - [ ] Display start/end dates on one line when both visible
-  - [ ] Make 'all day' toggle more subtle
-  - [ ] Auto-hide end date field when 'all day' is toggled on
-  - [ ] Integrate repeat and reminder sections seamlessly as cohesive trio under minical
-- [ ] Move status + tags into props section to save vertical space
-- [ ]
+- [ ] Render formatted descr for reference, hover previews
+- [ ] Render reference pop up on hover for dialog sidebar
+- [ ] ★ Add support for checkboxes in tiptap
+- [ ] Support mentions "@" in all textareas + tiptap fields
+- [ ] ★ Include "Archive" for deleted nodes & pages
+- [ ] Include img support for tiptap
+- [ ] ★ Include text color + highlighting support for tiptap
+- [ ] ★ Fix transparent bold text & overall formatting issues in tiptap
+- [ ] Include mermaid support in tiptap (or "diagram" entity type)
+- [ ] Include "whiteboard" entities (excalidraw)
+- [ ] Include "code" entities + monaco, runnable
+- [ ] Include "component" entities w/ source toggle (interactive)
+- [ ] ★ Include "Table" entities (for ppl who like spreadsheets)
+- [ ] Formula support & debugger
+- [ ] Audio entities + visualization
+- [ ] GenAI (nanobanana, etc...)
+- [ ] ★ "stream" entity type for hooked incoming data (for feed++)
+- [ ] Include "feed" projection (readcv/twitter style)
+- [ ] Include ontology for discord-esque chat + projections
+- [ ] Include ontology for chatbot/agent + projections
+- [ ] Include "Agent" ontology + projections
+- [ ] Explore projection inheritance
+- [ ] Re-introduce file dropper for files/docs dialog
+- [ ] ☑ props order [owner, invitee, ...]
+- [ ] Include dock for quick actions + gizmos
+- [ ] Include "Timer" gizmo
+- [ ] ☑ Include global statusbar
+- [ ] Include "calculator" gizmo
+- [ ] Include query field @ bottom of collection slug routes
+- [ ] Include personal profile settings
+- [ ] Include "Integration Ontology"
+- [ ] ☑ GRID ENGINE
+- [ ] ★ Indicators for heat-based ambient context (+ ontology)
+- [ ] Real-time agent memory visualization (directed graph w/ blue + red)
+- [ ] ☑ Keybindings + keyboard shortcut settings
+- [ ] Workflows, buttons, triggers, etc (especially for custom pages)
+- [ ] Include "quarters" view for calendar page
+- [ ] ★ Separate db sidebar grouped by "ontologies" (ie. budget, etc)
+- [ ] ★ Before adding new type, show dialog w/ templates & marketplace
+- [ ] Support publishable ontologies
+- [ ] ★ VIM Keybindings
+- [ ] Agent EVALs
+- [ ] Include "transcription" entity type
+- [ ] Include compliance ontology
+- [ ] Include music ontology (albums, playlists, artists, songs, etc)
+- [ ] Include "job" ontology (render in calendar + gantt)
+- [ ] Include surveys
+- [ ] Include forms
+- [ ] Include ambient edge synthesis + suggested links/entities

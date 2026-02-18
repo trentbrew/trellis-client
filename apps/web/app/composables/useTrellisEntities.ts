@@ -141,7 +141,7 @@ function _initStoreFromAdapter(adapter: DataAdapter) {
         const { id: itemId, ...fields } = item
         return {
           id: itemId,
-          ...fields,
+          ...bookmarkUrlFromAdapter(fields),
           tags: Array.isArray(fields.tags) ? fields.tags : [],
           involved: Array.isArray(fields.involved) ? fields.involved : [],
           checklist: Array.isArray(fields.checklist) ? fields.checklist : [],
@@ -249,9 +249,13 @@ export function useTrellisEntities() {
     // Default owner display name to the current user if not set
     const ownerName = (data as any).owner || user.value?.email || ownerId
 
-    const txs: any[] = [
+    // Step 1: Create the entity. Must be a separate transaction from the link
+    // because InstantDB evaluates permissions against pre-transaction state.
+    // If create + link are batched together, the entity doesn't exist yet when
+    // the link's update permission is checked, causing isOwner to fail.
+    await adapter.transact([
       adapter.tx.entities[itemId].create({
-        ...toAdapterPayload(data),
+        ...toAdapterPayload(bookmarkUrlToAdapter(data as Record<string, any>)),
         ownerId,
         owner: ownerName,
         orgId: orgId || undefined,
@@ -262,17 +266,15 @@ export function useTrellisEntities() {
         createdAt: now,
         updatedAt: now,
       }),
-    ]
+    ])
 
-    // Link entity to the org so CEL permission rules can traverse the link.
-    // Link from the entity side — the creator owns the entity and has update
-    // permission on it. Linking from the org side would require org update
-    // permission (owner-only), blocking non-owner members.
+    // Step 2: Link entity to the org so CEL permission rules can traverse the
+    // link for isOrgMember checks. Now that the entity exists, isOwner passes.
     if (orgId) {
-      txs.push(adapter.tx.entities[itemId].link({ organization: orgId }))
+      await adapter.transact([
+        adapter.tx.entities[itemId].link({ organization: orgId }),
+      ])
     }
-
-    await adapter.transact(txs)
 
     return itemId
   }
@@ -295,7 +297,7 @@ export function useTrellisEntities() {
 
     await adapter.transact([
       adapter.tx.entities[itemId].update({
-        ...toAdapterPayload(fields),
+        ...toAdapterPayload(bookmarkUrlToAdapter(fields as Record<string, any>)),
         ownerId,
         involved,
         startDate: extractYmd((fields as any).startDate),
@@ -379,9 +381,21 @@ export function useTrellisEntities() {
 }
 
 /**
- * Convert potentially reactive/proxy-rich objects into plain JSON-safe payloads
- * before sending them to InstantDB transactions (avoids IndexedDB DataCloneError).
+ * BookmarkItem uses `url` in TypeScript but InstantDB schema uses `bookmarkUrl`.
+ * These helpers translate at the adapter boundary to avoid schema errors.
  */
+function bookmarkUrlToAdapter(data: Record<string, any>): Record<string, any> {
+  if (data.type !== 'bookmark') return data
+  const { url, ...rest } = data
+  return url !== undefined ? { ...rest, bookmarkUrl: url } : rest
+}
+
+function bookmarkUrlFromAdapter(fields: Record<string, any>): Record<string, any> {
+  if (fields.type !== 'bookmark') return fields
+  const { bookmarkUrl, ...rest } = fields
+  return bookmarkUrl !== undefined ? { ...rest, url: bookmarkUrl } : rest
+}
+
 function toAdapterPayload<T>(value: T): T {
   try {
     return JSON.parse(JSON.stringify(value)) as T

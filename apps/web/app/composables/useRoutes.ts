@@ -618,8 +618,19 @@ export const useRoutes = () => {
 
     const pinnedPaths = new Set(pinned.getPinnedItems(currentSectionLinks.value).map((item) => item.path))
 
-    const sections = treeNodes
+    // Deduplicate section nodes by sectionKey (or id as fallback) to prevent duplicate sections
+    // This can happen if the TQL graph has multiple sidebar_node entities with the same sectionKey
+    const seenSectionKeys = new Set<string>()
+    const uniqueSectionNodes = treeNodes
       .filter((n) => n.nodeType === 'section')
+      .filter((n) => {
+        const key = n.sectionKey || n.id
+        if (seenSectionKeys.has(key)) return false
+        seenSectionKeys.add(key)
+        return true
+      })
+
+    const sections = uniqueSectionNodes
       .map((sectionNode) => {
         let items: RouteConfig[] = []
 
@@ -629,15 +640,18 @@ export const useRoutes = () => {
         } else if (sectionNode.specialItems === 'pages') {
           items = [...pagesChildren.value]
         } else {
-          // Convert child tree nodes to RouteConfig items
+          // Convert child tree nodes to RouteConfig items (including groups with nested children)
           items = sectionNode.children
-            .filter((child) => child.nodeType === 'item')
+            .filter((child) => child.nodeType === 'item' || child.nodeType === 'group')
             .map((child) => ({
               path: child.routePath || '',
               label: child.label,
               icon: child.icon,
               _treeNodeId: child.id,
               _locked: child.locked,
+              _nodeType: child.nodeType,
+              _children: child.nodeType === 'group' ? child.children : undefined,
+              _collapsed: child.collapsed,
             }))
         }
 
@@ -733,6 +747,11 @@ export const useRoutes = () => {
     // ── Legacy fallback (hardcoded sections) ───────────────────────────
     const pinnedPaths = new Set(pinned.getPinnedItems(currentSectionLinks.value).map((item) => item.path))
 
+    // Only suppress pinned items from non-pinned sections when this route
+    // actually has a dedicated PINNED section to receive them. Otherwise
+    // items would be filtered out with nowhere to land (disappear entirely).
+    const hasPinnedSection = section.sidebarSections.some((s) => s.items === 'pinned')
+
     const resolved = section.sidebarSections
       .map((sectionDef) => {
         let items: RouteConfig[] = []
@@ -749,6 +768,9 @@ export const useRoutes = () => {
         } else if (sectionDef.key === 'personal-pages') {
           // PAGES section gets user-created pages
           items = [...pagesChildren.value]
+        } else if (sectionDef.key === 'workflows') {
+          // WORKFLOWS section gets user-created workflows
+          items = [...workflowsChildren.value]
         }
         // Handle special keywords
         else if (sectionDef.items === 'pinned') {
@@ -764,8 +786,10 @@ export const useRoutes = () => {
           items = sectionDef.items
         }
 
-        // Filter out pinned items from non-pinned sections
-        if (sectionDef.items !== 'pinned' && !isDatabase) {
+        // Filter out pinned items from non-pinned sections only when a PINNED
+        // section exists in this route to catch them. Skip for database routes
+        // since those sections manage their own item resolution.
+        if (sectionDef.items !== 'pinned' && !isDatabase && hasPinnedSection) {
           items = items.filter((item) => !pinnedPaths.has(item.path))
         }
 
