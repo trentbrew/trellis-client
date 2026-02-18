@@ -1,5 +1,6 @@
 <script lang="ts" setup>
-  const { isAdmin: showIconRail } = useAdminUI()
+  const { user: _railUser } = useInstantAuth()
+  const showIconRail = computed(() => !!_railUser.value)
   const commandDialog = useCommandDialog()
   const routes = useRoutes()
   const appNavigate = useAppNavigate()

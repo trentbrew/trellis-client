@@ -1,7 +1,7 @@
 <script setup lang="ts">
   const { $colorMode: colorMode } = useNuxtApp()
   const { animationsEnabled, setAnimationsEnabled } = useAnimationSettings()
-  const { headerAboveSidebar, setHeaderAboveSidebar } = useLayoutPreferences()
+  const { headerAboveSidebar, setHeaderAboveSidebar, iconRailPosition, setIconRailPosition } = useLayoutPreferences()
   const go = (to: string) => navigateTo(to)
 
   const isDark = computed({
@@ -176,6 +176,66 @@
                   </div>
                 </div>
                 <UiSwitch :model-value="false" disabled />
+              </div>
+            </UiCardContent>
+          </UiCard>
+        </template>
+      </ClientOnly>
+
+      <!-- Icon Rail Position -->
+      <ClientOnly>
+        <UiCard>
+          <UiCardHeader>
+            <UiCardTitle>Icon Rail Position</UiCardTitle>
+            <UiCardDescription>Choose where the icon rail is anchored in the layout.</UiCardDescription>
+          </UiCardHeader>
+          <UiCardContent>
+            <div class="flex gap-3">
+              <button
+                class="flex flex-1 flex-col items-center gap-2 rounded-xl border px-4 py-3 transition-colors"
+                :class="iconRailPosition === 'left' ? 'border-primary bg-primary/10' : 'border-border bg-card hover:bg-muted/50'"
+                @click="setIconRailPosition('left')">
+                <div class="flex items-center gap-1.5">
+                  <Icon name="lucide:panel-left" class="size-4" :class="iconRailPosition === 'left' ? 'text-primary' : 'text-muted-foreground'" />
+                  <span class="text-sm font-medium" :class="iconRailPosition === 'left' ? 'text-primary' : 'text-foreground'">Left</span>
+                </div>
+                <p class="text-xs text-muted-foreground text-center">Rail on the left side</p>
+              </button>
+              <button
+                class="flex flex-1 flex-col items-center gap-2 rounded-xl border px-4 py-3 transition-colors"
+                :class="iconRailPosition === 'bottom' ? 'border-primary bg-primary/10' : 'border-border bg-card hover:bg-muted/50'"
+                @click="setIconRailPosition('bottom')">
+                <div class="flex items-center gap-1.5">
+                  <Icon name="lucide:panel-bottom" class="size-4" :class="iconRailPosition === 'bottom' ? 'text-primary' : 'text-muted-foreground'" />
+                  <span class="text-sm font-medium" :class="iconRailPosition === 'bottom' ? 'text-primary' : 'text-foreground'">Bottom</span>
+                </div>
+                <p class="text-xs text-muted-foreground text-center">Rail along the bottom</p>
+              </button>
+            </div>
+          </UiCardContent>
+        </UiCard>
+        <template #fallback>
+          <UiCard>
+            <UiCardHeader>
+              <UiCardTitle>Icon Rail Position</UiCardTitle>
+              <UiCardDescription>Choose where the icon rail is anchored in the layout.</UiCardDescription>
+            </UiCardHeader>
+            <UiCardContent>
+              <div class="flex gap-3 opacity-50 pointer-events-none">
+                <div class="flex flex-1 flex-col items-center gap-2 rounded-xl border border-border bg-card px-4 py-3">
+                  <div class="flex items-center gap-1.5">
+                    <Icon name="lucide:panel-left" class="size-4 text-muted-foreground" />
+                    <span class="text-sm font-medium">Left</span>
+                  </div>
+                  <p class="text-xs text-muted-foreground text-center">Loading...</p>
+                </div>
+                <div class="flex flex-1 flex-col items-center gap-2 rounded-xl border border-border bg-card px-4 py-3">
+                  <div class="flex items-center gap-1.5">
+                    <Icon name="lucide:panel-bottom" class="size-4 text-muted-foreground" />
+                    <span class="text-sm font-medium">Bottom</span>
+                  </div>
+                  <p class="text-xs text-muted-foreground text-center">Loading...</p>
+                </div>
               </div>
             </UiCardContent>
           </UiCard>

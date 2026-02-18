@@ -167,7 +167,7 @@
             type: 'role_changed',
             title: 'Your role was updated',
             message: `Your role was changed from ${oldRole} to ${newRole}.`,
-            actionUrl: '/members',
+            actionUrl: '/settings/members',
             icon: 'lucide:shield',
             variant: 'info',
             actorId: user.value?.id,

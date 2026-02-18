@@ -283,6 +283,11 @@ export const routeConfig: RouteConfig[] = [...staticRoutes]
 // Static baseline — server routes are the primary source via useTrellisConfig().routeConfigTree
 
 export const ROUTE_PATHS = {
+  messages: {
+    root: '/messages',
+    channel: (channelId: string) => `/messages/${channelId}`,
+    dm: (userId: string) => `/messages/dm/${userId}`,
+  },
   workspace: {
     root: '/workspace',
     today: '/workspace/today',

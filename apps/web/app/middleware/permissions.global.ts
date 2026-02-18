@@ -15,6 +15,7 @@ import type { UserRole } from '~/config/routes'
 const ROUTE_PERMISSIONS: Record<string, { minRole: UserRole; permission: 'read' | 'write' | 'admin' }> = {
   '/database': { minRole: 'admin', permission: 'read' },
   '/graph': { minRole: 'admin', permission: 'read' },
+  '/marketplace': { minRole: 'admin', permission: 'read' },
   '/members': { minRole: 'admin', permission: 'admin' },
   '/settings/project': { minRole: 'admin', permission: 'admin' },
   '/settings/pages': { minRole: 'admin', permission: 'admin' },

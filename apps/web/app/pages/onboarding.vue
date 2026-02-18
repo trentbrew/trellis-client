@@ -36,11 +36,12 @@
   } | null>(null)
 
   // ── Shared state ───────────────────────────────────────────────────
-  const open = ref(true)
-  const canClose = ref(false)
   const isSubmitting = ref(false)
   const errorMessage = ref<string | null>(null)
   const displayName = ref('')
+
+  // ── Slide direction for transitions ────────────────────────────────
+  const slideDirection = ref<'forward' | 'back'>('forward')
 
   // ── Owner flow state ───────────────────────────────────────────────
   const newOrgName = ref('')
@@ -50,11 +51,69 @@
   const inviteSending = ref(false)
   const inviteResults = ref<{ email: string; status: string; message?: string; inviteToken?: string; inviteUrl?: string }[]>([])
 
+  // ── Onboarding theme: force 'notion' + system dark/light for new users ────
+  const themeStore = useThemeStore()
+  const colorMode = useColorMode()
+
+  onMounted(() => {
+    colorMode.preference = 'system'
+    const mode = (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light') as 'light' | 'dark'
+    themeStore.setPreset('notion', mode)
+
+    const onKey = (e: KeyboardEvent) => {
+      const tag = (e.target as HTMLElement)?.tagName
+      if (tag === 'INPUT' || tag === 'TEXTAREA') return
+      if (e.key === 'ArrowRight' || e.key === ' ') { e.preventDefault(); goNext() }
+      if (e.key === 'ArrowLeft') { e.preventDefault(); goPrev() }
+    }
+    window.addEventListener('keydown', onKey)
+    onUnmounted(() => window.removeEventListener('keydown', onKey))
+  })
+
+  // ── Organization branding ───────────────────────────────────────
+  const orgAvatar = ref<string | null>(null)
+  const avatarInputRef = ref<HTMLInputElement | null>(null)
+
+  const handleAvatarUpload = (e: Event) => {
+    const file = (e.target as HTMLInputElement).files?.[0]
+    if (!file) return
+    if (file.size > 2 * 1024 * 1024) {
+      $toast?.error('Logo image must be under 2 MB')
+      return
+    }
+    const reader = new FileReader()
+    reader.onload = (ev) => { orgAvatar.value = ev.target?.result as string }
+    reader.readAsDataURL(file)
+  }
+
+  // ── World templates ───────────────────────────────────────────
+  interface WorldTemplate { id: string; name: string; icon: string; description: string; color: string }
+
+  const WORLD_TEMPLATES: WorldTemplate[] = [
+    { id: 'blank',              name: 'Blank',          icon: 'lucide:sparkles',      description: 'Start from scratch',                color: 'text-muted-foreground' },
+    { id: 'project-management', name: 'Projects',       icon: 'lucide:folder-kanban', description: 'Tasks, milestones & sprints',         color: 'text-blue-500' },
+    { id: 'crm',                name: 'CRM',            icon: 'lucide:users',         description: 'Contacts, companies & deals',          color: 'text-emerald-500' },
+    { id: 'knowledge',          name: 'Knowledge Base', icon: 'lucide:library',       description: 'Notes, bookmarks & reference docs',    color: 'text-violet-500' },
+    { id: 'events',             name: 'Events',         icon: 'lucide:calendar-days', description: 'Events, venues & attendees',           color: 'text-amber-500' },
+    { id: 'hr',                 name: 'HR',             icon: 'lucide:users-round',   description: 'Employees, departments & time-off',    color: 'text-rose-500' },
+  ]
+
+  const selectedTemplate = ref<string>('blank')
+
+  const selectTemplate = (tpl: WorldTemplate) => {
+    selectedTemplate.value = tpl.id
+    // Pre-fill the world name only if it's empty or currently set to another template name
+    const templateNames = new Set(WORLD_TEMPLATES.map((t) => t.name))
+    if (!newAppName.value.trim() || templateNames.has(newAppName.value)) {
+      newAppName.value = tpl.id === 'blank' ? '' : tpl.name
+    }
+  }
+
   // ── Step management ────────────────────────────────────────────────
   // Member flow:  1=welcome  2=profile  3=done (redirect)
-  // Owner flow:   1=welcome  2=org      3=app  4=invite
+  // Owner flow:   1=welcome  2=concepts  3=org  4=app  5=invite
   const step = ref(1)
-  const totalSteps = computed(() => flow.value === 'member' ? 2 : 4)
+  const totalSteps = computed(() => flow.value === 'member' ? 2 : 5)
 
   // ── Resolve user ───────────────────────────────────────────────────
   async function resolveUser(): Promise<any | null> {
@@ -173,11 +232,30 @@
     }
 
     const id = crypto.randomUUID()
-    await instant.transact([
-      tx.settings[id].create({
-        ownerId, settingKey, entityType, entityId, key, value, updatedAt: now,
-      }),
-    ])
+    try {
+      await instant.transact([
+        tx.settings[id].create({
+          ownerId, settingKey, entityType, entityId, key, value, updatedAt: now,
+        }),
+      ])
+    } catch (err: any) {
+      // Unique constraint violation — record exists but wasn't visible to queryOnce
+      if (err?.message?.includes('unique') || err?.message?.includes('already exists')) {
+        const retryResp = await instant.queryOnce({
+          settings: { $: { where: { settingKey } } },
+        })
+        const retryExisting = (retryResp.data as any)?.settings?.[0]
+        if (retryExisting?.id) {
+          await instant.transact([
+            tx.settings[retryExisting.id].update({
+              ownerId, entityType, entityId, key, value, updatedAt: now,
+            }),
+          ])
+          return
+        }
+      }
+      throw err
+    }
   }
 
   // ── Member flow: complete onboarding ───────────────────────────────
@@ -231,13 +309,10 @@
         await upsertInstantSetting(user.id, 'user', user.id, 'onboardingComplete', true)
       }
 
-      canClose.value = true
-
       // Invalidate middleware cache
       const authInitialized = useState<boolean>('auth:initialized')
       authInitialized.value = false
 
-      open.value = false
       await navigateTo('/welcome')
     } catch (err: any) {
       errorMessage.value = err?.message || 'Failed to complete setup'
@@ -278,7 +353,7 @@
         ownerId: userId,
         orgId: org.id,
         userId,
-        name: org.name,
+        name: displayName.value.trim() || (cachedUser.value?.name) || (cachedUser.value?.email) || 'Owner',
         role: 'owner',
         status: 'active',
         invitedAt: org.createdAt,
@@ -294,6 +369,7 @@
         icon: app.icon,
         color: app.color,
         description: app.description,
+        accessLevel: app.accessLevel,
         createdAt: app.createdAt,
         updatedAt: app.updatedAt,
       }),
@@ -335,9 +411,8 @@
     errorMessage.value = null
 
     const orgName = newOrgName.value.trim()
-    const appName = newAppName.value.trim()
+    const appName = newAppName.value.trim() || 'Default Space'
     if (!orgName) { errorMessage.value = 'Please enter a workspace name.'; return }
-    if (!appName) { errorMessage.value = 'Please enter an app name.'; return }
 
     isSubmitting.value = true
     try {
@@ -356,6 +431,7 @@
         ownerId: user.id,
         name: orgName,
         slug: generateSlug(orgName) || crypto.randomUUID(),
+        avatar: orgAvatar.value || undefined,
         plan: 'free',
         createdAt: now,
         updatedAt: now,
@@ -367,7 +443,8 @@
         slug: generateSlug(appName) || crypto.randomUUID(),
         icon: 'lucide:layout',
         color: 'bg-primary',
-        description: 'Workspace app',
+        description: 'My first world',
+        accessLevel: 'open',
         createdAt: now,
         updatedAt: now,
       }
@@ -393,12 +470,11 @@
 
       newOrgName.value = ''
       newAppName.value = ''
-      canClose.value = true
 
       const authInitialized = useState<boolean>('auth:initialized')
       authInitialized.value = false
 
-      step.value = 4
+      step.value = 5
     } catch (err: any) {
       errorMessage.value = err?.message || 'Onboarding failed'
       console.error('[onboarding] owner flow error:', err)
@@ -445,6 +521,7 @@
           worldName: currentApp.value?.name || '',
           inviterId: user?.id,
           inviterName: user?.name || user?.email,
+          role: 'member',
         },
       })
       inviteResults.value = (resp as any)?.results || []
@@ -466,7 +543,6 @@
   }
 
   const finishOnboarding = async () => {
-    open.value = false
     await navigateTo('/welcome')
   }
 
@@ -474,15 +550,19 @@
   const ownerStepContent = [
     {
       title: 'Welcome to Trellis',
-      description: 'Your personal knowledge graph starts here. Let\'s set up your workspace in a few quick steps.',
+      description: 'A living knowledge graph for teams.',
     },
     {
-      title: 'Name your workspace',
-      description: 'This is where your team will collaborate. You can change this later.',
+      title: 'How it\'s organized',
+      description: 'Trellis uses a simple, three-level structure to keep your work connected and clear.',
     },
     {
-      title: 'Create your first app',
-      description: 'Apps are how you organize different projects and workflows within your workspace.',
+      title: 'Name your organization',
+      description: 'This is the top-level container for your team. Everyone you invite will belong here.',
+    },
+    {
+      title: 'Create your first world',
+      description: 'Worlds organize your work into focused spaces — like a project, product, or team hub.',
     },
     {
       title: 'Invite your team',
@@ -512,12 +592,8 @@
     errorMessage.value = null
 
     if (flow.value === 'owner') {
-      if (step.value === 2 && !newOrgName.value.trim()) {
-        errorMessage.value = 'Please enter a workspace name.'
-        return false
-      }
-      if (step.value === 3 && !newAppName.value.trim()) {
-        errorMessage.value = 'Please enter an app name.'
+      if (step.value === 3 && !newOrgName.value.trim()) {
+        errorMessage.value = 'Please enter an organization name.'
         return false
       }
     }
@@ -527,6 +603,7 @@
 
   const goNext = async () => {
     if (!validateStep()) return
+    slideDirection.value = 'forward'
 
     // ── Member flow ──────────────────────────────────────────────
     if (flow.value === 'member') {
@@ -539,12 +616,12 @@
     }
 
     // ── Owner flow ───────────────────────────────────────────────
-    if (step.value === 3) {
+    if (step.value === 4) {
       await handleOwnerSubmit()
       return
     }
 
-    if (step.value === 4) {
+    if (step.value === 5) {
       if (inviteEmails.value.length > 0) await sendInvites()
       await finishOnboarding()
       return
@@ -554,337 +631,414 @@
   }
 
   const goPrev = () => {
-    if (flow.value === 'owner' && step.value === 4) return
-    if (step.value > 1) step.value -= 1
+    if (flow.value === 'owner' && step.value === 5) return
+    if (step.value > 1) {
+      slideDirection.value = 'back'
+      step.value -= 1
+    }
   }
 
-  const handleUpdateOpen = (next: boolean) => {
-    if (next) { open.value = true; return }
-    open.value = canClose.value
-  }
 </script>
 
 <template>
-  <div class="flex min-h-screen items-center justify-center p-4">
-    <UiDialog :open="open" @update:open="handleUpdateOpen">
-      <UiDialogContent
-        class="w-[min(560px,calc(100vw-2rem))]! gap-0 overflow-x-clip rounded-2xl border border-border bg-card p-0 shadow-2xl [&>button:last-child]:text-white"
-        :hide-close="true"
-        @escape-key-down.prevent
-        @pointer-down-outside.prevent
-        @interact-outside.prevent
-      >
-        <!-- Loading state -->
-        <div v-if="flow === 'loading'" class="flex flex-col items-center justify-center py-20 px-8">
-          <div class="h-8 w-8 animate-spin rounded-full border-2 border-primary border-t-transparent" />
-          <p class="mt-4 text-sm text-muted-foreground">Preparing your experience...</p>
-        </div>
+  <div class="relative z-10 flex min-h-dvh flex-col">
 
-        <!-- Main content -->
-        <div v-else class="space-y-8 px-8 pt-8 pb-8">
-          <!-- Header -->
-          <div class="flex items-start justify-between">
-            <Transition mode="out-in">
-              <div :key="`${flow}-${step}`" class="flex-1 space-y-2">
-                <!-- Logo + step indicator -->
-                <div class="flex items-center gap-3 mb-4">
-                  <AppLogo size="36" />
-                  <div class="flex items-center gap-1.5">
-                    <div
-                      v-for="(_, index) in Array(totalSteps)"
-                      :key="index"
-                      :class="[
-                        'h-1.5 rounded-full transition-all duration-300',
-                        index + 1 === step ? 'w-6 bg-primary' : index + 1 < step ? 'w-1.5 bg-primary/40' : 'w-1.5 bg-muted',
-                      ]"
-                    />
-                  </div>
-                </div>
-                <UiDialogHeader class="space-y-1.5 p-0">
-                  <UiDialogTitle class="text-xl font-semibold tracking-tight">
-                    {{ activeStepContent[step - 1]?.title }}
-                  </UiDialogTitle>
-                  <UiDialogDescription class="text-sm text-muted-foreground leading-relaxed">
-                    {{ activeStepContent[step - 1]?.description }}
-                  </UiDialogDescription>
-                </UiDialogHeader>
-              </div>
-            </Transition>
-            <button
-              type="button"
-              class="shrink-0 mt-1 text-xs text-muted-foreground hover:text-foreground transition-colors"
-              @click="handleLogout">
-              Sign out
-            </button>
-          </div>
+    <!-- ── Persistent chrome ──────────────────────────────────────── -->
+    <header class="fixed top-0 left-0 right-0 z-50 flex items-center justify-between px-6 py-5 pointer-events-none">
+      <div class="pointer-events-auto">
+        <AppLogo size="32" />
+      </div>
+      <button
+        type="button"
+        class="pointer-events-auto text-xs text-muted-foreground hover:text-foreground transition-colors"
+        @click="handleLogout">
+        Sign out
+      </button>
+    </header>
 
-          <!-- Error -->
-          <div v-if="errorMessage" class="rounded-lg border border-red-500/20 bg-red-500/5 px-4 py-3 text-sm text-red-400">
-            {{ errorMessage }}
-          </div>
+    <!-- ── Loading state ──────────────────────────────────────────── -->
+    <Transition name="ob-fade">
+      <div v-if="flow === 'loading'" class="flex flex-1 flex-col items-center justify-center gap-4 min-h-dvh">
+        <div class="h-8 w-8 animate-spin rounded-full border-2 border-primary border-t-transparent" />
+        <p class="text-sm text-muted-foreground">Preparing your experience...</p>
+      </div>
+    </Transition>
 
-          <!-- ═══════════════════════════════════════════════════════ -->
-          <!-- MEMBER FLOW                                            -->
-          <!-- ═══════════════════════════════════════════════════════ -->
-          <template v-if="flow === 'member'">
-            <!-- Step 1: Welcome -->
-            <div v-if="step === 1" class="space-y-6">
-              <div class="rounded-xl border border-border bg-muted/20 p-5 space-y-4">
-                <div class="flex items-center gap-3">
-                  <div class="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-primary/10">
-                    <Icon name="lucide:building-2" class="h-5 w-5 text-primary" />
-                  </div>
-                  <div>
-                    <div class="text-sm font-medium text-foreground">{{ membership?.orgName || 'Workspace' }}</div>
-                    <div class="text-xs text-muted-foreground capitalize">Joining as {{ membership?.role || 'member' }}</div>
-                  </div>
-                </div>
-                <p class="text-sm text-muted-foreground leading-relaxed">
-                  Trellis is a personal knowledge graph that helps teams organize ideas, tasks, and projects
-                  in a connected, visual way. Think of it as your team's second brain.
-                </p>
-              </div>
+    <!-- ── Slide stage ─────────────────────────────────────────────── -->
+    <div v-if="flow !== 'loading'" class="flex flex-1 flex-col">
+      <Transition :name="slideDirection === 'forward' ? 'ob-slide-fwd' : 'ob-slide-back'" mode="out-in">
+        <div
+          :key="`${flow}-${step}`"
+          class="flex flex-1 flex-col items-center justify-center px-6 py-24 min-h-dvh"
+        >
+          <div class="w-full max-w-lg mx-auto flex flex-col gap-8">
 
-              <div class="rounded-lg border border-border/50 bg-muted/10 p-4 space-y-3">
-                <div class="text-xs font-medium text-muted-foreground uppercase tracking-wide">What you'll be able to do</div>
-                <div class="grid gap-2.5">
-                  <div class="flex items-start gap-2.5">
-                    <Icon name="lucide:check-circle" class="h-4 w-4 text-emerald-500 mt-0.5 shrink-0" />
-                    <span class="text-sm text-foreground">Create and manage tasks, notes, and documents</span>
-                  </div>
-                  <div class="flex items-start gap-2.5">
-                    <Icon name="lucide:check-circle" class="h-4 w-4 text-emerald-500 mt-0.5 shrink-0" />
-                    <span class="text-sm text-foreground">Collaborate with your team in real time</span>
-                  </div>
-                  <div class="flex items-start gap-2.5">
-                    <Icon name="lucide:check-circle" class="h-4 w-4 text-emerald-500 mt-0.5 shrink-0" />
-                    <span class="text-sm text-foreground">Visualize connections between your work</span>
-                  </div>
-                </div>
-              </div>
+            <!-- Slide heading -->
+            <div class="space-y-2 text-center">
+              <h1 class="text-3xl font-bold tracking-tight text-foreground">
+                {{ activeStepContent[step - 1]?.title }}
+              </h1>
+              <p class="text-base text-muted-foreground leading-relaxed">
+                {{ activeStepContent[step - 1]?.description }}
+              </p>
             </div>
 
-            <!-- Step 2: Profile -->
-            <div v-else-if="step === 2" class="space-y-6">
-              <div class="space-y-4">
-                <div class="space-y-2">
+            <!-- Error banner -->
+            <Transition name="ob-fade">
+              <div v-if="errorMessage" class="rounded-xl border border-red-500/20 bg-red-500/5 px-4 py-3 text-sm text-red-400 text-center">
+                {{ errorMessage }}
+              </div>
+            </Transition>
+
+            <!-- ══════════════════════════════════════════════════════ -->
+            <!-- MEMBER FLOW                                           -->
+            <!-- ══════════════════════════════════════════════════════ -->
+            <template v-if="flow === 'member'">
+
+              <!-- Member Step 1: Welcome -->
+              <div v-if="step === 1" class="space-y-4">
+                <div class="rounded-2xl border border-border bg-card/60 backdrop-blur-sm p-6 space-y-4">
+                  <div class="flex items-center gap-3">
+                    <div class="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-primary/10">
+                      <Icon name="lucide:building-2" class="h-5 w-5 text-primary" />
+                    </div>
+                    <div>
+                      <div class="text-sm font-semibold text-foreground">{{ membership?.orgName || 'Workspace' }}</div>
+                      <div class="text-xs text-muted-foreground capitalize">Joining as {{ membership?.role || 'member' }}</div>
+                    </div>
+                  </div>
+                  <p class="text-sm text-muted-foreground leading-relaxed">
+                    Trellis is a living knowledge graph that helps teams organize ideas, tasks, and projects
+                    in a connected, visual way. Think of it as your team's second brain.
+                  </p>
+                </div>
+
+                <div class="rounded-2xl border border-border/50 bg-card/40 backdrop-blur-sm p-5 space-y-3">
+                  <div class="text-xs font-semibold text-muted-foreground uppercase tracking-widest">What you'll be able to do</div>
+                  <div class="grid gap-3">
+                    <div class="flex items-start gap-3">
+                      <Icon name="lucide:check-circle" class="h-4 w-4 text-emerald-500 mt-0.5 shrink-0" />
+                      <span class="text-sm text-foreground">{{ membership?.role === 'guest' ? 'View content shared with you' : 'Create and manage tasks, notes, and documents' }}</span>
+                    </div>
+                    <div class="flex items-start gap-3">
+                      <Icon name="lucide:check-circle" class="h-4 w-4 text-emerald-500 mt-0.5 shrink-0" />
+                      <span class="text-sm text-foreground">{{ membership?.role === 'guest' ? 'Explore connected entities in the knowledge graph' : 'Collaborate with your team in real time' }}</span>
+                    </div>
+                    <div class="flex items-start gap-3">
+                      <Icon name="lucide:check-circle" class="h-4 w-4 text-emerald-500 mt-0.5 shrink-0" />
+                      <span class="text-sm text-foreground">{{ membership?.role === 'guest' ? 'Request access to additional content from admins' : 'Visualize connections between your work' }}</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Member Step 2: Profile -->
+              <div v-else-if="step === 2" class="space-y-5">
+                <div class="space-y-3">
                   <label class="text-sm font-medium text-foreground">Display name</label>
                   <input
                     v-model="displayName"
                     type="text"
+                    autofocus
                     placeholder="How should your team know you?"
-                    class="bg-background border-border text-foreground placeholder:text-muted-foreground w-full rounded-lg border px-4 py-3 text-sm focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
+                    class="ob-input w-full rounded-xl border border-border bg-card/60 backdrop-blur-sm px-5 py-4 text-base text-foreground placeholder:text-muted-foreground/50 focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20 transition-all"
                     @keydown.enter="goNext"
                   />
-                  <p class="text-xs text-muted-foreground">This will be visible to other members of the workspace.</p>
+                  <p class="text-xs text-muted-foreground">Visible to other members of the organization.</p>
                 </div>
-              </div>
-
-              <div class="rounded-lg border border-border/50 bg-muted/10 p-4">
-                <div class="flex items-start gap-3">
+                <div class="flex items-start gap-3 rounded-xl border border-border/40 bg-muted/10 p-4">
                   <Icon name="lucide:info" class="h-4 w-4 text-muted-foreground mt-0.5 shrink-0" />
                   <p class="text-xs text-muted-foreground leading-relaxed">
-                    You can always update your profile, create your own workspace, or adjust your preferences
-                    later from Settings.
+                    You can update your profile, create your own workspace, or adjust preferences later from Settings.
                   </p>
                 </div>
               </div>
-            </div>
-          </template>
+            </template>
 
           <!-- ═══════════════════════════════════════════════════════ -->
           <!-- OWNER FLOW                                             -->
           <!-- ═══════════════════════════════════════════════════════ -->
           <template v-else-if="flow === 'owner'">
-            <!-- Step 1: Welcome -->
-            <div v-if="step === 1" class="space-y-6">
-              <div class="rounded-xl border border-border bg-muted/20 p-5 space-y-4">
-                <p class="text-sm text-muted-foreground leading-relaxed">
-                  Trellis is a personal knowledge graph that helps you organize ideas, tasks, and projects
-                  in a connected, visual way. Think of it as your second brain — everything linked, nothing lost.
-                </p>
-              </div>
 
-              <div class="rounded-lg border border-border/50 bg-muted/10 p-4 space-y-3">
-                <div class="text-xs font-medium text-muted-foreground uppercase tracking-wide">Here's what we'll set up</div>
-                <div class="grid gap-2.5">
-                  <div class="flex items-start gap-2.5">
-                    <div class="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-primary/10 text-[10px] font-bold text-primary mt-0.5">1</div>
-                    <span class="text-sm text-foreground">Create your workspace</span>
+              <!-- Owner Step 1: Welcome hero -->
+              <div v-if="step === 1" class="space-y-6">
+                <OnboardingBeam />
+                <div class="space-y-3 text-center">
+                  <p class="text-sm text-muted-foreground leading-relaxed">
+                    Trellis is a <span class="text-foreground font-semibold">living knowledge graph</span> —
+                    a workspace where your team's tasks, notes, people, and projects are all connected to each other.
+                  </p>
+                  <p class="text-sm text-muted-foreground leading-relaxed">
+                    Unlike traditional siloed tools, every piece of information can be linked to any other.
+                    Nothing falls through the cracks. Nothing gets lost.
+                  </p>
+                </div>
+                <div class="grid grid-cols-3 gap-3">
+                  <div class="rounded-2xl border border-border/50 bg-card/40 backdrop-blur-sm p-4 text-center space-y-2">
+                    <Icon name="lucide:link-2" class="h-5 w-5 text-primary mx-auto" />
+                    <div class="text-xs font-semibold text-foreground">Everything linked</div>
                   </div>
-                  <div class="flex items-start gap-2.5">
-                    <div class="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-primary/10 text-[10px] font-bold text-primary mt-0.5">2</div>
-                    <span class="text-sm text-foreground">Name your first app</span>
+                  <div class="rounded-2xl border border-border/50 bg-card/40 backdrop-blur-sm p-4 text-center space-y-2">
+                    <Icon name="lucide:users" class="h-5 w-5 text-primary mx-auto" />
+                    <div class="text-xs font-semibold text-foreground">Built for teams</div>
                   </div>
-                  <div class="flex items-start gap-2.5">
-                    <div class="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-primary/10 text-[10px] font-bold text-primary mt-0.5">3</div>
-                    <span class="text-sm text-foreground">Invite your team (optional)</span>
+                  <div class="rounded-2xl border border-border/50 bg-card/40 backdrop-blur-sm p-4 text-center space-y-2">
+                    <Icon name="lucide:layers" class="h-5 w-5 text-primary mx-auto" />
+                    <div class="text-xs font-semibold text-foreground">Infinitely flexible</div>
                   </div>
                 </div>
               </div>
-            </div>
 
-            <!-- Step 2: Organization -->
-            <div v-else-if="step === 2" class="space-y-6">
-              <div class="space-y-2">
-                <label class="text-sm font-medium text-foreground">Workspace name</label>
-                <input
-                  v-model="newOrgName"
-                  type="text"
-                  placeholder="e.g. Acme Inc, My Studio, Personal"
-                  class="bg-background border-border text-foreground placeholder:text-muted-foreground w-full rounded-lg border px-4 py-3 text-sm focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
-                  @keydown.enter="goNext"
-                />
-                <p class="text-xs text-muted-foreground">
-                  This is the name of your organization or team. Everyone you invite will see this.
-                </p>
-              </div>
-            </div>
-
-            <!-- Step 3: Application -->
-            <div v-else-if="step === 3" class="space-y-6">
-              <div class="space-y-2">
-                <label class="text-sm font-medium text-foreground">App name</label>
-                <input
-                  v-model="newAppName"
-                  type="text"
-                  placeholder="e.g. Product Roadmap, Design System, Wiki"
-                  class="bg-background border-border text-foreground placeholder:text-muted-foreground w-full rounded-lg border px-4 py-3 text-sm focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
-                  @keydown.enter="goNext"
-                />
-                <p class="text-xs text-muted-foreground">
-                  Apps help you organize different projects within your workspace. You can create more later.
-                </p>
-              </div>
-            </div>
-
-            <!-- Step 4: Invite team -->
-            <div v-else-if="step === 4" class="space-y-6">
-              <div class="space-y-2">
-                <label class="text-sm font-medium text-foreground">Email addresses</label>
-                <div class="flex gap-2">
-                  <input
-                    v-model="inviteInput"
-                    type="email"
-                    placeholder="teammate@company.com"
-                    class="bg-background border-border text-foreground placeholder:text-muted-foreground flex-1 rounded-lg border px-4 py-3 text-sm focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
-                    @keydown.enter.prevent="addInviteEmail"
-                    @keydown.,="addInviteEmail"
-                  />
-                  <UiButton variant="outline" type="button" @click="addInviteEmail">
-                    <Icon name="lucide:plus" class="h-4 w-4" />
-                  </UiButton>
-                </div>
-                <p class="text-xs text-muted-foreground">Press Enter or comma to add. Separate multiple with commas.</p>
-              </div>
-
-              <div v-if="inviteEmails.length" class="flex flex-wrap gap-1.5">
-                <span
-                  v-for="email in inviteEmails"
-                  :key="email"
-                  class="inline-flex items-center gap-1 rounded-full bg-primary/10 px-2.5 py-1 text-xs font-medium text-primary">
-                  {{ email }}
-                  <button
-                    type="button"
-                    class="ml-0.5 rounded-full p-0.5 hover:bg-primary/20 transition-colors"
-                    @click="removeInviteEmail(email)">
-                    <Icon name="lucide:x" class="h-3 w-3" />
-                  </button>
-                </span>
-              </div>
-
-              <div v-if="inviteResults.length" class="space-y-2">
-                <div
-                  v-for="result in inviteResults"
-                  :key="result.email"
-                  class="space-y-1">
-                  <div class="flex items-center gap-2 text-xs">
-                    <Icon
-                      :name="result.status === 'sent' ? 'lucide:check-circle' : result.status === 'already_member' ? 'lucide:info' : 'lucide:alert-circle'"
-                      :class="result.status === 'sent' ? 'text-emerald-500' : result.status === 'already_member' ? 'text-blue-400' : 'text-red-400'"
-                      class="h-3.5 w-3.5 shrink-0" />
-                    <span class="text-muted-foreground">{{ result.email }}</span>
-                    <span v-if="result.message" class="text-muted-foreground/60">— {{ result.message }}</span>
+              <!-- Owner Step 2: How it's organized -->
+              <div v-else-if="step === 2" class="space-y-3">
+                <div class="flex items-start gap-4 rounded-2xl border border-border bg-card/60 backdrop-blur-sm p-5">
+                  <div class="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-primary/10">
+                    <Icon name="lucide:building-2" class="h-5 w-5 text-primary" />
                   </div>
-                  <div v-if="result.inviteUrl" class="flex items-center gap-1.5 pl-5">
-                    <input
-                      :value="result.inviteUrl"
-                      readonly
-                      class="bg-muted/50 text-muted-foreground flex-1 rounded border border-border px-2 py-1 text-[10px] font-mono truncate"
-                      @click="($event.target as HTMLInputElement).select()" />
+                  <div class="flex-1 min-w-0">
+                    <div class="text-sm font-semibold text-foreground">Organization</div>
+                    <p class="text-xs text-muted-foreground mt-1 leading-relaxed">Your team's home base. One login, shared members, and a central place to hold all your worlds.</p>
+                    <div class="mt-2 text-[10px] text-muted-foreground/50 italic">e.g. "Acme Inc" · "My Studio" · "Personal"</div>
+                  </div>
+                </div>
+                <div class="flex justify-center py-1">
+                  <Icon name="lucide:arrow-down" class="h-4 w-4 text-muted-foreground/30" />
+                </div>
+                <div class="flex items-start gap-4 rounded-2xl border border-border bg-card/60 backdrop-blur-sm p-5">
+                  <div class="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-emerald-500/10">
+                    <Icon name="lucide:globe-2" class="h-5 w-5 text-emerald-500" />
+                  </div>
+                  <div class="flex-1 min-w-0">
+                    <div class="text-sm font-semibold text-foreground">World</div>
+                    <p class="text-xs text-muted-foreground mt-1 leading-relaxed">A focused space for a specific project, product, or team workflow. Each world has its own structure.</p>
+                    <div class="mt-2 text-[10px] text-muted-foreground/50 italic">e.g. "Product Roadmap" · "Design System" · "Q1 Planning"</div>
+                  </div>
+                </div>
+                <div class="flex justify-center py-1">
+                  <Icon name="lucide:arrow-down" class="h-4 w-4 text-muted-foreground/30" />
+                </div>
+                <div class="flex items-start gap-4 rounded-2xl border border-border bg-card/60 backdrop-blur-sm p-5">
+                  <div class="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-violet-500/10">
+                    <Icon name="lucide:shapes" class="h-5 w-5 text-violet-500" />
+                  </div>
+                  <div class="flex-1 min-w-0">
+                    <div class="text-sm font-semibold text-foreground">Entities</div>
+                    <p class="text-xs text-muted-foreground mt-1 leading-relaxed">The atomic units of your knowledge graph — tasks, notes, people, files, and more. Everything connects.</p>
+                    <div class="mt-2 text-[10px] text-muted-foreground/50 italic">tasks · notes · people · files · bookmarks · events · and more</div>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Owner Step 3: Organization name + logo -->
+              <div v-else-if="step === 3" class="space-y-6">
+                <div class="flex items-center gap-5">
+                  <div class="flex flex-col items-center gap-1.5 shrink-0">
                     <button
                       type="button"
-                      class="shrink-0 rounded p-1 text-muted-foreground hover:bg-muted hover:text-foreground transition-colors"
-                      title="Copy invite link"
-                      @click="copyInviteUrl(result.inviteUrl)">
-                      <Icon name="lucide:copy" class="h-3 w-3" />
+                      class="relative flex h-20 w-20 items-center justify-center rounded-2xl border-2 border-dashed border-border transition-all hover:border-primary/60 hover:bg-muted/20 overflow-hidden focus:outline-none focus:ring-2 focus:ring-primary/30"
+                      aria-label="Upload organization logo"
+                      @click="avatarInputRef?.click()">
+                      <img v-if="orgAvatar" :src="orgAvatar" class="h-full w-full object-cover" alt="Org logo" />
+                      <div v-else class="flex flex-col items-center gap-1.5">
+                        <Icon name="lucide:image-plus" class="h-6 w-6 text-muted-foreground/30" />
+                        <span class="text-[9px] font-semibold uppercase tracking-widest text-muted-foreground/30">Logo</span>
+                      </div>
+                    </button>
+                    <button v-if="orgAvatar" type="button" class="text-[10px] text-muted-foreground/50 hover:text-destructive transition-colors" @click="orgAvatar = null">Remove</button>
+                    <input ref="avatarInputRef" type="file" accept="image/png,image/jpeg,image/webp,image/gif" class="sr-only" @change="handleAvatarUpload" />
+                  </div>
+                  <div class="flex-1 space-y-3">
+                    <input
+                      v-model="newOrgName"
+                      type="text"
+                      autofocus
+                      placeholder="e.g. Acme Inc, My Studio…"
+                      class="w-full rounded-xl border border-border bg-card/60 backdrop-blur-sm px-5 py-4 text-base text-foreground placeholder:text-muted-foreground/50 focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20 transition-all"
+                      @keydown.enter="goNext"
+                    />
+                    <p class="text-xs text-muted-foreground">Everyone you invite will see this name.</p>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Owner Step 4: World name + template -->
+              <div v-else-if="step === 4" class="space-y-5">
+                <div class="space-y-3">
+                  <input
+                    v-model="newAppName"
+                    type="text"
+                    autofocus
+                    placeholder="Default Space"
+                    class="w-full rounded-xl border border-border bg-card/60 backdrop-blur-sm px-5 py-4 text-base text-foreground placeholder:text-muted-foreground/50 focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20 transition-all"
+                    @keydown.enter="goNext"
+                  />
+                  <p class="text-xs text-muted-foreground">Worlds organize your work into focused spaces. You can create more later.</p>
+                </div>
+                <div class="space-y-2">
+                  <div class="text-xs font-semibold text-muted-foreground uppercase tracking-widest">Start from a template</div>
+                  <div class="grid grid-cols-3 gap-2">
+                    <button
+                      v-for="tpl in WORLD_TEMPLATES"
+                      :key="tpl.id"
+                      type="button"
+                      class="flex flex-col items-start gap-2 rounded-xl border p-3 text-left transition-all focus:outline-none focus:ring-2 focus:ring-primary/30"
+                      :class="selectedTemplate === tpl.id ? 'border-primary/40 bg-primary/5 ring-1 ring-primary/20' : 'border-border/50 bg-card/30 hover:border-border hover:bg-card/60'"
+                      @click="selectTemplate(tpl)">
+                      <div class="flex items-center justify-between w-full">
+                        <Icon :name="tpl.icon" class="h-4 w-4" :class="tpl.color" />
+                        <Icon v-if="selectedTemplate === tpl.id" name="lucide:check-circle-2" class="h-3.5 w-3.5 text-primary" />
+                      </div>
+                      <div class="w-full">
+                        <div class="text-[11px] font-semibold text-foreground leading-tight">{{ tpl.name }}</div>
+                        <div class="text-[10px] text-muted-foreground leading-snug mt-0.5">{{ tpl.description }}</div>
+                      </div>
                     </button>
                   </div>
                 </div>
               </div>
 
-              <div v-if="!inviteEmails.length && !inviteResults.length" class="rounded-lg border border-dashed border-border/50 p-6 text-center">
-                <Icon name="lucide:users-round" class="mx-auto h-8 w-8 text-muted-foreground/40 mb-2" />
-                <p class="text-xs text-muted-foreground">
-                  No invites yet — you can always invite people later from the Members page.
-                </p>
+              <!-- Owner Step 5: Invite team -->
+              <div v-else-if="step === 5" class="space-y-5">
+                <div class="space-y-3">
+                  <div class="flex gap-2">
+                    <input
+                      v-model="inviteInput"
+                      type="email"
+                      autofocus
+                      placeholder="teammate@company.com"
+                      class="flex-1 rounded-xl border border-border bg-card/60 backdrop-blur-sm px-5 py-4 text-base text-foreground placeholder:text-muted-foreground/50 focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20 transition-all"
+                      @keydown.enter.prevent="addInviteEmail"
+                      @keydown.,="addInviteEmail"
+                    />
+                    <button type="button" class="rounded-xl border border-border bg-card/60 px-4 hover:bg-muted/30 transition-all" @click="addInviteEmail">
+                      <Icon name="lucide:plus" class="h-4 w-4 text-foreground" />
+                    </button>
+                  </div>
+                  <p class="text-xs text-muted-foreground">Press Enter or comma to add multiple.</p>
+                </div>
+
+                <div v-if="inviteEmails.length" class="flex flex-wrap gap-1.5">
+                  <span
+                    v-for="email in inviteEmails"
+                    :key="email"
+                    class="inline-flex items-center gap-1 rounded-full bg-primary/10 px-3 py-1 text-xs font-medium text-primary">
+                    {{ email }}
+                    <button type="button" class="ml-0.5 rounded-full p-0.5 hover:bg-primary/20 transition-colors" @click="removeInviteEmail(email)">
+                      <Icon name="lucide:x" class="h-3 w-3" />
+                    </button>
+                  </span>
+                </div>
+
+                <div v-if="inviteResults.length" class="space-y-2">
+                  <div v-for="result in inviteResults" :key="result.email" class="space-y-1">
+                    <div class="flex items-center gap-2 text-xs">
+                      <Icon
+                        :name="result.status === 'sent' ? 'lucide:check-circle' : result.status === 'already_member' ? 'lucide:info' : 'lucide:alert-circle'"
+                        :class="result.status === 'sent' ? 'text-emerald-500' : result.status === 'already_member' ? 'text-blue-400' : 'text-red-400'"
+                        class="h-3.5 w-3.5 shrink-0" />
+                      <span class="text-muted-foreground">{{ result.email }}</span>
+                      <span v-if="result.message" class="text-muted-foreground/60">— {{ result.message }}</span>
+                    </div>
+                    <div v-if="result.inviteUrl" class="flex items-center gap-1.5 pl-5">
+                      <input :value="result.inviteUrl" readonly class="bg-muted/50 text-muted-foreground flex-1 rounded border border-border px-2 py-1 text-[10px] font-mono truncate" @click="($event.target as HTMLInputElement).select()" />
+                      <button type="button" class="shrink-0 rounded p-1 text-muted-foreground hover:bg-muted hover:text-foreground transition-colors" title="Copy invite link" @click="copyInviteUrl(result.inviteUrl)">
+                        <Icon name="lucide:copy" class="h-3 w-3" />
+                      </button>
+                    </div>
+                  </div>
+                </div>
+
+                <div v-if="!inviteEmails.length && !inviteResults.length" class="rounded-2xl border border-dashed border-border/40 p-8 text-center">
+                  <Icon name="lucide:users-round" class="mx-auto h-8 w-8 text-muted-foreground/30 mb-3" />
+                  <p class="text-sm text-muted-foreground">No invites yet — you can always add teammates later from the Members page.</p>
+                </div>
               </div>
-            </div>
-          </template>
 
-          <!-- ═══════════════════════════════════════════════════════ -->
-          <!-- FOOTER                                                 -->
-          <!-- ═══════════════════════════════════════════════════════ -->
-          <div class="flex items-center justify-between pt-2 border-t border-border/50">
-            <div>
-              <UiButton
-                v-if="step > 1 && !(flow === 'owner' && step === 4)"
-                variant="ghost"
-                size="sm"
-                type="button"
-                @click="goPrev">
-                <Icon name="lucide:arrow-left" class="-ms-1 me-1.5 h-4 w-4 opacity-60" />
-                Back
-              </UiButton>
-            </div>
+            </template>
 
-            <div class="flex items-center gap-2">
-              <UiButton
-                v-if="flow === 'owner' && step === 4 && !inviteEmails.length"
-                variant="ghost"
-                size="sm"
-                type="button"
-                @click="finishOnboarding">
-                Skip for now
-              </UiButton>
-
-              <UiButton
-                class="group"
-                type="button"
-                :disabled="isSubmitting || inviteSending"
-                @click="goNext">
-                <template v-if="flow === 'member' && step === 2">
-                  {{ isSubmitting ? 'Setting up...' : 'Join workspace' }}
-                </template>
-                <template v-else-if="flow === 'owner' && step === 3">
-                  {{ isSubmitting ? 'Creating...' : 'Create workspace' }}
-                </template>
-                <template v-else-if="flow === 'owner' && step === 4">
-                  {{ inviteSending ? 'Sending...' : inviteEmails.length ? 'Send invites & finish' : 'Finish setup' }}
-                </template>
-                <template v-else>
-                  Continue
-                </template>
-                <Icon
-                  v-if="!isSubmitting && !inviteSending"
-                  name="lucide:arrow-right"
-                  class="ms-1.5 -me-0.5 h-4 w-4 opacity-60 transition-transform group-hover:translate-x-0.5"
-                />
-              </UiButton>
-            </div>
           </div>
         </div>
-      </UiDialogContent>
-    </UiDialog>
+      </Transition>
+    </div>
+
+    <!-- ── Floating nav bar ───────────────────────────────────────── -->
+    <div v-if="flow !== 'loading'" class="fixed bottom-0 left-0 right-0 z-50 flex items-center justify-between px-6 py-5">
+      <!-- Step dots -->
+      <div class="flex items-center gap-1.5">
+        <div
+          v-for="(_, index) in Array(totalSteps)"
+          :key="index"
+          :class="[
+            'rounded-full transition-all duration-300',
+            index + 1 === step ? 'w-5 h-1.5 bg-foreground' : index + 1 < step ? 'w-1.5 h-1.5 bg-foreground/40' : 'w-1.5 h-1.5 bg-foreground/15',
+          ]"
+        />
+      </div>
+
+      <!-- Nav buttons -->
+      <div class="flex items-center gap-3">
+        <button
+          v-if="step > 1 && !(flow === 'owner' && step === 5)"
+          type="button"
+          class="flex items-center gap-1.5 rounded-xl px-4 py-2.5 text-sm text-muted-foreground hover:text-foreground hover:bg-muted/30 transition-all"
+          @click="goPrev">
+          <Icon name="lucide:arrow-left" class="h-4 w-4" />
+          Back
+        </button>
+
+        <button
+          v-if="flow === 'owner' && step === 5 && !inviteEmails.length"
+          type="button"
+          class="rounded-xl px-4 py-2.5 text-sm text-muted-foreground hover:text-foreground hover:bg-muted/30 transition-all"
+          @click="finishOnboarding">
+          Skip for now
+        </button>
+
+        <button
+          type="button"
+          class="group flex items-center gap-2 rounded-xl bg-foreground px-5 py-2.5 text-sm font-semibold text-background hover:opacity-90 active:scale-[0.98] transition-all disabled:opacity-40"
+          :disabled="isSubmitting || inviteSending"
+          @click="goNext">
+          <template v-if="flow === 'member' && step === 2">
+            {{ isSubmitting ? 'Setting up…' : 'Join organization' }}
+          </template>
+          <template v-else-if="flow === 'owner' && step === 4">
+            {{ isSubmitting ? 'Creating…' : 'Set up workspace' }}
+          </template>
+          <template v-else-if="flow === 'owner' && step === 5">
+            {{ inviteSending ? 'Sending…' : inviteEmails.length ? 'Send invites & finish' : 'Finish setup' }}
+          </template>
+          <template v-else>
+            Continue
+          </template>
+          <Icon
+            v-if="!isSubmitting && !inviteSending"
+            name="lucide:arrow-right"
+            class="h-4 w-4 transition-transform group-hover:translate-x-0.5"
+          />
+        </button>
+      </div>
+    </div>
+
   </div>
 </template>
+
+<style scoped>
+/* Slide forward: new slide enters from right, old exits to left */
+.ob-slide-fwd-enter-active,
+.ob-slide-fwd-leave-active,
+.ob-slide-back-enter-active,
+.ob-slide-back-leave-active {
+  transition: opacity 300ms ease, transform 350ms cubic-bezier(0.25, 0.46, 0.45, 0.94);
+}
+
+.ob-slide-fwd-enter-from { opacity: 0; transform: translateX(40px); }
+.ob-slide-fwd-leave-to   { opacity: 0; transform: translateX(-40px); }
+.ob-slide-back-enter-from { opacity: 0; transform: translateX(-40px); }
+.ob-slide-back-leave-to   { opacity: 0; transform: translateX(40px); }
+
+.ob-fade-enter-active,
+.ob-fade-leave-active { transition: opacity 250ms ease; }
+.ob-fade-enter-from,
+.ob-fade-leave-to { opacity: 0; }
+</style>

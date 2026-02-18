@@ -7,7 +7,7 @@
 
   withDefaults(defineProps<Props>(), {
     size: 24,
-    colorClass: 'text-primary',
+    colorClass: 'text-foreground',
     brandMark: null,
   })
 </script>

@@ -28,7 +28,7 @@
   )
 
   const styles = tv({
-    base: 'fixed top-1/2 z-[52] grid max-h-[calc(100dvh-2rem)] w-full gap-4 overflow-y-auto rounded-xl border bg-background p-0 shadow-lg duration-200 data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=closed]:zoom-out-95 data-[state=open]:animate-in data-[state=open]:fade-in-0 data-[state=open]:zoom-in-[1.1] data-[state=open]:slide-in-from-bottom-2 sm:max-w-100',
+    base: 'fixed top-1/2 -translate-x-1/2 -translate-y-1/2 z-[52] grid max-h-[calc(100dvh-2rem)] w-full gap-4 overflow-y-auto rounded-xl border bg-background p-6 shadow-lg duration-200 data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=closed]:zoom-out-95 data-[state=open]:animate-in data-[state=open]:fade-in-0 data-[state=open]:zoom-in-95 sm:max-w-100',
   })
 
   const { rightSidebarWidth: sidebarWidth } = useRightSidebarWidth()
@@ -37,7 +37,6 @@
     const sw = sidebarWidth.value
     return {
       left: `calc(50% - ${sw / 2}px)`,
-      transform: 'translate(-50%, -50%)',
       maxWidth: `min(calc(100vw - ${sw}px - 2rem), 32rem)`,
       width: `calc(100vw - ${sw}px - 2rem)`,
     }

@@ -974,7 +974,7 @@ export function useInstantData() {
 
     const items = (workflows.value || []).slice()
     items.push(next)
-    await upsertAppSetting(appId, 'workflows', items)
+    await upsertAppSetting(appId, 'workflows', JSON.parse(JSON.stringify(items)))
     return next.id
   }
 
@@ -998,7 +998,7 @@ export function useInstantData() {
     }
     items[idx] = next
 
-    await upsertAppSetting(appId, 'workflows', items)
+    await upsertAppSetting(appId, 'workflows', JSON.parse(JSON.stringify(items)))
   }
 
   const deleteWorkflow = async (id: string) => {
@@ -1006,7 +1006,7 @@ export function useInstantData() {
     if (!appId) throw new Error('No application selected')
 
     const items = (workflows.value || []).filter((w) => w.id !== id)
-    await upsertAppSetting(appId, 'workflows', items)
+    await upsertAppSetting(appId, 'workflows', JSON.parse(JSON.stringify(items)))
   }
 
   // Helper functions

@@ -11,6 +11,52 @@
 import type { RouteDefinition } from '@toolkit/tql'
 
 // ============================================================================
+// Home Route — /home
+// ============================================================================
+
+const homeRoute: RouteDefinition = {
+  '@id': 'route:home',
+  '@type': 'trellis:Route',
+  routePath: '/home',
+  label: 'Home',
+  icon: 'lucide:house',
+  order: 0,
+  inRail: true,
+  railPosition: 'primary',
+  inCommandPalette: true,
+  requiresAuth: true,
+  collapseSidebar: true,
+  meta: {
+    title: 'Home',
+    description: 'Your personal home dashboard',
+    hideSidebar: true,
+  },
+}
+
+// ============================================================================
+// Agent Route — /agent
+// ============================================================================
+
+const agentRoute: RouteDefinition = {
+  '@id': 'route:agent',
+  '@type': 'trellis:Route',
+  routePath: '/agent',
+  label: 'Agent',
+  icon: 'lucide:bot',
+  order: 5,
+  inRail: true,
+  railPosition: 'primary',
+  inCommandPalette: true,
+  requiresAuth: true,
+  collapseSidebar: true,
+  meta: {
+    title: 'Agent',
+    description: 'AI agent workspace',
+    hideSidebar: true,
+  },
+}
+
+// ============================================================================
 // Workspace Route — /workspace
 // ============================================================================
 
@@ -45,6 +91,7 @@ const workspaceRoute: RouteDefinition = {
       collapsible: true,
       order: 10,
       items: [
+        { routePath: '/workspace/welcome', label: 'Welcome', icon: 'lucide:home' },
         { routePath: '/workspace/today', label: 'Overview', icon: 'lucide:layout-dashboard' },
         { routePath: '/workspace/feed', label: 'Feed', icon: 'lucide:rss' },
       ],
@@ -56,7 +103,7 @@ const workspaceRoute: RouteDefinition = {
       collapsible: true,
       order: 20,
       items: [
-        { routePath: '/workspace/calendar', label: 'Calendar', icon: 'lucide:calendar', entityType: 'event' },
+        { routePath: '/workspace/calendar', label: 'Calendar', icon: 'lucide:calendar', entityType: 'event', inRail: true, railPosition: 'primary', order: 15 },
         { routePath: '/workspace/projects', label: 'Projects', icon: 'lucide:folder-kanban', entityType: 'project' },
         { routePath: '/workspace/tasks', label: 'Tasks', icon: 'lucide:check-square', entityType: 'task' },
         { routePath: '/workspace/sprints', label: 'Sprints', icon: 'lucide:zap', entityType: 'sprint' },
@@ -99,6 +146,14 @@ const workspaceRoute: RouteDefinition = {
     },
   ],
   children: [
+    {
+      '@id': 'route:workspace/welcome',
+      '@type': 'trellis:Route',
+      routePath: '/workspace/welcome',
+      label: 'Welcome',
+      icon: 'lucide:home',
+      meta: { title: 'Welcome', description: 'World overview and quick links' },
+    },
     {
       '@id': 'route:workspace/today',
       '@type': 'trellis:Route',
@@ -258,7 +313,7 @@ const databaseRoute: RouteDefinition = {
   routePath: '/database',
   label: 'Database',
   icon: 'lucide:database',
-  order: 20,
+  order: 22,
   inRail: true,
   railPosition: 'primary',
   inCommandPalette: true,
@@ -308,7 +363,7 @@ const graphRoute: RouteDefinition = {
   routePath: '/graph',
   label: 'Graph',
   icon: 'lucide:workflow',
-  order: 30,
+  order: 32,
   inRail: true,
   railPosition: 'primary',
   inCommandPalette: true,
@@ -385,6 +440,96 @@ const graphRoute: RouteDefinition = {
 }
 
 // ============================================================================
+// Calendar Route — /workspace/calendar (top-level for icon rail)
+// ============================================================================
+
+const calendarRoute: RouteDefinition = {
+  '@id': 'route:calendar',
+  '@type': 'trellis:Route',
+  routePath: '/workspace/calendar',
+  label: 'Calendar',
+  icon: 'lucide:calendar',
+  order: 12,
+  inRail: true,
+  railPosition: 'primary',
+  inCommandPalette: true,
+  requiresAuth: true,
+  collapseSidebar: true,
+  meta: {
+    title: 'Calendar',
+    description: 'View and manage your schedule',
+    hideSidebar: true,
+  },
+}
+
+// ============================================================================
+// Messages Route — /messages
+// ============================================================================
+
+const messagesRoute: RouteDefinition = {
+  '@id': 'route:messages',
+  '@type': 'trellis:Route',
+  routePath: '/messages',
+  label: 'Messages',
+  icon: 'lucide:message-square',
+  order: 25,
+  inRail: true,
+  railPosition: 'primary',
+  inCommandPalette: true,
+  requiresAuth: true,
+  meta: {
+    title: 'Messages',
+    description: 'Realtime team chat and threads',
+    hideSidebar: false,
+  },
+  sidebarSections: [
+    {
+      label: 'CHANNELS',
+      key: 'chat-channels',
+      icon: 'lucide:hash',
+      collapsible: true,
+      editable: true,
+      order: 10,
+      items: [],
+    },
+    {
+      label: 'DIRECT MESSAGES',
+      key: 'chat-dms',
+      icon: 'lucide:message-circle',
+      collapsible: true,
+      order: 20,
+      items: [],
+    },
+    {
+      label: 'THREADS',
+      key: 'chat-threads',
+      icon: 'lucide:git-branch',
+      collapsible: true,
+      order: 30,
+      items: [],
+    },
+  ],
+  children: [
+    {
+      '@id': 'route:messages/channel',
+      '@type': 'trellis:Route',
+      routePath: '/messages/:channelId',
+      label: 'Channel',
+      icon: 'lucide:hash',
+      meta: { title: 'Channel' },
+    },
+    {
+      '@id': 'route:messages/dm',
+      '@type': 'trellis:Route',
+      routePath: '/messages/dm/:userId',
+      label: 'Direct Message',
+      icon: 'lucide:message-circle',
+      meta: { title: 'Direct Message' },
+    },
+  ],
+}
+
+// ============================================================================
 // Marketplace Route — /marketplace
 // ============================================================================
 
@@ -394,11 +539,12 @@ const marketplaceRoute: RouteDefinition = {
   routePath: '/marketplace',
   label: 'Marketplace',
   icon: 'lucide:store',
-  order: 35,
+  order: 38,
   inRail: true,
   railPosition: 'primary',
   inCommandPalette: true,
   requiresAuth: true,
+  permissions: { minRole: 'admin', permission: 'read' },
   meta: {
     title: 'Marketplace',
     description: 'Browse and install workspace templates',
@@ -453,17 +599,48 @@ const marketplaceRoute: RouteDefinition = {
 }
 
 // ============================================================================
-// Members Route — /members
+// Workflows Route — /workflows
+// ============================================================================
+
+const workflowsRoute: RouteDefinition = {
+  '@id': 'route:workflows',
+  '@type': 'trellis:Route',
+  routePath: '/workflows',
+  label: 'Workflows',
+  icon: 'lucide:git-branch',
+  order: 40,
+  inRail: false,
+  railPosition: 'primary',
+  inCommandPalette: true,
+  requiresAuth: true,
+  meta: {
+    title: 'Workflows',
+    description: 'Build and manage agentic automation workflows',
+  },
+  sidebarSections: [
+    {
+      label: 'WORKFLOWS',
+      key: 'workflows',
+      icon: 'lucide:git-branch',
+      collapsible: true,
+      editable: true,
+      order: 10,
+    },
+  ],
+}
+
+// ============================================================================
+// Members Route — /settings/members (child of settings, not a standalone rail item)
 // ============================================================================
 
 const membersRoute: RouteDefinition = {
   '@id': 'route:members',
   '@type': 'trellis:Route',
-  routePath: '/members',
+  routePath: '/settings/members',
   label: 'Members',
   icon: 'lucide:users-round',
   order: 80,
-  inRail: true,
+  inRail: false,
   railPosition: 'secondary',
   inCommandPalette: true,
   requiresAuth: true,
@@ -471,6 +648,7 @@ const membersRoute: RouteDefinition = {
   meta: {
     title: 'Members',
     description: 'Manage team members, invites, and permissions',
+    sidebarSectionPath: '/settings',
   },
 }
 
@@ -484,9 +662,9 @@ const settingsRoute: RouteDefinition = {
   routePath: '/settings',
   label: 'Settings',
   icon: 'lucide:settings',
-  order: 90,
+  order: 42,
   inRail: true,
-  railPosition: 'secondary',
+  railPosition: 'primary',
   inCommandPalette: true,
   requiresAuth: true,
   meta: {
@@ -503,6 +681,7 @@ const settingsRoute: RouteDefinition = {
       items: [
         { routePath: '/settings/project', label: 'Project', icon: 'lucide:folder' },
         { routePath: '/settings/profile', label: 'Profile', icon: 'lucide:user' },
+        { routePath: '/settings/members', label: 'Members', icon: 'lucide:users-round' },
         { routePath: '/settings/appearance', label: 'Appearance', icon: 'lucide:paintbrush' },
         { routePath: '/settings/theme', label: 'Theme', icon: 'lucide:palette' },
         { routePath: '/settings/notifications', label: 'Notifications', icon: 'lucide:bell' },
@@ -516,6 +695,7 @@ const settingsRoute: RouteDefinition = {
   children: [
     { '@id': 'route:settings/project', '@type': 'trellis:Route', routePath: '/settings/project', label: 'Project', icon: 'lucide:folder', permissions: { minRole: 'admin', permission: 'admin' }, meta: { title: 'Project Settings' } },
     { '@id': 'route:settings/profile', '@type': 'trellis:Route', routePath: '/settings/profile', label: 'Profile', icon: 'lucide:user', meta: { title: 'Profile Settings' } },
+    { '@id': 'route:settings/members', '@type': 'trellis:Route', routePath: '/settings/members', label: 'Members', icon: 'lucide:users-round', permissions: { minRole: 'admin', permission: 'admin' }, meta: { title: 'Members', sidebarSectionPath: '/settings' } },
     { '@id': 'route:settings/appearance', '@type': 'trellis:Route', routePath: '/settings/appearance', label: 'Appearance', icon: 'lucide:paintbrush', meta: { title: 'Appearance' } },
     { '@id': 'route:settings/theme', '@type': 'trellis:Route', routePath: '/settings/theme', label: 'Theme', icon: 'lucide:palette', meta: { title: 'Theme' } },
     { '@id': 'route:settings/notifications', '@type': 'trellis:Route', routePath: '/settings/notifications', label: 'Notifications', icon: 'lucide:bell', meta: { title: 'Notifications' } },
@@ -532,20 +712,30 @@ const settingsRoute: RouteDefinition = {
 
 export function getRouteDefinitions(): Record<string, RouteDefinition> {
   return {
+    'route:home': homeRoute,
+    'route:agent': agentRoute,
     'route:workspace': workspaceRoute,
+    'route:calendar': calendarRoute,
+    'route:messages': messagesRoute,
     'route:database': databaseRoute,
     'route:graph': graphRoute,
     'route:marketplace': marketplaceRoute,
+    'route:workflows': workflowsRoute,
     'route:members': membersRoute,
     'route:settings': settingsRoute,
   }
 }
 
 export {
+  homeRoute,
+  agentRoute,
   workspaceRoute,
+  calendarRoute,
+  messagesRoute,
   databaseRoute,
   graphRoute,
   marketplaceRoute,
+  workflowsRoute,
   membersRoute,
   settingsRoute,
 }

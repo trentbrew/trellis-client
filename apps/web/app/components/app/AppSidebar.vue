@@ -4,6 +4,7 @@
   import { SYSTEM_TYPES } from '~/lib/systemTypes'
   import type { ContextMenuEvent } from '~/types/contextMenu'
   import { CONTEXT_ACTIONS } from '~/types/contextMenu'
+  import type { SidebarTreeNode } from '~/composables/useSidebarTree'
   import {
     sidebarItemMenu,
     sidebarSectionMenu,
@@ -416,9 +417,24 @@
       return
     }
 
+    if (sectionKey === 'workflows') {
+      await handleCreateWorkflow()
+      return
+    }
+
     const section = routes.currentSidebarSection.value
     if (section?.path === '/database') {
       ontologyCreateOpen.value = true
+    }
+  }
+
+  const handleCreateWorkflow = async () => {
+    try {
+      const { createWorkflow } = useInstantData()
+      const id = await createWorkflow({ name: 'Untitled Workflow', icon: 'lucide:workflow', active: true })
+      await navigateTo(`/workflows/${id}`)
+    } catch (e) {
+      console.error('Failed to create workflow:', e)
     }
   }
 
@@ -633,6 +649,9 @@
 
   const isWorkspaceRoute = computed(() => routes.currentSidebarSection.value?.path === '/workspace')
   const isDatabaseRoute = computed(() => routes.currentSidebarSection.value?.path === '/database')
+  const isChatRoute = computed(() =>
+    route.path.startsWith('/messages') || routes.currentSidebarSection.value?.path === '/messages',
+  )
 
   const sectionsContainerRef = ref<HTMLElement | null>(null)
   const sortableInstances = ref<Sortable[]>([])
@@ -657,6 +676,11 @@
         const canReorder = isWorkspaceRoute.value || (isDatabaseRoute.value && sectionKey === 'database-custom')
         if (!canReorder) return
 
+        // In tree-driven mode, allow cross-section dragging for reparenting
+        const groupConfig = isTreeDriven.value
+          ? { name: 'sidebar-tree', pull: true, put: true }
+          : { name: sectionKey, pull: false, put: false }
+
         const instance = Sortable.create(list, {
           animation: 150,
           ghostClass: 'sortable-ghost',
@@ -667,15 +691,48 @@
           fallbackOnBody: true,
           delay: 100,
           delayOnTouchOnly: false,
-          group: { name: sectionKey, pull: false, put: false },
-          onEnd: () => {
-            const items = Array.from(list.querySelectorAll<HTMLElement>('[data-item-path]'))
+          group: groupConfig,
+          onEnd: (evt: any) => {
+            const targetList = evt.to as HTMLElement
+            const targetSectionKey = targetList?.dataset?.sortableSection
+            const items = Array.from(targetList.querySelectorAll<HTMLElement>('[data-item-path]'))
             const newOrder = items.map((el) => el.dataset.itemPath!).filter(Boolean)
-            sidebarOrder.setItemOrder(sectionKey, newOrder)
 
-            // Sync order to TQL graph nodes when tree-driven
+            // Persist to localStorage
+            if (targetSectionKey) {
+              sidebarOrder.setItemOrder(targetSectionKey, newOrder)
+            }
+
+            // Also update source section order if item moved across sections
+            if (evt.from !== evt.to) {
+              const srcSectionKey = (evt.from as HTMLElement)?.dataset?.sortableSection
+              if (srcSectionKey) {
+                const srcItems = Array.from((evt.from as HTMLElement).querySelectorAll<HTMLElement>('[data-item-path]'))
+                const srcOrder = srcItems.map((el) => el.dataset.itemPath!).filter(Boolean)
+                sidebarOrder.setItemOrder(srcSectionKey, srcOrder)
+              }
+            }
+
+            // Sync to TQL graph nodes when tree-driven
             if (isTreeDriven.value) {
               const flatNodes = sidebarTree.flatNodes.value
+              const movedPath = evt.item?.dataset?.itemPath
+
+              // If item moved between sections, reparent it
+              if (evt.from !== evt.to && movedPath && targetSectionKey) {
+                const movedNode = flatNodes.find((n) => n.routePath === movedPath)
+                // Find the target section's tree node ID
+                const targetSection = (dynamicSidebarSections.value || []).find(
+                  (s: any) => s.key === targetSectionKey,
+                )
+                const newParentId = (targetSection as any)?._treeNodeId || null
+
+                if (movedNode && newParentId) {
+                  sidebarTree.moveNode(movedNode.id, newParentId, evt.newIndex + 1)
+                }
+              }
+
+              // Update order for all items in the target section
               newOrder.forEach((path, idx) => {
                 const node = flatNodes.find((n) => n.routePath === path)
                 if (node && node.order !== idx + 1) {
@@ -797,6 +854,43 @@
     }
   }
 
+  // ── SidebarTreeItem helpers ─────────────────────────────────
+
+  /** Convert a resolved section item with _nodeType=group back to SidebarTreeNode shape */
+  const itemToTreeNode = (item: any): SidebarTreeNode => ({
+    id: item._treeNodeId || '',
+    label: item.label || '',
+    icon: item.icon || 'lucide:folder',
+    routePath: item.path || '',
+    scope: 'workspace',
+    nodeType: item._nodeType || 'item',
+    locked: !!item._locked,
+    collapsed: !!item._collapsed,
+    order: 0,
+    editable: false,
+    children: (item._children || []).map((c: any) => ({
+      ...c,
+      children: c.children || [],
+    })),
+  })
+
+  /** Context menu resolver for SidebarTreeItem */
+  const getTreeNodeContextMenu = (node: SidebarTreeNode) => {
+    if (node.nodeType === 'group') {
+      return treeNodeSectionMenu({
+        isCollapsed: collapsed.isCollapsed(`tree-group:${node.id}`),
+        isLocked: node.locked,
+        canCreate: canEditContent.value,
+      })
+    }
+    return treeNodeItemMenu({
+      isPinned: pinned.isPinned(node.routePath || ''),
+      canPin: true,
+      isLocked: node.locked,
+      path: node.routePath,
+    })
+  }
+
   // ── Tree node mutation handlers ─────────────────────────────
 
   const handleRenameTreeNode = (nodeId: string, currentLabel?: string) => {
@@ -826,13 +920,13 @@
   <!-- Sidebar: Content frame (matches page header) -->
   <aside
     data-slot="app-sidebar"
-    class="border-sidebar-border/75 bg-transparent text-sidebar-foreground hidden flex-col border-r px-0 pb-0 lg:flex relative overflow-hidden"
+    class="border-sidebar-border/75 bg-transparent text-sidebar-foreground hidden flex-col border-r-none px-0 pb-0 lg:flex relative overflow-hidden"
     :style="{
       width: sidebarCollapse.isCollapsed.value ? '0px' : `${sidebarWidth}px`,
       transition: transitionsDisabled ? 'none' : 'width 0.3s ease',
     }"
     :class="[
-      sidebarCollapse.isCollapsed.value ? 'overflow-hidden' : '',
+      sidebarCollapse.isCollapsed.value ? 'overflow-hidden pr-2.5' : '',
       isResizing ? 'is-resizing' : '',
       transitionsDisabled ? 'transitions-disabled' : '',
     ]"
@@ -860,7 +954,7 @@
     </div>
 
     <!-- Global Search Button (hidden when header is above sidebar — search moves to header) -->
-      <UiButton
+      <!-- <UiButton
         v-if="!props.headerAbove"
         variant="ghost"
         size="sm"
@@ -873,7 +967,7 @@
           </span>
         </div>
         <UiKbd class="bg-white/5 border-sidebar-border/20 text-sidebar-foreground/40 text-[10px]">⌘K</UiKbd>
-      </UiButton>
+      </UiButton> -->
 
     <!-- Sidebar section items animate per rail route (client-only to avoid hydration mismatches from localStorage/pins) -->
     <ClientOnly>
@@ -885,9 +979,10 @@
           <template #trigger>
         <div class="flex min-h-0 flex-1 flex-col overflow-y-auto overflow-x-hidden ">
           <!-- Sticky sidebar filter -->
-          <div class="sticky top-0 z-10 px-3 pt-4 pb-3" style="background: linear-gradient(to bottom, var(--background) 70%, transparent 100%)">
+          <!-- <div class="sticky top-0 z-10 px-2.5 pt-2.5 pb-2.5" style="background: linear-gradient(to bottom, var(--card) 0%, transparent 100%)"> -->
+          <div class="sticky top-0 z-10 px-2.5 pt-2.5 pb-2.5">
             <div class="relative flex items-center">
-              <Icon name="lucide:search" class="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-sidebar-foreground/60 z-10" />
+              <Icon name="lucide:search" class="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-sidebar-foreground/75 z-10" />
               <input
                 ref="sidebarFilterInputRef"
                 v-model="sidebarFilter"
@@ -900,7 +995,7 @@
                   <UiTooltipTrigger as-child>
                     <button
                       type="button"
-                      class="absolute right-1.5 top-1/2 -translate-y-1/2 flex items-center justify-center h-6 w-6 shrink-0 rounded-full bg-foreground/2 text-sidebar-foreground/50 hover:text-sidebar-foreground hover:bg-foreground/5 transition-colors"
+                      class="absolute right-1.5 top-1/2 -translate-y-1/2 flex items-center justify-center h-6 w-6 shrink-0 rounded-full bg-foreground/10 border text-foreground hover:text-sidebar-foreground hover:bg-foreground/5 transition-colors"
                       :aria-label="isWorkspaceRoute ? 'Add page' : 'New type'"
                       @click="isWorkspaceRoute ? handleCreatePageInstant() : handleAddNew()">
                       <Icon name="lucide:plus" class="h-3.5 w-3.5" />
@@ -921,8 +1016,13 @@
               :exit="{ opacity: 0, x: -8 }"
               :transition="transitionsDisabled ? { duration: 0 } : { duration: 0.22, ease: 'easeOut' }"
               class="flex min-h-0 flex-1 flex-col p-3 pl-2 pt-0 pb-24">
+              <!-- Chat Sidebar (messages route) -->
+              <template v-if="isChatRoute">
+                <ChatSidebar class="pt-2" />
+              </template>
+
               <!-- Dynamic Sidebar Sections (if configured in route) -->
-              <template v-if="filteredDynamicSidebarSections">
+              <template v-else-if="filteredDynamicSidebarSections">
                 <div ref="sectionsContainerRef" class="py-4">
                 <div v-for="(section, idx) in filteredDynamicSidebarSections" :key="section.key" :data-section-key="section.key" :data-section-pinned="section.key === 'personal-pinned' ? '' : undefined" :class="idx > 0 ? 'mt-6' : ''">
                   <AppContextMenu
@@ -1008,7 +1108,7 @@
                           :layout="!transitionsDisabled">
                           <motion.li
                             v-for="(item, i) in section.items"
-                            :key="item?.path || ''"
+                            :key="item?._treeNodeId || item?.path || ''"
                             :data-item-path="item?.path || ''"
                             :initial="{ opacity: 0, x: -10 }"
                             :animate="{ opacity: 1, x: 0 }"
@@ -1019,7 +1119,20 @@
                                 : { duration: 0.28, ease: 'easeOut', delay: i * 0.035 }
                             "
                             :layout="!transitionsDisabled">
+                            <!-- Group node: render via recursive SidebarTreeItem -->
+                            <SidebarTreeItem
+                              v-if="item._nodeType === 'group'"
+                              :node="itemToTreeNode(item)"
+                              :depth="0"
+                              :section-key="section.key"
+                              :is-active="(p: string) => routes.isRouteExactlyActive(p)"
+                              :get-context-menu="getTreeNodeContextMenu"
+                              :get-badge="(n: any) => routes.getRouteBadge(n)"
+                              :sidebar-width="sidebarWidth"
+                              @action="handleContextAction" />
+                            <!-- Regular item node: flat nav link -->
                             <AppContextMenu
+                              v-else
                               :actions="isTypesSection ? typeItemMenu(item) : getItemContextMenu(item, section.key)"
                               :context="isTypesSection ? { path: item.path, typeId: item.id } : { path: item.path, sectionKey: section.key, label: item.label, icon: item.icon, _treeNodeId: item._treeNodeId, _locked: item._locked }"
                               @action="handleContextAction">
@@ -1028,7 +1141,7 @@
                               <AppNavLink
                                 v-if="item?.path"
                                 :to="item.path"
-                                class="text-sidebar-foreground hover:bg-foreground/5 hover:text-sidebar-foreground flex items-center gap-3 rounded-lg px-3 py-2 transition ml-8"
+                                class="text-sidebar-foreground hover:bg-foreground/5 hover:text-sidebar-foreground flex items-center gap-3 rounded-xl px-3 py-2 transition ml-8"
                                 :class="[
                                   {
                                     'bg-foreground/5 text-foreground': routes.isRouteExactlyActive(item.path),

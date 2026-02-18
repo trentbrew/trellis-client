@@ -698,6 +698,55 @@ const entityTypeOntologies: Record<string, SchemaDefinition> = {
 // Workspace Configuration — the .trellis format
 // ============================================================================
 
+// ============================================================================
+// Chat Ontologies — channel, message
+// ============================================================================
+
+const channelOntology: SchemaDefinition = {
+  '@id': 'trellis:schema/channel', '@type': 'trellis:Schema', version: '1.0.0', tier: 'system',
+  entityClass: 'container', label: 'Channel', labelPlural: 'Channels',
+  icon: 'lucide:hash', color: 'sky',
+  projections: ['list'],
+  defaultProjection: 'list',
+  searchFields: ['title', 'description'],
+  fields: [
+    f('title', 'title', { required: true }),
+    f('slug', 'rich_text', { icon: 'lucide:hash', group: 'classification', display: 'inline-input', editable: true }),
+    f('description', 'rich_text'),
+    f('type', 'select', { selectOptions: ['public', 'private', 'dm', 'thread'], icon: 'lucide:lock', group: 'classification', display: 'popover', editable: true }),
+    f('icon', 'rich_text'),
+    f('orgId', 'rich_text'),
+    f('memberIds', 'multi_select'),
+    f('entityId', 'rich_text'),
+    f('lastMessageAt', 'date'),
+    f('createdBy', 'rich_text'),
+    f('createdAt', 'date'),
+  ],
+}
+
+const messageOntology: SchemaDefinition = {
+  '@id': 'trellis:schema/message', '@type': 'trellis:Schema', version: '1.0.0', tier: 'system',
+  entityClass: 'document', label: 'Message', labelPlural: 'Messages',
+  icon: 'lucide:message-square', color: 'sky',
+  projections: ['list'],
+  defaultProjection: 'list',
+  searchFields: ['content', 'authorName'],
+  fields: [
+    f('content', 'rich_text', { required: true }),
+    f('channelId', 'rich_text'),
+    f('authorId', 'rich_text'),
+    f('authorName', 'rich_text'),
+    f('authorAvatar', 'url'),
+    f('replyToId', 'rich_text'),
+    f('reactions', 'json'),
+    f('entityRefs', 'json'),
+    f('edited', 'checkbox'),
+    f('editedAt', 'date'),
+    f('deletedAt', 'date'),
+    f('createdAt', 'date'),
+  ],
+}
+
 export function createWorkspaceConfig(): WorkspaceConfig {
   return {
     workspace: {
@@ -708,6 +757,9 @@ export function createWorkspaceConfig(): WorkspaceConfig {
         [`trellis:schema/${ENTITY_NAMESPACE}`]: entityOntology,
         'trellis:schema/comment': commentOntology,
         [`trellis:schema/${SIDEBAR_NODE_NAMESPACE}`]: sidebarNodeOntology,
+        // Chat ontologies
+        'trellis:schema/channel': channelOntology,
+        'trellis:schema/message': messageOntology,
         // Per-type ontologies (all 22 entity types)
         ...entityTypeOntologies,
       },

@@ -202,7 +202,7 @@
 </script>
 
 <template>
-  <Page variant="calendar" seo-title="Calendar | Personal">
+  <Page variant="calendar" seo-title="Calendar | Personal" hide-sidebar>
     <CalendarView
       collection-id="personal-items"
       :model-value="calendarData"

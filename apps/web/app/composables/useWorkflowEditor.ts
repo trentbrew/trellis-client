@@ -115,6 +115,49 @@ export function useWorkflowEditor(workflowId: Ref<string>) {
   const isLoaded = ref(false)
   const nodeIdCounter = ref(100)
 
+  // ── Undo / Redo history ────────────────────────────────────────────────────
+  const history = ref<WorkflowGraph[]>([])
+  const future = ref<WorkflowGraph[]>([])
+  const MAX_HISTORY = 50
+
+  const canUndo = computed(() => history.value.length > 0)
+  const canRedo = computed(() => future.value.length > 0)
+
+  function snapshotCurrent(): WorkflowGraph {
+    return JSON.parse(JSON.stringify(vueFlowToGraph(nodes.value, edges.value, viewport.value)))
+  }
+
+  function pushHistory() {
+    history.value = [...history.value.slice(-(MAX_HISTORY - 1)), snapshotCurrent()]
+    future.value = []
+  }
+
+  function undo() {
+    const prev = history.value[history.value.length - 1]
+    if (!prev) return
+    future.value = [snapshotCurrent(), ...future.value.slice(0, MAX_HISTORY - 1)]
+    history.value = history.value.slice(0, -1)
+    const vf = graphToVueFlow(prev)
+    nodes.value = vf.nodes
+    edges.value = vf.edges
+    isDirty.value = true
+    if (saveTimeout) clearTimeout(saveTimeout)
+    saveTimeout = setTimeout(() => save(), 800)
+  }
+
+  function redo() {
+    const next = future.value[0]
+    if (!next) return
+    history.value = [...history.value.slice(-(MAX_HISTORY - 1)), snapshotCurrent()]
+    future.value = future.value.slice(1)
+    const vf = graphToVueFlow(next)
+    nodes.value = vf.nodes
+    edges.value = vf.edges
+    isDirty.value = true
+    if (saveTimeout) clearTimeout(saveTimeout)
+    saveTimeout = setTimeout(() => save(), 800)
+  }
+
   const workflow = computed<Workflow | undefined>(() =>
     (workflows.value || []).find((w) => w.id === workflowId.value),
   )
@@ -159,7 +202,9 @@ export function useWorkflowEditor(workflowId: Ref<string>) {
     isSaving.value = true
     try {
       const graph = vueFlowToGraph(nodes.value, edges.value, viewport.value)
-      await updateWorkflow(workflow.value.id, { graph })
+      // Deep-clone to strip Vue reactive proxies before persisting to IndexedDB
+      const plainGraph = JSON.parse(JSON.stringify(graph))
+      await updateWorkflow(workflow.value.id, { graph: plainGraph })
       isDirty.value = false
     } finally {
       isSaving.value = false
@@ -197,6 +242,7 @@ export function useWorkflowEditor(workflowId: Ref<string>) {
     if (kind === 'start' && nodes.value.some((n) => n.data?.kind === 'start')) {
       return
     }
+    pushHistory()
 
     const id = nextNodeId(kind)
     const pos = position || { x: 300 + Math.random() * 200, y: 200 + Math.random() * 200 }
@@ -243,6 +289,7 @@ export function useWorkflowEditor(workflowId: Ref<string>) {
    * Remove nodes and their connected edges.
    */
   function removeNodes(nodeIds: string[]) {
+    pushHistory()
     const idSet = new Set(nodeIds)
     nodes.value = nodes.value.filter((n) => !idSet.has(n.id))
     edges.value = edges.value.filter((e) => !idSet.has(e.source) && !idSet.has(e.target))
@@ -253,8 +300,73 @@ export function useWorkflowEditor(workflowId: Ref<string>) {
    * Remove edges by ID.
    */
   function removeEdges(edgeIds: string[]) {
+    pushHistory()
     const idSet = new Set(edgeIds)
     edges.value = edges.value.filter((e) => !idSet.has(e.id))
+    markDirty()
+  }
+
+  /**
+   * Auto-layout: assigns node positions using topological BFS layers (left-to-right).
+   */
+  function applyAutoLayout() {
+    if (nodes.value.length === 0) return
+    pushHistory()
+
+    const adj = new Map<string, string[]>()
+    const inDeg = new Map<string, number>()
+    for (const n of nodes.value) {
+      adj.set(n.id, [])
+      inDeg.set(n.id, 0)
+    }
+    for (const e of edges.value) {
+      adj.get(e.source)?.push(e.target)
+      inDeg.set(e.target, (inDeg.get(e.target) || 0) + 1)
+    }
+
+    const layers: string[][] = []
+    const placed = new Set<string>()
+    let frontier = nodes.value.filter((n) => (inDeg.get(n.id) || 0) === 0).map((n) => n.id)
+
+    while (frontier.length > 0) {
+      layers.push([...frontier])
+      frontier.forEach((id) => placed.add(id))
+      const next: string[] = []
+      for (const id of frontier) {
+        for (const nbr of adj.get(id) || []) {
+          if (placed.has(nbr)) continue
+          const deg = (inDeg.get(nbr) || 0) - 1
+          inDeg.set(nbr, deg)
+          if (deg <= 0) next.push(nbr)
+        }
+      }
+      frontier = next
+    }
+
+    // Nodes not reachable from source (cycles / disconnected)
+    const unplaced = nodes.value.filter((n) => !placed.has(n.id)).map((n) => n.id)
+    if (unplaced.length > 0) layers.push(unplaced)
+
+    const LAYER_W = 260
+    const NODE_H = 110
+    const PAD_X = 80
+    const PAD_Y = 60
+
+    const posMap = new Map<string, { x: number; y: number }>()
+    layers.forEach((layer, li) => {
+      const totalH = layer.length * NODE_H
+      layer.forEach((id, idx) => {
+        posMap.set(id, {
+          x: PAD_X + li * LAYER_W,
+          y: PAD_Y + idx * NODE_H - totalH / 2 + 300,
+        })
+      })
+    })
+
+    nodes.value = nodes.value.map((n) => {
+      const pos = posMap.get(n.id)
+      return pos ? { ...n, position: pos } : n
+    })
     markDirty()
   }
 
@@ -293,6 +405,14 @@ export function useWorkflowEditor(workflowId: Ref<string>) {
     removeNodes,
     removeEdges,
     nextNodeId,
+    pushHistory,
+    undo,
+    redo,
+    applyAutoLayout,
+
+    // State
+    canUndo,
+    canRedo,
 
     // Helpers
     KIND_TO_VF_TYPE,

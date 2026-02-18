@@ -25,9 +25,13 @@
   const ownedApps = computed(() => orderedApplications.value.filter((a) => isOwnedByMe(a.orgId)))
   const sharedApps = computed(() => orderedApplications.value.filter((a) => !isOwnedByMe(a.orgId)))
 
+  const { wp } = useWorkspacePath()
+
   const selectApp = async (app: Application) => {
     currentApp.value = app
     const orgForApp = organizations.value.find((o) => o.id === app.orgId)
+
+    // Update query params for context sync
     await router.replace({
       query: {
         ...route.query,
@@ -35,6 +39,10 @@
         ...(orgForApp?.slug ? { org: orgForApp.slug } : {}),
       },
     })
+
+    // Navigate to the welcome page for the new world
+    await nextTick()
+    await navigateTo(wp('/workspace/welcome'))
   }
 </script>
 

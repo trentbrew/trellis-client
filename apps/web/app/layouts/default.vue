@@ -3,10 +3,17 @@
   import { getSidebarSection, getCleanPath } from '~/config/routes'
 
   // Builder mode visual wrapper + role checks
-  const { isInEditMode: _isInEditMode, isAdmin: showIconRail } = useAdminUI()
+  const { isInEditMode: _isInEditMode } = useAdminUI()
+  const { user: _railUser } = useInstantAuth()
+  const showIconRail = computed(() => !!_railUser.value)
+  const { sidebarDisabled } = usePageShell()
+  const sidebarCollapse = useSidebarCollapse()
+  // Sidebar is hidden when the page explicitly disables it OR the route forces it closed
+  const showSidebar = computed(() => !sidebarDisabled.value && !sidebarCollapse.isForcedCollapsed.value)
 
   // Layout preference toggle
-  const { headerAboveSidebar } = useLayoutPreferences()
+  const { headerAboveSidebar, iconRailPosition } = useLayoutPreferences()
+  const railAtBottom = computed(() => iconRailPosition.value === 'bottom')
 
   const commandDialog = useCommandDialog()
   const routes = useRoutes()
@@ -182,7 +189,7 @@
 <template>
   <!-- Root: full-height row so right sidebar is adjacent to the entire layout -->
   <div
-    class="bg-background text-foreground flex h-dvh overflow-hidden transition-shadow duration-300"
+    class="bg-background text-foreground flex h-dvh overflow-hidden transition-shadow duration-500"
     :style="{ '--right-sidebar-width': rightSidebarCssWidth }">
     <!-- App body: icon rail + sidebar + content + right sidebar -->
     <div class="flex flex-1 min-h-0 overflow-hidden">
@@ -218,27 +225,48 @@
       <!-- Layout Mode A: Header above sidebar (spans sidebar + content) -->
       <template v-if="headerAboveSidebar">
         <div class="flex flex-1 flex-col min-w-0 overflow-hidden">
-          <AppHeader :above-sidebar="true" @toggle-right-sidebar="toggleRightSidebar" />
-          <div class="flex flex-1 min-h-0 overflow-hidden">
-            <IconRail v-if="showIconRail" />
-            <AppSidebar :header-above="true" />
-            <div class="flex flex-1 flex-col min-w-0 overflow-hidden">
-              <main
-                ref="pageEl"
-                class="page-transition-wrapper bg-transparent flex-1 overflow-y-auto p-0 relative"
-                aria-label="Main content">
-                <slot />
-              </main>
+          <AppHeader :above-sidebar="true" :hide-presence-controls="railAtBottom" @toggle-right-sidebar="toggleRightSidebar" />
+          <div class="flex flex-1 min-h-0 overflow-hidden p-2.5 pt-0 rounded-lg">
+            <div class="flex flex-1 min-h-0 overflow-hidden bg-transparent rounded-lg">
+              <!-- Left rail (default) -->
+              <IconRail
+                v-if="showIconRail && !railAtBottom"
+                position="left"
+                class="bg-card/75! mr-2.5 border rounded-lg" />
+              <div class="bg-card/50! border flex flex-1 min-w-0 overflow-hidden rounded-xl flex-col">
+                <div class="flex flex-1 min-h-0 overflow-hidden">
+                  <AppSidebar v-if="showSidebar" :header-above="true" class="bg-background" />
+                  <div class="flex flex-1 flex-col min-w-0 overflow-hidden p-2.5" :class="showSidebar ? 'pl-0' : 'pl-2.5'">
+                    <main
+                      ref="pageEl"
+                      class="page-transition-wrapper bg-card/75 rounded-lg flex-1 overflow-y-auto p-0 border relative"
+                      aria-label="Main content">
+                      <slot />
+                    </main>
+                  </div>
+                </div>
+              </div>
             </div>
+          </div>
+          <!-- Bottom rail -->
+          <div class="p-2.5 pt-0">
+            <IconRail
+              v-if="showIconRail && railAtBottom"
+              position="bottom"
+              class="bg-card/0 rounded-xl shrink-0" />
           </div>
         </div>
       </template>
 
       <!-- Layout Mode B: Default (header inside content column only) -->
       <template v-else>
-        <AppSidebar :header-above="false" />
+        <!-- Left rail (default) -->
+        <IconRail v-if="showIconRail && !railAtBottom" position="left" />
+        <AppSidebar v-if="showSidebar" :header-above="false" />
+        <!-- Gap when sidebar is hidden (forced-collapsed or page-disabled) -->
+        <div v-if="!showSidebar" class="w-2.5 shrink-0" />
         <div class="flex flex-1 flex-col min-w-0 overflow-hidden">
-          <AppHeader :above-sidebar="false">
+          <AppHeader :above-sidebar="false" :hide-presence-controls="railAtBottom">
             <!-- Right sidebar trigger in header -->
             <template #actions>
               <UiButton
@@ -259,6 +287,11 @@
               <slot />
             </main>
           </div>
+          <!-- Bottom rail -->
+          <IconRail
+            v-if="showIconRail && railAtBottom"
+            position="bottom"
+            class="bg-card mt-2.5 rounded-xl shrink-0" />
         </div>
       </template>
 
@@ -269,46 +302,49 @@
     <!-- Global Right Sidebar: teleported to body to ensure it sits above portaled dialogs -->
     <Teleport to="body">
       <Transition name="sidebar-slide">
-        <aside
-          v-if="isRightSidebarOpen"
-          data-slot="right-sidebar"
-          class="fixed right-0 top-0 bottom-0 border-l border-border bg-card/50 shrink-0 overflow-y-auto flex flex-col z-999"
-          :style="{ width: `${rightSidebarWidth}px` }"
-          :class="{ 'select-none': isResizingRightSidebar }"
-          aria-label="Right sidebar">
-        <!-- Drag handle -->
         <div
-          class="absolute left-0 top-0 bottom-0 w-1 cursor-col-resize hover:bg-primary/30 active:bg-primary/50 transition-colors z-10"
-          @mousedown.prevent="startRightSidebarResize"
-        />
-        <!-- Tabs Header - matches AppHeader h-14 height -->
-        <div class="h-14 shrink-0 border-b border-border bg-card/50 flex items-center px-2">
-          <UiTabs v-model="activeSidebarTab" class="w-full">
-            <UiTabsList class="w-full grid grid-cols-3 bg-transparent p-0 gap-1">
-              <UiTabsTrigger
-                v-for="tab in sidebarTabs"
-                :key="tab.id"
-                :value="tab.id"
-                class="flex items-center justify-center gap-1.5 py-2 text-xs font-medium data-[state=active]:bg-background data-[state=active]:shadow-sm rounded-md transition-all">
-                <Icon :name="tab.icon" class="h-3.5 w-3.5" />
-                <span>{{ tab.label }}</span>
-              </UiTabsTrigger>
-            </UiTabsList>
-          </UiTabs>
+          v-if="isRightSidebarOpen"
+          class="fixed right-0 top-0 bottom-0 p-2.5 pl-0 z-999"
+          :style="{ width: `${rightSidebarWidth}px` }">
+          <aside
+            data-slot="right-sidebar"
+            class="h-full border border-border bg-card/75 rounded-xl shrink-0 overflow-hidden flex flex-col shadow-lg"
+            :class="{ 'select-none': isResizingRightSidebar }"
+            aria-label="Right sidebar">
+            <!-- Drag handle -->
+            <div
+              class="absolute left-0 top-0 bottom-0 w-1 cursor-col-resize hover:bg-primary/30 active:bg-primary/50 transition-colors z-10"
+              @mousedown.prevent="startRightSidebarResize"
+            />
+            <!-- Tabs Header - matches AppHeader h-14 height -->
+            <div class="h-14 shrink-0 border-b border-border bg-card/50 flex items-center px-2 rounded-t-xl">
+              <UiTabs v-model="activeSidebarTab" class="w-full">
+                <UiTabsList class="w-full grid grid-cols-3 bg-transparent p-0 gap-1">
+                  <UiTabsTrigger
+                    v-for="tab in sidebarTabs"
+                    :key="tab.id"
+                    :value="tab.id"
+                    class="flex items-center justify-center gap-1.5 py-2 text-xs font-medium data-[state=active]:bg-background data-[state=active]:shadow-sm rounded-md transition-all">
+                    <Icon :name="tab.icon" class="h-3.5 w-3.5" />
+                    <span>{{ tab.label }}</span>
+                  </UiTabsTrigger>
+                </UiTabsList>
+              </UiTabs>
+            </div>
+            <div class="p-4 flex-1 overflow-y-auto">
+              <!-- Tab Content -->
+              <div v-if="activeSidebarTab === 'schedule'">
+                <slot name="right-sidebar" />
+              </div>
+              <div v-else-if="activeSidebarTab === 'messages'" class="text-sm text-muted-foreground text-center py-8">
+                Messages coming soon
+              </div>
+              <div v-else-if="activeSidebarTab === 'agent'" class="text-sm text-muted-foreground text-center py-8">
+                Agent coming soon
+              </div>
+            </div>
+          </aside>
         </div>
-        <div class="p-4 flex-1 overflow-y-auto">
-          <!-- Tab Content -->
-          <div v-if="activeSidebarTab === 'schedule'">
-            <slot name="right-sidebar" />
-          </div>
-          <div v-else-if="activeSidebarTab === 'messages'" class="text-sm text-muted-foreground text-center py-8">
-            Messages coming soon
-          </div>
-          <div v-else-if="activeSidebarTab === 'agent'" class="text-sm text-muted-foreground text-center py-8">
-            Agent coming soon
-          </div>
-        </div>
-        </aside>
       </Transition>
     </Teleport>
 
