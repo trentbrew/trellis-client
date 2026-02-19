@@ -383,5 +383,35 @@ export default defineEventHandler(async (event) => {
     }
   }
 
+  // ─── DELETE /api/graph/purge ────────────────────────────────────────
+  // Deletes all user entity nodes (entity: prefix). Preserves ontologies,
+  // system nodes, and kernel structure. Admin-only operation.
+  if (method === 'DELETE' && route === 'purge') {
+    const body = await readBody(event).catch(() => ({}))
+    const agent: string = body?.agentId || 'browser'
+
+    const store = kernel.getStore()
+    const entityIds = new Set<string>()
+    for (const fact of store.getAllFacts()) {
+      if (fact.e.startsWith('entity:')) {
+        entityIds.add(fact.e)
+      }
+    }
+
+    let deleted = 0
+    for (const entityId of entityIds) {
+      try {
+        await kernel.deleteNode(entityId, { agentId: agent })
+        deleted++
+      } catch {
+        // skip nodes that fail (e.g. already gone)
+      }
+    }
+
+    pushMutationLog({ action: 'purge', data: { deleted } })
+    emitMutation({ action: 'purge', entityId: '*', agentId: agent, data: { deleted } })
+    return { ok: true, deleted }
+  }
+
   throw createError({ statusCode: 404, message: `Unknown graph API route: ${method} /api/graph/${path}` })
 })

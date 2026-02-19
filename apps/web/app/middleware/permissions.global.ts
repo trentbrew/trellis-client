@@ -15,7 +15,6 @@ import type { UserRole } from '~/config/routes'
 const ROUTE_PERMISSIONS: Record<string, { minRole: UserRole; permission: 'read' | 'write' | 'admin' }> = {
   '/database': { minRole: 'admin', permission: 'read' },
   '/graph': { minRole: 'admin', permission: 'read' },
-  '/marketplace': { minRole: 'admin', permission: 'read' },
   '/members': { minRole: 'admin', permission: 'admin' },
   '/settings/project': { minRole: 'admin', permission: 'admin' },
   '/settings/pages': { minRole: 'admin', permission: 'admin' },
@@ -27,6 +26,10 @@ const ROUTE_PERMISSIONS: Record<string, { minRole: UserRole; permission: 'read' 
 export default defineNuxtRouteMiddleware((to) => {
   // Only run on client
   if (!import.meta.client) return
+
+  // Local mode (self-hosted) — no login required, skip permissions entirely
+  const dataMode = useRuntimeConfig().public.dataMode || 'local'
+  if (dataMode === 'local') return
 
   const path = to.path
 

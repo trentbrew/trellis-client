@@ -530,75 +530,6 @@ const messagesRoute: RouteDefinition = {
 }
 
 // ============================================================================
-// Marketplace Route — /marketplace
-// ============================================================================
-
-const marketplaceRoute: RouteDefinition = {
-  '@id': 'route:marketplace',
-  '@type': 'trellis:Route',
-  routePath: '/marketplace',
-  label: 'Marketplace',
-  icon: 'lucide:store',
-  order: 38,
-  inRail: true,
-  railPosition: 'primary',
-  inCommandPalette: true,
-  requiresAuth: true,
-  permissions: { minRole: 'admin', permission: 'read' },
-  meta: {
-    title: 'Marketplace',
-    description: 'Browse and install workspace templates',
-  },
-  sidebarSections: [
-    {
-      label: 'BROWSE',
-      key: 'marketplace-browse',
-      icon: 'lucide:compass',
-      collapsible: true,
-      order: 10,
-      items: [
-        { routePath: '/marketplace', label: 'All Templates', icon: 'lucide:layout-grid' },
-        { routePath: '/marketplace/featured', label: 'Featured', icon: 'lucide:star' },
-      ],
-    },
-    {
-      label: 'CATEGORIES',
-      key: 'marketplace-categories',
-      icon: 'lucide:tag',
-      collapsible: true,
-      order: 20,
-      items: [
-        { routePath: '/marketplace/category/utilities', label: 'Utilities', icon: 'lucide:wrench' },
-        { routePath: '/marketplace/category/project-management', label: 'Project Management', icon: 'lucide:folder-kanban' },
-        { routePath: '/marketplace/category/finance', label: 'Finance', icon: 'lucide:wallet' },
-        { routePath: '/marketplace/category/education', label: 'Education', icon: 'lucide:graduation-cap' },
-        { routePath: '/marketplace/category/crm', label: 'CRM', icon: 'lucide:users' },
-      ],
-    },
-    {
-      label: 'INSTALLED',
-      key: 'marketplace-installed',
-      icon: 'lucide:check-circle',
-      collapsible: true,
-      order: 30,
-      items: [
-        { routePath: '/marketplace/installed', label: 'My Templates', icon: 'lucide:package-check' },
-      ],
-    },
-  ],
-  children: [
-    {
-      '@id': 'route:marketplace/index',
-      '@type': 'trellis:Route',
-      routePath: '/marketplace',
-      label: 'All Templates',
-      icon: 'lucide:layout-grid',
-      meta: { title: 'Marketplace', description: 'Browse workspace templates' },
-    },
-  ],
-}
-
-// ============================================================================
 // Workflows Route — /workflows
 // ============================================================================
 
@@ -664,7 +595,7 @@ const settingsRoute: RouteDefinition = {
   icon: 'lucide:settings',
   order: 42,
   inRail: true,
-  railPosition: 'primary',
+  railPosition: 'secondary',
   inCommandPalette: true,
   requiresAuth: true,
   meta: {
@@ -673,36 +604,54 @@ const settingsRoute: RouteDefinition = {
   },
   sidebarSections: [
     {
-      label: 'SETTINGS',
-      key: 'settings',
-      icon: 'lucide:settings',
+      label: 'WORKSPACE',
+      key: 'settings-workspace',
+      icon: 'lucide:building-2',
       collapsible: true,
       order: 10,
       items: [
         { routePath: '/settings/project', label: 'Project', icon: 'lucide:folder' },
-        { routePath: '/settings/profile', label: 'Profile', icon: 'lucide:user' },
         { routePath: '/settings/members', label: 'Members', icon: 'lucide:users-round' },
+        { routePath: '/settings/roles', label: 'Roles', icon: 'lucide:shield' },
+        { routePath: '/settings/branding', label: 'Branding', icon: 'lucide:sparkles' },
+      ],
+    },
+    {
+      label: 'PREFERENCES',
+      key: 'settings-preferences',
+      icon: 'lucide:sliders-horizontal',
+      collapsible: true,
+      order: 20,
+      items: [
         { routePath: '/settings/appearance', label: 'Appearance', icon: 'lucide:paintbrush' },
         { routePath: '/settings/theme', label: 'Theme', icon: 'lucide:palette' },
         { routePath: '/settings/notifications', label: 'Notifications', icon: 'lucide:bell' },
-        { routePath: '/settings/pages', label: 'Pages', icon: 'lucide:book-open' },
-        { routePath: '/settings/integrations', label: 'Integrations', icon: 'lucide:plug' },
+        { routePath: '/settings/shortcuts', label: 'Keyboard Shortcuts', icon: 'lucide:keyboard' },
+      ],
+    },
+    {
+      label: 'EXTENSIONS',
+      key: 'settings-extensions',
+      icon: 'lucide:plug',
+      collapsible: true,
+      order: 30,
+      items: [
         { routePath: '/settings/marketplace', label: 'Marketplace', icon: 'lucide:store' },
-        { routePath: '/settings/branding', label: 'Branding', icon: 'lucide:sparkles' },
+        { routePath: '/settings/integrations', label: 'Integrations', icon: 'lucide:plug' },
       ],
     },
   ],
   children: [
     { '@id': 'route:settings/project', '@type': 'trellis:Route', routePath: '/settings/project', label: 'Project', icon: 'lucide:folder', permissions: { minRole: 'admin', permission: 'admin' }, meta: { title: 'Project Settings' } },
-    { '@id': 'route:settings/profile', '@type': 'trellis:Route', routePath: '/settings/profile', label: 'Profile', icon: 'lucide:user', meta: { title: 'Profile Settings' } },
     { '@id': 'route:settings/members', '@type': 'trellis:Route', routePath: '/settings/members', label: 'Members', icon: 'lucide:users-round', permissions: { minRole: 'admin', permission: 'admin' }, meta: { title: 'Members', sidebarSectionPath: '/settings' } },
+    { '@id': 'route:settings/roles', '@type': 'trellis:Route', routePath: '/settings/roles', label: 'Roles', icon: 'lucide:shield', permissions: { minRole: 'admin', permission: 'admin' }, meta: { title: 'Roles' } },
+    { '@id': 'route:settings/branding', '@type': 'trellis:Route', routePath: '/settings/branding', label: 'Branding', icon: 'lucide:sparkles', permissions: { minRole: 'admin', permission: 'admin' }, meta: { title: 'Branding' } },
     { '@id': 'route:settings/appearance', '@type': 'trellis:Route', routePath: '/settings/appearance', label: 'Appearance', icon: 'lucide:paintbrush', meta: { title: 'Appearance' } },
     { '@id': 'route:settings/theme', '@type': 'trellis:Route', routePath: '/settings/theme', label: 'Theme', icon: 'lucide:palette', meta: { title: 'Theme' } },
     { '@id': 'route:settings/notifications', '@type': 'trellis:Route', routePath: '/settings/notifications', label: 'Notifications', icon: 'lucide:bell', meta: { title: 'Notifications' } },
-    { '@id': 'route:settings/pages', '@type': 'trellis:Route', routePath: '/settings/pages', label: 'Pages', icon: 'lucide:book-open', permissions: { minRole: 'admin', permission: 'admin' }, meta: { title: 'Pages' } },
-    { '@id': 'route:settings/integrations', '@type': 'trellis:Route', routePath: '/settings/integrations', label: 'Integrations', icon: 'lucide:plug', permissions: { minRole: 'admin', permission: 'admin' }, meta: { title: 'Integrations' } },
+    { '@id': 'route:settings/shortcuts', '@type': 'trellis:Route', routePath: '/settings/shortcuts', label: 'Keyboard Shortcuts', icon: 'lucide:keyboard', meta: { title: 'Keyboard Shortcuts' } },
     { '@id': 'route:settings/marketplace', '@type': 'trellis:Route', routePath: '/settings/marketplace', label: 'Marketplace', icon: 'lucide:store', permissions: { minRole: 'admin', permission: 'admin' }, meta: { title: 'Marketplace' } },
-    { '@id': 'route:settings/branding', '@type': 'trellis:Route', routePath: '/settings/branding', label: 'Branding', icon: 'lucide:sparkles', permissions: { minRole: 'admin', permission: 'admin' }, meta: { title: 'Branding' } },
+    { '@id': 'route:settings/integrations', '@type': 'trellis:Route', routePath: '/settings/integrations', label: 'Integrations', icon: 'lucide:plug', permissions: { minRole: 'admin', permission: 'admin' }, meta: { title: 'Integrations' } },
   ],
 }
 
@@ -719,7 +668,6 @@ export function getRouteDefinitions(): Record<string, RouteDefinition> {
     'route:messages': messagesRoute,
     'route:database': databaseRoute,
     'route:graph': graphRoute,
-    'route:marketplace': marketplaceRoute,
     'route:workflows': workflowsRoute,
     'route:members': membersRoute,
     'route:settings': settingsRoute,
@@ -734,7 +682,6 @@ export {
   messagesRoute,
   databaseRoute,
   graphRoute,
-  marketplaceRoute,
   workflowsRoute,
   membersRoute,
   settingsRoute,

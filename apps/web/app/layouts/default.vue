@@ -253,7 +253,7 @@
             <IconRail
               v-if="showIconRail && railAtBottom"
               position="bottom"
-              class="bg-card/0 rounded-xl shrink-0" />
+              class="bg-card/0 border border-border/0 rounded-xl shrink-0" />
           </div>
         </div>
       </template>
@@ -308,7 +308,7 @@
           :style="{ width: `${rightSidebarWidth}px` }">
           <aside
             data-slot="right-sidebar"
-            class="h-full border border-border bg-card/75 rounded-xl shrink-0 overflow-hidden flex flex-col shadow-lg"
+            class="h-full border border-border/75 bg-card/75 rounded-xl shrink-0 overflow-hidden flex flex-col shadow-lg"
             :class="{ 'select-none': isResizingRightSidebar }"
             aria-label="Right sidebar">
             <!-- Drag handle -->

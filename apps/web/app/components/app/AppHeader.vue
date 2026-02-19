@@ -323,7 +323,7 @@
           <template v-if="onlineCount > 1 || workspaceUsers.some(u => u.isOnline && !u.isMe)">
             <div class="flex -space-x-1.5 px-0.5">
               <UiTooltip v-for="(u, index) in workspaceUsers" :key="u.id">
-                <UiTooltipTrigger as-child>
+                <UiTooltipTrigger as-child >
                   <div class="relative" :style="{ zIndex: workspaceUsers.length - index }">
                     <UiAvatar class="size-6 ring-2 ring-card grayscale-[0.3] transition-all hover:grayscale-0 hover:scale-110 cursor-pointer">
                       <UiAvatarImage v-if="u.avatar" :src="u.avatar" :alt="u.name" />
@@ -600,9 +600,9 @@
       <UiTooltip v-if="props.aboveSidebar">
         <UiTooltipTrigger as-child>
           <UiButton
-            variant="ghost"
+            variant="outline"
             size="icon-sm"
-            class="text-muted-foreground hover:text-foreground transition-transform active:scale-95 ml-1"
+            class="text-muted-foreground hover:text-foreground transition-transform active:scale-95 ml-1 rounded-full"
             @click="emit('toggleRightSidebar')">
             <Icon name="lucide:panel-right" class="h-4 w-4" />
           </UiButton>

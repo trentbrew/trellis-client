@@ -89,14 +89,15 @@
     aria-label="Navigation rail">
 
     <!-- Primary Navigation Routes -->
-    <div :class="['flex gap-1', isBottom ? 'flex-row px-1' : 'flex-col pt-3']">
+    <div :class="['flex gap-1.5', isBottom ? 'flex-row px-1 items-center' : 'flex-col pt-3']">
       <template v-for="route in routes.primaryRailRoutes.value" :key="route.path">
         <UiTooltip>
           <UiTooltipTrigger as-child>
             <AppNavLink
               :to="route.path"
-              class="group flex h-10 w-10 items-center justify-center rounded-xl transition"
+              class="group flex items-center justify-center rounded-full transition-all duration-200 ease-out overflow-hidden"
               :class="[
+                isBottom && routes.isRouteActive(route.path) ? 'h-8 px-3 gap-2' : 'h-8 w-8',
                 routes.isRouteActive(route.path)
                   ? isInEditMode
                     ? 'bg-accent-foreground/10 text-accent-foreground/80'
@@ -105,7 +106,20 @@
                     ? 'text-accent-foreground/70 hover:bg-accent-foreground/10 hover:text-accent-foreground'
                     : 'text-rail-foreground/70 hover:bg-rail-foreground/10 hover:text-rail-foreground',
               ]">
-              <Icon :name="route.icon" class="h-4 w-4 opacity-50" />
+              <Icon :name="route.icon" class="h-4 w-4 opacity-50 shrink-0" />
+              <Transition
+                enter-active-class="transition-all duration-200 ease-out"
+                enter-from-class="opacity-0 max-w-0"
+                enter-to-class="opacity-100 max-w-24"
+                leave-active-class="transition-all duration-150 ease-in"
+                leave-from-class="opacity-100 max-w-24"
+                leave-to-class="opacity-0 max-w-0">
+                <span
+                  v-if="isBottom && routes.isRouteActive(route.path)"
+                  class="text-xs font-medium whitespace-nowrap overflow-hidden">
+                  {{ route.label }}
+                </span>
+              </Transition>
             </AppNavLink>
           </UiTooltipTrigger>
           <UiTooltipContent :side="tooltipSide" :side-offset="8" :collision-padding="isBottom ? { bottom: 60 } : 0">{{ route.label }}</UiTooltipContent>
@@ -113,10 +127,7 @@
       </template>
     </div>
 
-    <!-- Spacer -->
-    <div class="flex-1" />
-
-    <!-- Secondary Navigation Routes -->
+    <!-- Secondary Navigation Routes (left of spacer in bottom mode) -->
     <div
       v-if="routes.secondaryRailRoutes.value?.length > 0"
       :class="['flex gap-1', isBottom ? 'flex-row px-1' : 'flex-col pb-2']">
@@ -143,6 +154,14 @@
       </template>
     </div>
 
+    <!-- Spacer -->
+    <div class="flex-1" />
+
+    <!-- Quick Capture -->
+    <div :class="['flex gap-1.5', isBottom ? 'flex-row px-1 items-center' : 'flex-col pb-1 items-center']">
+      <QuickCapturePopover :position="props.position" />
+    </div>
+
     <!-- Trailing dock: presence pill (bottom mode only) -->
     <template v-if="isBottom">
       <div class="flex items-center gap-1 pl-2 border-l border-border/40 ml-1">
@@ -151,7 +170,7 @@
           <UiTooltipTrigger as-child>
             <AppNavLink
               to="/settings/members"
-              class="flex items-center rounded-full border border-border bg-card/10 px-1 py-1 gap-1 hover:bg-card/20 transition-colors">
+              class="flex items-center rounded-full border border-border bg-card/10 px-2 py-1 gap-1 hover:bg-card/20 transition-colors">
               <!-- Avatars -->
               <div class="flex -space-x-1.5 px-0.5">
                 <div
@@ -172,13 +191,15 @@
               <!-- Online count -->
               <div class="px-2 border-l ml-0.5 flex flex-col justify-center h-5">
                 <p class="text-[10px] leading-none font-bold text-foreground/80 tabular-nums">
-                  {{ onlineCount }}<span class="text-muted-foreground font-medium uppercase tracking-tighter">/{{ totalMembers }} online</span>
+                  <!-- {{ onlineCount }}<span class="text-muted-foreground font-medium uppercase tracking-tighter">/{{ totalMembers }} online</span> -->
+                  {{ onlineCount }}<span class="text-muted-foreground font-medium uppercase tracking-tighter"> online</span>
                 </p>
               </div>
               <!-- Manage / Invite divider -->
-              <div v-if="canManageMembers" class="border-l border-border/40 pl-1.5 pr-1 flex items-center">
+              <UiButton variant="outline" size="xs" v-if="canManageMembers" class="border-l border-border/40 pl-1.5 pr-1 flex items-center rounded-full">
                 <Icon name="lucide:user-plus" class="h-3.5 w-3.5 text-muted-foreground" />
-              </div>
+                <span>Invite</span>
+              </UiButton>
             </AppNavLink>
           </UiTooltipTrigger>
           <UiTooltipContent side="top" :side-offset="8" :collision-padding="{ bottom: 60 }">Manage members</UiTooltipContent>

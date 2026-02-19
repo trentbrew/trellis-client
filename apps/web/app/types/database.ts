@@ -444,6 +444,7 @@ export interface Channel {
   slug?: string
   description?: string
   icon?: string
+  folder?: string
   memberIds?: string[]
   entityId?: string
   lastMessageAt?: number
@@ -481,4 +482,54 @@ export interface ChatNotificationPref {
   level: ChatNotificationLevel
   soundEnabled?: boolean
   desktopEnabled?: boolean
+}
+
+// ============================================================================
+// Integrations
+// ============================================================================
+
+export type IntegrationCategory = 'data' | 'auth' | 'communication' | 'storage' | 'automation' | 'analytics'
+export type IntegrationAuthType = 'oauth' | 'api_key' | 'webhook' | 'none'
+export type IntegrationSyncDirection = 'import' | 'export' | 'bidirectional'
+export type IntegrationDefinitionStatus = 'available' | 'beta' | 'deprecated'
+export type IntegrationConnectionStatus = 'connected' | 'error' | 'configuring' | 'disconnected'
+
+export interface IntegrationDefinition {
+  id: string
+  title: string
+  description?: string
+  provider: string
+  category: IntegrationCategory
+  authType: IntegrationAuthType
+  icon?: string
+  color?: string
+  features?: string[]
+  docsUrl?: string
+  webhookSupport?: boolean
+  pushNotificationSupport?: boolean
+  enrichmentSupport?: boolean
+  syncDirection?: IntegrationSyncDirection
+  requiredScopes?: string[]
+  configSchema?: string
+  integrationStatus?: IntegrationDefinitionStatus
+}
+
+export interface IntegrationConnection {
+  id: string
+  title: string
+  integrationId: string
+  userId: string
+  connectionStatus: IntegrationConnectionStatus
+  connectedAt?: string
+  lastSyncAt?: string
+  syncEnabled?: boolean
+  syncIntervalMs?: number
+  accountEmail?: string
+  accountName?: string
+  config?: string
+  credentialsRef?: string
+  watchChannelId?: string
+  watchExpiration?: string
+  errorMessage?: string
+  syncedEntityCount?: number
 }

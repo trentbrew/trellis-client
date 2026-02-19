@@ -1,5 +1,5 @@
 import type { Entity, EntityType, EntityReference } from '~/types/entity'
-import { extractYmd } from '~/utils/date'
+import { extractYmd, todayYmdLocal } from '~/utils/date'
 import { ENTITY_NAMESPACE, entityId as toEntityId, stripNamespace, entityQuery } from '~/lib/tql-namespace'
 import type { DataAdapter } from '~/lib/data-adapter'
 
@@ -261,8 +261,10 @@ export function useTrellisEntities() {
         orgId: orgId || undefined,
         visibility: (data as any).visibility || 'org',
         involved: (data as any).involved?.length ? (data as any).involved : [ownerId],
-        startDate: extractYmd((data as any).startDate),
+        startDate: extractYmd((data as any).startDate) || todayYmdLocal(new Date()),
         endDate: extractYmd((data as any).endDate) || undefined,
+        allDay: (data as any).allDay ?? true,
+        priority: (data as any).priority || 'medium',
         createdAt: now,
         updatedAt: now,
       }),
@@ -366,17 +368,41 @@ export function useTrellisEntities() {
 
   const useAdapter = adapter.entityBackend === 'adapter'
 
-  const create = useAdapter ? createViaAdapter : createViaTql
-  const update = useAdapter ? updateViaAdapter : updateViaTql
-  const remove = useAdapter ? removeViaAdapter : removeViaTql
+  const _create = useAdapter ? createViaAdapter : createViaTql
+  const _update = useAdapter ? updateViaAdapter : updateViaTql
+  const _remove = useAdapter ? removeViaAdapter : removeViaTql
+
+  // Read-only guard: prevent mutation of externally synced entities (e.g. Google Calendar)
+  function isReadOnlyEntity(itemOrId: Entity | string): boolean {
+    const id = typeof itemOrId === 'string' ? itemOrId : itemOrId.id
+    const item = items.value.find((i) => i.id === id)
+    return (item as any)?.source === 'google-calendar'
+  }
+
+  async function update(item: Entity) {
+    if (isReadOnlyEntity(item)) {
+      console.warn('[useTrellisEntities] Cannot edit a Google Calendar synced event. Use the enrichment layer instead.')
+      return
+    }
+    return _update(item)
+  }
+
+  async function remove(itemId: string) {
+    if (isReadOnlyEntity(itemId)) {
+      console.warn('[useTrellisEntities] Cannot delete a Google Calendar synced event.')
+      return
+    }
+    return _remove(itemId)
+  }
 
   return {
     items,
     loading: _loading,
     byType,
-    create,
+    create: _create,
     update,
     remove,
+    isReadOnlyEntity,
   }
 }
 

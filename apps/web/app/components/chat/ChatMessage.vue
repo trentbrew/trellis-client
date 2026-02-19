@@ -28,7 +28,7 @@
 <template>
   <div
     class="group relative flex gap-3 px-4 py-0.5 hover:bg-muted/30 transition-colors"
-    :class="{ 'pt-3': !isGrouped }"
+    :class="{ 'pt-4': !isGrouped, 'mt-0.5': isGrouped }"
     @mouseenter="showHover = true"
     @mouseleave="showHover = false"
   >
@@ -42,10 +42,10 @@
           </UiAvatarFallback>
         </UiAvatar>
       </template>
-      <!-- Timestamp on hover for grouped messages -->
+      <!-- Timestamp always visible for grouped messages -->
       <span
         v-else
-        class="text-[10px] text-muted-foreground/50 opacity-0 group-hover:opacity-100 transition-opacity leading-9 block text-right"
+        class="text-[10px] text-muted-foreground/35 leading-9 block text-right select-none"
       >
         {{ formatTime(message.createdAt) }}
       </span>
@@ -62,7 +62,7 @@
 
       <!-- Message body -->
       <div
-        class="text-sm leading-relaxed text-foreground/90 wrap-break-word"
+        class="chat-prose text-sm leading-relaxed text-foreground/90 wrap-break-word"
         v-html="message.content"
       />
 
@@ -155,5 +155,83 @@
 .fade-enter-from,
 .fade-leave-to {
   opacity: 0;
+}
+
+/* Rich text message body */
+.chat-prose :deep(p) {
+  margin: 0 0 0.25em;
+}
+.chat-prose :deep(p:last-child) {
+  margin-bottom: 0;
+}
+.chat-prose :deep(strong) {
+  font-weight: 600;
+  color: var(--foreground);
+}
+.chat-prose :deep(em) {
+  font-style: italic;
+}
+.chat-prose :deep(s) {
+  text-decoration: line-through;
+  opacity: 0.7;
+}
+.chat-prose :deep(code) {
+  font-family: 'JetBrainsMono', ui-monospace, monospace;
+  font-size: 0.8em;
+  background: var(--muted);
+  border: 1px solid var(--border);
+  border-radius: 0.25rem;
+  padding: 0.1em 0.3em;
+}
+.chat-prose :deep(pre) {
+  background: var(--muted);
+  border: 1px solid var(--border);
+  border-radius: 0.375rem;
+  padding: 0.5rem 0.75rem;
+  overflow-x: auto;
+  margin: 0.375rem 0;
+}
+.chat-prose :deep(pre code) {
+  background: none;
+  border: none;
+  padding: 0;
+  font-size: 0.8em;
+}
+.chat-prose :deep(blockquote) {
+  border-left: 2px solid var(--border);
+  padding-left: 0.625rem;
+  color: var(--muted-foreground);
+  margin: 0.25rem 0;
+}
+.chat-prose :deep(ul),
+.chat-prose :deep(ol) {
+  padding-left: 1.25rem;
+  margin: 0.25rem 0;
+}
+.chat-prose :deep(li) {
+  margin: 0.1rem 0;
+}
+.chat-prose :deep(img) {
+  max-width: 100%;
+  max-height: 320px;
+  border-radius: 0.375rem;
+  margin: 0.375rem 0;
+  display: block;
+}
+.chat-prose :deep(a) {
+  color: var(--primary);
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+/* Mention chip */
+.chat-prose :deep(.mention) {
+  display: inline-flex;
+  align-items: center;
+  background: color-mix(in oklch, var(--primary) 12%, transparent);
+  color: var(--primary);
+  border-radius: 0.25rem;
+  padding: 0 0.3em;
+  font-weight: 500;
+  font-size: 0.9em;
 }
 </style>

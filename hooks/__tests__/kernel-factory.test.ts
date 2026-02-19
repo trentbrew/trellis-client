@@ -58,6 +58,35 @@ describe('Kernel Factory', () => {
     kernel2.close();
   });
 
+  it('updateNode preserves domain type facts', async () => {
+    const backend = new JsonlKernelBackend({ filename: opsPath });
+    const kernel = new TrellisKernel({ backend, autoReplay: true });
+
+    // Create a node with EAV type 'entity' and domain type 'integration_connection'
+    await kernel.createNode('entity:conn-1', {
+      type: 'integration_connection',
+      title: 'GCal Connection',
+      connectionStatus: 'connected',
+    }, 'entity');
+
+    // Partial update — should NOT strip domain type
+    await kernel.updateNode('entity:conn-1', {
+      lastSyncAt: '2026-02-18T00:00:00Z',
+    }, 'entity');
+
+    // Verify domain type is preserved
+    const result = kernel.query(
+      'FIND entity AS ?c WHERE ?c.type = "integration_connection" RETURN ?c.title, ?c.connectionStatus, ?c.lastSyncAt',
+    );
+    const resolved = result instanceof Promise ? await result : result;
+    expect(resolved.rows.length).toBe(1);
+    expect((resolved.rows[0] as any)['?c.title']).toBe('GCal Connection');
+    expect((resolved.rows[0] as any)['?c.connectionStatus']).toBe('connected');
+    expect((resolved.rows[0] as any)['?c.lastSyncAt']).toBe('2026-02-18T00:00:00Z');
+
+    kernel.close();
+  });
+
   it('checkpoint + restore from snapshot speeds up boot', async () => {
     const backend1 = new JsonlKernelBackend({ filename: opsPath });
     const kernel1 = new TrellisKernel({ backend: backend1, autoReplay: true });
