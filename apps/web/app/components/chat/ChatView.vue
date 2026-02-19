@@ -37,16 +37,18 @@
 </script>
 
 <template>
-  <div class="flex flex-col h-full">
+  <div class="flex flex-col h-full overflow-hidden">
     <!-- Header -->
-    <ChatChannelHeader
-      :channel="channel"
-      @mute="muteChannel(channel.id)"
-      @unmute="unmuteChannel(channel.id)"
-    />
+    <div class="shrink-0 sticky top-0 z-20">
+      <ChatChannelHeader
+        :channel="channel"
+        @mute="muteChannel(channel.id)"
+        @unmute="unmuteChannel(channel.id)"
+      />
+    </div>
 
     <!-- Message list -->
-    <div class="relative flex-1 min-h-0">
+    <div class="relative flex-1 min-h-0 overflow-hidden">
       <ChatMessageList
         :messages="messages"
         :loading="loading"
@@ -63,6 +65,7 @@
     <ChatTypingIndicator :typing-users="typingUsers" />
 
     <!-- Input -->
+    <div class="shrink-0 relative z-20">
     <ChatInput
       :channel-id="channel.id"
       :reply-to="replyTo"
@@ -70,5 +73,6 @@
       @send="handleSend"
       @cancel-reply="replyTo = null"
     />
+    </div>
   </div>
 </template>

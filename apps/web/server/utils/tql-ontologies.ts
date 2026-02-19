@@ -598,7 +598,7 @@ const entityOntology: SchemaDefinition = {
   version: '1.0.0',
   tier: 'system',
   fields: [
-    f('type', 'select', { required: true, selectOptions: ['task', 'event', 'trip', 'payment', 'note', 'appointment', 'reminder', 'deadline', 'milestone', 'sprint', 'budget', 'bookmark', 'file', 'page', 'template', 'slide_deck', 'diagram', 'person', 'contact', 'organization', 'vendor', 'project', 'folder', 'collection', 'goal'] }),
+    f('type', 'select', { required: true, selectOptions: ['task', 'event', 'trip', 'payment', 'note', 'appointment', 'reminder', 'deadline', 'milestone', 'sprint', 'budget', 'bookmark', 'file', 'page', 'template', 'slide_deck', 'diagram', 'person', 'contact', 'organization', 'vendor', 'project', 'folder', 'collection', 'goal', 'integration_definition', 'integration_connection'] }),
     f('title', 'title', { required: true }),
     f('description', 'rich_text'),
     f('startDate', 'date'),
@@ -635,6 +635,43 @@ const entityOntology: SchemaDefinition = {
     f('confirmationNumber', 'rich_text'),
     f('tripStatus', 'select', { selectOptions: ['planning', 'booked', 'in-progress', 'completed', 'cancelled'] }),
     f('checklistContent', 'rich_text'),
+    // Integration fields (shared across integration_definition + integration_connection entities)
+    f('provider', 'rich_text'),
+    f('authType', 'select', { selectOptions: ['oauth', 'api_key', 'webhook', 'none'] }),
+    f('icon', 'rich_text'),
+    f('color', 'rich_text'),
+    f('features', 'multi_select'),
+    f('docsUrl', 'url'),
+    f('webhookSupport', 'checkbox'),
+    f('pushNotificationSupport', 'checkbox'),
+    f('enrichmentSupport', 'checkbox'),
+    f('syncDirection', 'select', { selectOptions: ['import', 'export', 'bidirectional'] }),
+    f('requiredScopes', 'multi_select'),
+    f('configSchema', 'rich_text'),
+    f('integrationStatus', 'select', { selectOptions: ['available', 'beta', 'deprecated'] }),
+    f('integrationId', 'rich_text'),
+    f('userId', 'rich_text'),
+    f('connectionStatus', 'select', { selectOptions: ['connected', 'error', 'configuring', 'disconnected'] }),
+    f('connectedAt', 'date'),
+    f('lastSyncAt', 'date'),
+    f('syncEnabled', 'checkbox'),
+    f('syncIntervalMs', 'number'),
+    f('accountEmail', 'email'),
+    f('accountName', 'rich_text'),
+    f('config', 'rich_text'),
+    f('credentialsRef', 'rich_text'),
+    f('watchChannelId', 'rich_text'),
+    f('watchExpiration', 'date'),
+    f('errorMessage', 'rich_text'),
+    f('syncedEntityCount', 'number'),
+    // Google Calendar sync fields (for synced event entities)
+    f('source', 'rich_text'),
+    f('googleEventId', 'rich_text'),
+    f('googleCalendarId', 'rich_text'),
+    f('htmlLink', 'url'),
+    f('googleStatus', 'rich_text'),
+    f('googleUpdatedAt', 'rich_text'),
+    f('gcalDeleted', 'checkbox'),
   ],
 }
 
@@ -692,6 +729,80 @@ const entityTypeOntologies: Record<string, SchemaDefinition> = {
   'trellis:schema/folder': folderOntology,
   'trellis:schema/collection': collectionOntology,
   'trellis:schema/goal': goalOntology,
+}
+
+// ============================================================================
+// Integration Ontologies — catalog + live connections
+// ============================================================================
+
+const integrationDefinitionOntology: SchemaDefinition = {
+  '@id': 'trellis:schema/integration_definition', '@type': 'trellis:Schema', version: '1.0.0', tier: 'system',
+  entityClass: 'container', label: 'Integration', labelPlural: 'Integrations',
+  icon: 'lucide:plug', color: 'violet',
+  projections: ['list', 'card-grid'],
+  defaultProjection: 'card-grid',
+  searchFields: ['title', 'description', 'provider'],
+  fields: [
+    f('title', 'title', { required: true }),
+    f('description', 'rich_text'),
+    f('provider', 'rich_text', { required: true }),
+    f('category', 'select', {
+      selectOptions: ['data', 'auth', 'communication', 'storage', 'automation', 'analytics'],
+      required: true,
+      icon: 'lucide:tag', group: 'classification', display: 'popover', editable: true,
+    }),
+    f('authType', 'select', {
+      selectOptions: ['oauth', 'api_key', 'webhook', 'none'],
+      required: true,
+      icon: 'lucide:key', group: 'classification', display: 'popover', editable: true,
+    }),
+    f('icon', 'rich_text'),
+    f('color', 'rich_text'),
+    f('features', 'multi_select'),
+    f('docsUrl', 'url'),
+    f('webhookSupport', 'checkbox'),
+    f('pushNotificationSupport', 'checkbox'),
+    f('enrichmentSupport', 'checkbox'),
+    f('syncDirection', 'select', { selectOptions: ['import', 'export', 'bidirectional'] }),
+    f('requiredScopes', 'multi_select'),
+    f('configSchema', 'rich_text'),
+    f('integrationStatus', 'select', {
+      selectOptions: ['available', 'beta', 'deprecated'],
+      defaultValue: 'available',
+    }),
+  ],
+}
+
+const integrationConnectionOntology: SchemaDefinition = {
+  '@id': 'trellis:schema/integration_connection', '@type': 'trellis:Schema', version: '1.0.0', tier: 'system',
+  entityClass: 'container', label: 'Integration Connection', labelPlural: 'Integration Connections',
+  icon: 'lucide:link', color: 'green',
+  projections: ['list'],
+  defaultProjection: 'list',
+  searchFields: ['title', 'integrationId'],
+  fields: [
+    f('title', 'title', { required: true }),
+    f('integrationId', 'rich_text', { required: true }),
+    f('userId', 'rich_text', { required: true }),
+    f('connectionStatus', 'select', {
+      selectOptions: ['connected', 'error', 'configuring', 'disconnected'],
+      required: true,
+      defaultValue: 'configuring',
+      icon: 'lucide:circle-dot', group: 'triage', display: 'popover', editable: true,
+    }),
+    f('connectedAt', 'date'),
+    f('lastSyncAt', 'date'),
+    f('syncEnabled', 'checkbox', { defaultValue: true }),
+    f('syncIntervalMs', 'number', { defaultValue: 900000 }),
+    f('accountEmail', 'email'),
+    f('accountName', 'rich_text'),
+    f('config', 'rich_text'),
+    f('credentialsRef', 'rich_text'),
+    f('watchChannelId', 'rich_text'),
+    f('watchExpiration', 'date'),
+    f('errorMessage', 'rich_text'),
+    f('syncedEntityCount', 'number'),
+  ],
 }
 
 // ============================================================================
@@ -760,6 +871,9 @@ export function createWorkspaceConfig(): WorkspaceConfig {
         // Chat ontologies
         'trellis:schema/channel': channelOntology,
         'trellis:schema/message': messageOntology,
+        // Integration ontologies
+        'trellis:schema/integration_definition': integrationDefinitionOntology,
+        'trellis:schema/integration_connection': integrationConnectionOntology,
         // Per-type ontologies (all 22 entity types)
         ...entityTypeOntologies,
       },
@@ -836,4 +950,6 @@ export {
   sprintOntology,
   budgetOntology,
   diagramOntology,
+  integrationDefinitionOntology,
+  integrationConnectionOntology,
 }

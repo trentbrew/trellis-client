@@ -304,6 +304,7 @@ const _schema = i.schema({
       slug: i.string().indexed().optional(),
       description: i.string().optional(),
       icon: i.string().optional(),
+      folder: i.string().indexed().optional(), // folder name for grouping channels
       memberIds: i.json().optional(),       // string[] — for DMs and private channels
       entityId: i.string().indexed().optional(), // for entity-scoped threads
       lastMessageAt: i.number().indexed().optional(),

@@ -16,7 +16,7 @@
 </script>
 
 <template>
-  <div class="flex h-full">
+  <div class="flex h-full overflow-hidden">
     <!-- Loading state -->
     <div v-if="loading" class="flex-1 flex items-center justify-center">
       <Icon name="lucide:loader-2" class="h-6 w-6 animate-spin text-muted-foreground/40" />

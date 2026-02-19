@@ -99,7 +99,7 @@
 <template>
   <div
     ref="listRef"
-    class="flex-1 overflow-y-auto"
+    class="h-full overflow-y-auto"
     @scroll="onScroll"
   >
     <!-- Loading skeleton -->

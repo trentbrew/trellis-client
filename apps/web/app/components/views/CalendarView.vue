@@ -639,6 +639,13 @@
       icon: 'lucide:sticky-note',
       label: 'note',
     },
+    GoogleCalendar: {
+      bg: 'bg-blue-100 dark:bg-blue-900/30',
+      text: 'text-blue-700 dark:text-blue-300',
+      dot: '#3b82f6',
+      icon: 'simple-icons:googlecalendar',
+      label: 'google-calendar',
+    },
   }
 
   const defaultTypeColor = {
@@ -652,6 +659,19 @@
   const getTypeStyle = (typeLabel?: string) => {
     if (!typeLabel) return defaultTypeColor
     return typeColorMap[typeLabel] || defaultTypeColor
+  }
+
+  // Convert PascalCase type keys to readable display strings (e.g. 'GoogleCalendar' → 'Google Calendar')
+  const getTypeDisplayLabel = (typeLabel?: string): string => {
+    if (!typeLabel) return 'Item'
+    // Use the label from typeColorMap if available (already human-readable)
+    const style = typeColorMap[typeLabel]
+    if (style) {
+      // Capitalize each word of the label
+      return style.label.replace(/-/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase())
+    }
+    // Fallback: split PascalCase into words
+    return typeLabel.replace(/([A-Z])/g, ' $1').trim()
   }
 
   interface TypeGroup {
@@ -1671,129 +1691,153 @@
             </div>
           </div>
 
-          <!-- Sidebar Filters Slot (e.g., type filters) -->
-          <div v-if="$slots['sidebar-filters']" class="shrink-0 px-4 pt-4 border-t border-border/50 my-4">
-            <slot name="sidebar-filters" />
-          </div>
+          <!-- Sidebar Sections (collapsible accordion) -->
+          <div class="flex-1 flex flex-col min-h-0 border-t border-border/50 mt-4 overflow-auto">
+            <UiAccordion type="multiple" :default-value="['sources', 'filter', 'attention']" class="px-4">
+              <!-- Sources Section -->
+              <UiAccordionItem v-if="$slots['sidebar-sources']" value="sources" class="border-b border-border/30">
+                <UiAccordionHeader class="py-0">
+                  <UiAccordionTrigger class="py-3 text-xs hover:no-underline">
+                    <span class="font-semibold text-muted-foreground uppercase tracking-wide">Sources</span>
+                  </UiAccordionTrigger>
+                </UiAccordionHeader>
+                <UiAccordionContent class="pb-3 pt-0">
+                  <slot name="sidebar-sources" />
+                </UiAccordionContent>
+              </UiAccordionItem>
 
-          <!-- Upcoming Events Section - Accordion by Status -->
-          <div
-            class="flex-1 flex flex-col min-h-0 p-4 pt-4 border-t border-border/50"
-            :class="$slots['sidebar-filters'] ? 'mt-0' : 'mt-4'">
-            <h4 class="shrink-0 text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-3">
-              Attention Required
-            </h4>
-            <div class="flex-1 overflow-auto">
-              <UiAccordion
-                v-if="overdueEvents.length > 0 || dueSoonEvents.length > 0"
-                type="multiple"
-                :default-value="['overdue', 'due-soon']"
-                class="space-y-2">
-                <!-- Overdue Accordion -->
-                <UiAccordionItem v-if="overdueEvents.length > 0" value="overdue" class="border-none">
-                  <UiAccordionHeader class="py-0">
-                    <UiAccordionTrigger class="py-2 text-xs hover:no-underline">
-                      <div class="flex items-center gap-2">
-                        <span class="w-2 h-2 rounded-full bg-rose-500" />
-                        <span class="font-semibold text-rose-600 dark:text-rose-400">Overdue</span>
-                        <span class="text-muted-foreground font-normal">({{ overdueEvents.length }})</span>
-                      </div>
-                    </UiAccordionTrigger>
-                  </UiAccordionHeader>
-                  <UiAccordionContent class="pb-2 pt-0">
-                    <div class="space-y-1.5">
-                      <div
-                        v-for="event in overdueEvents"
-                        :key="event.id"
-                        class="flex items-start gap-2.5 p-2 rounded-lg bg-rose-50/50 dark:bg-rose-950/20 hover:bg-rose-100/50 dark:hover:bg-rose-950/30 transition-colors cursor-pointer"
-                        @click="openEventDetail(event)">
-                        <Icon
-                          :name="getPriorityDisplay(event.priority).icon"
-                          :class="['h-3.5 w-3.5 mt-0.5 shrink-0', getPriorityDisplay(event.priority).textClass]" />
-                        <div class="flex-1 min-w-0">
-                          <p class="text-xs font-medium truncate">{{ event.title }}</p>
-                          <div class="flex items-center gap-2 mt-0.5">
-                            <div v-if="event.assignee" class="flex items-center gap-1">
-                              <div
-                                class="w-3.5 h-3.5 rounded-full bg-primary/20 flex items-center justify-center text-[7px] font-medium text-primary">
-                                {{
-                                  event.assignee
-                                    .split(' ')
-                                    .map((n) => n[0])
-                                    .join('')
-                                    .slice(0, 2)
-                                }}
+              <!-- Filter Section -->
+              <UiAccordionItem v-if="$slots['sidebar-filters']" value="filter" class="border-b border-border/30">
+                <UiAccordionHeader class="py-0">
+                  <UiAccordionTrigger class="py-3 text-xs hover:no-underline">
+                    <span class="font-semibold text-muted-foreground uppercase tracking-wide">Filter</span>
+                  </UiAccordionTrigger>
+                </UiAccordionHeader>
+                <UiAccordionContent class="pb-3 pt-0">
+                  <slot name="sidebar-filters" />
+                </UiAccordionContent>
+              </UiAccordionItem>
+
+              <!-- Attention Required Section -->
+              <UiAccordionItem value="attention" class="border-none">
+                <UiAccordionHeader class="py-0">
+                  <UiAccordionTrigger class="py-3 text-xs hover:no-underline">
+                    <span class="font-semibold text-muted-foreground uppercase tracking-wide">Attention Required</span>
+                  </UiAccordionTrigger>
+                </UiAccordionHeader>
+                <UiAccordionContent class="pb-3 pt-0">
+                  <UiAccordion
+                    v-if="overdueEvents.length > 0 || dueSoonEvents.length > 0"
+                    type="multiple"
+                    :default-value="['overdue', 'due-soon']"
+                    class="space-y-2">
+                    <!-- Overdue Accordion -->
+                    <UiAccordionItem v-if="overdueEvents.length > 0" value="overdue" class="border-none">
+                      <UiAccordionHeader class="py-0">
+                        <UiAccordionTrigger class="py-2 text-xs hover:no-underline">
+                          <div class="flex items-center gap-2">
+                            <span class="w-2 h-2 rounded-full bg-rose-500" />
+                            <span class="font-semibold text-rose-600 dark:text-rose-400">Overdue</span>
+                            <span class="text-muted-foreground font-normal">({{ overdueEvents.length }})</span>
+                          </div>
+                        </UiAccordionTrigger>
+                      </UiAccordionHeader>
+                      <UiAccordionContent class="pb-2 pt-0">
+                        <div class="space-y-1.5">
+                          <div
+                            v-for="event in overdueEvents"
+                            :key="event.id"
+                            class="flex items-start gap-2.5 p-2 rounded-lg bg-rose-50/50 dark:bg-rose-950/20 hover:bg-rose-100/50 dark:hover:bg-rose-950/30 transition-colors cursor-pointer"
+                            @click="openEventDetail(event)">
+                            <Icon
+                              :name="getPriorityDisplay(event.priority).icon"
+                              :class="['h-3.5 w-3.5 mt-0.5 shrink-0', getPriorityDisplay(event.priority).textClass]" />
+                            <div class="flex-1 min-w-0">
+                              <p class="text-xs font-medium truncate">{{ event.title }}</p>
+                              <div class="flex items-center gap-2 mt-0.5">
+                                <div v-if="event.assignee" class="flex items-center gap-1">
+                                  <div
+                                    class="w-3.5 h-3.5 rounded-full bg-primary/20 flex items-center justify-center text-[7px] font-medium text-primary">
+                                    {{
+                                      event.assignee
+                                        .split(' ')
+                                        .map((n) => n[0])
+                                        .join('')
+                                        .slice(0, 2)
+                                    }}
+                                  </div>
+                                  <span class="text-[10px] text-muted-foreground truncate max-w-[60px]">
+                                    {{ event.assignee }}
+                                  </span>
+                                </div>
+                                <span class="text-[10px] text-muted-foreground">{{ formatShortDate(event.date) }}</span>
                               </div>
-                              <span class="text-[10px] text-muted-foreground truncate max-w-[60px]">
-                                {{ event.assignee }}
-                              </span>
                             </div>
-                            <span class="text-[10px] text-muted-foreground">{{ formatShortDate(event.date) }}</span>
                           </div>
                         </div>
-                      </div>
-                    </div>
-                  </UiAccordionContent>
-                </UiAccordionItem>
+                      </UiAccordionContent>
+                    </UiAccordionItem>
 
-                <!-- Due Soon Accordion -->
-                <UiAccordionItem v-if="dueSoonEvents.length > 0" value="due-soon" class="border-none">
-                  <UiAccordionHeader class="py-0">
-                    <UiAccordionTrigger class="py-2 text-xs hover:no-underline">
-                      <div class="flex items-center gap-2">
-                        <span class="w-2 h-2 rounded-full bg-amber-500" />
-                        <span class="font-semibold text-amber-600 dark:text-amber-400">Due Soon</span>
-                        <span class="text-muted-foreground font-normal">({{ dueSoonEvents.length }})</span>
-                      </div>
-                    </UiAccordionTrigger>
-                  </UiAccordionHeader>
-                  <UiAccordionContent class="pb-2 pt-0">
-                    <div class="space-y-1.5">
-                      <div
-                        v-for="event in dueSoonEvents"
-                        :key="event.id"
-                        class="flex items-start gap-2.5 p-2 rounded-lg bg-amber-50/50 dark:bg-amber-950/20 hover:bg-amber-100/50 dark:hover:bg-amber-950/30 transition-colors cursor-pointer"
-                        @click="openEventDetail(event)">
-                        <Icon
-                          :name="getPriorityDisplay(event.priority).icon"
-                          :class="['h-3.5 w-3.5 mt-0.5 shrink-0', getPriorityDisplay(event.priority).textClass]" />
-                        <div class="flex-1 min-w-0">
-                          <p class="text-xs font-medium truncate">{{ event.title }}</p>
-                          <div class="flex items-center gap-2 mt-0.5">
-                            <div v-if="event.assignee" class="flex items-center gap-1">
-                              <div
-                                class="w-3.5 h-3.5 rounded-full bg-primary/20 flex items-center justify-center text-[7px] font-medium text-primary">
-                                {{
-                                  event.assignee
-                                    .split(' ')
-                                    .map((n) => n[0])
-                                    .join('')
-                                    .slice(0, 2)
-                                }}
+                    <!-- Due Soon Accordion -->
+                    <UiAccordionItem v-if="dueSoonEvents.length > 0" value="due-soon" class="border-none">
+                      <UiAccordionHeader class="py-0">
+                        <UiAccordionTrigger class="py-2 text-xs hover:no-underline">
+                          <div class="flex items-center gap-2">
+                            <span class="w-2 h-2 rounded-full bg-amber-500" />
+                            <span class="font-semibold text-amber-600 dark:text-amber-400">Due Soon</span>
+                            <span class="text-muted-foreground font-normal">({{ dueSoonEvents.length }})</span>
+                          </div>
+                        </UiAccordionTrigger>
+                      </UiAccordionHeader>
+                      <UiAccordionContent class="pb-2 pt-0">
+                        <div class="space-y-1.5">
+                          <div
+                            v-for="event in dueSoonEvents"
+                            :key="event.id"
+                            class="flex items-start gap-2.5 p-2 rounded-lg bg-amber-50/50 dark:bg-amber-950/20 hover:bg-amber-100/50 dark:hover:bg-amber-950/30 transition-colors cursor-pointer"
+                            @click="openEventDetail(event)">
+                            <Icon
+                              :name="getPriorityDisplay(event.priority).icon"
+                              :class="['h-3.5 w-3.5 mt-0.5 shrink-0', getPriorityDisplay(event.priority).textClass]" />
+                            <div class="flex-1 min-w-0">
+                              <p class="text-xs font-medium truncate">{{ event.title }}</p>
+                              <div class="flex items-center gap-2 mt-0.5">
+                                <div v-if="event.assignee" class="flex items-center gap-1">
+                                  <div
+                                    class="w-3.5 h-3.5 rounded-full bg-primary/20 flex items-center justify-center text-[7px] font-medium text-primary">
+                                    {{
+                                      event.assignee
+                                        .split(' ')
+                                        .map((n) => n[0])
+                                        .join('')
+                                        .slice(0, 2)
+                                    }}
+                                  </div>
+                                  <span class="text-[10px] text-muted-foreground truncate max-w-[60px]">
+                                    {{ event.assignee }}
+                                  </span>
+                                </div>
+                                <span class="text-[10px] text-muted-foreground">{{ formatShortDate(event.date) }}</span>
                               </div>
-                              <span class="text-[10px] text-muted-foreground truncate max-w-[60px]">
-                                {{ event.assignee }}
-                              </span>
                             </div>
-                            <span class="text-[10px] text-muted-foreground">{{ formatShortDate(event.date) }}</span>
                           </div>
                         </div>
-                      </div>
-                    </div>
-                  </UiAccordionContent>
-                </UiAccordionItem>
-              </UiAccordion>
+                      </UiAccordionContent>
+                    </UiAccordionItem>
+                  </UiAccordion>
 
-              <!-- Empty State -->
-              <div
-                v-if="overdueEvents.length === 0 && dueSoonEvents.length === 0"
-                class="flex-1 flex items-center justify-center">
-                <div class="text-center py-8">
-                  <Icon name="lucide:check-circle" class="h-8 w-8 mx-auto text-emerald-500/50 mb-2" />
-                  <p class="text-xs text-muted-foreground/50">All caught up!</p>
-                </div>
-              </div>
-            </div>
+                  <!-- Empty State -->
+                  <div
+                    v-if="overdueEvents.length === 0 && dueSoonEvents.length === 0"
+                    class="flex-1 flex items-center justify-center">
+                    <div class="text-center py-8">
+                      <Icon name="lucide:check-circle" class="h-8 w-8 mx-auto text-emerald-500/50 mb-2" />
+                      <p class="text-xs text-muted-foreground/50">All caught up!</p>
+                    </div>
+                  </div>
+                </UiAccordionContent>
+              </UiAccordionItem>
+            </UiAccordion>
           </div>
 
           <!-- Sidebar Resize Handle -->
@@ -1980,21 +2024,23 @@
                         :close-delay="100">
                         <UiHoverCardTrigger as-child>
                           <button
-                            draggable="true"
+                            :draggable="item.typeLabel !== 'GoogleCalendar'"
                             :class="[
                               'w-full flex items-center gap-1 px-1.5 py-0.5 rounded-md text-[11px] font-medium transition-all duration-150',
-                              'hover:ring-1 hover:ring-primary/30 cursor-grab active:cursor-grabbing',
+                              'hover:ring-1 hover:ring-primary/30',
+                              item.typeLabel !== 'GoogleCalendar' ? 'cursor-grab active:cursor-grabbing' : 'cursor-pointer',
                               getTypeStyle(item.typeLabel || '').bg,
                               getTypeStyle(item.typeLabel || '').text,
                               recurringItemClasses(item),
                             ]"
-                            @dragstart="(e: DragEvent) => onDragStart(e, item)"
+                            @dragstart="item.typeLabel !== 'GoogleCalendar' ? onDragStart($event as DragEvent, item) : undefined"
                             @dragend="onDragEnd"
                             @click.stop="openEventDetail(item)">
                             <Icon :name="getTypeStyle(item.typeLabel || '').icon" class="h-3 w-3 shrink-0" />
                             <Icon v-if="hasRecurringInstance(item)" name="lucide:repeat" class="h-2.5 w-2.5 shrink-0 opacity-60" />
                             <span v-if="item.recurrenceIndex" class="text-[9px] opacity-50 shrink-0">#{{ item.recurrenceIndex }}</span>
                             <span class="truncate">{{ item.title }}</span>
+                            <Icon v-if="item.typeLabel === 'GoogleCalendar'" name="simple-icons:googlecalendar" class="ml-auto h-2.5 w-2.5 shrink-0 opacity-70" />
                           </button>
                         </UiHoverCardTrigger>
                         <UiHoverCardContent class="w-64 p-3" side="top" :side-offset="4">
@@ -2002,7 +2048,7 @@
                             <h4 class="text-sm font-semibold leading-tight truncate">{{ item.title }}</h4>
                             <div class="flex items-center gap-1.5">
                               <Icon :name="getTypeStyle(item.typeLabel || '').icon" :class="['h-3 w-3 shrink-0', getTypeStyle(item.typeLabel || '').text]" />
-                              <span class="text-xs text-muted-foreground capitalize">{{ item.typeLabel || 'Item' }}</span>
+                              <span class="text-xs text-muted-foreground">{{ getTypeDisplayLabel(item.typeLabel) }}</span>
                               <template v-if="hasRecurringInstance(item)">
                                 <span class="text-xs text-muted-foreground">·</span>
                                 <Icon name="lucide:repeat" class="h-3 w-3 opacity-60" />
@@ -2210,21 +2256,23 @@
                           :close-delay="100">
                           <UiHoverCardTrigger as-child>
                             <button
-                              draggable="true"
+                              :draggable="item.typeLabel !== 'GoogleCalendar'"
                               :class="[
                                 'w-full flex items-center gap-1 px-1.5 py-0.5 rounded-md text-[11px] font-medium transition-all duration-150',
-                                'hover:ring-1 hover:ring-primary/30 cursor-grab active:cursor-grabbing',
+                                'hover:ring-1 hover:ring-primary/30',
+                                item.typeLabel !== 'GoogleCalendar' ? 'cursor-grab active:cursor-grabbing' : 'cursor-pointer',
                                 getTypeStyle(item.typeLabel || '').bg,
                                 getTypeStyle(item.typeLabel || '').text,
                                 recurringItemClasses(item),
                               ]"
-                              @dragstart="(e: DragEvent) => onDragStart(e, item)"
+                              @dragstart="item.typeLabel !== 'GoogleCalendar' ? onDragStart($event as DragEvent, item) : undefined"
                               @dragend="onDragEnd"
                               @click.stop="openEventDetail(item)">
                               <Icon :name="getTypeStyle(item.typeLabel || '').icon" class="h-3 w-3 shrink-0" />
                               <Icon v-if="hasRecurringInstance(item)" name="lucide:repeat" class="h-2.5 w-2.5 shrink-0 opacity-60" />
                               <span v-if="item.recurrenceIndex" class="text-[9px] opacity-50 shrink-0">#{{ item.recurrenceIndex }}</span>
                               <span class="truncate">{{ item.title }}</span>
+                              <Icon v-if="item.typeLabel === 'GoogleCalendar'" name="simple-icons:googlecalendar" class="ml-auto h-2.5 w-2.5 shrink-0 opacity-70" />
                             </button>
                           </UiHoverCardTrigger>
                           <UiHoverCardContent class="w-64 p-3" side="top" :side-offset="4">
@@ -2232,7 +2280,7 @@
                               <h4 class="text-sm font-semibold leading-tight truncate">{{ item.title }}</h4>
                               <div class="flex items-center gap-1.5">
                                 <Icon :name="getTypeStyle(item.typeLabel || '').icon" :class="['h-3 w-3 shrink-0', getTypeStyle(item.typeLabel || '').text]" />
-                                <span class="text-xs text-muted-foreground capitalize">{{ item.typeLabel || 'Item' }}</span>
+                                <span class="text-xs text-muted-foreground">{{ getTypeDisplayLabel(item.typeLabel) }}</span>
                                 <template v-if="hasRecurringInstance(item)">
                                   <span class="text-xs text-muted-foreground">·</span>
                                   <Icon name="lucide:repeat" class="h-3 w-3 opacity-60" />

@@ -1,9 +1,17 @@
 <script setup lang="ts">
-import type { IntegrationDefinition, ConnectedIntegration } from '~/composables/useIntegrations'
+import type { IntegrationDefinition } from '~/types/database'
+
+interface ConfigField {
+  key: string
+  label: string
+  type: 'text' | 'password' | 'url' | 'select' | 'boolean'
+  required?: boolean
+  placeholder?: string
+  options?: Array<{ value: string; label: string }>
+}
 
 const props = defineProps<{
   integration: IntegrationDefinition
-  connectedIntegration?: ConnectedIntegration
 }>()
 
 const emit = defineEmits<{
@@ -12,17 +20,13 @@ const emit = defineEmits<{
   startOAuth: []
 }>()
 
-const localConfig = ref<Record<string, any>>(props.connectedIntegration?.config || {})
+const localConfig = ref<Record<string, any>>({})
 
-watch(
-  () => props.connectedIntegration?.config,
-  (newConfig) => {
-    if (newConfig) {
-      localConfig.value = { ...newConfig }
-    }
-  },
-  { deep: true }
-)
+const configFields = computed<ConfigField[]>(() => {
+  if (!props.integration.configSchema) return []
+  try { return JSON.parse(props.integration.configSchema) as ConfigField[] }
+  catch { return [] }
+})
 
 const updateField = (key: string, value: any) => {
   localConfig.value[key] = value
@@ -40,11 +44,11 @@ const isOAuthFlow = computed(() => props.integration.authType === 'oauth')
     <!-- OAuth Flow -->
     <div v-if="isOAuthFlow" class="text-center py-6">
       <div class="w-16 h-16 mx-auto mb-4 rounded-full bg-muted flex items-center justify-center">
-        <Icon :name="integration.icon" class="w-8 h-8" />
+        <Icon :name="integration.icon || 'lucide:plug'" class="w-8 h-8" />
       </div>
-      <h3 class="font-medium mb-2">Connect to {{ integration.name }}</h3>
+      <h3 class="font-medium mb-2">Connect to {{ integration.title }}</h3>
       <p class="text-sm text-muted-foreground mb-4">
-        Click the button below to authorize access to your {{ integration.name }} account.
+        Click the button below to authorize access to your {{ integration.title }} account.
       </p>
       <UiButton @click="emit('startOAuth')">
         <Icon name="lucide:external-link" class="w-4 h-4 mr-2" />
@@ -52,15 +56,14 @@ const isOAuthFlow = computed(() => props.integration.authType === 'oauth')
       </UiButton>
     </div>
 
-    <!-- Config Fields -->
-    <template v-else-if="integration.configFields?.length">
-      <div v-for="field in integration.configFields" :key="field.key" class="space-y-1.5">
+    <!-- Config Fields (parsed from configSchema JSON) -->
+    <template v-else-if="configFields.length > 0">
+      <div v-for="field in configFields" :key="field.key" class="space-y-1.5">
         <label class="text-sm font-medium">
           {{ field.label }}
           <span v-if="field.required" class="text-destructive">*</span>
         </label>
 
-        <!-- Text / Password / URL input -->
         <UiInput
           v-if="field.type === 'text' || field.type === 'password' || field.type === 'url'"
           :type="field.type === 'password' ? 'password' : 'text'"
@@ -68,7 +71,6 @@ const isOAuthFlow = computed(() => props.integration.authType === 'oauth')
           :placeholder="field.placeholder || field.label"
           @update:model-value="updateField(field.key, $event)" />
 
-        <!-- Select -->
         <UiSelect
           v-else-if="field.type === 'select'"
           :model-value="localConfig[field.key] || ''"
@@ -83,13 +85,11 @@ const isOAuthFlow = computed(() => props.integration.authType === 'oauth')
           </UiSelectContent>
         </UiSelect>
 
-        <!-- Boolean -->
         <div v-else-if="field.type === 'boolean'" class="flex items-center gap-2">
           <UiSwitch :checked="localConfig[field.key] || false" @update:checked="updateField(field.key, $event)" />
         </div>
       </div>
 
-      <!-- Actions -->
       <div class="flex items-center justify-end gap-2 pt-4 border-t">
         <UiButton variant="outline" @click="emit('cancel')">Cancel</UiButton>
         <UiButton @click="handleSave">
@@ -107,7 +107,7 @@ const isOAuthFlow = computed(() => props.integration.authType === 'oauth')
           <div>
             <h4 class="font-medium text-sm">Webhook URL</h4>
             <p class="text-xs text-muted-foreground mt-1">
-              Copy this URL to your {{ integration.name }} settings to receive events.
+              Copy this URL to your {{ integration.title }} settings to receive events.
             </p>
             <div class="mt-2 flex items-center gap-2">
               <code class="text-xs bg-background px-2 py-1 rounded border flex-1 truncate">
@@ -121,7 +121,6 @@ const isOAuthFlow = computed(() => props.integration.authType === 'oauth')
         </div>
       </div>
 
-      <!-- Actions -->
       <div class="flex items-center justify-end gap-2 pt-4 border-t">
         <UiButton variant="outline" @click="emit('cancel')">Cancel</UiButton>
         <UiButton @click="handleSave">

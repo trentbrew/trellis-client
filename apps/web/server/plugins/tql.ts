@@ -78,7 +78,85 @@ export default defineNitroPlugin(async (nitro) => {
   _workspaceConfig = workspaceConfig
   await kernel.boot(workspaceConfig)
 
-  console.log('[tql] Kernel booted (no seed data)')
+  // ── Seed integration definitions (idempotent — createNode replaces existing) ──
+  const INTEGRATION_DEFS: Array<{ id: string; data: Record<string, any> }> = [
+    {
+      id: 'entity:integration-def-google-calendar',
+      data: {
+        type: 'integration_definition',
+        title: 'Google Calendar',
+        description: 'Import and sync events from Google Calendar with realtime push notifications.',
+        provider: 'Google',
+        category: 'data',
+        authType: 'oauth',
+        icon: 'simple-icons:googlecalendar',
+        color: '#4285F4',
+        features: ['Realtime sync', 'Push notifications', 'Entity enrichment', 'Multi-calendar'],
+        docsUrl: 'https://developers.google.com/calendar/api',
+        webhookSupport: true,
+        pushNotificationSupport: true,
+        enrichmentSupport: true,
+        syncDirection: 'import',
+        requiredScopes: ['https://www.googleapis.com/auth/calendar.readonly'],
+        integrationStatus: 'available',
+      },
+    },
+    {
+      id: 'entity:integration-def-notion',
+      data: {
+        type: 'integration_definition',
+        title: 'Notion',
+        description: 'Connect with Notion databases and pages.',
+        provider: 'Notion',
+        category: 'data',
+        authType: 'oauth',
+        icon: 'simple-icons:notion',
+        features: ['Import databases', 'Sync pages', 'Block support'],
+        docsUrl: 'https://developers.notion.com/',
+        syncDirection: 'import',
+        integrationStatus: 'available',
+      },
+    },
+    {
+      id: 'entity:integration-def-slack',
+      data: {
+        type: 'integration_definition',
+        title: 'Slack',
+        description: 'Send notifications and updates to Slack.',
+        provider: 'Slack',
+        category: 'communication',
+        authType: 'oauth',
+        icon: 'simple-icons:slack',
+        features: ['Notifications', 'Slash commands', 'Interactive messages'],
+        docsUrl: 'https://api.slack.com/',
+        webhookSupport: true,
+        syncDirection: 'bidirectional',
+        integrationStatus: 'available',
+      },
+    },
+    {
+      id: 'entity:integration-def-github',
+      data: {
+        type: 'integration_definition',
+        title: 'GitHub',
+        description: 'Track issues, PRs, and commits from GitHub repositories.',
+        provider: 'GitHub',
+        category: 'data',
+        authType: 'oauth',
+        icon: 'simple-icons:github',
+        features: ['Issue sync', 'PR tracking', 'Webhooks'],
+        docsUrl: 'https://docs.github.com/en/rest',
+        webhookSupport: true,
+        syncDirection: 'import',
+        integrationStatus: 'available',
+      },
+    },
+  ]
+
+  for (const def of INTEGRATION_DEFS) {
+    await kernel.createNode(def.id, def.data, 'entity')
+  }
+  console.log(`[tql] Seeded ${INTEGRATION_DEFS.length} integration definitions`)
 
   // Store in module singleton
   _kernel = kernel

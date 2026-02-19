@@ -34,6 +34,29 @@ export function useChannels() {
     channels.value.filter((c) => c.type === 'thread'),
   )
 
+  // ── Folder grouping ───────────────────────────────────────────────
+  const channelFolders = computed(() => {
+    const folders = new Set<string>()
+    for (const ch of publicChannels.value) {
+      if (ch.folder) folders.add(ch.folder)
+    }
+    return [...folders].sort()
+  })
+
+  const ungroupedPublicChannels = computed(() =>
+    publicChannels.value.filter((c) => !c.folder),
+  )
+
+  const channelsByFolder = computed(() => {
+    const map = new Map<string, Channel[]>()
+    for (const ch of publicChannels.value) {
+      if (!ch.folder) continue
+      if (!map.has(ch.folder)) map.set(ch.folder, [])
+      map.get(ch.folder)!.push(ch)
+    }
+    return [...map.entries()].map(([folder, chans]) => ({ folder, channels: chans }))
+  })
+
   // ── Unread tracking ──────────────────────────────────────────────
   const lastReadMap = useState<Record<string, number>>('chat:lastRead', () => ({}))
 
@@ -143,30 +166,43 @@ export function useChannels() {
     const now = Date.now()
     const slug = opts.slug ?? opts.title.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '')
 
-    const data: any = {
-      entityKind: 'channel',
-      channelType: opts.type ?? 'public',
-      title: opts.title,
-      slug,
-      description: opts.description,
-      icon: opts.icon,
-      memberIds: opts.memberIds ?? [],
-      entityId: opts.entityId,
-      createdBy: userId,
-      createdAt: now,
-    }
-
     if (isCloudMode) {
       if (!orgId) throw new Error('No org')
-      data.orgId = orgId
-      await db.transact(db.tx.channels[id].update(data))
+      const cloudData = {
+        orgId,
+        type: opts.type ?? 'public',
+        title: opts.title,
+        slug,
+        description: opts.description,
+        icon: opts.icon,
+        memberIds: opts.memberIds ?? [],
+        entityId: opts.entityId,
+        createdBy: userId,
+        createdAt: now,
+      }
+      await db.transact([
+        db.tx.channels[id].update(cloudData),
+        db.tx.organizations[orgId].link({ channels: id }),
+      ])
     } else {
       const { mutate } = useTrellisGraph()
       await mutate({
         action: 'createNode',
         entityId: toEntityId(id),
         type: 'entity',
-        data: { ...data, orgId: orgId ?? 'local' },
+        data: {
+          entityKind: 'channel',
+          channelType: opts.type ?? 'public',
+          title: opts.title,
+          slug,
+          description: opts.description,
+          icon: opts.icon,
+          memberIds: opts.memberIds ?? [],
+          entityId: opts.entityId,
+          createdBy: userId,
+          createdAt: now,
+          orgId: orgId ?? 'local',
+        },
       })
     }
 
@@ -241,6 +277,9 @@ export function useChannels() {
   return {
     channels,
     publicChannels,
+    ungroupedPublicChannels,
+    channelsByFolder,
+    channelFolders,
     dms,
     threads,
     loading,

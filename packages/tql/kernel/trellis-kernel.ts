@@ -867,7 +867,11 @@ export class TrellisKernel {
   }
 
   /**
-   * High-level CRUD: Update an existing node (overwrites all existing facts for this entity).
+   * High-level CRUD: Update an existing node (merge semantics).
+   *
+   * Reads existing facts, merges the provided data on top (overwriting
+   * supplied fields, preserving unmentioned ones), then writes back.
+   * Use createNode() for full-replace / idempotent upsert semantics.
    */
   async updateNode(
     entityId: string,
@@ -875,16 +879,24 @@ export class TrellisKernel {
     type: string,
     ctx: MiddlewareContext = {},
   ): Promise<void> {
-    // 1. Get existing facts
+    // 1. Build current data object from existing facts
     const existingFacts = this.store.getFactsByEntity(entityId);
+    const existing: Record<string, any> = {};
+    for (const f of existingFacts) {
+      if (f.a === 'type' && f.v === type) continue; // skip only the EAV namespace type; preserve domain type
+      existing[f.a] = f.v;
+    }
+
+    // 2. Merge: new data overwrites existing fields, unmentioned fields preserved
+    const merged = { ...existing, ...data };
+
+    // 3. Delete old facts and write merged result
     if (existingFacts.length > 0) {
       await this._mutate('deleteFacts', { facts: existingFacts }, ctx);
     }
-
-    // 2. Add new facts (with @expr evaluation if enabled)
     const facts = this.enableExprEvaluation
-      ? jsonEntityFactsWithExpr(entityId, data, type)
-      : jsonEntityFacts(entityId, data, type);
+      ? jsonEntityFactsWithExpr(entityId, merged, type)
+      : jsonEntityFacts(entityId, merged, type);
     await this._mutate('addFacts', { facts }, ctx);
   }
 

@@ -63,6 +63,10 @@ export default defineNuxtConfig({
     // Server-only (not exposed to client)
     instantAppId: process.env.INSTANTDB_APP_ID || process.env.INSTANT_APP_ID || '',
     instantAppSecret: process.env.INSTANTDB_APP_SECRET || '',
+    googleClientSecret: process.env.GOOGLE_CLIENT_SECRET || '',
+    googleCalendarRedirectUri: process.env.GOOGLE_CALENDAR_REDIRECT_URI
+      || `http://localhost:${PREFERRED_PORT}/api/integrations/google-calendar/callback`,
+    googleCalendarWebhookSecret: process.env.GOOGLE_CALENDAR_WEBHOOK_SECRET || '',
     public: {
       googleClientId: process.env.GOOGLE_CLIENT_ID,
       dataMode: process.env.TRELLIS_DATA_MODE || 'local',

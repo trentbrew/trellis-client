@@ -18,6 +18,7 @@ export const DEFAULT_SHORTCUTS: ShortcutDefinition[] = [
   // ── General ──────────────────────────────────────────────────────────
   { id: 'command-palette', label: 'Command palette', keys: 'mod+k', scope: 'global', category: 'General', showToast: false },
   { id: 'search', label: 'Focus search', keys: '/', scope: 'global', category: 'General', showToast: false },
+  { id: 'quick-capture', label: 'Quick capture', keys: 'mod+shift+n', scope: 'global', category: 'General', showToast: false },
 
   // ── Navigation ───────────────────────────────────────────────────────
   { id: 'go-home', label: 'Go to home', keys: 'mod+shift+h', scope: 'global', category: 'Navigation' },
@@ -117,7 +118,7 @@ export function useKeyboardShortcuts() {
    */
   function register(
     id: string,
-    action: () => void,
+    action: () => string | undefined | void,
     overrideDef?: Partial<ShortcutDefinition>,
   ): () => void {
     // Find the definition (default or custom)
@@ -135,7 +136,8 @@ export function useKeyboardShortcuts() {
       showToast: overrideDef?.showToast ?? baseDef?.showToast,
     }
 
-    const registered: RegisteredShortcut = { ...definition, action }
+    const wrapped: () => string | undefined = () => action() ?? undefined
+    const registered: RegisteredShortcut = { ...definition, action: wrapped }
 
     // Prevent duplicate registration
     const existingIdx = registry.value.findIndex(r => r.id === id)

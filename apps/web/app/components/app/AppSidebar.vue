@@ -25,6 +25,7 @@
 
   const routes = useRoutes()
   const pinned = usePinnedItems()
+  const settingsPinned = usePinnedSettings()
   const sidebarOrder = useSidebarOrder()
   const collapsed = useCollapsedSections()
   const sidebarCollapse = useSidebarCollapse()
@@ -98,6 +99,16 @@
   const sidebarSectionKey = computed(() => routes.currentSectionLabel.value)
 
   const isTypesSection = computed(() => routes.currentSidebarSection.value?.path === '/types')
+  const isSettingsSection = computed(() => route.path.startsWith('/settings'))
+
+  const pinnedSettingsItems = computed(() => {
+    if (!isSettingsSection.value || !filteredDynamicSidebarSections.value) return []
+    const allItems: any[] = []
+    for (const section of filteredDynamicSidebarSections.value) {
+      if (section.items) allItems.push(...section.items)
+    }
+    return allItems.filter((item: any) => item?.path && settingsPinned.isPinned(item.path))
+  })
 
   const { customTypes } = useInstantData()
 
@@ -1024,6 +1035,40 @@
               <!-- Dynamic Sidebar Sections (if configured in route) -->
               <template v-else-if="filteredDynamicSidebarSections">
                 <div ref="sectionsContainerRef" class="py-4">
+
+                <!-- Settings: Pinned section -->
+                <div v-if="isSettingsSection && pinnedSettingsItems.length > 0" class="mb-6">
+                  <div class="flex items-center px-3 mb-1">
+                    <Icon name="lucide:pin" class="mr-2 h-4 w-4 opacity-70 text-muted-foreground" />
+                    <span class="text-muted-foreground text-xs tracking-wide uppercase font-medium">Pinned</span>
+                  </div>
+                  <div class="relative pl-1">
+                    <div class="absolute ml-[18px] top-0 bottom-[18px] w-px bg-sidebar-border/15 translate-y-2" />
+                    <ul class="space-y-1 text-sm">
+                      <li v-for="item in pinnedSettingsItems" :key="item.path">
+                        <div class="group relative elbow-connector">
+                          <AppNavLink
+                            :to="item.path"
+                            class="text-sidebar-foreground hover:bg-foreground/5 hover:text-sidebar-foreground flex items-center gap-3 rounded-xl px-3 py-2 transition ml-8"
+                            :class="{ 'bg-foreground/5 text-foreground': routes.isRouteExactlyActive(item.path) }">
+                            <Icon :name="item.icon" class="h-4 w-4 shrink-0 opacity-50" />
+                            <span class="flex-1 truncate min-w-0 text-xs">{{ item.label }}</span>
+                          </AppNavLink>
+                          <div class="absolute right-2 top-1/2 z-10 flex -translate-y-1/2 items-center gap-1 opacity-0 transition-opacity group-hover:opacity-100">
+                            <button
+                              type="button"
+                              class="text-sidebar-foreground/60 hover:text-sidebar-foreground rounded p-0.5 hover:bg-white/10"
+                              aria-label="Unpin"
+                              @click.prevent.stop="settingsPinned.togglePin(item.path)">
+                              <Icon name="lucide:pin" class="h-3.5 w-3.5 fill-current" />
+                            </button>
+                          </div>
+                        </div>
+                      </li>
+                    </ul>
+                  </div>
+                </div>
+
                 <div v-for="(section, idx) in filteredDynamicSidebarSections" :key="section.key" :data-section-key="section.key" :data-section-pinned="section.key === 'personal-pinned' ? '' : undefined" :class="idx > 0 ? 'mt-6' : ''">
                   <AppContextMenu
                     :actions="getSectionContextMenu(section)"
@@ -1231,12 +1276,12 @@
                                 <button
                                   type="button"
                                   class="text-sidebar-foreground/60 hover:text-sidebar-foreground rounded p-0.5 hover:bg-white/10"
-                                  :aria-label="pinned.isPinned(item.path) ? 'Unpin' : 'Pin'"
-                                  @click.prevent.stop="pinned.togglePin(item.path)">
+                                  :aria-label="(isSettingsSection ? settingsPinned.isPinned(item.path) : pinned.isPinned(item.path)) ? 'Unpin' : 'Pin'"
+                                  @click.prevent.stop="isSettingsSection ? settingsPinned.togglePin(item.path) : pinned.togglePin(item.path)">
                                   <Icon
                                     name="lucide:pin"
                                     class="h-3.5 w-3.5"
-                                    :class="{ 'fill-current': pinned.isPinned(item.path) }" />
+                                    :class="{ 'fill-current': isSettingsSection ? settingsPinned.isPinned(item.path) : pinned.isPinned(item.path) }" />
                                 </button>
                               </div>
                             </div>

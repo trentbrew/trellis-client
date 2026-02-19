@@ -147,7 +147,7 @@
           <h3 class="text-sm font-semibold text-foreground">Customize this world</h3>
           <p class="text-xs text-muted-foreground">Install templates to add new entity types, sidebar sections, and starter content.</p>
         </div>
-        <NuxtLink :to="wp('/marketplace')">
+        <NuxtLink :to="wp('/settings/marketplace')">
           <UiButton variant="outline" size="sm" class="shrink-0 gap-2">
             <Icon name="lucide:store" class="h-4 w-4" />
             Marketplace

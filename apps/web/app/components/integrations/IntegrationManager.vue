@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import type { IntegrationDefinition, ConnectedIntegration, IntegrationCategory } from '~/composables/useIntegrations'
+import type { IntegrationDefinition, IntegrationCategory, IntegrationConnectionStatus } from '~/types/database'
 
 const _props = defineProps<{
   open: boolean
@@ -9,75 +9,58 @@ const emit = defineEmits<{
   'update:open': [open: boolean]
 }>()
 
-const { integrationsByCategory, categoryMeta, createConnectedIntegration } = useIntegrations()
+const {
+  definitionsByCategory,
+  getConnection,
+  connectedCount,
+  deleteConnection,
+  categoryMeta,
+  categories,
+} = useIntegrations()
 
 // UI state
 const activeCategory = ref<IntegrationCategory>('data')
-const configuringIntegration = ref<IntegrationDefinition | null>(null)
-const connectedIntegrations = ref<ConnectedIntegration[]>([])
-
-const categories: IntegrationCategory[] = ['data', 'auth', 'communication', 'storage', 'automation', 'analytics']
+const configuringDef = ref<IntegrationDefinition | null>(null)
 
 const currentCategoryIntegrations = computed(() => {
-  return integrationsByCategory.value[activeCategory.value] || []
+  return definitionsByCategory.value[activeCategory.value] || []
 })
 
-const getIntegrationStatus = (integrationId: string) => {
-  const connected = connectedIntegrations.value.find((c) => c.integrationId === integrationId)
-  return connected?.status
+function getConnectionStatus(integrationId: string): IntegrationConnectionStatus | undefined {
+  return getConnection(integrationId)?.connectionStatus
 }
 
-// Handlers
-const handleConfigure = (integration: IntegrationDefinition) => {
-  configuringIntegration.value = integration
-}
-
-const handleDisconnect = (integration: IntegrationDefinition) => {
-  connectedIntegrations.value = connectedIntegrations.value.filter(
-    (c) => c.integrationId !== integration.id
-  )
-}
-
-const handleSaveConfig = (config: Record<string, any>) => {
-  if (!configuringIntegration.value) return
-
-  const existing = connectedIntegrations.value.find(
-    (c) => c.integrationId === configuringIntegration.value!.id
-  )
-
-  if (existing) {
-    existing.config = config
-    existing.status = 'connected'
-    existing.updatedAt = Date.now()
-  } else {
-    const newConnection = createConnectedIntegration(configuringIntegration.value.id)
-    newConnection.config = config
-    newConnection.status = 'connected'
-    connectedIntegrations.value.push(newConnection)
+function handleConfigure(def: IntegrationDefinition) {
+  if (def.authType === 'oauth') {
+    const slug = def.id.replace('integration-def-', '')
+    window.location.href = `/api/integrations/${slug}/auth`
+    return
   }
-
-  configuringIntegration.value = null
+  configuringDef.value = def
 }
 
-const handleCancelConfig = () => {
-  configuringIntegration.value = null
+async function handleDisconnect(def: IntegrationDefinition) {
+  const conn = getConnection(def.id.replace('integration-def-', ''))
+  if (!conn) return
+  try { await deleteConnection(conn.id) }
+  catch (err) { console.error('[IntegrationManager] Disconnect failed:', err) }
 }
 
-const handleStartOAuth = () => {
-  // TODO: Implement OAuth flow
-  console.log('Starting OAuth flow for', configuringIntegration.value?.name)
+function handleCancelConfig() {
+  configuringDef.value = null
 }
 
-const connectedCount = computed(() => {
-  return connectedIntegrations.value.filter((c) => c.status === 'connected').length
-})
+function handleStartOAuth() {
+  if (!configuringDef.value) return
+  const slug = configuringDef.value.id.replace('integration-def-', '')
+  window.location.href = `/api/integrations/${slug}/auth`
+}
 </script>
 
 <template>
   <UiDialog :open="open" @update:open="emit('update:open', $event)">
-    <!-- Builder dialog: accent ring identifies this as a builder-mode feature -->
     <UiDialogContent class="w-[90vw]! max-w-[1400px]! h-[90vh]! flex flex-col p-0! ring-4 ring-accent">
-      <!-- Header with accent styling -->
+      <!-- Header -->
       <div class="flex items-center justify-between px-6 py-4 border-b border-accent/20 bg-accent/5 shrink-0">
         <div class="flex items-center gap-3">
           <Icon name="lucide:plug" class="w-5 h-5 text-primary" />
@@ -110,7 +93,7 @@ const connectedCount = computed(() => {
                 <div
                   class="text-xs truncate"
                   :class="activeCategory === cat ? 'text-primary-foreground/70' : 'text-muted-foreground'">
-                  {{ integrationsByCategory[cat]?.length || 0 }} available
+                  {{ definitionsByCategory[cat]?.length || 0 }} available
                 </div>
               </div>
             </button>
@@ -119,8 +102,8 @@ const connectedCount = computed(() => {
 
         <!-- Integration List / Config Form -->
         <div class="flex-1 overflow-y-auto p-6">
-          <!-- Config Form (when configuring) -->
-          <div v-if="configuringIntegration">
+          <!-- Config Form -->
+          <div v-if="configuringDef">
             <button
               class="flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground mb-4"
               @click="handleCancelConfig">
@@ -130,17 +113,16 @@ const connectedCount = computed(() => {
 
             <div class="flex items-center gap-3 mb-6">
               <div class="p-3 rounded-lg bg-muted">
-                <Icon :name="configuringIntegration.icon" class="w-8 h-8" />
+                <Icon :name="configuringDef.icon || 'lucide:plug'" class="w-8 h-8" />
               </div>
               <div>
-                <h3 class="text-lg font-semibold">{{ configuringIntegration.name }}</h3>
-                <p class="text-sm text-muted-foreground">{{ configuringIntegration.description }}</p>
+                <h3 class="text-lg font-semibold">{{ configuringDef.title }}</h3>
+                <p class="text-sm text-muted-foreground">{{ configuringDef.description }}</p>
               </div>
             </div>
 
             <IntegrationConfigForm
-              :integration="configuringIntegration"
-              @save="handleSaveConfig"
+              :integration="configuringDef"
               @cancel="handleCancelConfig"
               @start-o-auth="handleStartOAuth" />
           </div>
@@ -159,10 +141,10 @@ const connectedCount = computed(() => {
 
             <div v-else class="grid gap-4">
               <IntegrationCard
-                v-for="integration in currentCategoryIntegrations"
-                :key="integration.id"
-                :integration="integration"
-                :status="getIntegrationStatus(integration.id)"
+                v-for="def in currentCategoryIntegrations"
+                :key="def.id"
+                :integration="def"
+                :status="getConnectionStatus(def.id.replace('integration-def-', ''))"
                 @configure="handleConfigure"
                 @disconnect="handleDisconnect" />
             </div>

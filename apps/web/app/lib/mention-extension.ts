@@ -5,10 +5,31 @@ import Mention from '@tiptap/extension-mention'
 import MentionSuggestionList from '~/components/Ui/MentionSuggestionList.vue'
 import MentionChip from '~/components/Ui/MentionChip.vue'
 import type { EntitySearchItem } from '~/composables/useEntitySearch'
+import { getAllEntityTypeIds } from '~/config/entityRegistry'
+
+export interface MentionCreateContext {
+  type: string | null
+  name: string
+}
 
 export interface MentionSuggestionConfig {
   getItems: (_query: string) => EntitySearchItem[]
   onSelect?: (_item: EntitySearchItem) => void
+  onCreate?: (_type: string | null, _name: string) => Promise<EntitySearchItem | null>
+}
+
+/** Parse `type:name` query syntax. Returns null when query is empty (no create option shown). */
+export function parseMentionQuery(query: string): MentionCreateContext | null {
+  if (!query.trim()) return null
+  const colonIdx = query.indexOf(':')
+  if (colonIdx > 0) {
+    const possibleType = query.slice(0, colonIdx).toLowerCase()
+    const validTypes = new Set<string>(getAllEntityTypeIds() as string[])
+    if (validTypes.has(possibleType)) {
+      return { type: possibleType, name: query.slice(colonIdx + 1) }
+    }
+  }
+  return { type: null, name: query }
 }
 
 const CustomMention = Mention.extend({
@@ -55,19 +76,44 @@ function createSuggestion(config: MentionSuggestionConfig): Omit<SuggestionOptio
       let component: VueRenderer
       let popup: TippyInstance
 
+      function buildCommand(props: any) {
+        return (item: EntitySearchItem) => {
+          props.command({
+            id: item.id,
+            label: item.title || 'Untitled',
+            entityType: item.type,
+          })
+          config.onSelect?.(item)
+        }
+      }
+
+      function buildOnCreateNew(props: any) {
+        if (!config.onCreate) return undefined
+        return async (typeOverride?: string) => {
+          const ctx = parseMentionQuery(props.query)
+          if (!ctx) return
+          popup?.hide()
+          const resolvedType = typeOverride ?? ctx.type
+          const result = await config.onCreate!(resolvedType, ctx.name)
+          if (result) {
+            props.command({
+              id: result.id,
+              label: result.title || 'Untitled',
+              entityType: result.type,
+            })
+            config.onSelect?.(result)
+          }
+        }
+      }
+
       return {
         onStart(props) {
           component = new VueRenderer(MentionSuggestionList, {
             props: {
               items: props.items,
-              command: (item: EntitySearchItem) => {
-                props.command({
-                  id: item.id,
-                  label: item.title || 'Untitled',
-                  entityType: item.type,
-                })
-                config.onSelect?.(item)
-              },
+              command: buildCommand(props),
+              createContext: parseMentionQuery(props.query),
+              onCreateNew: buildOnCreateNew(props),
             },
             editor: props.editor,
           })
@@ -94,14 +140,9 @@ function createSuggestion(config: MentionSuggestionConfig): Omit<SuggestionOptio
         onUpdate(props) {
           component?.updateProps({
             items: props.items,
-            command: (item: EntitySearchItem) => {
-              props.command({
-                id: item.id,
-                label: item.title || 'Untitled',
-                entityType: item.type,
-              })
-              config.onSelect?.(item)
-            },
+            command: buildCommand(props),
+            createContext: parseMentionQuery(props.query),
+            onCreateNew: buildOnCreateNew(props),
           })
 
           if (!props.clientRect) return

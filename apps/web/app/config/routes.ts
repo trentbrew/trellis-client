@@ -303,11 +303,6 @@ export const ROUTE_PATHS = {
     bookmarks: '/workspace/bookmarks',
     places: '/workspace/places',
   },
-  marketplace: {
-    root: '/marketplace',
-    featured: '/marketplace/featured',
-    installed: '/marketplace/installed',
-  },
   app: {
     root: '/app',
     tasks: '/app/tasks',
@@ -391,6 +386,8 @@ export const ROUTE_PATHS = {
     appearance: '/settings/appearance',
     theme: '/settings/theme',
     notifications: '/settings/notifications',
+    shortcuts: '/settings/shortcuts',
+    roles: '/settings/roles',
     pages: '/settings/pages',
     integrations: '/settings/integrations',
     marketplace: '/settings/marketplace',
@@ -572,7 +569,7 @@ export function parseFullPath(path: string): ParsedPath {
   const segments = path.split('/').filter(Boolean)
 
   // Check for [workspace]/[app]/... pattern (2+ segments where first is not a known top-level route)
-  const knownTopLevelRoutes = ['docs', 'settings', 'admin', 'auth', 'database', 'collections', 'workflows', 'help', 'workspace', 'welcome', 'onboarding', 'notifications', 'permits', 'types', 'apptool', 'playground', 'components', 'embed', 'archive', 'members', 'learn', 'graph', 'calendar', 'documents', 'invite', 'w']
+  const knownTopLevelRoutes = ['docs', 'settings', 'admin', 'auth', 'database', 'collections', 'workflows', 'help', 'workspace', 'welcome', 'onboarding', 'notifications', 'permits', 'types', 'apptool', 'playground', 'components', 'embed', 'archive', 'members', 'learn', 'graph', 'calendar', 'documents', 'invite', 'messages', 'w']
 
   if (segments.length >= 2 && segments[0] && !knownTopLevelRoutes.includes(segments[0])) {
     // It's a workspace/app route: /[workspace]/[app]/path...

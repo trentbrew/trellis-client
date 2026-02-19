@@ -61,13 +61,19 @@ function initSSE() {
   _sseConnected = true
 
   let retryMs = 1000
+  let debouncedBump: ReturnType<typeof setTimeout> | null = null
 
   function connect() {
     const es = new EventSource(`${API_BASE}/events`)
 
     es.addEventListener('mutation', () => {
-      // Bump version so all reactive queries re-fetch
-      _graphVersion.value++
+      // Debounce rapid-fire mutations (e.g. GCal sync upserting many events)
+      // into a single _graphVersion bump so reactive queries re-fetch once.
+      if (debouncedBump) clearTimeout(debouncedBump)
+      debouncedBump = setTimeout(() => {
+        _graphVersion.value++
+        debouncedBump = null
+      }, 300)
     })
 
     es.addEventListener('connected', () => {

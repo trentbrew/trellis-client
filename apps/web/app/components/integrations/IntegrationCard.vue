@@ -1,9 +1,9 @@
 <script setup lang="ts">
-import type { IntegrationDefinition, IntegrationStatus } from '~/composables/useIntegrations'
+import type { IntegrationDefinition, IntegrationConnectionStatus } from '~/types/database'
 
 const props = defineProps<{
   integration: IntegrationDefinition
-  status?: IntegrationStatus
+  status?: IntegrationConnectionStatus
   compact?: boolean
 }>()
 
@@ -24,14 +24,14 @@ const categoryColors: Record<string, { bg: string; border: string; text: string 
 const defaultColors = { bg: 'bg-gray-500/10', border: 'border-gray-500/30', text: 'text-gray-600' }
 const colors = computed(() => categoryColors[props.integration.category] ?? defaultColors)
 
-const statusConfig: Record<IntegrationStatus, { label: string; color: string; icon: string }> = {
-  available: { label: 'Available', color: 'text-muted-foreground', icon: 'lucide:circle' },
+const statusConfig: Record<IntegrationConnectionStatus, { label: string; color: string; icon: string }> = {
   connected: { label: 'Connected', color: 'text-green-500', icon: 'lucide:check-circle' },
   error: { label: 'Error', color: 'text-red-500', icon: 'lucide:alert-circle' },
   configuring: { label: 'Configuring', color: 'text-amber-500', icon: 'lucide:settings' },
+  disconnected: { label: 'Disconnected', color: 'text-muted-foreground', icon: 'lucide:circle' },
 }
 
-const currentStatus = computed(() => statusConfig[props.status || 'available'])
+const currentStatus = computed(() => props.status ? statusConfig[props.status] : null)
 </script>
 
 <template>
@@ -43,14 +43,14 @@ const currentStatus = computed(() => statusConfig[props.status || 'available'])
       <div class="flex items-start gap-3">
         <!-- Icon -->
         <div class="shrink-0 p-2.5 rounded-lg" :class="colors.bg">
-          <Icon :name="integration.icon" class="w-6 h-6" :class="colors.text" />
+          <Icon :name="integration.icon || 'lucide:plug'" class="w-6 h-6" :class="colors.text" />
         </div>
 
         <!-- Info -->
         <div class="flex-1 min-w-0">
           <div class="flex items-center gap-2">
-            <h3 class="font-medium text-foreground">{{ integration.name }}</h3>
-            <span v-if="status" class="flex items-center gap-1 text-xs" :class="currentStatus.color">
+            <h3 class="font-medium text-foreground">{{ integration.title }}</h3>
+            <span v-if="currentStatus" class="flex items-center gap-1 text-xs" :class="currentStatus.color">
               <Icon :name="currentStatus.icon" class="w-3 h-3" />
               {{ currentStatus.label }}
             </span>
@@ -62,15 +62,15 @@ const currentStatus = computed(() => statusConfig[props.status || 'available'])
       </div>
 
       <!-- Features (not compact) -->
-      <div v-if="!compact && integration.features.length > 0" class="mt-3 flex flex-wrap gap-1.5">
+      <div v-if="!compact && (integration.features?.length ?? 0) > 0" class="mt-3 flex flex-wrap gap-1.5">
         <span
-          v-for="feature in integration.features.slice(0, 4)"
+          v-for="feature in (integration.features || []).slice(0, 4)"
           :key="feature"
           class="text-xs px-2 py-0.5 rounded-full bg-muted text-muted-foreground">
           {{ feature }}
         </span>
-        <span v-if="integration.features.length > 4" class="text-xs px-2 py-0.5 text-muted-foreground">
-          +{{ integration.features.length - 4 }} more
+        <span v-if="(integration.features?.length ?? 0) > 4" class="text-xs px-2 py-0.5 text-muted-foreground">
+          +{{ (integration.features?.length ?? 0) - 4 }} more
         </span>
       </div>
     </div>

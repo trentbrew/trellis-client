@@ -1,7 +1,6 @@
 <script setup lang="ts">
   import CalendarView from '~/components/views/CalendarView.vue'
   import EntityDialog from '~/components/dialogs/EntityDialog.vue'
-  import GCalEnrichedDialog from '~/components/dialogs/GCalEnrichedDialog.vue'
   import type { Entity, EntityType } from '~/types/entity'
   import { createDefaultItem } from '~/types/entity'
   import { typeHasField, getTypesForClass } from '~/config/entityRegistry'
@@ -10,7 +9,7 @@
     layout: 'default',
   })
 
-  useHead({ title: 'Calendar' })
+  useHead({ title: 'Calendar | Personal' })
 
   // ---------------------------------------------------------------------------
   // Live data from instant-local
@@ -73,6 +72,7 @@
   const visibleGcalEvents = computed(() => {
     if (!gcalConnected.value) return []
     if (hiddenGcalAccounts.value.size === 0) return gcalEvents.value
+    // Filter by accountEmail of visible connections
     const visibleEmails = new Set(
       gcalAccounts.value
         .filter((c) => !hiddenGcalAccounts.value.has(c.id))
@@ -82,6 +82,7 @@
     if (visibleEmails.size === 0) return []
     return gcalEvents.value.filter((e) => {
       const calId = e.googleCalendarId as string | undefined
+      // If no calendarId stored, show it (legacy data)
       if (!calId || calId === 'primary') return true
       return visibleEmails.has(calId)
     })
@@ -105,6 +106,7 @@
       ...getTypesForClass('container'),
     ]
     return allTypes
+      .filter(t => t.type !== 'project')
       .filter(t => typeHasField(t.type, 'startDate') || typeHasField(t.type, 'endDate') || typeHasField(t.type, 'targetDate'))
       .sort((a, b) => a.label.localeCompare(b.label))
   })
@@ -158,7 +160,9 @@
       '@id': `item:${item.id}`,
       '@type': item.type.charAt(0).toUpperCase() + item.type.slice(1),
       'trellis:title': item.title,
-      'user:dueDate': item.endDate ? { start: item.startDate, end: item.endDate } : item.startDate,
+      'user:dueDate': item.endDate
+        ? { start: `${item.startDate}T00:00:00`, end: `${item.endDate}T00:00:00` }
+        : `${item.startDate}T00:00:00`,
       'user:recurrence': item.recurrence,
       'user:status': (item as any).taskStatus || (item as any).paymentStatus || (item as any).eventType || 'note',
       'user:priority': item.priority,
@@ -173,7 +177,7 @@
         if (!startDate) continue
         nodes.push({
           '@id': `gcal:${node.googleEventId || node['@id']}`,
-          '@type': 'GoogleCalendar',
+          '@type': 'Event',
           'trellis:title': (node.title as string) || '(No title)',
           'user:dueDate': endDate && endDate !== startDate
             ? { start: `${startDate}T00:00:00`, end: `${endDate}T00:00:00` }
@@ -190,8 +194,8 @@
   })
 
   const calendarSchema = computed(() => ({
-    id: 'calendar-schema',
-    collectionId: 'all-items',
+    id: 'personal-calendar-schema',
+    collectionId: 'personal-items',
     fields: [
       { id: 'dueDate', name: 'Date', type: 'date' as const, order: 0, required: false },
       { id: 'status', name: 'Status', type: 'select' as const, order: 1, required: false },
@@ -209,10 +213,6 @@
   const viewDialogOpen = ref(false)
   const _viewingItemId = ref<string | null>(null)
   const _pendingNewItem = ref<Entity | null>(null)
-
-  // ── GCal event dialog ────────────────────────────────────────────────
-  const gcalDialogOpen = ref(false)
-  const gcalViewingEvent = ref<Record<string, any> | null>(null)
   const viewingItem = computed<Entity | null>(() => {
     if (!_viewingItemId.value) return null
     return items.value.find((i) => i.id === _viewingItemId.value)
@@ -253,19 +253,6 @@
   }
 
   function handleEntityClick(calEvent: { id: string }) {
-    // GCal events have IDs prefixed with "gcal:"
-    if (calEvent.id.startsWith('gcal:')) {
-      const googleEventId = calEvent.id
-        .replace(/^gcal:/, '')
-        .replace(/-repeat-\d+$/, '')
-        .replace(/-\d+-\d+$/, '')
-      const gcalEvent = gcalEvents.value.find((e) => e.googleEventId === googleEventId)
-      if (gcalEvent) {
-        gcalViewingEvent.value = gcalEvent
-        gcalDialogOpen.value = true
-      }
-      return
-    }
     // CalendarView formats IDs as "item:{uuid}-{nodeIndex}-{valueIndex}".
     // Repeated instances append "-repeat-{n}".
     // Strip the prefix and trailing index suffixes to get the original UUID
@@ -301,8 +288,6 @@
   }
 
   function handleEventReschedule(eventId: string, newDate: Date) {
-    // CalendarView formats IDs as "item:{uuid}-{nodeIndex}-{valueIndex}".
-    // Repeated instances append "-repeat-{n}".
     const rawId = eventId
       .replace(/^item:/, '')
       .replace(/-repeat-\d+$/, '')
@@ -315,9 +300,9 @@
 </script>
 
 <template>
-  <Page variant="calendar" seo-title="Calendar" hide-sidebar>
+  <Page variant="calendar" seo-title="Calendar | Personal" hide-sidebar>
     <CalendarView
-      collection-id="all-items"
+      collection-id="personal-items"
       :model-value="calendarData"
       :schema="calendarSchema"
       fullscreen
@@ -460,11 +445,6 @@
       @save="handleUpdate"
       @delete="handleDelete"
       @close="viewDialogOpen = false" />
-
-    <!-- Google Calendar Event Dialog (enriched) -->
-    <GCalEnrichedDialog
-      v-model:open="gcalDialogOpen"
-      :event="gcalViewingEvent" />
 
   </Page>
 </template>

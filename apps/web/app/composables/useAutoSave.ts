@@ -21,8 +21,8 @@ export function useAutoSave<T extends Record<string, any>>(
     enabled: Ref<boolean> | ComputedRef<boolean>
     /** Debounce delay in ms. Default 800. */
     debounce?: number
-    /** Called before each save — use for field defaults, formulas, etc. */
-    beforeSave?: (_item: T) => void
+    /** Called before each save — use for field defaults, formulas, etc. May be async. */
+    beforeSave?: (_item: T) => void | Promise<void>
     /** Keys to ignore when computing the change snapshot. */
     ignoreKeys?: string[]
   },
@@ -69,7 +69,7 @@ export function useAutoSave<T extends Record<string, any>>(
     if (!item.id) return
 
     try {
-      options.beforeSave?.(item)
+      await options.beforeSave?.(item)
       setStatus('saving')
       await updateItem({ ...item } as unknown as Entity)
       lastSavedAt.value = new Date()

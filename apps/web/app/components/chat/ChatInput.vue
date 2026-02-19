@@ -1,6 +1,13 @@
 <script setup lang="ts">
   import type { EntityRef } from '~/types/database'
 
+  type EditorRef = {
+    clearContent: () => void
+    focusEditor: () => void
+    getEditor: () => any
+    triggerImageUpload: () => void
+  }
+
   const props = defineProps<{
     channelId: string
     placeholder?: string
@@ -13,50 +20,51 @@
   }>()
 
   const content = ref('')
-  const textareaRef = ref<HTMLTextAreaElement | null>(null)
   const isSending = ref(false)
+  const editorRef = ref<EditorRef | null>(null)
 
-  function autoResize() {
-    const el = textareaRef.value
-    if (!el) return
-    el.style.height = 'auto'
-    el.style.height = `${Math.min(el.scrollHeight, 200)}px`
+  function hasContent(html: string): boolean {
+    if (!html) return false
+    if (/<img/i.test(html)) return true
+    return !!html.replace(/<[^>]+>/g, '').trim()
   }
 
-  async function handleSend() {
-    const text = content.value.trim()
-    if (!text || isSending.value) return
+  const canSend = computed(() => !isSending.value && hasContent(content.value))
 
+  async function handleSend() {
+    if (!canSend.value) return
     isSending.value = true
     try {
-      emit('send', text, [], props.replyTo?.id)
+      emit('send', content.value, [], props.replyTo?.id)
       content.value = ''
-      nextTick(() => {
-        if (textareaRef.value) {
-          textareaRef.value.style.height = 'auto'
-          textareaRef.value.focus()
-        }
-      })
+      editorRef.value?.clearContent()
+      nextTick(() => editorRef.value?.focusEditor())
     } finally {
       isSending.value = false
     }
   }
 
-  function handleKeydown(e: KeyboardEvent) {
-    if (e.key === 'Enter' && !e.shiftKey) {
-      e.preventDefault()
-      handleSend()
-    }
+  function handleWrapperKeydown(e: KeyboardEvent) {
     if (e.key === 'Escape' && props.replyTo) {
       emit('cancelReply')
     }
   }
 
-  const canSend = computed(() => content.value.trim().length > 0 && !isSending.value)
+  function fmt(cmd: string) {
+    const e = editorRef.value?.getEditor()
+    if (!e) return
+    switch (cmd) {
+      case 'bold': e.chain().focus().toggleBold().run(); break
+      case 'italic': e.chain().focus().toggleItalic().run(); break
+      case 'strike': e.chain().focus().toggleStrike().run(); break
+      case 'code': e.chain().focus().toggleCode().run(); break
+      case 'blockquote': e.chain().focus().toggleBlockquote().run(); break
+    }
+  }
 </script>
 
 <template>
-  <div class="shrink-0 border-t border-border bg-card">
+  <div class="shrink-0 border-t border-border bg-card" @keydown="handleWrapperKeydown">
     <!-- Reply preview -->
     <div
       v-if="replyTo"
@@ -74,42 +82,121 @@
       </button>
     </div>
 
-    <!-- Input area -->
-    <div class="flex items-end gap-2 px-3 py-3">
-      <div class="flex-1 flex items-end gap-2 rounded-xl border border-border bg-background px-3 py-2 focus-within:ring-1 focus-within:ring-ring transition-shadow">
-        <textarea
-          ref="textareaRef"
+    <!-- Input container -->
+    <div class="mx-3 my-2 rounded-xl border border-border bg-background focus-within:ring-1 focus-within:ring-ring transition-shadow">
+      <!-- Rich text editor -->
+      <div class="px-3 pt-2.5 pb-1 max-h-56 overflow-y-auto text-xs">
+        <UiRichTextEditor
+          ref="editorRef"
           v-model="content"
-          rows="1"
           :placeholder="placeholder ?? `Message #${channelId}`"
-          class="flex-1 resize-none bg-transparent text-sm leading-relaxed outline-none placeholder:text-muted-foreground/60 max-h-[200px] min-h-[24px]"
-          @input="autoResize"
-          @keydown="handleKeydown"
+          seamless
+          mentions
+          images
+          submit-on-enter
+          @submit="handleSend"
         />
-
-        <!-- Emoji button (placeholder) -->
-        <button
-          class="shrink-0 text-muted-foreground hover:text-foreground transition-colors mb-0.5"
-          title="Add emoji"
-        >
-          <Icon name="lucide:smile" class="h-4 w-4" />
-        </button>
       </div>
 
-      <!-- Send button -->
-      <UiButton
-        size="icon"
-        :disabled="!canSend"
-        class="h-9 w-9 shrink-0 rounded-xl"
-        @click="handleSend"
-      >
-        <Icon name="lucide:send" class="h-4 w-4" />
-      </UiButton>
+      <!-- Bottom bar: formatting + actions -->
+      <div class="flex items-center gap-0.5 px-2 pb-2 pt-0.5">
+        <!-- Formatting -->
+        <UiTooltip>
+          <UiTooltipTrigger as-child>
+            <button
+              class="h-6 w-6 flex items-center justify-center rounded text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
+              @click="fmt('bold')"
+            >
+              <Icon name="lucide:bold" class="h-3.5 w-3.5" />
+            </button>
+          </UiTooltipTrigger>
+          <UiTooltipContent side="top" class="text-xs">Bold</UiTooltipContent>
+        </UiTooltip>
+
+        <UiTooltip>
+          <UiTooltipTrigger as-child>
+            <button
+              class="h-6 w-6 flex items-center justify-center rounded text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
+              @click="fmt('italic')"
+            >
+              <Icon name="lucide:italic" class="h-3.5 w-3.5" />
+            </button>
+          </UiTooltipTrigger>
+          <UiTooltipContent side="top" class="text-xs">Italic</UiTooltipContent>
+        </UiTooltip>
+
+        <UiTooltip>
+          <UiTooltipTrigger as-child>
+            <button
+              class="h-6 w-6 flex items-center justify-center rounded text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
+              @click="fmt('strike')"
+            >
+              <Icon name="lucide:strikethrough" class="h-3.5 w-3.5" />
+            </button>
+          </UiTooltipTrigger>
+          <UiTooltipContent side="top" class="text-xs">Strikethrough</UiTooltipContent>
+        </UiTooltip>
+
+        <UiTooltip>
+          <UiTooltipTrigger as-child>
+            <button
+              class="h-6 w-6 flex items-center justify-center rounded text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
+              @click="fmt('code')"
+            >
+              <Icon name="lucide:code" class="h-3.5 w-3.5" />
+            </button>
+          </UiTooltipTrigger>
+          <UiTooltipContent side="top" class="text-xs">Inline code</UiTooltipContent>
+        </UiTooltip>
+
+        <UiTooltip>
+          <UiTooltipTrigger as-child>
+            <button
+              class="h-6 w-6 flex items-center justify-center rounded text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
+              @click="fmt('blockquote')"
+            >
+              <Icon name="lucide:quote" class="h-3.5 w-3.5" />
+            </button>
+          </UiTooltipTrigger>
+          <UiTooltipContent side="top" class="text-xs">Blockquote</UiTooltipContent>
+        </UiTooltip>
+
+        <div class="w-px h-3.5 bg-border/60 mx-0.5" />
+
+        <!-- Image attach -->
+        <UiTooltip>
+          <UiTooltipTrigger as-child>
+            <button
+              class="h-6 w-6 flex items-center justify-center rounded text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
+              @click="editorRef?.triggerImageUpload()"
+            >
+              <Icon name="lucide:image-plus" class="h-3.5 w-3.5" />
+            </button>
+          </UiTooltipTrigger>
+          <UiTooltipContent side="top" class="text-xs">Attach image</UiTooltipContent>
+        </UiTooltip>
+
+        <!-- Spacer -->
+        <div class="flex-1" />
+
+        <!-- Send -->
+        <button
+          :disabled="!canSend"
+          class="h-7 w-7 flex items-center justify-center rounded-lg transition-all"
+          :class="canSend
+            ? 'bg-primary text-primary-foreground hover:bg-primary/90 cursor-pointer'
+            : 'bg-muted/60 text-muted-foreground/40 cursor-not-allowed'"
+          title="Send (Enter)"
+          @click="handleSend"
+        >
+          <Icon name="lucide:send-horizontal" class="h-3.5 w-3.5" />
+        </button>
+      </div>
     </div>
 
     <!-- Hint -->
-    <div class="px-4 pb-2 text-[10px] text-muted-foreground/50">
-      <kbd class="font-mono">Enter</kbd> to send · <kbd class="font-mono">Shift+Enter</kbd> for new line
+    <div class="px-4 pb-2 text-[10px] text-muted-foreground/40">
+      <kbd class="font-mono">@</kbd> to mention · <kbd class="font-mono">⌘Enter</kbd> to send · <kbd class="font-mono">Enter</kbd> for new line
     </div>
   </div>
 </template>

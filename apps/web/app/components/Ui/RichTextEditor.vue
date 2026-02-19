@@ -14,13 +14,14 @@
   import { EditorContent, useEditor, VueNodeViewRenderer } from '@tiptap/vue-3'
   import { TextSelection } from 'prosemirror-state'
   import CodeBlockComponent from './CodeBlockComponent.vue'
-  import { createMentionExtension } from '~/lib/mention-extension'
+  import { createMentionExtension, parseMentionQuery } from '~/lib/mention-extension'
   import { createSlashCommandExtension } from '~/lib/slash-command-extension'
   import { Callout } from '~/lib/callout-extension'
   import { EntityEmbed } from '~/lib/entity-embed-extension'
   import { QueryView } from '~/lib/query-view-extension'
   import { useEntitySearch } from '~/composables/useEntitySearch'
   import type { EntitySearchItem } from '~/composables/useEntitySearch'
+  import { createDefaultItem } from '~/types/entity'
   import { useImageUpload } from '~/composables/useImageUpload'
   import { markdownToHtml } from '~/utils/markdown'
 
@@ -65,11 +66,13 @@
     embeds?: boolean
     collaborative?: boolean
     entityId?: string
+    submitOnEnter?: boolean
   }>()
 
   const emit = defineEmits<{
     'update:modelValue': [value: string]
     'mention-click': [attrs: { id: string; label: string; entityType: string }]
+    'submit': []
   }>()
 
   // ── Image upload infrastructure ──────────────────────────────────────
@@ -145,6 +148,7 @@
 
   // Build entity search for mentions and embeds
   const entitySearch = (props.mentions || props.embeds) ? useEntitySearch() : null
+  const { create: _createEntity } = (props.mentions || props.embeds) ? useTrellisEntities() : { create: async () => null }
   const tablesEnabled = props.tables !== false
   const mathematicsEnabled = props.mathematics !== false
 
@@ -343,8 +347,21 @@
       exts.push(
         createMentionExtension({
           getItems(query: string) {
+            const parsed = parseMentionQuery(query)
+            if (parsed?.type) {
+              entitySearch.search.value = parsed.name
+              return (entitySearch.filteredItems.value as EntitySearchItem[]).filter(i => i.type === parsed.type)
+            }
             entitySearch.search.value = query
             return entitySearch.filteredItems.value as EntitySearchItem[]
+          },
+          async onCreate(type: string | null, name: string) {
+            const entityType = (type || 'note') as any
+            const title = name.trim() || 'Untitled'
+            const defaults = createDefaultItem(entityType)
+            const id = await _createEntity({ ...defaults, type: entityType, title } as any)
+            if (!id) return null
+            return { id, title, type: entityType } as EntitySearchItem
           },
         }) as any,
       )
@@ -511,7 +528,7 @@
       handleKeyDown: (view, event) => {
         // Auto-indentation for code blocks: when Enter is pressed,
         // copy the leading whitespace from the current line to the new line
-        if (event.key === 'Enter' && !event.shiftKey) {
+        if (event.key === 'Enter' && !event.shiftKey && !event.metaKey && !event.ctrlKey) {
           const { state } = view
           const { selection } = state
           const { $from } = selection
@@ -548,6 +565,17 @@
               view.dispatch(tr)
               return true
             }
+          }
+
+        }
+        // Submit on Cmd+Enter (or Ctrl+Enter)
+        if (event.key === 'Enter' && (event.metaKey || event.ctrlKey) && props.submitOnEnter) {
+          // Don't fire if a suggestion dropdown (mention/slash) is open
+          const hasSuggestion = document.querySelector('.tippy-box, [data-tippy-root]')
+          if (!hasSuggestion) {
+            event.preventDefault()
+            emit('submit')
+            return true
           }
         }
         return false
@@ -595,6 +623,24 @@
     destroyCollab()
     editor.value?.destroy()
   })
+
+  function clearContent() {
+    editor.value?.commands.clearContent(true)
+  }
+
+  function focusEditor() {
+    editor.value?.commands.focus()
+  }
+
+  function getEditor() {
+    return editor.value
+  }
+
+  function triggerImageUpload() {
+    imageInputRef.value?.click()
+  }
+
+  defineExpose({ clearContent, focusEditor, getEditor, triggerImageUpload })
 </script>
 
 <template>
