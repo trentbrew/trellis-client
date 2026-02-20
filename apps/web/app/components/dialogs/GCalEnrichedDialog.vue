@@ -500,11 +500,11 @@
         </div>
 
         <!-- Trellis enrichment: notes (editable) -->
-        <div class="flex-1 px-6 py-4">
+        <div class="flex-1 px-0 py-0">
           <UiRichTextEditor
             v-model="editableEnrichment.notes"
             placeholder="Add notes, context, or action items for this event..."
-            class="min-h-[120px]" />
+            class="min-h-[120px] h-full flex-1" />
         </div>
       </div>
 

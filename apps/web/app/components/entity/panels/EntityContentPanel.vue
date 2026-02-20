@@ -9,6 +9,7 @@
    * Usage:
    *   <EntityContentPanel v-model="editableItem" :mode="mode" />
    */
+  import { getEntityClass } from '~/types/entity'
   import type { EntityType } from '~/types/entity'
 
   const props = defineProps<{
@@ -30,14 +31,23 @@
     bookmark: defineAsyncComponent(() => import('./document/BookmarkContent.vue')),
     diagram: defineAsyncComponent(() => import('~/components/editor/DiagramContent.vue')),
     goal: defineAsyncComponent(() => import('./container/GoalContent.vue')),
-    // trip, sprint, milestone, budget, payment — use summary fallback
+  }
+
+  // Class-level fallbacks for types without a specific panel
+  const classFallbacks: Record<string, ReturnType<typeof defineAsyncComponent>> = {
+    temporal: defineAsyncComponent(() => import('./temporal/TaskContent.vue')),
+    document: defineAsyncComponent(() => import('./document/NoteContent.vue')),
   }
 
   const SummaryPanel = defineAsyncComponent(() => import('./shared/EntitySummaryPanel.vue'))
 
   const currentPanel = computed(() => {
     if (!entityType.value) return SummaryPanel
-    return panelComponents[entityType.value] ?? SummaryPanel
+    return (
+      panelComponents[entityType.value]
+      ?? classFallbacks[getEntityClass(entityType.value)]
+      ?? SummaryPanel
+    )
   })
 </script>
 

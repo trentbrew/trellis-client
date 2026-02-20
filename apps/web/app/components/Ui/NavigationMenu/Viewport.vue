@@ -17,7 +17,7 @@
 </script>
 
 <template>
-  <div class="absolute top-full left-0 isolate z-50 flex justify-center">
+  <div class="absolute top-full left-0 isolate z-[60] flex justify-center">
     <NavigationMenuViewport
       data-slot="navigation-menu-viewport"
       v-bind="{ ...forwarded, ...$attrs }"

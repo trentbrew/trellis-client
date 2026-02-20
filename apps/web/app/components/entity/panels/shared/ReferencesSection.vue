@@ -178,7 +178,7 @@
     <!-- Quick-add pills (only shown when NO refs exist and not readonly) -->
     <div v-if="!readonly && !hasAnyRefs" class="flex flex-wrap items-center gap-1.5">
       <button
-        v-for="opt in availableEntityTypes.slice(0, 7)"
+        v-for="opt in availableEntityTypes"
         :key="opt.type"
         class="inline-flex items-center gap-1 px-2 py-1 rounded-md text-[11px] font-medium border border-dashed border-border text-muted-foreground hover:text-foreground hover:border-foreground/30 hover:bg-muted/50 transition-colors"
         @click="emit('addEntityOfType', opt.type)">

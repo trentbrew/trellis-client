@@ -14,28 +14,12 @@ export type MermaidResult = MermaidRenderResult | MermaidErrorResult
 
 let idCounter = 0
 
-function getThemeVariables(): Record<string, string> {
-  if (!import.meta.client) return {}
-  const style = getComputedStyle(document.documentElement)
-  const get = (v: string) => style.getPropertyValue(v).trim()
-
-  return {
-    background: `oklch(${get('--background')})`,
-    primaryColor: `oklch(${get('--primary')})`,
-    primaryTextColor: `oklch(${get('--primary-foreground')})`,
-    primaryBorderColor: `oklch(${get('--border')})`,
-    lineColor: `oklch(${get('--muted-foreground')})`,
-    secondaryColor: `oklch(${get('--muted')})`,
-    tertiaryColor: `oklch(${get('--accent')})`,
-    edgeLabelBackground: `oklch(${get('--card')})`,
-    nodeBorder: `oklch(${get('--border')})`,
-    clusterBkg: `oklch(${get('--muted')})`,
-    titleColor: `oklch(${get('--foreground')})`,
-    attributeBackgroundColorEven: `oklch(${get('--muted')})`,
-    attributeBackgroundColorOdd: `oklch(${get('--card')})`,
-    fontFamily: get('--font-sans') || 'ui-sans-serif, system-ui, sans-serif',
-    fontSize: '14px',
-  }
+function resolveTheme(): 'dark' | 'default' {
+  if (!import.meta.client) return 'default'
+  const el = document.documentElement
+  return el.classList.contains('dark') || el.getAttribute('data-color-mode') === 'dark'
+    ? 'dark'
+    : 'default'
 }
 
 async function ensureInitialized() {
@@ -43,10 +27,8 @@ async function ensureInitialized() {
   const mermaid = (await import('mermaid')).default
   mermaid.initialize({
     startOnLoad: false,
-    theme: 'base',
-    themeVariables: getThemeVariables(),
+    theme: resolveTheme(),
     securityLevel: 'loose',
-    fontFamily: 'ui-sans-serif, system-ui, sans-serif',
   })
   initialized = true
 }

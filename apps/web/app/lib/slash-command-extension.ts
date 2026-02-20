@@ -12,10 +12,10 @@ export interface SlashCommandItem {
   description: string
   icon: string
   group: string
-  action: (editor: any) => void
+  action: (_editor: any) => void
 }
 
-function getBuiltInCommands(hasEmbeds: boolean): SlashCommandItem[] {
+function getBuiltInCommands(hasEmbeds: boolean, hasImages: boolean): SlashCommandItem[] {
   const items: SlashCommandItem[] = [
     // ── Text ──
     {
@@ -114,6 +114,42 @@ function getBuiltInCommands(hasEmbeds: boolean): SlashCommandItem[] {
         },
       },
       {
+        id: 'collapsible',
+        label: 'Collapsible',
+        description: 'Foldable section with an editable title',
+        icon: 'lucide:chevron-right',
+        group: 'Embeds',
+        action: (e) => {
+          e.chain().focus().insertCollapsible().run()
+        },
+      },
+      {
+        id: 'tabs',
+        label: 'Tabs',
+        description: 'Tabbed content panel',
+        icon: 'lucide:layout-panel-top',
+        group: 'Embeds',
+        action: (e) => {
+          e.chain().focus().insertTabs().run()
+        },
+      },
+    )
+
+    if (hasImages) {
+      items.push({
+        id: 'image-embed',
+        label: 'Image',
+        description: 'Insert an image from file',
+        icon: 'lucide:image',
+        group: 'Embeds',
+        action: (_editor) => {
+          // Handled by onEmbedImage callback in RichTextEditor
+        },
+      })
+    }
+
+    items.push(
+      {
         id: 'entity-embed',
         label: 'Entity',
         description: 'Embed a live entity card',
@@ -140,8 +176,12 @@ function getBuiltInCommands(hasEmbeds: boolean): SlashCommandItem[] {
         description: 'Mermaid flowchart, sequence, Gantt, and more',
         icon: 'lucide:workflow',
         group: 'Embeds',
-        action: (_editor) => {
-          // Handled by onEmbedDiagram callback
+        action: (e) => {
+          e.chain().focus().insertContent({
+            type: 'codeBlock',
+            attrs: { language: 'mermaid' },
+            content: [{ type: 'text', text: 'graph TD\n    A[Start] --> B{Decision}\n    B -->|Yes| C[Do it]\n    B -->|No| D[Skip]\n    C --> E[End]\n    D --> E' }],
+          }).run()
         },
       },
     )
@@ -152,14 +192,16 @@ function getBuiltInCommands(hasEmbeds: boolean): SlashCommandItem[] {
 
 export interface SlashCommandConfig {
   hasEmbeds?: boolean
+  hasImages?: boolean
   onEmbedEntity?: (editor: any) => void
   onEmbedQuery?: (editor: any) => void
   onEmbedDiagram?: (editor: any) => void
+  onEmbedImage?: (editor: any) => void
   getTemplates?: () => NoteTemplate[]
 }
 
 export function createSlashCommandExtension(config: SlashCommandConfig = {}) {
-  const { hasEmbeds = false, onEmbedEntity, onEmbedQuery, onEmbedDiagram, getTemplates } = config
+  const { hasEmbeds = false, hasImages = false, onEmbedEntity, onEmbedQuery, onEmbedImage, getTemplates } = config
 
   return Extension.create({
     name: 'slashCommand',
@@ -184,15 +226,14 @@ export function createSlashCommandExtension(config: SlashCommandConfig = {}) {
               onEmbedQuery(editor)
               return
             }
-            if (item.id === 'diagram' && onEmbedDiagram) {
-              onEmbedDiagram(editor)
+            if (item.id === 'image-embed' && onEmbedImage) {
+              onEmbedImage(editor)
               return
             }
-
             item.action(editor)
           },
           items: ({ query }: { query: string }) => {
-            const commands = getBuiltInCommands(hasEmbeds)
+            const commands = getBuiltInCommands(hasEmbeds, hasImages)
 
             if (getTemplates) {
               const templates = getTemplates()

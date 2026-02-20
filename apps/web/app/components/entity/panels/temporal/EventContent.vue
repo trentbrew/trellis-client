@@ -51,12 +51,15 @@
   })
 
   const showPreview = ref(true)
+
+  const isViewMode = computed(() => props.mode === 'view')
 </script>
 
 <template>
-  <div v-if="hasLocation && (isMapUrl || isConferenceUrl || embedSrc)" class="divide-y divide-border">
-    <!-- Location Preview (map embed / conference link / maps URL card) -->
-    <div class="p-4 space-y-2">
+  <div class="flex-1 flex flex-col min-h-0 divide-y divide-border">
+
+    <!-- Location Preview (only when location is set and embeddable) -->
+    <div v-if="hasLocation && (isMapUrl || isConferenceUrl || embedSrc)" class="p-4 space-y-2">
       <div class="flex items-center justify-between">
         <p class="text-xs font-medium text-muted-foreground uppercase tracking-wide">Location Preview</p>
         <button
@@ -81,7 +84,6 @@
       <!-- Map Preview -->
       <Transition name="map-reveal">
         <div v-if="showPreview && (isMapUrl || embedSrc)" class="rounded-lg overflow-hidden border border-border">
-          <!-- Maps URL → styled card -->
           <a
             v-if="isMapUrl"
             :href="item.location"
@@ -96,8 +98,6 @@
             </div>
             <Icon name="lucide:external-link" class="h-3.5 w-3.5 text-muted-foreground group-hover:text-foreground shrink-0 transition-colors" />
           </a>
-
-          <!-- Plain address → embedded map -->
           <div v-else-if="embedSrc" class="relative">
             <iframe
               :src="embedSrc"
@@ -117,6 +117,33 @@
         </div>
       </Transition>
     </div>
+
+    <!-- Notes / content rich text editor -->
+    <div class="flex-1 flex flex-col min-h-0">
+      <UiRichTextEditor
+        v-if="!isViewMode"
+        v-model="item.content"
+        placeholder="Add notes, agenda, or action items..."
+        class="flex-1 min-h-0 border-none! rounded-none!"
+        fill-height
+        mentions
+        tasklist
+        images
+        embeds
+        tables
+        mathematics
+        :entity-id="item.id" />
+      <div
+        v-else-if="item.content"
+        class="prose prose-sm max-w-none text-sm text-foreground flex-1 p-4"
+        v-html="item.content" />
+      <div
+        v-else
+        class="flex-1 flex items-center justify-center p-8 text-muted-foreground/40 text-sm italic">
+        No notes
+      </div>
+    </div>
+
   </div>
 </template>
 
