@@ -42,12 +42,14 @@
     :stack-index="index">
     <component
       :is="resolvedDialogs[index]!.component"
-      :open="true"
-      :item="JSON.parse(JSON.stringify(entry.item))"
-      mode="edit"
-      :type-config="resolvedDialogs[index]!.needsTypeConfig ? getEntityConfig(entry.entityType) : undefined"
-      :can-navigate-prev="false"
-      :can-navigate-next="false"
+      v-bind="{
+        open: true,
+        item: JSON.parse(JSON.stringify(entry.item)),
+        mode: 'edit',
+        canNavigatePrev: false,
+        canNavigateNext: false,
+        ...(resolvedDialogs[index]!.needsTypeConfig ? { typeConfig: getEntityConfig(entry.entityType) } : {}),
+      }"
       @update:open="(val: boolean) => { if (!val) handleClose(index) }"
       @close="handleClose(index)"
       @save="handleSave"

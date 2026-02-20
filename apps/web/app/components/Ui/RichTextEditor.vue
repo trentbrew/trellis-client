@@ -7,7 +7,7 @@
   import Highlight from '@tiptap/extension-highlight'
   import { TaskList, TaskItem } from '@tiptap/extension-list'
   import CodeBlockLowlight from '@tiptap/extension-code-block-lowlight'
-  import Image from '@tiptap/extension-image'
+  import { ResizableImageExtension } from '~/lib/resizable-image-extension'
   import { TableKit } from '@tiptap/extension-table'
   import { Mathematics } from '@tiptap/extension-mathematics'
   import { common, createLowlight } from 'lowlight'
@@ -17,6 +17,8 @@
   import { createMentionExtension, parseMentionQuery } from '~/lib/mention-extension'
   import { createSlashCommandExtension } from '~/lib/slash-command-extension'
   import { Callout } from '~/lib/callout-extension'
+  import { Collapsible } from '~/lib/collapsible-extension'
+  import { TabsContainer, TabItem } from '~/lib/tabs-extension'
   import { EntityEmbed } from '~/lib/entity-embed-extension'
   import { QueryView } from '~/lib/query-view-extension'
   import { useEntitySearch } from '~/composables/useEntitySearch'
@@ -189,16 +191,8 @@
     queryPickerType.value = 'task'
   }
 
-  async function handleEmbedDiagram(_editor: any) {
-    const { create } = useTrellisEntities()
-    const STARTER = `graph TD\n    A[Start] --> B{Decision}\n    B -->|Yes| C[Do it]\n    B -->|No| D[Skip]\n    C --> E[End]\n    D --> E`
-    const id = await create({ type: 'diagram', title: 'Untitled Diagram', content: STARTER } as any)
-    if (!id) return
-    editor.value?.chain().focus().insertEntityEmbed({
-      entityId: id,
-      entityType: 'diagram',
-      title: 'Untitled Diagram',
-    }).run()
+  function handleEmbedImage(_editor: any) {
+    triggerImageUpload()
   }
 
   function selectEntityForEmbed(item: EntitySearchItem) {
@@ -330,7 +324,7 @@
     }
     if (props.images) {
       exts.push(
-        Image.configure({
+        ResizableImageExtension.configure({
           inline: false,
           allowBase64: true,
           HTMLAttributes: {
@@ -372,9 +366,10 @@
       exts.push(
         createSlashCommandExtension({
           hasEmbeds: !!props.embeds,
+          hasImages: !!props.images,
           onEmbedEntity: props.embeds ? handleEmbedEntity : undefined,
           onEmbedQuery: props.embeds ? handleEmbedQuery : undefined,
-          onEmbedDiagram: props.embeds ? handleEmbedDiagram : undefined,
+          onEmbedImage: (props.embeds && props.images) ? handleEmbedImage : undefined,
           getTemplates: () => {
             const userTemplates = (_allEntities.value ?? [])
               .filter((e: any) => e.type === 'template' && e.content)
@@ -392,6 +387,9 @@
       if (props.embeds) {
         exts.push(
           Callout as any,
+          Collapsible as any,
+          TabsContainer as any,
+          TabItem as any,
           EntityEmbed as any,
           QueryView as any,
         )

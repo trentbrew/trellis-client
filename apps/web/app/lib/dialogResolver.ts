@@ -19,6 +19,7 @@ import PersonDialog from '~/components/dialogs/PersonDialog.vue'
 import OrganizationDialog from '~/components/dialogs/OrganizationDialog.vue'
 import ProjectDialog from '~/components/dialogs/ProjectDialog.vue'
 import FileDialog from '~/components/dialogs/FileDialog.vue'
+import SlideDeckDialog from '~/components/dialogs/SlideDeckDialog.vue'
 import DynamicEntityDialog from '~/components/dialogs/DynamicEntityDialog.vue'
 
 /**
@@ -26,25 +27,17 @@ import DynamicEntityDialog from '~/components/dialogs/DynamicEntityDialog.vue'
  * Types not listed here use DynamicEntityDialog.
  */
 const DIALOG_OVERRIDES: Partial<Record<EntityType, Component>> = {
-  // Temporal types — EntityDialog has 2000+ lines of type-specific panels
+  // Temporal types with specialized content panels → EntityDialog
   task: EntityDialog,
   event: EntityDialog,
-  trip: EntityDialog,
-  payment: EntityDialog,
-  appointment: EntityDialog,
-  reminder: EntityDialog,
-  deadline: EntityDialog,
-  milestone: EntityDialog,
-  sprint: EntityDialog,
-  budget: EntityDialog,
 
-  // Document types — EntityDialog handles these too
+  // Document types with specialized content panels → EntityDialog
   note: EntityDialog,
-  slide_deck: EntityDialog,
   bookmark: EntityDialog,
   diagram: EntityDialog,
-  page: EntityDialog,
-  template: EntityDialog,
+
+  // Slide deck — full presentation view
+  slide_deck: SlideDeckDialog,
 
   // Actor types — dedicated PersonDialog
   person: PersonDialog,
@@ -62,6 +55,9 @@ const DIALOG_OVERRIDES: Partial<Record<EntityType, Component>> = {
 
   // File — dedicated FileDialog
   file: FileDialog,
+
+  // trip, payment, appointment, reminder, deadline, milestone, sprint,
+  // budget, page, template — no specialized panel; DynamicEntityDialog handles them
 }
 
 export interface ResolvedDialog {
