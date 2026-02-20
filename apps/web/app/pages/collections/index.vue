@@ -5,14 +5,15 @@
   })
 
   const route = useRoute()
+  const { wp } = useWorkspacePath()
 
   onMounted(() => {
     // Redirect /collections to /database, preserving any sub-path
     const subPath = route.path.replace(/^\/collections/, '')
     if (subPath && subPath !== '/') {
-      navigateTo(`/database/collections${subPath}`, { replace: true })
+      navigateTo(wp(`/database/collections${subPath}`), { replace: true })
     } else {
-      navigateTo('/database', { replace: true })
+      navigateTo(wp('/database'), { replace: true })
     }
   })
 </script>

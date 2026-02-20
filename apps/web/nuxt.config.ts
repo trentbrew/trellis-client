@@ -164,6 +164,11 @@ export default defineNuxtConfig({
       titleTemplate: '%s | Trellis',
       link: [
         {
+          rel: 'icon',
+          type: 'image/svg+xml',
+          href: '/favicon.svg',
+        },
+        {
           rel: 'stylesheet',
           href: 'https://fonts.googleapis.com/css?family=Material+Icons',
         },

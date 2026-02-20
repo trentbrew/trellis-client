@@ -3,6 +3,8 @@
   import { useOntologyRegistry, type DynamicEntityTypeConfig } from '~/composables/useOntologyRegistry'
   import { ENTITY_CLASSES } from '~/config/entityRegistry'
   import { useBrowsePage } from '~/composables/useBrowsePage'
+  import { formatFieldValue } from '~/utils/fieldFormatters'
+  import { resolveDialog } from '~/lib/dialogResolver'
   import type { Entity } from '~/types/entity'
 
   definePageMeta({
@@ -14,7 +16,7 @@
   const route = useRoute()
   const typeSlug = computed(() => (route.params.type as string) || '')
 
-  const { getEntityConfig, isDynamicType } = useOntologyRegistry()
+  const { getEntityConfig, isDynamicType, getBrowseConfig } = useOntologyRegistry()
 
   // Resolve type from ontology registry (covers both system entity types + user-created)
   const resolvedConfig = computed(() => {
@@ -70,7 +72,9 @@
     return ENTITY_CLASSES[entityClassName.value as keyof typeof ENTITY_CLASSES] || null
   })
 
-  // ── Schema-driven columns ──────────────────────────────────────────
+  // ── Schema-driven browse config ──────────────────────────────────────
+
+  const browseConfig = computed(() => getBrowseConfig(typeSlug.value))
 
   interface TableColumn {
     key: string
@@ -78,45 +82,23 @@
     valueType: string
     align: 'left' | 'right'
     isTitle: boolean
+    sortable?: boolean
   }
 
-  // Derive columns from schema fields for ALL types that have them
   const tableColumns = computed<TableColumn[]>(() => {
-    if (hasServerSchema.value && ontologyType.value?.fields?.length) {
-      return ontologyType.value.fields
-        .filter((f) => f.valueType !== 'rich_text' && f.valueType !== 'files')
-        .map((f) => ({
-          key: f.name,
-          label: titleCase(f.name),
-          valueType: f.valueType,
-          align: (f.valueType === 'number' ? 'right' : 'left') as 'left' | 'right',
-          isTitle: f.valueType === 'title',
-        }))
-    }
+    const cols = browseConfig.value.tableColumns
+    if (cols.length > 0) return cols
 
     // Fallback: minimal columns for platform types or types without server schema
     return [
-      { key: 'title', label: 'Title', valueType: 'title', align: 'left', isTitle: true },
-      { key: 'taskStatus', label: 'Status', valueType: 'status', align: 'left', isTitle: false },
-      { key: 'priority', label: 'Priority', valueType: 'select', align: 'left', isTitle: false },
-      { key: 'startDate', label: 'Date', valueType: 'date', align: 'left', isTitle: false },
+      { key: 'title', label: 'Title', valueType: 'title', align: 'left', isTitle: true, sortable: true },
+      { key: 'taskStatus', label: 'Status', valueType: 'status', align: 'left', isTitle: false, sortable: true },
+      { key: 'priority', label: 'Priority', valueType: 'select', align: 'left', isTitle: false, sortable: true },
+      { key: 'startDate', label: 'Date', valueType: 'date', align: 'left', isTitle: false, sortable: true },
     ]
   })
 
-  function titleCase(str: string): string {
-    return str
-      .replace(/([A-Z])/g, ' $1')
-      .replace(/[-_]/g, ' ')
-      .replace(/\b\w/g, (c) => c.toUpperCase())
-      .trim()
-  }
-
   // ── Browse page composable ─────────────────────────────────────────
-
-  const searchFields = computed(() => {
-    if (ontologyType.value?.searchFields) return ontologyType.value.searchFields
-    return ['title', 'description']
-  })
 
   const {
     items: typeItems,
@@ -134,46 +116,51 @@
     handleDelete,
   } = useBrowsePage({
     entityType: typeSlug,
-    searchFields: searchFields.value,
+    searchFields: browseConfig.value.searchFields,
     defaultViewMode: 'table',
-    sortOptions: [
-      { value: 'title', label: 'Title' },
-      { value: 'startDate', label: 'Date' },
-      { value: 'createdAt', label: 'Created' },
-    ],
+    sortOptions: browseConfig.value.sortOptions,
   })
 
   const viewMode = computed(() => browseState.viewMode.value)
 
-  const viewModeOptions = [
-    { mode: 'table' as const, label: 'Table', icon: 'lucide:table' },
-    { mode: 'grid' as const, label: 'Grid', icon: 'lucide:grid-3x3' },
-    { mode: 'list' as const, label: 'List', icon: 'lucide:list' },
-  ]
+  // Projection → view mode icon mapping
+  const PROJECTION_META: Record<string, { label: string; icon: string }> = {
+    table: { label: 'Table', icon: 'lucide:table' },
+    list: { label: 'List', icon: 'lucide:list' },
+    'card-grid': { label: 'Grid', icon: 'lucide:grid-3x3' },
+    grid: { label: 'Grid', icon: 'lucide:grid-3x3' },
+    calendar: { label: 'Calendar', icon: 'lucide:calendar' },
+    kanban: { label: 'Kanban', icon: 'lucide:layout-grid' },
+    timeline: { label: 'Timeline', icon: 'lucide:git-branch' },
+    graph: { label: 'Graph', icon: 'lucide:share-2' },
+    moodboard: { label: 'Moodboard', icon: 'lucide:layout-dashboard' },
+  }
+
+  const viewModeOptions = computed(() => {
+    const projections = resolvedConfig.value?.projections
+    if (projections?.length) {
+      // Always include table, then append ontology projections
+      const modes = new Set(['table', ...projections])
+      return Array.from(modes)
+        .filter(m => PROJECTION_META[m])
+        .map(m => {
+          const meta = PROJECTION_META[m]!
+          return { mode: m as any, label: meta.label, icon: meta.icon }
+        })
+    }
+    // Fallback
+    return [
+      { mode: 'table' as const, label: 'Table', icon: 'lucide:table' },
+      { mode: 'grid' as const, label: 'Grid', icon: 'lucide:grid-3x3' },
+      { mode: 'list' as const, label: 'List', icon: 'lucide:list' },
+    ]
+  })
 
   // ── Cell formatting ────────────────────────────────────────────────
 
   function getCellValue(item: Entity, col: TableColumn): string {
     const raw = (item as any)[col.key]
-    if (raw === undefined || raw === null || raw === '') return ''
-
-    switch (col.valueType) {
-      case 'date':
-        try {
-          return new Date(raw).toLocaleDateString()
-        } catch {
-          return String(raw)
-        }
-      case 'number':
-        return typeof raw === 'number' ? raw.toLocaleString() : String(raw)
-      case 'checkbox':
-        return raw ? '✓' : ''
-      case 'url':
-      case 'email':
-        return String(raw)
-      default:
-        return String(raw)
-    }
+    return formatFieldValue(raw, col.valueType)
   }
 
   // ── Create new entity ──────────────────────────────────────────────
@@ -181,6 +168,10 @@
   const handleCreateNew = () => {
     handleNewItem()
   }
+
+  // ── Dialog resolution (cached) ────────────────────────────────────
+
+  const resolvedDialog = computed(() => resolveDialog(typeSlug.value))
 
   // ── Detail panel toggle ────────────────────────────────────────────
 
@@ -432,31 +423,17 @@
       </div>
     </div>
 
-    <!-- Dynamic entity dialog (for custom ontology types) -->
-    <DynamicEntityDialog
-      v-if="isDynamic && ontologyType && viewingItem"
+    <!-- Entity dialog (resolved via centralized dialog resolver) -->
+    <component
+      :is="resolvedDialog.component"
+      v-if="viewingItem"
       :open="viewOpen"
       :item="viewingItem"
       mode="edit"
-      :type-config="ontologyType"
+      :type-config="resolvedDialog.needsTypeConfig ? ontologyType : undefined"
       :can-navigate-prev="canPrev"
       :can-navigate-next="canNext"
-      @update:open="(v) => { viewOpen = v }"
-      @close="viewOpen = false"
-      @save="handleUpdate($event)"
-      @delete="handleDelete"
-      @navigate-prev="navPrev"
-      @navigate-next="navNext" />
-
-    <!-- Standard entity dialog (for system entity types) -->
-    <EntityDialog
-      v-else-if="viewingItem && !isDynamic"
-      :open="viewOpen"
-      :item="viewingItem"
-      mode="edit"
-      :can-navigate-prev="canPrev"
-      :can-navigate-next="canNext"
-      @update:open="(v) => { viewOpen = v }"
+      @update:open="(v: boolean) => { viewOpen = v }"
       @close="viewOpen = false"
       @save="handleUpdate($event)"
       @delete="handleDelete"

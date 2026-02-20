@@ -137,8 +137,14 @@ function _initStoreFromAdapter(adapter: DataAdapter) {
       }
 
       const rawItems = (result.data as any)?.entities || []
-      _items.value = rawItems.map((item: any) => {
+
+      // First pass: build items with outgoing refs parsed from stored JSON
+      const items = rawItems.map((item: any) => {
         const { id: itemId, ...fields } = item
+        const storedRefs = Array.isArray(fields.references) ? fields.references : []
+        const outgoingRefs = storedRefs.filter(
+          (r: any) => r?.kind === 'entity' && r?.direction !== 'incoming',
+        )
         return {
           id: itemId,
           ...bookmarkUrlFromAdapter(fields),
@@ -148,9 +154,32 @@ function _initStoreFromAdapter(adapter: DataAdapter) {
           checklistContent: fields.checklistContent || '',
           attachments: Array.isArray(fields.attachments) ? fields.attachments : [],
           reminders: Array.isArray(fields.reminders) ? fields.reminders : [],
-          references: [], // TODO: Phase 3+ — resolve references from adapter links
-        } as unknown as Entity
+          references: outgoingRefs,
+        }
       })
+
+      // Second pass: compute incoming backlinks by scanning all outgoing refs
+      const incomingMap = new Map<string, any[]>()
+      for (const item of items) {
+        for (const ref of item.references) {
+          if (ref.entityId) {
+            if (!incomingMap.has(ref.entityId)) incomingMap.set(ref.entityId, [])
+            incomingMap.get(ref.entityId)!.push({
+              kind: 'entity',
+              id: `ref-references-${item.id}`,
+              entityId: item.id,
+              entityType: item.type,
+              title: item.title || 'Untitled',
+              direction: 'incoming',
+            })
+          }
+        }
+      }
+
+      _items.value = items.map((item: any) => ({
+        ...item,
+        references: [...item.references, ...(incomingMap.get(item.id) || [])],
+      })) as unknown as Entity[]
       _loading.value = false
     })
   }
@@ -237,7 +266,11 @@ export function useTrellisEntities() {
   async function createViaAdapter(item: Partial<Entity> & { type: EntityType; title: string }) {
     const currentOrg = useState<any>('currentOrg')
     const itemId = crypto.randomUUID()
-    const { id: _id, references: _refs, ...data } = item
+    const { id: _id, references, ...data } = item
+    // Only persist outgoing refs at creation — incoming backlinks are computed at load time
+    const outgoingRefs = Array.isArray(references)
+      ? references.filter((r: any) => r?.direction !== 'incoming')
+      : []
     const now = Date.now()
     const ownerId = user.value?.id || (await adapter.getAuth())?.id
     const orgId = currentOrg.value?.id
@@ -256,6 +289,7 @@ export function useTrellisEntities() {
     await adapter.transact([
       adapter.tx.entities[itemId].create({
         ...toAdapterPayload(bookmarkUrlToAdapter(data as Record<string, any>)),
+        references: outgoingRefs.length ? toAdapterPayload(outgoingRefs) : null,
         ownerId,
         owner: ownerName,
         orgId: orgId || undefined,
@@ -282,7 +316,11 @@ export function useTrellisEntities() {
   }
 
   async function updateViaAdapter(item: Entity) {
-    const { id: itemId, references: _refs, ...fields } = item as any
+    const { id: itemId, references, ...fields } = item as any
+    // Only persist outgoing refs — incoming backlinks are computed at load time
+    const outgoingRefs = Array.isArray(references)
+      ? references.filter((r: any) => r?.direction !== 'incoming')
+      : []
     const existing = _items.value.find((i) => i.id === itemId) as Record<string, any> | undefined
     const ownerId = fields.ownerId || existing?.ownerId || user.value?.id || (await adapter.getAuth())?.id
 
@@ -300,6 +338,7 @@ export function useTrellisEntities() {
     await adapter.transact([
       adapter.tx.entities[itemId].update({
         ...toAdapterPayload(bookmarkUrlToAdapter(fields as Record<string, any>)),
+        references: outgoingRefs.length ? toAdapterPayload(outgoingRefs) : null,
         ownerId,
         involved,
         startDate: extractYmd((fields as any).startDate),

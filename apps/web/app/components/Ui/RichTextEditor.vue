@@ -24,6 +24,7 @@
   import { createDefaultItem } from '~/types/entity'
   import { useImageUpload } from '~/composables/useImageUpload'
   import { markdownToHtml } from '~/utils/markdown'
+  import { BUILTIN_TEMPLATES } from '~/lib/noteTemplates'
 
   const lowlight = createLowlight(common)
 
@@ -64,6 +65,7 @@
     mathematics?: boolean
     draghandle?: boolean
     embeds?: boolean
+    templates?: boolean
     collaborative?: boolean
     entityId?: string
     submitOnEnter?: boolean
@@ -148,7 +150,7 @@
 
   // Build entity search for mentions and embeds
   const entitySearch = (props.mentions || props.embeds) ? useEntitySearch() : null
-  const { create: _createEntity } = (props.mentions || props.embeds) ? useTrellisEntities() : { create: async () => null }
+  const { create: _createEntity, items: _allEntities } = (props.mentions || props.embeds || props.templates) ? useTrellisEntities() : { create: async () => null, items: ref([]) }
   const tablesEnabled = props.tables !== false
   const mathematicsEnabled = props.mathematics !== false
 
@@ -366,18 +368,34 @@
         }) as any,
       )
     }
-    if (props.embeds) {
+    if (props.embeds || props.templates) {
       exts.push(
         createSlashCommandExtension({
-          hasEmbeds: true,
-          onEmbedEntity: handleEmbedEntity,
-          onEmbedQuery: handleEmbedQuery,
-          onEmbedDiagram: handleEmbedDiagram,
+          hasEmbeds: !!props.embeds,
+          onEmbedEntity: props.embeds ? handleEmbedEntity : undefined,
+          onEmbedQuery: props.embeds ? handleEmbedQuery : undefined,
+          onEmbedDiagram: props.embeds ? handleEmbedDiagram : undefined,
+          getTemplates: () => {
+            const userTemplates = (_allEntities.value ?? [])
+              .filter((e: any) => e.type === 'template' && e.content)
+              .map((e: any) => ({
+                id: `user:${e.id}`,
+                label: e.title || 'Untitled Template',
+                description: e.description ? String(e.description).slice(0, 80) : 'Custom template',
+                icon: 'lucide:file-text',
+                content: e.content as string,
+              }))
+            return [...BUILTIN_TEMPLATES, ...userTemplates]
+          },
         }) as any,
-        Callout as any,
-        EntityEmbed as any,
-        QueryView as any,
       )
+      if (props.embeds) {
+        exts.push(
+          Callout as any,
+          EntityEmbed as any,
+          QueryView as any,
+        )
+      }
     }
     // Inject Y.js Collaboration extension when collaborative mode is active
     if (collabEnabled.value && collabExtensions.value.length) {
@@ -482,6 +500,7 @@
     editorProps: {
       attributes: {
         class: editorClass,
+        spellcheck: 'false',
       },
       handlePaste: (view, event) => {
         const clipboardData = event.clipboardData
@@ -1105,7 +1124,7 @@
     <!-- Editor Content -->
     <EditorContent
       :editor="editor"
-      class="prose prose-sm max-w-none text-sm text-foreground"
+      class="prose prose-sm dark:prose-invert max-w-none text-sm text-foreground"
       :class="[
         seamless ? 'px-0 py-0' : 'px-8 py-8',
         seamless ? 'min-h-[24px]' : compact ? 'min-h-[60px]' : 'min-h-[100px]',
@@ -1210,7 +1229,10 @@
 
   :deep(.ProseMirror p),
   :deep(.ProseMirror li),
-  :deep(.ProseMirror h3) {
+  :deep(.ProseMirror h3),
+  :deep(.ProseMirror h4),
+  :deep(.ProseMirror h5),
+  :deep(.ProseMirror h6) {
     color: var(--foreground);
   }
 

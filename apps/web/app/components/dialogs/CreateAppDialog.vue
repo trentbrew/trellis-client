@@ -1,6 +1,7 @@
 <script lang="ts" setup>
   import { ENTITY_CLASSES, getEntityTypeConfig, getAllEntityTypeIds } from '~/config/entityRegistry'
   import type { EntityType, EntityClass } from '~/types/entity'
+  import { APP_TEMPLATES, type AppTemplate } from '~/lib/appTemplates'
 
   const props = defineProps<{
     open: boolean
@@ -16,6 +17,27 @@
 
   // Default entity types for new apps — the productivity trio
   const DEFAULT_ENABLED_TYPES = ['task', 'note', 'project']
+
+  // ── Template selection ──────────────────────────────────────────────
+  const selectedTemplate = ref<AppTemplate | null>(null)
+  const showTemplates = ref(true)
+
+  const applyTemplate = (template: AppTemplate) => {
+    selectedTemplate.value = template
+    form.value.name = template.name
+    form.value.slug = slugify(template.name)
+    form.value.description = template.description
+    form.value.icon = template.icon
+    form.value.color = template.color
+    form.value.ontologies = [...template.ontologies]
+    slugManuallyEdited.value = false
+    showTemplates.value = false
+  }
+
+  const clearTemplate = () => {
+    selectedTemplate.value = null
+    showTemplates.value = true
+  }
 
   const form = ref({
     name: '',
@@ -228,6 +250,8 @@
           ontologies: [...DEFAULT_ENABLED_TYPES],
         }
         slugManuallyEdited.value = false
+        selectedTemplate.value = null
+        showTemplates.value = true
       }
     },
   )
@@ -246,7 +270,53 @@
         </UiDialogDescription>
       </UiDialogHeader>
 
-      <form class="space-y-4 py-2" @submit.prevent="handleCreate">
+      <!-- Template Picker -->
+      <div v-if="showTemplates" class="py-2 space-y-3">
+        <div class="flex items-center justify-between">
+          <p class="text-xs font-medium text-muted-foreground">Start from a template</p>
+          <button
+            type="button"
+            class="text-[10px] text-muted-foreground hover:text-foreground transition-colors"
+            @click="showTemplates = false">
+            Skip — start blank
+          </button>
+        </div>
+        <div class="grid grid-cols-2 gap-2 max-h-[300px] overflow-y-auto pr-1">
+          <button
+            v-for="tmpl in APP_TEMPLATES"
+            :key="tmpl.id"
+            type="button"
+            class="flex items-start gap-2.5 p-3 rounded-lg border text-left transition-all hover:shadow-sm"
+            :class="selectedTemplate?.id === tmpl.id
+              ? 'border-primary bg-primary/5 ring-1 ring-primary/30'
+              : 'border-border hover:border-muted-foreground/30 hover:bg-muted/30'"
+            @click="applyTemplate(tmpl)">
+            <div
+              class="w-8 h-8 rounded-lg flex items-center justify-center shrink-0"
+              :style="{ backgroundColor: tmpl.color + '20', color: tmpl.color }">
+              <Icon :name="tmpl.icon" class="h-4 w-4" />
+            </div>
+            <div class="min-w-0">
+              <p class="text-xs font-medium truncate">{{ tmpl.name }}</p>
+              <p class="text-[10px] text-muted-foreground line-clamp-2 mt-0.5">{{ tmpl.description }}</p>
+              <p class="text-[9px] text-muted-foreground/60 mt-1">{{ tmpl.ontologies.length }} types</p>
+            </div>
+          </button>
+        </div>
+      </div>
+
+      <form v-else class="space-y-4 py-2" @submit.prevent="handleCreate">
+        <!-- Template indicator -->
+        <div v-if="selectedTemplate" class="flex items-center gap-2 px-3 py-2 rounded-lg bg-primary/5 border border-primary/20">
+          <div
+            class="w-6 h-6 rounded flex items-center justify-center shrink-0"
+            :style="{ backgroundColor: selectedTemplate.color + '20', color: selectedTemplate.color }">
+            <Icon :name="selectedTemplate.icon" class="h-3.5 w-3.5" />
+          </div>
+          <span class="text-xs font-medium flex-1">{{ selectedTemplate.name }} template</span>
+          <button type="button" class="text-[10px] text-muted-foreground hover:text-foreground" @click="clearTemplate">Change</button>
+        </div>
+
         <!-- Name -->
         <div class="space-y-1.5">
           <label for="app-name" class="text-sm font-medium">Name</label>
@@ -358,15 +428,15 @@
             </div>
           </div>
         </div>
+        <!-- Footer (inside form for submit-on-enter) -->
+        <div class="flex justify-end gap-2 pt-2">
+          <UiButton type="button" variant="outline" @click="emit('update:open', false)">Cancel</UiButton>
+          <UiButton type="submit" :disabled="!isFormValid || isCreating">
+            <Icon v-if="isCreating" name="lucide:loader-2" class="mr-2 h-4 w-4 animate-spin" />
+            Create App
+          </UiButton>
+        </div>
       </form>
-
-      <UiDialogFooter class="gap-2">
-        <UiButton variant="outline" @click="emit('update:open', false)">Cancel</UiButton>
-        <UiButton :disabled="!isFormValid || isCreating" @click="handleCreate">
-          <Icon v-if="isCreating" name="lucide:loader-2" class="mr-2 h-4 w-4 animate-spin" />
-          Create App
-        </UiButton>
-      </UiDialogFooter>
     </UiDialogContent>
   </UiDialog>
 </template>

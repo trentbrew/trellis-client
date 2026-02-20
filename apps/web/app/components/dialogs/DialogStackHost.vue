@@ -1,39 +1,15 @@
 <script lang="ts" setup>
-  import type { EntityType } from '~/types/entity'
   import type { Entity } from '~/types/entity'
-  import type { Component } from 'vue'
-  import EntityDialog from '~/components/dialogs/EntityDialog.vue'
-  import PersonDialog from '~/components/dialogs/PersonDialog.vue'
-  import OrganizationDialog from '~/components/dialogs/OrganizationDialog.vue'
-  import ProjectDialog from '~/components/dialogs/ProjectDialog.vue'
-  import FileDialog from '~/components/dialogs/FileDialog.vue'
+  import { resolveDialog } from '~/lib/dialogResolver'
 
   const dialogStack = useDialogStack()
   const { update: updateItem, remove: removeItem } = useEntities()
+  const { getEntityConfig } = useOntologyRegistry()
 
-  /**
-   * Resolve entity type → dialog component.
-   * Falls back to EntityDialog for unknown types.
-   */
-  function resolveDialogComponent(entityType: EntityType): Component {
-    switch (entityType) {
-      case 'person':
-      case 'contact':
-      case 'vendor':
-        return PersonDialog
-      case 'organization':
-        return OrganizationDialog
-      case 'project':
-      case 'folder':
-      case 'collection':
-      case 'goal':
-        return ProjectDialog
-      case 'file':
-        return FileDialog
-      default:
-        return EntityDialog
-    }
-  }
+  /** Cache resolved dialog per stack entry to avoid calling resolveDialog twice in template */
+  const resolvedDialogs = computed(() =>
+    dialogStack.stack.value.map((entry) => resolveDialog(entry.entityType)),
+  )
 
   /** Handle save from a stacked dialog */
   async function handleSave(item: Entity) {
@@ -65,10 +41,11 @@
     :key="entry.id"
     :stack-index="index">
     <component
-      :is="resolveDialogComponent(entry.entityType)"
+      :is="resolvedDialogs[index]!.component"
       :open="true"
       :item="JSON.parse(JSON.stringify(entry.item))"
       mode="edit"
+      :type-config="resolvedDialogs[index]!.needsTypeConfig ? getEntityConfig(entry.entityType) : undefined"
       :can-navigate-prev="false"
       :can-navigate-next="false"
       @update:open="(val: boolean) => { if (!val) handleClose(index) }"

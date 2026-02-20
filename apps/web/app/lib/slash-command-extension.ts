@@ -4,6 +4,7 @@ import Suggestion from '@tiptap/suggestion'
 import tippy, { type Instance as TippyInstance } from 'tippy.js'
 import type { SuggestionKeyDownProps } from '@tiptap/suggestion'
 import SlashCommandMenu from '~/components/Ui/SlashCommandMenu.vue'
+import type { NoteTemplate } from '~/lib/noteTemplates'
 
 export interface SlashCommandItem {
   id: string
@@ -154,10 +155,11 @@ export interface SlashCommandConfig {
   onEmbedEntity?: (editor: any) => void
   onEmbedQuery?: (editor: any) => void
   onEmbedDiagram?: (editor: any) => void
+  getTemplates?: () => NoteTemplate[]
 }
 
 export function createSlashCommandExtension(config: SlashCommandConfig = {}) {
-  const { hasEmbeds = false, onEmbedEntity, onEmbedQuery, onEmbedDiagram } = config
+  const { hasEmbeds = false, onEmbedEntity, onEmbedQuery, onEmbedDiagram, getTemplates } = config
 
   return Extension.create({
     name: 'slashCommand',
@@ -191,6 +193,23 @@ export function createSlashCommandExtension(config: SlashCommandConfig = {}) {
           },
           items: ({ query }: { query: string }) => {
             const commands = getBuiltInCommands(hasEmbeds)
+
+            if (getTemplates) {
+              const templates = getTemplates()
+              for (const tpl of templates) {
+                commands.push({
+                  id: `template:${tpl.id}`,
+                  label: tpl.label,
+                  description: tpl.description,
+                  icon: tpl.icon,
+                  group: 'Templates',
+                  action: (editor: any) => {
+                    editor.chain().focus().insertContent(tpl.content).run()
+                  },
+                })
+              }
+            }
+
             if (!query) return commands
             const q = query.toLowerCase()
             return commands.filter(

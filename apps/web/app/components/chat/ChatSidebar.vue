@@ -23,6 +23,7 @@
   const { $toast } = useNuxtApp()
 
   const route = useRoute()
+  const { wp } = useWorkspacePath()
   const activeChannelId = computed(() => route.params.channelId as string | undefined)
   function isActive(id: string) { return activeChannelId.value === id }
 
@@ -39,7 +40,7 @@
       const id = await createChannel({ title: name, type: 'public' })
       newChannelName.value = ''
       showCreate.value = false
-      navigateTo(`/messages/${id}`)
+      navigateTo(wp(`/messages/${id}`))
     } catch {
       ;($toast as any)?.error('Failed to create channel')
     } finally {
@@ -116,7 +117,7 @@
     deleting.value = true
     try {
       await deleteChannel(ch.id)
-      if (isActive(ch.id)) navigateTo('/messages')
+      if (isActive(ch.id)) navigateTo(wp('/messages'))
     } catch {
       ;($toast as any)?.error('Failed to delete channel')
     } finally {
