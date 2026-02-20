@@ -64,11 +64,11 @@
 </script>
 
 <template>
-  <div class="shrink-0 border-t border-border bg-card" @keydown="handleWrapperKeydown">
+  <div class="shrink-0 border-t-none border-border bg-card" @keydown="handleWrapperKeydown">
     <!-- Reply preview -->
     <div
       v-if="replyTo"
-      class="flex items-center gap-2 px-4 py-2 bg-muted/30 border-b border-border text-xs"
+      class="flex items-center gap-2 px-4 py-8 bg-muted/30 border-b border-border text-xs"
     >
       <Icon name="lucide:reply" class="h-3.5 w-3.5 text-muted-foreground shrink-0" />
       <span class="text-muted-foreground">Replying to</span>
@@ -83,9 +83,9 @@
     </div>
 
     <!-- Input container -->
-    <div class="mx-3 my-2 rounded-xl border border-border bg-background focus-within:ring-1 focus-within:ring-ring transition-shadow">
+    <div class="mx-3 mb-2 rounded-xl border border-border bg-foreground/5 focus-within:ring-1 focus-within:ring-ring transition-shadow">
       <!-- Rich text editor -->
-      <div class="px-3 pt-2.5 pb-1 max-h-56 overflow-y-auto text-xs">
+      <div class="px-3 pt-0 pb-1 max-h-96 overflow-y-auto text-xs">
         <UiRichTextEditor
           ref="editorRef"
           v-model="content"
@@ -185,7 +185,7 @@
           class="h-7 w-7 flex items-center justify-center rounded-lg transition-all"
           :class="canSend
             ? 'bg-primary text-primary-foreground hover:bg-primary/90 cursor-pointer'
-            : 'bg-muted/60 text-muted-foreground/40 cursor-not-allowed'"
+            : 'bg-primary/25 text-muted-foreground/40 cursor-not-allowed'"
           title="Send (Enter)"
           @click="handleSend"
         >

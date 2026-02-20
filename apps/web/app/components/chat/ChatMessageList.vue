@@ -126,12 +126,12 @@
     <template v-else>
       <div v-for="group in groupedMessages" :key="group.date">
         <!-- Date separator -->
-        <div class="flex items-center gap-3 px-4 py-3">
-          <div class="flex-1 h-px bg-border" />
-          <span class="text-xs text-muted-foreground font-medium px-2">
+        <div class="flex items-center gap-3 py-3 sticky top-0 z-10 bg-background/0">
+          <div class="flex-1 h-px bg-border/50" />
+          <span class="text-[11px] text-muted-foreground/70 font-medium px-3 py-0.5 rounded-full border border-border/50 bg-card shrink-0 select-none">
             {{ formatDateLabel(group.date) }}
           </span>
-          <div class="flex-1 h-px bg-border" />
+          <div class="flex-1 h-px bg-border/50" />
         </div>
 
         <!-- Messages in this date group -->
@@ -157,7 +157,7 @@
     <Transition name="fade">
       <button
         v-if="!isAtBottom && !loading"
-        class="absolute bottom-20 right-6 flex items-center gap-1.5 bg-card border border-border rounded-full px-3 py-1.5 text-xs shadow-md hover:bg-muted transition-colors z-10"
+        class="absolute bottom-4 right-12 flex items-center justify-center gap-1.5 bg-card max-w-fit border border-border rounded-full px-3 py-1.5 text-xs shadow-md hover:bg-muted transition-colors z-10"
         @click="scrollToBottom(true)"
       >
         <Icon name="lucide:arrow-down" class="h-3 w-3" />

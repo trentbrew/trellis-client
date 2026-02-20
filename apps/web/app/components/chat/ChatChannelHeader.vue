@@ -52,10 +52,11 @@
       <UiTooltip>
         <UiTooltipTrigger as-child>
           <button
-            class="h-8 w-8 flex items-center justify-center rounded-lg text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
+            class="h-8 w-8 flex items-center justify-center rounded-lg hover:text-foreground hover:bg-muted transition-colors"
+            :class="isMuted ? 'text-muted-foreground' : 'text-primary'"
             @click="isMuted ? emit('unmute') : emit('mute')"
           >
-            <Icon :name="isMuted ? 'lucide:bell-off' : 'lucide:bell'" class="h-4 w-4" />
+            <Icon :name="isMuted ? 'lucide:bell-off' : 'lucide:bell-ring'" class="h-4 w-4" />
           </button>
         </UiTooltipTrigger>
         <UiTooltipContent>{{ isMuted ? 'Unmute channel' : 'Mute channel' }}</UiTooltipContent>
@@ -68,7 +69,7 @@
             class="h-8 w-8 flex items-center justify-center rounded-lg text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
             @click="emit('settings')"
           >
-            <Icon name="lucide:settings" class="h-4 w-4" />
+            <Icon name="lucide:ellipsis" class="h-4 w-4" />
           </button>
         </UiTooltipTrigger>
         <UiTooltipContent>Channel settings</UiTooltipContent>

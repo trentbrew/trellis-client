@@ -60,6 +60,31 @@
 
   const rootEl = ref<HTMLElement | null>(null)
 
+  // ── Container-width responsive tiers ───────────────────────────────
+  const containerWidth = ref(9999)
+  const isCompact = computed(() => containerWidth.value < 480)
+  const isMedium = computed(() => containerWidth.value >= 480 && containerWidth.value < 760)
+
+  let _containerRO: ResizeObserver | null = null
+  onMounted(() => {
+    if (!rootEl.value) return
+    _containerRO = new ResizeObserver((entries) => {
+      const entry = entries[0]
+      if (entry) containerWidth.value = entry.contentRect.width
+    })
+    _containerRO.observe(rootEl.value)
+    containerWidth.value = rootEl.value.getBoundingClientRect().width
+  })
+  onUnmounted(() => { _containerRO?.disconnect() })
+
+  // Weekday label sets: full / medium / compact
+  const weekDaysFull = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat']
+  const weekDaysMed  = ['Su',  'Mo',  'Tu',  'We',  'Th',  'Fr',  'Sa']
+  const weekDaysSingle = ['S', 'M', 'T', 'W', 'T', 'F', 'S']
+  const weekDays = computed(() =>
+    isCompact.value ? weekDaysSingle : isMedium.value ? weekDaysMed : weekDaysFull,
+  )
+
   // ── Resizable sidebar ───────────────────────────────────────────────
   const SIDEBAR_MIN = 260
   const SIDEBAR_MAX = 420
@@ -1291,9 +1316,6 @@
     }
   })
 
-  // Week days for headers
-  const weekDays = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat']
-
   // Get days in month grid (includes padding from prev/next month)
   const monthDays = computed(() => {
     const year = currentYear.value
@@ -1331,15 +1353,22 @@
 
   const maxVisibleLanesPerRow = computed(() => {
     const rows = weekRowCount.value
-    return rows <= 4 ? 3 : 2
+    const base = rows <= 4 ? 3 : 2
+    return isCompact.value ? Math.max(1, base - 1) : base
   })
 
   const maxCellContentSlots = computed(() => {
-    if (calendarViewMode.value === 'week') return 8
+    if (calendarViewMode.value === 'week') {
+      return isCompact.value ? 4 : isMedium.value ? 6 : 8
+    }
     const rows = weekRowCount.value
-    if (rows <= 4) return 6
-    if (rows <= 5) return 5
-    return 4
+    let base: number
+    if (rows <= 4) base = 6
+    else if (rows <= 5) base = 5
+    else base = 4
+    if (isCompact.value) return Math.max(2, base - 2)
+    if (isMedium.value) return Math.max(3, base - 1)
+    return base
   })
 
   // Get week days for week view
@@ -1353,7 +1382,7 @@
         date,
         isToday: isSameDay(date, today.value),
         isCurrentMonth: true,
-        dayName: weekDays[i] || '',
+        dayName: weekDays.value[i] ?? '',
         dayNum: date.getDate(),
       })
     }
@@ -1559,46 +1588,6 @@
       class="m-4" />
 
     <div v-else class="flex flex-col h-full">
-      <!-- Calendar Header -->
-      <div class="shrink-0 px-6 py-4 border-b border-border/50 bg-card/0">
-        <div class="flex flex-wrap items-center justify-between gap-4">
-          <!-- Left: Navigation -->
-          <div class="flex items-center gap-3">
-            <div class="flex items-center gap-1">
-              <UiButton variant="outline" size="icon" class="h-8 w-8" @click="navigatePrev">
-                <Icon name="lucide:chevron-left" class="h-4 w-4" />
-              </UiButton>
-              <UiButton variant="outline" size="icon" class="h-8 w-8" @click="navigateNext">
-                <Icon name="lucide:chevron-right" class="h-4 w-4" />
-              </UiButton>
-            </div>
-            <UiButton variant="ghost" size="sm" class="h-8" @click="navigateToday">Today</UiButton>
-            <h2 class="text-lg font-semibold min-w-[200px]">{{ headerTitle }}</h2>
-          </div>
-
-          <!-- Right: View Mode & Date Field -->
-          <div class="flex items-center gap-3">
-            <!-- View Mode Switcher -->
-            <div class="flex items-center rounded-lg border border-border/50 bg-muted/30 p-0.5">
-              <button
-                v-for="option in viewModeOptions"
-                :key="option.value"
-                :class="[
-                  'px-3 py-1.5 text-xs font-medium rounded-md transition-all duration-200',
-                  calendarViewMode === option.value
-                    ? 'bg-foreground/10 shadow-sm text-foreground'
-                    : 'text-muted-foreground hover:text-foreground hover:bg-background/50',
-                ]"
-                @click="calendarViewMode = option.value">
-                {{ option.label }}
-              </button>
-            </div>
-
-            <!-- Header Actions Slot -->
-            <slot name="header-actions" />
-          </div>
-        </div>
-      </div>
 
       <!-- No Date Fields Warning -->
       <div v-if="!dateFields.length" class="flex-1 flex items-center justify-center p-8">
@@ -1621,9 +1610,10 @@
 
       <!-- Calendar Content with Mini Sidebar -->
       <div v-else class="flex-1 flex min-h-0">
-        <!-- Mini Calendar Sidebar -->
+        <!-- Mini Calendar Sidebar (hidden at compact widths) -->
         <div
-          class="shrink-0 border-r border-border/50 hidden lg:flex lg:flex-col h-full relative"
+          v-show="!isCompact"
+          class="shrink-0 border-r border-border bg-background/25 flex flex-col h-full relative"
           :style="{ width: sidebarWidth + 'px' }">
           <!-- Mini Calendar Section -->
           <div class="shrink-0 p-4 pb-0">
@@ -1692,7 +1682,7 @@
           </div>
 
           <!-- Sidebar Sections (collapsible accordion) -->
-          <div class="flex-1 flex flex-col min-h-0 border-t border-border/50 mt-4 overflow-auto">
+          <div class="flex-1 flex flex-col min-h-0 border-t border-border mt-4 overflow-auto">
             <UiAccordion type="multiple" :default-value="['sources', 'filter', 'attention']" class="px-4">
               <!-- Sources Section -->
               <UiAccordionItem v-if="$slots['sidebar-sources']" value="sources" class="border-b border-border/30">
@@ -1848,6 +1838,63 @@
 
         <!-- Main Calendar Area -->
         <div class="flex-1 min-w-0 h-full overflow-hidden">
+                <!-- Calendar Header -->
+        <div
+          class="shrink-0 border-b border-border bg-transparent"
+          :class="isCompact ? 'px-3 py-2' : isMedium ? 'px-4 py-3' : 'px-6 py-4'"
+        >
+          <div class="flex flex-wrap items-center justify-between gap-2">
+            <!-- Left: Navigation + Title -->
+            <div class="flex items-center" :class="isCompact ? 'gap-2' : 'gap-3'">
+              <div class="flex items-center">
+                <UiButton variant="outline" size="icon" class="h-8 w-8 rounded-r-none border-r-0" @click="navigatePrev">
+                  <Icon name="lucide:chevron-left" class="h-4 w-4" />
+                </UiButton>
+                <UiButton variant="outline" size="sm" class="h-8 rounded-none border-x-0" @click="navigateToday">
+                  {{ isCompact ? '·' : 'Today' }}
+                </UiButton>
+                <UiButton variant="outline" size="icon" class="h-8 w-8 rounded-l-none border-l-0" @click="navigateNext">
+                  <Icon name="lucide:chevron-right" class="h-4 w-4" />
+                </UiButton>
+              </div>
+              <h2
+                class="font-semibold truncate"
+                :class="isCompact ? 'text-sm' : 'text-lg'"
+              >
+                {{ headerTitle }}
+              </h2>
+            </div>
+
+            <!-- Right: View Mode Switcher + Slot -->
+            <div class="flex items-center gap-2 shrink-0">
+              <!-- View Mode Switcher -->
+              <div class="flex items-center rounded-lg border border-border p-0.5">
+                <UiTooltip v-for="option in viewModeOptions" :key="option.value">
+                  <UiTooltipTrigger as-child>
+                    <button
+                      :class="[
+                        'rounded-md transition-all duration-200 text-xs font-medium',
+                        isCompact ? 'h-7 w-7 flex items-center justify-center' : 'px-3 py-1.5',
+                        calendarViewMode === option.value
+                          ? 'bg-foreground/10 shadow-sm text-foreground'
+                          : 'text-muted-foreground hover:text-foreground hover:bg-background/50',
+                      ]"
+                      @click="calendarViewMode = option.value"
+                    >
+                      <Icon v-if="isCompact" :name="option.icon" class="h-3.5 w-3.5" />
+                      <span v-else>{{ option.label }}</span>
+                    </button>
+                  </UiTooltipTrigger>
+                  <UiTooltipContent v-if="isCompact" side="bottom">{{ option.label }}</UiTooltipContent>
+                </UiTooltip>
+              </div>
+
+              <!-- Header Actions Slot -->
+              <slot name="header-actions" />
+            </div>
+          </div>
+        </div>
+
           <Transition :name="transitionDirection === 'right' ? 'slide-left' : 'slide-right'" mode="out-in">
             <!-- Day View -->
             <div v-if="calendarViewMode === 'day'" :key="`day-${currentDate.toISOString()}`" class="flex flex-col">
@@ -1895,7 +1942,8 @@
                   v-for="day in weekViewDays"
                   :key="day.date.toISOString()"
                   :class="[
-                    'py-3 px-2 text-center border-r border-border/30 last:border-r-0',
+                    'px-1 text-center border-r border-border/30 last:border-r-0',
+                    isCompact ? 'py-1.5' : isMedium ? 'py-2' : 'py-3',
                     day.isToday ? 'bg-primary/10 border-b-2 border-b-primary' : '',
                   ]">
                   <div
@@ -1907,9 +1955,11 @@
                   </div>
                   <div
                     :class="[
-                      'mt-1 text-lg font-semibold',
+                      'font-semibold',
+                      isCompact ? 'mt-0.5 text-sm' : 'mt-1 text-lg',
                       day.isToday
-                        ? 'w-8 h-8 mx-auto rounded-full bg-primary text-primary-foreground flex items-center justify-center'
+                        ? 'mx-auto rounded-full bg-primary text-primary-foreground flex items-center justify-center'
+                        + (isCompact ? ' w-6 h-6 text-xs' : ' w-8 h-8')
                         : 'text-foreground',
                     ]">
                     {{ day.dayNum }}
@@ -2026,7 +2076,8 @@
                           <button
                             :draggable="item.typeLabel !== 'GoogleCalendar'"
                             :class="[
-                              'w-full flex items-center gap-1 px-1.5 py-0.5 rounded-md text-[11px] font-medium transition-all duration-150',
+                              'w-full flex items-center gap-1 rounded-md text-[11px] font-medium transition-all duration-150',
+                              isCompact ? 'px-1 py-0.5 justify-center' : 'px-1.5 py-0.5',
                               'hover:ring-1 hover:ring-primary/30',
                               item.typeLabel !== 'GoogleCalendar' ? 'cursor-grab active:cursor-grabbing' : 'cursor-pointer',
                               getTypeStyle(item.typeLabel || '').bg,
@@ -2037,10 +2088,12 @@
                             @dragend="onDragEnd"
                             @click.stop="openEventDetail(item)">
                             <Icon :name="getTypeStyle(item.typeLabel || '').icon" class="h-3 w-3 shrink-0" />
-                            <Icon v-if="hasRecurringInstance(item)" name="lucide:repeat" class="h-2.5 w-2.5 shrink-0 opacity-60" />
-                            <span v-if="item.recurrenceIndex" class="text-[9px] opacity-50 shrink-0">#{{ item.recurrenceIndex }}</span>
-                            <span class="truncate">{{ item.title }}</span>
-                            <Icon v-if="item.typeLabel === 'GoogleCalendar'" name="simple-icons:googlecalendar" class="ml-auto h-2.5 w-2.5 shrink-0 opacity-70" />
+                            <template v-if="!isCompact">
+                              <Icon v-if="hasRecurringInstance(item)" name="lucide:repeat" class="h-2.5 w-2.5 shrink-0 opacity-60" />
+                              <span v-if="item.recurrenceIndex" class="text-[9px] opacity-50 shrink-0">#{{ item.recurrenceIndex }}</span>
+                              <span class="truncate">{{ item.title }}</span>
+                              <Icon v-if="item.typeLabel === 'GoogleCalendar'" name="simple-icons:googlecalendar" class="ml-auto h-2.5 w-2.5 shrink-0 opacity-70" />
+                            </template>
                           </button>
                         </UiHoverCardTrigger>
                         <UiHoverCardContent class="w-64 p-3" side="top" :side-offset="4">
@@ -2097,11 +2150,11 @@
                     </div>
                     <!-- Per-cell overflow indicator for hidden multi-day events -->
                     <button
-                      v-if="weekViewRow.overflowPerCol[dayIdx] > 0"
+                      v-if="(weekViewRow.overflowPerCol[dayIdx] ?? 0) > 0"
                       type="button"
                       class="mt-0.5 text-[10px] text-muted-foreground font-medium hover:text-foreground transition-colors cursor-pointer"
                       @click.stop="openDayPopover(day.date)">
-                      +{{ weekViewRow.overflowPerCol[dayIdx] }} more
+                      +{{ weekViewRow.overflowPerCol[dayIdx] ?? 0 }} more
                     </button>
                   </div>
                 </div>
@@ -2118,10 +2171,12 @@
                 <div
                   v-for="day in weekDays"
                   :key="day"
-                  class="py-3 px-2 text-center text-xs font-medium text-muted-foreground uppercase tracking-wide">
+                  class="px-1 text-center text-xs font-medium text-muted-foreground uppercase tracking-wide"
+                  :class="isCompact ? 'py-1.5' : isMedium ? 'py-2' : 'py-3'">
                   {{ day }}
                 </div>
               </div>
+
               <!-- Month Grid: week-row sub-grids -->
               <div
                 class="flex-1 grid min-h-0 overflow-hidden"
@@ -2258,7 +2313,8 @@
                             <button
                               :draggable="item.typeLabel !== 'GoogleCalendar'"
                               :class="[
-                                'w-full flex items-center gap-1 px-1.5 py-0.5 rounded-md text-[11px] font-medium transition-all duration-150',
+                                'w-full flex items-center gap-1 rounded-md text-[11px] font-medium transition-all duration-150',
+                                isCompact ? 'px-1 py-0.5 justify-center' : 'px-1.5 py-0.5',
                                 'hover:ring-1 hover:ring-primary/30',
                                 item.typeLabel !== 'GoogleCalendar' ? 'cursor-grab active:cursor-grabbing' : 'cursor-pointer',
                                 getTypeStyle(item.typeLabel || '').bg,
@@ -2269,10 +2325,12 @@
                               @dragend="onDragEnd"
                               @click.stop="openEventDetail(item)">
                               <Icon :name="getTypeStyle(item.typeLabel || '').icon" class="h-3 w-3 shrink-0" />
-                              <Icon v-if="hasRecurringInstance(item)" name="lucide:repeat" class="h-2.5 w-2.5 shrink-0 opacity-60" />
-                              <span v-if="item.recurrenceIndex" class="text-[9px] opacity-50 shrink-0">#{{ item.recurrenceIndex }}</span>
-                              <span class="truncate">{{ item.title }}</span>
-                              <Icon v-if="item.typeLabel === 'GoogleCalendar'" name="simple-icons:googlecalendar" class="ml-auto h-2.5 w-2.5 shrink-0 opacity-70" />
+                              <template v-if="!isCompact">
+                                <Icon v-if="hasRecurringInstance(item)" name="lucide:repeat" class="h-2.5 w-2.5 shrink-0 opacity-60" />
+                                <span v-if="item.recurrenceIndex" class="text-[9px] opacity-50 shrink-0">#{{ item.recurrenceIndex }}</span>
+                                <span class="truncate">{{ item.title }}</span>
+                                <Icon v-if="item.typeLabel === 'GoogleCalendar'" name="simple-icons:googlecalendar" class="ml-auto h-2.5 w-2.5 shrink-0 opacity-70" />
+                              </template>
                             </button>
                           </UiHoverCardTrigger>
                           <UiHoverCardContent class="w-64 p-3" side="top" :side-offset="4">
@@ -2386,11 +2444,11 @@
                       </div>
                       <!-- Per-cell overflow indicator for hidden multi-day events -->
                       <button
-                        v-if="row.overflowPerCol[dayIdx] > 0"
+                        v-if="(row.overflowPerCol[dayIdx] ?? 0) > 0"
                         type="button"
                         class="mt-0.5 text-[10px] text-muted-foreground font-medium hover:text-foreground transition-colors cursor-pointer"
                         @click.stop="openDayPopover(day.date)">
-                        +{{ row.overflowPerCol[dayIdx] }} more
+                        +{{ row.overflowPerCol[dayIdx] ?? 0 }} more
                       </button>
                     </div>
                   </div>
@@ -2400,7 +2458,9 @@
 
             <!-- Year View -->
             <div v-else-if="calendarViewMode === 'year'" :key="`year-${currentYear}`" class="h-full overflow-auto">
-              <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 p-6 h-full">
+              <div
+                class="grid gap-4 p-6 h-full"
+                :style="{ gridTemplateColumns: `repeat(${isCompact ? 2 : isMedium ? 3 : 4}, minmax(0, 1fr))` }">
                 <div
                   v-for="month in yearMonths"
                   :key="month.month"

@@ -440,13 +440,13 @@ const graphRoute: RouteDefinition = {
 }
 
 // ============================================================================
-// Calendar Route — /workspace/calendar (top-level for icon rail)
+// Calendar Route — /calendar (top-level icon rail, auto-cloned to /w/:orgSlug/calendar)
 // ============================================================================
 
 const calendarRoute: RouteDefinition = {
   '@id': 'route:calendar',
   '@type': 'trellis:Route',
-  routePath: '/workspace/calendar',
+  routePath: '/calendar',
   label: 'Calendar',
   icon: 'lucide:calendar',
   order: 12,

@@ -28,8 +28,7 @@
   const hasLoggedInstantAuth = useState<boolean>('debug:instantAuthLogged', () => false)
 
   // Global adjacent sidebar state
-  const { setRightSidebarWidth } = useRightSidebarWidth()
-  const isRightSidebarOpen = ref(false)
+  const { setRightSidebarWidth, isRightSidebarOpen } = useRightSidebarWidth()
   const rightSidebarWidth = ref(320)
   const isResizingRightSidebar = ref(false)
   const MIN_RIGHT_SIDEBAR_WIDTH = 200
@@ -151,10 +150,6 @@
     commandDialog.close()
   }
 
-  const toggleRightSidebar = () => {
-    isRightSidebarOpen.value = !isRightSidebarOpen.value
-  }
-
   const rightSidebarCssWidth = computed(() =>
     isRightSidebarOpen.value ? `${rightSidebarWidth.value}px` : '0px'
   )
@@ -164,6 +159,7 @@
     ([open, w]) => setRightSidebarWidth(open ? w : 0),
     { immediate: true },
   )
+
 
   // Group command palette routes by section for better organization
   const commandPaletteGroups = computed(() => {
@@ -225,7 +221,7 @@
       <!-- Layout Mode A: Header above sidebar (spans sidebar + content) -->
       <template v-if="headerAboveSidebar">
         <div class="flex flex-1 flex-col min-w-0 overflow-hidden">
-          <AppHeader :above-sidebar="true" :hide-presence-controls="railAtBottom" @toggle-right-sidebar="toggleRightSidebar" />
+          <AppHeader :above-sidebar="true" />
           <div class="flex flex-1 min-h-0 overflow-hidden p-2.5 pt-0 rounded-lg">
             <div class="flex flex-1 min-h-0 overflow-hidden bg-transparent rounded-lg">
               <!-- Left rail (default) -->
@@ -266,19 +262,7 @@
         <!-- Gap when sidebar is hidden (forced-collapsed or page-disabled) -->
         <div v-if="!showSidebar" class="w-2.5 shrink-0" />
         <div class="flex flex-1 flex-col min-w-0 overflow-hidden">
-          <AppHeader :above-sidebar="false" :hide-presence-controls="railAtBottom">
-            <!-- Right sidebar trigger in header -->
-            <template #actions>
-              <UiButton
-                variant="ghost"
-                size="icon"
-                :aria-expanded="isRightSidebarOpen"
-                aria-label="Toggle right sidebar"
-                @click="toggleRightSidebar">
-                <Icon name="lucide:panel-right" class="h-4 w-4" />
-              </UiButton>
-            </template>
-          </AppHeader>
+          <AppHeader :above-sidebar="false" />
           <div class="flex flex-1 min-h-0 overflow-hidden">
             <main
               ref="pageEl"

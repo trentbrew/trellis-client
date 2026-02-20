@@ -31,6 +31,7 @@
   }
 
   const { create } = useTrellisEntities()
+  const { wp } = useWorkspacePath()
   const nuxtApp = useNuxtApp()
   const router = useRouter()
 
@@ -60,7 +61,7 @@
         description: noteTitle,
         action: {
           label: 'Open note',
-          onClick: () => router.push({ path: '/workspace/notes', query: { id: noteId } }),
+          onClick: () => router.push({ path: wp('/workspace/notes'), query: { id: noteId } }),
         },
       })
       setTimeout(() => {
@@ -182,76 +183,76 @@
         <div
           data-quick-capture-panel
           :style="panelStyle"
-          class="absolute w-[360px] shadow-2xl border border-border bg-card rounded-xl overflow-hidden"
+          class="absolute w-[360px] shadow-2xl border border-border bg-card rounded-xl overflow-hidden flex flex-col"
           @keydown="onWrapperKeydown">
 
-      <!-- Header -->
-      <div class="flex items-center gap-2 px-3 py-2.5 border-b border-border/60 bg-muted/20">
-        <div class="flex items-center gap-1.5 flex-1 min-w-0">
-          <Icon name="lucide:pencil-line" class="h-3.5 w-3.5 text-muted-foreground shrink-0" />
-          <span class="text-xs font-medium text-muted-foreground">Quick Note</span>
-        </div>
-        <div class="flex items-center gap-1">
-          <kbd class="inline-flex items-center gap-0.5 rounded border border-border bg-muted/60 px-1.5 py-0.5 text-[10px] font-mono text-muted-foreground select-none">
-            <span class="text-[11px]">⌘</span>↩
-          </kbd>
-          <span class="text-[10px] text-muted-foreground">to save</span>
-        </div>
-        <button
-          class="ml-1 h-5 w-5 rounded flex items-center justify-center text-muted-foreground hover:bg-muted hover:text-foreground transition-colors"
-          aria-label="Close"
-          @click.stop="open = false">
-          <Icon name="lucide:x" class="h-3 w-3" />
-        </button>
-      </div>
-
-      <!-- Rich Text Editor (seamless, mentions enabled) -->
-      <div class="px-3 pb-2 min-h-[80px] max-h-[200px] overflow-y-auto">
-        <UiRichTextEditor
-          v-model="content"
-          :seamless="true"
-          :mentions="true"
-          :tables="false"
-          :mathematics="false"
-          :draghandle="false"
-          :embeds="false"
-          :images="false"
-          placeholder="Start writing... @mention to link entities"
-          class="text-sm"
-        />
-      </div>
-
-      <!-- Footer -->
-      <div class="flex items-center justify-between px-3 py-2 border-t border-border/60 bg-muted/10">
-        <div class="flex items-center gap-2">
-          <div class="flex items-center gap-1.5">
-            <Icon name="lucide:tag" class="h-3 w-3 text-muted-foreground/40" />
-            <span class="text-[10px] text-muted-foreground/40 font-medium">quicknote</span>
+          <!-- Header -->
+          <div class="flex items-center gap-2 px-4 py-3 border-b border-border/60 bg-muted/20 shrink-0">
+            <div class="flex items-center gap-1.5 flex-1 min-w-0">
+              <Icon name="lucide:pencil-line" class="h-3.5 w-3.5 text-muted-foreground shrink-0" />
+              <span class="text-xs font-medium text-muted-foreground">Quick Note</span>
+            </div>
+            <div class="flex items-center gap-1">
+              <kbd class="inline-flex items-center gap-0.5 rounded border border-border bg-muted/60 px-1.5 py-0.5 text-[10px] font-mono text-muted-foreground select-none">
+                <span class="text-[11px]">⌘</span>↩
+              </kbd>
+              <span class="text-[10px] text-muted-foreground">to save</span>
+            </div>
+            <button
+              class="ml-1 h-5 w-5 rounded flex items-center justify-center text-muted-foreground hover:bg-muted hover:text-foreground transition-colors"
+              aria-label="Close"
+              @click.stop="open = false">
+              <Icon name="lucide:x" class="h-3 w-3" />
+            </button>
           </div>
-          <NuxtLink
-            to="/workspace/notes"
-            class="text-[10px] text-muted-foreground/50 hover:text-muted-foreground transition-colors underline-offset-2 hover:underline"
-            @click.stop="open = false">
-            View all notes
-          </NuxtLink>
-        </div>
-        <div class="flex items-center gap-2">
-          <button
-            class="text-[11px] text-muted-foreground hover:text-foreground transition-colors"
-            @click.stop="handleDiscard">
-            Discard
-          </button>
-          <UiButton
-            size="sm"
-            class="h-6 px-2.5 text-xs gap-1"
-            :disabled="!hasContent || isSaving"
-            @click.stop="handleSave">
-            <Icon v-if="isSaving" name="svg-spinners:ring-resize" class="h-3 w-3" />
-            <Icon v-else-if="saved" name="lucide:check" class="h-3 w-3" />
-            <span>{{ isSaving ? 'Saving…' : saved ? 'Saved!' : 'Save' }}</span>
-          </UiButton>
-        </div>
-      </div>
+
+          <!-- Rich Text Editor (seamless, mentions enabled) -->
+          <div class="flex-1 px-4 py-4 min-h-[160px] max-h-[280px] overflow-y-auto">
+            <UiRichTextEditor
+              v-model="content"
+              :seamless="true"
+              :mentions="true"
+              :tables="false"
+              :mathematics="false"
+              :draghandle="false"
+              :embeds="false"
+              :images="false"
+              placeholder="Start writing... @mention to link entities"
+              class="text-sm h-full"
+            />
+          </div>
+
+          <!-- Footer -->
+          <div class="flex items-center justify-between px-4 py-3 border-t border-border/60 bg-muted/10 shrink-0">
+            <div class="flex items-center gap-2">
+              <div class="flex items-center gap-1.5">
+                <Icon name="lucide:tag" class="h-3 w-3 text-muted-foreground/40" />
+                <span class="text-[10px] text-muted-foreground/40 font-medium">quicknote</span>
+              </div>
+              <NuxtLink
+                to="/workspace/notes"
+                class="text-[10px] text-muted-foreground/50 hover:text-muted-foreground transition-colors underline-offset-2 hover:underline"
+                @click.stop="open = false">
+                View all notes
+              </NuxtLink>
+            </div>
+            <div class="flex items-center gap-2">
+              <button
+                class="text-[11px] text-muted-foreground hover:text-foreground transition-colors"
+                @click.stop="handleDiscard">
+                Discard
+              </button>
+              <UiButton
+                size="sm"
+                class="h-6 px-2.5 text-xs gap-1"
+                :disabled="!hasContent || isSaving"
+                @click.stop="handleSave">
+                <Icon v-if="isSaving" name="svg-spinners:ring-resize" class="h-3 w-3" />
+                <Icon v-else-if="saved" name="lucide:check" class="h-3 w-3" />
+                <span>{{ isSaving ? 'Saving…' : saved ? 'Saved!' : 'Save' }}</span>
+              </UiButton>
+            </div>
+          </div>
         </div>
       </div>
     </Transition>

@@ -23,6 +23,7 @@
 
   const BADGE_LABEL_THRESHOLD = 300
 
+  const { wp } = useWorkspacePath()
   const routes = useRoutes()
   const pinned = usePinnedItems()
   const settingsPinned = usePinnedSettings()
@@ -362,7 +363,7 @@
     if (!collection) return
 
     // Navigate to collection page where icon picker is available
-    await navigateTo(collectionSlug)
+    await navigateTo(wp(collectionSlug))
   }
 
   const handleDelete = async (collectionSlug: string) => {
@@ -399,7 +400,7 @@
 
     await deleteCollection(id)
     deleteDialogOpen.value = false
-    navigateTo('/database')
+    navigateTo(wp('/database'))
   }
 
   watch(deleteDialogOpen, (open) => {
@@ -443,7 +444,7 @@
     try {
       const { createWorkflow } = useInstantData()
       const id = await createWorkflow({ name: 'Untitled Workflow', icon: 'lucide:workflow', active: true })
-      await navigateTo(`/workflows/${id}`)
+      await navigateTo(wp(`/workflows/${id}`))
     } catch (e) {
       console.error('Failed to create workflow:', e)
     }
@@ -457,7 +458,6 @@
         dataSource: 'all',
         layout: 'grid',
       })
-      const { wp } = useWorkspacePath()
       await navigateTo(wp(`/workspace/pages/${id}`))
     } catch (e) {
       console.error('Failed to create page:', e)

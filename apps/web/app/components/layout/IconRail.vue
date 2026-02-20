@@ -13,13 +13,12 @@
 
   const tooltipSide = computed(() => (isBottom.value ? 'top' : 'right'))
 
-  // Trailing dock items (bottom mode only)
-  const { user, signOut } = useInstantAuth()
+  // Presence
+  const { user } = useInstantAuth()
   const { canManageMembers } = useAdminUI()
   const { onlineCount, totalMembers, members: workspaceMembers, isUserOnline } = usePresence()
-  const { userRole: _userRole, roleConfig: _roleConfig } = useUserRole()
 
-  const getInitials = (value: string) => {
+  function getInitials(value: string) {
     const cleaned = value.trim()
     if (!cleaned) return 'U'
     const emailPrefix = cleaned.includes('@') ? cleaned.split('@')[0]! : cleaned
@@ -32,11 +31,6 @@
   const initials = computed(() => {
     const u = user.value as any
     return getInitials(u?.name || u?.email || 'User')
-  })
-
-  const _userDisplayName = computed(() => {
-    const u = user.value as any
-    return u?.name || u?.email || 'User'
   })
 
   const _avatarUrl = computed(() => {
@@ -70,10 +64,8 @@
     return [...all, ...others].slice(0, 5)
   })
 
-  const _handleLogout = async () => {
-    await signOut()
-    await navigateTo('/auth/login')
-  }
+  // Right sidebar toggle
+  const { isRightSidebarOpen, toggleRightSidebar } = useRightSidebarWidth()
 </script>
 
 <template>
@@ -128,26 +120,23 @@
     </div>
 
     <!-- Secondary Navigation Routes (left of spacer in bottom mode) -->
+    <!-- Uses NuxtLink directly (not AppNavLink) so paths like /settings are not org-prefixed -->
     <div
       v-if="routes.secondaryRailRoutes.value?.length > 0"
       :class="['flex gap-1', isBottom ? 'flex-row px-1' : 'flex-col pb-2']">
       <template v-for="route in routes.secondaryRailRoutes.value" :key="route.path">
         <UiTooltip>
           <UiTooltipTrigger as-child>
-            <AppNavLink
+            <NuxtLink
               :to="route.path"
               class="group flex h-10 w-10 items-center justify-center rounded-xl transition"
               :class="[
                 routes.isRouteActive(route.path)
-                  ? isInEditMode
-                    ? 'bg-accent-foreground/10 text-accent-foreground/80'
-                    : 'bg-rail-foreground/10 text-foreground'
-                  : isInEditMode
-                    ? 'text-accent-foreground/70 hover:bg-accent-foreground/10 hover:text-accent-foreground'
-                    : 'text-rail-foreground/70 hover:bg-rail-foreground/10 hover:text-rail-foreground',
+                  ? 'bg-rail-foreground/10 text-foreground'
+                  : 'text-rail-foreground/70 hover:bg-rail-foreground/10 hover:text-rail-foreground',
               ]">
               <Icon :name="route.icon" class="h-4 w-4 opacity-50" />
-            </AppNavLink>
+            </NuxtLink>
           </UiTooltipTrigger>
           <UiTooltipContent :side="tooltipSide" :side-offset="8" :collision-padding="isBottom ? { bottom: 60 } : 0">{{ route.label }}</UiTooltipContent>
         </UiTooltip>
@@ -165,13 +154,11 @@
     <!-- Trailing dock: presence pill (bottom mode only) -->
     <template v-if="isBottom">
       <div class="flex items-center gap-1 pl-2 border-l border-border/40 ml-1">
-        <!-- Presence + manage members pill -->
         <UiTooltip v-if="workspaceUsers.length > 0">
           <UiTooltipTrigger as-child>
             <AppNavLink
               to="/settings/members"
-              class="flex items-center rounded-full border border-border bg-card/10 px-2 py-1 gap-1 hover:bg-card/20 transition-colors">
-              <!-- Avatars -->
+              class="flex items-center rounded-full border border-border bg-card/10 px-1 py-1 gap-1 hover:bg-card/20 transition-colors">
               <div class="flex -space-x-1.5 px-0.5">
                 <div
                   v-for="(u, index) in workspaceUsers"
@@ -188,23 +175,36 @@
                   />
                 </div>
               </div>
-              <!-- Online count -->
               <div class="px-2 border-l ml-0.5 flex flex-col justify-center h-5">
                 <p class="text-[10px] leading-none font-bold text-foreground/80 tabular-nums">
-                  <!-- {{ onlineCount }}<span class="text-muted-foreground font-medium uppercase tracking-tighter">/{{ totalMembers }} online</span> -->
-                  {{ onlineCount }}<span class="text-muted-foreground font-medium uppercase tracking-tighter"> online</span>
+                  {{ onlineCount }}<span class="text-muted-foreground font-medium uppercase tracking-tighter">/{{ totalMembers }} online</span>
                 </p>
               </div>
-              <!-- Manage / Invite divider -->
-              <UiButton variant="outline" size="xs" v-if="canManageMembers" class="border-l border-border/40 pl-1.5 pr-1 flex items-center rounded-full">
+              <div v-if="canManageMembers" class="border-l border-border/40 pl-1.5 pr-1 flex items-center">
                 <Icon name="lucide:user-plus" class="h-3.5 w-3.5 text-muted-foreground" />
-                <span>Invite</span>
-              </UiButton>
+              </div>
             </AppNavLink>
           </UiTooltipTrigger>
           <UiTooltipContent side="top" :side-offset="8" :collision-padding="{ bottom: 60 }">Manage members</UiTooltipContent>
         </UiTooltip>
       </div>
     </template>
+
+    <!-- Right Sidebar Toggle -->
+    <div :class="['flex items-center', isBottom ? 'pl-2 border-l border-border/40 ml-1' : 'pb-2']">
+      <UiTooltip>
+        <UiTooltipTrigger as-child>
+          <button
+            type="button"
+            :aria-expanded="isRightSidebarOpen"
+            aria-label="Toggle AI assistant"
+            class="group flex h-8 w-8 items-center justify-center rounded-full transition bg-muted-foreground"
+            @click="toggleRightSidebar">
+            <Icon name="lucide:bot" class="h-4 w-4 text-background" />
+          </button>
+        </UiTooltipTrigger>
+        <UiTooltipContent :side="tooltipSide" :side-offset="8" :collision-padding="isBottom ? { bottom: 60 } : 0">AI assistant</UiTooltipContent>
+      </UiTooltip>
+    </div>
   </nav>
 </template>

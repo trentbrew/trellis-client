@@ -1,34 +1,37 @@
 <script lang="ts" setup>
-  import type { Reference, EntityReference, FileReference, EntityType } from '~/types/entity'
+  import type { Reference, EntityReference, FileReference, Entity } from '~/types/entity'
   import { isEntityReference, isFileReference } from '~/types/entity'
   import { getEntityTypeConfig } from '~/config/entityRegistry'
+  import { stripHtml } from '~/utils/stripHtml'
 
-  const props = withDefaults(defineProps<{
+  const props = defineProps<{
     modelValue: Reference[]
     readonly?: boolean
-    grouped?: boolean
-  }>(), {
-    grouped: false,
-  })
+  }>()
 
   const emit = defineEmits<{
     'update:modelValue': [value: Reference[]]
     openEntity: [ref: EntityReference]
     removeRef: [id: string]
     addEntity: []
-    addEntityOfType: [type: EntityType]
+    addEntityOfType: [type: string]
   }>()
 
-  // ── Quick-add pill definitions ────────────────────────────────────────
-  const quickAddOptions: { type: EntityType; label: string; icon: string }[] = [
-    { type: 'file', label: 'Add File', icon: 'lucide:paperclip' },
-    { type: 'bookmark', label: 'Add Bookmark', icon: 'lucide:link' },
-    { type: 'note', label: 'Add Note', icon: 'lucide:sticky-note' },
-    { type: 'task', label: 'Add Task', icon: 'lucide:check-square' },
-    { type: 'event', label: 'Add Event', icon: 'lucide:calendar' },
-    { type: 'project', label: 'Add Project', icon: 'lucide:folder-kanban' },
-    { type: 'person', label: 'Add Person', icon: 'lucide:user' },
-  ]
+  // ── Dynamic entity type list from ontology registry ──────────────────
+  const { serverTypes } = useOntologyRegistry()
+  const { items: allItems } = useEntities()
+
+  const availableEntityTypes = computed(() => {
+    return serverTypes.value
+      .filter(t => t.tier !== 'core')
+      .sort((a, b) => a.label.localeCompare(b.label))
+      .map(t => ({
+        type: t.type,
+        label: t.label,
+        icon: t.icon,
+        color: t.color,
+      }))
+  })
 
   const references = computed({
     get: () => props.modelValue ?? [],
@@ -42,49 +45,24 @@
     references.value.filter((r) => isEntityReference(r) && r.direction === 'incoming'),
   )
 
-  // ── Group outgoing refs by type ───────────────────────────────────────
-  interface RefGroup {
-    key: string
-    label: string
-    icon: string
-    refs: Reference[]
-  }
-
-  const groupedOutgoing = computed<RefGroup[]>(() => {
-    const groups = new Map<string, { label: string; icon: string; refs: Reference[] }>()
-
-    for (const ref of outgoingRefs.value) {
-      let key: string, label: string, icon: string
-
-      if (isEntityReference(ref)) {
-        key = ref.entityType
-        try {
-          const cfg = getEntityTypeConfig(ref.entityType)
-          label = cfg.labelPlural || cfg.label + 's'
-          icon = cfg.icon
-        } catch {
-          label = ref.entityType
-          icon = 'lucide:link'
-        }
-      } else if (isFileReference(ref)) {
-        key = `__file_${ref.fileType}`
-        label = ref.fileType === 'image' ? 'Images' : 'Files'
-        icon = getFileIcon(ref)
-      } else {
-        continue
-      }
-
-      if (!groups.has(key)) {
-        groups.set(key, { label, icon, refs: [] })
-      }
-      groups.get(key)!.refs.push(ref)
-    }
-
-    return Array.from(groups.entries()).map(([key, g]) => ({ key, ...g }))
-  })
+  const hasAnyRefs = computed(() => outgoingRefs.value.length > 0 || incomingRefs.value.length > 0)
 
   const removeRef = (id: string) => {
     emit('removeRef', id)
+  }
+
+  // ── Entity content for reference cards ────────────────────────────
+  function getEntityHtmlContent(ref: EntityReference): string {
+    const entity = allItems.value.find((e: Entity) => e.id === ref.entityId)
+    if (!entity) return ''
+    return (entity as any).content || ''
+  }
+
+  function getEntityContentPreview(ref: EntityReference): string {
+    const entity = allItems.value.find((e: Entity) => e.id === ref.entityId)
+    if (!entity) return ''
+    const raw = (entity as any).description || (entity as any).excerpt || ''
+    return stripHtml(raw).slice(0, 120)
   }
 
   // ── Entity reference helpers ────────────────────────────────────────
@@ -165,15 +143,42 @@
 
 <template>
   <div v-if="outgoingRefs.length || incomingRefs.length || !readonly" class="p-4 space-y-3">
-    <!-- Header -->
+    <!-- Header with add button -->
     <div class="flex items-center justify-between">
       <p class="text-xs font-medium text-muted-foreground uppercase tracking-wide">References</p>
+      <!-- "+" dropdown (shown when refs exist and not readonly) -->
+      <UiDropdownMenu v-if="!readonly && hasAnyRefs">
+        <UiDropdownMenuTrigger as-child>
+          <button
+            class="h-5 w-5 rounded flex items-center justify-center hover:bg-muted text-muted-foreground hover:text-foreground transition-colors"
+            title="Add reference">
+            <Icon name="lucide:plus" class="h-3.5 w-3.5" />
+          </button>
+        </UiDropdownMenuTrigger>
+        <UiDropdownMenuContent align="end" :side-offset="4" class="w-48 max-h-64 overflow-y-auto p-1">
+          <UiDropdownMenuItem
+            v-for="opt in availableEntityTypes"
+            :key="opt.type"
+            class="gap-2 text-xs"
+            @select="emit('addEntityOfType', opt.type)">
+            <div :class="['w-5 h-5 rounded flex items-center justify-center shrink-0', `bg-${opt.color}-500/10`]">
+              <Icon :name="opt.icon" :class="['h-3 w-3', `text-${opt.color}-500`]" />
+            </div>
+            <span class="flex-1">{{ opt.label }}</span>
+          </UiDropdownMenuItem>
+          <UiDropdownMenuSeparator />
+          <UiDropdownMenuItem class="gap-2 text-xs text-muted-foreground" @select="emit('addEntity')">
+            <Icon name="lucide:search" class="h-3 w-3" />
+            <span>Browse all…</span>
+          </UiDropdownMenuItem>
+        </UiDropdownMenuContent>
+      </UiDropdownMenu>
     </div>
 
-    <!-- Quick-add pills -->
-    <div v-if="!readonly" class="flex flex-wrap items-center gap-1.5">
+    <!-- Quick-add pills (only shown when NO refs exist and not readonly) -->
+    <div v-if="!readonly && !hasAnyRefs" class="flex flex-wrap items-center gap-1.5">
       <button
-        v-for="opt in quickAddOptions"
+        v-for="opt in availableEntityTypes.slice(0, 7)"
         :key="opt.type"
         class="inline-flex items-center gap-1 px-2 py-1 rounded-md text-[11px] font-medium border border-dashed border-border text-muted-foreground hover:text-foreground hover:border-foreground/30 hover:bg-muted/50 transition-colors"
         @click="emit('addEntityOfType', opt.type)">
@@ -188,91 +193,130 @@
       </button>
     </div>
 
-    <!-- Outgoing references — grouped mode -->
-    <template v-if="grouped">
-      <div v-for="group in groupedOutgoing" :key="group.key" class="space-y-1.5">
-        <p class="text-[10px] font-medium text-muted-foreground uppercase tracking-wide flex items-center gap-1.5">
-          <Icon :name="group.icon" class="h-3 w-3" />
-          {{ group.label }}
-        </p>
-        <div class="flex flex-wrap gap-1.5">
-          <button
-            v-for="ref in group.refs"
-            :key="ref.id"
-            class="ref-pill group inline-flex items-center gap-1.5 pl-1.5 pr-2 py-1 rounded-lg bg-muted/60 hover:bg-muted transition-colors cursor-pointer"
-            @click="handleCardClick(ref)">
-            <div :class="['w-5 h-5 rounded flex items-center justify-center shrink-0', getRefColor(ref)]">
-              <Icon :name="getRefIcon(ref)" class="h-3 w-3" />
-            </div>
-            <span class="text-[11px] font-medium truncate max-w-[140px]">
-              {{ getRefName(ref) }}
-            </span>
-            <span v-if="getRefBadge(ref)" class="text-[9px] px-1.5 py-0.5 rounded bg-muted-foreground/10 text-muted-foreground capitalize shrink-0">
-              {{ getRefBadge(ref) }}
-            </span>
-            <Icon name="lucide:external-link" class="h-3 w-3 text-muted-foreground/50 shrink-0" />
+    <!-- Outgoing references — full-width cards with preview -->
+    <div v-if="outgoingRefs.length" class="space-y-1.5">
+      <template v-for="ref in outgoingRefs" :key="ref.id">
+        <!-- Entity references — with hover preview -->
+        <EntityPreviewPopover
+          v-if="isEntityReference(ref)"
+          :entity-id="(ref as EntityReference).entityId"
+          :entity-type="(ref as EntityReference).entityType"
+          side="left"
+          align="start">
+          <template #trigger>
             <button
-              v-if="!readonly"
-              class="h-4 w-4 flex items-center justify-center rounded hover:bg-destructive/10 opacity-0 group-hover:opacity-100 transition-opacity shrink-0 -mr-0.5"
-              @click.stop="removeRef(ref.id)">
-              <Icon name="lucide:x" class="h-2.5 w-2.5 text-muted-foreground" />
+              class="ref-card group w-full flex flex-col rounded-lg border border-border/50 bg-card hover:bg-muted/50 hover:border-border transition-all cursor-pointer text-left overflow-hidden"
+              @click="handleCardClick(ref)">
+              <!-- HTML content thumbnail (document entities with rich content) -->
+              <div
+                v-if="getEntityHtmlContent(ref as EntityReference)"
+                class="relative w-full h-20 overflow-hidden bg-muted/30 border-b border-border/30 shrink-0">
+                <div class="absolute inset-0 bg-linear-to-b from-transparent via-transparent to-card/80 pointer-events-none z-10" />
+                <div
+                  class="prose prose-sm dark:prose-invert max-w-none text-[9px] leading-relaxed p-2 h-full overflow-hidden opacity-60 select-none"
+                  v-html="getEntityHtmlContent(ref as EntityReference)" />
+              </div>
+              <!-- Card footer: icon + title + badge + remove -->
+              <div class="flex items-start gap-2.5 p-2.5">
+                <div :class="['w-7 h-7 rounded-md flex items-center justify-center shrink-0', getRefColor(ref)]">
+                  <Icon :name="getRefIcon(ref)" class="h-3.5 w-3.5" />
+                </div>
+                <div class="flex-1 min-w-0">
+                  <div class="flex items-center gap-1.5 mb-0.5">
+                    <span class="text-xs font-medium truncate flex-1">{{ getRefName(ref) }}</span>
+                    <span v-if="getRefBadge(ref)" class="text-[9px] px-1.5 py-0.5 rounded bg-muted-foreground/10 text-muted-foreground capitalize shrink-0">
+                      {{ getRefBadge(ref) }}
+                    </span>
+                  </div>
+                  <p v-if="!getEntityHtmlContent(ref as EntityReference) && getEntityContentPreview(ref as EntityReference)" class="text-[11px] text-muted-foreground line-clamp-2 leading-relaxed">
+                    {{ getEntityContentPreview(ref as EntityReference) }}
+                  </p>
+                </div>
+                <button
+                  v-if="!readonly"
+                  class="h-5 w-5 flex items-center justify-center rounded hover:bg-destructive/10 opacity-0 group-hover:opacity-100 transition-opacity shrink-0 mt-0.5"
+                  @click.stop="removeRef(ref.id)">
+                  <Icon name="lucide:x" class="h-3 w-3 text-muted-foreground" />
+                </button>
+              </div>
             </button>
-          </button>
-        </div>
-      </div>
-    </template>
+          </template>
+        </EntityPreviewPopover>
 
-    <!-- Outgoing references — flat mode (default) -->
-    <div v-else-if="outgoingRefs.length" class="flex flex-wrap gap-1.5">
-      <button
-        v-for="ref in outgoingRefs"
-        :key="ref.id"
-        class="ref-pill group inline-flex items-center gap-1.5 pl-1.5 pr-2 py-1 rounded-lg bg-muted/60 hover:bg-muted transition-colors cursor-pointer"
-        @click="handleCardClick(ref)">
-        <div :class="['w-5 h-5 rounded flex items-center justify-center shrink-0', getRefColor(ref)]">
-          <Icon :name="getRefIcon(ref)" class="h-3 w-3" />
-        </div>
-        <span class="text-[11px] font-medium truncate max-w-[140px]">
-          {{ getRefName(ref) }}
-        </span>
-        <span v-if="getRefBadge(ref)" class="text-[9px] px-1.5 py-0.5 rounded bg-muted-foreground/10 text-muted-foreground capitalize shrink-0">
-          {{ getRefBadge(ref) }}
-        </span>
-        <Icon name="lucide:external-link" class="h-3 w-3 text-muted-foreground/50 shrink-0" />
+        <!-- File / bookmark references — no hover preview -->
         <button
-          v-if="!readonly"
-          class="h-4 w-4 flex items-center justify-center rounded hover:bg-destructive/10 opacity-0 group-hover:opacity-100 transition-opacity shrink-0 -mr-0.5"
-          @click.stop="removeRef(ref.id)">
-          <Icon name="lucide:x" class="h-2.5 w-2.5 text-muted-foreground" />
+          v-else
+          class="ref-card group w-full flex items-start gap-2.5 p-2.5 rounded-lg border border-border/50 bg-card hover:bg-muted/50 hover:border-border transition-all cursor-pointer text-left"
+          @click="handleCardClick(ref)">
+          <div :class="['w-7 h-7 rounded-md flex items-center justify-center shrink-0', getRefColor(ref)]">
+            <Icon :name="getRefIcon(ref)" class="h-3.5 w-3.5" />
+          </div>
+          <div class="flex-1 min-w-0">
+            <div class="flex items-center gap-1.5">
+              <span class="text-xs font-medium truncate flex-1">{{ getRefName(ref) }}</span>
+              <span v-if="getRefBadge(ref)" class="text-[9px] px-1.5 py-0.5 rounded bg-muted-foreground/10 text-muted-foreground capitalize shrink-0">
+                {{ getRefBadge(ref) }}
+              </span>
+            </div>
+          </div>
+          <button
+            v-if="!readonly"
+            class="h-5 w-5 flex items-center justify-center rounded hover:bg-destructive/10 opacity-0 group-hover:opacity-100 transition-opacity shrink-0"
+            @click.stop="removeRef(ref.id)">
+            <Icon name="lucide:x" class="h-3 w-3 text-muted-foreground" />
+          </button>
         </button>
-      </button>
+      </template>
     </div>
 
     <!-- Divider between outgoing and incoming refs -->
     <div v-if="incomingRefs.length && outgoingRefs.length" class="border-t border-border" />
 
-    <!-- Incoming references ("Referenced by") — same pill style -->
+    <!-- Incoming references ("Referenced by") — same card style with preview -->
     <div v-if="incomingRefs.length" class="space-y-1.5">
       <p class="text-[10px] font-medium text-muted-foreground uppercase tracking-wide flex items-center gap-1.5">
         <Icon name="lucide:arrow-left" class="h-3 w-3" />
         Referenced by
       </p>
-      <div class="flex flex-wrap gap-1.5">
-        <button
-          v-for="ref in incomingRefs"
-          :key="ref.id"
-          class="ref-pill group inline-flex items-center gap-1.5 pl-1.5 pr-2 py-1 rounded-lg bg-muted/60 hover:bg-muted transition-colors cursor-pointer"
-          @click="isEntityReference(ref) && emit('openEntity', ref)">
-          <div :class="['w-5 h-5 rounded flex items-center justify-center shrink-0', getEntityColor(ref as EntityReference)]">
-            <Icon :name="getEntityIcon(ref as EntityReference)" class="h-2.5 w-2.5" />
-          </div>
-          <span class="text-[11px] font-medium truncate max-w-[140px]">{{ (ref as EntityReference).title }}</span>
-          <span class="text-[9px] px-1.5 py-0.5 rounded bg-muted-foreground/10 text-muted-foreground capitalize shrink-0">
-            {{ getEntityLabel(ref as EntityReference) }}
-          </span>
-          <Icon name="lucide:external-link" class="h-3 w-3 text-muted-foreground/50 shrink-0" />
-        </button>
-      </div>
+      <template v-for="ref in incomingRefs" :key="ref.id">
+        <EntityPreviewPopover
+          :entity-id="(ref as EntityReference).entityId"
+          :entity-type="(ref as EntityReference).entityType"
+          side="left"
+          align="start">
+          <template #trigger>
+            <button
+              class="ref-card group w-full flex flex-col rounded-lg border border-border/50 bg-card hover:bg-muted/50 hover:border-border transition-all cursor-pointer text-left overflow-hidden"
+              @click="isEntityReference(ref) && emit('openEntity', ref as EntityReference)">
+              <!-- HTML content thumbnail -->
+              <div
+                v-if="getEntityHtmlContent(ref as EntityReference)"
+                class="relative w-full h-20 overflow-hidden bg-muted/30 border-b border-border/30 shrink-0">
+                <div class="absolute inset-0 bg-linear-to-b from-transparent via-transparent to-card/80 pointer-events-none z-10" />
+                <div
+                  class="prose prose-sm dark:prose-invert max-w-none text-[9px] leading-relaxed p-2 h-full overflow-hidden opacity-60 select-none"
+                  v-html="getEntityHtmlContent(ref as EntityReference)" />
+              </div>
+              <div class="flex items-start gap-2.5 p-2.5">
+                <div :class="['w-7 h-7 rounded-md flex items-center justify-center shrink-0', getEntityColor(ref as EntityReference)]">
+                  <Icon :name="getEntityIcon(ref as EntityReference)" class="h-3.5 w-3.5" />
+                </div>
+                <div class="flex-1 min-w-0">
+                  <div class="flex items-center gap-1.5 mb-0.5">
+                    <span class="text-xs font-medium truncate flex-1">{{ (ref as EntityReference).title }}</span>
+                    <span class="text-[9px] px-1.5 py-0.5 rounded bg-muted-foreground/10 text-muted-foreground capitalize shrink-0">
+                      {{ getEntityLabel(ref as EntityReference) }}
+                    </span>
+                  </div>
+                  <p v-if="!getEntityHtmlContent(ref as EntityReference) && getEntityContentPreview(ref as EntityReference)" class="text-[11px] text-muted-foreground line-clamp-2 leading-relaxed">
+                    {{ getEntityContentPreview(ref as EntityReference) }}
+                  </p>
+                </div>
+              </div>
+            </button>
+          </template>
+        </EntityPreviewPopover>
+      </template>
     </div>
 
     <!-- Empty state (readonly only — edit mode has the pills) -->

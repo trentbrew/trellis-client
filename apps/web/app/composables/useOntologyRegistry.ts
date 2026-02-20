@@ -32,6 +32,12 @@ interface SchemaField {
   required?: boolean
   description?: string
   selectOptions?: any[]
+  // Relation metadata (from TQL schema)
+  relation?: {
+    targetSchema?: string
+    cardinality?: 'one' | 'many'
+    syncedProperty?: string
+  }
   // UI metadata from server ontologies
   icon?: string
   group?: string
@@ -449,6 +455,64 @@ export function useOntologyRegistry() {
   // Backward-compat alias
   const getDynamicEntityTypeConfig = getEntityConfig
 
+  /**
+   * Auto-generate browse page configuration from a type's ontology schema.
+   * Returns sort options, search fields, and table columns
+   * derived from the schema's field definitions.
+   * Synchronous — safe for use in reactive computeds.
+   */
+  function getBrowseConfig(type: string) {
+    const config = _serverTypes.value.get(type)
+    if (!config || !config.fields?.length) {
+      return {
+        sortOptions: [
+          { value: 'title', label: 'Title' },
+          { value: 'createdAt', label: 'Created' },
+        ] as { value: string; label: string }[],
+        searchFields: ['title', 'description'],
+        tableColumns: [] as { key: string; label: string; valueType: string; align: 'left' | 'right'; isTitle: boolean; sortable: boolean }[],
+      }
+    }
+
+    // Inline lightweight derivation (no async import)
+    const SORTABLE = new Set(['title', 'number', 'date', 'select', 'status'])
+    const SEARCHABLE = new Set(['title', 'rich_text', 'url', 'email', 'phone_number', 'select'])
+
+    const sortOptions = config.fields
+      .filter(f => SORTABLE.has(f.valueType))
+      .map(f => ({ value: f.name, label: _titleCase(f.name) }))
+    if (!sortOptions.some(o => o.value === 'createdAt')) {
+      sortOptions.push({ value: 'createdAt', label: 'Created' })
+    }
+
+    const baseSearchFields = config.searchFields?.length
+      ? [...config.searchFields]
+      : config.fields.filter(f => SEARCHABLE.has(f.valueType)).map(f => f.name)
+    if (!baseSearchFields.includes('description')) baseSearchFields.push('description')
+    const searchFields = baseSearchFields
+
+    const tableColumns = config.fields
+      .filter(f => f.valueType !== 'rich_text' && f.valueType !== 'files')
+      .map(f => ({
+        key: f.name,
+        label: _titleCase(f.name),
+        valueType: f.valueType,
+        align: (f.valueType === 'number' ? 'right' : 'left') as 'left' | 'right',
+        isTitle: f.valueType === 'title',
+        sortable: SORTABLE.has(f.valueType),
+      }))
+
+    return { sortOptions, searchFields, tableColumns }
+  }
+
+  function _titleCase(str: string): string {
+    return str
+      .replace(/([A-Z])/g, ' $1')
+      .replace(/[-_]/g, ' ')
+      .replace(/\b\w/g, (c: string) => c.toUpperCase())
+      .trim()
+  }
+
   return {
     serverTypes,
     dynamicTypes,
@@ -460,6 +524,7 @@ export function useOntologyRegistry() {
 
     getEntityConfig,
     getDynamicEntityTypeConfig,
+    getBrowseConfig,
     hasType,
     isServerType,
     isDynamicType,

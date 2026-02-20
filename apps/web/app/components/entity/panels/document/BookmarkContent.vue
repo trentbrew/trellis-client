@@ -491,11 +491,39 @@
       </div>
     </template>
 
-    <!-- No URL (edit mode without URL) -->
+    <!-- No URL (edit/view mode without URL) — show inline URL input -->
     <div v-else class="flex-1 flex items-center justify-center p-8">
-      <div class="text-center space-y-2">
-        <Icon name="lucide:link" class="h-8 w-8 text-muted-foreground/40 mx-auto" />
-        <p class="text-sm text-muted-foreground">Add a URL in the properties panel to see a preview</p>
+      <div class="w-full max-w-md space-y-4">
+        <div class="text-center space-y-2">
+          <div class="w-12 h-12 rounded-full bg-sky-500/10 flex items-center justify-center mx-auto">
+            <Icon name="lucide:link" class="h-6 w-6 text-sky-500" />
+          </div>
+          <p class="text-sm font-medium">Add a URL</p>
+          <p class="text-xs text-muted-foreground">Paste or type a URL to save it. We'll grab the title and details automatically.</p>
+        </div>
+
+        <div class="relative">
+          <div class="flex items-center gap-2 rounded-lg border border-border bg-card px-3 py-2.5 focus-within:ring-2 focus-within:ring-primary/30 focus-within:border-primary/50 transition-all">
+            <Icon v-if="!unfurling" name="lucide:globe" class="h-4 w-4 text-muted-foreground shrink-0" />
+            <Icon v-else name="lucide:loader-2" class="h-4 w-4 text-muted-foreground shrink-0 animate-spin" />
+            <input
+              v-model="urlInput"
+              type="url"
+              placeholder="https://..."
+              class="flex-1 bg-transparent text-sm outline-none placeholder:text-muted-foreground/50 font-mono"
+              :disabled="unfurling"
+              @keydown="handleUrlKeydown"
+              @paste="handleUrlPaste" />
+            <button
+              v-if="urlInput && !unfurling"
+              type="button"
+              class="shrink-0 rounded-md bg-primary px-3 py-1 text-xs font-medium text-primary-foreground hover:bg-primary/90 transition-colors"
+              @click="unfurlUrl(urlInput)">
+              Add
+            </button>
+          </div>
+          <p v-if="unfurlError" class="mt-1.5 text-xs text-destructive">{{ unfurlError }}</p>
+        </div>
       </div>
     </div>
   </div>
