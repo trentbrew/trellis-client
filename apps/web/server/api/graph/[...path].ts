@@ -347,6 +347,13 @@ export default defineEventHandler(async (event) => {
     schema['@id'] = ontologyId
     schema['@type'] = 'trellis:Schema'
 
+    // Guard: reject duplicate field names
+    const fieldNames = schema.fields.map((f: any) => f.name)
+    const dupes = fieldNames.filter((n: string, i: number) => fieldNames.indexOf(n) !== i)
+    if (dupes.length > 0) {
+      throw createError({ statusCode: 409, message: `Duplicate field name(s): ${dupes.join(', ')}` })
+    }
+
     try {
       await kernel.updateOntology(schema, { agentId: agent })
       pushMutationLog({ action: 'updateOntology', entityId: ontologyId, data: { version: schema.version } })

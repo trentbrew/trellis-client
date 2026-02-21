@@ -159,7 +159,7 @@ function positionOverlay(tableEl: HTMLElement, wrapper: HTMLDivElement) {
   const addRow = wrapper.querySelector<HTMLElement>('.tc-add-row')
   if (addRow) {
     addRow.style.position = 'absolute'
-    addRow.style.bottom = '-20px'
+    addRow.style.bottom = '-32px'
     addRow.style.left = '50%'
     addRow.style.transform = 'translateX(-50%)'
     addRow.style.pointerEvents = 'auto'
@@ -169,7 +169,7 @@ function positionOverlay(tableEl: HTMLElement, wrapper: HTMLDivElement) {
   const addCol = wrapper.querySelector<HTMLElement>('.tc-add-col')
   if (addCol) {
     addCol.style.position = 'absolute'
-    addCol.style.right = '-20px'
+    addCol.style.right = '-32px'
     addCol.style.top = '50%'
     addCol.style.transform = 'translateY(-50%)'
     addCol.style.pointerEvents = 'auto'

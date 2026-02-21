@@ -196,3 +196,18 @@ External Service (Notion, Slack, etc.)
 2. **Webhook endpoint pattern** — One global `/api/webhooks/:integrationId` route, or per-provider routes (`/api/webhooks/slack`, `/api/webhooks/notion`)?
 3. **Sync execution** — Should sync logic live in Nitro server tasks (cron), Trigger.dev jobs, or the TQL workflow engine?
 4. **Priority** — Should we start with Phase 1+2 (ontology + persistence) and defer the feed/workflow wiring, or go end-to-end for one provider first (e.g. webhooks only)?
+
+
+===========================
+
+| # | Branch | Stories | Cuts from |
+|---|--------|---------|-----------|
+| 1 | feat/program-standard-crud | 1–2 | main |
+| 2 | feat/standard-scoping | 3–4, 5, 6 | branch 1 merge |
+| 3 | feat/question-management | 7–8, 16, 17–18 | branch 2 merge |
+| 4 | feat/answer-logic | 9–10, 11, 14 | branch 3 merge |
+| 5 | feat/questionnaire-settings | 20–23 | branch 4 merge |
+| 6 | feat/path-validation | 15 | branch 5 merge |
+| 7 | feat/preview-mode | 19 | branch 6 merge |
+| 8 | feat/dag-canvas | 12–13 | branch 7 merge |
+

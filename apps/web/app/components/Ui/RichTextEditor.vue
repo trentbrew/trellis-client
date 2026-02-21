@@ -15,7 +15,7 @@
   import { EditorContent, useEditor, VueNodeViewRenderer } from '@tiptap/vue-3'
   import { InlineComment } from '~/lib/inline-comment-extension'
   import { DropIndicator } from '~/lib/drop-indicator-extension'
-  import { TextSelection } from 'prosemirror-state'
+  import { TextSelection, NodeSelection } from 'prosemirror-state'
   import CodeBlockComponent from './CodeBlockComponent.vue'
   import { createMentionExtension, parseMentionQuery } from '~/lib/mention-extension'
   import { createSlashCommandExtension } from '~/lib/slash-command-extension'
@@ -295,6 +295,25 @@
     const chain = e.chain().focus()
     if (typeof pos === 'number') chain.setNodeSelection(pos)
     chain.updateBlockMath({ latex }).run()
+  }
+
+  // ── Block selection via drag handle ─────────────────────────────
+  const currentDragPos = ref<number | null>(null)
+
+  function onDragHandleClick() {
+    const e = editor.value
+    const pos = currentDragPos.value
+    if (!e || pos === null) return
+
+    try {
+      // Create a NodeSelection at the block position
+      const selection = NodeSelection.create(e.state.doc, pos)
+      const tr = e.state.tr.setSelection(selection)
+      e.view.dispatch(tr)
+      e.view.focus()
+    } catch (err) {
+      console.error('[RichTextEditor] Failed to select node:', err)
+    }
   }
 
   // ── Context menu ─────────────────────────────────────────────────
@@ -837,7 +856,9 @@
       v-if="draghandle && editor"
       :editor="editor"
       :nested="true"
-      class="drag-handle" />
+      class="drag-handle"
+      @node-change="({ pos }) => currentDragPos = pos"
+      @click="onDragHandleClick" />
 
     <!-- Floating selection toolbar -->
     <Teleport to="body">
@@ -1611,7 +1632,8 @@
   /* Table extension styles */
   :deep(.ProseMirror .tableWrapper) {
     margin: 1rem 0;
-    overflow-x: auto;
+    display: table; /* Match table dimensions exactly */
+    overflow: hidden; /* Prevent scrollbars from absolutely positioned buttons */
     border-radius: calc(var(--radius) - 4px);
     border: 1px solid var(--border);
     background: var(--card);
@@ -2228,79 +2250,54 @@
     color: transparent;
     transition: color 0.1s, background 0.1s;
     cursor: pointer;
-    z-index: 1;
-  }
-
-  :deep(td:hover .tc-del-col, th:hover .tc-del-col) {
-    color: var(--muted-foreground);
   }
 
   :deep(.tc-del-col:hover) {
-    background: hsl(var(--destructive) / 0.12);
-    color: hsl(var(--destructive)) !important;
+    color: var(--destructive);
+    background: color-mix(in srgb, var(--destructive) 10%, transparent);
   }
 
-  /* Add-column cell: slim sticky column after the last real column */
-  :deep(.tc-add-col-cell) {
-    width: 28px !important;
-    min-width: 28px !important;
-    max-width: 28px !important;
-    padding: 0 !important;
-    border-left: 1px dashed var(--border) !important;
-    border-top: none !important;
-    border-right: none !important;
-    border-bottom: none !important;
-    background: transparent !important;
-    vertical-align: middle;
+  /* ── Table Controls (Overlay) ────────────────────────────────────────── */
+
+  :deep(.tc-overlay) {
+    pointer-events: none;
+    z-index: 10;
+    overflow: visible;
   }
 
+  :deep(.tc-add-row),
   :deep(.tc-add-col) {
     display: flex;
     align-items: center;
     justify-content: center;
-    width: 100%;
-    height: 100%;
-    min-height: 28px;
+    width: 24px;
+    height: 24px;
+    border-radius: 6px;
+    background: var(--background);
+    border: 1px solid var(--border);
     color: var(--muted-foreground);
-    opacity: 0.35;
-    transition: opacity 0.15s, background 0.15s;
+    opacity: 0;
+    transition: opacity 0.15s, background-color 0.15s, color 0.15s;
     cursor: pointer;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+    pointer-events: auto !important; /* Ensure they are clickable */
   }
 
+  :deep(.tc-add-row:hover),
   :deep(.tc-add-col:hover) {
-    opacity: 1;
     background: var(--accent);
+    color: var(--foreground);
   }
 
-  /* Add-row row: slim persistent row at the bottom */
-  :deep(.tc-add-row-tr) {
-    pointer-events: auto;
-  }
-
-  :deep(.tc-add-row-td) {
-    padding: 0 !important;
-    border-top: 1px dashed var(--border) !important;
-    border-left: none !important;
-    border-right: none !important;
-    border-bottom: none !important;
-    background: transparent !important;
-  }
-
-  :deep(.tc-add-row) {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    width: 100%;
-    height: 20px;
-    color: var(--muted-foreground);
-    opacity: 0.35;
-    transition: opacity 0.15s, background 0.15s;
-    cursor: pointer;
-  }
-
-  :deep(.tc-add-row:hover) {
+  :deep(.tc-overlay:hover .tc-add-row),
+  :deep(.tc-overlay:hover .tc-add-col),
+  :deep(.tableWrapper:hover .tc-add-row),
+  :deep(.tableWrapper:hover .tc-add-col),
+  :deep(.tc-overlay:hover .tc-del-row),
+  :deep(.tc-overlay:hover .tc-del-col),
+  :deep(.tableWrapper:hover .tc-del-row),
+  :deep(.tableWrapper:hover .tc-del-col) {
     opacity: 1;
-    background: var(--accent);
   }
 
   /* Collaborative cursor styles (y-prosemirror defaults) */

@@ -12,6 +12,7 @@ export async function hashOp(op: Omit<KernelOp, 'hash'>): Promise<string> {
     previousHash: op.previousHash,
     facts: op.facts,
     links: op.links,
+    nonce: crypto.randomUUID(),
   });
 
   // Simple SHA-256 hash using Web Crypto API (available in Bun/Node/Browser)
