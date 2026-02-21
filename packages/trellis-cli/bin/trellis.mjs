@@ -221,6 +221,12 @@ async function run() {
           const id = flag('id')
           const version = flag('version') || '1.0.0'
           const tier = flag('tier')
+          const entityClass = flag('entity-class')
+          const label = flag('label')
+          const labelPlural = flag('label-plural')
+          const icon = flag('icon')
+          const color = flag('color')
+          const defaultSortField = flag('default-sort-field')
           const fieldsStr = flag('fields')
           if (!id) err('Usage: trellis ontology create --id <id> [--version <v>] [--tier system|user] --fields \'[...]\'')
           if (tier && tier !== 'system' && tier !== 'user') err('--tier must be "system" or "user"')
@@ -230,6 +236,13 @@ async function run() {
           }
           const schema = { '@id': id, '@type': 'trellis:Schema', version, fields }
           if (tier) schema.tier = tier
+          if (entityClass) schema.entityClass = entityClass
+          if (label) schema.label = label
+          if (labelPlural) schema.labelPlural = labelPlural
+          if (icon) schema.icon = icon
+          if (color) schema.color = color
+          if (defaultSortField) schema.defaultSortField = defaultSortField
+
           const result = await client.createOntology(schema)
           out(result)
           break
@@ -238,6 +251,12 @@ async function run() {
         case 'update': {
           const id = args[2]
           const version = flag('version')
+          const entityClass = flag('entity-class')
+          const label = flag('label')
+          const labelPlural = flag('label-plural')
+          const icon = flag('icon')
+          const color = flag('color')
+          const defaultSortField = flag('default-sort-field')
           const fieldsStr = flag('fields')
           if (!id) err('Usage: trellis ontology update <id> [--version <v>] [--fields \'[...]\']')
           const existing = await client.getOntology(id)
@@ -246,6 +265,12 @@ async function run() {
             version: version || existing.version,
             fields: fieldsStr ? JSON.parse(fieldsStr) : existing.fields,
           }
+          if (entityClass !== undefined) schema.entityClass = entityClass
+          if (label !== undefined) schema.label = label
+          if (labelPlural !== undefined) schema.labelPlural = labelPlural
+          if (icon !== undefined) schema.icon = icon
+          if (color !== undefined) schema.color = color
+          if (defaultSortField !== undefined) schema.defaultSortField = defaultSortField
           const result = await client.updateOntology(id, schema)
           out(result)
           break

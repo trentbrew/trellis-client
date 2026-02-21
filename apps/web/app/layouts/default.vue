@@ -238,7 +238,7 @@
               <IconRail
                 v-if="showIconRail && !railAtBottom"
                 position="left"
-                class="bg-card/50! mr-0 border rounded-lg !rounded-r-none border-r-none!" />
+                class="bg-card/60! mr-0 border-l border-b border-t rounded-l-xl rounded-lg !rounded-r-none border-r-none!" />
               <div class="bg-card/75! border flex flex-1 min-w-0 overflow-hidden rounded-xl rounded-l-none flex-col">
                 <div class="flex flex-1 min-h-0 overflow-hidden">
                   <AppSidebar v-if="showSidebar" :header-above="true" class="bg-background/0 rounded-l-xl" />
