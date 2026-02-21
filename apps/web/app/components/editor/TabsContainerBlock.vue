@@ -20,10 +20,27 @@
     }))
   })
 
-  const activeIndex = computed(() => tabs.value.findIndex((t) => t.active))
+  const _activeIndex = computed(() => tabs.value.findIndex((t) => t.active))
+
+  // ── Rename mode ──────────────────────────────────────────────────
+  const renamingIndex = ref(-1)
+  const labelInputRefs = ref<HTMLInputElement[]>([])
+
+  function startRename(index: number, event: MouseEvent) {
+    event.stopPropagation()
+    renamingIndex.value = index
+    nextTick(() => {
+      const el = labelInputRefs.value[index]
+      if (el) { el.readOnly = false; el.focus(); el.select() }
+    })
+  }
+
+  function finishRename() {
+    renamingIndex.value = -1
+  }
 
   function activateTab(index: number) {
-    const containerPos = typeof props.getPos === 'function' ? props.getPos() : 0
+    const containerPos = (typeof props.getPos === 'function' ? props.getPos() : 0) ?? 0
     const { tr } = props.editor.state
     let offset = containerPos + 1
     props.node.content.forEach((child: any, _nodeOffset: number, i: number) => {
@@ -37,12 +54,12 @@
   }
 
   function addTab() {
-    const containerPos = typeof props.getPos === 'function' ? props.getPos() : 0
+    const containerPos = (typeof props.getPos === 'function' ? props.getPos() : 0) ?? 0
     const insertPos = containerPos + props.node.nodeSize - 1
     const schema = props.editor.schema
-    const newTabNode = schema.nodes.tabItem.createAndFill(
+    const newTabNode = schema.nodes.tabItem?.createAndFill(
       { label: `Tab ${tabs.value.length + 1}`, icon: '', active: false },
-      schema.nodes.paragraph.create(),
+      schema.nodes.paragraph?.create(),
     )
     if (!newTabNode) return
     const { tr } = props.editor.state
@@ -52,7 +69,7 @@
 
   function removeTab(index: number) {
     if (tabs.value.length <= 1) return
-    const containerPos = typeof props.getPos === 'function' ? props.getPos() : 0
+    const containerPos = (typeof props.getPos === 'function' ? props.getPos() : 0) ?? 0
 
     const childSlots: Array<{ from: number; to: number; node: any }> = []
     let offset = containerPos + 1
@@ -85,18 +102,23 @@
     props.editor.view.dispatch(tr)
   }
 
-  function handleLabelKeydown(event: KeyboardEvent, index: number) {
+  function handleLabelKeydown(event: KeyboardEvent, _index: number) {
     if (event.key === 'Enter') {
       event.preventDefault()
-      activateTab(index)
+      finishRename()
+    }
+    if (event.key === 'Escape') {
+      event.preventDefault()
+      finishRename()
     }
   }
 
   function handleLabelInput(event: Event, index: number) {
+    if (renamingIndex.value !== index) return
     const input = event.target as HTMLInputElement
     const containerPos = typeof props.getPos === 'function' ? props.getPos() : 0
     const { tr } = props.editor.state
-    let offset = containerPos + 1
+    let offset = (containerPos ?? 0) + 1
     props.node.content.forEach((child: any, _nodeOffset: number, i: number) => {
       if (i === index) {
         tr.setNodeMarkup(offset, undefined, {
@@ -119,15 +141,26 @@
           v-for="tab in tabs"
           :key="tab.index"
           class="tab-header-item"
-          :class="{ 'is-active': tab.active }"
+          :class="{ 'is-active': tab.active, 'is-renaming': renamingIndex === tab.index }"
           @click.stop="activateTab(tab.index)">
           <Icon v-if="tab.icon" :name="tab.icon" class="h-3.5 w-3.5 shrink-0 opacity-70" />
           <input
+            :ref="(el) => { if (el) labelInputRefs[tab.index] = el as HTMLInputElement }"
             class="tab-label-input"
+            :readonly="renamingIndex !== tab.index"
             :value="tab.label"
             @click.stop
             @keydown="handleLabelKeydown($event, tab.index)"
-            @input="handleLabelInput($event, tab.index)" />
+            @input="handleLabelInput($event, tab.index)"
+            @blur="finishRename" />
+          <!-- Pencil rename button -->
+          <button
+            type="button"
+            class="tab-rename-btn"
+            :title="`Rename ${tab.label}`"
+            @click.stop="startRename(tab.index, $event)">
+            <Icon name="lucide:pencil-line" class="h-3 w-3" />
+          </button>
           <button
             v-if="tabs.length > 1"
             type="button"
@@ -210,20 +243,23 @@
     background: none;
     border: none;
     color: inherit;
-    cursor: pointer;
+    cursor: default;
     font-size: inherit;
     font-weight: inherit;
     max-width: 12rem;
     min-width: 2rem;
     outline: none;
     padding: 0;
+    pointer-events: none;
     width: auto;
   }
 
-  .tab-header-item.is-active .tab-label-input {
+  .tab-header-item.is-renaming .tab-label-input {
     cursor: text;
+    pointer-events: auto;
   }
 
+  .tab-rename-btn,
   .tab-close-btn {
     align-items: center;
     background: none;
@@ -236,6 +272,22 @@
     opacity: 0;
     padding: 1px;
     transition: opacity 120ms, background 120ms;
+  }
+
+  .tab-header-item:hover .tab-rename-btn,
+  .tab-header-item.is-active .tab-rename-btn {
+    opacity: 0.4;
+  }
+
+  .tab-rename-btn:hover {
+    background: hsl(var(--muted) / 0.8);
+    opacity: 0.9 !important;
+  }
+
+  .tab-header-item.is-renaming .tab-rename-btn {
+    opacity: 0.9;
+    background: hsl(var(--primary) / 0.12);
+    color: hsl(var(--primary));
   }
 
   .tab-header-item:hover .tab-close-btn,

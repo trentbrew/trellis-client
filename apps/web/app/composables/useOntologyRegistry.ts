@@ -513,6 +513,79 @@ export function useOntologyRegistry() {
       .trim()
   }
 
+  /**
+   * Add a field to an existing ontology schema (user-tier only).
+   * Fetches the current schema, appends the field, and PUTs the update.
+   * SSE propagation handles UI refresh automatically.
+   */
+  async function addFieldToType(
+    schemaId: string,
+    field: { name: string; valueType: string; required?: boolean; description?: string; selectOptions?: any[] },
+  ): Promise<void> {
+    // Safety: only allow mutation of user-tier ontologies
+    const config = Array.from(_serverTypes.value.values()).find((t) => t.schemaId === schemaId)
+    if (config && config.tier && config.tier !== 'user') {
+      throw new Error(`Cannot add fields to ${config.tier}-tier ontology "${schemaId}"`)
+    }
+
+    // Fetch current schema
+    const { ontology: currentSchema } = await $fetch<{ ontology: SchemaDefinition }>(
+      `/api/graph/ontology/${encodeURIComponent(schemaId)}`,
+    )
+
+    // Check for duplicate field name
+    if (currentSchema.fields.some((f) => f.name === field.name)) {
+      throw new Error(`Field "${field.name}" already exists on "${schemaId}"`)
+    }
+
+    // Append the new field
+    const updatedFields = [...currentSchema.fields, field]
+
+    // PUT the updated schema
+    await $fetch(`/api/graph/ontology/${encodeURIComponent(schemaId)}`, {
+      method: 'PUT',
+      body: {
+        schema: {
+          ...currentSchema,
+          fields: updatedFields,
+        },
+        agentId: 'browser',
+      },
+    })
+
+    // SSE event will trigger fetchOntologies() automatically
+  }
+
+  /**
+   * Remove a field from an existing ontology schema (user-tier only).
+   */
+  async function removeFieldFromType(schemaId: string, fieldName: string): Promise<void> {
+    const config = Array.from(_serverTypes.value.values()).find((t) => t.schemaId === schemaId)
+    if (config && config.tier && config.tier !== 'user') {
+      throw new Error(`Cannot remove fields from ${config.tier}-tier ontology "${schemaId}"`)
+    }
+
+    const { ontology: currentSchema } = await $fetch<{ ontology: SchemaDefinition }>(
+      `/api/graph/ontology/${encodeURIComponent(schemaId)}`,
+    )
+
+    const updatedFields = currentSchema.fields.filter((f) => f.name !== fieldName)
+    if (updatedFields.length === currentSchema.fields.length) {
+      throw new Error(`Field "${fieldName}" not found on "${schemaId}"`)
+    }
+
+    await $fetch(`/api/graph/ontology/${encodeURIComponent(schemaId)}`, {
+      method: 'PUT',
+      body: {
+        schema: {
+          ...currentSchema,
+          fields: updatedFields,
+        },
+        agentId: 'browser',
+      },
+    })
+  }
+
   return {
     serverTypes,
     dynamicTypes,
@@ -528,6 +601,8 @@ export function useOntologyRegistry() {
     hasType,
     isServerType,
     isDynamicType,
+    addFieldToType,
+    removeFieldFromType,
     refresh: fetchOntologies,
   }
 }

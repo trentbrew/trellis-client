@@ -67,6 +67,8 @@ export default defineNuxtConfig({
     googleCalendarRedirectUri: process.env.GOOGLE_CALENDAR_REDIRECT_URI
       || `http://localhost:${PREFERRED_PORT}/api/integrations/google-calendar/callback`,
     googleCalendarWebhookSecret: process.env.GOOGLE_CALENDAR_WEBHOOK_SECRET || '',
+    resendApiKey: process.env.RESEND_API_KEY || '',
+    resendFrom: process.env.RESEND_FROM || 'Trellis <noreply@trellis.app>',
     public: {
       googleClientId: process.env.GOOGLE_CLIENT_ID,
       dataMode: process.env.TRELLIS_DATA_MODE || 'local',

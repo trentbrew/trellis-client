@@ -133,6 +133,16 @@ function getBuiltInCommands(hasEmbeds: boolean, hasImages: boolean): SlashComman
           e.chain().focus().insertTabs().run()
         },
       },
+      {
+        id: 'card',
+        label: 'Card',
+        description: 'Wrap content in a styled card container',
+        icon: 'lucide:square',
+        group: 'Embeds',
+        action: (e) => {
+          e.chain().focus().insertCard().run()
+        },
+      },
     )
 
     if (hasImages) {
@@ -193,6 +203,7 @@ function getBuiltInCommands(hasEmbeds: boolean, hasImages: boolean): SlashComman
 export interface SlashCommandConfig {
   hasEmbeds?: boolean
   hasImages?: boolean
+  chatMode?: boolean
   onEmbedEntity?: (editor: any) => void
   onEmbedQuery?: (editor: any) => void
   onEmbedDiagram?: (editor: any) => void
@@ -200,8 +211,10 @@ export interface SlashCommandConfig {
   getTemplates?: () => NoteTemplate[]
 }
 
+const CHAT_EXCLUDED_IDS = new Set(['heading-1', 'heading-2', 'heading-3', 'table', 'diagram'])
+
 export function createSlashCommandExtension(config: SlashCommandConfig = {}) {
-  const { hasEmbeds = false, hasImages = false, onEmbedEntity, onEmbedQuery, onEmbedImage, getTemplates } = config
+  const { hasEmbeds = false, hasImages = false, chatMode = false, onEmbedEntity, onEmbedQuery, onEmbedImage, getTemplates } = config
 
   return Extension.create({
     name: 'slashCommand',
@@ -233,7 +246,11 @@ export function createSlashCommandExtension(config: SlashCommandConfig = {}) {
             item.action(editor)
           },
           items: ({ query }: { query: string }) => {
-            const commands = getBuiltInCommands(hasEmbeds, hasImages)
+            let commands = getBuiltInCommands(hasEmbeds, hasImages)
+
+            if (chatMode) {
+              commands = commands.filter((item) => !CHAT_EXCLUDED_IDS.has(item.id))
+            }
 
             if (getTemplates) {
               const templates = getTemplates()

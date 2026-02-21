@@ -5,7 +5,6 @@
 
   const currentOrg = useState<any>('currentOrg')
   const currentApp = useState<any>('currentApp')
-  const { wp } = useWorkspacePath()
 
   // Real-time status from the auth middleware (set via useState('setup:status'))
   const setupStatus = useState<string>('setup:status', () => '')
@@ -37,7 +36,7 @@
 
         // Brief pause so the user sees the final message before transition
         await new Promise((r) => setTimeout(r, 800))
-        await navigateTo(wp('/workspace/tasks'))
+        await navigateTo('/messages')
       }
     }, 300)
 
@@ -47,14 +46,14 @@
         ready.value = true
         clearInterval(check)
         console.warn('[welcome] Timed out waiting for org/app — navigating anyway')
-        await navigateTo(wp('/workspace/tasks'))
+        await navigateTo('/messages')
       }
     }, 20000)
   })
 </script>
 
 <template>
-  <div class="flex flex-col items-center justify-center gap-6">
+  <div class="fixed inset-0 flex flex-col items-center justify-center gap-6 bg-background h-screen w-screen">
     <AppLogo size="48" class="animate-pulse" />
 
     <div class="flex flex-col items-center gap-2">

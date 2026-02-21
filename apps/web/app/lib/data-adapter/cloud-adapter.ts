@@ -89,7 +89,7 @@ export function createCloudAdapter(options: CloudAdapterOptions): DataAdapter {
             id: auth.user.id,
             email: auth.user.email || null,
             name: (auth.user as any).name || null,
-            avatar: (auth.user as any).avatar || null,
+            avatar: (auth.user as any).imageURL || (auth.user as any).avatar || null,
             role: null,
           }
           callback({ user })
@@ -125,7 +125,7 @@ export function createCloudAdapter(options: CloudAdapterOptions): DataAdapter {
           id: user.id,
           email: user.email || null,
           name: (user as any).name || null,
-          avatar: (user as any).avatar || null,
+          avatar: (user as any).imageURL || (user as any).avatar || null,
           role: null,
         }
       } catch {

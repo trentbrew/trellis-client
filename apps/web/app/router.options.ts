@@ -25,6 +25,7 @@ export default <RouterConfig>{
       'members',
       'messages',
       'notifications',
+      'pages',
       'settings',
       'types',
       'workflows',

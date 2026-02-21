@@ -206,12 +206,12 @@ export class InstantDBProvider {
       console.warn('[InstantDBProvider] Failed to request state:', err)
     }
 
-    // If no response within 2s, assume we're the first peer — mark as synced
+    // If no response within 400ms, assume we're the first peer — mark as synced
     setTimeout(() => {
       if (!this.synced && !this.destroyed) {
         this.synced = true
       }
-    }, 2000)
+    }, 400)
   }
 
   // ── Cleanup ───────────────────────────────────────────────────────────

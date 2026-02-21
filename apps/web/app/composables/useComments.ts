@@ -26,7 +26,11 @@ export interface Comment {
  * @param entityId - Reactive or static ID of the parent entity
  * @param entityType - Type discriminator (e.g. 'entity')
  */
-export function useComments(entityId: Ref<string | undefined> | string, entityType: string = 'entity') {
+export function useComments(
+  entityId: Ref<string | undefined> | string,
+  entityType: string = 'entity',
+  context?: { orgId?: string; entityOwnerId?: string; entityTitle?: string },
+) {
   const { user: currentUser } = useInstantAuth()
   const adapter = useDataAdapter()
   const isCloudMode = adapter.mode === 'cloud'
@@ -167,6 +171,30 @@ export function useComments(entityId: Ref<string | undefined> | string, entityTy
         adapter.tx.entities[parentId].link({ comments: commentId }),
       ]
       await adapter.transact(txs)
+
+      // Notify entity owner about the new comment (skip activity log entries and self-comments)
+      if (type === 'comment' && context?.orgId && context?.entityOwnerId) {
+        const authorId = currentUser.value?.id
+        if (context.entityOwnerId !== authorId) {
+          const authorName = currentUser.value?.name || (currentUser.value as any)?.email || 'Someone'
+          $fetch('/api/notify', {
+            method: 'POST',
+            body: {
+              recipientId: context.entityOwnerId,
+              orgId: context.orgId,
+              type: 'comment',
+              title: `New comment on "${context.entityTitle || 'an item'}"`,
+              message: `${authorName}: ${content.slice(0, 100)}`,
+              actionUrl: '/workspace/tasks',
+              icon: 'lucide:message-circle',
+              variant: 'default',
+              actorId: authorId,
+              actorName: authorName,
+              metadata: { entityId: parentId, commentId },
+            },
+          }).catch(() => { /* non-fatal */ })
+        }
+      }
     } else {
       // Local: create via TQL graph
       const { mutate } = useTrellisGraph()
@@ -210,6 +238,10 @@ export function useComments(entityId: Ref<string | undefined> | string, entityTy
     return addComment(content, type, metadata)
   }
 
+  async function addInlineComment(commentId: string, quotedText: string, content = '') {
+    return addComment(content, 'comment', { anchorId: commentId, quotedText })
+  }
+
   const displayActivity = computed(() => {
     if (comments.value.length > 0) return comments.value
     return [
@@ -233,5 +265,6 @@ export function useComments(entityId: Ref<string | undefined> | string, entityTy
     addComment,
     removeComment,
     logActivity,
+    addInlineComment,
   }
 }

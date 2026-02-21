@@ -8,7 +8,10 @@
   const { user } = useInstantAuth()
   const channelId = computed(() => props.channel.id)
 
-  const { messages, loading, sendMessage, deleteMessage, addReaction, removeReaction } = useChat(channelId)
+  const { messages, loading, sendMessage, deleteMessage, addReaction, removeReaction } = useChat(channelId, {
+    orgId: props.channel.orgId,
+    channelTitle: props.channel.slug ?? props.channel.title,
+  })
   const { typingUsers, publishTyping, markSeen } = useChatPresence(channelId)
   const { muteChannel, unmuteChannel } = useChatNotifications()
 

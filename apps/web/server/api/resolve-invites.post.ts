@@ -107,26 +107,25 @@ export default defineEventHandler(async (event) => {
           } catch { /* non-fatal */ }
         }
 
-        // Notify other admins (member_joined)
-        const adminsResult = await db.query({
+        // Notify ALL other active members (member_joined)
+        const allMembersResult = await db.query({
           members: {
             $: {
               where: {
                 orgId: member.orgId,
                 status: 'active',
-                role: 'admin',
               },
             },
           },
         })
-        const admins = ((adminsResult as any)?.members || [])
+        const peers = ((allMembersResult as any)?.members || [])
           .filter((a: any) => a.userId && a.userId !== body.userId && a.userId !== member.ownerId)
 
-        for (const admin of admins) {
-          const adminNotifId = crypto.randomUUID()
+        for (const peer of peers) {
+          const peerNotifId = crypto.randomUUID()
           await db.transact(
-            db.tx.notifications[adminNotifId].update({
-              recipientId: admin.userId,
+            db.tx.notifications[peerNotifId].update({
+              recipientId: peer.userId,
               orgId: member.orgId,
               orgName,
               type: 'member_joined',
@@ -143,7 +142,7 @@ export default defineEventHandler(async (event) => {
             }),
           )
           try {
-            await db.transact(db.tx.organizations[member.orgId].link({ notifications: adminNotifId }))
+            await db.transact(db.tx.organizations[member.orgId].link({ notifications: peerNotifId }))
           } catch { /* non-fatal */ }
         }
       } catch (notifErr: any) {

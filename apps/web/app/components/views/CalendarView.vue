@@ -6,7 +6,7 @@
   import { extractNodeValue, fieldKeyAliases, getStatusBadgeClass, getPriorityDisplay } from '~/lib/ontology'
   import { useGlobalDetailSheet } from '~/composables/useGlobalDetailSheet'
 
-  type CalendarViewMode = 'day' | 'week' | 'month' | 'year'
+  type CalendarViewMode = 'day' | 'week' | 'month' | 'quarter' | 'year'
 
   interface CalendarEvent {
     id: string
@@ -30,9 +30,17 @@
   const props = defineProps<{
     collectionId: string
     modelValue?: string
+    /**
+     * Alternative to modelValue: pass pre-built node objects directly to skip
+     * the JSON.stringify → JSON.parse round-trip. When provided, modelValue
+     * is ignored.
+     */
+    nodes?: Record<string, any>[]
     schema?: DatabaseSchema | null
     /** When true, removes border and rounding for fullscreen use */
     fullscreen?: boolean
+    /** When true, hides the internal mini-calendar sidebar (used when sidebar lives in AppSidebar) */
+    hideSidebar?: boolean
   }>()
 
   const emit = defineEmits<{
@@ -44,9 +52,9 @@
     'event-reschedule': [eventId: string, newDate: Date]
   }>()
 
-  // Calendar view mode state
-  const calendarViewMode = ref<CalendarViewMode>('month')
-  const currentDate = ref(new Date())
+  // Calendar view mode + current date + today ref: shared with CalendarSidebarPanel via composable
+  const { currentDate, calendarViewMode: _sharedViewMode, today, eventDateIndex } = useCalendarSidebarState()
+  const calendarViewMode = _sharedViewMode as Ref<CalendarViewMode>
   const _hasAutoNavigated = ref(false)
   const isTransitioning = ref(false)
   const transitionDirection = ref<'left' | 'right'>('right')
@@ -55,6 +63,7 @@
     { value: 'day', label: 'Today', icon: 'lucide:calendar-days' },
     { value: 'week', label: 'Week', icon: 'lucide:calendar-range' },
     { value: 'month', label: 'Month', icon: 'lucide:calendar' },
+    { value: 'quarter', label: 'Quarter', icon: 'lucide:calendar-check' },
     { value: 'year', label: 'Year', icon: 'lucide:calendar-check' },
   ]
 
@@ -335,6 +344,17 @@
   }
 
   const recordNodes = computed(() => {
+    // Fast path: nodes prop bypasses JSON parse entirely
+    if (props.nodes) {
+      return props.nodes.filter((n) => {
+        if (!n || typeof n !== 'object' || Array.isArray(n)) return false
+        const t = getNodeType(n)
+        if (t === 'trellis:Collection') return false
+        if (t === 'trellis:PropertyValueSpecification') return false
+        return true
+      })
+    }
+
     const root = doc.value
     let nodes: any[] = []
 
@@ -801,8 +821,24 @@
     isWrapEnd: boolean
   }
 
+  interface DayData {
+    date: Date
+    isCurrentMonth: boolean
+    isToday: boolean
+    /** Pre-computed unified day group (single-day events only, excl. multi-day) */
+    dayGroup: DayGroup | null
+    /** Pre-computed visible single-day items (respects maxSingleDayItems) */
+    visibleItems: CalendarEvent[]
+    /** Pre-computed overflow group, or null if all items fit */
+    overflowGroup: DayGroup | null
+    /** Pre-computed lane slots for this column */
+    laneSlots: Array<LaneSlot | null>
+  }
+
   interface WeekRow {
     days: Array<{ date: Date; isCurrentMonth: boolean; isToday: boolean }>
+    /** Enriched day data with pre-computed per-cell values */
+    dayData: DayData[]
     lanes: MultiDayLane[]
     overflowPerCol: number[]
   }
@@ -814,7 +850,9 @@
     return e.getTime() > s.getTime()
   }
 
-  const multiDayEvents = computed(() => events.value.filter(isMultiDayEvent))
+  // Date key helper — pure function, no reactive deps, used by index + mini calendar
+  const _dateKey = (date: Date): string =>
+    `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`
 
   const getMultiDayLanes = (
     weekDays: Array<{ date: Date }>,
@@ -925,76 +963,6 @@
     return { lanes: visible, overflowPerCol }
   }
 
-  const weekRows = computed<WeekRow[]>(() => {
-    const days = monthDays.value
-    const rows: WeekRow[] = []
-    const globalLaneMap = new Map<string, number>()
-    for (let i = 0; i < days.length; i += 7) {
-      const weekDays = days.slice(i, i + 7)
-      const { lanes, overflowPerCol } = getMultiDayLanes(weekDays, globalLaneMap, maxVisibleLanesPerRow.value)
-      rows.push({ days: weekDays, lanes, overflowPerCol })
-    }
-    return rows
-  })
-
-  // Dynamic row heights: proportional fr values based on content density
-  const _monthGridTemplateRows = computed(() => {
-    const rows = weekRows.value
-    if (!rows.length) return ''
-    const weights = rows.map((row) => {
-      // Multi-day lane count for this row
-      const laneCount = row.lanes.length ? Math.max(...row.lanes.map((l) => l.laneIndex)) + 1 : 0
-      // Max visible single-day items across all 7 days in this row
-      let maxItems = 0
-      for (const day of row.days) {
-        const visible = getVisibleSingleDayItems(day.date, row).length
-        const hasOverflow = getOverflowDayGroup(day.date, row) ? 1 : 0
-        const total = visible + hasOverflow
-        if (total > maxItems) maxItems = total
-      }
-      // Weight = lanes + single-day items + 1 base (for header/padding)
-      return Math.max(laneCount + maxItems + 1, 2)
-    })
-    return weights.map((w) => `${w}fr`).join(' ')
-  })
-
-  const getLaneSlotsForDay = (row: WeekRow, colIdx: number): Array<LaneSlot | null> => {
-    if (!row.lanes.length) return []
-    const maxLane = Math.max(...row.lanes.map((l) => l.laneIndex))
-    const slotCount = maxLane + 1
-    const slots: Array<LaneSlot | null> = Array(slotCount).fill(null)
-    for (const lane of row.lanes) {
-      if (colIdx >= lane.startCol && colIdx <= lane.endCol) {
-        slots[lane.laneIndex] = {
-          event: lane.event,
-          style: lane.style,
-          isStart: colIdx === lane.startCol && !lane.continuesFromPrev,
-          isEnd: colIdx === lane.endCol && !lane.continuesToNext,
-          isWrapStart: colIdx === lane.startCol && lane.continuesFromPrev,
-          isWrapEnd: colIdx === lane.endCol && lane.continuesToNext,
-        }
-      }
-    }
-    // Trim trailing nulls so empty lanes at the bottom don't create stray gaps
-    while (slots.length > 0 && slots[slots.length - 1] === null) slots.pop()
-    return slots.length > 0 ? slots : []
-  }
-
-  // Multi-day event IDs set for quick lookup (to exclude from single-day rendering)
-  const multiDayEventIds = computed(() => new Set(multiDayEvents.value.map((e) => e.id)))
-
-  // Check if a hovered multi-day event spans a specific date
-  const isHoveredMultiDayCell = (date: Date): boolean => {
-    const id = hoveredMultiDayEventId.value
-    if (!id) return false
-    const ev = multiDayEvents.value.find((e) => e.id === id)
-    if (!ev?.range) return false
-    const d = new Date(date.getFullYear(), date.getMonth(), date.getDate()).getTime()
-    const s = new Date(ev.range.start.getFullYear(), ev.range.start.getMonth(), ev.range.start.getDate()).getTime()
-    const e = new Date(ev.range.end.getFullYear(), ev.range.end.getMonth(), ev.range.end.getDate()).getTime()
-    return d >= s && d <= e
-  }
-
   // Format date range for hover preview
   const formatEventDateRange = (event: CalendarEvent): string => {
     const opts: Intl.DateTimeFormatOptions = { month: 'short', day: 'numeric' }
@@ -1066,46 +1034,22 @@
     return { items: dayEvents, urgentCount, typeSegments }
   }
 
+  // Week-row lookup helpers — read from pre-computed dayData when available
+  const _findDayData = (row: WeekRow, date: Date): DayData | undefined =>
+    row.dayData.find((dd) => isSameDay(dd.date, date))
+
   // ── Visible / overflow split for individual item pills ───────────────
-  const getMaxSingleDayItems = (row: WeekRow): number => {
+  const _getMaxSingleDayItems = (row: WeekRow): number => {
     const laneCount = row.lanes.length ? Math.max(...row.lanes.map((l) => l.laneIndex)) + 1 : 0
     const available = maxCellContentSlots.value - laneCount
     return Math.max(available, 1)
   }
 
-  const getVisibleSingleDayItems = (date: Date, row: WeekRow): CalendarEvent[] => {
-    const group = getDayGroup(date)
-    if (!group) return []
-    const max = getMaxSingleDayItems(row)
-    if (group.items.length <= max) return group.items
-    return group.items.slice(0, max - 1) // leave room for overflow pill
-  }
+  const getVisibleSingleDayItems = (date: Date, row: WeekRow): CalendarEvent[] =>
+    _findDayData(row, date)?.visibleItems ?? []
 
-  const getOverflowDayGroup = (date: Date, row: WeekRow): DayGroup | null => {
-    const group = getDayGroup(date)
-    if (!group) return null
-    const max = getMaxSingleDayItems(row)
-    if (group.items.length <= max) return null
-    const overflowItems = group.items.slice(max - 1)
-    const grouped = new Map<string, CalendarEvent[]>()
-    for (const ev of overflowItems) {
-      const key = ev.typeLabel || 'Item'
-      if (!grouped.has(key)) grouped.set(key, [])
-      grouped.get(key)!.push(ev)
-    }
-    const typeSegments: TypeSegment[] = []
-    let urgentCount = 0
-    for (const [typeLabel, items] of grouped) {
-      const style = getTypeStyle(typeLabel)
-      typeSegments.push({ label: typeLabel, icon: style.icon, color: style.dot, count: items.length })
-      urgentCount += items.filter((i) => {
-        const u = i.urgency?.toLowerCase()
-        const p = i.priority?.toLowerCase()
-        return u === 'urgent' || u === 'high' || p === 'urgent' || p === 'high'
-      }).length
-    }
-    return { items: overflowItems, urgentCount, typeSegments }
-  }
+  const getOverflowDayGroup = (date: Date, row: WeekRow): DayGroup | null =>
+    _findDayData(row, date)?.overflowGroup ?? null
 
   // Use ontology utilities for display configuration
   const getNodeStringValue = (node: any, keys: string[]): string | undefined => {
@@ -1209,10 +1153,185 @@
     return out.sort((a, b) => a.date.getTime() - b.date.getTime())
   })
 
-  const today = computed(() => {
-    const now = new Date()
-    now.setHours(0, 0, 0, 0)
-    return now
+  // ── Derived from events (must be declared AFTER events) ──────────────
+  const multiDayEvents = computed(() => events.value.filter(isMultiDayEvent))
+
+  // O(N) date-key index: built once per events change, O(1) per lookup.
+  // Key format: "YYYY-MM-DD". Range events are indexed for every day they span.
+  const eventsByDateKey = computed<Map<string, CalendarEvent[]>>(() => {
+    const map = new Map<string, CalendarEvent[]>()
+    for (const ev of events.value) {
+      if (ev.range) {
+        const s = new Date(ev.range.start.getFullYear(), ev.range.start.getMonth(), ev.range.start.getDate())
+        const e = new Date(ev.range.end.getFullYear(), ev.range.end.getMonth(), ev.range.end.getDate())
+        let cursor = new Date(s)
+        while (cursor <= e) {
+          const k = _dateKey(cursor)
+          if (!map.has(k)) map.set(k, [])
+          map.get(k)!.push(ev)
+          cursor = new Date(cursor.getFullYear(), cursor.getMonth(), cursor.getDate() + 1)
+        }
+      } else {
+        const k = _dateKey(ev.date)
+        if (!map.has(k)) map.set(k, [])
+        map.get(k)!.push(ev)
+      }
+    }
+    return map
+  })
+
+  // Keep the shared eventDateIndex in sync so CalendarSidebarPanel can use it
+  watch(eventsByDateKey, (map) => {
+    eventDateIndex.value = new Set(map.keys())
+  }, { immediate: true })
+
+  // ── Computed properties that depend on multiDayEvents / eventsByDateKey ──
+
+  // Multi-day event IDs set for quick lookup (to exclude from single-day rendering)
+  const multiDayEventIds = computed(() => new Set(multiDayEvents.value.map((e) => e.id)))
+
+  // Check if a hovered multi-day event spans a specific date
+  const isHoveredMultiDayCell = (date: Date): boolean => {
+    const id = hoveredMultiDayEventId.value
+    if (!id) return false
+    const ev = multiDayEvents.value.find((e) => e.id === id)
+    if (!ev?.range) return false
+    const d = new Date(date.getFullYear(), date.getMonth(), date.getDate()).getTime()
+    const s = new Date(ev.range.start.getFullYear(), ev.range.start.getMonth(), ev.range.start.getDate()).getTime()
+    const e = new Date(ev.range.end.getFullYear(), ev.range.end.getMonth(), ev.range.end.getDate()).getTime()
+    return d >= s && d <= e
+  }
+
+  // Shared helper: builds DayData for a set of week days given pre-computed lanes.
+  const _buildDayData = (
+    weekDays: Array<{ date: Date; isCurrentMonth: boolean; isToday: boolean }>,
+    lanes: MultiDayLane[],
+    maxItems: number,
+  ): DayData[] => {
+    const multiDayIds = new Set(multiDayEvents.value.map((e) => e.id))
+    const maxLane = lanes.length ? Math.max(...lanes.map((l) => l.laneIndex)) : -1
+    const slotCount = maxLane + 1
+
+    return weekDays.map((day, colIdx) => {
+      const slots: Array<LaneSlot | null> = slotCount > 0 ? Array(slotCount).fill(null) : []
+      for (const lane of lanes) {
+        if (colIdx >= lane.startCol && colIdx <= lane.endCol) {
+          slots[lane.laneIndex] = {
+            event: lane.event,
+            style: lane.style,
+            isStart: colIdx === lane.startCol && !lane.continuesFromPrev,
+            isEnd: colIdx === lane.endCol && !lane.continuesToNext,
+            isWrapStart: colIdx === lane.startCol && lane.continuesFromPrev,
+            isWrapEnd: colIdx === lane.endCol && lane.continuesToNext,
+          }
+        }
+      }
+      while (slots.length > 0 && slots[slots.length - 1] === null) slots.pop()
+      const laneSlots = slots.length > 0 ? slots : []
+
+      const allDayEvents = eventsByDateKey.value.get(_dateKey(day.date)) ?? []
+      const singleDayEvents = allDayEvents.filter((e) => !multiDayIds.has(e.id))
+
+      let dayGroup: DayGroup | null = null
+      if (singleDayEvents.length > 0) {
+        const grouped = new Map<string, CalendarEvent[]>()
+        for (const ev of singleDayEvents) {
+          const key = ev.typeLabel || 'Item'
+          if (!grouped.has(key)) grouped.set(key, [])
+          grouped.get(key)!.push(ev)
+        }
+        const typeSegments: TypeSegment[] = []
+        let urgentCount = 0
+        for (const [typeLabel, items] of grouped) {
+          const style = getTypeStyle(typeLabel)
+          typeSegments.push({ label: typeLabel, icon: style.icon, color: style.dot, count: items.length })
+          urgentCount += items.filter((it) => {
+            const u = it.urgency?.toLowerCase()
+            const p = it.priority?.toLowerCase()
+            return u === 'urgent' || u === 'high' || p === 'urgent' || p === 'high'
+          }).length
+        }
+        dayGroup = { items: singleDayEvents, urgentCount, typeSegments }
+      }
+
+      let visibleItems: CalendarEvent[] = []
+      let overflowGroup: DayGroup | null = null
+      if (dayGroup) {
+        if (dayGroup.items.length <= maxItems) {
+          visibleItems = dayGroup.items
+        } else {
+          visibleItems = dayGroup.items.slice(0, maxItems - 1)
+          const overflowItems = dayGroup.items.slice(maxItems - 1)
+          const og = new Map<string, CalendarEvent[]>()
+          for (const ev of overflowItems) {
+            const key = ev.typeLabel || 'Item'
+            if (!og.has(key)) og.set(key, [])
+            og.get(key)!.push(ev)
+          }
+          const oSegs: TypeSegment[] = []
+          let oUrgent = 0
+          for (const [typeLabel, items] of og) {
+            const style = getTypeStyle(typeLabel)
+            oSegs.push({ label: typeLabel, icon: style.icon, color: style.dot, count: items.length })
+            oUrgent += items.filter((it) => {
+              const u = it.urgency?.toLowerCase()
+              const p = it.priority?.toLowerCase()
+              return u === 'urgent' || u === 'high' || p === 'urgent' || p === 'high'
+            }).length
+          }
+          overflowGroup = { items: overflowItems, urgentCount: oUrgent, typeSegments: oSegs }
+        }
+      }
+
+      return { ...day, dayGroup, visibleItems, overflowGroup, laneSlots }
+    })
+  }
+
+  const weekRows = computed<WeekRow[]>(() => {
+    const days = monthDays.value
+    const rows: WeekRow[] = []
+    const globalLaneMap = new Map<string, number>()
+    const maxSlots = maxCellContentSlots.value
+
+    for (let i = 0; i < days.length; i += 7) {
+      const weekDays = days.slice(i, i + 7)
+      const { lanes, overflowPerCol } = getMultiDayLanes(weekDays, globalLaneMap, maxVisibleLanesPerRow.value)
+      const laneCount = lanes.length ? Math.max(...lanes.map((l) => l.laneIndex)) + 1 : 0
+      const maxItems = Math.max(maxSlots - laneCount, 1)
+      const dayData = _buildDayData(weekDays, lanes, maxItems)
+      rows.push({ days: weekDays, dayData, lanes, overflowPerCol })
+    }
+    return rows
+  })
+
+  // Dynamic row heights: proportional fr values based on pre-computed content density
+  const _monthGridTemplateRows = computed(() => {
+    const rows = weekRows.value
+    if (!rows.length) return ''
+    const weights = rows.map((row) => {
+      const laneCount = row.lanes.length ? Math.max(...row.lanes.map((l) => l.laneIndex)) + 1 : 0
+      let maxItems = 0
+      for (const dd of row.dayData) {
+        const total = dd.visibleItems.length + (dd.overflowGroup ? 1 : 0)
+        if (total > maxItems) maxItems = total
+      }
+      return Math.max(laneCount + maxItems + 1, 2)
+    })
+    return weights.map((w) => `${w}fr`).join(' ')
+  })
+
+  const getLaneSlotsForDay = (row: WeekRow, colIdx: number): Array<LaneSlot | null> =>
+    row.dayData[colIdx]?.laneSlots ?? []
+
+  // Week view: single WeekRow for multi-day lane computation (with pre-computed dayData)
+  const weekViewRow = computed<WeekRow>(() => {
+    const days = weekViewDays.value
+    const globalLaneMap = new Map<string, number>()
+    const { lanes, overflowPerCol } = getMultiDayLanes(days, globalLaneMap, 6)
+    const laneCount = lanes.length ? Math.max(...lanes.map((l) => l.laneIndex)) + 1 : 0
+    const maxItems = Math.max(maxCellContentSlots.value - laneCount, 1)
+    const dayData = _buildDayData(days, lanes, maxItems)
+    return { days, dayData, lanes, overflowPerCol }
   })
 
   // Navigation functions
@@ -1389,19 +1508,14 @@
     return days
   })
 
-  // Week view: single WeekRow for multi-day lane computation
-  const weekViewRow = computed<WeekRow>(() => {
-    const days = weekViewDays.value
-    const globalLaneMap = new Map<string, number>()
-    const { lanes, overflowPerCol } = getMultiDayLanes(days, globalLaneMap, 6)
-    return { days, lanes, overflowPerCol }
-  })
-
-  // Helper to get mini calendar days for any month
+  // Helper to get mini calendar days for any month.
+  // Uses eventsByDateKey index for O(1) per-day lookups instead of O(N) filter.
   const getMiniCalendarDays = (year: number, month: number) => {
     const firstDay = new Date(year, month, 1)
     const lastDay = new Date(year, month + 1, 0)
     const startPadding = firstDay.getDay()
+    const index = eventsByDateKey.value
+    const todayVal = today.value
     const days: Array<{
       day: number
       isCurrentMonth: boolean
@@ -1412,16 +1526,13 @@
       recurringCount: number
     }> = []
 
-    // Previous month padding
-    const prevMonthLastDay = new Date(year, month, 0).getDate()
-    for (let i = startPadding - 1; i >= 0; i--) {
-      const date = new Date(year, month - 1, prevMonthLastDay - i)
-      const dayEvents = events.value.filter((e) => isDateInEventRange(date, e))
-      const recurringCount = dayEvents.filter((e) => hasRecurringInstance(e)).length
+    const _pushDay = (date: Date, dayNum: number, isCurrentMonth: boolean) => {
+      const dayEvents = index.get(_dateKey(date)) ?? []
+      const recurringCount = dayEvents.filter(hasRecurringInstance).length
       days.push({
-        day: prevMonthLastDay - i,
-        isCurrentMonth: false,
-        isToday: isSameDay(date, today.value),
+        day: dayNum,
+        isCurrentMonth,
+        isToday: isSameDay(date, todayVal),
         hasEvents: dayEvents.length > 0,
         hasRecurring: recurringCount > 0,
         eventCount: dayEvents.length,
@@ -1429,37 +1540,22 @@
       })
     }
 
+    // Previous month padding
+    const prevMonthLastDay = new Date(year, month, 0).getDate()
+    for (let i = startPadding - 1; i >= 0; i--) {
+      const dayNum = prevMonthLastDay - i
+      _pushDay(new Date(year, month - 1, dayNum), dayNum, false)
+    }
+
     // Current month
     for (let i = 1; i <= lastDay.getDate(); i++) {
-      const date = new Date(year, month, i)
-      const dayEvents = events.value.filter((e) => isDateInEventRange(date, e))
-      const recurringCount = dayEvents.filter((e) => hasRecurringInstance(e)).length
-      days.push({
-        day: i,
-        isCurrentMonth: true,
-        isToday: isSameDay(date, today.value),
-        hasEvents: dayEvents.length > 0,
-        hasRecurring: recurringCount > 0,
-        eventCount: dayEvents.length,
-        recurringCount,
-      })
+      _pushDay(new Date(year, month, i), i, true)
     }
 
     // Next month padding (fill to 42 days = 6 weeks)
     const remaining = 42 - days.length
     for (let i = 1; i <= remaining; i++) {
-      const date = new Date(year, month + 1, i)
-      const dayEvents = events.value.filter((e) => isDateInEventRange(date, e))
-      const recurringCount = dayEvents.filter((e) => hasRecurringInstance(e)).length
-      days.push({
-        day: i,
-        isCurrentMonth: false,
-        isToday: isSameDay(date, today.value),
-        hasEvents: dayEvents.length > 0,
-        hasRecurring: recurringCount > 0,
-        eventCount: dayEvents.length,
-        recurringCount,
-      })
+      _pushDay(new Date(year, month + 1, i), i, false)
     }
 
     return days
@@ -1494,7 +1590,7 @@
   const isSameDay = (a: Date, b: Date) =>
     a.getFullYear() === b.getFullYear() && a.getMonth() === b.getMonth() && a.getDate() === b.getDate()
 
-  const isDateInEventRange = (date: Date, event: CalendarEvent): boolean => {
+  const _isDateInEventRange = (date: Date, event: CalendarEvent): boolean => {
     if (event.range) {
       const d = new Date(date.getFullYear(), date.getMonth(), date.getDate())
       const s = new Date(event.range.start.getFullYear(), event.range.start.getMonth(), event.range.start.getDate())
@@ -1504,7 +1600,7 @@
     return isSameDay(event.date, date)
   }
 
-  const getEventsForDay = (date: Date) => events.value.filter((event) => isDateInEventRange(date, event))
+  const getEventsForDay = (date: Date): CalendarEvent[] => eventsByDateKey.value.get(_dateKey(date)) ?? []
 
   const hasRecurringInstance = (event: CalendarEvent) => event.isRecurringInstance === true
 
@@ -1610,9 +1706,9 @@
 
       <!-- Calendar Content with Mini Sidebar -->
       <div v-else class="flex-1 flex min-h-0">
-        <!-- Mini Calendar Sidebar (hidden at compact widths) -->
+        <!-- Mini Calendar Sidebar (hidden at compact widths or when AppSidebar hosts it) -->
         <div
-          v-show="!isCompact"
+          v-show="!isCompact && !props.hideSidebar"
           class="shrink-0 border-r border-border bg-background/25 flex flex-col h-full relative"
           :style="{ width: sidebarWidth + 'px' }">
           <!-- Mini Calendar Section -->
@@ -1840,43 +1936,23 @@
         <div class="flex-1 min-w-0 h-full overflow-hidden">
                 <!-- Calendar Header -->
         <div
-          class="shrink-0 border-b border-border bg-transparent"
+          class="shrink-0 border-b border-border bg-transparent p-0!"
           :class="isCompact ? 'px-3 py-2' : isMedium ? 'px-4 py-3' : 'px-6 py-4'"
         >
-          <div class="flex flex-wrap items-center justify-between gap-2">
-            <!-- Left: Navigation + Title -->
-            <div class="flex items-center" :class="isCompact ? 'gap-2' : 'gap-3'">
-              <div class="flex items-center">
-                <UiButton variant="outline" size="icon" class="h-8 w-8 rounded-r-none border-r-0" @click="navigatePrev">
-                  <Icon name="lucide:chevron-left" class="h-4 w-4" />
-                </UiButton>
-                <UiButton variant="outline" size="sm" class="h-8 rounded-none border-x-0" @click="navigateToday">
-                  {{ isCompact ? '·' : 'Today' }}
-                </UiButton>
-                <UiButton variant="outline" size="icon" class="h-8 w-8 rounded-l-none border-l-0" @click="navigateNext">
-                  <Icon name="lucide:chevron-right" class="h-4 w-4" />
-                </UiButton>
-              </div>
-              <h2
-                class="font-semibold truncate"
-                :class="isCompact ? 'text-sm' : 'text-lg'"
-              >
-                {{ headerTitle }}
-              </h2>
-            </div>
+          <div class="flex flex-wrap items-center justify-between gap-2 ">
 
-            <!-- Right: View Mode Switcher + Slot -->
-            <div class="flex items-center gap-2 shrink-0">
+            <!-- View Mode Switcher + Slot -->
+            <div class="flex items-center gap-2 shrink-0 ml-8">
               <!-- View Mode Switcher -->
-              <div class="flex items-center rounded-lg border border-border p-0.5">
+              <div class="flex items-center rounded-lg p-0">
                 <UiTooltip v-for="option in viewModeOptions" :key="option.value">
                   <UiTooltipTrigger as-child>
                     <button
                       :class="[
-                        'rounded-md transition-all duration-200 text-xs font-medium',
+                        'rounded-none transition-all duration-200 text-xs font-medium',
                         isCompact ? 'h-7 w-7 flex items-center justify-center' : 'px-3 py-1.5',
                         calendarViewMode === option.value
-                          ? 'bg-foreground/10 shadow-sm text-foreground'
+                          ? 'border-b border-primary shadow-sm text-foreground'
                           : 'text-muted-foreground hover:text-foreground hover:bg-background/50',
                       ]"
                       @click="calendarViewMode = option.value"
@@ -1888,10 +1964,33 @@
                   <UiTooltipContent v-if="isCompact" side="bottom">{{ option.label }}</UiTooltipContent>
                 </UiTooltip>
               </div>
+            </div>
+
+            <!-- <h2
+                class="font-medium text-base truncate"
+                :class="isCompact ? 'text-sm' : 'text-lg'"
+              >
+                {{ headerTitle }}
+              </h2> -->
+
+            <!--Navigation + Title -->
+            <div class="flex items-center" :class="isCompact ? 'gap-2' : 'gap-3'">
+              <div class="flex items-center">
+                <UiButton variant="ghost" size="icon" class="h-8 w-8 rounded-r-none border-r-0" @click="navigatePrev">
+                  <Icon name="lucide:chevron-left" class="h-4 w-4" />
+                </UiButton>
+                <UiButton variant="ghost" size="sm" class="h-8 rounded-none border-x-none" @click="navigateToday">
+                  {{ isCompact ? '·' : 'Today' }}
+                </UiButton>
+                <UiButton variant="ghost" size="icon" class="h-8 w-8 rounded-l-none border-l-0" @click="navigateNext">
+                  <Icon name="lucide:chevron-right" class="h-4 w-4" />
+                </UiButton>
+              </div>
 
               <!-- Header Actions Slot -->
               <slot name="header-actions" />
             </div>
+
           </div>
         </div>
 
@@ -2179,7 +2278,7 @@
 
               <!-- Month Grid: week-row sub-grids -->
               <div
-                class="flex-1 grid min-h-0 overflow-hidden"
+                class="flex-1 grid min-h-0 overflow-hidden max-h-[calc(100vh-256px)]"
                 :style="{ gridTemplateRows: `repeat(${weekRows.length}, minmax(0, 1fr))` }">
                 <div
                   v-for="(row, rowIdx) in weekRows"
@@ -2457,7 +2556,7 @@
             </div>
 
             <!-- Year View -->
-            <div v-else-if="calendarViewMode === 'year'" :key="`year-${currentYear}`" class="h-full overflow-auto">
+            <div v-else-if="calendarViewMode === 'year'" :key="`year-${currentYear}`" class="h-[calc(100vh-12rem)] overflow-auto">
               <div
                 class="grid gap-4 p-6 h-full"
                 :style="{ gridTemplateColumns: `repeat(${isCompact ? 2 : isMedium ? 3 : 4}, minmax(0, 1fr))` }">

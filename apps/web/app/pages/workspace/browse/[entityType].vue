@@ -1,26 +1,72 @@
 <script setup lang="ts">
   import type { PageStat } from '~/components/layout/Page.vue'
+  import { useBrowsePage } from '~/composables/useBrowsePage'
+  import { useBrowseSelection } from '~/composables/useBrowseSelection'
+  import DynamicEntityDialog from '~/components/dialogs/DynamicEntityDialog.vue'
+
+  definePageMeta({ layout: 'default' })
 
   const route = useRoute()
   const entityType = computed(() => route.params.entityType as string)
 
-  const { getDynamicEntityTypeConfig } = useOntologyRegistry()
+  const { getEntityConfig, getBrowseConfig } = useOntologyRegistry()
 
-  const typeConfig = computed(() => getDynamicEntityTypeConfig(entityType.value))
+  const typeConfig = computed(() => getEntityConfig(entityType.value))
+  const browseConfig = computed(() => getBrowseConfig(entityType.value))
 
-  const pageTitle = computed(() => typeConfig.value?.labelPlural || typeConfig.value?.label || entityType.value)
-  const pageIcon = computed(() => typeConfig.value?.icon || 'lucide:database')
-  const pageColor = computed(() => typeConfig.value?.color || 'blue')
+  const pageTitle = computed(() => (typeConfig.value as any)?.labelPlural || (typeConfig.value as any)?.label || entityType.value)
+  const pageIcon = computed(() => (typeConfig.value as any)?.icon || 'lucide:database')
+  const pageColor = computed(() => (typeConfig.value as any)?.color || 'violet')
 
-  const items = ref<any[]>([])
+  useHead({ title: () => `${pageTitle.value} | Browse` })
+
+  // ---------------------------------------------------------------------------
+  // Browse page (data + browse + dialog + CRUD)
+  // ---------------------------------------------------------------------------
+
+  const {
+    items, filteredItems, browseState, viewMode,
+    viewOpen, viewingItem, openDetail, handleNewItem,
+    canPrev, canNext, navPrev, navNext,
+    handleUpdate, handleDelete,
+  } = useBrowsePage({
+    entityType,
+    searchFields: computed(() => browseConfig.value.searchFields).value,
+    defaultViewMode: 'list',
+    sortOptions: computed(() => browseConfig.value.sortOptions).value,
+  })
+
+  // ---------------------------------------------------------------------------
+  // Multi-select + batch operations
+  // ---------------------------------------------------------------------------
+
+  const {
+    isSelected, toggle: toggleSelection, clearSelection,
+    selectedItems, selectionCount,
+    handleBatchDelete, handleBatchDuplicate,
+  } = useBrowseSelection(filteredItems)
+
+  // ---------------------------------------------------------------------------
+  // Stats
+  // ---------------------------------------------------------------------------
 
   const stats = computed<PageStat[]>(() => [
-    { label: 'Total', value: items.value.length, icon: 'lucide:database' },
+    { label: 'Total', value: items.value.length, icon: pageIcon.value },
   ])
 
-  useHead({
-    title: () => `${pageTitle.value} | Browse`,
-  })
+  // ---------------------------------------------------------------------------
+  // Table columns from schema
+  // ---------------------------------------------------------------------------
+
+  const tableColumns = computed(() => browseConfig.value.tableColumns)
+
+  function cellValue(item: any, key: string): string {
+    const val = item[key]
+    if (val === null || val === undefined) return '—'
+    if (typeof val === 'boolean') return val ? 'Yes' : 'No'
+    if (typeof val === 'object') return JSON.stringify(val)
+    return String(val)
+  }
 </script>
 
 <template>
@@ -32,41 +78,174 @@
     :data-source="entityType"
     :icon="pageIcon"
     :icon-class="`text-${pageColor}-400`"
-    search-placeholder="Search..."
+    :search-placeholder="`Search ${pageTitle.toLowerCase()}...`"
     :stats="stats"
-    :fill-height="true">
-    <template #content>
-      <div class="flex h-full flex-col items-center justify-center text-center p-8">
-        <div
-          class="flex h-16 w-16 items-center justify-center rounded-2xl mb-6"
-          :class="`bg-${pageColor}-500/10`">
-          <Icon :name="pageIcon" class="h-8 w-8" :class="`text-${pageColor}-400`" />
+    :show-view-switcher="true"
+    :fill-height="true"
+    :browse="browseState"
+    :view-mode-options="[
+      { mode: 'list', label: 'List', icon: 'lucide:list' },
+      { mode: 'table', label: 'Table', icon: 'lucide:table' },
+      { mode: 'grid', label: 'Grid', icon: 'lucide:grid-3x3' },
+    ]">
+
+    <!-- Toolbar Actions -->
+    <template #toolbarActions>
+      <UiButton @click="handleNewItem()">
+        <Icon name="lucide:plus" class="mr-2 h-4 w-4" />
+        New {{ (typeConfig as any)?.label || entityType }}
+      </UiButton>
+    </template>
+
+    <!-- ================= LIST VIEW ================= -->
+    <div v-if="viewMode === 'list'" class="flex flex-col gap-2">
+      <div
+        v-for="item in filteredItems"
+        :key="item.id"
+        class="flex items-center gap-3 px-3 py-2.5 rounded-lg border border-border/50 bg-card hover:bg-muted/30 cursor-pointer transition-colors group"
+        @click="openDetail(item)">
+        <input
+          type="checkbox"
+          class="h-4 w-4 rounded border-border shrink-0 opacity-0 group-hover:opacity-100 transition-opacity"
+          :checked="isSelected(item.id)"
+          @click.stop="toggleSelection(item.id)" />
+        <Icon :name="pageIcon" class="h-4 w-4 shrink-0 text-muted-foreground" />
+        <span class="flex-1 text-sm font-medium truncate">{{ item.title || 'Untitled' }}</span>
+        <span
+          v-for="col in tableColumns.filter(c => !c.isTitle).slice(0, 3)"
+          :key="col.key"
+          class="text-xs text-muted-foreground shrink-0 hidden sm:block">
+          {{ cellValue(item, col.key) }}
+        </span>
+        <span class="text-xs text-muted-foreground/50 shrink-0">
+          {{ item.updatedAt ? new Date(item.updatedAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) : '' }}
+        </span>
+      </div>
+      <div v-if="!filteredItems.length" class="flex flex-col items-center justify-center h-48 text-muted-foreground gap-3">
+        <Icon :name="pageIcon" class="h-8 w-8 text-muted-foreground/30" />
+        <p class="text-sm">No {{ pageTitle.toLowerCase() }} yet</p>
+        <UiButton size="sm" variant="outline" @click="handleNewItem()">
+          <Icon name="lucide:plus" class="mr-2 h-3.5 w-3.5" />
+          New {{ (typeConfig as any)?.label || entityType }}
+        </UiButton>
+      </div>
+    </div>
+
+    <!-- ================= GRID VIEW ================= -->
+    <div v-else-if="viewMode === 'grid'" class="grid gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+      <div
+        v-for="item in filteredItems"
+        :key="item.id"
+        class="flex flex-col gap-2 p-4 rounded-xl border border-border/50 bg-card hover:bg-muted/20 cursor-pointer transition-colors"
+        @click="openDetail(item)">
+        <div class="flex items-start justify-between gap-2">
+          <Icon :name="pageIcon" class="h-4 w-4 shrink-0 text-muted-foreground mt-0.5" />
+          <input
+            type="checkbox"
+            class="h-4 w-4 rounded border-border shrink-0 opacity-0 hover:opacity-100 transition-opacity"
+            :checked="isSelected(item.id)"
+            @click.stop="toggleSelection(item.id)" />
         </div>
-        <h2 class="text-lg font-semibold text-foreground">{{ pageTitle }}</h2>
-        <p class="mt-2 text-sm text-muted-foreground max-w-md">
-          This is a dynamically scaffolded page for the <strong>{{ entityType }}</strong> type.
-          Create entities of this type using the CLI or API to see them here.
-        </p>
-        <div v-if="typeConfig && 'fields' in typeConfig" class="mt-6 w-full max-w-md">
-          <p class="text-xs text-muted-foreground/70 uppercase tracking-wide mb-3">Schema Fields</p>
-          <div class="grid gap-2">
-            <div
-              v-for="field in (typeConfig as any).fields"
-              :key="field.name"
-              class="flex items-center justify-between rounded-lg border border-border/50 bg-card/50 px-3 py-2 text-sm">
-              <span class="font-medium text-foreground/80">{{ field.name }}</span>
-              <span class="text-xs text-muted-foreground rounded-full bg-muted px-2 py-0.5">{{ field.valueType }}</span>
-            </div>
-          </div>
-        </div>
-        <div class="mt-6 flex gap-3">
-          <UiButton variant="outline" size="sm" @click="$router.back()">
-            <Icon name="lucide:arrow-left" class="mr-2 h-4 w-4" />
-            Back
-          </UiButton>
+        <p class="text-sm font-medium leading-snug line-clamp-2">{{ item.title || 'Untitled' }}</p>
+        <div class="flex flex-wrap gap-1 mt-auto">
+          <span
+            v-for="col in tableColumns.filter(c => !c.isTitle && (item as any)[c.key]).slice(0, 2)"
+            :key="col.key"
+            class="text-[10px] px-1.5 py-0.5 rounded-full bg-muted text-muted-foreground">
+            {{ cellValue(item, col.key) }}
+          </span>
         </div>
       </div>
-    </template>
+      <div v-if="!filteredItems.length" class="col-span-full flex flex-col items-center justify-center h-48 text-muted-foreground gap-3">
+        <Icon :name="pageIcon" class="h-8 w-8 text-muted-foreground/30" />
+        <p class="text-sm">No {{ pageTitle.toLowerCase() }} yet</p>
+        <UiButton size="sm" variant="outline" @click="handleNewItem()">
+          <Icon name="lucide:plus" class="mr-2 h-3.5 w-3.5" />
+          New {{ (typeConfig as any)?.label || entityType }}
+        </UiButton>
+      </div>
+    </div>
+
+    <!-- ================= TABLE VIEW ================= -->
+    <div v-else-if="viewMode === 'table'" class="overflow-x-auto">
+      <table class="w-full text-sm">
+        <thead>
+          <tr class="border-b border-border">
+            <th class="w-8 py-2 px-3"></th>
+            <th
+              v-for="col in tableColumns"
+              :key="col.key"
+              class="py-2 px-3 text-xs font-medium text-muted-foreground whitespace-nowrap"
+              :class="col.align === 'right' ? 'text-right' : 'text-left'">
+              {{ col.label }}
+            </th>
+            <th class="py-2 px-3 text-xs font-medium text-muted-foreground text-right">Updated</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr
+            v-for="item in filteredItems"
+            :key="item.id"
+            class="border-b border-border/50 hover:bg-muted/30 cursor-pointer transition-colors"
+            @click="openDetail(item)">
+            <td class="py-2 px-3">
+              <input
+                type="checkbox"
+                class="h-4 w-4 rounded border-border"
+                :checked="isSelected(item.id)"
+                @click.stop="toggleSelection(item.id)" />
+            </td>
+            <td
+              v-for="col in tableColumns"
+              :key="col.key"
+              class="py-2 px-3"
+              :class="col.align === 'right' ? 'text-right tabular-nums' : ''">
+              <span v-if="col.isTitle" class="font-medium">{{ item.title || 'Untitled' }}</span>
+              <span v-else class="text-muted-foreground">{{ cellValue(item, col.key) }}</span>
+            </td>
+            <td class="py-2 px-3 text-right text-muted-foreground text-xs whitespace-nowrap">
+              {{ item.updatedAt ? new Date(item.updatedAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) : '—' }}
+            </td>
+          </tr>
+        </tbody>
+      </table>
+      <div v-if="!filteredItems.length" class="flex flex-col items-center justify-center h-48 text-muted-foreground gap-3">
+        <Icon :name="pageIcon" class="h-8 w-8 text-muted-foreground/30" />
+        <p class="text-sm">No {{ pageTitle.toLowerCase() }} yet</p>
+        <UiButton size="sm" variant="outline" @click="handleNewItem()">
+          <Icon name="lucide:plus" class="mr-2 h-3.5 w-3.5" />
+          New {{ (typeConfig as any)?.label || entityType }}
+        </UiButton>
+      </div>
+    </div>
+
+    <!-- Results count -->
+    <div class="text-xs text-muted-foreground mt-4 pt-4 border-t border-border pb-10">
+      Showing {{ filteredItems.length }} {{ filteredItems.length === 1 ? ((typeConfig as any)?.label || entityType) : ((typeConfig as any)?.labelPlural || pageTitle.toLowerCase()) }}
+    </div>
+
+    <!-- Selection Bar -->
+    <EntitySelectionBar
+      :selected-items="selectedItems"
+      :selection-count="selectionCount"
+      @batch-delete="handleBatchDelete"
+      @batch-duplicate="handleBatchDuplicate"
+      @clear-selection="clearSelection" />
+
+    <!-- View/Edit Dialog -->
+    <DynamicEntityDialog
+      v-if="viewOpen && viewingItem && typeConfig && 'dynamic' in typeConfig"
+      :open="viewOpen"
+      :item="viewingItem"
+      :type-config="(typeConfig as any)"
+      :can-navigate-prev="canPrev"
+      :can-navigate-next="canNext"
+      @navigate-prev="navPrev"
+      @navigate-next="navNext"
+      @save="handleUpdate"
+      @delete="handleDelete"
+      @close="viewOpen = false" />
+
   </Page>
 
   <div v-else class="flex h-full items-center justify-center">

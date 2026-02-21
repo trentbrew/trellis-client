@@ -292,7 +292,7 @@ export default defineEventHandler(async (event) => {
 
   // ─── GET /api/graph/ontology/:id ─────────────────────────────────────
   if (method === 'GET' && route === 'ontology') {
-    const ontologyId = segments.slice(1).join('/')
+    const ontologyId = decodeURIComponent(segments.slice(1).join('/'))
     if (!ontologyId) {
       throw createError({ statusCode: 400, message: 'Missing ontology ID' })
     }
@@ -330,7 +330,7 @@ export default defineEventHandler(async (event) => {
 
   // ─── PUT /api/graph/ontology/:id ───────────────────────────────────
   if (method === 'PUT' && route === 'ontology') {
-    const ontologyId = segments.slice(1).join('/')
+    const ontologyId = decodeURIComponent(segments.slice(1).join('/'))
     if (!ontologyId) {
       throw createError({ statusCode: 400, message: 'Missing ontology ID' })
     }
@@ -362,7 +362,7 @@ export default defineEventHandler(async (event) => {
 
   // ─── DELETE /api/graph/ontology/:id ────────────────────────────────
   if (method === 'DELETE' && route === 'ontology') {
-    const ontologyId = segments.slice(1).join('/')
+    const ontologyId = decodeURIComponent(segments.slice(1).join('/'))
     if (!ontologyId) {
       throw createError({ statusCode: 400, message: 'Missing ontology ID' })
     }

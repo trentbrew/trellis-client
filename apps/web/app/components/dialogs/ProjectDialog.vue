@@ -3,6 +3,7 @@
   import { CATEGORY_OPTIONS, createDefaultItem } from '~/types/entity'
   import { typeHasField } from '~/config/entityRegistry'
   import { useComments } from '~/composables/useComments'
+  import { getPresenceBg } from '~/utils/presenceColor'
 
   const { user: currentUser } = useInstantAuth()
 
@@ -125,21 +126,6 @@
     const i = editableItem.involved.indexOf(uid)
     if (i === -1) editableItem.involved.push(uid)
     else editableItem.involved.splice(i, 1)
-  }
-
-  const formatRelativeTime = (timestamp: number): string => {
-    if (!timestamp) return ''
-    const now = Date.now()
-    const diff = now - timestamp
-    const seconds = Math.floor(diff / 1000)
-    const minutes = Math.floor(seconds / 60)
-    const hours = Math.floor(minutes / 60)
-    const days = Math.floor(hours / 24)
-    if (seconds < 60) return 'Just now'
-    if (minutes < 60) return `${minutes}m ago`
-    if (hours < 24) return `${hours}h ago`
-    if (days < 7) return `${days}d ago`
-    return new Date(timestamp).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
   }
 
   const initBlankCreateItem = () => {
@@ -394,10 +380,12 @@
               </div>
               <div v-else-if="displayActivity.length" class="space-y-1.5 mb-2">
                 <div v-for="activityItem in displayActivity" :key="activityItem.id" class="flex items-start gap-2">
-                  <div class="w-5 h-5 rounded-full bg-muted flex items-center justify-center shrink-0 mt-0.5">
-                    <Icon v-if="activityItem.type === 'created'" name="lucide:plus" class="h-2.5 w-2.5 text-muted-foreground" />
-                    <Icon v-else-if="activityItem.type === 'comment'" name="lucide:message-circle" class="h-2.5 w-2.5 text-muted-foreground" />
-                    <Icon v-else name="lucide:activity" class="h-2.5 w-2.5 text-muted-foreground" />
+                  <div
+                    class="w-5 h-5 rounded-full flex items-center justify-center shrink-0 mt-0.5 text-white"
+                    :class="getPresenceBg(activityItem.authorId)">
+                    <Icon v-if="activityItem.type === 'created'" name="lucide:plus" class="h-2.5 w-2.5" />
+                    <Icon v-else-if="activityItem.type === 'comment'" name="lucide:message-circle" class="h-2.5 w-2.5" />
+                    <Icon v-else name="lucide:activity" class="h-2.5 w-2.5" />
                   </div>
                   <div class="flex-1 min-w-0">
                     <div class="flex items-baseline gap-1 flex-wrap">

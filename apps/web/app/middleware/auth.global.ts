@@ -344,7 +344,13 @@ export default defineNuxtRouteMiddleware(async (to) => {
     // Resolve org and app
     setupStatus.value = 'Loading your workspace…'
     const ensureValidOrgAndApp = async () => {
-      const lastOrgId = await getSetting('user', user.id, 'lastOrgId')
+      // joinOrgId query param is set by invite/accept.vue to guarantee the
+      // invited user lands in the correct org even if the admin SDK settings
+      // write from resolve-invites hasn't propagated to the client SDK yet.
+      const joinOrgIdParam = typeof to.query?.joinOrgId === 'string' ? to.query.joinOrgId : null
+
+      const settingsLastOrgId = await getSetting('user', user.id, 'lastOrgId')
+      const lastOrgId = joinOrgIdParam || settingsLastOrgId
       const lastAppId = await getSetting('user', user.id, 'lastAppId')
 
       // Query all orgs visible to this user (owned + member via permissions)

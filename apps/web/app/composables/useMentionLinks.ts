@@ -19,9 +19,11 @@ import { entityId as toEntityId } from '~/lib/tql-namespace'
  * before the TQL roundtrip completes.
  */
 export function useMentionLinks(
-  editableItem: { id: string; content?: string; references?: Reference[] },
+  editableItem: { id: string; content?: string; references?: Reference[]; title?: string; ownerId?: string },
+  context?: { orgId?: string; authorId?: string; authorName?: string },
 ) {
   const { mutate } = useTrellisGraph()
+  const adapter = useDataAdapter()
 
   // Baseline: the set of mentioned entity IDs at the time we start watching.
   // Mutations only fire for the *diff* from this baseline.
@@ -68,7 +70,7 @@ export function useMentionLinks(
       const currentIds = extractCurrentIds()
       const sourceId = toEntityId(editableItem.id)
 
-      // New mentions → create links
+      // New mentions → create links + notify (cloud only)
       for (const id of currentIds) {
         if (!prevMentionIds.value.has(id)) {
           mutate({
@@ -79,6 +81,33 @@ export function useMentionLinks(
           }).catch((err: unknown) =>
             console.error('[useMentionLinks] Failed to create link:', err),
           )
+
+          // Notify the mentioned entity's owner (cloud mode only)
+          if (adapter.mode === 'cloud' && context?.orgId && context?.authorId) {
+            // Fetch the target entity to get its ownerId
+            $fetch(`/api/graph/node/${encodeURIComponent(toEntityId(id))}`)
+              .then((node: any) => {
+                const targetOwnerId = node?.ownerId
+                if (!targetOwnerId || targetOwnerId === context.authorId) return
+                return $fetch('/api/notify', {
+                  method: 'POST',
+                  body: {
+                    recipientId: targetOwnerId,
+                    orgId: context.orgId,
+                    type: 'mention',
+                    title: `Mentioned in "${editableItem.title || 'a document'}"`,
+                    message: `${context.authorName || 'Someone'} mentioned you.`,
+                    actionUrl: `/workspace/tasks`,
+                    icon: 'lucide:at-sign',
+                    variant: 'default',
+                    actorId: context.authorId,
+                    actorName: context.authorName || '',
+                    metadata: { entityId: editableItem.id, mentionedEntityId: id },
+                  },
+                })
+              })
+              .catch(() => { /* non-fatal */ })
+          }
         }
       }
 

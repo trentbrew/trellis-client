@@ -28,6 +28,7 @@
   import { typeHasField } from '~/config/entityRegistry'
   import { useComments } from '~/composables/useComments'
   import { extractYmd, formatYmdLocal, parseYmdLocal, todayYmdLocal } from '~/utils/date'
+  import { getPresenceBg } from '~/utils/presenceColor'
 
   const colorMode = useColorMode()
   const isDark = computed(() => colorMode.value === 'dark')
@@ -710,23 +711,6 @@
     urgencyOpen.value = false
   }
 
-  // Format timestamps as relative time (e.g. "2m ago", "3h ago", "Jan 5")
-  const formatRelativeTime = (timestamp: number): string => {
-    if (!timestamp) return ''
-    const now = Date.now()
-    const diff = now - timestamp
-    const seconds = Math.floor(diff / 1000)
-    const minutes = Math.floor(seconds / 60)
-    const hours = Math.floor(minutes / 60)
-    const days = Math.floor(hours / 24)
-
-    if (seconds < 60) return 'Just now'
-    if (minutes < 60) return `${minutes}m ago`
-    if (hours < 24) return `${hours}h ago`
-    if (days < 7) return `${days}d ago`
-    return new Date(timestamp).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
-  }
-
   // Actions
   const closeDialog = () => {
     emit('update:open', false)
@@ -762,6 +746,43 @@
 
   // Sync inline @mentions → TQL 'mentions' links
   useMentionLinks(editableItem)
+
+  // Notify newly assigned user when owner changes in edit mode
+  const currentOrg = useState<any>('currentOrg')
+  const adapter = useDataAdapter()
+  let _prevOwner: string | undefined = undefined
+  watch(
+    () => editableItem.owner,
+    (newOwner, oldOwner) => {
+      // Seed baseline on first load — don't fire on initial hydration
+      if (_prevOwner === undefined) {
+        _prevOwner = newOwner
+        return
+      }
+      if (!isEditMode.value || !newOwner || newOwner === oldOwner) return
+      if (newOwner === currentUser.value?.id) return
+      if (adapter.mode !== 'cloud') return
+      const orgId = currentOrg.value?.id
+      if (!orgId) return
+      $fetch('/api/notify', {
+        method: 'POST',
+        body: {
+          recipientId: newOwner,
+          orgId,
+          type: 'entity_updated',
+          title: 'Task assigned to you',
+          message: `${(currentUser.value as any)?.name || (currentUser.value as any)?.email || 'Someone'} assigned "${editableItem.title || 'a task'}" to you.`,
+          actionUrl: '/workspace/tasks',
+          icon: 'lucide:user-check',
+          variant: 'default',
+          actorId: currentUser.value?.id,
+          actorName: (currentUser.value as any)?.name || (currentUser.value as any)?.email || '',
+          metadata: { entityId: editableItem.id, subtype: 'assigned' },
+        },
+      }).catch(() => { /* non-fatal */ })
+      _prevOwner = newOwner
+    },
+  )
 
   // Sync inline images → content-derived FileReference entries
   useImageLinks(editableItem)
@@ -2019,16 +2040,18 @@
           </div>
           <div v-else-if="displayActivity.length" class="space-y-1.5 mb-2">
             <div v-for="activityItem in displayActivity" :key="activityItem.id" class="flex items-start gap-2">
-              <div class="w-5 h-5 rounded-full bg-muted flex items-center justify-center shrink-0 mt-0.5">
+              <div
+                class="w-5 h-5 rounded-full flex items-center justify-center shrink-0 mt-0.5 text-white"
+                :class="getPresenceBg(activityItem.authorId)">
                 <Icon
                   v-if="activityItem.type === 'created'"
                   name="lucide:plus"
-                  class="h-2.5 w-2.5 text-muted-foreground" />
+                  class="h-2.5 w-2.5" />
                 <Icon
                   v-else-if="activityItem.type === 'comment'"
                   name="lucide:message-circle"
-                  class="h-2.5 w-2.5 text-muted-foreground" />
-                <Icon v-else name="lucide:activity" class="h-2.5 w-2.5 text-muted-foreground" />
+                  class="h-2.5 w-2.5" />
+                <Icon v-else name="lucide:activity" class="h-2.5 w-2.5" />
               </div>
               <div class="flex-1 min-w-0">
                 <div class="flex items-baseline gap-1 flex-wrap">
@@ -2064,6 +2087,12 @@
             </button>
           </div>
         </div>
+      </div>
+      <!-- Last edited -->
+      <div v-if="!isCreateMode && (editableItem.updatedAt || editableItem.createdAt)" class="px-4 py-2 border-t border-border shrink-0">
+        <p class="text-[10px] text-muted-foreground/50 text-center">
+          Last edited · {{ formatRelativeTime((editableItem as any).updatedAt || (editableItem as any).createdAt) }}
+        </p>
       </div>
     </aside>
 
