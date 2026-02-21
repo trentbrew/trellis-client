@@ -8,8 +8,18 @@
   const showIconRail = computed(() => !!_railUser.value)
   const { sidebarDisabled } = usePageShell()
   const sidebarCollapse = useSidebarCollapse()
+  // Calendar route always shows sidebar (it hosts CalendarSidebarPanel)
+  const isCalendarRoute = computed(() => {
+    const clean = getCleanPath(route.path)
+    return clean === '/calendar' || clean.startsWith('/calendar/')
+  })
   // Sidebar is hidden when the page explicitly disables it OR the route forces it closed
-  const showSidebar = computed(() => !sidebarDisabled.value && !sidebarCollapse.isForcedCollapsed.value)
+  // Exception: calendar route always shows sidebar
+  const showSidebar = computed(() =>
+    isCalendarRoute.value
+      ? !sidebarDisabled.value
+      : !sidebarDisabled.value && !sidebarCollapse.isForcedCollapsed.value,
+  )
 
   // Layout preference toggle
   const { headerAboveSidebar, iconRailPosition } = useLayoutPreferences()
@@ -222,16 +232,16 @@
       <template v-if="headerAboveSidebar">
         <div class="flex flex-1 flex-col min-w-0 overflow-hidden">
           <AppHeader :above-sidebar="true" />
-          <div class="flex flex-1 min-h-0 overflow-hidden p-2.5 pt-0 rounded-lg">
+          <div class="flex flex-1 min-h-0 overflow-hidden p-2.5 pt-0 rounded-xl">
             <div class="flex flex-1 min-h-0 overflow-hidden bg-transparent rounded-lg">
               <!-- Left rail (default) -->
               <IconRail
                 v-if="showIconRail && !railAtBottom"
                 position="left"
-                class="bg-card/75! mr-2.5 border rounded-lg" />
-              <div class="bg-card/50! border flex flex-1 min-w-0 overflow-hidden rounded-xl flex-col">
+                class="bg-card/50! mr-0 border rounded-lg !rounded-r-none border-r-none!" />
+              <div class="bg-card/75! border flex flex-1 min-w-0 overflow-hidden rounded-xl rounded-l-none flex-col">
                 <div class="flex flex-1 min-h-0 overflow-hidden">
-                  <AppSidebar v-if="showSidebar" :header-above="true" class="bg-background" />
+                  <AppSidebar v-if="showSidebar" :header-above="true" class="bg-background/0 rounded-l-xl" />
                   <div class="flex flex-1 flex-col min-w-0 overflow-hidden p-2.5" :class="showSidebar ? 'pl-0' : 'pl-2.5'">
                     <main
                       ref="pageEl"
@@ -292,7 +302,7 @@
           :style="{ width: `${rightSidebarWidth}px` }">
           <aside
             data-slot="right-sidebar"
-            class="h-full border border-border/75 bg-card/75 rounded-xl shrink-0 overflow-hidden flex flex-col shadow-lg"
+            class="h-full border border-border/75 bg-card/75 rounded-xl shrink-0 overflow-hidden flex flex-col "
             :class="{ 'select-none': isResizingRightSidebar }"
             aria-label="Right sidebar">
             <!-- Drag handle -->

@@ -37,6 +37,9 @@ export const DEFAULT_SHORTCUTS: ShortcutDefinition[] = [
 
   // ── View ─────────────────────────────────────────────────────────────
   { id: 'toggle-edit-mode', label: 'Toggle edit mode', keys: 'mod+e', scope: 'grid', category: 'View' },
+
+  // ── Debug ─────────────────────────────────────────────────────────────
+  { id: 'debug-toast', label: 'Test toast', keys: 'alt+t', scope: 'global', category: 'General', showToast: 'Toast is working' },
 ]
 
 // ============================================================================

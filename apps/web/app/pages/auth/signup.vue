@@ -79,6 +79,23 @@
         return
       }
 
+      // Extract Google profile data (name, picture) from the JWT and
+      // persist to the $users record so it's available app-wide.
+      const profile = decodeGoogleJwt(response.credential)
+      if (profile && confirmedUser.id) {
+        const updates: Record<string, string> = {}
+        if (profile.name) updates.name = profile.name
+        if (profile.picture) updates.imageURL = profile.picture
+        if (Object.keys(updates).length) {
+          try {
+            await db.transact(db.tx.$users[confirmedUser.id].update(updates))
+            Object.assign(confirmedUser, updates)
+          } catch (err) {
+            console.warn('[auth] Failed to persist Google profile to $users:', err)
+          }
+        }
+      }
+
       // Seed the middleware cache with the confirmed user
       const authInitialized = useState<boolean>('auth:initialized')
       authInitialized.value = false

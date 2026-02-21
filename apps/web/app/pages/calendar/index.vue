@@ -26,33 +26,24 @@
     gcalEvents,
     isConnected: gcalConnected,
     activeConnections: gcalAccounts,
-    connect: gcalConnect,
     disconnect: _gcalDisconnect,
   } = useGoogleCalendar()
 
-  // Per-account visibility toggles (all visible by default)
-  const hiddenGcalAccounts = ref(new Set<string>())
-
-  function toggleGcalAccount(connId: string) {
-    const next = new Set(hiddenGcalAccounts.value)
-    if (next.has(connId)) next.delete(connId)
-    else next.add(connId)
-    hiddenGcalAccounts.value = next
-  }
+  // Per-account visibility toggles — shared with CalendarSidebarPanel
+  const { selectedTypes, hiddenGcalAccounts, reset: resetSidebarState } = useCalendarSidebarState()
 
   const showGcalEvents = computed(() =>
     gcalConnected.value && hiddenGcalAccounts.value.size < gcalAccounts.value.length,
   )
 
-  function handleGcalConnect() {
-    const route = useRoute()
-    gcalConnect({ returnTo: route.fullPath })
-  }
-
   // ── Connection success/error toast on redirect back from OAuth ──────
   const { $toast } = useNuxtApp()
   const route = useRoute()
   const router = useRouter()
+
+  onUnmounted(() => {
+    resetSidebarState()
+  })
 
   onMounted(() => {
     if (route.query.connected === 'google-calendar') {
@@ -87,7 +78,7 @@
     })
   })
 
-  function gcalEventCount(connId: string) {
+  function _gcalEventCount(connId: string) {
     const conn = gcalAccounts.value.find((c) => c.id === connId)
     return conn?.syncedEntityCount ?? 0
   }
@@ -96,7 +87,9 @@
   // Dynamic type filters (multi-select checkboxes)
   // ---------------------------------------------------------------------------
 
-  // All entity types that have date-related property fields in their schema
+  // selectedTypes is now managed by CalendarSidebarPanel via useCalendarSidebarState
+
+  // Still needed locally for the #header-actions Add button dropdown
   const availableFilterTypes = computed(() => {
     const allTypes = [
       ...getTypesForClass('temporal'),
@@ -108,37 +101,6 @@
       .filter(t => typeHasField(t.type, 'startDate') || typeHasField(t.type, 'endDate') || typeHasField(t.type, 'targetDate'))
       .sort((a, b) => a.label.localeCompare(b.label))
   })
-
-  const selectedTypes = ref(new Set<EntityType>())
-
-  // Initialize with all date-bearing types selected
-  watch(availableFilterTypes, (types) => {
-    if (selectedTypes.value.size === 0 && types.length > 0) {
-      selectedTypes.value = new Set(types.map(t => t.type))
-    }
-  }, { immediate: true })
-
-  function toggleType(type: EntityType) {
-    const next = new Set(selectedTypes.value)
-    if (next.has(type)) next.delete(type)
-    else next.add(type)
-    selectedTypes.value = next
-  }
-
-  const allSelected = computed(() =>
-    availableFilterTypes.value.length > 0
-    && selectedTypes.value.size === availableFilterTypes.value.length,
-  )
-
-  function toggleAll() {
-    if (allSelected.value) {
-      selectedTypes.value = new Set()
-    } else {
-      selectedTypes.value = new Set(availableFilterTypes.value.map(t => t.type))
-    }
-  }
-
-  const typeCount = (type: EntityType) => items.value.filter(i => i.type === type).length
 
   // ---------------------------------------------------------------------------
   // Filtered data per selection
@@ -153,8 +115,8 @@
   // Calendar data transform (for CalendarView component)
   // ---------------------------------------------------------------------------
 
-  const calendarData = computed(() => {
-    const nodes = filteredItems.value.map((item) => ({
+  const calendarNodes = computed<Record<string, any>[]>(() => {
+    const nodes: Record<string, any>[] = filteredItems.value.map((item) => ({
       '@id': `item:${item.id}`,
       '@type': item.type.charAt(0).toUpperCase() + item.type.slice(1),
       'trellis:title': item.title,
@@ -178,15 +140,15 @@
           'user:dueDate': endDate && endDate !== startDate
             ? { start: `${startDate}T00:00:00`, end: `${endDate}T00:00:00` }
             : `${startDate}T00:00:00`,
-          'user:recurrence': undefined as any,
+          'user:recurrence': undefined,
           'user:status': 'google-calendar',
-          'user:priority': undefined as any,
-          'user:urgency': undefined as any,
+          'user:priority': undefined,
+          'user:urgency': undefined,
         })
       }
     }
 
-    return JSON.stringify({ '@graph': nodes })
+    return nodes
   })
 
   const calendarSchema = computed(() => ({
@@ -315,114 +277,17 @@
 </script>
 
 <template>
-  <Page variant="calendar" seo-title="Calendar" hide-sidebar>
+  <Page variant="calendar" seo-title="Calendar">
     <CalendarView
       collection-id="all-items"
-      :model-value="calendarData"
+      :nodes="calendarNodes"
       :schema="calendarSchema"
+      :hide-sidebar="true"
       fullscreen
       @task-click="handleEntityClick"
       @cell-click="handleCellClick"
       @create-request="handleCreateRequest"
       @event-reschedule="handleEventReschedule">
-      <!-- Sources (GCal accounts) -->
-      <template #sidebar-sources>
-        <!-- Connected accounts: per-account toggles -->
-        <div v-if="gcalAccounts.length > 0" class="flex flex-col gap-0.5">
-          <label
-            v-for="conn in gcalAccounts"
-            :key="conn.id"
-            class="flex items-center gap-2 px-2 py-1.5 rounded-lg text-xs font-medium transition-colors cursor-pointer group"
-            :class="[
-              !hiddenGcalAccounts.has(conn.id)
-                ? 'text-foreground hover:bg-muted/50'
-                : 'text-muted-foreground/50 hover:bg-muted/30',
-            ]">
-            <span
-              class="flex h-3.5 w-3.5 shrink-0 items-center justify-center rounded border transition-colors"
-              :class="!hiddenGcalAccounts.has(conn.id) ? 'bg-blue-500 border-blue-500' : 'border-muted-foreground/30'"
-              @click.prevent="toggleGcalAccount(conn.id)">
-              <Icon v-if="!hiddenGcalAccounts.has(conn.id)" name="lucide:check" class="h-2.5 w-2.5 text-white" />
-            </span>
-            <Icon name="simple-icons:googlecalendar" class="h-3.5 w-3.5 shrink-0 text-blue-500" />
-            <span class="flex-1 truncate" @click.prevent="toggleGcalAccount(conn.id)">
-              {{ conn.accountEmail || 'Google Calendar' }}
-            </span>
-            <span class="text-[10px] tabular-nums px-1.5 py-0.5 rounded-full min-w-[20px] text-center bg-muted text-muted-foreground">
-              {{ gcalEventCount(conn.id) }}
-            </span>
-          </label>
-
-          <!-- Add another account -->
-          <button
-            type="button"
-            class="flex items-center gap-2 px-2 py-1.5 rounded-lg text-xs text-muted-foreground hover:text-foreground hover:bg-muted/50 transition-colors"
-            @click="handleGcalConnect">
-            <Icon name="lucide:plus" class="h-3.5 w-3.5 shrink-0" />
-            <span>Add account</span>
-          </button>
-        </div>
-
-        <!-- No accounts connected: invite to connect -->
-        <div v-else class="px-2">
-          <div class="flex items-start gap-2.5 py-2">
-            <Icon name="simple-icons:googlecalendar" class="h-5 w-5 shrink-0 text-blue-500 mt-0.5" />
-            <div class="flex-1 min-w-0">
-              <p class="text-xs font-medium text-foreground">Google Calendar</p>
-              <p class="text-[10px] text-muted-foreground mt-0.5 leading-relaxed">
-                Import events from your Google account
-              </p>
-            </div>
-          </div>
-          <button
-            type="button"
-            class="w-full flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-medium bg-blue-500/10 text-blue-500 hover:bg-blue-500/20 transition-colors mt-1"
-            @click="handleGcalConnect">
-            <Icon name="lucide:link" class="h-3 w-3" />
-            Connect
-          </button>
-        </div>
-      </template>
-
-      <!-- Type filter checkboxes -->
-      <template #sidebar-filters>
-        <div class="flex items-center justify-end mb-2">
-          <button
-            type="button"
-            class="text-[10px] text-muted-foreground hover:text-foreground transition-colors"
-            @click="toggleAll">
-            {{ allSelected ? 'None' : 'All' }}
-          </button>
-        </div>
-        <div class="flex flex-col gap-0.5">
-          <label
-            v-for="tc in availableFilterTypes"
-            :key="tc.type"
-            class="flex items-center gap-2 px-2 py-1.5 rounded-lg text-xs font-medium transition-colors cursor-pointer"
-            :class="[
-              selectedTypes.has(tc.type)
-                ? 'text-foreground hover:bg-muted/50'
-                : 'text-muted-foreground/50 hover:bg-muted/30 hover:text-muted-foreground',
-            ]">
-            <span
-              class="flex h-3.5 w-3.5 shrink-0 items-center justify-center rounded border transition-colors"
-              :class="[
-                selectedTypes.has(tc.type)
-                  ? `bg-${tc.color}-500 border-${tc.color}-500`
-                  : 'border-muted-foreground/30',
-              ]"
-              @click.prevent="toggleType(tc.type)">
-              <Icon v-if="selectedTypes.has(tc.type)" name="lucide:check" class="h-2.5 w-2.5 text-white" />
-            </span>
-            <Icon :name="tc.icon" :class="['h-3.5 w-3.5 shrink-0', `text-${tc.color}-500`]" />
-            <span class="flex-1" @click.prevent="toggleType(tc.type)">{{ tc.labelPlural }}</span>
-            <span class="text-[10px] tabular-nums px-1.5 py-0.5 rounded-full min-w-[20px] text-center bg-muted text-muted-foreground">
-              {{ typeCount(tc.type) }}
-            </span>
-          </label>
-        </div>
-      </template>
-
       <!-- Create button in the calendar header (with type dropdown) -->
       <template #header-actions>
         <UiPopover>

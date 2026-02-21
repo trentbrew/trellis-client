@@ -11,7 +11,10 @@
   import { TableKit } from '@tiptap/extension-table'
   import { Mathematics } from '@tiptap/extension-mathematics'
   import { common, createLowlight } from 'lowlight'
+  import { Extension, InputRule, Node, mergeAttributes, wrappingInputRule } from '@tiptap/core'
   import { EditorContent, useEditor, VueNodeViewRenderer } from '@tiptap/vue-3'
+  import { InlineComment } from '~/lib/inline-comment-extension'
+  import { DropIndicator } from '~/lib/drop-indicator-extension'
   import { TextSelection } from 'prosemirror-state'
   import CodeBlockComponent from './CodeBlockComponent.vue'
   import { createMentionExtension, parseMentionQuery } from '~/lib/mention-extension'
@@ -19,6 +22,8 @@
   import { Callout } from '~/lib/callout-extension'
   import { Collapsible } from '~/lib/collapsible-extension'
   import { TabsContainer, TabItem } from '~/lib/tabs-extension'
+  import { Card } from '~/lib/card-extension'
+  import { TableControls } from '~/lib/table-controls-plugin'
   import { EntityEmbed } from '~/lib/entity-embed-extension'
   import { QueryView } from '~/lib/query-view-extension'
   import { useEntitySearch } from '~/composables/useEntitySearch'
@@ -69,14 +74,17 @@
     embeds?: boolean
     templates?: boolean
     collaborative?: boolean
+    chatMode?: boolean
     entityId?: string
     submitOnEnter?: boolean
+    inlineComments?: boolean
   }>()
 
   const emit = defineEmits<{
     'update:modelValue': [value: string]
     'mention-click': [attrs: { id: string; label: string; entityType: string }]
     'submit': []
+    'add-inline-comment': [{ commentId: string; quotedText: string }]
   }>()
 
   // ── Image upload infrastructure ──────────────────────────────────────
@@ -155,6 +163,21 @@
   const { create: _createEntity, items: _allEntities } = (props.mentions || props.embeds || props.templates) ? useTrellisEntities() : { create: async () => null, items: ref([]) }
   const tablesEnabled = props.tables !== false
   const mathematicsEnabled = props.mathematics !== false
+  const { toolbarMode } = useLayoutPreferences()
+
+  const currentBlockType = computed(() => {
+    const e = editor.value
+    if (!e) return { label: 'Paragraph', shortLabel: '¶' }
+    if (e.isActive('heading', { level: 1 })) return { label: 'Heading 1', shortLabel: 'H1' }
+    if (e.isActive('heading', { level: 2 })) return { label: 'Heading 2', shortLabel: 'H2' }
+    if (e.isActive('heading', { level: 3 })) return { label: 'Heading 3', shortLabel: 'H3' }
+    if (e.isActive('bulletList')) return { label: 'Bullet List', shortLabel: '•' }
+    if (e.isActive('orderedList')) return { label: 'Ordered List', shortLabel: '1.' }
+    if (e.isActive('taskList')) return { label: 'Task List', shortLabel: '☐' }
+    if (e.isActive('blockquote')) return { label: 'Blockquote', shortLabel: '"' }
+    if (e.isActive('codeBlock')) return { label: 'Code Block', shortLabel: '</>' }
+    return { label: 'Paragraph', shortLabel: '¶' }
+  })
 
   // ── Collaborative editing ───────────────────────────────────────────
   const collabEntityId = computed(() => props.entityId)
@@ -274,13 +297,61 @@
     chain.updateBlockMath({ latex }).run()
   }
 
+  // ── Context menu ─────────────────────────────────────────────────
+  const contextMenu = reactive({ visible: false, x: 0, y: 0 })
+
+  function closeContextMenu() { contextMenu.visible = false }
+
+  function onDocClick() { closeContextMenu() }
+  function onDocKeydown(e: KeyboardEvent) { if (e.key === 'Escape') closeContextMenu() }
+
+  watch(
+    () => contextMenu.visible,
+    (v) => {
+      if (v) {
+        document.addEventListener('click', onDocClick)
+        document.addEventListener('keydown', onDocKeydown)
+      } else {
+        document.removeEventListener('click', onDocClick)
+        document.removeEventListener('keydown', onDocKeydown)
+      }
+    },
+  )
+
+  // ── Custom Blockquote — triggered by | instead of > ───────────────
+  const CustomBlockquote = Node.create({
+    name: 'blockquote',
+    group: 'block',
+    content: 'block+',
+    defining: true,
+    parseHTML() { return [{ tag: 'blockquote' }] },
+    renderHTML({ HTMLAttributes }) { return ['blockquote', mergeAttributes(HTMLAttributes), 0] },
+    addCommands() {
+      return {
+        setBlockquote: () => ({ commands }: any) => commands.wrapIn(this.type),
+        toggleBlockquote: () => ({ commands }: any) => commands.toggleWrap(this.type),
+        unsetBlockquote: () => ({ commands }: any) => commands.lift(this.type),
+      } as any
+    },
+    addKeyboardShortcuts() {
+      return { 'Mod-Shift-b': () => (this.editor.commands as any).toggleBlockquote() }
+    },
+    addInputRules() {
+      return [
+        wrappingInputRule({ find: /^\|\s$/, type: this.type }),
+      ]
+    },
+  })
+
   const buildExtensions = () => {
     const exts = [
       StarterKit.configure({
         codeBlock: false, // replaced by CodeBlockLowlight
+        blockquote: false, // replaced by CustomBlockquote (| trigger instead of >)
         // When collaborative, disable built-in history — Y.js handles undo/redo
         ...(collabEnabled.value ? { history: false } : {}),
       }),
+      CustomBlockquote,
       CodeBlockLowlight.extend({
         addNodeView() {
           return VueNodeViewRenderer(CodeBlockComponent)
@@ -300,6 +371,7 @@
             resizable: true,
           },
         }) as any,
+        TableControls as any,
       )
     }
     if (mathematicsEnabled) {
@@ -367,6 +439,7 @@
         createSlashCommandExtension({
           hasEmbeds: !!props.embeds,
           hasImages: !!props.images,
+          chatMode: !!props.chatMode,
           onEmbedEntity: props.embeds ? handleEmbedEntity : undefined,
           onEmbedQuery: props.embeds ? handleEmbedQuery : undefined,
           onEmbedImage: (props.embeds && props.images) ? handleEmbedImage : undefined,
@@ -390,14 +463,37 @@
           Collapsible as any,
           TabsContainer as any,
           TabItem as any,
+          Card as any,
           EntityEmbed as any,
           QueryView as any,
+        )
+        // Input rule: > at start of empty line → Collapsible toggle
+        exts.push(
+          Extension.create({
+            name: 'collapsibleInputRule',
+            addInputRules() {
+              return [
+                new InputRule({
+                  find: /^\s*>\s$/,
+                  handler({ chain, range }: any) {
+                    chain().deleteRange(range).insertCollapsible({ title: 'Toggle', open: true }).run()
+                  },
+                }),
+              ]
+            },
+          }),
         )
       }
     }
     // Inject Y.js Collaboration extension when collaborative mode is active
     if (collabEnabled.value && collabExtensions.value.length) {
       exts.push(...collabExtensions.value)
+    }
+    if (props.draghandle) {
+      exts.push(DropIndicator)
+    }
+    if (props.inlineComments) {
+      exts.push(InlineComment as any)
     }
     return exts
   }
@@ -542,6 +638,20 @@
         handleImageFiles(imageFiles)
         return true
       },
+      handleDOMEvents: {
+        contextmenu: (_view, event) => {
+          if (props.seamless) return false
+          event.preventDefault()
+          const vw = window.innerWidth
+          const vh = window.innerHeight
+          const MENU_W = 196
+          const MENU_H = 320
+          contextMenu.x = Math.min(event.clientX, vw - MENU_W - 8)
+          contextMenu.y = Math.min(event.clientY, vh - MENU_H - 8)
+          contextMenu.visible = true
+          return true
+        },
+      },
       handleKeyDown: (view, event) => {
         // Auto-indentation for code blocks: when Enter is pressed,
         // copy the leading whitespace from the current line to the new line
@@ -607,15 +717,16 @@
   })
 
   // Seed Y.doc with initial HTML when collaborative mode is active.
-  // The Collaboration extension ignores the `content` editor option,
-  // so we populate via setContent after the editor is created. If a peer
-  // sends full state later, Y.js CRDT merges cleanly (identical content = no-op).
-  // useEditor() creates the editor asynchronously, so we must watch for it.
+  // The Collaboration extension ignores the `content` editor option, so we
+  // populate via setContent. IMPORTANT: only the confirmed leader (first peer)
+  // should seed — if both peers seed independently with the same HTML, Y.js
+  // CRDT treats them as distinct concurrent insertions and duplicates content
+  // on merge. We wait for _isLeader to become true before seeding.
   let collabSeeded = false
   watch(
-    () => editor.value,
-    (e) => {
-      if (!e || collabSeeded || !collabEnabled.value) return
+    [() => editor.value, _isLeader],
+    ([e, leader]) => {
+      if (!e || !leader || collabSeeded || !collabEnabled.value) return
       collabSeeded = true
       const html = markdownToHtml(props.modelValue || '')
       if (html && html !== '<p></p>') {
@@ -657,7 +768,61 @@
     imageInputRef.value?.click()
   }
 
-  defineExpose({ clearContent, focusEditor, getEditor, triggerImageUpload })
+  function addInlineComment() {
+    const e = editor.value
+    if (!e) return
+    const { from, to } = e.state.selection
+    if (from === to) return
+    const selectedText = e.state.doc.textBetween(from, to, ' ')
+    const commentId = crypto.randomUUID()
+    ;(e.chain().focus() as any).setInlineComment(commentId).run()
+    emit('add-inline-comment', { commentId, quotedText: selectedText })
+  }
+
+  // ── Inline comment floating toolbar ─────────────────────────────
+  const bubbleMenu = reactive({ visible: false, top: 0, left: 0 })
+
+  function updateBubbleMenu() {
+    const e = editor.value
+    if (!e) { bubbleMenu.visible = false; return }
+    const { from, to, empty } = e.state.selection
+    if (empty) { bubbleMenu.visible = false; return }
+    try {
+      const startCoords = e.view.coordsAtPos(from)
+      const endCoords = e.view.coordsAtPos(to)
+      const rawLeft = (startCoords.left + endCoords.right) / 2
+      const rawTop = Math.min(startCoords.top, endCoords.top) - 48
+      const BUBBLE_HALF_W = 220
+      const MARGIN = 8
+      const vw = window.innerWidth
+      bubbleMenu.left = Math.max(BUBBLE_HALF_W + MARGIN, Math.min(rawLeft, vw - BUBBLE_HALF_W - MARGIN))
+      bubbleMenu.top = rawTop < 72
+        ? Math.max(startCoords.bottom, endCoords.bottom) + 6
+        : rawTop
+      bubbleMenu.visible = true
+    } catch {
+      bubbleMenu.visible = false
+    }
+  }
+
+  function hideBubbleMenu() { bubbleMenu.visible = false }
+
+  watch(
+    editor,
+    (e, prev) => {
+      if (prev) {
+        prev.off('selectionUpdate', updateBubbleMenu)
+        prev.off('blur', hideBubbleMenu)
+      }
+      if (e) {
+        e.on('selectionUpdate', updateBubbleMenu)
+        e.on('blur', hideBubbleMenu)
+      }
+    },
+    { immediate: true },
+  )
+
+  defineExpose({ clearContent, focusEditor, getEditor, triggerImageUpload, addInlineComment })
 </script>
 
 <template>
@@ -667,16 +832,182 @@
       seamless ? 'overflow-hidden' : 'rounded-none border-none bg-card overflow-hidden',
       fillHeight ? 'flex flex-col min-h-0' : '',
     ]">
-    <!-- Drag Handle (conditional) -->
+    <!-- Drag Handle (conditional) — class applied directly to avoid duplicate icon from nested div -->
     <DragHandle
       v-if="draghandle && editor"
       :editor="editor"
-      :nested="true">
-      <div class="drag-handle" />
-    </DragHandle>
+      :nested="true"
+      class="drag-handle" />
 
-    <!-- Compact Toolbar -->
-    <div v-if="!seamless" class="flex flex-wrap items-center gap-1 border-b bg-muted/30 px-1.5 py-[2.5px]">
+    <!-- Floating selection toolbar -->
+    <Teleport to="body">
+      <div
+        v-if="!seamless && editor && bubbleMenu.visible && (toolbarMode === 'floating' || inlineComments)"
+        class="bubble-menu-bar"
+        :style="{ top: `${bubbleMenu.top}px`, left: `${bubbleMenu.left}px` }"
+        @mousedown.prevent>
+
+        <!-- ── Floating mode: full toolbar ── -->
+        <template v-if="toolbarMode === 'floating'">
+          <!-- Block type picker -->
+          <UiPopover>
+            <UiPopoverTrigger as-child>
+              <button class="bubble-btn bubble-type-btn" :title="currentBlockType.label">
+                <span class="text-[10px] font-semibold leading-none">{{ currentBlockType.shortLabel }}</span>
+                <Icon name="lucide:chevron-down" class="h-2 w-2 opacity-50 ml-0.5" />
+              </button>
+            </UiPopoverTrigger>
+            <UiPopoverContent class="w-44 p-1" align="center" side="bottom" :side-offset="6">
+              <button class="bubble-type-option" :class="{ 'is-active': !editor.isActive('heading') && !editor.isActive('bulletList') && !editor.isActive('orderedList') && !editor.isActive('taskList') && !editor.isActive('blockquote') && !editor.isActive('codeBlock') }" @mousedown.prevent="editor.chain().focus().setParagraph().run()"><span class="w-5 font-mono text-[10px] opacity-50">¶</span>Paragraph</button>
+              <button class="bubble-type-option" :class="{ 'is-active': editor.isActive('heading', { level: 1 }) }" @mousedown.prevent="editor.chain().focus().toggleHeading({ level: 1 }).run()"><span class="w-5 font-mono text-[10px] opacity-50">H1</span>Heading 1</button>
+              <button class="bubble-type-option" :class="{ 'is-active': editor.isActive('heading', { level: 2 }) }" @mousedown.prevent="editor.chain().focus().toggleHeading({ level: 2 }).run()"><span class="w-5 font-mono text-[10px] opacity-50">H2</span>Heading 2</button>
+              <button class="bubble-type-option" :class="{ 'is-active': editor.isActive('heading', { level: 3 }) }" @mousedown.prevent="editor.chain().focus().toggleHeading({ level: 3 }).run()"><span class="w-5 font-mono text-[10px] opacity-50">H3</span>Heading 3</button>
+              <button class="bubble-type-option" :class="{ 'is-active': editor.isActive('bulletList') }" @mousedown.prevent="editor.chain().focus().toggleBulletList().run()"><Icon name="lucide:list" class="h-3 w-3 opacity-50" />Bullet List</button>
+              <button class="bubble-type-option" :class="{ 'is-active': editor.isActive('orderedList') }" @mousedown.prevent="editor.chain().focus().toggleOrderedList().run()"><Icon name="lucide:list-ordered" class="h-3 w-3 opacity-50" />Ordered List</button>
+              <button v-if="tasklist" class="bubble-type-option" :class="{ 'is-active': editor.isActive('taskList') }" @mousedown.prevent="editor.chain().focus().toggleTaskList().run()"><Icon name="lucide:list-checks" class="h-3 w-3 opacity-50" />Task List</button>
+              <button class="bubble-type-option" :class="{ 'is-active': editor.isActive('blockquote') }" @mousedown.prevent="editor.chain().focus().toggleBlockquote().run()"><Icon name="lucide:quote" class="h-3 w-3 opacity-50" />Blockquote</button>
+              <button class="bubble-type-option" :class="{ 'is-active': editor.isActive('codeBlock') }" @mousedown.prevent="editor.chain().focus().toggleCodeBlock().run()"><Icon name="lucide:code" class="h-3 w-3 opacity-50" />Code Block</button>
+            </UiPopoverContent>
+          </UiPopover>
+
+          <div class="bubble-sep" />
+
+          <!-- Inline marks -->
+          <button class="bubble-btn" :class="{ 'is-active': editor.isActive('bold') }" title="Bold" @click="editor.chain().focus().toggleBold().run()"><Icon name="lucide:bold" class="h-3 w-3" /></button>
+          <button class="bubble-btn" :class="{ 'is-active': editor.isActive('italic') }" title="Italic" @click="editor.chain().focus().toggleItalic().run()"><Icon name="lucide:italic" class="h-3 w-3" /></button>
+          <button class="bubble-btn" :class="{ 'is-active': editor.isActive('strike') }" title="Strikethrough" @click="editor.chain().focus().toggleStrike().run()"><Icon name="lucide:strikethrough" class="h-3 w-3" /></button>
+          <button class="bubble-btn" :class="{ 'is-active': editor.isActive('code') }" title="Inline Code" @click="editor.chain().focus().toggleCode().run()"><Icon name="lucide:code" class="h-3 w-3" /></button>
+
+          <div class="bubble-sep" />
+
+          <!-- Color / Highlight -->
+          <UiPopover>
+            <UiPopoverTrigger as-child>
+              <button class="bubble-btn" title="Color &amp; Highlight" style="position:relative">
+                <Icon name="lucide:palette" class="h-3 w-3" />
+                <span class="absolute bottom-0.5 left-1/2 -translate-x-1/2 h-0.5 w-3 rounded-full" :style="{ backgroundColor: editor.getAttributes('textStyle').color || 'currentColor' }" />
+              </button>
+            </UiPopoverTrigger>
+            <UiPopoverContent class="w-auto p-2" align="center" side="bottom" :side-offset="6">
+              <div class="flex flex-col gap-1">
+                <span class="text-[10px] font-medium text-muted-foreground uppercase tracking-wider px-1">Text Color</span>
+                <div class="flex gap-1">
+                  <button v-for="c in TEXT_COLORS" :key="c.label" class="h-5 w-5 rounded-full border border-border/50 transition-all hover:scale-110" :class="{ 'ring-1 ring-primary ring-offset-1 ring-offset-background': c.value ? editor.isActive('textStyle', { color: c.value }) : !editor.isActive('textStyle') }" :style="{ backgroundColor: c.value || 'var(--foreground)' }" :title="c.label" @mousedown.prevent="c.value ? editor.chain().focus().setColor(c.value).run() : editor.chain().focus().unsetColor().run()" />
+                </div>
+                <span class="text-[10px] font-medium text-muted-foreground uppercase tracking-wider px-1 mt-1">Highlight</span>
+                <div class="flex gap-1">
+                  <button v-for="h in HIGHLIGHT_COLORS" :key="h.label" class="h-5 w-5 rounded-full border border-border/50 transition-all hover:scale-110" :class="{ 'ring-1 ring-primary ring-offset-1 ring-offset-background': h.value ? editor.isActive('highlight', { color: h.value }) : !editor.isActive('highlight') }" :style="{ backgroundColor: h.value || 'var(--muted)' }" :title="h.label" @mousedown.prevent="h.value ? editor.chain().focus().toggleHighlight({ color: h.value }).run() : editor.chain().focus().unsetHighlight().run()" />
+                </div>
+              </div>
+            </UiPopoverContent>
+          </UiPopover>
+
+          <!-- Overflow: tables / images / math + undo/redo -->
+          <UiPopover>
+            <UiPopoverTrigger as-child>
+              <button class="bubble-btn" title="More"><Icon name="lucide:ellipsis" class="h-3 w-3" /></button>
+            </UiPopoverTrigger>
+            <UiPopoverContent class="w-44 p-1" align="center" side="bottom" :side-offset="6">
+              <template v-if="tablesEnabled">
+                <button class="bubble-type-option" @mousedown.prevent="editor.chain().focus().insertTable({ rows: 3, cols: 3, withHeaderRow: true }).run()"><Icon name="lucide:table" class="h-3 w-3 opacity-50" />Insert Table</button>
+                <button v-if="editor.isActive('table')" class="bubble-type-option" @mousedown.prevent="editor.chain().focus().deleteTable().run()"><Icon name="lucide:trash-2" class="h-3 w-3 text-destructive opacity-70" />Delete Table</button>
+              </template>
+              <button v-if="images" class="bubble-type-option" @mousedown.prevent="triggerImageUpload()"><Icon name="lucide:image-plus" class="h-3 w-3 opacity-50" />Insert Image</button>
+              <template v-if="mathematicsEnabled">
+                <button class="bubble-type-option" @mousedown.prevent="insertInlineMath()"><Icon name="lucide:calculator" class="h-3 w-3 opacity-50" />Inline Math</button>
+                <button class="bubble-type-option" @mousedown.prevent="insertBlockMath()"><Icon name="lucide:calculator" class="h-3 w-3 opacity-50" />Block Math</button>
+              </template>
+              <div class="h-px bg-border my-1" />
+              <button class="bubble-type-option" :class="{ 'opacity-40 pointer-events-none': !editor.can().undo() }" @mousedown.prevent="editor.chain().focus().undo().run()"><Icon name="lucide:undo" class="h-3 w-3 opacity-50" />Undo</button>
+              <button class="bubble-type-option" :class="{ 'opacity-40 pointer-events-none': !editor.can().redo() }" @mousedown.prevent="editor.chain().focus().redo().run()"><Icon name="lucide:redo" class="h-3 w-3 opacity-50" />Redo</button>
+            </UiPopoverContent>
+          </UiPopover>
+
+          <!-- Comment -->
+          <template v-if="inlineComments">
+            <div class="bubble-sep" />
+            <button class="bubble-btn" :class="{ 'is-active': editor.isActive('inlineComment') }" title="Add comment" @click="addInlineComment"><Icon name="lucide:message-square" class="h-3 w-3" /></button>
+          </template>
+        </template>
+
+        <!-- ── Static mode: bold/italic/strike + comment (existing behaviour) ── -->
+        <template v-else>
+          <button class="bubble-btn" :class="{ 'is-active': editor.isActive('bold') }" title="Bold" @click="editor.chain().focus().toggleBold().run()"><Icon name="lucide:bold" class="h-3 w-3" /></button>
+          <button class="bubble-btn" :class="{ 'is-active': editor.isActive('italic') }" title="Italic" @click="editor.chain().focus().toggleItalic().run()"><Icon name="lucide:italic" class="h-3 w-3" /></button>
+          <button class="bubble-btn" :class="{ 'is-active': editor.isActive('strike') }" title="Strikethrough" @click="editor.chain().focus().toggleStrike().run()"><Icon name="lucide:strikethrough" class="h-3 w-3" /></button>
+          <div class="bubble-sep" />
+          <button class="bubble-btn" :class="{ 'is-active': editor.isActive('inlineComment') }" title="Add comment" @click="addInlineComment"><Icon name="lucide:message-square" class="h-3 w-3" /></button>
+        </template>
+      </div>
+    </Teleport>
+
+    <!-- Context menu (right-click) -->
+    <Teleport to="body">
+      <div
+        v-if="!seamless && editor && contextMenu.visible"
+        class="ctx-menu"
+        :style="{ top: `${contextMenu.y}px`, left: `${contextMenu.x}px` }"
+        @mousedown.stop
+        @contextmenu.prevent.stop>
+
+        <!-- Block type section -->
+        <div class="ctx-label">Turn into</div>
+        <button class="ctx-item" :class="{ 'is-active': !editor.isActive('heading') && !editor.isActive('bulletList') && !editor.isActive('orderedList') && !editor.isActive('taskList') && !editor.isActive('blockquote') && !editor.isActive('codeBlock') }" @mousedown.prevent="editor.chain().focus().setParagraph().run(); closeContextMenu()">
+          <span class="ctx-mono">¶</span> Paragraph
+        </button>
+        <button class="ctx-item" :class="{ 'is-active': editor.isActive('heading', { level: 1 }) }" @mousedown.prevent="editor.chain().focus().toggleHeading({ level: 1 }).run(); closeContextMenu()">
+          <span class="ctx-mono">H1</span> Heading 1
+        </button>
+        <button class="ctx-item" :class="{ 'is-active': editor.isActive('heading', { level: 2 }) }" @mousedown.prevent="editor.chain().focus().toggleHeading({ level: 2 }).run(); closeContextMenu()">
+          <span class="ctx-mono">H2</span> Heading 2
+        </button>
+        <button class="ctx-item" :class="{ 'is-active': editor.isActive('heading', { level: 3 }) }" @mousedown.prevent="editor.chain().focus().toggleHeading({ level: 3 }).run(); closeContextMenu()">
+          <span class="ctx-mono">H3</span> Heading 3
+        </button>
+        <button class="ctx-item" :class="{ 'is-active': editor.isActive('bulletList') }" @mousedown.prevent="editor.chain().focus().toggleBulletList().run(); closeContextMenu()">
+          <Icon name="lucide:list" class="ctx-icon" /> Bullet List
+        </button>
+        <button class="ctx-item" :class="{ 'is-active': editor.isActive('orderedList') }" @mousedown.prevent="editor.chain().focus().toggleOrderedList().run(); closeContextMenu()">
+          <Icon name="lucide:list-ordered" class="ctx-icon" /> Numbered List
+        </button>
+        <button v-if="tasklist" class="ctx-item" :class="{ 'is-active': editor.isActive('taskList') }" @mousedown.prevent="editor.chain().focus().toggleTaskList().run(); closeContextMenu()">
+          <Icon name="lucide:list-checks" class="ctx-icon" /> Task List
+        </button>
+        <button class="ctx-item" :class="{ 'is-active': editor.isActive('blockquote') }" @mousedown.prevent="editor.chain().focus().toggleBlockquote().run(); closeContextMenu()">
+          <Icon name="lucide:quote" class="ctx-icon" /> Quote
+        </button>
+        <button class="ctx-item" :class="{ 'is-active': editor.isActive('codeBlock') }" @mousedown.prevent="editor.chain().focus().toggleCodeBlock().run(); closeContextMenu()">
+          <Icon name="lucide:code" class="ctx-icon" /> Code Block
+        </button>
+
+        <div class="ctx-sep" />
+
+        <!-- Inline formatting -->
+        <div class="ctx-label">Format</div>
+        <button class="ctx-item" :class="{ 'is-active': editor.isActive('bold') }" @mousedown.prevent="editor.chain().focus().toggleBold().run(); closeContextMenu()">
+          <Icon name="lucide:bold" class="ctx-icon" /> Bold <span class="ctx-shortcut">⌘B</span>
+        </button>
+        <button class="ctx-item" :class="{ 'is-active': editor.isActive('italic') }" @mousedown.prevent="editor.chain().focus().toggleItalic().run(); closeContextMenu()">
+          <Icon name="lucide:italic" class="ctx-icon" /> Italic <span class="ctx-shortcut">⌘I</span>
+        </button>
+        <button class="ctx-item" :class="{ 'is-active': editor.isActive('strike') }" @mousedown.prevent="editor.chain().focus().toggleStrike().run(); closeContextMenu()">
+          <Icon name="lucide:strikethrough" class="ctx-icon" /> Strikethrough
+        </button>
+        <button class="ctx-item" :class="{ 'is-active': editor.isActive('code') }" @mousedown.prevent="editor.chain().focus().toggleCode().run(); closeContextMenu()">
+          <Icon name="lucide:code" class="ctx-icon" /> Inline Code <span class="ctx-shortcut">⌘E</span>
+        </button>
+
+        <template v-if="inlineComments && !editor.state.selection.empty">
+          <div class="ctx-sep" />
+          <button class="ctx-item" @mousedown.prevent="addInlineComment(); closeContextMenu()">
+            <Icon name="lucide:message-square" class="ctx-icon" /> Add comment
+          </button>
+        </template>
+      </div>
+    </Teleport>
+
+    <!-- Compact Toolbar (shown when toolbarMode is 'static') -->
+    <div v-if="!seamless && toolbarMode === 'static'" class="flex flex-wrap items-center gap-1 border-b bg-transparent px-1.5 py-[2.5px]">
       <!-- Text Formatting -->
       <div class="flex items-center">
         <UiTooltip>
@@ -717,7 +1048,7 @@
         </UiTooltip>
       </div>
 
-      <UiSeparator orientation="vertical" class="h-5 mx-0.5" />
+      <UiSeparator orientation="vertical" class="h-5 mx-0.5 bg-foreground/40" />
 
       <!-- Headings -->
       <div class="flex items-center">
@@ -759,7 +1090,7 @@
         </UiTooltip>
       </div>
 
-      <UiSeparator orientation="vertical" class="h-5 mx-0.5" />
+      <UiSeparator orientation="vertical" class="h-5 mx-0.5 bg-foreground/40" />
 
       <!-- Lists -->
       <div class="flex items-center">
@@ -789,7 +1120,7 @@
         </UiTooltip>
       </div>
 
-      <UiSeparator orientation="vertical" class="h-5 mx-0.5" />
+      <UiSeparator orientation="vertical" class="h-5 mx-0.5 bg-foreground/40" />
 
       <!-- Block Elements -->
       <div class="flex items-center">
@@ -821,7 +1152,7 @@
 
       <!-- Tables -->
       <template v-if="tablesEnabled">
-        <UiSeparator orientation="vertical" class="h-5 mx-0.5" />
+        <UiSeparator orientation="vertical" class="h-5 mx-0.5 bg-foreground/40" />
         <div class="flex items-center">
           <UiTooltip>
             <UiTooltipTrigger as-child>
@@ -950,7 +1281,7 @@
 
       <!-- Mathematics -->
       <template v-if="mathematicsEnabled">
-        <UiSeparator orientation="vertical" class="h-5 mx-0.5" />
+        <UiSeparator orientation="vertical" class="h-5 mx-0.5 bg-foreground/40" />
         <div class="flex items-center">
           <UiPopover>
             <UiTooltip>
@@ -998,7 +1329,7 @@
 
       <!-- Task List (conditional) -->
       <template v-if="tasklist">
-        <UiSeparator orientation="vertical" class="h-5 mx-0.5" />
+        <UiSeparator orientation="vertical" class="h-5 mx-0.5 bg-foreground/40" />
         <div class="flex items-center">
           <UiTooltip>
             <UiTooltipTrigger as-child>
@@ -1017,7 +1348,7 @@
 
       <!-- Image Upload (conditional) -->
       <template v-if="images">
-        <UiSeparator orientation="vertical" class="h-5 mx-0.5" />
+        <UiSeparator orientation="vertical" class="h-5 mx-0.5 bg-foreground/40" />
         <div class="flex items-center">
           <UiTooltip>
             <UiTooltipTrigger as-child>
@@ -1036,7 +1367,7 @@
         </div>
       </template>
 
-      <UiSeparator orientation="vertical" class="h-5 mx-0.5" />
+      <UiSeparator orientation="vertical" class="h-5 mx-0.5 bg-foreground/40" />
 
       <!-- Text Color -->
       <div class="flex items-center">
@@ -1086,7 +1417,7 @@
         </UiPopover>
       </div>
 
-      <UiSeparator orientation="vertical" class="h-5 mx-0.5" />
+      <UiSeparator orientation="vertical" class="h-5 mx-0.5 bg-foreground/40" />
 
       <!-- Undo/Redo -->
       <div class="flex items-center">
@@ -1523,7 +1854,7 @@
 
   :deep(hr) {
     margin: 1.5rem 0 0 0;
-    opacity: 0.1;
+    opacity: 1;
   }
 
   /* ── Syntax Highlighting (lowlight / hljs) ──────────────────────────── */
@@ -1633,7 +1964,7 @@
   }
 
   /* ── Drag Handle Styles ──────────────────────────────────────────────── */
-  :deep(.drag-handle) {
+  .drag-handle {
     width: 1.25rem;
     height: 1.25rem;
     display: flex;
@@ -1642,34 +1973,334 @@
     cursor: grab;
     border-radius: 0.25rem;
     color: var(--muted-foreground);
-    transition: all 0.15s ease;
+    transition: background 0.15s ease, color 0.15s ease;
   }
 
-  :deep(.drag-handle:hover) {
+  .drag-handle:hover {
     background: var(--muted);
     color: var(--foreground);
   }
 
-  :deep(.drag-handle:active) {
+  .drag-handle:active {
     cursor: grabbing;
   }
 
-  :deep(.drag-handle::before) {
+  /* Single icon via mask — applied to the component element directly */
+  .drag-handle::before {
     content: '';
     width: 0.75rem;
     height: 0.75rem;
-    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Ccircle cx='9' cy='5' r='1'/%3E%3Ccircle cx='9' cy='12' r='1'/%3E%3Ccircle cx='9' cy='19' r='1'/%3E%3Ccircle cx='15' cy='5' r='1'/%3E%3Ccircle cx='15' cy='12' r='1'/%3E%3Ccircle cx='15' cy='19' r='1'/%3E%3C/svg%3E");
-    background-repeat: no-repeat;
-    background-position: center;
-    background-size: contain;
-    opacity: 0.7;
+    display: block;
+    background-color: currentColor;
+    mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Ccircle cx='9' cy='5' r='1'/%3E%3Ccircle cx='9' cy='12' r='1'/%3E%3Ccircle cx='9' cy='19' r='1'/%3E%3Ccircle cx='15' cy='5' r='1'/%3E%3Ccircle cx='15' cy='12' r='1'/%3E%3Ccircle cx='15' cy='19' r='1'/%3E%3C/svg%3E");
+    mask-repeat: no-repeat;
+    mask-position: center;
+    mask-size: contain;
+    -webkit-mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Ccircle cx='9' cy='5' r='1'/%3E%3Ccircle cx='9' cy='12' r='1'/%3E%3Ccircle cx='9' cy='19' r='1'/%3E%3Ccircle cx='15' cy='5' r='1'/%3E%3Ccircle cx='15' cy='12' r='1'/%3E%3Ccircle cx='15' cy='19' r='1'/%3E%3C/svg%3E");
+    -webkit-mask-repeat: no-repeat;
+    -webkit-mask-position: center;
+    -webkit-mask-size: contain;
   }
 
-  /* Highlight node being dragged */
+  /* Drag in progress: dimmed ghost + subtle scale */
   :deep(.ProseMirror .is-dragging) {
-    opacity: 0.5;
+    opacity: 0.4;
+    transform: scale(0.985);
     background: color-mix(in oklch, var(--muted) 50%, transparent);
     border-radius: 0.25rem;
+    box-shadow: 0 4px 16px color-mix(in oklch, var(--foreground) 10%, transparent);
+    transition: opacity 0.1s ease, transform 0.1s ease;
+  }
+
+  /* ── Inline Comment mark ─────────────────────────────────────────────── */
+  :deep(.inline-comment) {
+    background: oklch(0.92 0.08 95 / 0.25);
+    border-bottom: 2px solid oklch(0.83 0.17 85 / 0.6);
+    border-radius: 2px 2px 0 0;
+    cursor: pointer;
+    transition: background 0.15s ease;
+  }
+
+  :deep(.inline-comment:hover) {
+    background: oklch(0.92 0.08 95 / 0.45);
+  }
+
+  /* ── Bubble Menu ──────────────────────────────────────────────────────── */
+  .bubble-menu-bar {
+    position: fixed;
+    transform: translateX(-50%);
+    z-index: 9999;
+    display: flex;
+    align-items: center;
+    gap: 1px;
+    background: var(--popover);
+    border: 1px solid var(--border);
+    border-radius: calc(var(--radius) - 2px);
+    padding: 3px;
+    box-shadow: 0 2px 12px color-mix(in oklch, var(--foreground) 15%, transparent);
+    animation: bubble-in 0.1s ease;
+  }
+
+  @keyframes bubble-in {
+    from { opacity: 0; transform: translateX(-50%) translateY(4px); }
+    to   { opacity: 1; transform: translateX(-50%) translateY(0); }
+  }
+
+  .bubble-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 1.75rem;
+    height: 1.75rem;
+    border-radius: calc(var(--radius) - 4px);
+    color: var(--muted-foreground);
+    transition: background 0.1s ease, color 0.1s ease;
+  }
+
+  .bubble-btn:hover {
+    background: var(--accent);
+    color: var(--foreground);
+  }
+
+  .bubble-btn.is-active {
+    background: var(--primary);
+    color: var(--primary-foreground);
+  }
+
+  .bubble-sep {
+    width: 1px;
+    height: 1rem;
+    background: var(--border);
+    margin: 0 2px;
+  }
+
+  .bubble-type-btn {
+    width: auto;
+    padding: 0 0.375rem;
+    gap: 0.125rem;
+    font-size: 0.7rem;
+  }
+
+  .bubble-type-option {
+    display: flex;
+    align-items: center;
+    gap: 0.375rem;
+    width: 100%;
+    padding: 0.3rem 0.5rem;
+    border-radius: calc(var(--radius) - 4px);
+    font-size: 0.75rem;
+    color: var(--foreground);
+    text-align: left;
+    transition: background 0.1s ease;
+  }
+
+  .bubble-type-option:hover {
+    background: var(--accent);
+  }
+
+  .bubble-type-option.is-active {
+    background: var(--accent);
+    font-weight: 500;
+  }
+
+  /* ── Context menu ───────────────────────────────────────────────── */
+  .ctx-menu {
+    position: fixed;
+    z-index: 9999;
+    min-width: 188px;
+    background: var(--popover);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    box-shadow: 0 4px 24px rgba(0, 0, 0, 0.15), 0 1px 4px rgba(0, 0, 0, 0.08);
+    padding: 4px;
+    font-size: 0.8rem;
+  }
+
+  .ctx-label {
+    font-size: 0.65rem;
+    color: var(--muted-foreground);
+    padding: 4px 8px 2px;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    font-weight: 600;
+    user-select: none;
+  }
+
+  .ctx-item {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    width: 100%;
+    padding: 4px 8px;
+    border-radius: calc(var(--radius) - 3px);
+    color: var(--foreground);
+    cursor: pointer;
+    text-align: left;
+    transition: background 0.08s ease;
+    white-space: nowrap;
+  }
+
+  .ctx-item:hover {
+    background: var(--accent);
+  }
+
+  .ctx-item.is-active {
+    background: var(--accent);
+    color: var(--primary);
+    font-weight: 500;
+  }
+
+  .ctx-mono {
+    display: inline-block;
+    width: 1.4rem;
+    font-family: var(--font-mono, ui-monospace, monospace);
+    font-size: 0.7rem;
+    opacity: 0.55;
+    text-align: center;
+    flex-shrink: 0;
+  }
+
+  .ctx-icon {
+    width: 14px;
+    height: 14px;
+    opacity: 0.6;
+    flex-shrink: 0;
+  }
+
+  .ctx-shortcut {
+    margin-left: auto;
+    font-size: 0.68rem;
+    opacity: 0.4;
+    padding-left: 1rem;
+  }
+
+  .ctx-sep {
+    height: 1px;
+    background: var(--border);
+    margin: 3px 0;
+  }
+
+  /* ── Inline table controls ─────────────────────────────────────── */
+
+  /* Delete-row cell: narrow gutter column on the right of each row */
+  :deep(.tc-del-row-cell) {
+    width: 20px !important;
+    min-width: 20px !important;
+    max-width: 20px !important;
+    padding: 0 !important;
+    border: none !important;
+    background: transparent !important;
+    vertical-align: middle;
+  }
+
+  :deep(.tc-del-row) {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 18px;
+    height: 18px;
+    border-radius: 3px;
+    color: transparent;
+    transition: color 0.1s, background 0.1s;
+    cursor: pointer;
+  }
+
+  :deep(tr:hover .tc-del-row) {
+    color: var(--muted-foreground);
+  }
+
+  :deep(.tc-del-row:hover) {
+    background: hsl(var(--destructive) / 0.12);
+    color: hsl(var(--destructive)) !important;
+  }
+
+  /* Delete-column button: top-right corner of each header cell */
+  :deep(.tc-del-col) {
+    position: absolute;
+    top: 2px;
+    right: 2px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 14px;
+    height: 14px;
+    border-radius: 3px;
+    color: transparent;
+    transition: color 0.1s, background 0.1s;
+    cursor: pointer;
+    z-index: 1;
+  }
+
+  :deep(td:hover .tc-del-col, th:hover .tc-del-col) {
+    color: var(--muted-foreground);
+  }
+
+  :deep(.tc-del-col:hover) {
+    background: hsl(var(--destructive) / 0.12);
+    color: hsl(var(--destructive)) !important;
+  }
+
+  /* Add-column cell: slim sticky column after the last real column */
+  :deep(.tc-add-col-cell) {
+    width: 28px !important;
+    min-width: 28px !important;
+    max-width: 28px !important;
+    padding: 0 !important;
+    border-left: 1px dashed var(--border) !important;
+    border-top: none !important;
+    border-right: none !important;
+    border-bottom: none !important;
+    background: transparent !important;
+    vertical-align: middle;
+  }
+
+  :deep(.tc-add-col) {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    height: 100%;
+    min-height: 28px;
+    color: var(--muted-foreground);
+    opacity: 0.35;
+    transition: opacity 0.15s, background 0.15s;
+    cursor: pointer;
+  }
+
+  :deep(.tc-add-col:hover) {
+    opacity: 1;
+    background: var(--accent);
+  }
+
+  /* Add-row row: slim persistent row at the bottom */
+  :deep(.tc-add-row-tr) {
+    pointer-events: auto;
+  }
+
+  :deep(.tc-add-row-td) {
+    padding: 0 !important;
+    border-top: 1px dashed var(--border) !important;
+    border-left: none !important;
+    border-right: none !important;
+    border-bottom: none !important;
+    background: transparent !important;
+  }
+
+  :deep(.tc-add-row) {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    height: 20px;
+    color: var(--muted-foreground);
+    opacity: 0.35;
+    transition: opacity 0.15s, background 0.15s;
+    cursor: pointer;
+  }
+
+  :deep(.tc-add-row:hover) {
+    opacity: 1;
+    background: var(--accent);
   }
 
   /* Collaborative cursor styles (y-prosemirror defaults) */
@@ -1692,7 +2323,6 @@
     line-height: 1.2;
     padding: 0.125rem 0.375rem;
     border-radius: 0.25rem;
-    color: white;
     white-space: nowrap;
     pointer-events: none;
     user-select: none;

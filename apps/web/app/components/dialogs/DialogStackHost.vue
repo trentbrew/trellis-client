@@ -11,6 +11,15 @@
     dialogStack.stack.value.map((entry) => resolveDialog(entry.entityType)),
   )
 
+  /**
+   * Reactive typeConfig per stack entry — re-evaluates whenever the ontology
+   * registry updates (e.g. after addFieldToType() triggers SSE → fetchOntologies()).
+   * Without this computed, the v-bind snapshot is stale after schema mutations.
+   */
+  const typeConfigs = computed(() =>
+    dialogStack.stack.value.map((entry) => getEntityConfig(entry.entityType)),
+  )
+
   /** Handle save from a stacked dialog */
   async function handleSave(item: Entity) {
     await updateItem(item)
@@ -48,7 +57,7 @@
         mode: 'edit',
         canNavigatePrev: false,
         canNavigateNext: false,
-        ...(resolvedDialogs[index]!.needsTypeConfig ? { typeConfig: getEntityConfig(entry.entityType) } : {}),
+        ...(resolvedDialogs[index]!.needsTypeConfig ? { typeConfig: typeConfigs[index] } : {}),
       }"
       @update:open="(val: boolean) => { if (!val) handleClose(index) }"
       @close="handleClose(index)"

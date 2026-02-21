@@ -14,21 +14,22 @@ import { Extension } from '@tiptap/core'
 import Collaboration from '@tiptap/extension-collaboration'
 import { yCursorPlugin } from '@tiptap/y-tiptap'
 import { InstantDBProvider } from '~/lib/yjs-instant-provider'
+import { getPresenceHex } from '~/utils/presenceColor'
 
 export type CollabConnectionStatus = 'disconnected' | 'connecting' | 'connected'
 
-// Helper to generate consistent color per user ID
-function generateUserColor(userId: string): string {
-  const colors = [
-    '#FF6B6B', '#4ECDC4', '#45B7D1', '#FFA07A',
-    '#98D8C8', '#F7DC6F', '#BB8FCE', '#85C1E2',
-  ]
-  let hash = 0
-  for (let i = 0; i < userId.length; i++) {
-    const code = userId.charCodeAt(i)
-    hash = code + ((hash << 5) - hash)
-  }
-  return colors[Math.abs(hash) % colors.length]
+
+/**
+ * Returns '#000000' or '#ffffff' — whichever has higher contrast against the
+ * given hex background color, using the WCAG relative luminance formula.
+ */
+function contrastTextColor(hexBg: string): string {
+  const r = parseInt(hexBg.slice(1, 3), 16) / 255
+  const g = parseInt(hexBg.slice(3, 5), 16) / 255
+  const b = parseInt(hexBg.slice(5, 7), 16) / 255
+  const toLinear = (c: number) => c <= 0.03928 ? c / 12.92 : ((c + 0.055) / 1.055) ** 2.4
+  const L = 0.2126 * toLinear(r) + 0.7152 * toLinear(g) + 0.0722 * toLinear(b)
+  return L > 0.179 ? '#000000' : '#ffffff'
 }
 
 export function useCollaborativeEditor(
@@ -81,7 +82,7 @@ export function useCollaborativeEditor(
     activeRoom = room
 
     // 3. Generate consistent color for this user
-    const userColor = generateUserColor(user.value.id!)
+    const userColor = getPresenceHex(user.value.id!)
     const userName = user.value.name || user.value.email || 'Anonymous'
 
     // 4. Create provider with user info for awareness
@@ -103,13 +104,31 @@ export function useCollaborativeEditor(
     // matches. The v2 @tiptap/extension-collaboration-cursor uses y-prosemirror
     // which has a different ySyncPluginKey, causing "Cannot read 'doc'" errors.
     const awareness = p.awareness
-    awareness.setLocalStateField('user', { name: userName, color: userColor })
+    const userTextColor = contrastTextColor(userColor)
+    awareness.setLocalStateField('user', { name: userName, color: userColor, textColor: userTextColor })
 
     const cursorExtension = Extension.create({
       name: 'collaborationCursor',
       priority: 999,
       addProseMirrorPlugins() {
-        return [yCursorPlugin(awareness)]
+        return [
+          yCursorPlugin(awareness, {
+            cursorBuilder(user: any) {
+              const color: string = user?.color ?? '#888888'
+              const name: string = user?.name ?? 'Anonymous'
+              const textColor: string = user?.textColor ?? contrastTextColor(color)
+              const cursor = document.createElement('span')
+              cursor.classList.add('ProseMirror-yjs-cursor')
+              cursor.style.borderColor = color
+              const label = document.createElement('div')
+              label.style.backgroundColor = color
+              label.style.color = textColor
+              label.textContent = name
+              cursor.appendChild(label)
+              return cursor
+            },
+          }),
+        ]
       },
     })
 
@@ -128,7 +147,7 @@ export function useCollaborativeEditor(
       if (p.synced && !p.lastRemoteUpdate) {
         isLeader.value = true
       }
-    }, 2500)
+    }, 600)
   }
 
   function cleanup() {

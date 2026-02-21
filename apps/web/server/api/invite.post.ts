@@ -8,6 +8,9 @@
  * Body: { emails: string[], orgId: string, appId: string, inviterId: string, inviterName?: string }
  */
 
+import { sendEmail } from '../utils/email'
+import { inviteEmailHtml } from '../utils/email-templates'
+
 interface InviteBody {
   emails: string[]
   orgId: string
@@ -148,6 +151,20 @@ export default defineEventHandler(async (event) => {
 
       // Build the invite URL — the accept page will send the magic code
       const inviteUrl = `${baseUrl}/invite/accept?token=${inviteToken}`
+
+      // Send invite email via Resend (fire-and-forget, non-fatal)
+      sendEmail({
+        to: email,
+        subject: `You've been invited to ${body.orgName || 'a Trellis workspace'}`,
+        html: inviteEmailHtml({
+          inviterName: body.inviterName || 'A teammate',
+          orgName: body.orgName || 'a workspace',
+          inviteUrl,
+        }),
+      }).catch((err: any) => {
+        console.warn(`[invite] Email send failed for ${email} (non-fatal):`, err?.message)
+      })
+
       results.push({ email, status: 'sent', inviteToken, inviteUrl })
     } catch (err: any) {
       console.error(`[invite] Failed for ${email}:`, err?.message || err)

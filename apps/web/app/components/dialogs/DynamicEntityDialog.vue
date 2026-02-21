@@ -109,6 +109,10 @@
     }
   }
 
+  // ── Ontology field management (user-tier only) ─────────────────────
+
+  const { removeFieldFromType } = useOntologyRegistry()
+
   // ── Mention/image link sync ─────────────────────────────────────────
 
   useMentionLinks(editableItem)
@@ -175,6 +179,7 @@
 
   const VALUE_TYPE_ICONS: Record<string, string> = {
     title: 'lucide:type',
+    text: 'lucide:type',
     rich_text: 'lucide:align-left',
     number: 'lucide:hash',
     select: 'lucide:chevrons-up-down',
@@ -215,6 +220,10 @@
   function getFieldIcon(valueType: string): string {
     return VALUE_TYPE_ICONS[valueType] || 'lucide:circle'
   }
+
+  // User-tier: allow inline field CRUD. system/core tiers are always explicitly set.
+  // Treat null/undefined tier as 'user' (dynamic ontologies without explicit tier).
+  const isUserTier = computed(() => !props.typeConfig?.tier || props.typeConfig.tier === 'user')
 
   // Split into property fields (inline row) and content fields (main area)
   const PROPERTY_VALUE_TYPES = new Set(['select', 'multi_select', 'status', 'date', 'checkbox', 'people', 'number'])
@@ -280,23 +289,6 @@
       .trim()
   }
 
-  // ── Format timestamps ──────────────────────────────────────────────
-
-  const formatRelativeTime = (timestamp: number): string => {
-    if (!timestamp) return ''
-    const now = Date.now()
-    const diff = now - timestamp
-    const seconds = Math.floor(diff / 1000)
-    const minutes = Math.floor(seconds / 60)
-    const hours = Math.floor(minutes / 60)
-    const days = Math.floor(hours / 24)
-    if (seconds < 60) return 'Just now'
-    if (minutes < 60) return `${minutes}m ago`
-    if (hours < 24) return `${hours}h ago`
-    if (days < 7) return `${days}d ago`
-    return new Date(timestamp).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
-  }
-
   // ── Save / Delete / Close ──────────────────────────────────────────
 
   const closeDialog = () => {
@@ -355,8 +347,9 @@
     </template>
 
     <!-- Properties row -->
-    <template v-if="propertyFields.length > 0" #properties>
+    <template v-if="propertyFields.length > 0 || isUserTier" #properties>
       <template v-for="field in propertyFields" :key="field.name">
+        <div class="group/field relative inline-flex items-center">
         <!-- ── Select (with dropdown if options exist) ──────────────── -->
         <UiPopover
           v-if="field.valueType === 'select' && field.selectOptions.length > 0"
@@ -551,7 +544,24 @@
             class="bg-transparent text-xs outline-none w-24 placeholder:text-muted-foreground/50" />
           <span v-else class="text-xs">{{ editableItem[field.name] || titleCase(field.name) }}</span>
         </div>
+
+        <!-- Trash button — user-tier edit mode only -->
+        <button
+          v-if="isUserTier && !isViewMode"
+          class="ml-0.5 h-5 w-5 rounded flex items-center justify-center text-muted-foreground/0 group-hover/field:text-muted-foreground/50 hover:text-destructive! hover:bg-destructive/10 transition-colors"
+          :title="`Remove ${titleCase(field.name)} field`"
+          @click.stop="removeFieldFromType(typeConfig.schemaId, field.name)">
+          <Icon name="lucide:x" class="h-3 w-3" />
+        </button>
+        </div>
       </template>
+
+      <!-- Add property button (user-tier only) -->
+      <AddPropertyPopover
+        v-if="isUserTier && !isViewMode"
+        :schema-id="typeConfig.schemaId"
+        :existing-field-names="schemaFields.map(f => f.name)"
+        @added="() => {}" />
     </template>
 
     <!-- Main content: body fields + right sidebar -->
@@ -560,12 +570,45 @@
       <div class="flex-1 flex flex-col min-w-0 overflow-y-auto">
         <div class="divide-y divide-border">
           <template v-for="field in bodyFields" :key="field.name">
-            <!-- Rich text -->
-            <div v-if="field.valueType === 'rich_text'" class="p-4">
+            <!-- Plain text (single-line string) -->
+            <div v-if="field.valueType === 'text'" class="p-4 group/body-field">
               <label class="text-xs font-medium text-muted-foreground mb-2 flex items-center gap-1.5">
                 <Icon :name="getFieldIcon(field.valueType)" class="h-3.5 w-3.5" />
                 {{ titleCase(field.name) }}
                 <span v-if="field.required" class="text-destructive text-[9px]">*</span>
+                <button
+                  v-if="isUserTier && !isViewMode"
+                  class="ml-auto h-4 w-4 rounded flex items-center justify-center text-muted-foreground/0 group-hover/body-field:text-muted-foreground/40 hover:text-destructive! hover:bg-destructive/10 transition-colors"
+                  :title="`Remove ${titleCase(field.name)} field`"
+                  @click.stop="removeFieldFromType(typeConfig.schemaId, field.name)">
+                  <Icon name="lucide:x" class="h-3 w-3" />
+                </button>
+              </label>
+              <div class="mt-2">
+                <input
+                  v-if="!isViewMode"
+                  v-model="editableItem[field.name]"
+                  type="text"
+                  :placeholder="`Add ${titleCase(field.name).toLowerCase()}…`"
+                  class="w-full rounded-lg border border-border bg-transparent py-2 px-3 text-sm outline-none focus:ring-1 focus:ring-ring" />
+                <p v-else-if="editableItem[field.name]" class="text-sm">{{ editableItem[field.name] }}</p>
+                <p v-else class="text-sm text-muted-foreground/50 italic">No content</p>
+              </div>
+            </div>
+
+            <!-- Rich text -->
+            <div v-else-if="field.valueType === 'rich_text'" class="p-4 group/body-field">
+              <label class="text-xs font-medium text-muted-foreground mb-2 flex items-center gap-1.5">
+                <Icon :name="getFieldIcon(field.valueType)" class="h-3.5 w-3.5" />
+                {{ titleCase(field.name) }}
+                <span v-if="field.required" class="text-destructive text-[9px]">*</span>
+                <button
+                  v-if="isUserTier && !isViewMode"
+                  class="ml-auto h-4 w-4 rounded flex items-center justify-center text-muted-foreground/0 group-hover/body-field:text-muted-foreground/40 hover:text-destructive! hover:bg-destructive/10 transition-colors"
+                  :title="`Remove ${titleCase(field.name)} field`"
+                  @click.stop="removeFieldFromType(typeConfig.schemaId, field.name)">
+                  <Icon name="lucide:x" class="h-3 w-3" />
+                </button>
               </label>
               <div class="mt-2">
                 <UiRichTextEditor
@@ -585,10 +628,17 @@
             </div>
 
             <!-- URL -->
-            <div v-else-if="field.valueType === 'url'" class="p-4">
+            <div v-else-if="field.valueType === 'url'" class="p-4 group/body-field">
               <label class="text-xs font-medium text-muted-foreground mb-2 flex items-center gap-1.5">
                 <Icon :name="getFieldIcon(field.valueType)" class="h-3.5 w-3.5" />
                 {{ titleCase(field.name) }}
+                <button
+                  v-if="isUserTier && !isViewMode"
+                  class="ml-auto h-4 w-4 rounded flex items-center justify-center text-muted-foreground/0 group-hover/body-field:text-muted-foreground/40 hover:text-destructive! hover:bg-destructive/10 transition-colors"
+                  :title="`Remove ${titleCase(field.name)} field`"
+                  @click.stop="removeFieldFromType(typeConfig.schemaId, field.name)">
+                  <Icon name="lucide:x" class="h-3 w-3" />
+                </button>
               </label>
               <div class="mt-2">
                 <input
@@ -609,10 +659,17 @@
             </div>
 
             <!-- Email -->
-            <div v-else-if="field.valueType === 'email'" class="p-4">
+            <div v-else-if="field.valueType === 'email'" class="p-4 group/body-field">
               <label class="text-xs font-medium text-muted-foreground mb-2 flex items-center gap-1.5">
                 <Icon :name="getFieldIcon(field.valueType)" class="h-3.5 w-3.5" />
                 {{ titleCase(field.name) }}
+                <button
+                  v-if="isUserTier && !isViewMode"
+                  class="ml-auto h-4 w-4 rounded flex items-center justify-center text-muted-foreground/0 group-hover/body-field:text-muted-foreground/40 hover:text-destructive! hover:bg-destructive/10 transition-colors"
+                  :title="`Remove ${titleCase(field.name)} field`"
+                  @click.stop="removeFieldFromType(typeConfig.schemaId, field.name)">
+                  <Icon name="lucide:x" class="h-3 w-3" />
+                </button>
               </label>
               <div class="mt-2">
                 <input
@@ -632,10 +689,17 @@
             </div>
 
             <!-- Phone -->
-            <div v-else-if="field.valueType === 'phone_number'" class="p-4">
+            <div v-else-if="field.valueType === 'phone_number'" class="p-4 group/body-field">
               <label class="text-xs font-medium text-muted-foreground mb-2 flex items-center gap-1.5">
                 <Icon :name="getFieldIcon(field.valueType)" class="h-3.5 w-3.5" />
                 {{ titleCase(field.name) }}
+                <button
+                  v-if="isUserTier && !isViewMode"
+                  class="ml-auto h-4 w-4 rounded flex items-center justify-center text-muted-foreground/0 group-hover/body-field:text-muted-foreground/40 hover:text-destructive! hover:bg-destructive/10 transition-colors"
+                  :title="`Remove ${titleCase(field.name)} field`"
+                  @click.stop="removeFieldFromType(typeConfig.schemaId, field.name)">
+                  <Icon name="lucide:x" class="h-3 w-3" />
+                </button>
               </label>
               <div class="mt-2">
                 <input

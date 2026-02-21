@@ -288,6 +288,10 @@ export const ROUTE_PATHS = {
     channel: (channelId: string) => `/messages/${channelId}`,
     dm: (userId: string) => `/messages/dm/${userId}`,
   },
+  pages: {
+    root: '/pages',
+    page: (pageId: string) => `/pages/${pageId}`,
+  },
   workspace: {
     root: '/workspace',
     today: '/workspace/today',
@@ -353,6 +357,7 @@ export const ROUTE_PATHS = {
     root: '/graph',
     dashboard: '/graph/dashboard',
     explorer: '/graph/explorer',
+    visualization: '/graph/visualization',
     query: '/graph/query',
     ontology: '/graph/ontology',
     activity: '/graph/activity',
@@ -569,7 +574,7 @@ export function parseFullPath(path: string): ParsedPath {
   const segments = path.split('/').filter(Boolean)
 
   // Check for [workspace]/[app]/... pattern (2+ segments where first is not a known top-level route)
-  const knownTopLevelRoutes = ['docs', 'settings', 'admin', 'auth', 'database', 'collections', 'workflows', 'help', 'workspace', 'welcome', 'onboarding', 'notifications', 'permits', 'types', 'apptool', 'playground', 'components', 'embed', 'archive', 'members', 'learn', 'graph', 'calendar', 'documents', 'invite', 'messages', 'w']
+  const knownTopLevelRoutes = ['docs', 'settings', 'admin', 'auth', 'database', 'collections', 'workflows', 'help', 'workspace', 'welcome', 'onboarding', 'notifications', 'permits', 'types', 'apptool', 'playground', 'components', 'embed', 'archive', 'members', 'learn', 'graph', 'calendar', 'documents', 'invite', 'messages', 'pages', 'w']
 
   if (segments.length >= 2 && segments[0] && !knownTopLevelRoutes.includes(segments[0])) {
     // It's a workspace/app route: /[workspace]/[app]/path...

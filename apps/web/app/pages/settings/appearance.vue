@@ -1,7 +1,7 @@
 <script setup lang="ts">
   const { $colorMode: colorMode } = useNuxtApp()
   const { animationsEnabled, setAnimationsEnabled } = useAnimationSettings()
-  const { headerAboveSidebar, setHeaderAboveSidebar, iconRailPosition, setIconRailPosition } = useLayoutPreferences()
+  const { headerAboveSidebar, setHeaderAboveSidebar, iconRailPosition, setIconRailPosition, toolbarMode, setToolbarMode } = useLayoutPreferences()
   const go = (to: string) => navigateTo(to)
 
   const isDark = computed({
@@ -127,6 +127,66 @@
                   </div>
                 </div>
                 <UiSwitch :model-value="true" disabled />
+              </div>
+            </UiCardContent>
+          </UiCard>
+        </template>
+      </ClientOnly>
+
+      <!-- Editor Toolbar Mode -->
+      <ClientOnly>
+        <UiCard>
+          <UiCardHeader>
+            <UiCardTitle>Editor Toolbar</UiCardTitle>
+            <UiCardDescription>Choose between a floating toolbar that appears on text selection or a fixed toolbar at the top of the editor.</UiCardDescription>
+          </UiCardHeader>
+          <UiCardContent>
+            <div class="flex gap-3">
+              <button
+                class="flex flex-1 flex-col items-center gap-2 rounded-xl border px-4 py-3 transition-colors"
+                :class="toolbarMode === 'floating' ? 'border-primary bg-primary/10' : 'border-border bg-card hover:bg-muted/50'"
+                @click="setToolbarMode('floating')">
+                <div class="flex items-center gap-1.5">
+                  <Icon name="lucide:sparkles" class="size-4" :class="toolbarMode === 'floating' ? 'text-primary' : 'text-muted-foreground'" />
+                  <span class="text-sm font-medium" :class="toolbarMode === 'floating' ? 'text-primary' : 'text-foreground'">Floating</span>
+                </div>
+                <p class="text-xs text-muted-foreground text-center">Appears above selected text</p>
+              </button>
+              <button
+                class="flex flex-1 flex-col items-center gap-2 rounded-xl border px-4 py-3 transition-colors"
+                :class="toolbarMode === 'static' ? 'border-primary bg-primary/10' : 'border-border bg-card hover:bg-muted/50'"
+                @click="setToolbarMode('static')">
+                <div class="flex items-center gap-1.5">
+                  <Icon name="lucide:panel-top" class="size-4" :class="toolbarMode === 'static' ? 'text-primary' : 'text-muted-foreground'" />
+                  <span class="text-sm font-medium" :class="toolbarMode === 'static' ? 'text-primary' : 'text-foreground'">Static</span>
+                </div>
+                <p class="text-xs text-muted-foreground text-center">Fixed bar at the top</p>
+              </button>
+            </div>
+          </UiCardContent>
+        </UiCard>
+        <template #fallback>
+          <UiCard>
+            <UiCardHeader>
+              <UiCardTitle>Editor Toolbar</UiCardTitle>
+              <UiCardDescription>Choose between a floating toolbar that appears on text selection or a fixed toolbar at the top of the editor.</UiCardDescription>
+            </UiCardHeader>
+            <UiCardContent>
+              <div class="flex gap-3 opacity-50 pointer-events-none">
+                <div class="flex flex-1 flex-col items-center gap-2 rounded-xl border border-border bg-card px-4 py-3">
+                  <div class="flex items-center gap-1.5">
+                    <Icon name="lucide:sparkles" class="size-4 text-muted-foreground" />
+                    <span class="text-sm font-medium">Floating</span>
+                  </div>
+                  <p class="text-xs text-muted-foreground text-center">Loading...</p>
+                </div>
+                <div class="flex flex-1 flex-col items-center gap-2 rounded-xl border border-border bg-card px-4 py-3">
+                  <div class="flex items-center gap-1.5">
+                    <Icon name="lucide:panel-top" class="size-4 text-muted-foreground" />
+                    <span class="text-sm font-medium">Static</span>
+                  </div>
+                  <p class="text-xs text-muted-foreground text-center">Loading...</p>
+                </div>
               </div>
             </UiCardContent>
           </UiCard>

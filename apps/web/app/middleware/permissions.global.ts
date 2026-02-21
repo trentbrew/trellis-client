@@ -68,6 +68,10 @@ export default defineNuxtRouteMiddleware((to) => {
 
   if (!allowed) {
     console.warn(`[permissions] Blocked ${userRole.value} from accessing ${cleanPath} (requires ${matchedPermission.minRole}+)`)
+    // For settings sub-pages, fall back to a non-admin settings page rather than workspace
+    if (cleanPath.startsWith('/settings')) {
+      return navigateTo('/settings/notifications', { replace: true })
+    }
     const { wp } = useWorkspacePath()
     return navigateTo(wp('/workspace'))
   }

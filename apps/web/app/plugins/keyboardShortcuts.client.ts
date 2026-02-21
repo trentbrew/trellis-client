@@ -34,7 +34,7 @@ function _showShortcutToast(message: string, keyChord: string, target?: string) 
   el.setAttribute('aria-live', 'polite')
   Object.assign(el.style, {
     position: 'fixed',
-    bottom: '24px',
+    top: '24px',
     right: '24px',
     zIndex: '999999',
     padding: '12px 16px',
@@ -46,7 +46,7 @@ function _showShortcutToast(message: string, keyChord: string, target?: string) 
     fontSize: '13px',
     lineHeight: '1.4',
     opacity: '0',
-    transform: 'translateY(8px)',
+    transform: 'translateY(-8px)',
     transition: 'opacity .2s, transform .2s',
     pointerEvents: 'none',
     maxWidth: '320px',
@@ -65,7 +65,7 @@ function _showShortcutToast(message: string, keyChord: string, target?: string) 
 
   setTimeout(() => {
     el.style.opacity = '0'
-    el.style.transform = 'translateY(8px)'
+    el.style.transform = 'translateY(-8px)'
     setTimeout(() => el.remove(), 200)
   }, 2500)
 }

@@ -139,6 +139,7 @@
       window.open(ref.url, '_blank', 'noopener')
     }
   }
+
 </script>
 
 <template>
@@ -195,8 +196,7 @@
 
     <!-- Outgoing references — full-width cards with preview -->
     <div v-if="outgoingRefs.length" class="space-y-1.5">
-      <template v-for="ref in outgoingRefs" :key="ref.id">
-        <!-- Entity references — with hover preview -->
+      <template v-for="ref in outgoingRefs" :key="(ref as any).id">
         <EntityPreviewPopover
           v-if="isEntityReference(ref)"
           :entity-id="(ref as EntityReference).entityId"
@@ -205,9 +205,8 @@
           align="start">
           <template #trigger>
             <button
-              class="ref-card group w-full flex flex-col rounded-lg border border-border/50 bg-card hover:bg-muted/50 hover:border-border transition-all cursor-pointer text-left overflow-hidden"
+              class="ref-card group w-full flex flex-col rounded-lg border border-border/50 bg-card hover:bg-muted/50 hover:border-border transition-all text-left overflow-hidden cursor-pointer"
               @click="handleCardClick(ref)">
-              <!-- HTML content thumbnail (document entities with rich content) -->
               <div
                 v-if="getEntityHtmlContent(ref as EntityReference)"
                 class="relative w-full h-20 overflow-hidden bg-muted/30 border-b border-border/30 shrink-0">
@@ -216,13 +215,12 @@
                   class="prose prose-sm dark:prose-invert max-w-none text-[9px] leading-relaxed p-2 h-full overflow-hidden opacity-60 select-none"
                   v-html="getEntityHtmlContent(ref as EntityReference)" />
               </div>
-              <!-- Card footer: icon + title + badge + remove -->
-              <div class="flex items-start gap-2.5 p-2.5">
+              <div class="flex items-center gap-2.5 p-2.5 h-full">
                 <div :class="['w-7 h-7 rounded-md flex items-center justify-center shrink-0', getRefColor(ref)]">
                   <Icon :name="getRefIcon(ref)" class="h-3.5 w-3.5" />
                 </div>
-                <div class="flex-1 min-w-0">
-                  <div class="flex items-center gap-1.5 mb-0.5">
+                <div class="flex-1 min-w-0 items-center h-full">
+                  <div class="flex items-center gap-1.5 mb-0.5 h-full">
                     <span class="text-xs font-medium truncate flex-1">{{ getRefName(ref) }}</span>
                     <span v-if="getRefBadge(ref)" class="text-[9px] px-1.5 py-0.5 rounded bg-muted-foreground/10 text-muted-foreground capitalize shrink-0">
                       {{ getRefBadge(ref) }}
@@ -235,7 +233,7 @@
                 <button
                   v-if="!readonly"
                   class="h-5 w-5 flex items-center justify-center rounded hover:bg-destructive/10 opacity-0 group-hover:opacity-100 transition-opacity shrink-0 mt-0.5"
-                  @click.stop="removeRef(ref.id)">
+                  @click.stop="removeRef((ref as any).id)">
                   <Icon name="lucide:x" class="h-3 w-3 text-muted-foreground" />
                 </button>
               </div>
@@ -243,10 +241,9 @@
           </template>
         </EntityPreviewPopover>
 
-        <!-- File / bookmark references — no hover preview -->
         <button
           v-else
-          class="ref-card group w-full flex items-start gap-2.5 p-2.5 rounded-lg border border-border/50 bg-card hover:bg-muted/50 hover:border-border transition-all cursor-pointer text-left"
+          class="ref-card group w-full flex items-start gap-2.5 p-2.5 rounded-lg border border-border/50 bg-card hover:bg-muted/50 hover:border-border transition-all text-left cursor-pointer"
           @click="handleCardClick(ref)">
           <div :class="['w-7 h-7 rounded-md flex items-center justify-center shrink-0', getRefColor(ref)]">
             <Icon :name="getRefIcon(ref)" class="h-3.5 w-3.5" />
@@ -262,7 +259,7 @@
           <button
             v-if="!readonly"
             class="h-5 w-5 flex items-center justify-center rounded hover:bg-destructive/10 opacity-0 group-hover:opacity-100 transition-opacity shrink-0"
-            @click.stop="removeRef(ref.id)">
+            @click.stop="removeRef((ref as any).id)">
             <Icon name="lucide:x" class="h-3 w-3 text-muted-foreground" />
           </button>
         </button>

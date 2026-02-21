@@ -47,7 +47,7 @@
 
   const avatarUrl = computed(() => {
     const u = user.value as any
-    const candidate = u?.picture || u?.photoURL || u?.avatarUrl || u?.imageUrl || u?.imageURL || u?.profileImageUrl
+    const candidate = u?.avatar || u?.imageURL || u?.picture
     return typeof candidate === 'string' && candidate.trim() ? candidate.trim() : null
   })
 

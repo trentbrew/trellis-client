@@ -1,5 +1,6 @@
 <script lang="ts" setup>
   import { AnimatePresence, motion } from 'motion-v'
+  import AnimatedIconsMenu from '~/components/animated-icons/Menu.vue'
   import Sortable from 'sortablejs'
   import { SYSTEM_TYPES } from '~/lib/systemTypes'
   import type { ContextMenuEvent } from '~/types/contextMenu'
@@ -55,6 +56,15 @@
   // ── Sidebar filter ─────────────────────────────────────────
   const sidebarFilter = ref('')
   const sidebarFilterInputRef = ref<HTMLInputElement | null>(null)
+  const menuIconRef = ref<{ startAnimation: () => void; stopAnimation: () => void } | null>(null)
+
+  watch(() => sidebarCollapse.isCollapsed.value, (collapsed) => {
+    if (collapsed) {
+      menuIconRef.value?.stopAnimation()
+    } else {
+      menuIconRef.value?.startAnimation()
+    }
+  })
 
   const matchesFilter = (label: string) => {
     if (!sidebarFilter.value) return true
@@ -663,6 +673,16 @@
   const isChatRoute = computed(() =>
     route.path.startsWith('/messages') || routes.currentSidebarSection.value?.path === '/messages',
   )
+  const isPagesRoute = computed(() =>
+    route.path.startsWith('/pages') || routes.currentSidebarSection.value?.path === '/pages',
+  )
+  const isCalendarRoute = computed(() =>
+    route.path === '/calendar' || route.path.startsWith('/calendar/') || routes.currentSidebarSection.value?.path === '/calendar',
+  )
+
+  const isGraphRoute = computed(() =>
+    route.path === '/graph' || route.path.startsWith('/graph/') || routes.currentSidebarSection.value?.path === '/graph',
+  )
 
   const sectionsContainerRef = ref<HTMLElement | null>(null)
   const sortableInstances = ref<Sortable[]>([])
@@ -931,13 +951,13 @@
   <!-- Sidebar: Content frame (matches page header) -->
   <aside
     data-slot="app-sidebar"
-    class="border-sidebar-border/75 bg-transparent text-sidebar-foreground hidden flex-col border-r-none px-0 pb-0 lg:flex relative overflow-hidden"
+    class="border-sidebar-border/75 bg-transparent text-sidebar-foreground hidden flex-col border-r-none px-0 pb-0 lg:flex relative"
     :style="{
       width: sidebarCollapse.isCollapsed.value ? '0px' : `${sidebarWidth}px`,
       transition: transitionsDisabled ? 'none' : 'width 0.3s ease',
     }"
     :class="[
-      sidebarCollapse.isCollapsed.value ? 'overflow-hidden pr-2.5' : '',
+      sidebarCollapse.isCollapsed.value ? 'overflow-visible pr-2.5' : 'overflow-hidden',
       isResizing ? 'is-resizing' : '',
       transitionsDisabled ? 'transitions-disabled' : '',
     ]"
@@ -950,6 +970,26 @@
         'bg-primary': isResizing,
       }"
       @mousedown="startResize" />
+
+    <!-- Sidebar toggle: always rendered, sits at search-row position -->
+    <ClientOnly>
+      <UiTooltip v-if="!sidebarCollapse.isForcedCollapsed.value">
+        <UiTooltipTrigger as-child>
+          <button
+            type="button"
+            :aria-label="sidebarCollapse.isCollapsed.value ? 'Expand sidebar' : 'Collapse sidebar'"
+            :class="sidebarCollapse.isCollapsed.value ? 'border-none!' : 'bg-foreground/3'"
+            class="absolute z-20 flex h-[32px] w-[32px] shrink-0 items-center justify-center rounded-full border border-border bg-card text-muted-foreground shadow-sm transition-all hover:text-foreground hover:bg-muted mr-2"
+            :style="{ left: '10px', top: '10px' }"
+            @click="sidebarCollapse.toggle()">
+            <AnimatedIconsMenu ref="menuIconRef" :size="14" />
+          </button>
+        </UiTooltipTrigger>
+        <UiTooltipContent side="bottom" :side-offset="6">
+          {{ sidebarCollapse.isCollapsed.value ? 'Expand sidebar' : 'Collapse sidebar' }}
+        </UiTooltipContent>
+      </UiTooltip>
+    </ClientOnly>
 
     <!-- Builder Controls (Edit Mode) -->
     <div v-if="showBuilderUI && canCreatePages" class="px-4 py-0 border-b border-sidebar-border/10">
@@ -991,32 +1031,37 @@
         <div class="flex min-h-0 flex-1 flex-col overflow-y-auto overflow-x-hidden ">
           <!-- Sticky sidebar filter -->
           <!-- <div class="sticky top-0 z-10 px-2.5 pt-2.5 pb-2.5" style="background: linear-gradient(to bottom, var(--card) 0%, transparent 100%)"> -->
-          <div class="sticky top-0 z-10 px-2.5 pt-2.5 pb-2.5">
-            <div class="relative flex items-center">
-              <Icon name="lucide:search" class="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-sidebar-foreground/75 z-10" />
-              <input
-                ref="sidebarFilterInputRef"
-                v-model="sidebarFilter"
-                type="text"
-                placeholder="Search..."
-                class="w-full bg-transparent border border-border backdrop-blur-md text-sidebar-foreground text-xs rounded-full pl-8 pr-10 py-2 outline-none placeholder:text-sidebar-foreground/30 focus:ring-1 focus:ring-ring/50 transition-colors"
-                @keydown.escape="sidebarFilter = ''" />
-              <UiTooltipProvider v-if="isWorkspaceRoute || routes.currentSidebarSection.value?.path === '/database'">
-                <UiTooltip>
-                  <UiTooltipTrigger as-child>
-                    <button
-                      type="button"
-                      class="absolute right-1.5 top-1/2 -translate-y-1/2 flex items-center justify-center h-6 w-6 shrink-0 rounded-full bg-foreground/10 border text-foreground hover:text-sidebar-foreground hover:bg-foreground/5 transition-colors"
-                      :aria-label="isWorkspaceRoute ? 'Add page' : 'New type'"
-                      @click="isWorkspaceRoute ? handleCreatePageInstant() : handleAddNew()">
-                      <Icon name="lucide:plus" class="h-3.5 w-3.5" />
-                    </button>
-                  </UiTooltipTrigger>
-                  <UiTooltipContent side="bottom" :side-offset="4">
-                    <p>{{ isWorkspaceRoute ? 'Add page' : 'New type' }}</p>
-                  </UiTooltipContent>
-                </UiTooltip>
-              </UiTooltipProvider>
+          <div v-if="!isCalendarRoute && !isGraphRoute" class="sticky top-0 z-10 px-2.5 pt-2.5 pb-2.5">
+            <div class="flex items-center gap-1.5">
+              <!-- Toggle placeholder: reserves space equal to the toggle button -->
+              <div v-if="!sidebarCollapse.isForcedCollapsed.value" class="shrink-0 h-[30px] w-[30px]" />
+              <!-- Search input -->
+              <div class="relative flex-1 flex items-center">
+                <Icon name="lucide:search" class="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-sidebar-foreground/75 z-10" />
+                <input
+                  ref="sidebarFilterInputRef"
+                  v-model="sidebarFilter"
+                  type="text"
+                  placeholder="Search..."
+                  class="w-full bg-foreground/3 border border-border backdrop-blur-md text-sidebar-foreground text-xs rounded-full pl-8 pr-10 py-2 outline-none placeholder:text-sidebar-foreground/30 focus:ring-1 focus:ring-ring/50 transition-colors"
+                  @keydown.escape="sidebarFilter = ''" />
+                <UiTooltipProvider v-if="isWorkspaceRoute || routes.currentSidebarSection.value?.path === '/database'">
+                  <UiTooltip>
+                    <UiTooltipTrigger as-child>
+                      <button
+                        type="button"
+                        class="absolute right-1.5 top-1/2 -translate-y-1/2 flex items-center justify-center h-6 w-6 shrink-0 rounded-full text-foreground hover:text-sidebar-foreground hover:bg-foreground/5 transition-colors"
+                        :aria-label="isWorkspaceRoute ? 'Add page' : 'New type'"
+                        @click="isWorkspaceRoute ? handleCreatePageInstant() : handleAddNew()">
+                        <Icon name="lucide:plus" class="h-3.5 w-3.5" />
+                      </button>
+                    </UiTooltipTrigger>
+                    <UiTooltipContent side="bottom" :side-offset="4">
+                      <p>{{ isWorkspaceRoute ? 'Add page' : 'New type' }}</p>
+                    </UiTooltipContent>
+                  </UiTooltip>
+                </UiTooltipProvider>
+              </div>
             </div>
           </div>
           <AnimatePresence mode="wait">
@@ -1026,10 +1071,25 @@
               :animate="{ opacity: 1, x: 0 }"
               :exit="{ opacity: 0, x: -8 }"
               :transition="transitionsDisabled ? { duration: 0 } : { duration: 0.22, ease: 'easeOut' }"
-              class="flex min-h-0 flex-1 flex-col p-3 pl-2 pt-0 pb-24">
+              :class="(isCalendarRoute || isGraphRoute) ? 'flex min-h-0 flex-1 flex-col overflow-hidden' : 'flex min-h-0 flex-1 flex-col p-3 pl-2 pt-0 pb-24'">
+              <!-- Graph Sidebar Panel (graph route) -->
+              <template v-if="isGraphRoute">
+                <GraphSidebarPanel />
+              </template>
+
+              <!-- Calendar Sidebar Panel (calendar route) -->
+              <template v-else-if="isCalendarRoute">
+                <CalendarSidebarPanel />
+              </template>
+
               <!-- Chat Sidebar (messages route) -->
-              <template v-if="isChatRoute">
+              <template v-else-if="isChatRoute">
                 <ChatSidebar class="pt-2" />
+              </template>
+
+              <!-- Pages Sidebar (pages route) -->
+              <template v-else-if="isPagesRoute">
+                <PagesSidebar class="pt-2" />
               </template>
 
               <!-- Dynamic Sidebar Sections (if configured in route) -->

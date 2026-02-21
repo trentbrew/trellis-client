@@ -293,6 +293,7 @@
         <div class="flex items-center gap-1.5 text-xs overflow-x-auto scrollbar-none whitespace-nowrap">
           <slot name="properties" />
           <slot name="properties-tags" />
+          <slot name="extension-properties" />
         </div>
       </div>
 

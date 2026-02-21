@@ -165,6 +165,7 @@ export type NotificationType =
   | 'mention'
   | 'comment'
   | 'entity_updated'
+  | 'new_message'
   | 'system'
 
 export type NotificationVariant = 'default' | 'success' | 'warning' | 'destructive' | 'info'

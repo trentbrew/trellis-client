@@ -1,3 +1,5 @@
+import { getPresenceBg } from '~/utils/presenceColor'
+
 /**
  * Per-entity editing presence — tracks who has a specific entity dialog open.
  *
@@ -21,6 +23,7 @@ export interface EntityPeer {
   email: string
   name: string
   avatar?: string
+  color: string      // bg-* Tailwind class from presenceColor
   editingField?: string
   openedAt: number
 }
@@ -103,6 +106,7 @@ export function useEntityPresence(entityId: Ref<string | undefined> | string) {
                   email: peer.email || '',
                   name: peer.name || peer.email || '',
                   avatar: peer.avatar || '',
+                  color: getPresenceBg(peer.userId),
                   editingField: peer.editingField || undefined,
                   openedAt: peer.openedAt || 0,
                 }

@@ -11,7 +11,10 @@ import { entityId as toEntityId, entityQuery } from '~/lib/tql-namespace'
  * Usage:
  *   const { messages, sendMessage, editMessage, deleteMessage } = useChat(channelId)
  */
-export function useChat(channelId: Ref<string | undefined> | string) {
+export function useChat(
+  channelId: Ref<string | undefined> | string,
+  context?: { orgId?: string; channelTitle?: string },
+) {
   const db = useInstantDb()
   const { user } = useInstantAuth()
   const adapter = useDataAdapter()
@@ -100,6 +103,20 @@ export function useChat(channelId: Ref<string | undefined> | string) {
     watch(queryLoading, (v) => { if (v) loading.value = true })
   }
 
+  // ── Helpers ──────────────────────────────────────────────────────
+  function _extractMentionedUserIds(html: string): string[] {
+    if (!html || !import.meta.client) return []
+    const div = document.createElement('div')
+    div.innerHTML = html
+    const chips = div.querySelectorAll('[data-type="mention"][data-id], .mention-chip[data-id]')
+    const ids: string[] = []
+    chips.forEach((el) => {
+      const id = el.getAttribute('data-id')
+      if (id && !ids.includes(id)) ids.push(id)
+    })
+    return ids
+  }
+
   // ── CRUD ─────────────────────────────────────────────────────────
   async function sendMessage(content: string, opts?: {
     entityRefs?: EntityRef[]
@@ -127,6 +144,53 @@ export function useChat(channelId: Ref<string | undefined> | string) {
     if (isCloudMode) {
       await db.transact(db.tx.messages[msgId].update(data))
       await db.transact(db.tx.channels[id].update({ lastMessageAt: now }))
+
+      // Detect @mentioned user IDs from mention chips in the HTML content
+      const mentionedUserIds = _extractMentionedUserIds(data.content)
+
+      // Fire mention notifications (higher priority than new_message)
+      if (mentionedUserIds.length > 0 && context?.orgId) {
+        for (const mentionedUserId of mentionedUserIds) {
+          if (mentionedUserId === userId) continue
+          $fetch('/api/notify', {
+            method: 'POST',
+            body: {
+              recipientId: mentionedUserId,
+              orgId: context.orgId,
+              type: 'mention',
+              title: `#${context.channelTitle ?? id}`,
+              message: `${data.authorName} mentioned you: ${data.content.replace(/<[^>]+>/g, '').slice(0, 80)}`,
+              actionUrl: `/messages/${id}`,
+              icon: 'lucide:at-sign',
+              variant: 'default',
+              actorId: userId,
+              actorName: data.authorName,
+              metadata: { channelId: id, messageId: msgId },
+            },
+          }).catch((err) => {
+            console.warn('[useChat] mention notify failed (non-fatal):', err?.message)
+          })
+        }
+      }
+
+      // Fire-and-forget: notify other org members about the new message
+      // (skip users who already received a mention notification)
+      if (context?.orgId) {
+        $fetch('/api/chat/notify-message', {
+          method: 'POST',
+          body: {
+            channelId: id,
+            channelTitle: context.channelTitle ?? id,
+            orgId: context.orgId,
+            authorId: userId,
+            authorName: data.authorName,
+            content: data.content,
+            skipUserIds: mentionedUserIds,
+          },
+        }).catch((err) => {
+          console.warn('[useChat] notify-message failed (non-fatal):', err?.message)
+        })
+      }
     } else {
       const { mutate } = useTrellisGraph()
       await mutate({

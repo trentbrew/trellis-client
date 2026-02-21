@@ -1,4 +1,5 @@
 export type IconRailPosition = 'left' | 'bottom'
+export type ToolbarMode = 'floating' | 'static'
 
 /**
  * Composable for managing layout preferences
@@ -10,6 +11,7 @@ export const useLayoutPreferences = () => {
   // Global state using useState for SSR compatibility
   const headerAboveSidebar = useState<boolean>('layout:headerAboveSidebar', () => true)
   const iconRailPosition = useState<IconRailPosition>('layout:iconRailPosition', () => 'bottom')
+  const toolbarMode = useState<ToolbarMode>('layout:toolbarMode', () => 'floating')
 
   // Load from localStorage on client
   if (import.meta.client) {
@@ -19,6 +21,7 @@ export const useLayoutPreferences = () => {
         const parsed = JSON.parse(stored)
         headerAboveSidebar.value = parsed.headerAboveSidebar ?? true
         iconRailPosition.value = parsed.iconRailPosition ?? 'bottom'
+        toolbarMode.value = parsed.toolbarMode ?? 'floating'
       } catch {
         // Invalid JSON, use default
       }
@@ -32,6 +35,7 @@ export const useLayoutPreferences = () => {
         JSON.stringify({
           headerAboveSidebar: headerAboveSidebar.value,
           iconRailPosition: iconRailPosition.value,
+          toolbarMode: toolbarMode.value,
         }),
       )
     }
@@ -51,11 +55,18 @@ export const useLayoutPreferences = () => {
     _persist()
   }
 
+  const setToolbarMode = (mode: ToolbarMode) => {
+    toolbarMode.value = mode
+    _persist()
+  }
+
   return {
     headerAboveSidebar: readonly(headerAboveSidebar),
     setHeaderAboveSidebar,
     toggleHeaderAboveSidebar,
     iconRailPosition: readonly(iconRailPosition),
     setIconRailPosition,
+    toolbarMode: readonly(toolbarMode),
+    setToolbarMode,
   }
 }

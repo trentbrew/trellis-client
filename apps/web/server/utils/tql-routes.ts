@@ -454,11 +454,9 @@ const calendarRoute: RouteDefinition = {
   railPosition: 'primary',
   inCommandPalette: true,
   requiresAuth: true,
-  collapseSidebar: true,
   meta: {
     title: 'Calendar',
     description: 'View and manage your schedule',
-    hideSidebar: true,
   },
 }
 
@@ -525,6 +523,49 @@ const messagesRoute: RouteDefinition = {
       label: 'Direct Message',
       icon: 'lucide:message-circle',
       meta: { title: 'Direct Message' },
+    },
+  ],
+}
+
+// ============================================================================
+// Pages Route — /pages
+// ============================================================================
+
+const pagesRoute: RouteDefinition = {
+  '@id': 'route:pages',
+  '@type': 'trellis:Route',
+  routePath: '/pages',
+  label: 'Pages',
+  icon: 'lucide:notebook',
+  order: 20,
+  inRail: true,
+  railPosition: 'primary',
+  inCommandPalette: true,
+  requiresAuth: true,
+  meta: {
+    title: 'Pages',
+    description: 'Fullscreen document editor with folders',
+    hideSidebar: false,
+  },
+  sidebarSections: [
+    {
+      label: 'PAGES',
+      key: 'pages-list',
+      icon: 'lucide:file-text',
+      collapsible: true,
+      editable: true,
+      order: 10,
+      items: [],
+    },
+  ],
+  children: [
+    {
+      '@id': 'route:pages/page',
+      '@type': 'trellis:Route',
+      routePath: '/pages/:id',
+      label: 'Page',
+      icon: 'lucide:file-text',
+      meta: { title: 'Page' },
     },
   ],
 }
@@ -610,10 +651,10 @@ const settingsRoute: RouteDefinition = {
       collapsible: true,
       order: 10,
       items: [
-        { routePath: '/settings/project', label: 'Project', icon: 'lucide:folder' },
-        { routePath: '/settings/members', label: 'Members', icon: 'lucide:users-round' },
-        { routePath: '/settings/roles', label: 'Roles', icon: 'lucide:shield' },
-        { routePath: '/settings/branding', label: 'Branding', icon: 'lucide:sparkles' },
+        { routePath: '/settings/project', label: 'Project', icon: 'lucide:folder', permissions: { minRole: 'admin', permission: 'admin' } },
+        { routePath: '/settings/members', label: 'Members', icon: 'lucide:users-round', permissions: { minRole: 'admin', permission: 'admin' } },
+        { routePath: '/settings/roles', label: 'Roles', icon: 'lucide:shield', permissions: { minRole: 'admin', permission: 'admin' } },
+        { routePath: '/settings/branding', label: 'Branding', icon: 'lucide:sparkles', permissions: { minRole: 'admin', permission: 'admin' } },
       ],
     },
     {
@@ -636,8 +677,8 @@ const settingsRoute: RouteDefinition = {
       collapsible: true,
       order: 30,
       items: [
-        { routePath: '/settings/marketplace', label: 'Marketplace', icon: 'lucide:store' },
-        { routePath: '/settings/integrations', label: 'Integrations', icon: 'lucide:plug' },
+        { routePath: '/settings/marketplace', label: 'Marketplace', icon: 'lucide:store', permissions: { minRole: 'admin', permission: 'admin' } },
+        { routePath: '/settings/integrations', label: 'Integrations', icon: 'lucide:plug', permissions: { minRole: 'admin', permission: 'admin' } },
       ],
     },
   ],
@@ -666,6 +707,7 @@ export function getRouteDefinitions(): Record<string, RouteDefinition> {
     'route:workspace': workspaceRoute,
     'route:calendar': calendarRoute,
     'route:messages': messagesRoute,
+    'route:pages': pagesRoute,
     'route:database': databaseRoute,
     'route:graph': graphRoute,
     'route:workflows': workflowsRoute,
@@ -680,6 +722,7 @@ export {
   workspaceRoute,
   calendarRoute,
   messagesRoute,
+  pagesRoute,
   databaseRoute,
   graphRoute,
   workflowsRoute,

@@ -21,6 +21,7 @@ const NOTIFICATION_META: Record<NotificationType, { icon: string; defaultVariant
   mention: { icon: 'lucide:at-sign', defaultVariant: 'default' },
   comment: { icon: 'lucide:message-circle', defaultVariant: 'default' },
   entity_updated: { icon: 'lucide:file-edit', defaultVariant: 'default' },
+  new_message: { icon: 'lucide:message-square', defaultVariant: 'default' },
   system: { icon: 'lucide:info', defaultVariant: 'default' },
 }
 
@@ -45,9 +46,11 @@ export function useNotifications() {
   // ── Notification preferences ────────────────────────────────────────
   const notificationPrefs = useState<{
     soundEnabled: boolean
+    desktopEnabled: boolean
     mutedTypes: NotificationType[]
   }>('notifications:prefs', () => ({
     soundEnabled: true,
+    desktopEnabled: true,
     mutedTypes: [],
   }))
 
@@ -64,6 +67,7 @@ export function useNotifications() {
           if (setting?.value) {
             notificationPrefs.value = {
               soundEnabled: setting.value.soundEnabled ?? true,
+              desktopEnabled: setting.value.desktopEnabled ?? true,
               mutedTypes: setting.value.mutedTypes ?? [],
             }
           }
@@ -123,16 +127,40 @@ export function useNotifications() {
             (n) => !_prevIds.value.has(n.id) && !n.isRead,
           )
           if (newItems.length > 0) {
-            // Play chime
-            if (notificationPrefs.value.soundEnabled && chimeAudio) {
+            const first = newItems[0]!
+            const isMuted = notificationPrefs.value.mutedTypes.includes(first.type as NotificationType)
+
+            // Play chime (respect muted types)
+            if (!isMuted && notificationPrefs.value.soundEnabled && chimeAudio) {
               chimeAudio.currentTime = 0
               chimeAudio.play().catch(() => {
                 // Autoplay blocked — user hasn't interacted yet
               })
             }
+
             // Show toast for the first new one
-            const first = newItems[0]!
-            $toast?.info(first.title, { description: first.message })
+            if (!isMuted) {
+              $toast?.info(first.title, { description: first.message })
+            }
+
+            // Desktop push notification
+            if (
+              !isMuted
+              && notificationPrefs.value.desktopEnabled
+              && typeof Notification !== 'undefined'
+              && Notification.permission === 'granted'
+            ) {
+              const n = new Notification(first.title, {
+                body: first.message,
+                icon: '/favicon.ico',
+              })
+              if (first.actionUrl) {
+                n.onclick = () => {
+                  window.focus()
+                  navigateTo(first.actionUrl!)
+                }
+              }
+            }
           }
         }
 

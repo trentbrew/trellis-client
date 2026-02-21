@@ -93,6 +93,9 @@
           seamless
           mentions
           images
+          embeds
+          templates
+          chat-mode
           submit-on-enter
           @submit="handleSend"
         />
@@ -196,7 +199,7 @@
 
     <!-- Hint -->
     <div class="px-4 pb-2 text-[10px] text-muted-foreground/40">
-      <kbd class="font-mono">@</kbd> to mention · <kbd class="font-mono">⌘Enter</kbd> to send · <kbd class="font-mono">Enter</kbd> for new line
+      <kbd class="font-mono">@</kbd> mention · <kbd class="font-mono">/</kbd> commands · <kbd class="font-mono">⌘Enter</kbd> to send · <kbd class="font-mono">Enter</kbd> for new line
     </div>
   </div>
 </template>
