@@ -84,7 +84,7 @@
     title="Preferences"
     description="Control how and when you receive notifications."
     fill-height>
-    <div class="max-w-2xl space-y-8">
+    <div class="space-y-8">
       <!-- Sound -->
       <section class="space-y-4">
         <div>

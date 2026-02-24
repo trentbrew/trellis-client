@@ -367,8 +367,8 @@
       StarterKit.configure({
         codeBlock: false, // replaced by CodeBlockLowlight
         blockquote: false, // replaced by CustomBlockquote (| trigger instead of >)
-        // When collaborative, disable built-in history — Y.js handles undo/redo
-        ...(collabEnabled.value ? { history: false } : {}),
+        // Disable history only when collaborative (Y.js provides it)
+        history: collabEnabled.value ? false : undefined,
       }),
       CustomBlockquote,
       CodeBlockLowlight.extend({
@@ -848,7 +848,7 @@
   <div
     v-if="editor"
     :class="[
-      seamless ? 'overflow-hidden' : 'rounded-none border-none bg-card overflow-hidden',
+      seamless ? 'overflow-hidden' : 'rounded-none border-none bg-card/0 overflow-hidden',
       fillHeight ? 'flex flex-col min-h-0' : '',
     ]">
     <!-- Drag Handle (conditional) — class applied directly to avoid duplicate icon from nested div -->

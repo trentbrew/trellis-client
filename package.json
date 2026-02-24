@@ -17,6 +17,7 @@
     "clean": "pnpm -r --if-present clean && rm -rf node_modules",
     "typecheck": "pnpm -r --if-present typecheck",
     "prepare": "husky",
+    "setup:mcp": "node scripts/setup-mcp.mjs",
     "hq:init": "bun run hooks/tql-init.ts",
     "hq:status": "bun run hooks/tql-status.ts",
     "hq:query": "bun run hooks/tql-query.ts",

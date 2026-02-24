@@ -190,6 +190,7 @@ const _schema = i.schema({
       slug: i.string().optional(),
       isPublished: i.boolean().optional(),
       templateFor: i.string().optional(),
+      icon: i.string().optional(),
       // Container-specific (project, folder, collection, goal)
       children: i.json().optional(), // string[] — child entity IDs
       progress: i.number().optional(), // 0–1
@@ -334,6 +335,25 @@ const _schema = i.schema({
       level: i.string(),                    // 'all' | 'mentions' | 'none'
       soundEnabled: i.boolean().optional(),
       desktopEnabled: i.boolean().optional(),
+    }),
+
+    // ========================================================================
+    // Agent — Conversations, Messages
+    // ========================================================================
+
+    agent_conversations: i.entity({
+      userId: i.string().indexed(),
+      title: i.string().optional(),
+      createdAt: i.number().indexed(),
+      updatedAt: i.number().indexed(),
+    }),
+
+    agent_messages: i.entity({
+      conversationId: i.string().indexed(),
+      role: i.string().indexed(), // 'user' | 'assistant' | 'function'
+      content: i.string(),
+      toolCalls: i.json().optional(),
+      timestamp: i.number().indexed(),
     }),
 
   },

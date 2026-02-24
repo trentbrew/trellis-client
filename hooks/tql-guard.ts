@@ -61,6 +61,9 @@ const DANGEROUS_COMMANDS = [
   /(?:^|[|;&]\s*)python3?\s+<<\s*/,
   /(?:^|[|;&]\s*)python3?\s+-\s*</,
   /(?:^|[|;&]\s*)python3?\s+<\(/,
+  // CLI purity: block piping trellis CLI output through inline scripts
+  /\bjust\s+trellis\b.*\|/,
+  /\bnode\s+packages\/trellis-cli\b.*\|/,
 ];
 
 const SENSITIVE_PATHS = [

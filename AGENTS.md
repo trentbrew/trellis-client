@@ -4,6 +4,8 @@ You are working inside the **Trellis** monorepo — a personal knowledge graph p
 
 **You are a Trellis-aware agent.** You can read, write, query, and manage the graph directly — either through the REST API, the CLI, or MCP tools. Any mutations you make appear instantly in the browser UI via SSE.
 
+> **MCP-first rule:** If you have MCP tools available (48 total), **always use them** instead of `curl`, `fetch`, or raw HTTP requests. The MCP tools handle errors, serialization, and agent ID tracking automatically. See `packages/trellis-mcp/SKILL.md` for the full tool reference and mapping table.
+
 > Read `packages/trellis-mcp/SKILL.md` for the full domain knowledge reference (entity types, fields, linking, querying, ontology CRUD).
 
 ---
@@ -110,6 +112,48 @@ Creating an ontology auto-scaffolds it in the UI — sidebar item, browse page, 
 - `user` (or omitted) — User-created custom type, appears under CUSTOM section
 - `core` — Kernel structural types (immutable, code-only — never create these via CLI)
 
+### Platform CRUD via CLI
+
+Platform resources (orgs, apps, collections, pages, tags, workflows, settings) are managed via `/api/platform/*` routes backed by the TQL kernel.
+
+```bash
+# Workspace context
+just trellis org list --pretty
+just trellis org create --name "Media CMS" --slug media-cms
+just trellis app create --name "Production" --icon "lucide:video" --org-id platform:org/media-cms
+just trellis app list --pretty
+just trellis context --pretty
+just trellis context set --org-id platform:org/media-cms --app-id platform:app/production
+
+# Collections & Pages
+just trellis collection create --name "Episodes" --slug episodes
+just trellis page create --title "Dashboard" --data-source show --layout grid
+
+# Comments & Tags
+just trellis comment add entity:task-1 --content "Reviewed and approved"
+just trellis comment list entity:task-1 --pretty
+just trellis tag create --name "Priority" --color "bg-red-500"
+just trellis tag assign entity:task-1 --tags "priority,reviewed"
+
+# Bulk operations
+just trellis bulk update --query 'FIND entity AS ?t WHERE ?t.type = "task" AND ?t.taskStatus = "pending"' --data '{"taskStatus":"in-progress"}'
+just trellis bulk delete --query 'FIND entity AS ?t WHERE ?t.type = "task" AND ?t.taskStatus = "completed"'
+
+# Workflows
+just trellis workflow create --name "Auto-triage" --trigger '{"type":"onCreate","entityType":"task"}'
+just trellis workflow list --pretty
+
+# Settings
+just trellis setting set theme dark
+just trellis setting get theme --pretty
+just trellis setting list --pretty
+
+# Rich text body (for notes, pages, documents)
+just trellis create --type entity --id entity:meeting-notes --data '{"type":"note","title":"Notes"}' --body '# Agenda\n- Review goals'
+```
+
+Context persistence: `~/.trellis/context.json` stores the current org + app. Use `--org` / `--app` flags to override per-command.
+
 ## SDK
 
 ```js
@@ -125,9 +169,11 @@ await client.createOntology({ '@id': 'trellis:schema/invoice', '@type': 'trellis
 
 ## MCP Server
 
-The MCP server (`packages/trellis-mcp/`) exposes 15 tools:
+The MCP server (`packages/trellis-mcp/`) exposes 49 tools (16 graph + 33 platform):
 
-`query_graph`, `get_node`, `get_nodes`, `create_node`, `update_node`, `delete_node`, `link_nodes`, `graph_health`, `get_schema`, `get_catalog`, `get_mutation_log`, `get_ontology`, `create_ontology`, `update_ontology`, `delete_ontology`
+`get_graph_summary`, `query_graph`, `get_node`, `get_nodes`, `create_node`, `update_node`, `delete_node`, `link_nodes`, `graph_health`, `get_schema`, `get_catalog`, `get_mutation_log`, `get_ontology`, `create_ontology`, `update_ontology`, `delete_ontology`
+
+> **Start with `get_graph_summary`** — returns health, entity type counts, ontology names, top attributes, link relations, and recent mutations in a single call. Replaces `graph_health` + `get_schema` + `get_catalog` for agent orientation.
 
 ### Connect to the MCP Server
 
@@ -172,6 +218,33 @@ When creating ontology fields, use these Notion-compatible value types:
 | `references` | Bidirectional reference |
 | `dependsOn` | Task dependency chain |
 | `parentOf` / `childOf` | Container hierarchy |
+
+## CLI Purity Rules
+
+**NEVER pipe CLI output through `node -e`, `python -c`, `jq`, `awk`, or any inline script.**
+
+The CLI has built-in flags for every common need. If you need programmatic access to query results, use MCP tools instead of piping CLI output.
+
+```bash
+# Orientation — call this FIRST
+just trellis summary --pretty
+
+# Queries with built-in formatting
+just trellis query 'FIND entity AS ?e WHERE ?e.type = "task"' --pretty
+just trellis query '...' --count                    # just the row count
+just trellis query '...' --fields title,startDate --pretty  # specific columns
+
+# Single entity
+just trellis get entity:task-1 --pretty
+```
+
+**Forbidden patterns:**
+- ❌ `just trellis query '...' | node -e "..."`
+- ❌ `just trellis query '...' | python3 -c "..."`
+- ❌ `just trellis query '...' 2>&1 | node -e "..."`
+- ❌ Any command that pipes `just trellis` output into another program
+
+**Instead:** Use MCP tools (`query_graph`, `get_node`, `get_graph_summary`) for programmatic access. They return structured JSON directly — no shell piping needed.
 
 ## Key Conventions
 

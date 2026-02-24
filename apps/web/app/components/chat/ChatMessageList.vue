@@ -116,7 +116,7 @@
     <!-- Empty state -->
     <div
       v-else-if="!groupedMessages.length"
-      class="flex flex-col items-center justify-center h-full gap-3 text-muted-foreground"
+      class="flex flex-col items-center justify-center h-full gap-3 text-muted-foreground bg-card/50"
     >
       <Icon name="lucide:message-square" class="h-10 w-10 opacity-20" />
       <p class="text-sm">No messages yet. Say hello!</p>

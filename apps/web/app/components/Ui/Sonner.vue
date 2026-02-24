@@ -5,14 +5,16 @@
 <template>
   <Toaster
     class="toaster group"
+    position="top-right"
     :visible-toasts="5"
     close-button
     :duration="7000"
     :theme="colorMode.value === 'dark' ? 'dark' : 'light'"
     :style="{
-      '--normal-bg': 'var(--popover)',
-      '--normal-text': 'var(--popover-foreground)',
-      '--normal-border': 'var(--border)',
+      'margin-top': '32px',
+      '--normal-bg': 'color-mix(in srgb, var(--color-sky-950, #082f49) 80%, transparent)',
+      '--normal-text': 'var(--color-sky-300, #7dd3fc)',
+      '--normal-border': 'color-mix(in srgb, var(--color-sky-500, #0ea5e9) 30%, transparent)',
       '--success-bg': 'color-mix(in srgb, var(--color-emerald-950, #022c22) 80%, transparent)',
       '--success-text': 'var(--color-emerald-300, #6ee7b7)',
       '--success-border': 'color-mix(in srgb, var(--color-emerald-500, #10b981) 30%, transparent)',

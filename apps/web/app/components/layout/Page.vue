@@ -1,4 +1,5 @@
 <script setup lang="ts">
+  import { clsx } from 'clsx'
   import AppEmptyState from '~/components/app/AppEmptyState.vue'
   import FilterBuilder from '~/components/layout/FilterBuilder.vue'
   import type { BrowseState, BrowseVariant, BrowseViewMode } from '~/composables/useBrowse'
@@ -231,25 +232,9 @@
     showSortControls: true,
     countLabel: 'items',
     transparent: false,
-    browse: undefined,
     isLoading: false,
     error: null,
-    headerIcon: undefined,
-    primaryAction: undefined,
-    secondaryAction: undefined,
-    tertiaryAction: undefined,
-    viewModeOptions: undefined,
-    folderItems: undefined,
-    selectedFolderPath: undefined,
     selectedItemId: null,
-    onFolderSelect: undefined,
-    onItemSelect: undefined,
-    onAddFolder: undefined,
-    onAddItem: undefined,
-    onMoveItem: undefined,
-    folderEmptyTitle: undefined,
-    folderEmptyDescription: undefined,
-    dataSource: undefined,
   })
 
   const emit = defineEmits<{
@@ -257,46 +242,51 @@
     moveItem: [itemId: string]
   }>()
 
-  // Computed variant-based settings
-  const variantConfig = computed(() => {
-    switch (props.variant) {
-      case 'canvas':
-        return { showHeader: false, showTabs: false, contentPadding: 'p-0', maxWidth: '', showToolbar: false }
-      case 'prose':
-        return {
-          showHeader: true,
-          showTabs: false,
-          contentPadding: 'px-8 pb-6 pt-0',
-          maxWidth: 'max-w-4xl mx-auto',
-          showToolbar: false,
-        }
-      case 'settings':
-        return { showHeader: true, showTabs: true, contentPadding: 'px-8 py-6', maxWidth: '', showToolbar: false }
-      case 'sidebar':
-        return { showHeader: false, showTabs: false, contentPadding: 'p-0', maxWidth: '', showToolbar: false }
-      case 'browse':
-        return { showHeader: true, showTabs: false, contentPadding: 'px-8 py-6 pt-0', maxWidth: '', showToolbar: true }
-      case 'filesystem':
-        return { showHeader: false, showTabs: false, contentPadding: 'p-0', maxWidth: '', showToolbar: false }
-      case 'folders':
-        return { showHeader: true, showTabs: false, contentPadding: 'p-0', maxWidth: '', showToolbar: false }
-      case 'calendar':
-        return { showHeader: false, showTabs: false, contentPadding: 'p-0', maxWidth: '', showToolbar: false }
-      case 'feed':
-        return { showHeader: true, showTabs: false, contentPadding: 'px-4 py-4 pt-0', maxWidth: '', showToolbar: true }
-      case 'station':
-        return { showHeader: false, showTabs: true, contentPadding: 'p-0', maxWidth: '', showToolbar: false }
-      case 'grid':
-        return { showHeader: false, showTabs: false, contentPadding: 'p-0', maxWidth: '', showToolbar: false }
-      default:
-        return { showHeader: true, showTabs: true, contentPadding: 'px-8 py-6', maxWidth: '', showToolbar: false }
-    }
-  })
+  // Variant configuration type
+  interface VariantConfig {
+    showHeader: boolean
+    showTabs: boolean
+    contentPadding: string
+    maxWidth: string
+    showToolbar: boolean
+  }
 
-  const isFilesystem = computed(() => props.variant === 'filesystem')
-  const isFolders = computed(() => props.variant === 'folders')
-  const isCalendar = computed(() => props.variant === 'calendar')
-  const isFeed = computed(() => props.variant === 'feed')
+  // Variant configurations - single source of truth
+  const VARIANT_CONFIGS: Record<PageVariant, VariantConfig> = {
+    canvas: { showHeader: false, showTabs: false, contentPadding: 'p-0', maxWidth: '', showToolbar: false },
+    prose: { showHeader: true, showTabs: false, contentPadding: 'px-8 pb-6 pt-0', maxWidth: 'max-w-full', showToolbar: false },
+    settings: { showHeader: true, showTabs: true, contentPadding: 'px-8 pb-12 pt-6', maxWidth: 'max-w-full', showToolbar: false },
+    sidebar: { showHeader: false, showTabs: false, contentPadding: 'p-0', maxWidth: '', showToolbar: false },
+    browse: { showHeader: true, showTabs: false, contentPadding: 'px-8 py-6 pt-0', maxWidth: '', showToolbar: true },
+    filesystem: { showHeader: false, showTabs: false, contentPadding: 'p-0', maxWidth: '', showToolbar: false },
+    folders: { showHeader: true, showTabs: false, contentPadding: 'p-0', maxWidth: '', showToolbar: false },
+    calendar: { showHeader: false, showTabs: false, contentPadding: 'p-0', maxWidth: '', showToolbar: false },
+    feed: { showHeader: true, showTabs: false, contentPadding: 'px-4 py-4 pt-0', maxWidth: '', showToolbar: true },
+    station: { showHeader: false, showTabs: true, contentPadding: 'p-0', maxWidth: '', showToolbar: false },
+    grid: { showHeader: false, showTabs: false, contentPadding: 'p-0', maxWidth: '', showToolbar: false },
+    default: { showHeader: true, showTabs: true, contentPadding: 'px-8 py-6', maxWidth: '', showToolbar: false },
+  }
+
+  // Computed variant-based settings
+  const variantConfig = computed(() => VARIANT_CONFIGS[props.variant])
+
+  // Variant flags - consolidated variant checking
+  const variantFlags = computed(() => ({
+    isFilesystem: props.variant === 'filesystem',
+    isFolders: props.variant === 'folders',
+    isCalendar: props.variant === 'calendar',
+    isFeed: props.variant === 'feed',
+    isBrowse: props.variant === 'browse',
+    isSettings: props.variant === 'settings',
+    isGrid: props.variant === 'grid',
+  }))
+
+  // Backward compatibility - keep existing computeds for template
+  const isFilesystem = computed(() => variantFlags.value.isFilesystem)
+  const isFolders = computed(() => variantFlags.value.isFolders)
+  const isCalendar = computed(() => variantFlags.value.isCalendar)
+  const isFeed = computed(() => variantFlags.value.isFeed)
+
   const effectiveFillHeight = computed(
     () => props.fillHeight || isFilesystem.value || isFolders.value || isCalendar.value,
   )
@@ -375,41 +365,43 @@
     },
   )
 
+  // Debounced localStorage write for better performance
+  const debouncedSaveWidth = useDebounceFn((key: string, value: string) => {
+    if (import.meta.client) {
+      try {
+        localStorage.setItem(key, value)
+      } catch {
+        // Silently fail if localStorage is unavailable
+      }
+    }
+  }, 300)
+
   // Toggle width and persist preference
   function _toggleWidth() {
     isFullWidth.value = !isFullWidth.value
-    if (import.meta.client) {
-      try {
-        localStorage.setItem(storageKey.value, String(isFullWidth.value))
-      } catch {
-        return
-      }
-    }
+    debouncedSaveWidth(storageKey.value, String(isFullWidth.value))
   }
 
   // Container class
-  const finalContainerClass = computed(() => {
-    const base = props.containerClass || ''
-    const heightClass = effectiveFillHeight.value ? 'h-full flex flex-col' : ''
-    return `${base} ${heightClass}`.trim()
-  })
+  const finalContainerClass = computed(() =>
+    clsx(props.containerClass, effectiveFillHeight.value && 'h-full flex flex-col'),
+  )
 
   // Content wrapper class
   const contentWrapperClass = computed(() => {
     if (!effectiveFillHeight.value) return 'w-full'
-    const overflowClass = isFilesystem.value ? 'overflow-hidden' : 'overflow-y-auto'
-    return `w-full flex h-full flex-col ${overflowClass}`.trim()
+    return clsx('w-full flex h-full flex-col', isFilesystem.value ? 'overflow-hidden' : 'overflow-y-auto')
   })
 
   // Main content area class
-  const mainContentClass = computed(() => {
-    const base = props.contentClass || ''
-    const padding = variantConfig.value.contentPadding
-    const maxWidth = variantConfig.value.maxWidth
-    const fillClass = effectiveFillHeight.value ? 'min-h-0' : ''
-    const growthClass = effectiveFillHeight.value ? 'flex-1' : ''
-    return `${base} ${padding} ${maxWidth} ${fillClass} ${growthClass}`.trim()
-  })
+  const mainContentClass = computed(() =>
+    clsx(
+      props.contentClass,
+      variantConfig.value.contentPadding,
+      variantConfig.value.maxWidth,
+      effectiveFillHeight.value && ['min-h-0', 'flex-1'],
+    ),
+  )
 
   // Handle SEO meta reactively
   const seoTitle = computed(() => props.seoTitle || props.title)
@@ -429,7 +421,8 @@
 
       // Set OG image if title and description are available
       if (seoTitle.value && seoDesc.value) {
-        const og = (globalThis as any).defineOgImageComponent
+        const og = (globalThis as { defineOgImageComponent?: (name: string, props: Record<string, string>) => void })
+          .defineOgImageComponent
         if (typeof og === 'function') {
           og('Site', {
             title: seoTitle.value,
@@ -440,103 +433,8 @@
     }
   })
 
-  // Hash-based tab support
-  const activeHash = ref('')
-  const isScrolling = ref(false)
-  const highlightedSection = ref('')
-
-  // Get all hash-based tabs
-  const hashTabs = computed(() => effectiveTabs.value?.filter((tab) => tab.to?.startsWith('#')) || [])
-
-  // Initialize hash from URL and set up Intersection Observer
-  onMounted(() => {
-    if (import.meta.client) {
-      // Set initial hash
-      activeHash.value = window.location.hash || hashTabs.value[0]?.to || ''
-
-      // Ensure the first hash tab is actually selected (and reflected in route.hash)
-      if (!route.hash && hashTabs.value[0]?.to && !window.location.hash) {
-        router.replace({ path: route.path, query: route.query, hash: hashTabs.value[0].to })
-      }
-
-      // Listen for manual hash changes
-      window.addEventListener('hashchange', () => {
-        if (!isScrolling.value) {
-          activeHash.value = window.location.hash
-        }
-      })
-
-      // Set up Intersection Observer to track visible sections
-      setupScrollObserver()
-    }
-  })
-
-  // Intersection Observer to auto-update active tab on scroll
-  function setupScrollObserver() {
-    const observer = new IntersectionObserver(
-      (entries) => {
-        if (isScrolling.value) return
-
-        for (const entry of entries) {
-          if (entry.isIntersecting && entry.intersectionRatio >= 0.3) {
-            const hash = `#${entry.target.id}`
-            if (hashTabs.value.some((tab) => tab.to === hash)) {
-              activeHash.value = hash
-              window.history.replaceState(null, '', `${window.location.pathname}${window.location.search}${hash}`)
-            }
-          }
-        }
-      },
-      { threshold: [0.3, 0.5, 0.7], rootMargin: '-100px 0px -50% 0px' },
-    )
-
-    // Observe all hash-based sections
-    nextTick(() => {
-      hashTabs.value.forEach((tab) => {
-        const el = document.querySelector(tab.to)
-        if (el) observer.observe(el)
-      })
-    })
-  }
-
-  const isTabActive = (to: string): boolean => {
-    if (to.startsWith('#')) {
-      if (!activeHash.value && hashTabs.value[0]?.to === to) return true
-      return activeHash.value === to
-    }
-    return route.path === to
-  }
-
-  // Handle hash click with smooth scroll and highlight
-  function handleHashClick(hash: string) {
-    if (import.meta.client) {
-      const el = document.querySelector(hash)
-      if (el) {
-        isScrolling.value = true
-        activeHash.value = hash
-        window.history.pushState(null, '', `${window.location.pathname}${window.location.search}${hash}`)
-
-        // Smooth scroll to section
-        el.scrollIntoView({ behavior: 'smooth', block: 'start' })
-
-        // Brief highlight animation
-        highlightedSection.value = hash
-        setTimeout(() => {
-          highlightedSection.value = ''
-        }, 800)
-
-        // Reset scrolling flag after animation completes
-        setTimeout(() => {
-          isScrolling.value = false
-        }, 600)
-      }
-    }
-  }
-
-  // Check if a section should be highlighted
-  function isSectionHighlighted(id: string): boolean {
-    return highlightedSection.value === `#${id}`
-  }
+  // Hash-based tab navigation
+  const { activeHash, isTabActive, handleHashClick, isSectionHighlighted } = useHashNavigation(effectiveTabs)
 
   const searchQuery = computed({
     get: () => props.browse?.searchQuery?.value || '',
@@ -555,21 +453,21 @@
   const hasCalendarSlot = computed(() => !!slots.calendar)
 
   // Data source indicator — resolves entity type slug(s) to a database link + label
-  const dataSourceTypes = computed(() => {
+  const dataSourceTypes = computed<string[]>(() => {
     if (!props.dataSource) return []
     return Array.isArray(props.dataSource) ? props.dataSource : [props.dataSource]
   })
 
   const dataSourceLink = computed(() => {
     const types = dataSourceTypes.value
-    if (types.length === 1) return `/database/${types[0]}`
+    if (types.length === 1 && types[0]) return `/database/${types[0]}`
     return '/database'
   })
 
   const dataSourceLabel = computed(() => {
     const types = dataSourceTypes.value
     if (types.length === 0) return ''
-    if (types.length === 1) return types[0]!
+    if (types.length === 1 && types[0]) return types[0]
     return `${types.length} types`
   })
 
@@ -672,21 +570,22 @@
     if (items.length === 0) return
 
     // Get all keys from the first item as columns
-    const [firstItem] = items
+    const firstItem = items[0]
     if (!firstItem || typeof firstItem !== 'object') return
     const keys = Object.keys(firstItem as Record<string, unknown>)
     const csvContent = [
       keys.join(','),
-      ...items.map((item: Record<string, unknown>) =>
-        keys
+      ...items.map((item) => {
+        const record = item as Record<string, unknown>
+        return keys
           .map((key) => {
-            const val = item[key]
+            const val = record[key]
             if (val === null || val === undefined) return ''
             const str = String(val).replace(/"/g, '""')
             return str.includes(',') || str.includes('"') || str.includes('\n') ? `"${str}"` : str
           })
-          .join(','),
-      ),
+          .join(',')
+      }),
     ].join('\n')
 
     const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' })
@@ -890,20 +789,10 @@
                 v-if="$slots.actions || primaryAction || secondaryAction || tertiaryAction"
                 class="flex items-center gap-2">
                 <slot name="actions">
-                  <template v-for="action in [tertiaryAction, secondaryAction, primaryAction]" :key="action?.label">
-                    <UiButton
-                      v-if="action"
-                      :variant="action.variant || (action === primaryAction ? 'default' : 'outline')"
-                      size="xs"
-                      :disabled="action.disabled"
-                      :loading="action.isLoading"
-                      class="gap-2"
-                      :class="action.variant === 'default' ? 'bg-accent!' : ''"
-                      @click="handleActionClick(action)">
-                      <Icon v-if="action.icon" :name="action.icon" class="h-4 w-4" />
-                      <span>{{ action.label }}</span>
-                    </UiButton>
-                  </template>
+                  <PageActionButtons
+                    :actions="[tertiaryAction, secondaryAction, primaryAction]"
+                    size="xs"
+                    :on-action-click="handleActionClick" />
                 </slot>
               </div>
             </div>
@@ -1071,19 +960,10 @@
                 v-if="$slots.toolbarActions || primaryAction || secondaryAction || tertiaryAction"
                 class="flex items-center gap-2 shrink-0">
                 <slot name="toolbarActions">
-                  <template v-for="action in [tertiaryAction, secondaryAction, primaryAction]" :key="action?.label">
-                    <UiButton
-                      v-if="action"
-                      :variant="action.variant || (action === primaryAction ? 'default' : 'outline')"
-                      size="sm"
-                      :disabled="action.disabled"
-                      :loading="action.isLoading"
-                      class="gap-2"
-                      @click="handleActionClick(action)">
-                      <Icon v-if="action.icon" :name="action.icon" class="h-4 w-4" />
-                      <span>{{ action.label }}</span>
-                    </UiButton>
-                  </template>
+                  <PageActionButtons
+                    :actions="[tertiaryAction, secondaryAction, primaryAction]"
+                    size="sm"
+                    :on-action-click="handleActionClick" />
                 </slot>
               </div>
             </div>

@@ -1,5 +1,6 @@
 import { ENTITY_NAMESPACE } from '~/lib/tql-namespace'
 import type { DataAdapter } from '~/lib/data-adapter'
+import { useSSESubscribe } from './useTrellisSSE'
 
 /**
  * Dynamic Ontology Registry
@@ -304,9 +305,7 @@ function subscribeToSSE(): void {
   if (!import.meta.client) return
   if (_sseCleanup) return // Already subscribed
 
-  const eventSource = new EventSource('/api/graph/events')
-
-  eventSource.addEventListener('mutation', (event) => {
+  _sseCleanup = useSSESubscribe('mutation', (event) => {
     try {
       const data = JSON.parse(event.data)
       if (data.action?.includes('Ontology') || data.type === 'ontology') {
@@ -317,15 +316,6 @@ function subscribeToSSE(): void {
       // Ignore malformed events
     }
   })
-
-  eventSource.onerror = () => {
-    // EventSource auto-reconnects
-  }
-
-  _sseCleanup = () => {
-    eventSource.close()
-    _sseCleanup = null
-  }
 }
 
 /**

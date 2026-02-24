@@ -10,6 +10,8 @@
  * - Realtime SSE connection — auto-refreshes queries when any client mutates
  */
 
+import { useSSESubscribe } from './useTrellisSSE'
+
 type GraphQueryResult = {
   data: Record<string, unknown>[]
   meta?: {
@@ -53,42 +55,24 @@ async function graphFetch<T>(path: string, opts?: { method?: string; body?: Reco
 // Version counter — bumped on every mutation so reactive queries re-fetch
 const _graphVersion = ref(0)
 
-// ── SSE connection (singleton, client-only) ─────────────────────────────
-let _sseConnected = false
+// ── SSE connection (centralized, singleton) ─────────────────────────────
+let _sseInitialized = false
+let _debouncedBump: ReturnType<typeof setTimeout> | null = null
 
 function initSSE() {
-  if (_sseConnected || typeof window === 'undefined' || typeof EventSource === 'undefined') return
-  _sseConnected = true
+  if (_sseInitialized || typeof window === 'undefined') return
+  _sseInitialized = true
 
-  let retryMs = 1000
-  let debouncedBump: ReturnType<typeof setTimeout> | null = null
-
-  function connect() {
-    const es = new EventSource(`${API_BASE}/events`)
-
-    es.addEventListener('mutation', () => {
-      // Debounce rapid-fire mutations (e.g. GCal sync upserting many events)
-      // into a single _graphVersion bump so reactive queries re-fetch once.
-      if (debouncedBump) clearTimeout(debouncedBump)
-      debouncedBump = setTimeout(() => {
-        _graphVersion.value++
-        debouncedBump = null
-      }, 300)
-    })
-
-    es.addEventListener('connected', () => {
-      retryMs = 1000 // Reset backoff on successful connection
-    })
-
-    es.onerror = () => {
-      es.close()
-      // Exponential backoff with cap at 30s
-      setTimeout(connect, retryMs)
-      retryMs = Math.min(retryMs * 2, 30_000)
-    }
-  }
-
-  connect()
+  // Subscribe to mutation events via centralized SSE manager
+  useSSESubscribe('mutation', () => {
+    // Debounce rapid-fire mutations (e.g. GCal sync upserting many events)
+    // into a single _graphVersion bump so reactive queries re-fetch once.
+    if (_debouncedBump) clearTimeout(_debouncedBump)
+    _debouncedBump = setTimeout(() => {
+      _graphVersion.value++
+      _debouncedBump = null
+    }, 300)
+  })
 }
 
 /**

@@ -214,7 +214,7 @@
     subtitle="Settings"
     description="Manage team members, roles, and permissions"
     icon="lucide:users-round">
-    <div class="mx-auto w-full max-w-3xl space-y-6 p-6">
+    <div class="space-y-6">
       <!-- Header row -->
       <div class="flex items-center justify-between">
         <div>

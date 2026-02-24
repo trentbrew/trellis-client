@@ -81,11 +81,8 @@ export function useNotifications() {
   const unreadNotifications = computed(() => notifications.value.filter((n) => !n.isRead))
 
   const notificationBadgeVariant = computed(() => {
-    const unread = unreadNotifications.value
-    if (unread.some((n) => n.variant === 'destructive')) return 'destructive'
-    if (unread.some((n) => n.variant === 'warning')) return 'warning'
-    if (unread.some((n) => n.variant === 'success')) return 'success'
-    return 'default'
+    // Always return 'destructive' to make the badge always red
+    return 'destructive'
   })
 
   // ── Subscription ────────────────────────────────────────────────────

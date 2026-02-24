@@ -65,8 +65,85 @@ export default defineEventHandler(async (event) => {
     }
   }
 
-  // ─── GET /api/graph/ontologies ──────────────────────────────────────
-  if (method === 'GET' && route === 'ontologies') {
+  // ─── GET /api/graph/summary ─────────────────────────────────────────
+  // Compact, deterministic graph overview for AI agents.
+  // Replaces health + schema + catalog for orientation in a single call.
+  if (method === 'GET' && route === 'summary') {
+    const store = kernel.getStore()
+    const limitParam = parseInt((event.node.req.url?.match(/[?&]limit=(\d+)/)?.[1]) || '10')
+    const limit = isNaN(limitParam) ? 10 : limitParam
+
+    // Count facts and links
+    let factCount = 0
+    for (const _ of store.getAllFacts()) factCount++
+    let linkCount = 0
+    for (const _ of store.getAllLinks()) linkCount++
+
+    // Count entities by type
+    const typeCounts: Record<string, number> = {}
+    const entityIds = new Set<string>()
+    for (const fact of store.getAllFacts()) {
+      if (fact.a === 'type' && fact.e.startsWith('entity:')) {
+        typeCounts[String(fact.v)] = (typeCounts[String(fact.v)] || 0) + 1
+        entityIds.add(fact.e)
+      }
+    }
+
+    const entityTypes = Object.entries(typeCounts)
+      .sort((a, b) => b[1] - a[1])
+      .slice(0, limit)
+      .map(([type, count]) => ({ type, count }))
+
+    // Ontologies split by tier
+    const workspace = await kernel.exportWorkspace()
+    const ontologies = workspace.workspace.ontologies || {}
+    const systemOntologies: string[] = []
+    const userOntologies: string[] = []
+    for (const [id, schema] of Object.entries(ontologies as Record<string, any>)) {
+      const shortId = id.replace(/^(trellis:schema\/|core:)/, '')
+      if (schema?.tier === 'user') {
+        userOntologies.push(shortId)
+      } else if (schema?.tier !== 'core') {
+        systemOntologies.push(shortId)
+      }
+    }
+
+    // Top attributes from catalog (skip internal ones)
+    const catalog: Array<{ attribute: string; distinctCount: number; cardinality: string }> = store.getCatalog() || []
+    const SKIP_ATTRS = new Set(['@id', '@type', 'id'])
+    const topAttributes = catalog
+      .filter((c) => !SKIP_ATTRS.has(c.attribute))
+      .sort((a, b) => b.distinctCount - a.distinctCount)
+      .slice(0, limit)
+      .map((c) => ({ attribute: c.attribute, distinctCount: c.distinctCount, cardinality: c.cardinality }))
+
+    // Distinct link relations
+    const relations = new Set<string>()
+    for (const link of store.getAllLinks()) relations.add(link.a)
+
+    // Recent mutations
+    const recentMutations = getMutationLog()
+      .slice()
+      .reverse()
+      .slice(0, 5)
+      .map((m) => ({ action: m.action, entityId: m.entityId, timestamp: m.timestamp }))
+
+    return {
+      health: { status: 'ok', factCount, linkCount, entityCount: entityIds.size },
+      entityTypes,
+      ontologies: {
+        total: Object.keys(ontologies).length,
+        system: systemOntologies,
+        user: userOntologies,
+      },
+      topAttributes,
+      links: { total: linkCount, relations: [...relations] },
+      recentMutations,
+    }
+  }
+
+  // ─── GET /api/graph/ontologies (alias: /api/graph/schema) ──────────
+  if (method === 'GET' && (route === 'ontologies' || route === 'schema')) {
     const workspace = await kernel.exportWorkspace()
     return {
       ontologies: workspace.workspace.ontologies || {},

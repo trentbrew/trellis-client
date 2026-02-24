@@ -28,11 +28,38 @@ const defaultApiUrl = `http://localhost:${process.env.TRELLIS_PORT || '1414'}`
 const BASE_URL = (process.env.TRELLIS_API_URL || defaultApiUrl).replace(/\/$/, '')
 const AGENT_ID = process.env.TRELLIS_AGENT_ID || 'mcp'
 const API = `${BASE_URL}/api/graph`
+const PLATFORM_API = `${BASE_URL}/api/platform`
 
-// ── HTTP helper ─────────────────────────────────────────────────────────────
+// ── HTTP helpers ────────────────────────────────────────────────────────────
 
 async function request(path, options) {
   const url = `${API}/${path}`
+  const res = await fetch(url, {
+    method: options?.method || 'GET',
+    headers: options?.body ? { 'Content-Type': 'application/json' } : undefined,
+    body: options?.body ? JSON.stringify(options.body) : undefined,
+  })
+
+  if (!res.ok) {
+    let message
+    try {
+      const err = await res.json()
+      message = err.message || err.statusMessage || res.statusText
+    } catch {
+      message = res.statusText
+    }
+    throw new Error(`[${res.status}] ${message}`)
+  }
+
+  return res.json()
+}
+
+async function platformRequest(path, options) {
+  let url = `${PLATFORM_API}/${path}`
+  if (options?.query) {
+    const params = new URLSearchParams(options.query)
+    url += `?${params.toString()}`
+  }
   const res = await fetch(url, {
     method: options?.method || 'GET',
     headers: options?.body ? { 'Content-Type': 'application/json' } : undefined,
@@ -190,6 +217,16 @@ const TOOLS = [
     },
   },
   {
+    name: 'get_graph_summary',
+    description: 'Get a compact graph overview in a single call — replaces graph_health + get_schema + get_catalog for agent orientation. Returns: health stats, entity type counts, ontology names by tier, top attributes, link relations, and recent mutations. Call this FIRST before any other operation to understand the current graph state.',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        limit: { type: 'number', description: 'Max items per section (default: 10)' },
+      },
+    },
+  },
+  {
     name: 'graph_health',
     description: 'Check graph health — returns fact count, link count, and status.',
     inputSchema: { type: 'object', properties: {} },
@@ -257,6 +294,357 @@ const TOOLS = [
       required: ['id'],
     },
   },
+
+  // ── Phase 1: Workspace Context ──────────────────────────────────────────
+
+  {
+    name: 'list_orgs',
+    description: 'List all organizations in the platform.',
+    inputSchema: { type: 'object', properties: {} },
+  },
+  {
+    name: 'create_org',
+    description: 'Create a new organization (idempotent by slug).',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        name: { type: 'string', description: 'Organization name' },
+        slug: { type: 'string', description: 'URL-safe slug (auto-generated from name if omitted)' },
+        description: { type: 'string', description: 'Optional description' },
+      },
+      required: ['name'],
+    },
+  },
+  {
+    name: 'get_org',
+    description: 'Get an organization by slug.',
+    inputSchema: {
+      type: 'object',
+      properties: { slug: { type: 'string', description: 'Organization slug' } },
+      required: ['slug'],
+    },
+  },
+  {
+    name: 'list_apps',
+    description: 'List apps/worlds, optionally scoped to an organization.',
+    inputSchema: {
+      type: 'object',
+      properties: { orgId: { type: 'string', description: 'Optional org ID to filter by' } },
+    },
+  },
+  {
+    name: 'create_app',
+    description: 'Create a new app/world (idempotent by slug).',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        name: { type: 'string', description: 'App name' },
+        slug: { type: 'string', description: 'URL-safe slug' },
+        orgId: { type: 'string', description: 'Parent organization ID' },
+        icon: { type: 'string', description: 'Lucide icon name (e.g. "lucide:video")' },
+        color: { type: 'string', description: 'Hex color (e.g. "#8b5cf6")' },
+        ontologies: { type: 'array', items: { type: 'string' }, description: 'Ontology IDs to enable' },
+      },
+      required: ['name'],
+    },
+  },
+  {
+    name: 'update_app',
+    description: 'Update an existing app/world.',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        slug: { type: 'string', description: 'App slug to update' },
+        data: { type: 'object', description: 'Fields to update (name, icon, color, ontologies, etc.)' },
+      },
+      required: ['slug', 'data'],
+    },
+  },
+  {
+    name: 'delete_app',
+    description: 'Delete an app/world.',
+    inputSchema: {
+      type: 'object',
+      properties: { slug: { type: 'string', description: 'App slug to delete' } },
+      required: ['slug'],
+    },
+  },
+  {
+    name: 'get_context',
+    description: 'Get the current workspace context (active org + app).',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        orgId: { type: 'string', description: 'Optional org ID' },
+        appId: { type: 'string', description: 'Optional app ID' },
+      },
+    },
+  },
+
+  // ── Phase 2: Collections & Pages ────────────────────────────────────────
+
+  {
+    name: 'list_collections',
+    description: 'List database collections, optionally scoped to an app.',
+    inputSchema: {
+      type: 'object',
+      properties: { appId: { type: 'string', description: 'Optional app ID to filter by' } },
+    },
+  },
+  {
+    name: 'create_collection',
+    description: 'Create a new database collection (idempotent by slug).',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        name: { type: 'string', description: 'Collection name' },
+        slug: { type: 'string', description: 'URL-safe slug' },
+        appId: { type: 'string', description: 'Parent app ID' },
+        type: { type: 'string', description: 'Collection type (default: "database")' },
+        schema: { type: 'object', description: 'Optional schema definition' },
+      },
+      required: ['name'],
+    },
+  },
+  {
+    name: 'update_collection',
+    description: 'Update a collection.',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        slug: { type: 'string', description: 'Collection slug' },
+        data: { type: 'object', description: 'Fields to update' },
+      },
+      required: ['slug', 'data'],
+    },
+  },
+  {
+    name: 'delete_collection',
+    description: 'Delete a collection.',
+    inputSchema: {
+      type: 'object',
+      properties: { slug: { type: 'string', description: 'Collection slug' } },
+      required: ['slug'],
+    },
+  },
+  {
+    name: 'list_pages',
+    description: 'List custom dashboard pages, optionally scoped to an app.',
+    inputSchema: {
+      type: 'object',
+      properties: { appId: { type: 'string', description: 'Optional app ID to filter by' } },
+    },
+  },
+  {
+    name: 'create_page',
+    description: 'Create a custom dashboard page.',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        title: { type: 'string', description: 'Page title' },
+        appId: { type: 'string', description: 'Parent app ID' },
+        dataSource: { type: 'string', description: 'Entity type slug for data source (e.g. "task")' },
+        layout: { type: 'string', enum: ['grid', 'fullscreen'], description: 'Page layout mode' },
+        defaultProjection: { type: 'string', description: 'Default view (table, kanban, calendar, etc.)' },
+      },
+      required: ['title'],
+    },
+  },
+  {
+    name: 'update_page',
+    description: 'Update a page.',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        id: { type: 'string', description: 'Page ID' },
+        data: { type: 'object', description: 'Fields to update' },
+      },
+      required: ['id', 'data'],
+    },
+  },
+  {
+    name: 'delete_page',
+    description: 'Delete a page.',
+    inputSchema: {
+      type: 'object',
+      properties: { id: { type: 'string', description: 'Page ID' } },
+      required: ['id'],
+    },
+  },
+
+  // ── Phase 3: Entity Enrichment ──────────────────────────────────────────
+
+  {
+    name: 'list_comments',
+    description: 'List comments/activity on an entity.',
+    inputSchema: {
+      type: 'object',
+      properties: { entityId: { type: 'string', description: 'Entity ID to list comments for' } },
+      required: ['entityId'],
+    },
+  },
+  {
+    name: 'add_comment',
+    description: 'Add a comment to an entity.',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        entityId: { type: 'string', description: 'Entity ID to comment on' },
+        content: { type: 'string', description: 'Comment text' },
+        commentType: { type: 'string', enum: ['comment', 'status_change', 'attachment'], description: 'Comment type (default: comment)' },
+      },
+      required: ['entityId', 'content'],
+    },
+  },
+  {
+    name: 'list_tags',
+    description: 'List all tags in the platform.',
+    inputSchema: { type: 'object', properties: {} },
+  },
+  {
+    name: 'create_tag',
+    description: 'Create a tag (idempotent by name).',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        name: { type: 'string', description: 'Tag name' },
+        color: { type: 'string', description: 'CSS color class (e.g. "bg-red-500")' },
+      },
+      required: ['name'],
+    },
+  },
+  {
+    name: 'assign_tags',
+    description: 'Assign one or more tags to an entity. Auto-creates tags that don\'t exist.',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        entityId: { type: 'string', description: 'Entity ID to tag' },
+        tags: { type: 'array', items: { type: 'string' }, description: 'Tag names to assign' },
+      },
+      required: ['entityId', 'tags'],
+    },
+  },
+
+  // ── Phase 4: Bulk & Workflows ───────────────────────────────────────────
+
+  {
+    name: 'bulk_update',
+    description: 'Batch update all entities matching an EQL-S query.',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        query: { type: 'string', description: 'EQL-S query to select entities' },
+        data: { type: 'object', description: 'Fields to set on all matching entities' },
+      },
+      required: ['query', 'data'],
+    },
+  },
+  {
+    name: 'bulk_delete',
+    description: 'Batch delete all entities matching an EQL-S query.',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        query: { type: 'string', description: 'EQL-S query to select entities for deletion' },
+      },
+      required: ['query'],
+    },
+  },
+  {
+    name: 'list_workflows',
+    description: 'List agent workflow graphs, optionally scoped to an app.',
+    inputSchema: {
+      type: 'object',
+      properties: { appId: { type: 'string', description: 'Optional app ID to filter by' } },
+    },
+  },
+  {
+    name: 'create_workflow',
+    description: 'Create an agent workflow graph.',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        name: { type: 'string', description: 'Workflow name' },
+        appId: { type: 'string', description: 'Parent app ID' },
+        trigger: { type: 'object', description: 'Trigger configuration (e.g. {"type":"onCreate","entityType":"task"})' },
+        graph: { type: 'object', description: 'Workflow graph definition (nodes + edges)' },
+      },
+      required: ['name'],
+    },
+  },
+  {
+    name: 'update_workflow',
+    description: 'Update a workflow.',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        id: { type: 'string', description: 'Workflow ID' },
+        data: { type: 'object', description: 'Fields to update' },
+      },
+      required: ['id', 'data'],
+    },
+  },
+  {
+    name: 'delete_workflow',
+    description: 'Delete a workflow.',
+    inputSchema: {
+      type: 'object',
+      properties: { id: { type: 'string', description: 'Workflow ID' } },
+      required: ['id'],
+    },
+  },
+
+  // ── Phase 5: Settings, Files & Invites ──────────────────────────────────
+
+  {
+    name: 'get_setting',
+    description: 'Get a platform setting by key.',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        key: { type: 'string', description: 'Setting key' },
+        scope: { type: 'string', enum: ['app', 'user'], description: 'Setting scope (default: app)' },
+      },
+      required: ['key'],
+    },
+  },
+  {
+    name: 'set_setting',
+    description: 'Set a platform setting value.',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        key: { type: 'string', description: 'Setting key' },
+        value: { description: 'Setting value (any JSON type)' },
+        scope: { type: 'string', enum: ['app', 'user'], description: 'Setting scope (default: app)' },
+      },
+      required: ['key', 'value'],
+    },
+  },
+  {
+    name: 'list_settings',
+    description: 'List all platform settings.',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        scope: { type: 'string', enum: ['app', 'user'], description: 'Setting scope to list (default: app)' },
+      },
+    },
+  },
+  {
+    name: 'send_invite',
+    description: 'Send a workspace invitation email.',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        email: { type: 'string', description: 'Email address to invite' },
+        role: { type: 'string', enum: ['member', 'admin', 'guest'], description: 'Role to assign (default: member)' },
+        orgId: { type: 'string', description: 'Organization ID' },
+      },
+      required: ['email'],
+    },
+  },
 ]
 
 // ── Tool handlers ───────────────────────────────────────────────────────────
@@ -302,6 +690,11 @@ const HANDLERS = {
     }))
   },
 
+  async get_graph_summary({ limit } = {}) {
+    const path = limit ? `summary?limit=${limit}` : 'summary'
+    return ok(await request(path))
+  },
+
   async graph_health() {
     return ok(await request('health'))
   },
@@ -344,12 +737,216 @@ const HANDLERS = {
       body: { agentId: AGENT_ID },
     }))
   },
+
+  // ── Phase 1: Workspace Context ──────────────────────────────────────────
+
+  async list_orgs() {
+    return ok(await platformRequest('org/list'))
+  },
+
+  async create_org({ name, slug, description }) {
+    return ok(await platformRequest('org/create', {
+      method: 'POST',
+      body: { name, slug, description, agentId: AGENT_ID },
+    }))
+  },
+
+  async get_org({ slug }) {
+    return ok(await platformRequest(`org/${slug}`))
+  },
+
+  async list_apps({ orgId } = {}) {
+    const query = orgId ? { orgId } : undefined
+    return ok(await platformRequest('app/list', { query }))
+  },
+
+  async create_app({ name, slug, orgId, icon, color, ontologies }) {
+    return ok(await platformRequest('app/create', {
+      method: 'POST',
+      body: { name, slug, orgId, icon, color, ontologies, agentId: AGENT_ID },
+    }))
+  },
+
+  async update_app({ slug, data }) {
+    return ok(await platformRequest(`app/${slug}`, {
+      method: 'PUT',
+      body: { data, agentId: AGENT_ID },
+    }))
+  },
+
+  async delete_app({ slug }) {
+    return ok(await platformRequest(`app/${slug}`, {
+      method: 'DELETE',
+      body: { agentId: AGENT_ID },
+    }))
+  },
+
+  async get_context({ orgId, appId } = {}) {
+    const query = {}
+    if (orgId) query.orgId = orgId
+    if (appId) query.appId = appId
+    return ok(await platformRequest('context', { query }))
+  },
+
+  // ── Phase 2: Collections & Pages ────────────────────────────────────────
+
+  async list_collections({ appId } = {}) {
+    const query = appId ? { appId } : undefined
+    return ok(await platformRequest('collection/list', { query }))
+  },
+
+  async create_collection({ name, slug, appId, type, schema }) {
+    return ok(await platformRequest('collection/create', {
+      method: 'POST',
+      body: { name, slug, appId, type, schema, agentId: AGENT_ID },
+    }))
+  },
+
+  async update_collection({ slug, data }) {
+    return ok(await platformRequest(`collection/${slug}`, {
+      method: 'PUT',
+      body: { data, agentId: AGENT_ID },
+    }))
+  },
+
+  async delete_collection({ slug }) {
+    return ok(await platformRequest(`collection/${slug}`, {
+      method: 'DELETE',
+      body: { agentId: AGENT_ID },
+    }))
+  },
+
+  async list_pages({ appId } = {}) {
+    const query = appId ? { appId } : undefined
+    return ok(await platformRequest('page/list', { query }))
+  },
+
+  async create_page({ title, appId, dataSource, layout, defaultProjection }) {
+    return ok(await platformRequest('page/create', {
+      method: 'POST',
+      body: { title, appId, dataSource, layout, defaultProjection, agentId: AGENT_ID },
+    }))
+  },
+
+  async update_page({ id, data }) {
+    return ok(await platformRequest(`page/${id}`, {
+      method: 'PUT',
+      body: { data, agentId: AGENT_ID },
+    }))
+  },
+
+  async delete_page({ id }) {
+    return ok(await platformRequest(`page/${id}`, {
+      method: 'DELETE',
+      body: { agentId: AGENT_ID },
+    }))
+  },
+
+  // ── Phase 3: Entity Enrichment ──────────────────────────────────────────
+
+  async list_comments({ entityId }) {
+    return ok(await platformRequest(`comment/list/${entityId}`))
+  },
+
+  async add_comment({ entityId, content, commentType }) {
+    return ok(await platformRequest('comment/add', {
+      method: 'POST',
+      body: { entityId, content, commentType, agentId: AGENT_ID },
+    }))
+  },
+
+  async list_tags() {
+    return ok(await platformRequest('tag/list'))
+  },
+
+  async create_tag({ name, color }) {
+    return ok(await platformRequest('tag/create', {
+      method: 'POST',
+      body: { name, color, agentId: AGENT_ID },
+    }))
+  },
+
+  async assign_tags({ entityId, tags }) {
+    return ok(await platformRequest('tag/assign', {
+      method: 'POST',
+      body: { entityId, tags, agentId: AGENT_ID },
+    }))
+  },
+
+  // ── Phase 4: Bulk & Workflows ───────────────────────────────────────────
+
+  async bulk_update({ query, data }) {
+    return ok(await platformRequest('bulk/update', {
+      method: 'POST',
+      body: { query, data, agentId: AGENT_ID },
+    }))
+  },
+
+  async bulk_delete({ query }) {
+    return ok(await platformRequest('bulk/delete', {
+      method: 'POST',
+      body: { query, agentId: AGENT_ID },
+    }))
+  },
+
+  async list_workflows({ appId } = {}) {
+    const query = appId ? { appId } : undefined
+    return ok(await platformRequest('workflow/list', { query }))
+  },
+
+  async create_workflow({ name, appId, trigger, graph }) {
+    return ok(await platformRequest('workflow/create', {
+      method: 'POST',
+      body: { name, appId, trigger, graph, agentId: AGENT_ID },
+    }))
+  },
+
+  async update_workflow({ id, data }) {
+    return ok(await platformRequest(`workflow/${id}`, {
+      method: 'PUT',
+      body: { data, agentId: AGENT_ID },
+    }))
+  },
+
+  async delete_workflow({ id }) {
+    return ok(await platformRequest(`workflow/${id}`, {
+      method: 'DELETE',
+      body: { agentId: AGENT_ID },
+    }))
+  },
+
+  // ── Phase 5: Settings & Invites ─────────────────────────────────────────
+
+  async get_setting({ key, scope }) {
+    const query = { key }
+    if (scope) query.scope = scope
+    return ok(await platformRequest('setting/get', { query }))
+  },
+
+  async set_setting({ key, value, scope }) {
+    return ok(await platformRequest('setting/set', {
+      method: 'POST',
+      body: { key, value, scope, agentId: AGENT_ID },
+    }))
+  },
+
+  async list_settings({ scope } = {}) {
+    const query = scope ? { scope } : undefined
+    return ok(await platformRequest('setting/list', { query }))
+  },
+
+  async send_invite({ email, role, orgId }) {
+    return ok(await platformRequest('invite/send', {
+      method: 'POST',
+      body: { email, role, orgId, agentId: AGENT_ID },
+    }))
+  },
 }
 
 // ── MCP Server (low-level) ──────────────────────────────────────────────────
 
 const server = new Server(
-  { name: 'trellis-graph', version: '0.1.0' },
+  { name: 'trellis-graph', version: '0.2.0' },
   { capabilities: { tools: {}, resources: {} } },
 )
 
@@ -382,6 +979,12 @@ server.setRequestHandler(ListResourcesRequestSchema, async () => {
         description: 'Complete entity type registry — classes, types, fields, and projections',
         mimeType: 'application/json',
       },
+      {
+        uri: 'trellis://context',
+        name: 'Workspace Context',
+        description: 'Current org and app context',
+        mimeType: 'application/json',
+      },
     ],
   }
 })
@@ -392,6 +995,12 @@ server.setRequestHandler(ReadResourceRequestSchema, async (req) => {
   if (uri === 'trellis://schema/entity-types') {
     return {
       contents: [{ uri, text: JSON.stringify(ENTITY_SCHEMA, null, 2), mimeType: 'application/json' }],
+    }
+  }
+  if (uri === 'trellis://context') {
+    const ctx = await platformRequest('context').catch(() => ({ ok: false }))
+    return {
+      contents: [{ uri, text: JSON.stringify(ctx, null, 2), mimeType: 'application/json' }],
     }
   }
   throw new Error(`Unknown resource: ${uri}`)

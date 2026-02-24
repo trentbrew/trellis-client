@@ -223,14 +223,27 @@ export function useBrowsePage(options: UseBrowsePageOptions): UseBrowsePageRetur
    * The entity exists in the graph from the start so references/links work.
    */
   async function handleNewItem(typeOverride?: string) {
-    const type = (typeOverride || activeType.value) as EntityType
-    const defaults = createDefaultItem(type)
-    const newId = await createItem({ ...defaults, type, title: '' } as Entity)
-    _pendingNewItem.value = { ...defaults, id: newId } as Entity
-    _viewingItemId.value = newId
-    viewOpen.value = true
-    const { setOriginHash } = useDialogUrl()
-    setOriginHash(newId)
+    const { $toast } = useNuxtApp()
+
+    try {
+      const type = (typeOverride || activeType.value) as EntityType
+      const defaults = createDefaultItem(type)
+      const newId = await createItem({ ...defaults, type, title: '' } as Entity)
+      _pendingNewItem.value = { ...defaults, id: newId } as Entity
+      _viewingItemId.value = newId
+      viewOpen.value = true
+      const { setOriginHash } = useDialogUrl()
+      setOriginHash(newId)
+    } catch (error: any) {
+      const message = typeof error?.message === 'string' ? error.message : String(error ?? 'Unknown error')
+      const isTimeout = /transaction timed out|operation[- ]timed[- ]out/i.test(message)
+      console.error('[useBrowsePage] failed to create new item:', error)
+      $toast?.error('Could not create item', {
+        description: isTimeout
+          ? 'InstantDB timed out. Please try again in a moment.'
+          : message,
+      })
+    }
   }
 
   async function handleUpdate(item: Entity) {

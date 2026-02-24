@@ -38,19 +38,12 @@
   const hasLoggedInstantAuth = useState<boolean>('debug:instantAuthLogged', () => false)
 
   // Global adjacent sidebar state
-  const { setRightSidebarWidth, isRightSidebarOpen } = useRightSidebarWidth()
+  const { setRightSidebarWidth, isRightSidebarOpen, toggleRightSidebar } = useRightSidebarWidth()
   const rightSidebarWidth = ref(320)
   const isResizingRightSidebar = ref(false)
   const MIN_RIGHT_SIDEBAR_WIDTH = 200
   const MAX_RIGHT_SIDEBAR_WIDTH = 600
 
-  // Right sidebar tabs
-  const activeSidebarTab = ref<'schedule' | 'messages' | 'agent'>('schedule')
-  const sidebarTabs = [
-    { id: 'schedule', label: 'Schedule', icon: 'lucide:calendar' },
-    { id: 'messages', label: 'Messages', icon: 'lucide:message-square' },
-    { id: 'agent', label: 'Agent', icon: 'lucide:bot' },
-  ] as const
 
   const startRightSidebarResize = (e: MouseEvent) => {
     isResizingRightSidebar.value = true
@@ -230,22 +223,22 @@
 
       <!-- Layout Mode A: Header above sidebar (spans sidebar + content) -->
       <template v-if="headerAboveSidebar">
-        <div class="flex flex-1 flex-col min-w-0 overflow-hidden">
+        <div class="flex flex-1 flex-col min-w-0 overflow-hidden ">
           <AppHeader :above-sidebar="true" />
-          <div class="flex flex-1 min-h-0 overflow-hidden p-2.5 pt-0 rounded-xl">
-            <div class="flex flex-1 min-h-0 overflow-hidden bg-transparent rounded-lg">
+          <div class="flex flex-1 min-h-0 overflow-hidden p-4 pt-0 rounded-xl bg-transparent">
+            <div class="flex flex-1 min-h-0 overflow-hidden rounded-xl border bg-card/50">
               <!-- Left rail (default) -->
               <IconRail
                 v-if="showIconRail && !railAtBottom"
                 position="left"
-                class="bg-card/60! mr-0 border-l border-b border-t rounded-l-xl rounded-lg !rounded-r-none border-r-none!" />
-              <div class="bg-card/75! border flex flex-1 min-w-0 overflow-hidden rounded-xl rounded-l-none flex-col">
+                class="bg-transparent mr-0 border-l border-b border-t rounded-l-xl rounded-lg !rounded-r-none border-r-none!" />
+              <div class="bg-transparent  flex flex-1 min-w-0 overflow-hidden rounded-md! flex-col">
                 <div class="flex flex-1 min-h-0 overflow-hidden">
-                  <AppSidebar v-if="showSidebar" :header-above="true" class="bg-background/0 rounded-l-xl" />
+                  <AppSidebar v-if="showSidebar" :header-above="true" class="bg-transparent rounded-xl" />
                   <div class="flex flex-1 flex-col min-w-0 overflow-hidden p-2.5" :class="showSidebar ? 'pl-0' : 'pl-2.5'">
                     <main
                       ref="pageEl"
-                      class="page-transition-wrapper bg-card/75 rounded-lg flex-1 overflow-y-auto p-0 border relative"
+                      class="page-transition-wrapper bg-card/50 rounded-lg flex-1 overflow-y-auto p-0 border relative"
                       aria-label="Main content">
                       <slot />
                     </main>
@@ -259,7 +252,7 @@
             <IconRail
               v-if="showIconRail && railAtBottom"
               position="bottom"
-              class="bg-card/0 border border-border/0 rounded-xl shrink-0" />
+              class="bg-transparent border border-border/0 rounded-xl shrink-0" />
           </div>
         </div>
       </template>
@@ -276,7 +269,7 @@
           <div class="flex flex-1 min-h-0 overflow-hidden">
             <main
               ref="pageEl"
-              class="page-transition-wrapper bg-transparent flex-1 overflow-y-auto p-0 relative"
+              class="page-transition-wrapper bg-surface-2 flex-1 overflow-y-auto p-0 relative"
               aria-label="Main content">
               <slot />
             </main>
@@ -302,7 +295,7 @@
           :style="{ width: `${rightSidebarWidth}px` }">
           <aside
             data-slot="right-sidebar"
-            class="h-full border border-border/75 bg-card/75 rounded-xl shrink-0 overflow-hidden flex flex-col "
+            class="h-full border border-border/75 rounded-xl shrink-0 overflow-hidden flex flex-col "
             :class="{ 'select-none': isResizingRightSidebar }"
             aria-label="Right sidebar">
             <!-- Drag handle -->
@@ -310,32 +303,8 @@
               class="absolute left-0 top-0 bottom-0 w-1 cursor-col-resize hover:bg-primary/30 active:bg-primary/50 transition-colors z-10"
               @mousedown.prevent="startRightSidebarResize"
             />
-            <!-- Tabs Header - matches AppHeader h-14 height -->
-            <div class="h-14 shrink-0 border-b border-border bg-card/50 flex items-center px-2 rounded-t-xl">
-              <UiTabs v-model="activeSidebarTab" class="w-full">
-                <UiTabsList class="w-full grid grid-cols-3 bg-transparent p-0 gap-1">
-                  <UiTabsTrigger
-                    v-for="tab in sidebarTabs"
-                    :key="tab.id"
-                    :value="tab.id"
-                    class="flex items-center justify-center gap-1.5 py-2 text-xs font-medium data-[state=active]:bg-background data-[state=active]:shadow-sm rounded-md transition-all">
-                    <Icon :name="tab.icon" class="h-3.5 w-3.5" />
-                    <span>{{ tab.label }}</span>
-                  </UiTabsTrigger>
-                </UiTabsList>
-              </UiTabs>
-            </div>
-            <div class="p-4 flex-1 overflow-y-auto">
-              <!-- Tab Content -->
-              <div v-if="activeSidebarTab === 'schedule'">
-                <slot name="right-sidebar" />
-              </div>
-              <div v-else-if="activeSidebarTab === 'messages'" class="text-sm text-muted-foreground text-center py-8">
-                Messages coming soon
-              </div>
-              <div v-else-if="activeSidebarTab === 'agent'" class="text-sm text-muted-foreground text-center py-8">
-                Agent coming soon
-              </div>
+            <div class="flex-1 overflow-hidden">
+              <AgentPanel />
             </div>
           </aside>
         </div>
@@ -350,6 +319,27 @@
         :style="{ width: `${rightSidebarWidth}px` }"
       />
     </Transition>
+
+    <!-- Fixed Bottom-Right Sidebar Trigger -->
+    <Teleport to="body">
+      <div
+        class="fixed right-4 z-9999 flex items-center gap-2 transition-all duration-250"
+        :class="isRightSidebarOpen ? 'bottom-[72px]' : 'bottom-2.5'">
+        <!-- Right Sidebar Toggle Button -->
+        <UiButton
+          size="icon"
+          variant="outline"
+          class="h-10 w-10 rounded-full shadow-lg border-border/75 bg-card/95 backdrop-blur-sm hover:bg-card transition-all"
+          :class="{ 'bg-primary/10 border-primary/50': isRightSidebarOpen }"
+          @click="toggleRightSidebar">
+          <Icon
+            :name="isRightSidebarOpen ? 'lucide:panel-right-close' : 'lucide:panel-right-open'"
+            class="h-4 w-4"
+            :class="{ 'text-primary': isRightSidebarOpen }" />
+          <span class="sr-only">{{ isRightSidebarOpen ? 'Close' : 'Open' }} right sidebar</span>
+        </UiButton>
+      </div>
+    </Teleport>
   </div>
 </template>
 

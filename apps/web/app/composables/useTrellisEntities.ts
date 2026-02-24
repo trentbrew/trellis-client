@@ -263,6 +263,36 @@ export function useTrellisEntities() {
 
   // ── CRUD: Adapter backend (cloud mode) ──────────────────────────────
 
+  function isInstantTimeoutError(error: unknown): boolean {
+    const e = error as Record<string, any> | null
+    const message = typeof e?.message === 'string' ? e.message : String(error ?? '')
+    const type = typeof e?.type === 'string' ? e.type : ''
+    const bodyType = typeof e?.body?.type === 'string' ? e.body.type : ''
+    return /transaction timed out|operation[- ]timed[- ]out/i.test(`${message} ${type} ${bodyType}`)
+  }
+
+  async function transactWithRetry(chunks: any[], context: string, retries = 2) {
+    let attempt = 0
+
+    while (true) {
+      try {
+        await adapter.transact(chunks)
+        return
+      } catch (error) {
+        if (!isInstantTimeoutError(error) || attempt >= retries) {
+          throw error
+        }
+
+        const delayMs = 250 * (attempt + 1)
+        console.warn(
+          `[useTrellisEntities] ${context} timed out (attempt ${attempt + 1}/${retries + 1}); retrying in ${delayMs}ms`,
+        )
+        await new Promise((resolve) => setTimeout(resolve, delayMs))
+        attempt += 1
+      }
+    }
+  }
+
   async function createViaAdapter(item: Partial<Entity> & { type: EntityType; title: string }) {
     const currentOrg = useState<any>('currentOrg')
     const itemId = crypto.randomUUID()
@@ -286,8 +316,10 @@ export function useTrellisEntities() {
     // because InstantDB evaluates permissions against pre-transaction state.
     // If create + link are batched together, the entity doesn't exist yet when
     // the link's update permission is checked, causing isOwner to fail.
-    await adapter.transact([
-      adapter.tx.entities[itemId].create({
+    // Use update (upsert) for idempotency so retrying the same ID after a
+    // transient timeout converges cleanly instead of failing duplicate-creates.
+    await transactWithRetry([
+      adapter.tx.entities[itemId].update({
         ...toAdapterPayload(bookmarkUrlToAdapter(data as Record<string, any>)),
         references: outgoingRefs.length ? toAdapterPayload(outgoingRefs) : null,
         ownerId,
@@ -302,14 +334,14 @@ export function useTrellisEntities() {
         createdAt: now,
         updatedAt: now,
       }),
-    ])
+    ], `create entity ${itemId}`)
 
     // Step 2: Link entity to the org so CEL permission rules can traverse the
     // link for isOrgMember checks. Now that the entity exists, isOwner passes.
     if (orgId) {
-      await adapter.transact([
+      await transactWithRetry([
         adapter.tx.entities[itemId].link({ organization: orgId }),
-      ])
+      ], `link entity ${itemId} to org ${orgId}`)
     }
 
     return itemId
@@ -335,7 +367,7 @@ export function useTrellisEntities() {
       involved.push(currentUserId)
     }
 
-    await adapter.transact([
+    await transactWithRetry([
       adapter.tx.entities[itemId].update({
         ...toAdapterPayload(bookmarkUrlToAdapter(fields as Record<string, any>)),
         references: outgoingRefs.length ? toAdapterPayload(outgoingRefs) : null,
@@ -345,13 +377,13 @@ export function useTrellisEntities() {
         endDate: extractYmd((fields as any).endDate) || undefined,
         updatedAt: Date.now(),
       }),
-    ])
+    ], `update entity ${itemId}`)
   }
 
   async function removeViaAdapter(itemId: string) {
-    await adapter.transact([
+    await transactWithRetry([
       adapter.tx.entities[itemId].delete(),
-    ])
+    ], `delete entity ${itemId}`)
   }
 
   // ── CRUD: TQL backend (local mode) ──────────────────────────────────

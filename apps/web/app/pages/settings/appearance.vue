@@ -1,7 +1,7 @@
 <script setup lang="ts">
   const { $colorMode: colorMode } = useNuxtApp()
   const { animationsEnabled, setAnimationsEnabled } = useAnimationSettings()
-  const { headerAboveSidebar, setHeaderAboveSidebar, iconRailPosition, setIconRailPosition, toolbarMode, setToolbarMode } = useLayoutPreferences()
+  const { headerAboveSidebar, setHeaderAboveSidebar, iconRailPosition, setIconRailPosition, toolbarMode, setToolbarMode, showRecentPages, setShowRecentPages } = useLayoutPreferences()
   const go = (to: string) => navigateTo(to)
 
   const isDark = computed({
@@ -25,6 +25,11 @@
   const headerAbove = computed({
     get: () => headerAboveSidebar.value,
     set: (checked) => setHeaderAboveSidebar(checked),
+  })
+
+  const recentPagesOn = computed({
+    get: () => showRecentPages.value,
+    set: (checked) => setShowRecentPages(checked),
   })
 </script>
 
@@ -127,6 +132,55 @@
                   </div>
                 </div>
                 <UiSwitch :model-value="true" disabled />
+              </div>
+            </UiCardContent>
+          </UiCard>
+        </template>
+      </ClientOnly>
+
+      <!-- Recent Pages Strip Toggle -->
+      <ClientOnly>
+        <UiCard>
+          <UiCardHeader>
+            <UiCardTitle>Recent Pages Strip</UiCardTitle>
+            <UiCardDescription>Show a horizontal strip of recently visited pages for quick switching.</UiCardDescription>
+          </UiCardHeader>
+          <UiCardContent>
+            <div class="border-border bg-card flex items-center justify-between rounded-xl border px-4 py-3 shadow-sm">
+              <div class="flex items-center gap-3">
+                <div class="bg-primary/10 flex size-9 items-center justify-center rounded-lg">
+                  <Icon :name="recentPagesOn ? 'lucide:layers' : 'lucide:file-text'" class="text-primary size-4" />
+                </div>
+                <div>
+                  <p class="text-foreground text-sm font-semibold">Show recent pages</p>
+                  <p class="text-muted-foreground text-xs">
+                    {{ recentPagesOn ? 'Strip visible when multiple pages visited' : 'Strip hidden' }}
+                  </p>
+                </div>
+              </div>
+              <UiSwitch v-model="recentPagesOn" />
+            </div>
+          </UiCardContent>
+        </UiCard>
+        <template #fallback>
+          <UiCard>
+            <UiCardHeader>
+              <UiCardTitle>Recent Pages Strip</UiCardTitle>
+              <UiCardDescription>Show a horizontal strip of recently visited pages for quick switching.</UiCardDescription>
+            </UiCardHeader>
+            <UiCardContent>
+              <div
+                class="border-border bg-card flex items-center justify-between rounded-xl border px-4 py-3 shadow-sm">
+                <div class="flex items-center gap-3">
+                  <div class="bg-primary/10 flex size-9 items-center justify-center rounded-lg">
+                    <Icon name="lucide:file-text" class="text-primary size-4" />
+                  </div>
+                  <div>
+                    <p class="text-foreground text-sm font-semibold">Show recent pages</p>
+                    <p class="text-muted-foreground text-xs">Loading...</p>
+                  </div>
+                </div>
+                <UiSwitch :model-value="false" disabled />
               </div>
             </UiCardContent>
           </UiCard>

@@ -54,6 +54,12 @@ export class TrellisClient {
 
   // ── Queries ──────────────────────────────────────────────────────────
 
+  /** Get a compact graph summary — health, entity types, ontologies, top attributes, recent mutations. */
+  async summary(limit) {
+    const path = limit ? `summary?limit=${limit}` : 'summary'
+    return this.#request(path)
+  }
+
   /** Execute an EQL-S query. */
   async query(eqls) {
     return this.#request('query', { method: 'POST', body: { query: eqls } })
@@ -175,6 +181,292 @@ export class TrellisClient {
     return this.#request(`ontology/${id}`, {
       method: 'DELETE',
       body: { agentId: this.#agentId },
+    })
+  }
+
+  // ── Platform API Base ────────────────────────────────────────────────
+
+  get platformBase() {
+    return `${this.#baseUrl}/api/platform`
+  }
+
+  /**
+   * @template T
+   * @param {string} path
+   * @param {{ method?: string, body?: Record<string, any>, query?: Record<string, string> }} [options]
+   * @returns {Promise<T>}
+   */
+  async #platformRequest(path, options) {
+    let url = `${this.platformBase}/${path}`
+    if (options?.query) {
+      const params = new URLSearchParams(options.query)
+      url += `?${params.toString()}`
+    }
+    const res = await fetch(url, {
+      method: options?.method || 'GET',
+      headers: options?.body ? { 'Content-Type': 'application/json' } : undefined,
+      body: options?.body ? JSON.stringify(options.body) : undefined,
+    })
+
+    if (!res.ok) {
+      let message
+      try {
+        const err = await res.json()
+        message = err.message || err.statusMessage || res.statusText
+      } catch {
+        message = res.statusText
+      }
+      throw new Error(`[${res.status}] ${message}`)
+    }
+
+    return res.json()
+  }
+
+  // ── Phase 1: Org / App / Context ───────────────────────────────────
+
+  /** List all organizations. */
+  async listOrgs() {
+    return this.#platformRequest('org/list')
+  }
+
+  /** Create an organization (idempotent by slug). */
+  async createOrg(name, slug, description) {
+    return this.#platformRequest('org/create', {
+      method: 'POST',
+      body: { name, slug, description, agentId: this.#agentId },
+    })
+  }
+
+  /** Get an organization by slug or ID. */
+  async getOrg(id) {
+    return this.#platformRequest(`org/${id}`)
+  }
+
+  /** List apps, optionally scoped by orgId. */
+  async listApps(orgId) {
+    const query = orgId ? { orgId } : undefined
+    return this.#platformRequest('app/list', { query })
+  }
+
+  /** Create an app/world (idempotent by slug). */
+  async createApp(data) {
+    return this.#platformRequest('app/create', {
+      method: 'POST',
+      body: { ...data, agentId: this.#agentId },
+    })
+  }
+
+  /** Get an app by slug or ID. */
+  async getApp(id) {
+    return this.#platformRequest(`app/${id}`)
+  }
+
+  /** Update an app. */
+  async updateApp(id, data) {
+    return this.#platformRequest(`app/${id}`, {
+      method: 'PUT',
+      body: { data, agentId: this.#agentId },
+    })
+  }
+
+  /** Delete an app. */
+  async deleteApp(id) {
+    return this.#platformRequest(`app/${id}`, {
+      method: 'DELETE',
+      body: { agentId: this.#agentId },
+    })
+  }
+
+  /** Get current workspace context. */
+  async getContext(orgId, appId) {
+    const query = {}
+    if (orgId) query.orgId = orgId
+    if (appId) query.appId = appId
+    return this.#platformRequest('context', { query })
+  }
+
+  // ── Phase 2: Collections & Pages ───────────────────────────────────
+
+  /** List collections, optionally scoped by appId. */
+  async listCollections(appId) {
+    const query = appId ? { appId } : undefined
+    return this.#platformRequest('collection/list', { query })
+  }
+
+  /** Create a collection (idempotent by slug). */
+  async createCollection(data) {
+    return this.#platformRequest('collection/create', {
+      method: 'POST',
+      body: { ...data, agentId: this.#agentId },
+    })
+  }
+
+  /** Update a collection. */
+  async updateCollection(id, data) {
+    return this.#platformRequest(`collection/${id}`, {
+      method: 'PUT',
+      body: { data, agentId: this.#agentId },
+    })
+  }
+
+  /** Delete a collection. */
+  async deleteCollection(id) {
+    return this.#platformRequest(`collection/${id}`, {
+      method: 'DELETE',
+      body: { agentId: this.#agentId },
+    })
+  }
+
+  /** List pages, optionally scoped by appId. */
+  async listPages(appId) {
+    const query = appId ? { appId } : undefined
+    return this.#platformRequest('page/list', { query })
+  }
+
+  /** Create a page. */
+  async createPage(data) {
+    return this.#platformRequest('page/create', {
+      method: 'POST',
+      body: { ...data, agentId: this.#agentId },
+    })
+  }
+
+  /** Update a page. */
+  async updatePage(id, data) {
+    return this.#platformRequest(`page/${id}`, {
+      method: 'PUT',
+      body: { data, agentId: this.#agentId },
+    })
+  }
+
+  /** Delete a page. */
+  async deletePage(id) {
+    return this.#platformRequest(`page/${id}`, {
+      method: 'DELETE',
+      body: { agentId: this.#agentId },
+    })
+  }
+
+  // ── Phase 3: Comments & Tags ───────────────────────────────────────
+
+  /** List comments on an entity. */
+  async listComments(entityId) {
+    return this.#platformRequest(`comment/list/${entityId}`)
+  }
+
+  /** Add a comment to an entity. */
+  async addComment(entityId, content, options) {
+    return this.#platformRequest('comment/add', {
+      method: 'POST',
+      body: { entityId, content, ...options, agentId: this.#agentId },
+    })
+  }
+
+  /** List all tags. */
+  async listTags() {
+    return this.#platformRequest('tag/list')
+  }
+
+  /** Create a tag (idempotent by name). */
+  async createTag(name, color, description) {
+    return this.#platformRequest('tag/create', {
+      method: 'POST',
+      body: { name, color, description, agentId: this.#agentId },
+    })
+  }
+
+  /** Assign tags to an entity. */
+  async assignTags(entityId, tags) {
+    return this.#platformRequest('tag/assign', {
+      method: 'POST',
+      body: { entityId, tags, agentId: this.#agentId },
+    })
+  }
+
+  // ── Phase 4: Bulk & Workflows ──────────────────────────────────────
+
+  /** Bulk update entities matching an EQL-S query. */
+  async bulkUpdate(eqls, data) {
+    return this.#platformRequest('bulk/update', {
+      method: 'POST',
+      body: { query: eqls, data, agentId: this.#agentId },
+    })
+  }
+
+  /** Bulk delete entities matching an EQL-S query. */
+  async bulkDelete(eqls) {
+    return this.#platformRequest('bulk/delete', {
+      method: 'POST',
+      body: { query: eqls, agentId: this.#agentId },
+    })
+  }
+
+  /** List workflows, optionally scoped by appId. */
+  async listWorkflows(appId) {
+    const query = appId ? { appId } : undefined
+    return this.#platformRequest('workflow/list', { query })
+  }
+
+  /** Create a workflow. */
+  async createWorkflow(data) {
+    return this.#platformRequest('workflow/create', {
+      method: 'POST',
+      body: { ...data, agentId: this.#agentId },
+    })
+  }
+
+  /** Update a workflow. */
+  async updateWorkflow(id, data) {
+    return this.#platformRequest(`workflow/${id}`, {
+      method: 'PUT',
+      body: { data, agentId: this.#agentId },
+    })
+  }
+
+  /** Delete a workflow. */
+  async deleteWorkflow(id) {
+    return this.#platformRequest(`workflow/${id}`, {
+      method: 'DELETE',
+      body: { agentId: this.#agentId },
+    })
+  }
+
+  // ── Phase 5: Settings, Files & Invites ─────────────────────────────
+
+  /** Get a setting by key. */
+  async getSetting(key, scope) {
+    const query = { key }
+    if (scope) query.scope = scope
+    return this.#platformRequest('setting/get', { query })
+  }
+
+  /** Set a setting value. */
+  async setSetting(key, value, scope) {
+    return this.#platformRequest('setting/set', {
+      method: 'POST',
+      body: { key, value, scope, agentId: this.#agentId },
+    })
+  }
+
+  /** List settings. */
+  async listSettings(scope) {
+    const query = scope ? { scope } : undefined
+    return this.#platformRequest('setting/list', { query })
+  }
+
+  /** Upload a file (base64-encoded). */
+  async uploadFile(fileBase64, filename, options) {
+    return this.#platformRequest('file/upload', {
+      method: 'POST',
+      body: { fileBase64, filename, ...options, agentId: this.#agentId },
+    })
+  }
+
+  /** Send an invite. */
+  async sendInvite(email, options) {
+    return this.#platformRequest('invite/send', {
+      method: 'POST',
+      body: { email, ...options, agentId: this.#agentId },
     })
   }
 

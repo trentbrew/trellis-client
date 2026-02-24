@@ -8,9 +8,7 @@ import { createDefaultItem } from '~/types/entity'
  * Mirrors the folder-tree pattern from useChannels (used by ChatSidebar).
  */
 export function usePageNotes() {
-  const { items: allItems, create, update, remove } = useTrellisEntities()
-
-  const loading = useState<boolean>('pageNotes:loading', () => false)
+  const { items: allItems, loading, create, update, remove } = useTrellisEntities()
 
   // Shared live title for the currently-open page (updated on every keystroke)
   const livePageTitle = useState<{ id: string; title: string } | null>('pageNotes:liveTitle', () => null)

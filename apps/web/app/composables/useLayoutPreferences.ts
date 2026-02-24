@@ -12,6 +12,7 @@ export const useLayoutPreferences = () => {
   const headerAboveSidebar = useState<boolean>('layout:headerAboveSidebar', () => true)
   const iconRailPosition = useState<IconRailPosition>('layout:iconRailPosition', () => 'bottom')
   const toolbarMode = useState<ToolbarMode>('layout:toolbarMode', () => 'floating')
+  const showRecentPages = useState<boolean>('layout:showRecentPages', () => false)
 
   // Load from localStorage on client
   if (import.meta.client) {
@@ -22,6 +23,7 @@ export const useLayoutPreferences = () => {
         headerAboveSidebar.value = parsed.headerAboveSidebar ?? true
         iconRailPosition.value = parsed.iconRailPosition ?? 'bottom'
         toolbarMode.value = parsed.toolbarMode ?? 'floating'
+        showRecentPages.value = parsed.showRecentPages ?? false
       } catch {
         // Invalid JSON, use default
       }
@@ -36,6 +38,7 @@ export const useLayoutPreferences = () => {
           headerAboveSidebar: headerAboveSidebar.value,
           iconRailPosition: iconRailPosition.value,
           toolbarMode: toolbarMode.value,
+          showRecentPages: showRecentPages.value,
         }),
       )
     }
@@ -60,6 +63,11 @@ export const useLayoutPreferences = () => {
     _persist()
   }
 
+  const setShowRecentPages = (enabled: boolean) => {
+    showRecentPages.value = enabled
+    _persist()
+  }
+
   return {
     headerAboveSidebar: readonly(headerAboveSidebar),
     setHeaderAboveSidebar,
@@ -68,5 +76,7 @@ export const useLayoutPreferences = () => {
     setIconRailPosition,
     toolbarMode: readonly(toolbarMode),
     setToolbarMode,
+    showRecentPages: readonly(showRecentPages),
+    setShowRecentPages,
   }
 }

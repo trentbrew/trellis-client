@@ -42,50 +42,76 @@ export function usePages() {
       subscriptionStarted.value = true
 
       let unsubPages: (() => void) | null = null
-      watch(
-        currentApp,
-        (app) => {
-          if (unsubPages) {
-            unsubPages()
-            unsubPages = null
-          }
 
-          if (!app) {
-            pages.value = []
-            pagesLoading.value = false
-            return
-          }
+      const setupSubscription = (app: any) => {
+        if (unsubPages) {
+          unsubPages()
+          unsubPages = null
+        }
 
-          pagesLoading.value = true
-          const settingKey = `app:${app.id}:pages`
-          unsubPages = db.subscribeQuery(
-            {
-              settings: {
-                $: {
-                  where: {
-                    settingKey,
-                  },
+        if (!app) {
+          if (import.meta.dev) console.log('[usePages] No app set, clearing pages')
+          pages.value = []
+          pagesLoading.value = false
+          return
+        }
+
+        pagesLoading.value = true
+        const settingKey = `app:${app.id}:pages`
+        if (import.meta.dev) console.log('[usePages] Setting up subscription for', settingKey)
+
+        unsubPages = db.subscribeQuery(
+          {
+            settings: {
+              $: {
+                where: {
+                  settingKey,
                 },
               },
             },
-            (result: any) => {
-              const raw = (result.data as any)?.settings?.[0]?.value
-              const items = Array.isArray(raw) ? (raw as PageConfig[]) : []
-              pages.value = items.sort((a, b) => (a.order ?? 999) - (b.order ?? 999))
-              pagesLoading.value = false
-            },
-          )
+          },
+          (result: any) => {
+            const raw = (result.data as any)?.settings?.[0]?.value
+            const items = Array.isArray(raw) ? (raw as PageConfig[]) : []
+            if (import.meta.dev) {
+              console.log('[usePages] Subscription fired, received', items.length, 'pages')
+            }
+            pages.value = items.sort((a, b) => (a.order ?? 999) - (b.order ?? 999))
+            pagesLoading.value = false
+          },
+        )
+      }
+
+      // Eager initialization: if currentApp is already set, subscribe immediately
+      if (currentApp.value) {
+        if (import.meta.dev) console.log('[usePages] Eager init: currentApp already set')
+        setupSubscription(currentApp.value)
+      }
+
+      // Watch for changes to currentApp
+      watch(
+        currentApp,
+        (app) => {
+          if (import.meta.dev) console.log('[usePages] currentApp changed:', app?.id || 'null')
+          setupSubscription(app)
         },
-        { immediate: true },
+        { immediate: false }, // Already handled by eager init above
       )
     }
   }
 
   const _persistPages = async (updatedPages: PageConfig[]) => {
     const app = currentApp.value
-    if (!app) return
+    if (!app) {
+      console.warn('[usePages] Cannot persist pages: no currentApp')
+      return
+    }
 
     const settingKey = `app:${app.id}:pages`
+    if (import.meta.dev) {
+      console.log('[usePages] Persisting', updatedPages.length, 'pages to', settingKey)
+    }
+
     const resp = await db.queryOnce({
       settings: {
         $: {
@@ -110,6 +136,7 @@ export function usePages() {
           updatedAt: now,
         }),
       ])
+      if (import.meta.dev) console.log('[usePages] Updated existing settings record', existing.id)
     } else {
       const id = crypto.randomUUID()
       await db.transact([
@@ -122,6 +149,7 @@ export function usePages() {
           updatedAt: now,
         }),
       ])
+      if (import.meta.dev) console.log('[usePages] Created new settings record', id)
     }
   }
 
