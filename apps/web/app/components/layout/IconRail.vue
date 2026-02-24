@@ -22,7 +22,7 @@
     :class="[
       'flex items-center relative',
       isBottom
-        ? 'flex-row w-full h-12 px-2 py-0 border-t-none'
+        ? 'flex-row w-full h-8 px-2 py-0 border-t-none'
         : 'flex-col w-16 px-2 py-0 pb-2 border-r-none',
     ]"
     aria-label="Navigation rail">
@@ -94,7 +94,7 @@
     <div class="flex-1" />
 
     <!-- Quick Capture -->
-    <div :class="['flex gap-1.5', isBottom ? 'flex-row px-1 items-center' : 'flex-col pb-1 items-center']">
+    <div class="mr-12" :class="['flex gap-1.5', isBottom ? 'flex-row px-1 items-center' : 'flex-col pb-1 items-center']">
       <QuickCapturePopover :position="props.position" />
     </div>
 

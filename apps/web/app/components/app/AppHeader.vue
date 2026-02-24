@@ -202,7 +202,7 @@
       </div>
     </div>
 
-      <span class="text-muted-foreground/50 mr-3 ml-1 rotate-10 text-lg">
+      <span class="text-muted-foreground/30 mr-3 ml-1 rotate-10 text-lg">
         /
       </span>
 
@@ -211,7 +211,7 @@
         <OrganizationPicker />
       </ClientOnly>
 
-      <span class="text-muted-foreground/50 mx-3 rotate-10 text-lg">
+      <span class="text-muted-foreground/30 mx-3 rotate-10 text-lg">
         /
       </span>
 

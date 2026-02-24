@@ -1,3 +1,28 @@
+# Trellis
+
+A personal knowledge graph platform with full AI agent integration.
+
+## Quick Start
+
+### MCP Setup for AI Assistants
+
+Connect your AI coding assistant to Trellis in one command:
+
+```bash
+pnpm setup:mcp claude    # or: windsurf, cursor, continue
+just setup-mcp claude    # alternative using justfile
+```
+
+See [`SETUP.md`](./SETUP.md) for detailed instructions.
+
+### Development
+
+```bash
+just dev    # Start dev server on port 1414
+```
+
+---
+
 # TQL Hooks + Context Graph: Project Brain
 
 Establish TQL as the project's decision trace / context graph — a shared knowledge base for agent and developer — by fixing the broken hook imports, creating a portable JSONL backend, upgrading archive responses to JSON-LD, and adding self-healing capabilities.

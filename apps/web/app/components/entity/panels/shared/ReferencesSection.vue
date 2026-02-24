@@ -45,8 +45,6 @@
     references.value.filter((r) => isEntityReference(r) && r.direction === 'incoming'),
   )
 
-  const hasAnyRefs = computed(() => outgoingRefs.value.length > 0 || incomingRefs.value.length > 0)
-
   const removeRef = (id: string) => {
     emit('removeRef', id)
   }
@@ -147,8 +145,8 @@
     <!-- Header with add button -->
     <div class="flex items-center justify-between">
       <p class="text-xs font-medium text-muted-foreground uppercase tracking-wide">References</p>
-      <!-- "+" dropdown (shown when refs exist and not readonly) -->
-      <UiDropdownMenu v-if="!readonly && hasAnyRefs">
+      <!-- "+" dropdown (always shown when not readonly) -->
+      <UiDropdownMenu v-if="!readonly">
         <UiDropdownMenuTrigger as-child>
           <button
             class="h-5 w-5 rounded flex items-center justify-center hover:bg-muted text-muted-foreground hover:text-foreground transition-colors"
@@ -174,24 +172,6 @@
           </UiDropdownMenuItem>
         </UiDropdownMenuContent>
       </UiDropdownMenu>
-    </div>
-
-    <!-- Quick-add pills (only shown when NO refs exist and not readonly) -->
-    <div v-if="!readonly && !hasAnyRefs" class="flex flex-wrap items-center gap-1.5">
-      <button
-        v-for="opt in availableEntityTypes"
-        :key="opt.type"
-        class="inline-flex items-center gap-1 px-2 py-1 rounded-md text-[11px] font-medium border border-dashed border-border text-muted-foreground hover:text-foreground hover:border-foreground/30 hover:bg-muted/50 transition-colors"
-        @click="emit('addEntityOfType', opt.type)">
-        <Icon :name="opt.icon" class="h-3 w-3" />
-        {{ opt.label }}
-      </button>
-      <button
-        class="inline-flex items-center gap-1 px-2 py-1 rounded-md text-[11px] font-medium border border-dashed border-border text-muted-foreground hover:text-foreground hover:border-foreground/30 hover:bg-muted/50 transition-colors"
-        @click="emit('addEntity')">
-        <Icon name="lucide:plus" class="h-3 w-3" />
-        Other
-      </button>
     </div>
 
     <!-- Outgoing references — full-width cards with preview -->

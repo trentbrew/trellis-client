@@ -117,6 +117,86 @@ const client = new TrellisClient({ agentId: 'my-agent' })
 await client.createNode('entity:new', 'entity', { type: 'task', title: 'Hello' })
 ```
 
+## Platform CRUD
+
+Platform resources (orgs, apps, collections, pages, tags, workflows, settings) are managed via `/api/platform/*` routes.
+
+```bash
+# ── Workspace Context ──────────────────────────────────────────────────
+
+# Create an org + app
+just trellis org create --name "Media CMS" --slug media-cms --pretty
+just trellis app create --name "Production" --icon "lucide:video" \
+  --org-id platform:org/media-cms --pretty
+
+# Set persistent context (saved to ~/.trellis/context.json)
+just trellis context set --org-id platform:org/media-cms --app-id platform:app/production
+
+# View current context
+just trellis context --pretty
+
+# ── Collections & Pages ────────────────────────────────────────────────
+
+just trellis collection create --name "Episodes" --slug episodes --pretty
+just trellis page create --title "Dashboard" --data-source show --layout grid --pretty
+
+# ── Comments & Tags ────────────────────────────────────────────────────
+
+just trellis comment add entity:task-1 --content "Reviewed and approved" --pretty
+just trellis comment list entity:task-1 --pretty
+just trellis tag create --name "Priority" --color "bg-red-500" --pretty
+just trellis tag assign entity:task-1 --tags "priority,reviewed" --pretty
+
+# ── Bulk Operations ────────────────────────────────────────────────────
+
+just trellis bulk update \
+  --query 'FIND entity AS ?t WHERE ?t.type = "task" AND ?t.taskStatus = "pending"' \
+  --data '{"taskStatus":"in-progress"}' --pretty
+
+just trellis bulk delete \
+  --query 'FIND entity AS ?t WHERE ?t.type = "task" AND ?t.taskStatus = "completed"' \
+  --pretty
+
+# ── Workflows ──────────────────────────────────────────────────────────
+
+just trellis workflow create --name "Auto-triage" \
+  --trigger '{"type":"onCreate","entityType":"task"}' --pretty
+
+# ── Settings ───────────────────────────────────────────────────────────
+
+just trellis setting set theme dark --pretty
+just trellis setting get theme --pretty
+just trellis setting list --pretty
+
+# ── Rich Text Body ─────────────────────────────────────────────────────
+
+just trellis create --type entity --id entity:meeting-notes \
+  --data '{"type":"note","title":"Meeting Notes"}' \
+  --body '# Agenda\n- Review Q3 goals\n- Assign tasks' \
+  --agent-id cascade
+```
+
+### Platform ID Conventions
+
+| Resource | ID Format | Example |
+|----------|-----------|---------|
+| Organization | `platform:org/<slug>` | `platform:org/media-cms` |
+| App/World | `platform:app/<slug>` | `platform:app/production` |
+| Collection | `platform:collection/<slug>` | `platform:collection/episodes` |
+| Page | `platform:page/<slug>-<ts>` | `platform:page/dashboard-mlx6yjnj` |
+| Tag | `platform:tag/<slug>` | `platform:tag/priority` |
+| Workflow | `platform:workflow/<slug>-<ts>` | `platform:workflow/auto-triage-mlx6yv0g` |
+| Comment | `comment:<uuid>` | `comment:1890044d-...` |
+| Setting | `platform:setting/<scope>/<key>` | `platform:setting/app/theme` |
+
+### Idempotent Creates
+
+`org create`, `app create`, `collection create`, and `tag create` are idempotent by slug. If the slug already exists, the existing record is returned with `"created": false`.
+
+### Context Scoping
+
+Commands that operate within an app (`collection`, `page`, `workflow`) read the app ID from `~/.trellis/context.json`. Override per-command with `--app <id>`. Similarly, `app list` reads the org from context, overridable with `--org <id>`.
+
 ## E2E Test
 
 ```bash

@@ -350,36 +350,39 @@
               </span>
               <NuxtLink
                 :to="`/pages/${page.id}`"
-                class="flex items-center gap-2 pl-5 pr-7 py-1.5 rounded-lg text-xs transition-colors"
+                class="flex items-center gap-2 pl-5 pr-2 py-1.5 rounded-lg text-xs transition-colors"
                 :class="isActive(page.id) ? 'bg-primary/10 text-primary font-medium' : 'text-muted-foreground hover:bg-muted/50 hover:text-foreground'"
               >
                 <Icon name="lucide:file-text" class="h-3.5 w-3.5 shrink-0" />
                 <span class="flex-1 truncate">{{ pageLabel(page) }}</span>
-                <!-- Presence avatars -->
-                <span v-if="getViewers(page.id).length" class="flex items-center shrink-0 ml-1">
-                  <!-- Typing indicator -->
-                  <span
-                    v-if="isTyping(page.id)"
-                    class="flex gap-[2px] items-center mr-1"
-                    :title="getViewers(page.id).find(v => !!v.editingField)?.name + ' is typing…'"
-                  >
-                    <span class="h-1 w-1 rounded-full animate-bounce [animation-delay:0ms]" :class="typingColor(page.id)" />
-                    <span class="h-1 w-1 rounded-full animate-bounce [animation-delay:100ms]" :class="typingColor(page.id)" />
-                    <span class="h-1 w-1 rounded-full animate-bounce [animation-delay:200ms]" :class="typingColor(page.id)" />
-                  </span>
-                  <!-- Avatar stack -->
-                  <span class="flex -space-x-1">
-                    <span
-                      v-for="(viewer, i) in getViewers(page.id).slice(0, 3)"
-                      :key="viewer.peerId"
-                      :title="viewer.name + (viewer.isMe ? ' (you)' : '')"
-                      :style="{ zIndex: 3 - i }"
-                      class="relative h-3.5 w-3.5 rounded-full flex items-center justify-center text-[8px] font-bold text-white ring-1 ring-background"
-                      :class="[viewer.color, viewer.isMe ? 'ring-white/60' : '']"
-                    >{{ viewer.initials[0] }}</span>
-                  </span>
-                </span>
               </NuxtLink>
+              <!-- Presence avatars (absolute positioned at right edge) -->
+              <div
+                v-if="getViewers(page.id).length"
+                class="absolute right-7 top-1/2 -translate-y-1/2 flex items-center shrink-0 transition-all group-hover/pg:right-8"
+              >
+                <!-- Typing indicator -->
+                <span
+                  v-if="isTyping(page.id)"
+                  class="flex gap-[2px] items-center mr-1"
+                  :title="getViewers(page.id).find(v => !!v.editingField)?.name + ' is typing…'"
+                >
+                  <span class="h-1 w-1 rounded-full animate-bounce [animation-delay:0ms]" :class="typingColor(page.id)" />
+                  <span class="h-1 w-1 rounded-full animate-bounce [animation-delay:100ms]" :class="typingColor(page.id)" />
+                  <span class="h-1 w-1 rounded-full animate-bounce [animation-delay:200ms]" :class="typingColor(page.id)" />
+                </span>
+                <!-- Avatar stack -->
+                <span class="flex -space-x-1">
+                  <span
+                    v-for="(viewer, i) in getViewers(page.id).slice(0, 3)"
+                    :key="viewer.peerId"
+                    :title="viewer.name + (viewer.isMe ? ' (you)' : '')"
+                    :style="{ zIndex: 3 - i }"
+                    class="relative h-3.5 w-3.5 rounded-full flex items-center justify-center text-[8px] font-bold text-white ring-1 ring-background"
+                    :class="[viewer.color, viewer.isMe ? 'ring-white/60' : '']"
+                  >{{ viewer.initials[0] }}</span>
+                </span>
+              </div>
               <!-- ⋯ menu -->
               <div class="absolute right-1 top-1/2 -translate-y-1/2 opacity-0 group-hover/pg:opacity-100 transition-opacity z-10">
                 <UiDropdownMenu>
@@ -554,34 +557,37 @@
                       </span> -->
                       <NuxtLink
                         :to="`/pages/${page.id}`"
-                        class="flex items-center gap-2 pl-8 pr-7 py-1.5 rounded-lg text-xs transition-colors mx-1 ml-6"
+                        class="flex items-center gap-2 pl-8 pr-2 py-1.5 rounded-lg text-xs transition-colors mx-1 ml-6"
                         :class="isActive(page.id) ? 'bg-primary/10 text-primary font-medium' : 'text-muted-foreground hover:bg-muted/50 hover:text-foreground'"
                       >
                         <Icon name="lucide:file-text" class="h-3.5 w-3.5 shrink-0" />
                         <span class="flex-1 truncate">{{ pageLabel(page) }}</span>
-                        <!-- Presence avatars -->
-                        <span v-if="getViewers(page.id).length" class="flex items-center shrink-0 ml-1">
-                          <span
-                            v-if="isTyping(page.id)"
-                            class="flex gap-[2px] items-center mr-1"
-                            :title="getViewers(page.id).find(v => !!v.editingField)?.name + ' is typing…'"
-                          >
-                            <span class="h-1 w-1 rounded-full animate-bounce [animation-delay:0ms]" :class="typingColor(page.id)" />
-                            <span class="h-1 w-1 rounded-full animate-bounce [animation-delay:100ms]" :class="typingColor(page.id)" />
-                            <span class="h-1 w-1 rounded-full animate-bounce [animation-delay:200ms]" :class="typingColor(page.id)" />
-                          </span>
-                          <span class="flex -space-x-1">
-                            <span
-                              v-for="(viewer, i) in getViewers(page.id).slice(0, 3)"
-                              :key="viewer.peerId"
-                              :title="viewer.name + (viewer.isMe ? ' (you)' : '')"
-                              :style="{ zIndex: 3 - i }"
-                              class="relative h-3.5 w-3.5 rounded-full flex items-center justify-center text-[8px] font-bold text-white ring-1 ring-background"
-                              :class="[viewer.color, viewer.isMe ? 'ring-white/60' : '']"
-                            >{{ viewer.initials[0] }}</span>
-                          </span>
-                        </span>
                       </NuxtLink>
+                      <!-- Presence avatars (absolute positioned at right edge) -->
+                      <div
+                        v-if="getViewers(page.id).length"
+                        class="absolute right-8 top-1/2 -translate-y-1/2 flex items-center shrink-0 transition-all group-hover/pg:right-9"
+                      >
+                        <span
+                          v-if="isTyping(page.id)"
+                          class="flex gap-[2px] items-center mr-1"
+                          :title="getViewers(page.id).find(v => !!v.editingField)?.name + ' is typing…'"
+                        >
+                          <span class="h-1 w-1 rounded-full animate-bounce [animation-delay:0ms]" :class="typingColor(page.id)" />
+                          <span class="h-1 w-1 rounded-full animate-bounce [animation-delay:100ms]" :class="typingColor(page.id)" />
+                          <span class="h-1 w-1 rounded-full animate-bounce [animation-delay:200ms]" :class="typingColor(page.id)" />
+                        </span>
+                        <span class="flex -space-x-1">
+                          <span
+                            v-for="(viewer, i) in getViewers(page.id).slice(0, 3)"
+                            :key="viewer.peerId"
+                            :title="viewer.name + (viewer.isMe ? ' (you)' : '')"
+                            :style="{ zIndex: 3 - i }"
+                            class="relative h-3.5 w-3.5 rounded-full flex items-center justify-center text-[8px] font-bold text-white ring-1 ring-background"
+                            :class="[viewer.color, viewer.isMe ? 'ring-white/60' : '']"
+                          >{{ viewer.initials[0] }}</span>
+                        </span>
+                      </div>
                       <!-- ⋯ menu -->
                       <div class="absolute right-2 top-1/2 -translate-y-1/2 opacity-0 group-hover/pg:opacity-100 transition-opacity z-10">
                         <UiDropdownMenu>

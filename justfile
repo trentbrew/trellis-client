@@ -75,6 +75,10 @@ auto-commit interval="60":
 
 # ── Trellis CLI ──────────────────────────────────────────────────────────
 
+# Setup MCP for AI assistants (claude, windsurf, cursor, continue, or --all)
+setup-mcp assistant="--help":
+    node scripts/setup-mcp.mjs {{assistant}}
+
 # Run the trellis CLI (pass arguments after --)
 trellis *ARGS:
     node packages/trellis-cli/bin/trellis.mjs {{ARGS}}

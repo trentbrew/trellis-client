@@ -1993,7 +1993,7 @@
 
     <!-- Center: type-specific content panel -->
     <div class="flex-1 flex flex-col min-w-0 overflow-y-auto">
-      <EntityContentPanel :model-value="editableItem" :mode="mode" />
+      <EntityContentPanel v-model="editableItem" :mode="mode" />
     </div>
 
     <!-- Right sidebar: tabbed references + activity -->

@@ -33,6 +33,7 @@
   },
   "dependencies": {
     "@alcyone-labs/zod-to-json-schema": "4.0.10",
+    "@google/generative-ai": "^0.21.0",
     "@guolao/vue-monaco-editor": "1.6.0",
     "@iconify-json/svg-spinners": "1.2.4",
     "@instantdb/admin": "0.22.138",

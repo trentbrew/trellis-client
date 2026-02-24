@@ -10,5 +10,7 @@ export default defineNuxtPlugin((nuxtApp) => {
     info: (title: string, options?: any) => toast.info(title, options),
     warning: (title: string, options?: any) => toast.warning(title, options),
     message: (title: string, options?: any) => toast.message(title, options),
+    // Default method uses info type
+    default: (title: string, options?: any) => toast.info(title, options),
   })
 })

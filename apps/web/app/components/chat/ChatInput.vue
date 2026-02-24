@@ -64,7 +64,7 @@
 </script>
 
 <template>
-  <div class="shrink-0 border-t-none border-border bg-card" @keydown="handleWrapperKeydown">
+  <div class="shrink-0 border-t-none border-border bg-card/50" @keydown="handleWrapperKeydown">
     <!-- Reply preview -->
     <div
       v-if="replyTo"

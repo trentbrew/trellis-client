@@ -951,7 +951,7 @@
   <!-- Sidebar: Content frame (matches page header) -->
   <aside
     data-slot="app-sidebar"
-    class="border-sidebar-border/75 bg-transparent text-sidebar-foreground hidden flex-col border-r-none px-0 pb-0 lg:flex relative"
+    class="border-sidebar-border/75 rounded-xl! text-sidebar-foreground hidden flex-col border-r-none px-0 pb-0 lg:flex relative"
     :style="{
       width: sidebarCollapse.isCollapsed.value ? '0px' : `${sidebarWidth}px`,
       transition: transitionsDisabled ? 'none' : 'width 0.3s ease',
@@ -972,7 +972,7 @@
       @mousedown="startResize" />
 
     <!-- Sidebar toggle: always rendered, sits at search-row position -->
-    <ClientOnly>
+    <!-- <ClientOnly>
       <UiTooltip v-if="!sidebarCollapse.isForcedCollapsed.value">
         <UiTooltipTrigger as-child>
           <button
@@ -989,7 +989,7 @@
           {{ sidebarCollapse.isCollapsed.value ? 'Expand sidebar' : 'Collapse sidebar' }}
         </UiTooltipContent>
       </UiTooltip>
-    </ClientOnly>
+    </ClientOnly> -->
 
     <!-- Builder Controls (Edit Mode) -->
     <div v-if="showBuilderUI && canCreatePages" class="px-4 py-0 border-b border-sidebar-border/10">
@@ -1034,7 +1034,7 @@
           <div v-if="!isCalendarRoute && !isGraphRoute" class="sticky top-0 z-10 px-2.5 pt-2.5 pb-2.5">
             <div class="flex items-center gap-1.5">
               <!-- Toggle placeholder: reserves space equal to the toggle button -->
-              <div v-if="!sidebarCollapse.isForcedCollapsed.value" class="shrink-0 h-[30px] w-[30px]" />
+              <!-- <div v-if="!sidebarCollapse.isForcedCollapsed.value" class="shrink-0 h-[30px] w-[30px]" /> -->
               <!-- Search input -->
               <div class="relative flex-1 flex items-center">
                 <Icon name="lucide:search" class="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-sidebar-foreground/75 z-10" />
@@ -1043,7 +1043,7 @@
                   v-model="sidebarFilter"
                   type="text"
                   placeholder="Search..."
-                  class="w-full bg-foreground/3 border border-border backdrop-blur-md text-sidebar-foreground text-xs rounded-full pl-8 pr-10 py-2 outline-none placeholder:text-sidebar-foreground/30 focus:ring-1 focus:ring-ring/50 transition-colors"
+                  class="w-full bg-card/50 border border-border backdrop-blur-md text-sidebar-foreground text-xs rounded-md pl-8 pr-10 py-2 outline-none placeholder:text-sidebar-foreground/30 focus:ring-1 focus:ring-ring/50 transition-colors"
                   @keydown.escape="sidebarFilter = ''" />
                 <UiTooltipProvider v-if="isWorkspaceRoute || routes.currentSidebarSection.value?.path === '/database'">
                   <UiTooltip>
@@ -2140,8 +2140,8 @@
     height: 1rem;
     width: 0.875rem;
     transform: translateY(-1rem);
-    border-left: 1px solid var(--sidebar-border);
-    border-bottom: 1px solid var(--sidebar-border);
+    border-left: 1.5px solid var(--sidebar-border);
+    border-bottom: 1.5px solid var(--sidebar-border);
     border-bottom-left-radius: 0.5rem;
     border-color: var(--sidebar-border);
   }

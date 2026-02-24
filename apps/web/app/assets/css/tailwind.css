@@ -283,6 +283,27 @@
   --shadow-2xl: 0px 1px 4px 0px hsl(0 0% 0% / 0.13);
 }
 
+@layer utilities {
+  /* Surface depth hierarchy - semantic opacity variations of card color
+   * Creates visual layering: background → surface-1 → surface-2 → surface-3
+   * Usage:
+   *   bg-surface-1 - Sidebar (subtle lift from background)
+   *   bg-surface-2 - Main content area (medium lift)
+   *   bg-surface-3 - Cards/panels (full card color, lightest before foreground)
+   */
+  .bg-surface-1 {
+    background-color: color-mix(in oklch, var(--card) 25%, transparent);
+  }
+
+  .bg-surface-2 {
+    background-color: color-mix(in oklch, var(--card) 50%, transparent);
+  }
+
+  .bg-surface-3 {
+    background-color: var(--card);
+  }
+}
+
 @layer base {
   * {
     @apply border-border;

@@ -15,6 +15,28 @@ properties and semantic links. The graph powers a Nuxt web app running on
 `localhost:$TRELLIS_PORT` with realtime sync — any mutations you make via MCP tools
 appear instantly in the browser UI.
 
+## IMPORTANT: Always Use MCP Tools
+
+**Never use `curl`, `fetch`, or raw HTTP requests to interact with the Trellis API.**
+You have 48 MCP tools available — use them directly. They handle authentication,
+error formatting, and JSON serialization automatically.
+
+| Instead of... | Use this MCP tool |
+|---------------|-------------------|
+| `curl /api/graph/health` | `graph_health` |
+| `curl /api/graph/query` | `query_graph` |
+| `curl /api/graph/ontologies` | `get_schema` |
+| `curl /api/graph/catalog` | `get_catalog` |
+| `curl /api/graph/node/:id` | `get_node` |
+| `curl /api/graph/mutate` (create) | `create_node` |
+| `curl /api/graph/mutate` (update) | `update_node` |
+| `curl /api/graph/mutate` (delete) | `delete_node` |
+| `curl /api/graph/mutate` (link) | `link_nodes` |
+| `curl /api/platform/*` | Use the corresponding platform tool (e.g. `list_orgs`, `create_tag`) |
+
+The MCP tools are the **only** supported interface for AI agents. Raw HTTP calls
+may break, miss error handling, or hit undocumented routes.
+
 ## Entity Architecture
 
 ### Two-Axis Type System
@@ -169,10 +191,30 @@ FIND projects AS p WHERE p.status = "active" RETURN p.title, p.progress
 
 ## Introspection
 
-- `graph_health` — Quick check: status, fact count, link count
-- `get_schema` — Full ontology definitions
-- `get_catalog` — Attribute distributions (what data exists)
-- `get_mutation_log` — Recent changes to the graph
+**Start here:** Call `get_graph_summary` first. It replaces `graph_health` + `get_schema` + `get_catalog` in a single round trip and gives you everything needed to orient yourself in the graph.
+
+| Tool | When to use |
+|------|-------------|
+| `get_graph_summary` | **Always call first** — compact overview of health, entity types, ontologies, attributes, links, recent mutations |
+| `graph_health` | Quick liveness check only (fact/link counts) |
+| `get_schema` | Full ontology field definitions (when you need field-level detail) |
+| `get_catalog` | Full attribute distribution (77 attrs, verbose — prefer `get_graph_summary`) |
+| `get_mutation_log` | Full recent mutation history |
+
+### `get_graph_summary` response shape
+
+```json
+{
+  "health": { "status": "ok", "factCount": 8306, "linkCount": 39, "entityCount": 456 },
+  "entityTypes": [{ "type": "event", "count": 450 }, { "type": "task", "count": 6 }],
+  "ontologies": { "total": 46, "system": ["task", "note", "event", "..."], "user": [] },
+  "topAttributes": [{ "attribute": "title", "distinctCount": 43, "cardinality": "one" }],
+  "links": { "total": 39, "relations": ["assignedTo", "belongsTo"] },
+  "recentMutations": [{ "action": "createNode", "entityId": "entity:gcal-...", "timestamp": "..." }]
+}
+```
+
+Optional `limit` parameter caps list lengths (default: 10).
 
 ## Ontology CRUD (Runtime Type Creation)
 
@@ -218,6 +260,59 @@ Use `update_ontology` with the full field list (replaces all existing fields).
 Use `delete_ontology` — removes the type schema. Existing entities of that type remain
 in the graph but the type disappears from the UI.
 
+## Platform Tools
+
+Beyond graph CRUD, the MCP server exposes 33 platform tools for managing
+workspace resources. All platform data is stored in the TQL kernel and
+persists across restarts.
+
+### Workspace Context
+
+- `list_orgs` — List all organizations
+- `create_org` — Create an org (idempotent by slug)
+- `get_org` — Get org by slug
+- `list_apps` — List apps/worlds (optionally scoped by orgId)
+- `create_app` — Create an app (idempotent by slug)
+- `update_app` — Update app properties
+- `delete_app` — Delete an app
+- `get_context` — Get current org + app context
+
+### Collections & Pages
+
+- `list_collections` / `create_collection` / `update_collection` / `delete_collection`
+- `list_pages` / `create_page` / `update_page` / `delete_page`
+
+### Entity Enrichment
+
+- `list_comments` — List comments on an entity
+- `add_comment` — Add a comment (auto-links to parent entity)
+- `list_tags` / `create_tag` — Tag management (idempotent)
+- `assign_tags` — Assign tags to entity (auto-creates missing tags)
+
+### Bulk Operations & Workflows
+
+- `bulk_update` — Batch update entities matching an EQL-S query
+- `bulk_delete` — Batch delete entities matching an EQL-S query
+- `list_workflows` / `create_workflow` / `update_workflow` / `delete_workflow`
+
+### Settings & Invites
+
+- `get_setting` / `set_setting` / `list_settings` — Key-value settings (app or user scoped)
+- `send_invite` — Send workspace invitation
+
+### Platform ID Conventions
+
+| Resource | ID Format | Example |
+|----------|-----------|---------|
+| Organization | `platform:org/<slug>` | `platform:org/media-cms` |
+| App/World | `platform:app/<slug>` | `platform:app/production` |
+| Collection | `platform:collection/<slug>` | `platform:collection/episodes` |
+| Page | `platform:page/<slug>-<ts>` | `platform:page/dashboard-mlx6yjnj` |
+| Tag | `platform:tag/<slug>` | `platform:tag/priority` |
+| Workflow | `platform:workflow/<slug>-<ts>` | `platform:workflow/auto-triage-mlx6yv0g` |
+| Comment | `comment:<uuid>` | `comment:1890044d-67a1-...` |
+| Setting | `platform:setting/<scope>/<key>` | `platform:setting/app/theme` |
+
 ## Best Practices
 
 1. **Always set a title** — Every entity needs at minimum a `title` field
@@ -227,3 +322,5 @@ in the graph but the type disappears from the UI.
 5. **Check before creating** — Use `query_graph` to avoid duplicates
 6. **Use tags liberally** — Tags are the primary cross-cutting classification
 7. **Mutations are realtime** — The browser UI updates instantly via SSE
+8. **Creates are idempotent** — `create_org`, `create_app`, `create_tag`, `create_collection` return existing if slug matches
+9. **Use context** — Set org/app context once, then all scoped commands use it automatically

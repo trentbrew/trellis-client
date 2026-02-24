@@ -35,6 +35,15 @@ export interface HealthResult {
   linkCount: number
 }
 
+export interface SummaryResult {
+  health: { status: string; factCount: number; linkCount: number; entityCount: number }
+  entityTypes: Array<{ type: string; count: number }>
+  ontologies: { total: number; system: string[]; user: string[] }
+  topAttributes: Array<{ attribute: string; distinctCount: number; cardinality: string }>
+  links: { total: number; relations: string[] }
+  recentMutations: Array<{ action: string; entityId?: string; timestamp: string }>
+}
+
 export interface MutateResult {
   ok: boolean
   entityId?: string
@@ -90,6 +99,12 @@ export class TrellisClient {
   }
 
   // ── Queries ──────────────────────────────────────────────────────────
+
+  /** Get a compact graph summary — health, entity types, ontologies, top attributes, recent mutations. */
+  async summary(limit?: number): Promise<SummaryResult> {
+    const path = limit ? `summary?limit=${limit}` : 'summary'
+    return this.request<SummaryResult>(path)
+  }
 
   /** Execute an EQL-S query. */
   async query(eqls: string): Promise<QueryResult> {
@@ -221,6 +236,256 @@ export class TrellisClient {
     return this.request<MutateResult>(`ontology/${id}`, {
       method: 'DELETE',
       body: { agentId: this.agentId },
+    })
+  }
+
+  // ── Platform API ────────────────────────────────────────────────────
+
+  private get platformBase(): string {
+    return `${this.baseUrl}/api/platform`
+  }
+
+  private async platformRequest<T>(
+    path: string,
+    options?: { method?: string; body?: Record<string, any>; query?: Record<string, string> },
+  ): Promise<T> {
+    let url = `${this.platformBase}/${path}`
+    if (options?.query) {
+      const params = new URLSearchParams(options.query)
+      url += `?${params.toString()}`
+    }
+    const res = await fetch(url, {
+      method: options?.method || 'GET',
+      headers: options?.body ? { 'Content-Type': 'application/json' } : undefined,
+      body: options?.body ? JSON.stringify(options.body) : undefined,
+    })
+
+    if (!res.ok) {
+      let message: string
+      try {
+        const err = (await res.json()) as Record<string, any>
+        message = (err.message as string) || (err.statusMessage as string) || res.statusText
+      } catch {
+        message = res.statusText
+      }
+      throw new Error(`[${res.status}] ${message}`)
+    }
+
+    return res.json() as Promise<T>
+  }
+
+  // ── Phase 1: Org / App / Context ───────────────────────────────────
+
+  async listOrgs(): Promise<{ ok: boolean; orgs: Record<string, any>[] }> {
+    return this.platformRequest('org/list')
+  }
+
+  async createOrg(name: string, slug?: string, description?: string): Promise<Record<string, any>> {
+    return this.platformRequest('org/create', {
+      method: 'POST',
+      body: { name, slug, description, agentId: this.agentId },
+    })
+  }
+
+  async getOrg(id: string): Promise<Record<string, any>> {
+    return this.platformRequest(`org/${id}`)
+  }
+
+  async listApps(orgId?: string): Promise<{ ok: boolean; apps: Record<string, any>[] }> {
+    const query = orgId ? { orgId } : undefined
+    return this.platformRequest('app/list', { query })
+  }
+
+  async createApp(data: Record<string, any>): Promise<Record<string, any>> {
+    return this.platformRequest('app/create', {
+      method: 'POST',
+      body: { ...data, agentId: this.agentId },
+    })
+  }
+
+  async getApp(id: string): Promise<Record<string, any>> {
+    return this.platformRequest(`app/${id}`)
+  }
+
+  async updateApp(id: string, data: Record<string, any>): Promise<MutateResult> {
+    return this.platformRequest(`app/${id}`, {
+      method: 'PUT',
+      body: { data, agentId: this.agentId },
+    })
+  }
+
+  async deleteApp(id: string): Promise<MutateResult> {
+    return this.platformRequest(`app/${id}`, {
+      method: 'DELETE',
+      body: { agentId: this.agentId },
+    })
+  }
+
+  async getContext(orgId?: string, appId?: string): Promise<Record<string, any>> {
+    const query: Record<string, string> = {}
+    if (orgId) query.orgId = orgId
+    if (appId) query.appId = appId
+    return this.platformRequest('context', { query })
+  }
+
+  // ── Phase 2: Collections & Pages ───────────────────────────────────
+
+  async listCollections(appId?: string): Promise<{ ok: boolean; collections: Record<string, any>[] }> {
+    const query = appId ? { appId } : undefined
+    return this.platformRequest('collection/list', { query })
+  }
+
+  async createCollection(data: Record<string, any>): Promise<Record<string, any>> {
+    return this.platformRequest('collection/create', {
+      method: 'POST',
+      body: { ...data, agentId: this.agentId },
+    })
+  }
+
+  async updateCollection(id: string, data: Record<string, any>): Promise<MutateResult> {
+    return this.platformRequest(`collection/${id}`, {
+      method: 'PUT',
+      body: { data, agentId: this.agentId },
+    })
+  }
+
+  async deleteCollection(id: string): Promise<MutateResult> {
+    return this.platformRequest(`collection/${id}`, {
+      method: 'DELETE',
+      body: { agentId: this.agentId },
+    })
+  }
+
+  async listPages(appId?: string): Promise<{ ok: boolean; pages: Record<string, any>[] }> {
+    const query = appId ? { appId } : undefined
+    return this.platformRequest('page/list', { query })
+  }
+
+  async createPage(data: Record<string, any>): Promise<Record<string, any>> {
+    return this.platformRequest('page/create', {
+      method: 'POST',
+      body: { ...data, agentId: this.agentId },
+    })
+  }
+
+  async updatePage(id: string, data: Record<string, any>): Promise<MutateResult> {
+    return this.platformRequest(`page/${id}`, {
+      method: 'PUT',
+      body: { data, agentId: this.agentId },
+    })
+  }
+
+  async deletePage(id: string): Promise<MutateResult> {
+    return this.platformRequest(`page/${id}`, {
+      method: 'DELETE',
+      body: { agentId: this.agentId },
+    })
+  }
+
+  // ── Phase 3: Comments & Tags ───────────────────────────────────────
+
+  async listComments(entityId: string): Promise<{ ok: boolean; comments: Record<string, any>[] }> {
+    return this.platformRequest(`comment/list/${entityId}`)
+  }
+
+  async addComment(entityId: string, content: string, options?: Record<string, any>): Promise<Record<string, any>> {
+    return this.platformRequest('comment/add', {
+      method: 'POST',
+      body: { entityId, content, ...options, agentId: this.agentId },
+    })
+  }
+
+  async listTags(): Promise<{ ok: boolean; tags: Record<string, any>[] }> {
+    return this.platformRequest('tag/list')
+  }
+
+  async createTag(name: string, color?: string, description?: string): Promise<Record<string, any>> {
+    return this.platformRequest('tag/create', {
+      method: 'POST',
+      body: { name, color, description, agentId: this.agentId },
+    })
+  }
+
+  async assignTags(entityId: string, tags: string[]): Promise<Record<string, any>> {
+    return this.platformRequest('tag/assign', {
+      method: 'POST',
+      body: { entityId, tags, agentId: this.agentId },
+    })
+  }
+
+  // ── Phase 4: Bulk & Workflows ──────────────────────────────────────
+
+  async bulkUpdate(eqls: string, data: Record<string, any>): Promise<{ ok: boolean; updated: number; ids: string[] }> {
+    return this.platformRequest('bulk/update', {
+      method: 'POST',
+      body: { query: eqls, data, agentId: this.agentId },
+    })
+  }
+
+  async bulkDelete(eqls: string): Promise<{ ok: boolean; deleted: number; ids: string[] }> {
+    return this.platformRequest('bulk/delete', {
+      method: 'POST',
+      body: { query: eqls, agentId: this.agentId },
+    })
+  }
+
+  async listWorkflows(appId?: string): Promise<{ ok: boolean; workflows: Record<string, any>[] }> {
+    const query = appId ? { appId } : undefined
+    return this.platformRequest('workflow/list', { query })
+  }
+
+  async createWorkflow(data: Record<string, any>): Promise<Record<string, any>> {
+    return this.platformRequest('workflow/create', {
+      method: 'POST',
+      body: { ...data, agentId: this.agentId },
+    })
+  }
+
+  async updateWorkflow(id: string, data: Record<string, any>): Promise<MutateResult> {
+    return this.platformRequest(`workflow/${id}`, {
+      method: 'PUT',
+      body: { data, agentId: this.agentId },
+    })
+  }
+
+  async deleteWorkflow(id: string): Promise<MutateResult> {
+    return this.platformRequest(`workflow/${id}`, {
+      method: 'DELETE',
+      body: { agentId: this.agentId },
+    })
+  }
+
+  // ── Phase 5: Settings, Files & Invites ─────────────────────────────
+
+  async getSetting(key: string, scope?: string): Promise<Record<string, any>> {
+    const query: Record<string, string> = { key }
+    if (scope) query.scope = scope
+    return this.platformRequest('setting/get', { query })
+  }
+
+  async setSetting(key: string, value: any, scope?: string): Promise<Record<string, any>> {
+    return this.platformRequest('setting/set', {
+      method: 'POST',
+      body: { key, value, scope, agentId: this.agentId },
+    })
+  }
+
+  async listSettings(scope?: string): Promise<{ ok: boolean; settings: Record<string, any>[]; scope: string }> {
+    const query = scope ? { scope } : undefined
+    return this.platformRequest('setting/list', { query })
+  }
+
+  async uploadFile(fileBase64: string, filename: string, options?: Record<string, any>): Promise<Record<string, any>> {
+    return this.platformRequest('file/upload', {
+      method: 'POST',
+      body: { fileBase64, filename, ...options, agentId: this.agentId },
+    })
+  }
+
+  async sendInvite(email: string, options?: Record<string, any>): Promise<Record<string, any>> {
+    return this.platformRequest('invite/send', {
+      method: 'POST',
+      body: { email, ...options, agentId: this.agentId },
     })
   }
 

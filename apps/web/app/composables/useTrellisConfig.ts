@@ -13,6 +13,8 @@
  *
  * Also provides helper functions equivalent to what appConfig.ts exported:
  * - buildPageConfigFromRoute()
+
+import { useSSESubscribe } from './useTrellisSSE'
  * - buildRouteConfigTree()
  * - etc.
  */
@@ -163,9 +165,7 @@ function subscribeToSSE(): void {
   if (!import.meta.client) return
   if (_sseCleanup) return
 
-  const eventSource = new EventSource('/api/graph/events')
-
-  eventSource.addEventListener('mutation', (event) => {
+  _sseCleanup = useSSESubscribe('mutation', (event) => {
     try {
       const data = JSON.parse(event.data)
       // Re-fetch config on ontology or route mutations
@@ -181,15 +181,6 @@ function subscribeToSSE(): void {
       // Ignore malformed events
     }
   })
-
-  eventSource.onerror = () => {
-    // EventSource auto-reconnects
-  }
-
-  _sseCleanup = () => {
-    eventSource.close()
-    _sseCleanup = null
-  }
 }
 
 // ── Conversion helpers ─────────────────────────────────────────────────

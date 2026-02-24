@@ -9,6 +9,8 @@
  * for hierarchy.
  */
 
+import { useSSESubscribe } from './useTrellisSSE'
+
 // ── Types ──────────────────────────────────────────────────────────────
 
 export type SidebarScope = 'workspace' | 'database' | 'settings' | 'graph'
@@ -163,9 +165,8 @@ function subscribeToSSE(): void {
   if (!import.meta.client) return
   if (_sseCleanup) return
 
-  const eventSource = new EventSource('/api/graph/events')
-
-  eventSource.addEventListener('mutation', (event) => {
+  // Subscribe via centralized SSE manager
+  _sseCleanup = useSSESubscribe('mutation', (event) => {
     try {
       const data = JSON.parse(event.data)
       // Re-fetch on sidebar_node mutations or link mutations
@@ -181,15 +182,6 @@ function subscribeToSSE(): void {
       // Ignore malformed events
     }
   })
-
-  eventSource.onerror = () => {
-    // EventSource auto-reconnects
-  }
-
-  _sseCleanup = () => {
-    eventSource.close()
-    _sseCleanup = null
-  }
 }
 
 // ── Tree builder ───────────────────────────────────────────────────────

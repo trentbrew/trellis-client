@@ -90,9 +90,10 @@ export function useAutoSave<T extends Record<string, any>>(
   )
 
   watchDebounced(
-    () => buildSnapshot(),
-    (snapshot) => {
+    () => item,
+    () => {
       if (!options.enabled.value || !item.id) return
+      const snapshot = buildSnapshot()
       if (lastSnapshot.value === null) {
         lastSnapshot.value = snapshot
         return
@@ -101,7 +102,7 @@ export function useAutoSave<T extends Record<string, any>>(
       lastSnapshot.value = snapshot
       save()
     },
-    { debounce: debounceMs, deep: false },
+    { debounce: debounceMs, deep: true },
   )
 
   return { status, save, lastSavedAt, formatLastSaved }

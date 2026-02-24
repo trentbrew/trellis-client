@@ -8,6 +8,7 @@
   const pageId = computed(() => route.params.id as string)
 
   const { getPage, updatePage, deletePage, pages, folders, moveToFolder, livePageTitle } = usePageNotes()
+  const { addPage: addRecentPage } = useRecentPages()
   const { items: allItems } = useTrellisEntities()
   const { register: registerPresence, deregister: deregisterPresence, publishField, getViewers } = usePagePresence()
   const { user: currentUser } = useInstantAuth()
@@ -37,21 +38,38 @@
 
   // ── Auto-save ─────────────────────────────────────────────────────
   const saveTimeout = ref<ReturnType<typeof setTimeout> | null>(null)
+  const saveStatus = ref<'idle' | 'saving' | 'saved'>('idle')
+  let saveStatusResetTimer: ReturnType<typeof setTimeout> | null = null
 
   function debouncedSave(data: Partial<Entity>) {
     if (saveTimeout.value) clearTimeout(saveTimeout.value)
     saveTimeout.value = setTimeout(async () => {
       if (!pageId.value) return
-      await updatePage(pageId.value, data)
+      saveStatus.value = 'saving'
+      console.log('[Page] Saving...', { pageId: pageId.value, fields: Object.keys(data) })
+      try {
+        await updatePage(pageId.value, data)
+        console.log('[Page] Saved successfully')
+        saveStatus.value = 'saved'
+        if (saveStatusResetTimer) clearTimeout(saveStatusResetTimer)
+        saveStatusResetTimer = setTimeout(() => { saveStatus.value = 'idle' }, 2000)
+      } catch (err) {
+        console.error('[Page] Save failed:', err)
+        saveStatus.value = 'idle'
+      }
     }, 800)
   }
 
   onMounted(() => {
-    if (pageId.value) registerPresence(pageId.value)
+    if (pageId.value) {
+      registerPresence(pageId.value)
+      addRecentPage(pageId.value)
+    }
   })
 
   onBeforeUnmount(() => {
     if (saveTimeout.value) clearTimeout(saveTimeout.value)
+    if (saveStatusResetTimer) clearTimeout(saveStatusResetTimer)
     if (_titleLogTimer) clearTimeout(_titleLogTimer)
     if (_descLogTimer) clearTimeout(_descLogTimer)
     if (_contentLogTimer) clearTimeout(_contentLogTimer)
@@ -62,7 +80,10 @@
   // Re-register when navigating between pages
   watch(pageId, (newId, oldId) => {
     if (oldId) deregisterPresence(oldId)
-    if (newId) registerPresence(newId)
+    if (newId) {
+      registerPresence(newId)
+      addRecentPage(newId)
+    }
   })
 
   // ── Local state ───────────────────────────────────────────────────
@@ -231,7 +252,7 @@
   }, { deep: true })
 
   // ── Right sidebar ─────────────────────────────────────────────────
-  const showSidebar = ref(true)
+  const showSidebar = ref(false)
   const sidebarTab = ref<'references' | 'activity'>('references')
   const sidebarW = ref(272)
   const isResizingSidebar = ref(false)
@@ -367,7 +388,20 @@
             </span>
             <TagsSection v-model="localTags" inline />
           </div>
-          <div class="flex items-center gap-0.5 shrink-0">
+          <div class="flex items-center gap-1 shrink-0">
+            <!-- Save status indicator -->
+            <Transition name="fade" mode="out-in">
+              <span
+                v-if="saveStatus !== 'idle'"
+                class="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] text-muted-foreground">
+                <Icon
+                  :name="saveStatus === 'saving' ? 'lucide:loader-2' : 'lucide:check'"
+                  class="h-3 w-3"
+                  :class="saveStatus === 'saving' ? 'animate-spin' : 'text-emerald-500'" />
+                {{ saveStatus === 'saving' ? 'Saving...' : 'Saved' }}
+              </span>
+            </Transition>
+
             <!-- Prev/Next navigation -->
             <UiButton variant="ghost" size="icon" class="h-7 w-7" :disabled="!canPrev" @click="navPrev">
               <Icon name="lucide:chevron-up" class="h-4 w-4" />
@@ -604,6 +638,9 @@
       </div>
     </div>
 
+    <!-- Recent pages strip -->
+    <RecentPagesStrip />
+
     <!-- Body: editor + optional right sidebar -->
     <div class="flex-1 flex min-h-0 overflow-hidden">
       <!-- Main editor -->
@@ -668,13 +705,6 @@
               @click="sidebarTab = 'activity'">
               Activity
               <span v-if="displayActivity.length" class="ml-1 text-[9px] bg-muted rounded-full px-1.5 py-0.5">{{ displayActivity.length }}</span>
-            </button>
-            <!-- Collapse button -->
-            <button
-              class="px-2 py-2 text-muted-foreground hover:text-foreground transition-colors shrink-0"
-              title="Collapse sidebar"
-              @click="showSidebar = false">
-              <Icon name="lucide:panel-right-close" class="h-3.5 w-3.5" />
             </button>
           </div>
 
@@ -796,6 +826,14 @@
 .sidebar-slide-enter-from,
 .sidebar-slide-leave-to {
   width: 0 !important;
+  opacity: 0;
+}
+.fade-enter-active,
+.fade-leave-active {
+  transition: opacity 0.15s ease;
+}
+.fade-enter-from,
+.fade-leave-to {
   opacity: 0;
 }
 </style>
