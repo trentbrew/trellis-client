@@ -1,62 +1,140 @@
-import type { AgentMessage } from '~/types/agent'
+import type { AgentMessage, AgentConversation } from '~/types/agent'
+
+interface ThreadStore {
+  activeThreadId: string | null
+  threads: Record<string, { meta: AgentConversation; messages: AgentMessage[] }>
+}
+
+const STORAGE_KEY = 'agent-threads'
+
+function loadStore(): ThreadStore {
+  if (typeof window === 'undefined') return { activeThreadId: null, threads: {} }
+  try {
+    const stored = localStorage.getItem(STORAGE_KEY)
+    if (stored) return JSON.parse(stored) as ThreadStore
+  } catch (e) {
+    console.warn('[useAgent] Failed to load threads:', e)
+  }
+  return { activeThreadId: null, threads: {} }
+}
+
+function saveStore(store: ThreadStore) {
+  if (typeof window === 'undefined') return
+  try {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(store))
+  } catch (e) {
+    console.warn('[useAgent] Failed to save threads:', e)
+  }
+}
+
+function generateId(): string {
+  return `thread-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`
+}
 
 export function useAgent() {
   const { user } = useInstantAuth()
   const messages = ref<AgentMessage[]>([])
   const isStreaming = ref(false)
-  const conversationId = ref<string | null>(null)
   const error = ref<string | null>(null)
+  const activeThreadId = ref<string | null>(null)
+  const threads = ref<AgentConversation[]>([])
 
-  // Load conversation history from localStorage for now
-  // TODO: Persist to InstantDB
-  const STORAGE_KEY = 'agent-conversation'
-
-  function loadMessages() {
-    if (typeof window === 'undefined') return
-    try {
-      const stored = localStorage.getItem(STORAGE_KEY)
-      if (stored) {
-        const parsed = JSON.parse(stored)
-        messages.value = parsed.messages || []
-        conversationId.value = parsed.conversationId || null
-      }
-    } catch (e) {
-      console.warn('[useAgent] Failed to load conversation:', e)
+  function syncFromStore() {
+    const store = loadStore()
+    threads.value = Object.values(store.threads)
+      .map((t) => t.meta)
+      .sort((a, b) => b.updatedAt - a.updatedAt)
+    activeThreadId.value = store.activeThreadId
+    if (store.activeThreadId && store.threads[store.activeThreadId]) {
+      messages.value = store.threads[store.activeThreadId]!.messages
+    } else {
+      messages.value = []
     }
   }
 
-  function saveMessages() {
-    if (typeof window === 'undefined') return
-    try {
-      localStorage.setItem(
-        STORAGE_KEY,
-        JSON.stringify({
-          conversationId: conversationId.value,
-          messages: messages.value,
-        })
-      )
-    } catch (e) {
-      console.warn('[useAgent] Failed to save conversation:', e)
+  function saveActiveThread() {
+    const store = loadStore()
+    const id = activeThreadId.value
+    if (!id) return
+    const existing = store.threads[id]
+    if (!existing) return
+    existing.messages = messages.value as AgentMessage[]
+    existing.meta.updatedAt = Date.now()
+    if (!existing.meta.title && messages.value.length > 0) {
+      const firstUser = messages.value.find((m) => m.role === 'user')
+      if (firstUser) existing.meta.title = firstUser.content.slice(0, 60)
+    }
+    saveStore(store)
+    threads.value = Object.values(store.threads)
+      .map((t) => t.meta)
+      .sort((a, b) => b.updatedAt - a.updatedAt)
+  }
+
+  function createThread() {
+    const id = generateId()
+    const now = Date.now()
+    const meta: AgentConversation = {
+      id,
+      userId: user.value?.id || 'guest',
+      title: undefined,
+      createdAt: now,
+      updatedAt: now,
+    }
+    const store = loadStore()
+    store.threads[id] = { meta, messages: [] }
+    store.activeThreadId = id
+    saveStore(store)
+    activeThreadId.value = id
+    messages.value = []
+    error.value = null
+    threads.value = Object.values(store.threads)
+      .map((t) => t.meta)
+      .sort((a, b) => b.updatedAt - a.updatedAt)
+  }
+
+  function switchThread(id: string) {
+    const store = loadStore()
+    if (!store.threads[id]) return
+    store.activeThreadId = id
+    saveStore(store)
+    activeThreadId.value = id
+    messages.value = store.threads[id]!.messages
+    error.value = null
+  }
+
+  function clearConversation() {
+    messages.value = []
+    error.value = null
+    const store = loadStore()
+    const id = activeThreadId.value
+    if (id && store.threads[id]) {
+      store.threads[id]!.messages = []
+      saveStore(store)
     }
   }
 
   async function sendMessage(content: string) {
     const userId = user.value?.id || 'guest'
 
-    // Add user message locally
+    // Ensure there's an active thread
+    if (!activeThreadId.value) {
+      createThread()
+    }
+
+    const threadId = activeThreadId.value!
+
     const userMessage: AgentMessage = {
       id: `msg-${Date.now()}`,
-      conversationId: conversationId.value || 'default',
+      conversationId: threadId,
       role: 'user',
       content,
       timestamp: Date.now(),
     }
     messages.value.push(userMessage)
 
-    // Initialize assistant message
     const assistantMessage: AgentMessage = {
       id: `msg-${Date.now() + 1}`,
-      conversationId: conversationId.value || 'default',
+      conversationId: threadId,
       role: 'assistant',
       content: '',
       timestamp: Date.now(),
@@ -68,27 +146,20 @@ export function useAgent() {
     error.value = null
 
     try {
-      // Call streaming API
       const response = await fetch('/api/agent/chat', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           message: content,
-          conversationId: conversationId.value,
+          conversationId: threadId,
           userId,
           path: useRoute().path,
         }),
       })
 
-      if (!response.ok) {
-        throw new Error(`API error: ${response.statusText}`)
-      }
+      if (!response.ok) throw new Error(`API error: ${response.statusText}`)
+      if (!response.body) throw new Error('No response body')
 
-      if (!response.body) {
-        throw new Error('No response body')
-      }
-
-      // Parse SSE stream
       const reader = response.body.getReader()
       const decoder = new TextDecoder()
 
@@ -104,25 +175,22 @@ export function useAgent() {
             const data = JSON.parse(line.slice(6))
 
             if (data.type === 'text') {
-              // Append text to assistant message (reactive update)
               const msg = messages.value[assistantMessageIndex]
               if (msg) msg.content += data.content
             } else if (data.type === 'tool') {
-              // Store tool execution
               const msg = messages.value[assistantMessageIndex]
               if (msg) {
                 const newToolCall = {
                   id: `call_${Date.now()}_${Math.random().toString(36).substring(7)}`,
                   name: data.tool,
-                  args: {}, // We don't have args from the stream yet, but we could add them
-                  result: data.result
+                  args: {},
+                  result: data.result,
                 }
                 msg.toolCalls = [...(msg.toolCalls || []), newToolCall]
               }
             } else if (data.type === 'error') {
               error.value = data.message
             } else if (data.type === 'done') {
-              // Stream complete
               break
             }
           }
@@ -133,29 +201,28 @@ export function useAgent() {
       console.error('[useAgent] sendMessage error:', err)
     } finally {
       isStreaming.value = false
-      saveMessages()
-    }
-  }
-
-  function clearConversation() {
-    messages.value = []
-    conversationId.value = null
-    error.value = null
-    if (typeof window !== 'undefined') {
-      localStorage.removeItem(STORAGE_KEY)
+      saveActiveThread()
     }
   }
 
   // Load on mount
   if (typeof window !== 'undefined') {
-    loadMessages()
+    syncFromStore()
+    // Auto-create an initial thread if none exist
+    if (Object.keys(loadStore().threads).length === 0) {
+      createThread()
+    }
   }
 
   return {
     messages: readonly(messages),
+    threads: readonly(threads),
+    activeThreadId: readonly(activeThreadId),
     isStreaming: readonly(isStreaming),
     error: readonly(error),
     sendMessage,
+    createThread,
+    switchThread,
     clearConversation,
   }
 }

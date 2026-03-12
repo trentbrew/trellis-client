@@ -181,7 +181,8 @@
 
   // ── Collaborative editing ───────────────────────────────────────────
   const collabEntityId = computed(() => props.entityId)
-  const collabEnabled = computed(() => !!props.collaborative && !!props.entityId)
+  const adapter = useDataAdapter()
+  const collabEnabled = computed(() => !!props.collaborative && !!props.entityId && adapter.mode === 'cloud')
   const initialContent = computed(() => props.modelValue || '')
   const { ydoc: _ydoc, collabExtensions, connectionStatus: _connectionStatus, isLeader: _isLeader, destroy: destroyCollab } = useCollaborativeEditor(
     collabEntityId,

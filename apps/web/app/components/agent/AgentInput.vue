@@ -1,46 +1,103 @@
 <script setup lang="ts">
-const props = defineProps<{
-  disabled?: boolean
-}>()
-
-const emit = defineEmits<{
-  send: [message: string]
-}>()
-
-const input = ref('')
-
-const canSend = computed(() => input.value.trim().length > 0 && !props.disabled)
-
-function handleSend() {
-  if (!canSend.value) return
-  emit('send', input.value.trim())
-  input.value = ''
-}
-
-function handleKeydown(e: KeyboardEvent) {
-  if (e.key === 'Enter' && !e.shiftKey) {
-    e.preventDefault()
-    handleSend()
+  type EditorRef = {
+    clearContent: () => void
+    focusEditor: () => void
+    getEditor: () => any
+    triggerImageUpload: () => void
   }
-}
+
+  const props = defineProps<{
+    disabled?: boolean
+  }>()
+
+  const emit = defineEmits<{
+    send: [message: string]
+  }>()
+
+  const content = ref('')
+  const isSending = ref(false)
+  const editorRef = ref<EditorRef | null>(null)
+
+  function hasContent(html: string): boolean {
+    if (!html) return false
+    if (/<img/i.test(html)) return true
+    return !!html.replace(/<[^>]+>/g, '').trim()
+  }
+
+  const canSend = computed(() => !isSending.value && !props.disabled && hasContent(content.value))
+
+  async function handleSend() {
+    if (!canSend.value) return
+    isSending.value = true
+    try {
+      emit('send', content.value)
+      content.value = ''
+      editorRef.value?.clearContent()
+      nextTick(() => editorRef.value?.focusEditor())
+    } finally {
+      isSending.value = false
+    }
+  }
 </script>
 
 <template>
-  <div class="flex items-end gap-2">
-    <textarea
-      v-model="input"
-      :disabled="disabled"
-      placeholder="Ask about your graph..."
-      class="flex-1 min-h-[40px] max-h-[120px] px-3 py-2 text-sm rounded-lg border border-border bg-background resize-none focus:outline-none focus:ring-1 focus:ring-ring disabled:opacity-50"
-      rows="1"
-      @keydown="handleKeydown"
-    />
-    <UiButton
-      size="sm"
-      :disabled="!canSend"
-      class="shrink-0"
-      @click="handleSend">
-      <Icon name="lucide:send-horizontal" class="h-4 w-4" />
-    </UiButton>
+  <div class="shrink-0 border-t border-border bg-card/50">
+    <!-- Input container -->
+    <div class="mx-3 mb-2 mt-2 rounded-xl border border-border bg-foreground/5 focus-within:ring-1 focus-within:ring-ring transition-shadow">
+      <!-- Rich text editor -->
+      <div class="px-3 pt-2 pb-1 max-h-48 overflow-y-auto text-xs">
+        <UiRichTextEditor
+          ref="editorRef"
+          v-model="content"
+          placeholder="Ask about your graph..."
+          seamless
+          mentions
+          images
+          chat-mode
+          submit-on-enter
+          @submit="handleSend"
+        />
+      </div>
+
+      <!-- Bottom bar: attach + send -->
+      <div class="flex items-center gap-0.5 px-2 pb-2 pt-0.5">
+        <!-- Attach file -->
+        <UiTooltip>
+          <UiTooltipTrigger as-child>
+            <button
+              type="button"
+              class="h-6 w-6 flex items-center justify-center rounded text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
+              :disabled="disabled"
+              @click="editorRef?.triggerImageUpload()"
+            >
+              <Icon name="lucide:paperclip" class="h-3.5 w-3.5" />
+            </button>
+          </UiTooltipTrigger>
+          <UiTooltipContent side="top" class="text-xs">Attach file</UiTooltipContent>
+        </UiTooltip>
+
+        <!-- Spacer -->
+        <div class="flex-1" />
+
+        <!-- Send -->
+        <button
+          type="button"
+          :disabled="!canSend"
+          class="h-7 w-7 flex items-center justify-center rounded-lg transition-all"
+          :class="canSend
+            ? 'bg-primary text-primary-foreground hover:bg-primary/90 cursor-pointer'
+            : 'bg-primary/25 text-muted-foreground/40 cursor-not-allowed'"
+          title="Send (⌘Enter)"
+          @click="handleSend"
+        >
+          <Icon name="lucide:send-horizontal" class="h-3.5 w-3.5" />
+        </button>
+      </div>
+    </div>
+
+    <!-- Hint -->
+    <div class="px-4 pb-2 text-[10px] text-muted-foreground/40">
+      <kbd class="font-mono">@</kbd> mention · <kbd class="font-mono">⌘Enter</kbd> to send · <kbd class="font-mono">Enter</kbd> for new line
+    </div>
   </div>
 </template>
