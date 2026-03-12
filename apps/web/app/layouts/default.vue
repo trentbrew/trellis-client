@@ -38,7 +38,7 @@
   const hasLoggedInstantAuth = useState<boolean>('debug:instantAuthLogged', () => false)
 
   // Global adjacent sidebar state
-  const { setRightSidebarWidth, isRightSidebarOpen, toggleRightSidebar } = useRightSidebarWidth()
+  const { setRightSidebarWidth, isRightSidebarOpen } = useRightSidebarWidth()
   const rightSidebarWidth = ref(320)
   const isResizingRightSidebar = ref(false)
   const MIN_RIGHT_SIDEBAR_WIDTH = 200
@@ -295,7 +295,7 @@
           :style="{ width: `${rightSidebarWidth}px` }">
           <aside
             data-slot="right-sidebar"
-            class="h-full border border-border/75 rounded-xl shrink-0 overflow-hidden flex flex-col "
+            class="h-full border border-border/75 rounded-xl shrink-0 overflow-hidden flex flex-col"
             :class="{ 'select-none': isResizingRightSidebar }"
             aria-label="Right sidebar">
             <!-- Drag handle -->
@@ -319,27 +319,6 @@
         :style="{ width: `${rightSidebarWidth}px` }"
       />
     </Transition>
-
-    <!-- Fixed Bottom-Right Sidebar Trigger -->
-    <Teleport to="body">
-      <div
-        class="fixed right-4 z-9999 flex items-center gap-2 transition-all duration-250"
-        :class="isRightSidebarOpen ? 'bottom-[72px]' : 'bottom-2.5'">
-        <!-- Right Sidebar Toggle Button -->
-        <UiButton
-          size="icon"
-          variant="outline"
-          class="h-10 w-10 rounded-full shadow-lg border-border/75 bg-card/95 backdrop-blur-sm hover:bg-card transition-all"
-          :class="{ 'bg-primary/10 border-primary/50': isRightSidebarOpen }"
-          @click="toggleRightSidebar">
-          <Icon
-            :name="isRightSidebarOpen ? 'lucide:panel-right-close' : 'lucide:panel-right-open'"
-            class="h-4 w-4"
-            :class="{ 'text-primary': isRightSidebarOpen }" />
-          <span class="sr-only">{{ isRightSidebarOpen ? 'Close' : 'Open' }} right sidebar</span>
-        </UiButton>
-      </div>
-    </Teleport>
   </div>
 </template>
 

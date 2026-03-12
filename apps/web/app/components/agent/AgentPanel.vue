@@ -1,5 +1,5 @@
 <script setup lang="ts">
-const { messages, isStreaming, error, sendMessage, clearConversation } = useAgent()
+const { messages, isStreaming, error, sendMessage, createThread } = useAgent()
 
 const messageContainer = ref<HTMLElement | null>(null)
 
@@ -23,13 +23,12 @@ onMounted(() => {
 })
 
 const handleSend = (message: string) => {
-  sendMessage(message)
+  const plain = message.replace(/<[^>]+>/g, '').trim()
+  if (plain) sendMessage(plain)
 }
 
-const handleClear = () => {
-  if (confirm('Clear conversation history?')) {
-    clearConversation()
-  }
+function handleNewThread() {
+  createThread()
 }
 </script>
 
@@ -41,13 +40,18 @@ const handleClear = () => {
         <Icon name="lucide:bot" class="h-4 w-4 text-primary" />
         <span class="font-medium text-sm">Graph Assistant</span>
       </div>
-      <UiButton
-        size="sm"
-        variant="ghost"
-        :disabled="messages.length === 0"
-        @click="handleClear">
-        <Icon name="lucide:trash-2" class="h-3.5 w-3.5" />
-      </UiButton>
+      <UiTooltip>
+        <UiTooltipTrigger as-child>
+          <UiButton
+            size="sm"
+            variant="ghost"
+            class="text-muted-foreground hover:text-foreground"
+            @click="handleNewThread">
+            <Icon name="lucide:plus" class="h-3.5 w-3.5" />
+          </UiButton>
+        </UiTooltipTrigger>
+        <UiTooltipContent side="bottom" :side-offset="8">New thread</UiTooltipContent>
+      </UiTooltip>
     </div>
 
     <!-- Message List -->
@@ -115,12 +119,10 @@ const handleClear = () => {
     </div>
 
     <!-- Input -->
-    <div class="shrink-0 border-t border-border p-3">
-      <AgentInput
-        :disabled="isStreaming"
-        @send="handleSend"
-      />
-    </div>
+    <AgentInput
+      :disabled="isStreaming"
+      @send="handleSend"
+    />
   </div>
 </template>
 

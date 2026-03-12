@@ -294,10 +294,11 @@ export const ROUTE_PATHS = {
   },
   workspace: {
     root: '/workspace',
+    browse: '/workspace/browse',
     today: '/workspace/today',
     feed: '/workspace/feed',
-    tasks: '/workspace/tasks',
     calendar: '/workspace/calendar',
+    tasks: '/workspace/tasks',
     notes: '/workspace/notes',
     projects: '/workspace/projects',
     people: '/workspace/people',

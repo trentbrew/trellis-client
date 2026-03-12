@@ -803,10 +803,10 @@
         <div
           v-if="variantConfig.showToolbar"
           ref="stickyRef"
-          class="sticky -top-px z-40 transition-all duration-0"
+          class="sticky -top-px z-40 transition-all duration-0 rounded-t-lg"
           :class="[
             isStuck
-              ? 'bg-transparent border-b border-border/0 backdrop-blur-lg'
+              ? 'bg-transparent border-b border-border backdrop-blur-lg'
               : 'bg-transparent border-b-transparent',
             transparent ? 'bg-transparent backdrop-blur-none' : '',
           ]">

@@ -20,7 +20,7 @@
   const { userRole: _userRole, roleConfig } = useUserRole()
   const { isInEditMode, toggleEditMode, canToggleEditMode, canManageMembers, isAdmin: _isAdmin } = useAdminUI()
   const { onlineCount, totalMembers: _totalMembers, members: workspaceMembers, isUserOnline } = usePresence()
-  const { isRightSidebarOpen: _isRightSidebarOpen, toggleRightSidebar: _toggleRightSidebar } = useRightSidebarWidth()
+  const { isRightSidebarOpen, toggleRightSidebar } = useRightSidebarWidth()
   const isResizing = useState<boolean>('isSidebarResizing', () => false)
 
   // User avatar and auth
@@ -508,102 +508,95 @@
 
       <!-- User Avatar -->
       <ClientOnly>
-        <UiDropdownMenu>
-          <UiDropdownMenuTrigger as-child>
-            <button
-              type="button"
-              class="relative flex h-8 w-8 shrink-0 items-center justify-center overflow-hidden rounded-full border border-border bg-muted/50 text-xs font-semibold transition-all hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring active:scale-95"
-              aria-label="User menu"
-            >
-              <img
-                v-if="avatarUrl"
-                :src="avatarUrl"
-                :alt="userDisplayName"
-                class="h-full w-full rounded-full object-cover"
-                referrerpolicy="no-referrer"
-              />
-              <span v-else class="text-[10px] text-foreground/70">{{ initials }}</span>
-            </button>
-            <!-- <span class="absolute bottom-4 right-4 h-2 w-2 rounded-full border-2 border-background bg-emerald-500 " /> -->
-          </UiDropdownMenuTrigger>
+        <div class="flex items-center gap-2">
+          <UiDropdownMenu>
+            <UiDropdownMenuTrigger as-child>
+              <button
+                type="button"
+                class="relative flex h-8 w-8 shrink-0 items-center justify-center overflow-hidden rounded-full border border-border bg-muted/50 text-xs font-semibold transition-all hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring active:scale-95"
+                aria-label="User menu"
+              >
+                <img
+                  v-if="avatarUrl"
+                  :src="avatarUrl"
+                  :alt="userDisplayName"
+                  class="h-full w-full rounded-full object-cover"
+                  referrerpolicy="no-referrer"
+                />
+                <span v-else class="text-[10px] text-foreground/70">{{ initials }}</span>
+              </button>
+            </UiDropdownMenuTrigger>
 
-          <UiDropdownMenuContent align="end" class="w-[220px] shadow-2xl border-border/50">
-            <div class="px-2 py-2 mb-1 border-b bg-muted/5 flex items-center gap-3">
-              <div class="h-8 w-8 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
-                <span class="text-[10px] font-bold text-primary">{{ initials }}</span>
-              </div>
-              <div class="flex-1 min-w-0">
-                <div class="text-sm font-bold truncate leading-none">{{ userDisplayName }}</div>
-                <div class="text-[10px] text-muted-foreground truncate mt-1 uppercase tracking-wider font-bold">{{ roleConfig?.label || 'Member' }}</div>
-              </div>
-            </div>
-
-            <UiDropdownMenuItem as-child>
-              <AppNavLink to="/settings/profile" class="flex w-full items-center">
-                <Icon name="lucide:user" class="mr-2 h-4 w-4" />
-                Profile settings
-              </AppNavLink>
-            </UiDropdownMenuItem>
-
-            <template v-if="canToggleEditMode">
-              <UiDropdownMenuSeparator />
-              <UiDropdownMenuItem class="flex items-center justify-between" @click="toggleEditMode">
-                <div class="flex items-center gap-2">
-                  <Icon :name="isInEditMode ? 'lucide:pencil-off' : 'lucide:pencil'" class="h-4 w-4" />
-                  <span>{{ isInEditMode ? 'Exit Edit Mode' : 'Edit Mode' }}</span>
+            <UiDropdownMenuContent align="end" class="w-[220px] shadow-2xl border-border/50">
+              <div class="px-2 py-2 mb-1 border-b bg-muted/5 flex items-center gap-3">
+                <div class="h-8 w-8 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
+                  <span class="text-[10px] font-bold text-primary">{{ initials }}</span>
                 </div>
-                <div
-                  v-if="isInEditMode"
-                  class="h-2 w-2 rounded-full bg-amber-500 animate-pulse" />
-              </UiDropdownMenuItem>
-            </template>
+                <div class="flex-1 min-w-0">
+                  <div class="text-sm font-bold truncate leading-none">{{ userDisplayName }}</div>
+                  <div class="text-[10px] text-muted-foreground truncate mt-1 uppercase tracking-wider font-bold">{{ roleConfig?.label || 'Member' }}</div>
+                </div>
+              </div>
 
-            <UiDropdownMenuSeparator />
-            <UiDropdownMenuItem class="text-destructive focus:text-destructive" @click="handleLogout">
-              <Icon name="lucide:log-out" class="mr-2 h-4 w-4" />
-              Sign out
-            </UiDropdownMenuItem>
-          </UiDropdownMenuContent>
-        </UiDropdownMenu>
+              <UiDropdownMenuItem as-child>
+                <AppNavLink to="/settings/profile" class="flex w-full items-center">
+                  <Icon name="lucide:user" class="mr-2 h-4 w-4" />
+                  Profile settings
+                </AppNavLink>
+              </UiDropdownMenuItem>
+
+              <template v-if="canToggleEditMode">
+                <UiDropdownMenuSeparator />
+                <UiDropdownMenuItem class="flex items-center justify-between" @click="toggleEditMode">
+                  <div class="flex items-center gap-2">
+                    <Icon :name="isInEditMode ? 'lucide:pencil-off' : 'lucide:pencil'" class="h-4 w-4" />
+                    <span>{{ isInEditMode ? 'Exit Edit Mode' : 'Edit Mode' }}</span>
+                  </div>
+                  <div
+                    v-if="isInEditMode"
+                    class="h-2 w-2 rounded-full bg-amber-500 animate-pulse" />
+                </UiDropdownMenuItem>
+              </template>
+
+              <UiDropdownMenuSeparator />
+              <UiDropdownMenuItem class="text-destructive focus:text-destructive" @click="handleLogout">
+                <Icon name="lucide:log-out" class="mr-2 h-4 w-4" />
+                Sign out
+              </UiDropdownMenuItem>
+            </UiDropdownMenuContent>
+          </UiDropdownMenu>
+
+          <!-- AI Assistant Toggle -->
+          <UiTooltip>
+            <UiTooltipTrigger as-child>
+              <UiButton
+                variant="default"
+                size="icon-sm"
+                class="h-8 w-8 shrink-0 rounded-full bg-primary hover:bg-primary/90 text-primary-foreground shadow-sm transition-all active:scale-95"
+                :class="{ 'ring-2 ring-primary ring-offset-2 ring-offset-background': isRightSidebarOpen }"
+                @click="toggleRightSidebar"
+              >
+                <Icon name="lucide:bot" class="h-4 w-4" />
+              </UiButton>
+            </UiTooltipTrigger>
+            <UiTooltipContent side="bottom" :side-offset="8">
+              AI Assistant
+            </UiTooltipContent>
+          </UiTooltip>
+        </div>
 
         <template #fallback>
-          <div
-            class="flex h-8 w-8 items-center justify-center rounded-full bg-muted/50 text-[10px] font-semibold"
-            aria-label="User"
-          >
-            <Icon name="lucide:user" class="h-4 w-4 opacity-50" />
+          <div class="flex items-center gap-2">
+            <div
+              class="flex h-8 w-8 items-center justify-center rounded-full bg-muted/50 text-[10px] font-semibold"
+              aria-label="User"
+            >
+              <Icon name="lucide:user" class="h-4 w-4 opacity-50" />
+            </div>
+            <div class="h-8 w-8 rounded-full bg-primary/20 animate-pulse" />
           </div>
         </template>
       </ClientOnly>
-
-      <!-- Right Sidebar Toggle -->
-      <!-- <UiTooltip v-if="props.aboveSidebar">
-        <UiTooltipTrigger as-child>
-          <UiButton
-            variant="outline"
-            size="icon-sm"
-            class="text-muted-foreground hover:text-foreground transition-transform active:scale-95 ml-1 rounded-full"
-            @click="emit('toggleRightSidebar')">
-            <Icon name="lucide:panel-right" class="h-4 w-4" />
-          </UiButton>
-        </UiTooltipTrigger>
-        <UiTooltipContent side="bottom">Toggle details panel</UiTooltipContent>
-      </UiTooltip> -->
-
-      <!-- AI Assistant Toggle -->
-      <!-- <UiTooltip>
-        <UiTooltipTrigger as-child>
-          <button
-            type="button"
-            :aria-expanded="isRightSidebarOpen"
-            aria-label="Toggle AI assistant"
-            class="group flex h-8 w-8 items-center justify-center rounded-full transition bg-muted-foreground"
-            @click="toggleRightSidebar">
-            <Icon name="lucide:bot" class="h-4 w-4 text-background" />
-          </button>
-        </UiTooltipTrigger>
-        <UiTooltipContent side="bottom">AI assistant</UiTooltipContent>
-      </UiTooltip> -->
 
       <!-- Member Invite Dialog -->
       <MemberInviteDialog v-model:open="inviteDialogOpen" />
