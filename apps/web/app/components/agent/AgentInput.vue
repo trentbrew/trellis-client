@@ -41,9 +41,9 @@
 </script>
 
 <template>
-  <div class="shrink-0 border-t border-border bg-card/50">
+  <div class="shrink-0  bg-card/50">
     <!-- Input container -->
-    <div class="mx-3 mb-2 mt-2 rounded-xl border border-border bg-foreground/5 focus-within:ring-1 focus-within:ring-ring transition-shadow">
+    <div class="mx-3 mb-2 mt-0 rounded-xl border border-border bg-foreground/5 focus-within:ring-1 focus-within:ring-ring transition-shadow">
       <!-- Rich text editor -->
       <div class="px-3 pt-2 pb-1 max-h-48 overflow-y-auto text-xs">
         <UiRichTextEditor

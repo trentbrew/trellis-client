@@ -1,8 +1,8 @@
 <script lang="ts" setup>
   import { AnimatePresence, motion } from 'motion-v'
-  import AnimatedIconsMenu from '~/components/animated-icons/Menu.vue'
   import Sortable from 'sortablejs'
   import { SYSTEM_TYPES } from '~/lib/systemTypes'
+  import { getAllEntityTypes } from '~/config/entityRegistry'
   import type { ContextMenuEvent } from '~/types/contextMenu'
   import { CONTEXT_ACTIONS } from '~/types/contextMenu'
   import type { SidebarTreeNode } from '~/composables/useSidebarTree'
@@ -16,11 +16,9 @@
     treeNodeItemMenu,
   } from '~/composables/useContextMenu'
 
-  const props = withDefaults(defineProps<{
+  defineProps<{
     headerAbove?: boolean
-  }>(), {
-    headerAbove: false,
-  })
+  }>()
 
   const BADGE_LABEL_THRESHOLD = 300
 
@@ -684,6 +682,29 @@
     route.path === '/graph' || route.path.startsWith('/graph/') || routes.currentSidebarSection.value?.path === '/graph',
   )
 
+  const isBrowseRoute = computed(() => route.path.endsWith('/workspace/browse'))
+
+  const pageSidebar = usePageSidebar()
+
+  const browseTotalCount = computed(() =>
+    Object.values(pageSidebar.state.typeCounts).reduce((s, n) => s + n, 0),
+  )
+
+  const browseAllPinned = computed(() => pageSidebar.isPinned('all'))
+
+  const browsePinnedTypes = computed(() => {
+    const allTypes = getAllEntityTypes()
+    return allTypes.filter(t => pageSidebar.isPinned(t.type))
+  })
+
+  const browseUnpinnedTypes = computed(() => {
+    const allTypes = getAllEntityTypes()
+    return allTypes.filter(
+      t => !pageSidebar.isPinned(t.type)
+        && ((pageSidebar.state.typeCounts[t.type] ?? 0) > 0 || t.type === pageSidebar.state.activeTypeId),
+    )
+  })
+
   const sectionsContainerRef = ref<HTMLElement | null>(null)
   const sortableInstances = ref<Sortable[]>([])
 
@@ -1004,21 +1025,6 @@
       </UiButton>
     </div>
 
-    <!-- Global Search Button (hidden when header is above sidebar — search moves to header) -->
-      <!-- <UiButton
-        v-if="!props.headerAbove"
-        variant="ghost"
-        size="sm"
-        class="w-full text-sidebar-foreground/50 hover:text-sidebar-foreground hover:bg-white/10 rounded-none justify-between group px-6 border-b h-16 bg-transparent"
-        @click.prevent="useCommandDialog().open()">
-        <div class="flex items-center gap-2 w-full">
-          <Icon name="lucide:search" class="h-4 w-4 transition-transform group-hover:scale-110" />
-          <span class="text-xs font-medium opacity-70 group-hover:opacity-100 transition-opacity">
-            Find anything...
-          </span>
-        </div>
-        <UiKbd class="bg-white/5 border-sidebar-border/20 text-sidebar-foreground/40 text-[10px]">⌘K</UiKbd>
-      </UiButton> -->
 
     <!-- Sidebar section items animate per rail route (client-only to avoid hydration mismatches from localStorage/pins) -->
     <ClientOnly>
@@ -1091,6 +1097,156 @@
               <template v-else-if="isPagesRoute">
                 <PagesSidebar class="pt-2" />
               </template>
+
+              <!-- Browse type filter sidebar -->
+<template v-else-if="isBrowseRoute">
+  <div class="py-4">
+    <template v-if="pageSidebar.state.isActive">
+      <div class="relative px-2 space-y-4">
+
+        <!-- Pinned section -->
+        <div v-if="browseAllPinned || browsePinnedTypes.length > 0">
+          <div class="flex items-center px-3 mb-1">
+            <span class="text-muted-foreground text-[10px] tracking-wide uppercase font-medium">Pinned</span>
+          </div>
+          <ul class="space-y-0.5 text-sm">
+            <!-- All (pinned) -->
+            <li v-if="browseAllPinned">
+              <div
+                class="group relative flex items-center rounded-lg transition hover:bg-foreground/5"
+                :class="{ 'bg-foreground/10': pageSidebar.state.activeTypeId === 'all' }">
+                <button
+                  type="button"
+                  class="flex flex-1 items-center justify-start gap-3 px-3 py-2 min-w-0"
+                  :class="pageSidebar.state.activeTypeId === 'all' ? 'text-foreground font-semibold' : 'text-sidebar-foreground'"
+                  @click="pageSidebar.state.onSelectType?.('all')">
+                  <Icon name="lucide:layers-3" class="h-4 w-4 shrink-0 opacity-50" />
+                  <span class="flex-1 flex justify-start truncate min-w-0 text-xs">All</span>
+                  <span
+                    class="rounded-full px-1.5 py-0.5 text-[10px] font-semibold tabular-nums shrink-0"
+                    :class="pageSidebar.state.activeTypeId === 'all' ? 'bg-primary/20 text-primary' : 'bg-muted text-muted-foreground'">
+                    {{ browseTotalCount }}
+                  </span>
+                </button>
+                <button
+                  type="button"
+                  class="shrink-0 mr-1.5 p-1 rounded transition text-primary/60"
+                  title="Unpin"
+                  @click.stop="pageSidebar.togglePin('all')">
+                  <Icon name="lucide:pin" class="h-3 w-3" />
+                </button>
+              </div>
+            </li>
+            <!-- Pinned types -->
+            <li v-for="t in browsePinnedTypes" :key="t.type">
+              <div
+                class="group relative flex items-center rounded-lg transition hover:bg-foreground/5"
+                :class="{ 'bg-foreground/10': pageSidebar.state.activeTypeId === t.type }">
+                <button
+                  type="button"
+                  class="flex flex-1 items-center justify-start gap-3 px-3 py-2 min-w-0"
+                  :class="pageSidebar.state.activeTypeId === t.type ? 'text-foreground font-semibold' : 'text-sidebar-foreground'"
+                  @click="pageSidebar.state.onSelectType?.(t.type)">
+                  <Icon
+                    :name="t.icon"
+                    class="h-4 w-4 shrink-0 opacity-50"
+                    :class="pageSidebar.state.activeTypeId === t.type ? `text-${t.color}-400` : ''" />
+                  <span class="flex-1 flex justify-start truncate min-w-0 text-xs">{{ t.labelPlural ?? t.label }}</span>
+                  <span
+                    v-if="pageSidebar.state.typeCounts[t.type]"
+                    class="rounded-full px-1.5 py-0.5 text-[10px] font-semibold tabular-nums shrink-0"
+                    :class="pageSidebar.state.activeTypeId === t.type ? 'bg-primary/20 text-primary' : 'bg-muted text-muted-foreground'">
+                    {{ pageSidebar.state.typeCounts[t.type] }}
+                  </span>
+                </button>
+                <button
+                  type="button"
+                  class="shrink-0 mr-1.5 p-1 rounded transition text-primary/60"
+                  title="Unpin"
+                  @click.stop="pageSidebar.togglePin(t.type)">
+                  <Icon name="lucide:pin" class="h-3 w-3" />
+                </button>
+              </div>
+            </li>
+          </ul>
+        </div>
+
+        <!-- Types section -->
+        <div v-if="!browseAllPinned || browseUnpinnedTypes.length > 0">
+          <div class="flex items-center px-3 mb-1">
+            <span class="text-muted-foreground text-[10px] tracking-wide uppercase font-medium">Types</span>
+          </div>
+          <ul class="space-y-0.5 text-sm">
+            <!-- All (unpinned) -->
+            <li v-if="!browseAllPinned">
+              <div
+                class="group relative flex items-center rounded-lg transition hover:bg-foreground/5"
+                :class="{ 'bg-foreground/10': pageSidebar.state.activeTypeId === 'all' }">
+                <button
+                  type="button"
+                  class="flex flex-1 items-center justify-start gap-3 px-3 py-2 min-w-0"
+                  :class="pageSidebar.state.activeTypeId === 'all' ? 'text-foreground font-semibold' : 'text-sidebar-foreground'"
+                  @click="pageSidebar.state.onSelectType?.('all')">
+                  <Icon name="lucide:layers-3" class="h-4 w-4 shrink-0 opacity-50" />
+                  <span class="flex-1 flex justify-start truncate min-w-0 text-xs">All</span>
+                  <span
+                    class="rounded-full px-1.5 py-0.5 text-[10px] font-semibold tabular-nums shrink-0"
+                    :class="pageSidebar.state.activeTypeId === 'all' ? 'bg-primary/20 text-primary' : 'bg-muted text-muted-foreground'">
+                    {{ browseTotalCount }}
+                  </span>
+                </button>
+                <button
+                  type="button"
+                  class="shrink-0 mr-1.5 p-1 rounded transition opacity-0 group-hover:opacity-100 text-muted-foreground hover:text-foreground"
+                  title="Pin"
+                  @click.stop="pageSidebar.togglePin('all')">
+                  <Icon name="lucide:pin" class="h-3 w-3" />
+                </button>
+              </div>
+            </li>
+            <!-- Unpinned types -->
+            <li v-for="t in browseUnpinnedTypes" :key="t.type">
+              <div
+                class="group relative flex items-center rounded-lg transition hover:bg-foreground/5"
+                :class="{ 'bg-foreground/10': pageSidebar.state.activeTypeId === t.type }">
+                <button
+                  type="button"
+                  class="flex flex-1 items-center justify-start gap-3 px-3 py-2 min-w-0"
+                  :class="pageSidebar.state.activeTypeId === t.type ? 'text-foreground font-semibold' : 'text-sidebar-foreground'"
+                  @click="pageSidebar.state.onSelectType?.(t.type)">
+                  <Icon
+                    :name="t.icon"
+                    class="h-4 w-4 shrink-0 opacity-50"
+                    :class="pageSidebar.state.activeTypeId === t.type ? `text-${t.color}-400` : ''" />
+                  <span class="flex-1 flex justify-start truncate min-w-0 text-xs">{{ t.labelPlural ?? t.label }}</span>
+                  <span
+                    v-if="pageSidebar.state.typeCounts[t.type]"
+                    class="rounded-full px-1.5 py-0.5 text-[10px] font-semibold tabular-nums shrink-0"
+                    :class="pageSidebar.state.activeTypeId === t.type ? 'bg-primary/20 text-primary' : 'bg-muted text-muted-foreground'">
+                    {{ pageSidebar.state.typeCounts[t.type] }}
+                  </span>
+                </button>
+                <button
+                  type="button"
+                  class="shrink-0 mr-1.5 p-1 rounded transition opacity-0 group-hover:opacity-100 text-muted-foreground hover:text-foreground"
+                  title="Pin"
+                  @click.stop="pageSidebar.togglePin(t.type)">
+                  <Icon name="lucide:pin" class="h-3 w-3" />
+                </button>
+              </div>
+            </li>
+          </ul>
+        </div>
+
+      </div>
+    </template>
+    <template v-else>
+      <div class="space-y-1.5 px-3">
+        <div v-for="n in 6" :key="n" class="h-8 rounded-xl bg-muted/30 animate-pulse" />
+      </div>
+    </template>
+  </div>
+</template>
 
               <!-- Dynamic Sidebar Sections (if configured in route) -->
               <template v-else-if="filteredDynamicSidebarSections">

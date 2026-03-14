@@ -1939,10 +1939,10 @@
           class="shrink-0 border-b border-border bg-transparent p-0!"
           :class="isCompact ? 'px-3 py-2' : isMedium ? 'px-4 py-3' : 'px-6 py-4'"
         >
-          <div class="flex flex-wrap items-center justify-between gap-2 ">
+          <div class="flex flex-wrap items-center justify-between gap-2 py-2 pr-2">
 
             <!-- View Mode Switcher + Slot -->
-            <div class="flex items-center gap-2 shrink-0 ml-8">
+            <div class="flex items-center gap-2 shrink-0 ml-4">
               <!-- View Mode Switcher -->
               <div class="flex items-center rounded-lg p-0">
                 <UiTooltip v-for="option in viewModeOptions" :key="option.value">

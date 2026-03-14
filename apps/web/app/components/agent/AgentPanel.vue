@@ -33,7 +33,7 @@ function handleNewThread() {
 </script>
 
 <template>
-  <div class="flex flex-col h-full">
+  <div class="flex flex-col h-full bg-card">
     <!-- Header -->
     <div class="shrink-0 border-b border-border p-3 flex items-center justify-between">
       <div class="flex items-center gap-2">
@@ -57,7 +57,7 @@ function handleNewThread() {
     <!-- Message List -->
     <div
       ref="messageContainer"
-      class="flex-1 overflow-y-auto p-4 space-y-4">
+      class="flex-1 overflow-y-auto p-4 space-y-4 ">
       <!-- Empty state -->
       <div v-if="messages.length === 0" class="flex flex-col items-center justify-center h-full text-center px-4">
         <div class="h-12 w-12 rounded-full bg-primary/10 flex items-center justify-center mb-3">

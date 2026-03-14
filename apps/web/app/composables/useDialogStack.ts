@@ -50,6 +50,8 @@ const sharedH = ref(0)
 const originTitle = ref('')
 /** Entity ID of the originating (page-managed) dialog beneath the stack */
 const originEntityId = ref('')
+/** Whether a non-stacked (originating) dialog shell is currently open */
+const _originatingDialogOpen = ref(false)
 
 /**
  * Global dialog stack composable.
@@ -181,5 +183,7 @@ export function useDialogStack() {
     sharedW: readonly(sharedW),
     sharedH: readonly(sharedH),
     setSharedDimensions,
+    originatingDialogOpen: readonly(_originatingDialogOpen),
+    setOriginatingDialogOpen: (v: boolean) => { _originatingDialogOpen.value = v },
   }
 }

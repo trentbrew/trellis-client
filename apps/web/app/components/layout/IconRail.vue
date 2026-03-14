@@ -10,92 +10,148 @@
 
   // Navigation routes
   const routes = useRoutes()
+  const commandDialog = useCommandDialog()
 
   const tooltipSide = computed(() => (isBottom.value ? 'top' : 'right'))
+
+  const { isRightSidebarOpen, toggleRightSidebar } = useRightSidebarWidth()
 
 </script>
 
 <template>
-  <!-- Navigation Rail: Always visible with primary navigation routes -->
+    <!-- Navigation Rail: Always visible with primary navigation routes -->
   <nav
     data-slot="icon-rail"
     :class="[
-      'flex items-center relative',
+      'flex items-center relative transition-all duration-300',
       isBottom
-        ? 'flex-row w-full h-8 px-2 py-0 border-t-none'
+        ? 'flex-row w-full h-12 px-6 py-0 border-t bg-card/60 backdrop-blur-xl z-50'
         : 'flex-col w-16 px-2 py-0 pb-2 border-r-none',
     ]"
     aria-label="Navigation rail">
 
-    <!-- Primary Navigation Routes -->
-    <div :class="['flex gap-1.5', isBottom ? 'flex-row px-1 items-center' : 'flex-col pt-3']">
-      <template v-for="route in routes.primaryRailRoutes.value" :key="route.path">
-        <UiTooltip>
-          <UiTooltipTrigger as-child>
-            <AppNavLink
-              :to="route.path"
-              class="group flex items-center justify-center rounded-full transition-all duration-200 ease-out overflow-hidden"
-              :class="[
-                isBottom && routes.isRouteActive(route.path) ? 'h-8 px-3 gap-2' : 'h-8 w-8',
-                routes.isRouteActive(route.path)
-                  ? isInEditMode
-                    ? 'bg-accent-foreground/10 text-accent-foreground/80'
-                    : 'bg-rail-foreground/10 text-foreground'
-                  : isInEditMode
-                    ? 'text-accent-foreground/70 hover:bg-accent-foreground/10 hover:text-accent-foreground'
+    <!-- Left side group (Bottom mode): Global Search -->
+    <div v-if="isBottom" class="flex-1 flex items-center justify-start">
+      <UiTooltip>
+        <UiTooltipTrigger as-child>
+          <UiButton
+            variant="ghost"
+            size="icon-sm"
+            class="h-9 w-9 rounded-full text-rail-foreground/70 hover:bg-rail-foreground/10 hover:text-rail-foreground transition-all active:scale-95"
+            @click="commandDialog.open()"
+          >
+            <Icon name="lucide:search" class="h-4.5 w-4.5 opacity-60" />
+          </UiButton>
+        </UiTooltipTrigger>
+        <UiTooltipContent side="top" :side-offset="8">
+          Search <UiKbd class="ml-2 bg-transparent border-none text-[10px] opacity-50">⌘K</UiKbd>
+        </UiTooltipContent>
+      </UiTooltip>
+    </div>
+
+    <!-- Navigation Items (Centered in bottom mode) -->
+    <div :class="['flex items-center', isBottom ? 'gap-6' : 'flex-col gap-1.5 pt-3']">
+      <!-- Primary Navigation Routes -->
+      <div :class="['flex gap-1.5', isBottom ? 'flex-row items-center' : 'flex-col']">
+        <template v-for="route in routes.primaryRailRoutes.value" :key="route.path">
+          <UiTooltip>
+            <UiTooltipTrigger as-child>
+              <AppNavLink
+                :to="route.path"
+                class="group flex items-center justify-center rounded-full transition-all duration-200 ease-out overflow-hidden"
+                :class="[
+                  isBottom && routes.isRouteActive(route.path) ? 'h-9 px-4 gap-2' : 'h-9 w-9',
+                  routes.isRouteActive(route.path)
+                    ? isInEditMode
+                      ? 'bg-accent-foreground/10 text-accent-foreground/80'
+                      : 'bg-rail-foreground/10 text-foreground'
+                    : isInEditMode
+                      ? 'text-accent-foreground/70 hover:bg-accent-foreground/10 hover:text-accent-foreground'
+                      : 'text-rail-foreground/70 hover:bg-rail-foreground/10 hover:text-rail-foreground',
+                ]">
+                <Icon :name="route.icon" class="h-4.5 w-4.5 opacity-60 shrink-0" />
+                <Transition
+                  enter-active-class="transition-all duration-200 ease-out"
+                  enter-from-class="opacity-0 max-w-0"
+                  enter-to-class="opacity-100 max-w-24"
+                  leave-active-class="transition-all duration-150 ease-in"
+                  leave-from-class="opacity-100 max-w-24"
+                  leave-to-class="opacity-0 max-w-0">
+                  <span
+                    v-if="isBottom && routes.isRouteActive(route.path)"
+                    class="text-xs font-bold tracking-tight whitespace-nowrap overflow-hidden">
+                    {{ route.label }}
+                  </span>
+                </Transition>
+              </AppNavLink>
+            </UiTooltipTrigger>
+            <UiTooltipContent :side="tooltipSide" :side-offset="8" align="center" :align-offset="0" :avoid-collisions="false">{{ route.label }}</UiTooltipContent>
+          </UiTooltip>
+        </template>
+      </div>
+
+      <!-- Secondary Navigation Routes -->
+      <div
+        v-if="routes.secondaryRailRoutes.value?.length > 0"
+        :class="['flex gap-1.5', isBottom ? 'flex-row px-1' : 'flex-col pb-2']">
+        <template v-for="route in routes.secondaryRailRoutes.value" :key="route.path">
+          <UiTooltip>
+            <UiTooltipTrigger as-child>
+              <NuxtLink
+                :to="route.path"
+                class="group flex h-9 w-9 items-center justify-center rounded-xl transition"
+                :class="[
+                  routes.isRouteActive(route.path)
+                    ? 'bg-rail-foreground/10 text-foreground'
                     : 'text-rail-foreground/70 hover:bg-rail-foreground/10 hover:text-rail-foreground',
-              ]">
-              <Icon :name="route.icon" class="h-4 w-4 opacity-50 shrink-0" />
-              <Transition
-                enter-active-class="transition-all duration-200 ease-out"
-                enter-from-class="opacity-0 max-w-0"
-                enter-to-class="opacity-100 max-w-24"
-                leave-active-class="transition-all duration-150 ease-in"
-                leave-from-class="opacity-100 max-w-24"
-                leave-to-class="opacity-0 max-w-0">
-                <span
-                  v-if="isBottom && routes.isRouteActive(route.path)"
-                  class="text-xs font-medium whitespace-nowrap overflow-hidden">
-                  {{ route.label }}
-                </span>
-              </Transition>
-            </AppNavLink>
-          </UiTooltipTrigger>
-          <UiTooltipContent :side="tooltipSide" :side-offset="8" :collision-padding="isBottom ? { bottom: 60 } : 0">{{ route.label }}</UiTooltipContent>
-        </UiTooltip>
-      </template>
+                ]">
+                <Icon :name="route.icon" class="h-4.5 w-4.5 opacity-60" />
+              </NuxtLink>
+            </UiTooltipTrigger>
+            <UiTooltipContent :side="tooltipSide" :side-offset="8" align="center" :align-offset="0" :avoid-collisions="false">{{ route.label }}</UiTooltipContent>
+          </UiTooltip>
+        </template>
+      </div>
     </div>
 
-    <!-- Secondary Navigation Routes (left of spacer in bottom mode) -->
-    <!-- Uses NuxtLink directly (not AppNavLink) so paths like /settings are not org-prefixed -->
-    <div
-      v-if="routes.secondaryRailRoutes.value?.length > 0"
-      :class="['flex gap-1', isBottom ? 'flex-row px-1' : 'flex-col pb-2']">
-      <template v-for="route in routes.secondaryRailRoutes.value" :key="route.path">
-        <UiTooltip>
-          <UiTooltipTrigger as-child>
-            <NuxtLink
-              :to="route.path"
-              class="group flex h-10 w-10 items-center justify-center rounded-xl transition"
-              :class="[
-                routes.isRouteActive(route.path)
-                  ? 'bg-rail-foreground/10 text-foreground'
-                  : 'text-rail-foreground/70 hover:bg-rail-foreground/10 hover:text-rail-foreground',
-              ]">
-              <Icon :name="route.icon" class="h-4 w-4 opacity-50" />
-            </NuxtLink>
-          </UiTooltipTrigger>
-          <UiTooltipContent :side="tooltipSide" :side-offset="8" :collision-padding="isBottom ? { bottom: 60 } : 0">{{ route.label }}</UiTooltipContent>
-        </UiTooltip>
-      </template>
-    </div>
+    <!-- Right side group: Actions (Bottom mode) or Quick Capture (Vertical mode) -->
+    <div :class="['flex items-center', isBottom ? 'flex-1 justify-end gap-3' : 'flex-col pb-1 mt-auto']">
+      <!-- Global Search (Bottom Left in rail) -->
+      <UiTooltip v-if="!isBottom">
+        <UiTooltipTrigger as-child>
+          <UiButton
+            variant="ghost"
+            size="icon-sm"
+            class="h-9 w-9 rounded-full text-rail-foreground/70 hover:bg-rail-foreground/10 hover:text-rail-foreground transition-all active:scale-95 mb-1"
+            @click="commandDialog.open()"
+          >
+            <Icon name="lucide:search" class="h-4.5 w-4.5 opacity-60" />
+          </UiButton>
+        </UiTooltipTrigger>
+        <UiTooltipContent side="right" :side-offset="8">
+          Search <UiKbd class="ml-2 bg-transparent border-none text-[10px] opacity-50">⌘K</UiKbd>
+        </UiTooltipContent>
+      </UiTooltip>
 
-    <!-- Spacer -->
-    <div class="flex-1" />
-
-    <!-- Quick Capture -->
-    <div class="mr-12" :class="['flex gap-1.5', isBottom ? 'flex-row px-1 items-center' : 'flex-col pb-1 items-center']">
       <QuickCapturePopover :position="props.position" />
+
+      <!-- AI Assistant Toggle (Bottom Right next to Quick Capture) -->
+      <UiTooltip v-if="isBottom">
+        <UiTooltipTrigger as-child>
+          <UiButton
+            variant="default"
+            size="icon-sm"
+            class="h-8 w-8 shrink-0 rounded-full bg-primary hover:bg-primary/90 text-primary-foreground shadow-lg transition-all active:scale-95"
+            :class="{ 'ring-2 ring-primary ring-offset-2 ring-offset-background': isRightSidebarOpen }"
+            @click="toggleRightSidebar"
+          >
+            <Icon name="lucide:bot" class="h-5 w-5" />
+          </UiButton>
+        </UiTooltipTrigger>
+        <UiTooltipContent side="top" :side-offset="12" align="center">
+          AI Assistant
+        </UiTooltipContent>
+      </UiTooltip>
     </div>
 
   </nav>

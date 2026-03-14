@@ -71,11 +71,6 @@
     return counts
   })
 
-  // Only show pills for types that have at least 1 entity (or are currently active)
-  const visibleTypePills = computed(() =>
-    allEntityTypes.filter(t => (typeCounts.value[t.type] ?? 0) > 0 || t.type === activeTypeParam.value),
-  )
-
   const totalCount = computed(() => allItems.value.length)
 
   // ── Grouping ──────────────────────────────────────────────────────────────
@@ -133,10 +128,10 @@
       }
       return [
         { label: 'All', value: totalCount.value, icon: 'lucide:layers' },
-        { label: 'Scheduled', value: classCounts.temporal, icon: 'lucide:calendar', color: 'text-blue-400' },
-        { label: 'Documents', value: classCounts.document, icon: 'lucide:file-text', color: 'text-purple-400' },
-        { label: 'People', value: classCounts.actor, icon: 'lucide:users', color: 'text-emerald-400' },
-        { label: 'Containers', value: classCounts.container, icon: 'lucide:folder', color: 'text-amber-400' },
+        { label: 'Scheduled', value: classCounts.temporal || 0, icon: 'lucide:calendar', color: 'text-blue-400' },
+        { label: 'Documents', value: classCounts.document || 0, icon: 'lucide:file-text', color: 'text-purple-400' },
+        { label: 'People', value: classCounts.actor || 0, icon: 'lucide:users', color: 'text-emerald-400' },
+        { label: 'Containers', value: classCounts.container || 0, icon: 'lucide:folder', color: 'text-amber-400' },
       ]
     }
     const cfg = getEntityTypeConfig(activeTypeParam.value as EntityType)
@@ -179,6 +174,20 @@
   const activeTypeCfg = computed(() =>
     isAllMode.value ? null : getEntityTypeConfig(activeTypeParam.value as EntityType),
   )
+
+  // ── Sidebar injection ─────────────────────────────────────────────────────
+
+  const pageSidebar = usePageSidebar()
+
+  watch(typeCounts, (counts) => pageSidebar.updateCounts(counts))
+  watch(activeTypeParam, (id) => pageSidebar.updateActiveType(id))
+
+  onMounted(() => {
+    pageSidebar.activate(typeCounts.value, activeTypeParam.value, selectType)
+  })
+  onUnmounted(() => {
+    pageSidebar.deactivate()
+  })
 </script>
 
 <template>
@@ -189,6 +198,7 @@
     :icon="pageIcon"
     :icon-class="pageIconClass"
     search-placeholder="Search everything..."
+    :hide-header="true"
     :stats="stats"
     :show-view-switcher="true"
     :fill-height="true"
@@ -240,51 +250,6 @@
       </UiDropdownMenu>
     </template>
 
-    <!-- ── Type filter pill bar ── -->
-    <div class="relative flex items-center gap-1.5 pb-4 overflow-x-auto scrollbar-none">
-      <!-- Left fade -->
-      <div class="pointer-events-none absolute left-0 top-0 bottom-0 w-6 bg-gradient-to-r from-background to-transparent z-10" />
-      <!-- Right fade -->
-      <div class="pointer-events-none absolute right-0 top-0 bottom-0 w-6 bg-gradient-to-l from-background to-transparent z-10" />
-
-      <!-- All pill -->
-      <button
-        type="button"
-        class="inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-medium transition-colors shrink-0"
-        :class="isAllMode
-          ? 'bg-foreground text-background'
-          : 'bg-muted text-muted-foreground hover:bg-muted/70 hover:text-foreground'"
-        @click="selectType('all')">
-        <Icon name="lucide:layers-3" class="h-3.5 w-3.5" />
-        All
-        <span
-          class="rounded-full px-1.5 py-0.5 text-[10px] font-semibold tabular-nums"
-          :class="isAllMode ? 'bg-background/20' : 'bg-background text-muted-foreground'">
-          {{ totalCount }}
-        </span>
-      </button>
-
-      <!-- Per-type pills -->
-      <button
-        v-for="t in visibleTypePills"
-        :key="t.type"
-        type="button"
-        class="inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-medium transition-colors shrink-0"
-        :class="activeTypeParam === t.type
-          ? 'bg-foreground text-background'
-          : 'bg-muted text-muted-foreground hover:bg-muted/70 hover:text-foreground'"
-        @click="selectType(t.type)">
-        <Icon :name="t.icon" class="h-3.5 w-3.5 shrink-0" />
-        {{ t.labelPlural ?? t.label }}
-        <span
-          v-if="typeCounts[t.type]"
-          class="rounded-full px-1.5 py-0.5 text-[10px] font-semibold tabular-nums"
-          :class="activeTypeParam === t.type ? 'bg-background/20' : 'bg-background text-muted-foreground'">
-          {{ typeCounts[t.type] }}
-        </span>
-      </button>
-    </div>
-
     <!-- ── Content: grouped or flat ── -->
 
     <!-- Grouped by class view -->
@@ -292,7 +257,7 @@
       <div v-for="group in groupedItems" :key="group.class" class="mb-8">
         <!-- Group header -->
         <div class="flex items-center gap-2 mb-3">
-          <Icon :name="group.icon" :class="`h-4 w-4 shrink-0 ${group.color}`" />
+          <Icon :name="group.icon || 'lucide:circle'" :class="`h-4 w-4 shrink-0 ${group.color || ''}`" />
           <span class="text-xs font-semibold uppercase tracking-wide text-muted-foreground">{{ group.label }}</span>
           <span class="text-xs text-muted-foreground/60 tabular-nums">({{ group.items.length }})</span>
           <div class="flex-1 h-px bg-border/50 ml-2" />

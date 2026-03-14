@@ -109,8 +109,11 @@ export function useDialogStackAware() {
     // Stacked dialogs
     const d = dialogStack.distFromTop(stackIndex.value)
     if (d === 0) {
-      // Topmost stacked — transparent overlay so background dialog peeks through
-      return '!bg-transparent !backdrop-blur-none'
+      // Topmost stacked — transparent only if an originating dialog is already providing blur;
+      // otherwise show blur so the page backdrop is dimmed (e.g. opening from pages route)
+      return dialogStack.originatingDialogOpen.value
+        ? '!bg-transparent !backdrop-blur-none'
+        : undefined
     }
     // Background stacked — transparent + no pointer-events
     return '!bg-transparent !backdrop-blur-none !pointer-events-none'

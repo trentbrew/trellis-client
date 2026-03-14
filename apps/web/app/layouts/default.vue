@@ -225,7 +225,7 @@
       <template v-if="headerAboveSidebar">
         <div class="flex flex-1 flex-col min-w-0 overflow-hidden ">
           <AppHeader :above-sidebar="true" />
-          <div class="flex flex-1 min-h-0 overflow-hidden p-4 pt-0 rounded-xl bg-transparent">
+          <div class="flex flex-1 min-h-0 overflow-hidden rounded-xl bg-transparent pt-0 p-2.5">
             <div class="flex flex-1 min-h-0 overflow-hidden rounded-xl border bg-card/50">
               <!-- Left rail (default) -->
               <IconRail
@@ -238,7 +238,7 @@
                   <div class="flex flex-1 flex-col min-w-0 overflow-hidden p-2.5" :class="showSidebar ? 'pl-0' : 'pl-2.5'">
                     <main
                       ref="pageEl"
-                      class="page-transition-wrapper bg-card/50 rounded-lg flex-1 overflow-y-auto p-0 border relative"
+                      class="page-transition-wrapper bg-card/50 rounded-md flex-1 overflow-y-auto p-0 border relative"
                       aria-label="Main content">
                       <slot />
                     </main>

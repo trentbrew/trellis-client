@@ -36,7 +36,7 @@
 
         // Brief pause so the user sees the final message before transition
         await new Promise((r) => setTimeout(r, 800))
-        await navigateTo('/messages')
+        await navigateTo('/workspace')
       }
     }, 300)
 
@@ -46,7 +46,7 @@
         ready.value = true
         clearInterval(check)
         console.warn('[welcome] Timed out waiting for org/app — navigating anyway')
-        await navigateTo('/messages')
+        await navigateTo('/workspace')
       }
     }, 20000)
   })

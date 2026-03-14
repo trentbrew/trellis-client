@@ -436,10 +436,17 @@ export interface FileItem extends EntityItemBase {
   pinned: boolean
 }
 
+export type PageStatus = 'draft' | 'published' | 'archived'
+
 export interface PageItem extends EntityItemBase {
   type: 'page'
   content?: string
   slug?: string
+  icon?: string
+  status?: PageStatus
+  folder?: string
+  bannerImage?: string
+  sortOrder?: number
   isPublished: boolean
   pinned: boolean
 }

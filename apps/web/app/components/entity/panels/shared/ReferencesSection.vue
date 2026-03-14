@@ -3,6 +3,7 @@
   import { isEntityReference, isFileReference } from '~/types/entity'
   import { getEntityTypeConfig } from '~/config/entityRegistry'
   import { stripHtml } from '~/utils/stripHtml'
+  import DiagramEmbedPreview from '~/components/editor/DiagramEmbedPreview.vue'
 
   const props = defineProps<{
     modelValue: Reference[]
@@ -54,6 +55,10 @@
     const entity = allItems.value.find((e: Entity) => e.id === ref.entityId)
     if (!entity) return ''
     return (entity as any).content || ''
+  }
+
+  function isDiagramRef(ref: EntityReference): boolean {
+    return ref.entityType === 'diagram'
   }
 
   function getEntityContentPreview(ref: EntityReference): string {
@@ -191,7 +196,13 @@
                 v-if="getEntityHtmlContent(ref as EntityReference)"
                 class="relative w-full h-20 overflow-hidden bg-muted/30 border-b border-border/30 shrink-0">
                 <div class="absolute inset-0 bg-linear-to-b from-transparent via-transparent to-card/80 pointer-events-none z-10" />
+                <DiagramEmbedPreview
+                  v-if="isDiagramRef(ref as EntityReference)"
+                  :source="getEntityHtmlContent(ref as EntityReference)"
+                  compact
+                  class="absolute inset-0 p-2 pointer-events-none" />
                 <div
+                  v-else
                   class="prose prose-sm dark:prose-invert max-w-none text-[9px] leading-relaxed p-2 h-full overflow-hidden opacity-60 select-none"
                   v-html="getEntityHtmlContent(ref as EntityReference)" />
               </div>
@@ -265,12 +276,18 @@
             <button
               class="ref-card group w-full flex flex-col rounded-lg border border-border/50 bg-card hover:bg-muted/50 hover:border-border transition-all cursor-pointer text-left overflow-hidden"
               @click="isEntityReference(ref) && emit('openEntity', ref as EntityReference)">
-              <!-- HTML content thumbnail -->
+              <!-- Content thumbnail -->
               <div
                 v-if="getEntityHtmlContent(ref as EntityReference)"
                 class="relative w-full h-20 overflow-hidden bg-muted/30 border-b border-border/30 shrink-0">
                 <div class="absolute inset-0 bg-linear-to-b from-transparent via-transparent to-card/80 pointer-events-none z-10" />
+                <DiagramEmbedPreview
+                  v-if="isDiagramRef(ref as EntityReference)"
+                  :source="getEntityHtmlContent(ref as EntityReference)"
+                  compact
+                  class="absolute inset-0 p-2 pointer-events-none" />
                 <div
+                  v-else
                   class="prose prose-sm dark:prose-invert max-w-none text-[9px] leading-relaxed p-2 h-full overflow-hidden opacity-60 select-none"
                   v-html="getEntityHtmlContent(ref as EntityReference)" />
               </div>

@@ -95,7 +95,7 @@
     leave-to-class="translate-y-4 opacity-0">
     <div
       v-if="selectionCount > 0"
-      class="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 flex items-center gap-2 rounded-xl border border-border bg-card/95 backdrop-blur-xl shadow-lg px-4 py-2.5"
+      class="fixed bottom-20 left-1/2 -translate-x-1/2 z-50 flex items-center gap-2 rounded-xl border border-border bg-card/95 backdrop-blur-xl shadow-lg px-4 py-2.5"
       :class="{ 'opacity-60 pointer-events-none': loading }">
 
       <!-- Selection count + clear -->
