@@ -51,11 +51,11 @@
     quickTitle.value = ''
   }
 
-  function captureTypeIcon(type: EntityType) {
+  function captureTypeIcon(type: string) {
     return ENTITY_TYPE_OPTIONS.find((t) => t.value === type)?.icon ?? 'lucide:circle'
   }
 
-  function captureTypeLabel(type: EntityType) {
+  function captureTypeLabel(type: string) {
     return ENTITY_TYPE_OPTIONS.find((t) => t.value === type)?.label ?? type
   }
 

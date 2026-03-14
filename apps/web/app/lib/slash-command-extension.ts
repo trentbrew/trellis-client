@@ -194,6 +194,46 @@ function getBuiltInCommands(hasEmbeds: boolean, hasImages: boolean): SlashComman
           }).run()
         },
       },
+      {
+        id: 'url-embed',
+        label: 'Embed',
+        description: 'Embed a webpage or video via URL',
+        icon: 'lucide:globe',
+        group: 'Embeds',
+        action: (_editor) => {
+          // Handled by onEmbedUrl callback in RichTextEditor
+        },
+      },
+      {
+        id: 'image-url',
+        label: 'Image URL',
+        description: 'Insert a remote image by URL',
+        icon: 'lucide:image-plus',
+        group: 'Embeds',
+        action: (_editor) => {
+          // Handled by onEmbedImageUrl callback in RichTextEditor
+        },
+      },
+      {
+        id: 'youtube-embed',
+        label: 'YouTube',
+        description: 'Embed a YouTube video by URL or ID',
+        icon: 'lucide:youtube',
+        group: 'Embeds',
+        action: (_e) => {
+          // Handled by onEmbedYoutube callback in RichTextEditor
+        },
+      },
+      {
+        id: 'spotify-embed',
+        label: 'Spotify',
+        description: 'Embed a Spotify track, album, or playlist',
+        icon: 'lucide:music',
+        group: 'Embeds',
+        action: (_e) => {
+          // Handled by onEmbedSpotify callback in RichTextEditor
+        },
+      },
     )
   }
 
@@ -208,13 +248,17 @@ export interface SlashCommandConfig {
   onEmbedQuery?: (editor: any) => void
   onEmbedDiagram?: (editor: any) => void
   onEmbedImage?: (editor: any) => void
+  onEmbedUrl?: (editor: any) => void
+  onEmbedImageUrl?: (editor: any) => void
+  onEmbedYoutube?: (editor: any) => void
+  onEmbedSpotify?: (editor: any) => void
   getTemplates?: () => NoteTemplate[]
 }
 
 const CHAT_EXCLUDED_IDS = new Set(['heading-1', 'heading-2', 'heading-3', 'table', 'diagram'])
 
 export function createSlashCommandExtension(config: SlashCommandConfig = {}) {
-  const { hasEmbeds = false, hasImages = false, chatMode = false, onEmbedEntity, onEmbedQuery, onEmbedImage, getTemplates } = config
+  const { hasEmbeds = false, hasImages = false, chatMode = false, onEmbedEntity, onEmbedQuery, onEmbedImage, onEmbedUrl, onEmbedImageUrl, onEmbedYoutube, onEmbedSpotify, getTemplates } = config
 
   return Extension.create({
     name: 'slashCommand',
@@ -241,6 +285,22 @@ export function createSlashCommandExtension(config: SlashCommandConfig = {}) {
             }
             if (item.id === 'image-embed' && onEmbedImage) {
               onEmbedImage(editor)
+              return
+            }
+            if (item.id === 'url-embed' && onEmbedUrl) {
+              onEmbedUrl(editor)
+              return
+            }
+            if (item.id === 'image-url' && onEmbedImageUrl) {
+              onEmbedImageUrl(editor)
+              return
+            }
+            if (item.id === 'youtube-embed' && onEmbedYoutube) {
+              onEmbedYoutube(editor)
+              return
+            }
+            if (item.id === 'spotify-embed' && onEmbedSpotify) {
+              onEmbedSpotify(editor)
               return
             }
             item.action(editor)

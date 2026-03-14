@@ -13,14 +13,12 @@
 
   const routes = useRoutes()
   const route = useRoute()
-  const commandDialog = useCommandDialog()
   const pinnedItems = usePinnedItems()
   const { currentApp, updateCollection: updateCollectionData, getCollectionBySlug } = useInstantData()
   const { logoMarkForMode } = useBrandConfig()
   const { userRole: _userRole, roleConfig } = useUserRole()
   const { isInEditMode, toggleEditMode, canToggleEditMode, canManageMembers, isAdmin: _isAdmin } = useAdminUI()
-  const { onlineCount, totalMembers: _totalMembers, members: workspaceMembers, isUserOnline } = usePresence()
-  const { isRightSidebarOpen, toggleRightSidebar } = useRightSidebarWidth()
+  const { totalMembers: _totalMembers, members: workspaceMembers, isUserOnline } = usePresence()
   const isResizing = useState<boolean>('isSidebarResizing', () => false)
 
   // User avatar and auth
@@ -284,63 +282,6 @@
         </UiSheetContent>
       </UiSheet>
 
-      <!-- Global Search (shown when header spans above sidebar) -->
-      <UiButton
-        v-if="props.aboveSidebar"
-        variant="ghost"
-        class="rounded-full text-muted-foreground hover:text-foreground hover:bg-muted-foreground/10 border border-border bg-card/0 gap-2 pl-3 pr-2 min-w-[300px] flex items-center justify-between"
-        @click="commandDialog.open()">
-        <div class="flex items-center gap-2">
-          <Icon name="lucide:search" class="h-4 w-4" />
-          <span class="text-xs font-semibold opacity-50">Find...</span>
-        </div>
-        <UiKbd class="bg-card border-border/50 text-muted-foreground font-mono border rounded-full gap-0">
-          <Icon name="lucide:command" class="scale-75" />
-          <span class="text-[12px]">K</span>
-        </UiKbd>
-      </UiButton>
-
-      <!-- Workspace Members & Presence -->
-      <div v-if="!props.hidePresenceControls && workspaceUsers.length > 0" class="flex items-center ml-2 mr-1">
-        <UiTooltip>
-          <UiTooltipTrigger as-child>
-            <AppNavLink
-              to="/settings/members"
-              class="flex items-center rounded-full border border-border bg-card/10 px-1 py-1 gap-1 hover:bg-card/20 transition-colors">
-              <div class="flex -space-x-1.5 px-0.5">
-                <div
-                  v-for="(u, index) in workspaceUsers"
-                  :key="u.id"
-                  class="relative rounded-full ring-2 ring-offset-1 ring-offset-background transition-all hover:scale-110 grayscale-[0.2] hover:grayscale-0"
-                  :class="u.color.ring"
-                  :style="{ zIndex: workspaceUsers.length - index }"
-                  :title="u.name + (u.isMe ? ' (you)' : '')">
-                  <UiAvatar class="size-6">
-                    <UiAvatarImage v-if="u.avatar" :src="u.avatar" :alt="u.name" />
-                    <UiAvatarFallback class="text-[9px] font-bold text-white" :class="u.color.bg">{{ u.initials }}</UiAvatarFallback>
-                  </UiAvatar>
-                  <span
-                    v-if="u.isOnline"
-                    class="absolute -bottom-0.5 -right-0.5 h-2 w-2 rounded-full border border-background bg-emerald-500 shadow-[0_0_6px_rgba(16,185,129,0.6)]"
-                  />
-                </div>
-              </div>
-              <div class="px-2 border-l ml-0.5 flex flex-col justify-center h-5">
-                <p class="text-[10px] leading-none font-bold text-foreground/80 tabular-nums">
-                  <!-- {{ onlineCount }}<span class="text-muted-foreground font-medium uppercase tracking-tighter">/{{ totalMembers }} online</span> -->
-                  {{ onlineCount }}<span class="text-muted-foreground font-medium uppercase tracking-tighter"> online</span>
-                </p>
-              </div>
-              <UiButton v-if="canManageMembers" size="xs" variant="outline" class="border-l border-border/40 flex items-center rounded-full">
-                <Icon name="lucide:plus" class="h-3.5 w-3.5 text-muted-foreground" />
-                <span class="text-[10px] leading-none font-bold text-muted-foreground tabular-nums mr-2 uppercase">Invite</span>
-              </UiButton>
-            </AppNavLink>
-          </UiTooltipTrigger>
-          <UiTooltipContent side="bottom" :side-offset="8">Manage members</UiTooltipContent>
-        </UiTooltip>
-      </div>
-
 
       <!-- Notifications Button -->
       <UiDropdownMenu>
@@ -348,7 +289,7 @@
           <UiButton
             variant="outline"
             size="icon-sm"
-            class="text-muted-foreground hover:text-foreground bg-transparent! relative transition-transform active:scale-95 mr-1 !rounded-full">
+            class="text-muted-foreground hover:text-foreground bg-transparent! relative transition-transform active:scale-95 mr-1 rounded-full!">
             <Icon name="lucide:bell" class="h-4 w-4" />
             <Motion
               v-if="unreadCount > 0"
@@ -505,6 +446,43 @@
         </UiDropdownMenuContent>
       </UiDropdownMenu>
 
+      <!-- Workspace Members & Presence -->
+      <div v-if="!props.hidePresenceControls && workspaceUsers.length > 0" class="flex items-center ml-2 mr-1">
+        <UiTooltip>
+          <UiTooltipTrigger as-child>
+            <AppNavLink
+              to="/settings/members"
+              class="flex items-center rounded-full border border-border/0 bg-card/10 px-1 py-1 gap-1 hover:bg-card/20 transition-colors">
+              <div class="flex -space-x-1.5 px-0.5">
+                <div
+                  v-for="(u, index) in workspaceUsers"
+                  :key="u.id"
+                  class="relative rounded-full ring-2 ring-offset-1 ring-offset-background transition-all hover:scale-110 grayscale-[0.2] hover:grayscale-0"
+                  :class="u.color.ring"
+                  :style="{ zIndex: workspaceUsers.length - index }"
+                  :title="u.name + (u.isMe ? ' (you)' : '')">
+                  <UiAvatar class="size-6">
+                    <UiAvatarImage v-if="u.avatar" :src="u.avatar" :alt="u.name" />
+                    <UiAvatarFallback class="text-[9px] font-bold text-white" :class="u.color.bg">{{ u.initials }}</UiAvatarFallback>
+                  </UiAvatar>
+                  <span
+                    v-if="u.isOnline"
+                    class="absolute -bottom-0.5 -right-0.5 h-2 w-2 rounded-full border border-background bg-emerald-500 shadow-[0_0_6px_rgba(16,185,129,0.6)]"
+                  />
+                </div>
+              </div>
+              <UiButton v-if="canManageMembers" size="icon-xs" variant="outline" class="border-l border-border/40 flex items-center rounded-full -ml-2 px-0">
+                <Icon name="lucide:plus" class="h-3.5 w-3.5 text-muted-foreground" />
+              </UiButton>
+            </AppNavLink>
+          </UiTooltipTrigger>
+          <UiTooltipContent side="bottom" :side-offset="8">Manage members</UiTooltipContent>
+        </UiTooltip>
+      </div>
+
+
+
+
 
       <!-- User Avatar -->
       <ClientOnly>
@@ -565,24 +543,6 @@
               </UiDropdownMenuItem>
             </UiDropdownMenuContent>
           </UiDropdownMenu>
-
-          <!-- AI Assistant Toggle -->
-          <UiTooltip>
-            <UiTooltipTrigger as-child>
-              <UiButton
-                variant="default"
-                size="icon-sm"
-                class="h-8 w-8 shrink-0 rounded-full bg-primary hover:bg-primary/90 text-primary-foreground shadow-sm transition-all active:scale-95"
-                :class="{ 'ring-2 ring-primary ring-offset-2 ring-offset-background': isRightSidebarOpen }"
-                @click="toggleRightSidebar"
-              >
-                <Icon name="lucide:bot" class="h-4 w-4" />
-              </UiButton>
-            </UiTooltipTrigger>
-            <UiTooltipContent side="bottom" :side-offset="8">
-              AI Assistant
-            </UiTooltipContent>
-          </UiTooltip>
         </div>
 
         <template #fallback>

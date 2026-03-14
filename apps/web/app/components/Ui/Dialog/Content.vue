@@ -36,9 +36,9 @@
   const dialogStyle = computed(() => {
     const sw = sidebarWidth.value
     return {
-      left: `calc(50% - ${sw / 2}px)`,
+      width: '100%',
       maxWidth: `min(calc(100vw - ${sw}px - 2rem), 32rem)`,
-      width: `calc(100vw - ${sw}px - 2rem)`,
+      left: `calc(50% - ${sw / 2}px)`,
     }
   })
   const preventNonOverlayClose = (e: any) => {

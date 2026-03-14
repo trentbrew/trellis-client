@@ -1,4 +1,4 @@
-import type { Entity } from '~/types/entity'
+import type { Entity, PageItem } from '~/types/entity'
 import { createDefaultItem } from '~/types/entity'
 
 /**
@@ -14,8 +14,8 @@ export function usePageNotes() {
   const livePageTitle = useState<{ id: string; title: string } | null>('pageNotes:liveTitle', () => null)
 
   // ── Filtered pages ────────────────────────────────────────────────
-  const pages = computed<Entity[]>(() =>
-    (allItems.value ?? []).filter((item: Entity) => item.type === 'page'),
+  const pages = computed<PageItem[]>(() =>
+    (allItems.value ?? []).filter((item: Entity) => item.type === 'page') as PageItem[],
   )
 
   // ── Folder grouping ───────────────────────────────────────────────
@@ -27,9 +27,9 @@ export function usePageNotes() {
     return [...set].sort()
   })
 
-  function sortByOrder(a: Entity, b: Entity): number {
-    const ao = (a as any).sortOrder ?? (a as any).createdAt ?? 0
-    const bo = (b as any).sortOrder ?? (b as any).createdAt ?? 0
+  function sortByOrder(a: PageItem, b: PageItem): number {
+    const ao = a.sortOrder ?? 0
+    const bo = b.sortOrder ?? 0
     return ao - bo
   }
 
@@ -38,7 +38,7 @@ export function usePageNotes() {
   )
 
   const pagesByFolder = computed(() => {
-    const map = new Map<string, Entity[]>()
+    const map = new Map<string, PageItem[]>()
     for (const p of pages.value) {
       if (!p.folder) continue
       if (!map.has(p.folder)) map.set(p.folder, [])
@@ -64,10 +64,10 @@ export function usePageNotes() {
     return id
   }
 
-  async function updatePage(id: string, data: Partial<Entity>) {
+  async function updatePage(id: string, data: Partial<PageItem>) {
     const existing = getPage(id)
-    if (!existing) return
-    await update({ ...existing, ...data, id } as Entity)
+    const payload = existing ? { ...existing, ...data, id } : { id, type: 'page' as const, ...data }
+    await update(payload as Entity)
   }
 
   async function deletePage(id: string) {
@@ -79,28 +79,28 @@ export function usePageNotes() {
   }
 
   async function moveToFolder(id: string, folder: string | null) {
-    await updatePage(id, { folder: folder ?? undefined } as any)
+    await updatePage(id, { folder: folder ?? undefined })
   }
 
   async function reorderPages(orderedIds: string[], folder: string | null) {
     await Promise.all(
       orderedIds.map((id, index) =>
-        updatePage(id, { sortOrder: index * 1000, folder: folder ?? undefined } as any),
+        updatePage(id, { sortOrder: index * 1000, folder: folder ?? undefined }),
       ),
     )
   }
 
   async function renameFolder(oldName: string, newName: string) {
     const affected = pages.value.filter((p) => p.folder === oldName)
-    await Promise.all(affected.map((p) => updatePage(p.id, { folder: newName } as any)))
+    await Promise.all(affected.map((p) => updatePage(p.id, { folder: newName })))
   }
 
   async function deleteFolder(name: string) {
     const affected = pages.value.filter((p) => p.folder === name)
-    await Promise.all(affected.map((p) => updatePage(p.id, { folder: undefined } as any)))
+    await Promise.all(affected.map((p) => updatePage(p.id, { folder: undefined })))
   }
 
-  function getPage(id: string): Entity | undefined {
+  function getPage(id: string): PageItem | undefined {
     return pages.value.find((p) => p.id === id)
   }
 

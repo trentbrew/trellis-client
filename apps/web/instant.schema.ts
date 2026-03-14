@@ -80,6 +80,8 @@ const _schema = i.schema({
       recurrence: i.json().optional(), // RecurrenceRule
       formulas: i.json().optional(), // FormulaField[]
       dependsOn: i.json().optional(), // string[] — entity IDs this depends on
+      // Generic status (used by page entities: draft | published | archived)
+      status: i.string().indexed().optional(),
       // Task-specific
       taskStatus: i.string().indexed().optional(), // pending | in-progress | completed | overdue …
       checklist: i.json().optional(), // @deprecated — use checklistContent

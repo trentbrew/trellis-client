@@ -480,6 +480,10 @@ body.is-resizing * {
   animation: none !important;
 }
 
+.prose hr {
+  @apply border-border! mb-8! mt-10!;
+}
+
 /* Vue Flow Theme Overrides */
 @layer base {
   /* Canvas background */

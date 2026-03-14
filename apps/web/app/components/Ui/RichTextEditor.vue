@@ -26,6 +26,7 @@
   import { TableControls } from '~/lib/table-controls-plugin'
   import { EntityEmbed } from '~/lib/entity-embed-extension'
   import { QueryView } from '~/lib/query-view-extension'
+  import { UrlEmbed, UrlEmbedPasteHandler } from '~/lib/url-embed-extension'
   import { useEntitySearch } from '~/composables/useEntitySearch'
   import type { EntitySearchItem } from '~/composables/useEntitySearch'
   import { createDefaultItem } from '~/types/entity'
@@ -217,6 +218,22 @@
 
   function handleEmbedImage(_editor: any) {
     triggerImageUpload()
+  }
+
+  function handleEmbedUrl(_editor: any) {
+    editor.value?.commands.insertUrlEmbed({ mode: 'embed' })
+  }
+
+  function handleEmbedImageUrl(_editor: any) {
+    editor.value?.commands.insertUrlEmbed({ mode: 'image' })
+  }
+
+  function handleEmbedYoutube(_editor: any) {
+    editor.value?.commands.insertUrlEmbed({ mode: 'youtube', height: 360 })
+  }
+
+  function handleEmbedSpotify(_editor: any) {
+    editor.value?.commands.insertUrlEmbed({ mode: 'spotify', height: 152 })
   }
 
   function selectEntityForEmbed(item: EntitySearchItem) {
@@ -463,6 +480,10 @@
           onEmbedEntity: props.embeds ? handleEmbedEntity : undefined,
           onEmbedQuery: props.embeds ? handleEmbedQuery : undefined,
           onEmbedImage: (props.embeds && props.images) ? handleEmbedImage : undefined,
+          onEmbedUrl: props.embeds ? handleEmbedUrl : undefined,
+          onEmbedImageUrl: props.embeds ? handleEmbedImageUrl : undefined,
+          onEmbedYoutube: props.embeds ? handleEmbedYoutube : undefined,
+          onEmbedSpotify: props.embeds ? handleEmbedSpotify : undefined,
           getTemplates: () => {
             const userTemplates = (_allEntities.value ?? [])
               .filter((e: any) => e.type === 'template' && e.content)
@@ -486,6 +507,8 @@
           Card as any,
           EntityEmbed as any,
           QueryView as any,
+          UrlEmbed as any,
+          UrlEmbedPasteHandler as any,
         )
         // Input rule: > at start of empty line → Collapsible toggle
         exts.push(
@@ -744,11 +767,15 @@
   // on merge. We wait for _isLeader to become true before seeding.
   let collabSeeded = false
   watch(
-    [() => editor.value, _isLeader],
-    ([e, leader]) => {
+    [() => editor.value, _isLeader, () => props.modelValue],
+    ([e, leader, mv]) => {
       if (!e || !leader || collabSeeded || !collabEnabled.value) return
+      // Defer seeding until content has arrived from the DB.
+      // isLeader fires at ~600ms but InstantDB may not have returned the
+      // entity yet — if we seed with an empty string the content is lost.
+      if (!mv) return
       collabSeeded = true
-      const html = markdownToHtml(props.modelValue || '')
+      const html = markdownToHtml(mv)
       if (html && html !== '<p></p>') {
         e.commands.setContent(html)
       }
@@ -1499,13 +1526,13 @@
           <UiDialogTitle>Embed Entity</UiDialogTitle>
           <UiDialogDescription>Search for an entity to embed inline.</UiDialogDescription>
         </UiDialogHeader>
-        <div class="space-y-3 py-2">
+        <div class="flex flex-col gap-3 py-2 min-w-0">
           <input
             v-model="entityPickerSearch"
             type="text"
             placeholder="Search entities..."
-            class="w-full rounded-md border border-border bg-background px-3 py-2 text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-ring" />
-          <div class="max-h-60 overflow-y-auto space-y-0.5">
+            class="h-9 w-full rounded-md border border-input bg-background px-3 py-1 text-sm shadow-sm transition-colors placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring" />
+          <div class="max-h-60 overflow-y-auto space-y-0 min-w-0">
             <button
               v-for="item in entityPickerItems"
               :key="item.id"
@@ -1531,8 +1558,8 @@
           <UiDialogTitle>Embed Query View</UiDialogTitle>
           <UiDialogDescription>Choose an entity type to display.</UiDialogDescription>
         </UiDialogHeader>
-        <div class="space-y-3 py-2">
-          <div class="space-y-0.5">
+        <div class="flex flex-col gap-3 py-2 min-w-0">
+          <div class="flex flex-col gap-0.5 min-w-0">
             <button
               v-for="opt in QUERY_TYPE_OPTIONS"
               :key="opt.value"
@@ -1540,10 +1567,10 @@
               class="flex w-full items-center gap-2.5 rounded-md px-2.5 py-2 text-left text-sm transition-colors"
               :class="queryPickerType === opt.value ? 'bg-primary/10 text-primary' : 'hover:bg-accent'"
               @click="queryPickerType = opt.value">
-              <span class="font-medium">{{ opt.label }}</span>
+              <span class="font-medium truncate">{{ opt.label }}</span>
             </button>
           </div>
-          <UiButton class="w-full" size="sm" @click="selectTypeForQuery">
+          <UiButton class="w-full shrink-0" size="sm" @click="selectTypeForQuery">
             Insert
           </UiButton>
         </div>

@@ -1,5 +1,5 @@
 <script setup lang="ts">
-  import type { Entity, EntityReference, Reference } from '~/types/entity'
+  import type { Entity, EntityReference, Reference, PageItem, PageStatus } from '~/types/entity'
   import { getPresenceBg, getPresenceRing } from '~/utils/presenceColor'
 
   definePageMeta({ layout: 'default' })
@@ -30,8 +30,9 @@
   const { displayActivity, addComment, addInlineComment, logActivity, loading: commentsLoading } = useComments(pageId)
 
   // Resolve current page from store
-  const currentPage = computed<Entity | undefined>(() => {
-    return getPage(pageId.value) ?? allItems.value?.find((i: Entity) => i.id === pageId.value)
+  const currentPage = computed<PageItem | undefined>(() => {
+    const found = getPage(pageId.value) ?? allItems.value?.find((i: Entity) => i.id === pageId.value)
+    return found as PageItem | undefined
   })
 
   useHead({ title: computed(() => currentPage.value?.title || 'Untitled') })
@@ -41,14 +42,39 @@
   const saveStatus = ref<'idle' | 'saving' | 'saved'>('idle')
   let saveStatusResetTimer: ReturnType<typeof setTimeout> | null = null
 
-  function debouncedSave(data: Partial<Entity>) {
+  // Snapshot of last saved state — prevents redundant saves and breaks the
+  // post-save SSE-update → re-seed → re-save infinite loop.
+  let _lastSavedSnapshot = ''
+
+  function buildCurrentSnapshot(): string {
+    return JSON.stringify({
+      title: localTitle.value,
+      description: localDescription.value,
+      content: localContent.value,
+      icon: localIcon.value,
+      status: localStatus.value,
+      tags: localTags.value,
+    })
+  }
+
+  function debouncedSave() {
     if (saveTimeout.value) clearTimeout(saveTimeout.value)
     saveTimeout.value = setTimeout(async () => {
       if (!pageId.value) return
+      const snapshot = buildCurrentSnapshot()
+      if (snapshot === _lastSavedSnapshot) return
+      _lastSavedSnapshot = snapshot
       saveStatus.value = 'saving'
-      console.log('[Page] Saving...', { pageId: pageId.value, fields: Object.keys(data) })
+      console.log('[Page] Saving...', { pageId: pageId.value })
       try {
-        await updatePage(pageId.value, data)
+        await updatePage(pageId.value, {
+          title: localTitle.value,
+          description: localDescription.value,
+          content: localContent.value,
+          icon: localIcon.value,
+          status: localStatus.value,
+          tags: localTags.value,
+        })
         console.log('[Page] Saved successfully')
         saveStatus.value = 'saved'
         if (saveStatusResetTimer) clearTimeout(saveStatusResetTimer)
@@ -91,28 +117,13 @@
   const localDescription = ref('')
   const localContent = ref('')
 
-  // Seed local refs from entity data
-  watch(currentPage, (page) => {
-    if (!page) return
-    if (localTitle.value !== (page.title ?? '')) localTitle.value = page.title ?? ''
-    if (localDescription.value !== (page.description ?? '')) localDescription.value = page.description ?? ''
-    if (localContent.value !== ((page as any).content ?? '')) localContent.value = (page as any).content ?? ''
-  }, { immediate: true })
-
-  // Reseed when navigating to a different page
-  watch(pageId, () => {
-    const page = currentPage.value
-    if (!page) return
-    localTitle.value = page.title ?? ''
-    localDescription.value = page.description ?? ''
-    localContent.value = (page as any).content ?? ''
-  })
+  // Local refs are seeded via _seedFromPage defined below, after all refs are declared.
 
   function onTitleInput(e: Event) {
     const val = (e.target as HTMLInputElement).value
     localTitle.value = val
     livePageTitle.value = { id: pageId.value, title: val }
-    debouncedSave({ title: val })
+    debouncedSave()
     if (_titleLogTimer) clearTimeout(_titleLogTimer)
     _titleLogTimer = setTimeout(() => {
       if (val.trim()) logActivity(`renamed to "${val}"`, 'status_change')
@@ -126,7 +137,7 @@
 
   function onDescriptionUpdate(val: string) {
     localDescription.value = val
-    debouncedSave({ description: val })
+    debouncedSave()
     if (_descLogTimer) clearTimeout(_descLogTimer)
     _descLogTimer = setTimeout(() => {
       logActivity('updated description', 'status_change')
@@ -135,7 +146,7 @@
 
   function onContentUpdate(val: string) {
     localContent.value = val
-    debouncedSave({ content: val })
+    debouncedSave()
     if (_contentLogTimer) clearTimeout(_contentLogTimer)
     _contentLogTimer = setTimeout(() => {
       logActivity('edited content', 'status_change')
@@ -202,19 +213,12 @@
   const localIcon = ref('')
   const iconPickerOpen = ref(false)
 
-  watch(currentPage, (page) => {
-    if (!page) return
-    localIcon.value = (page as any).icon || ''
-  }, { immediate: true })
-
   function handleIconChange(icon: string) {
     localIcon.value = icon
-    debouncedSave({ icon } as any)
+    debouncedSave()
   }
 
   // ── Page status ─────────────────────────────────────────────────
-  type PageStatus = 'draft' | 'published' | 'archived'
-
   const PAGE_STATUS_OPTIONS: { value: PageStatus; label: string; icon: string; color: string }[] = [
     { value: 'draft',     label: 'Draft',     icon: 'lucide:pencil',        color: 'text-muted-foreground' },
     { value: 'published', label: 'Published', icon: 'lucide:globe',         color: 'text-emerald-500' },
@@ -224,15 +228,7 @@
   const localStatus = ref<PageStatus>('draft')
   const statusPickerOpen = ref(false)
 
-  watch(currentPage, (page) => {
-    if (!page) return
-    const s = (page as any).status as PageStatus | undefined
-    if (s && PAGE_STATUS_OPTIONS.some((o) => o.value === s)) localStatus.value = s
-  }, { immediate: true })
-
-  watch(localStatus, (status) => {
-    debouncedSave({ status } as any)
-  })
+  watch(localStatus, () => debouncedSave())
 
   const currentStatusOption = computed(() =>
     PAGE_STATUS_OPTIONS.find((o) => o.value === localStatus.value) ?? PAGE_STATUS_OPTIONS[0]!
@@ -241,18 +237,10 @@
   // ── Tags ─────────────────────────────────────────────────────────
   const localTags = ref<string[]>([])
 
-  watch(currentPage, (page) => {
-    if (!page) return
-    const t = (page as any).tags
-    if (Array.isArray(t)) localTags.value = t
-  }, { immediate: true })
-
-  watch(localTags, (tags) => {
-    debouncedSave({ tags })
-  }, { deep: true })
+  watch(localTags, () => debouncedSave(), { deep: true })
 
   // ── Right sidebar ─────────────────────────────────────────────────
-  const showSidebar = ref(false)
+  const showSidebar = ref(true)
   const sidebarTab = ref<'references' | 'activity'>('references')
   const sidebarW = ref(272)
   const isResizingSidebar = ref(false)
@@ -309,11 +297,38 @@
   // ── References ────────────────────────────────────────────────────
   const localReferences = ref<Reference[]>([])
 
+  // ── Unified page seeder ───────────────────────────────────────────────
+  // Seeds all local refs once per pageId (not on every store update).
+  // This mirrors notes behavior and prevents the post-save SSE → re-seed → re-save loop.
+  const _seededPageId = ref<string | null>(null)
+
+  function _seedFromPage(page: PageItem) {
+    localTitle.value = page.title ?? ''
+    localDescription.value = page.description ?? ''
+    localContent.value = page.content ?? ''
+    localIcon.value = page.icon || ''
+    const s = page.status
+    localStatus.value = (s && PAGE_STATUS_OPTIONS.some((o) => o.value === s)) ? s : 'draft'
+    localTags.value = Array.isArray(page.tags) ? [...page.tags] : []
+    localReferences.value = Array.isArray(page.references) ? [...page.references] : []
+    // Initialize snapshot after seeding so watchers don't trigger a spurious save
+    _lastSavedSnapshot = buildCurrentSnapshot()
+    _seededPageId.value = page.id
+  }
+
+  // Seed when currentPage first becomes available for this pageId
   watch(currentPage, (page) => {
-    if (!page) return
-    const refs = (page as any).references
-    if (Array.isArray(refs)) localReferences.value = refs
+    if (!page || page.id !== pageId.value) return
+    if (_seededPageId.value === page.id) return // already seeded — skip post-save store updates
+    _seedFromPage(page)
   }, { immediate: true })
+
+  // Re-seed when navigating to a different page
+  watch(pageId, () => {
+    _seededPageId.value = null
+    const page = currentPage.value
+    if (page && page.id === pageId.value) _seedFromPage(page)
+  })
 
   const editablePageRef = reactive({
     get id() { return pageId.value },
@@ -329,20 +344,20 @@
 
   async function handleAddEntityRef(ref: EntityReference) {
     await addEntityRef(ref)
-    debouncedSave({ references: editablePageRef.references })
+    debouncedSave()
     logActivity(`linked ${ref.entityType} "${ref.title || ref.entityId}"`, 'status_change')
   }
 
   async function handleCreatedEntityRef(ref: EntityReference) {
     await createAndOpenEntityRef(ref)
-    debouncedSave({ references: editablePageRef.references })
+    debouncedSave()
     logActivity(`created and linked ${ref.entityType} "${ref.title || ref.entityId}"`, 'status_change')
   }
 
   async function handleRemoveRef(refId: string) {
     const ref = editablePageRef.references.find((r: any) => r.id === refId || r.entityId === refId) as EntityReference | undefined
     await removeEntityRef(refId)
-    debouncedSave({ references: editablePageRef.references })
+    debouncedSave()
     if (ref) {
       logActivity(`unlinked "${ref.title || ref.entityId}"`, 'status_change')
     }
@@ -410,11 +425,6 @@
               <Icon name="lucide:chevron-down" class="h-4 w-4" />
             </UiButton>
 
-            <!-- Sidebar toggle -->
-            <UiButton variant="ghost" size="icon" class="h-7 w-7" @click="showSidebar = !showSidebar">
-              <Icon :name="showSidebar ? 'lucide:panel-right-close' : 'lucide:panel-right-open'" class="h-4 w-4" />
-            </UiButton>
-
             <!-- Context menu -->
             <UiDropdownMenu>
               <UiDropdownMenuTrigger as-child>
@@ -442,7 +452,7 @@
         </div>
 
         <!-- Title row: icon + input -->
-        <div class="flex items-center gap-2">
+        <div class="flex items-center gap-0">
           <!-- Page icon button -->
           <button
             type="button"
@@ -497,8 +507,17 @@
         </div>
 
       </div>
-      <!-- Properties (props): horizontal pill row -->
-      <div class="flex items-center gap-1.5 flex-wrap py-2 px-2 border-t">
+    </div>
+
+    <!-- Recent pages strip -->
+    <RecentPagesStrip />
+
+    <!-- Body: props bar + editor + optional right sidebar -->
+    <div class="flex-1 flex min-h-0 overflow-hidden">
+      <!-- Left: props + editor -->
+      <div class="flex-1 flex flex-col min-w-0 overflow-hidden">
+        <!-- Properties (props): horizontal pill row -->
+        <div class="flex items-center gap-1.5 flex-wrap py-2 px-2 border-b shrink-0">
 
         <!-- Owner pill -->
         <span class="inline-flex items-center gap-1.5 px-2 py-1 rounded-lg text-xs bg-muted/50 text-muted-foreground">
@@ -512,7 +531,7 @@
             />
             <Icon v-else name="lucide:user" class="h-2.5 w-2.5" />
           </span>
-          Created by {{ currentUserDisplayName || (currentPage as any).owner || 'Unknown' }}
+          Created by {{ currentUserDisplayName || currentPage?.owner || 'Unknown' }}
         </span>
 
         <!-- People pill (presence avatars) -->
@@ -548,12 +567,12 @@
             <button
               type="button"
               class="inline-flex items-center gap-1.5 px-2 py-1 rounded-lg text-xs transition-colors"
-              :class="(currentPage as any).folder
+              :class="currentPage?.folder
                 ? 'bg-muted/50 text-muted-foreground hover:bg-muted'
                 : 'border border-dashed border-muted-foreground/30 text-muted-foreground/60 hover:border-muted-foreground/50 hover:bg-muted/30 hover:text-muted-foreground'"
             >
               <Icon name="lucide:folder" class="h-3.5 w-3.5" />
-              {{ (currentPage as any).folder || 'No folder' }}
+              {{ currentPage?.folder || 'No folder' }}
               <Icon name="lucide:chevron-down" class="h-3 w-3 opacity-40" />
             </button>
           </UiDropdownMenuTrigger>
@@ -562,7 +581,7 @@
             <UiDropdownMenuSeparator />
             <UiDropdownMenuItem v-for="f in folders" :key="f" @click="handleMoveToFolder(f)">
               <Icon name="lucide:folder-open" class="mr-2 h-4 w-4" />{{ f }}
-              <Icon v-if="(currentPage as any).folder === f" name="lucide:check" class="ml-auto h-3.5 w-3.5 text-primary" />
+              <Icon v-if="currentPage?.folder === f" name="lucide:check" class="ml-auto h-3.5 w-3.5 text-primary" />
             </UiDropdownMenuItem>
             <UiDropdownMenuSeparator v-if="folders.length" />
             <div class="px-2 py-1.5">
@@ -583,8 +602,8 @@
                 >Create</button>
               </div>
             </div>
-            <UiDropdownMenuSeparator v-if="(currentPage as any).folder" />
-            <UiDropdownMenuItem v-if="(currentPage as any).folder" class="text-muted-foreground" @click="handleMoveToFolder(null)">
+            <UiDropdownMenuSeparator v-if="currentPage?.folder" />
+            <UiDropdownMenuItem v-if="currentPage?.folder" class="text-muted-foreground" @click="handleMoveToFolder(null)">
               <Icon name="lucide:folder-minus" class="mr-2 h-4 w-4" />Remove from folder
             </UiDropdownMenuItem>
           </UiDropdownMenuContent>
@@ -615,36 +634,31 @@
 
         <!-- Created date pill -->
         <span
-          v-if="(currentPage as any).createdAt"
+          v-if="currentPage?.createdAt"
           class="inline-flex items-center gap-1.5 px-2 py-1 rounded-lg text-xs bg-muted/50 text-muted-foreground"
-          :title="new Date((currentPage as any).createdAt).toLocaleString()"
+          :title="new Date(currentPage.createdAt).toLocaleString()"
         >
           <Icon name="lucide:calendar-plus" class="h-3.5 w-3.5 shrink-0" />
-          Created on {{ new Date((currentPage as any).createdAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) }}
+          Created on {{ new Date(currentPage.createdAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) }}
         </span>
 
         <!-- Last edited pill -->
         <span
-          v-if="(currentPage as any).updatedAt || (currentPage as any).createdAt"
+          v-if="currentPage?.updatedAt || currentPage?.createdAt"
           class="inline-flex items-center gap-1.5 px-2 py-1 rounded-lg text-xs bg-muted/50 text-muted-foreground"
-          :title="new Date((currentPage as any).updatedAt || (currentPage as any).createdAt).toLocaleString()"
+          :title="new Date(currentPage.updatedAt || currentPage.createdAt!).toLocaleString()"
         >
           <Icon name="lucide:clock" class="h-3.5 w-3.5 shrink-0" />
-          Last edited {{ formatRelativeTime((currentPage as any).updatedAt || (currentPage as any).createdAt) }}
+          Last edited {{ formatRelativeTime(currentPage.updatedAt || currentPage.createdAt!) }}
         </span>
 
 
 
-      </div>
-    </div>
 
-    <!-- Recent pages strip -->
-    <RecentPagesStrip />
+        </div>
 
-    <!-- Body: editor + optional right sidebar -->
-    <div class="flex-1 flex min-h-0 overflow-hidden">
-      <!-- Main editor -->
-      <UiRichTextEditor
+        <!-- Main editor -->
+        <UiRichTextEditor
         ref="editorRef"
         :model-value="localContent"
         placeholder="Write your note..."
@@ -658,12 +672,12 @@
         tables
         mathematics
         templates
-        collaborative
         inline-comments
         :entity-id="currentPage.id"
         @update:model-value="onContentUpdate"
         @add-inline-comment="handleAddInlineComment"
       />
+      </div>
 
       <!-- Right sidebar: collapsed strip -->
       <Transition name="sidebar-slide">
@@ -694,7 +708,7 @@
           <!-- Tab bar -->
           <div class="flex border-b border-border shrink-0">
             <button
-              class="flex-1 px-3 py-2 text-[10px] font-medium uppercase tracking-wide transition-colors"
+              class="flex-1 px-3 py-3 text-[10.5px] font-medium uppercase tracking-wide transition-colors"
               :class="sidebarTab === 'references' ? 'text-foreground border-b-2 border-primary' : 'text-muted-foreground hover:text-foreground'"
               @click="sidebarTab = 'references'">
               References
@@ -705,6 +719,12 @@
               @click="sidebarTab = 'activity'">
               Activity
               <span v-if="displayActivity.length" class="ml-1 text-[9px] bg-muted rounded-full px-1.5 py-0.5">{{ displayActivity.length }}</span>
+            </button>
+            <button
+              class="px-2 flex items-center justify-center text-muted-foreground hover:text-foreground transition-colors shrink-0"
+              title="Close sidebar"
+              @click="showSidebar = false">
+              <Icon name="lucide:panel-right-close" class="h-4 w-4" />
             </button>
           </div>
 
@@ -720,8 +740,27 @@
               @add-entity-of-type="(type) => { entityPickerFilterType = type; entityPickerOpen = true }" />
 
             <!-- Activity tab -->
-            <div v-if="sidebarTab === 'activity'" class="p-3 space-y-2 flex flex-col h-full">
-              <div class="flex-1 overflow-y-auto space-y-2 min-h-0">
+            <div v-if="sidebarTab === 'activity'" class="p-3 pb-0 space-y-2 flex flex-col h-full">
+              <!-- Comment input -->
+              <div class="flex items-center gap-2 pt-2 border border-border bg-card py-4 px-2 rounded-lg m-0! shrink-0">
+                <div class="w-5 h-5 rounded-full bg-muted/60 flex items-center justify-center shrink-0">
+                  <Icon name="lucide:user" class="h-2.5 w-2.5 text-muted-foreground" />
+                </div>
+                <input
+                  v-model="newComment"
+                  type="text"
+                  placeholder="Add a comment…"
+                  class="flex-1 text-xs bg-transparent border-none outline-none placeholder:text-muted-foreground/50"
+                  @keydown.enter="newComment.trim() && handleAddComment()" />
+                <button
+                  v-if="newComment.trim()"
+                  class="text-primary hover:text-primary/80 transition-colors shrink-0"
+                  @click="handleAddComment">
+                  <Icon name="lucide:send" class="h-3 w-3" />
+                </button>
+              </div>
+              <!-- Activity items -->
+              <div class="flex-1 overflow-y-auto space-y-2 min-h-0 px-2 pt-4">
                 <div v-if="commentsLoading" class="flex items-center gap-2 py-2">
                   <Icon name="lucide:loader-2" class="h-3 w-3 animate-spin text-muted-foreground" />
                   <span class="text-xs text-muted-foreground">Loading…</span>
@@ -773,27 +812,6 @@
                   <p class="text-xs text-muted-foreground italic">No activity yet</p>
                 </div>
               </div>
-              <!-- Comment input -->
-              <div class="flex items-center gap-2 pt-2 border-t border-border shrink-0">
-                <div class="w-5 h-5 rounded-full bg-muted/60 flex items-center justify-center shrink-0">
-                  <Icon name="lucide:user" class="h-2.5 w-2.5 text-muted-foreground" />
-                </div>
-                <input
-                  v-model="newComment"
-                  type="text"
-                  placeholder="Add a comment…"
-                  class="flex-1 text-xs bg-transparent border-none outline-none placeholder:text-muted-foreground/50"
-                  @keydown.enter="newComment.trim() && handleAddComment()" />
-                <button
-                  v-if="newComment.trim()"
-                  class="text-primary hover:text-primary/80 transition-colors shrink-0"
-                  @click="handleAddComment">
-                  <Icon name="lucide:send" class="h-3 w-3" />
-                </button>
-              </div>
-              <p v-if="currentPage?.updatedAt || currentPage?.createdAt" class="text-[10px] text-muted-foreground/50 text-center shrink-0 pt-1">
-                Last edited · {{ formatRelativeTime((currentPage as any).updatedAt || (currentPage as any).createdAt) }}
-              </p>
             </div>
           </div>
         </aside>

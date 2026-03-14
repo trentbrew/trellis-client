@@ -1214,7 +1214,7 @@
         leave-to-class="translate-y-4 opacity-0">
         <div
           v-if="hasSelection"
-          class="absolute bottom-4 left-1/2 -translate-x-1/2 z-20 flex items-center gap-2 rounded-xl border border-border bg-card px-4 py-2.5 shadow-lg">
+          class="absolute bottom-20 left-1/2 -translate-x-1/2 z-20 flex items-center gap-2 rounded-xl border border-border bg-card px-4 py-2.5 shadow-lg">
           <!-- Selection count -->
           <span class="text-xs font-medium tabular-nums">
             {{ selectedRowCount }} selected

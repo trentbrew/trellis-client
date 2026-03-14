@@ -803,10 +803,10 @@
         <div
           v-if="variantConfig.showToolbar"
           ref="stickyRef"
-          class="sticky -top-px z-40 transition-all duration-0 rounded-t-lg"
+          class="sticky -top-px z-40 transition-all duration-200 rounded-t-lg backdrop-blur-2xl"
           :class="[
             isStuck
-              ? 'bg-transparent border-b border-border backdrop-blur-lg'
+              ? 'bg-card/50 border-b border-border'
               : 'bg-transparent border-b-transparent',
             transparent ? 'bg-transparent backdrop-blur-none' : '',
           ]">
@@ -853,12 +853,12 @@
                     v-model="searchQuery"
                     type="text"
                     :placeholder="effectiveSearchPlaceholder"
-                    class="w-full rounded-lg border border-border bg-card/0 py-2 pl-10 pr-4 text-sm placeholder:text-muted-foreground focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary" />
+                    class="w-full rounded-lg border border-border bg-card/50 py-2 pl-10 pr-4 text-sm placeholder:text-muted-foreground focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary" />
                   <input
                     v-else
                     type="text"
                     :placeholder="effectiveSearchPlaceholder"
-                    class="w-full rounded-lg border border-border bg-card/0 py-2 pl-10 pr-4 text-sm placeholder:text-muted-foreground focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary" />
+                    class="w-full rounded-lg border border-border bg-card/50 py-2 pl-10 pr-4 text-sm placeholder:text-muted-foreground focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary" />
                 </slot>
               </div>
 

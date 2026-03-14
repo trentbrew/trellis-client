@@ -91,22 +91,47 @@
       source.value = STARTER_DIAGRAM
     }
   })
+
+  const tab = ref<'diagram' | 'code'>('diagram')
 </script>
 
 <template>
   <div class="flex flex-col min-h-0 flex-1">
-    <!-- Editor pane -->
+    <!-- Editor pane (tabbed) -->
     <div
       v-if="!isViewMode"
-      class="flex flex-col min-h-0 flex-1 divide-y divide-border">
-      <!-- Source textarea -->
-      <div class="relative flex-1 min-h-0">
-        <textarea
-          v-model="source"
-          class="w-full h-full min-h-[160px] resize-none bg-muted/30 font-mono text-xs p-4 text-foreground placeholder:text-muted-foreground/50 focus:outline-none focus:bg-muted/50 transition-colors"
-          placeholder="Enter Mermaid diagram source..." />
-        <div class="absolute top-2 right-2 flex items-center gap-1">
+      class="flex flex-col min-h-0 flex-1">
+      <!-- Tab bar -->
+      <div class="flex items-center border-b border-border shrink-0">
+        <button
+          class="px-3 py-2 text-[10px] font-medium uppercase tracking-wide transition-colors"
+          :class="tab === 'diagram' ? 'text-foreground border-b-2 border-primary -mb-px' : 'text-muted-foreground hover:text-foreground'"
+          @click="tab = 'diagram'">
+          Diagram
+        </button>
+        <button
+          class="px-3 py-2 text-[10px] font-medium uppercase tracking-wide transition-colors"
+          :class="tab === 'code' ? 'text-foreground border-b-2 border-primary -mb-px' : 'text-muted-foreground hover:text-foreground'"
+          @click="tab = 'code'">
+          Code
+        </button>
+        <div class="flex-1" />
+        <div class="flex items-center gap-1 pr-2">
+          <Icon
+            v-if="rendering"
+            name="svg-spinners:ring-resize"
+            class="h-3.5 w-3.5 text-muted-foreground" />
           <UiButton
+            v-if="tab === 'diagram' && svg"
+            variant="ghost"
+            size="icon"
+            class="h-6 w-6 opacity-60 hover:opacity-100"
+            title="Copy SVG"
+            @click="copySvg">
+            <Icon name="lucide:image" class="h-3 w-3" />
+          </UiButton>
+          <UiButton
+            v-if="tab === 'code'"
             variant="ghost"
             size="icon"
             class="h-6 w-6 opacity-60 hover:opacity-100"
@@ -117,27 +142,10 @@
         </div>
       </div>
 
-      <!-- Preview pane -->
-      <div class="p-4 bg-card/50">
-        <div class="flex items-center justify-between mb-3">
-          <span class="text-xs font-medium text-muted-foreground uppercase tracking-wider">Preview</span>
-          <div class="flex items-center gap-1">
-            <Icon
-              v-if="rendering"
-              name="svg-spinners:ring-resize"
-              class="h-3.5 w-3.5 text-muted-foreground" />
-            <UiButton
-              v-if="svg"
-              variant="ghost"
-              size="icon"
-              class="h-6 w-6 opacity-60 hover:opacity-100"
-              title="Copy SVG"
-              @click="copySvg">
-              <Icon name="lucide:image" class="h-3 w-3" />
-            </UiButton>
-          </div>
-        </div>
-
+      <!-- Diagram tab (default) -->
+      <div
+        v-if="tab === 'diagram'"
+        class="flex-1 p-4 overflow-auto bg-card/50">
         <div
           v-if="error"
           class="rounded-md border border-destructive/30 bg-destructive/5 px-3 py-2 text-xs text-destructive">
@@ -147,17 +155,25 @@
           </div>
           <pre class="whitespace-pre-wrap font-mono text-[10px] opacity-70 leading-relaxed">{{ error }}</pre>
         </div>
-
         <div
           v-else-if="svg"
           class="overflow-x-auto rounded-md"
           v-html="svg" />
-
         <div
           v-else-if="!rendering"
           class="flex items-center justify-center py-8 text-muted-foreground/40 text-xs italic">
-          Enter diagram source above to preview
+          Switch to Code tab to add diagram source
         </div>
+      </div>
+
+      <!-- Code tab -->
+      <div
+        v-if="tab === 'code'"
+        class="relative flex-1 min-h-0">
+        <textarea
+          v-model="source"
+          class="w-full h-full min-h-[160px] resize-none bg-muted/30 font-mono text-xs p-4 text-foreground placeholder:text-muted-foreground/50 focus:outline-none focus:bg-muted/50 transition-colors"
+          placeholder="Enter Mermaid diagram source..." />
       </div>
     </div>
 

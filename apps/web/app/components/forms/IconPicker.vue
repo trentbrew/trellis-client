@@ -239,7 +239,7 @@
 
 <template>
   <UiDialog :open="isOpen" @update:open="isOpen = $event">
-    <UiDialogContent class="max-w-7xl max-h-[85vh] flex flex-col p-0 overflow-hidden">
+    <UiDialogContent class="max-w-7xl max-h-[50vh] flex flex-col p-0! overflow-hidden">
       <!-- Header with Tabs -->
       <div class="flex items-center justify-between border-b border-border px-4 py-2 shrink-0 pr-12">
         <div class="flex items-center gap-1">

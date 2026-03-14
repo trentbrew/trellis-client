@@ -58,6 +58,15 @@
   // ── Stack-aware positioning ─────────────────────────────────────────
   const { buildContentStyle, overlayClass: stackOverlayClass, stackTransform, isStacked, parentTitle, hideNavigation, onBack, reportDimensions } = useDialogStackAware()
 
+  // ── Originating-dialog tracking (for backdrop blur on pages route) ──
+  const { setOriginatingDialogOpen } = useDialogStack()
+  watch(
+    () => props.open,
+    (val) => { if (!isStacked.value) setOriginatingDialogOpen(val) },
+    { immediate: true },
+  )
+  onUnmounted(() => { if (!isStacked.value) setOriginatingDialogOpen(false) })
+
   // ── Resize logic ──────────────────────────────────────────────────────
   const MIN_W = 640
   const MIN_H = 480
