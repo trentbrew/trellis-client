@@ -32,7 +32,7 @@ function _initStoreFromTql() {
       }
 
       try {
-        const entityIdList = ids.map((row) => (row as any)['?e'] as string)
+        const entityIdList = ids.map((row) => (row as Record<string, string>)['?e']).filter(Boolean) as string[]
         const rawNodes = await fetchNodes(entityIdList)
 
         // Build a lookup of entityId → node for resolving link titles
@@ -80,8 +80,8 @@ function _initStoreFromTql() {
             id,
             ...normalizeScalars(rest),
             type: normalizeScalar(node['@type'] || node.type),
-            startDate: extractYmd((node as any).startDate || (rest as any).startDate),
-            endDate: extractYmd((node as any).endDate || (rest as any).endDate) || undefined,
+            startDate: extractYmd(rest.startDate as string | undefined),
+            endDate: extractYmd(rest.endDate as string | undefined) || undefined,
             tags: normalizeArray(node.tags),
             involved: normalizeArray(node.involved),
             reminders: parseJsonArray(node.reminders),
@@ -136,7 +136,7 @@ function _initStoreFromAdapter(adapter: DataAdapter) {
         return
       }
 
-      const rawItems = (result.data as any)?.entities || []
+      const rawItems = (result.data as Record<string, any>)?.entities || []
 
       // First pass: build items with outgoing refs parsed from stored JSON
       const items = rawItems.map((item: any) => {
@@ -310,7 +310,7 @@ export function useTrellisEntities() {
     }
 
     // Default owner display name to the current user if not set
-    const ownerName = (data as any).owner || user.value?.email || ownerId
+    const ownerName = (data as Record<string, any>).owner || user.value?.email || ownerId
 
     // Step 1: Create the entity. Must be a separate transaction from the link
     // because InstantDB evaluates permissions against pre-transaction state.
@@ -325,12 +325,12 @@ export function useTrellisEntities() {
         ownerId,
         owner: ownerName,
         orgId: orgId || undefined,
-        visibility: (data as any).visibility || 'org',
-        involved: (data as any).involved?.length ? (data as any).involved : [ownerId],
-        startDate: extractYmd((data as any).startDate) || todayYmdLocal(new Date()),
-        endDate: extractYmd((data as any).endDate) || undefined,
-        allDay: (data as any).allDay ?? true,
-        priority: (data as any).priority || 'medium',
+        visibility: (data as Record<string, any>).visibility || 'org',
+        involved: (data as Record<string, any>).involved?.length ? (data as Record<string, any>).involved : [ownerId],
+        startDate: extractYmd((data as Record<string, any>).startDate) || todayYmdLocal(new Date()),
+        endDate: extractYmd((data as Record<string, any>).endDate) || undefined,
+        allDay: (data as Record<string, any>).allDay ?? true,
+        priority: (data as Record<string, any>).priority || 'medium',
         createdAt: now,
         updatedAt: now,
       }),
@@ -348,7 +348,7 @@ export function useTrellisEntities() {
   }
 
   async function updateViaAdapter(item: Entity) {
-    const { id: itemId, references, ...fields } = item as any
+    const { id: itemId, references, ...fields } = item as Entity & Record<string, any>
     // Only persist outgoing refs — incoming backlinks are computed at load time
     const outgoingRefs = Array.isArray(references)
       ? references.filter((r: any) => r?.direction !== 'incoming')
@@ -373,8 +373,8 @@ export function useTrellisEntities() {
         references: outgoingRefs.length ? toAdapterPayload(outgoingRefs) : null,
         ownerId,
         involved,
-        startDate: extractYmd((fields as any).startDate),
-        endDate: extractYmd((fields as any).endDate) || undefined,
+        startDate: extractYmd(fields.startDate as string | undefined),
+        endDate: extractYmd(fields.endDate as string | undefined) || undefined,
         updatedAt: Date.now(),
       }),
     ], `update entity ${itemId}`)
@@ -400,8 +400,8 @@ export function useTrellisEntities() {
       type: ENTITY_NAMESPACE,
       data: prepareDataForEAV({
         ...data,
-        startDate: extractYmd((data as any).startDate),
-        endDate: extractYmd((data as any).endDate) || undefined,
+        startDate: extractYmd((data as Record<string, any>).startDate),
+        endDate: extractYmd((data as Record<string, any>).endDate) || undefined,
         createdAt: now,
         updatedAt: now,
       }),
@@ -420,8 +420,8 @@ export function useTrellisEntities() {
       type: ENTITY_NAMESPACE,
       data: prepareDataForEAV({
         ...fields,
-        startDate: extractYmd((fields as any).startDate),
-        endDate: extractYmd((fields as any).endDate) || undefined,
+        startDate: extractYmd((fields as Record<string, any>).startDate),
+        endDate: extractYmd((fields as Record<string, any>).endDate) || undefined,
         updatedAt: Date.now(),
       }),
     })
@@ -447,7 +447,7 @@ export function useTrellisEntities() {
   function isReadOnlyEntity(itemOrId: Entity | string): boolean {
     const id = typeof itemOrId === 'string' ? itemOrId : itemOrId.id
     const item = items.value.find((i) => i.id === id)
-    return (item as any)?.source === 'google-calendar'
+    return (item as Record<string, any> | undefined)?.source === 'google-calendar'
   }
 
   async function update(item: Entity) {

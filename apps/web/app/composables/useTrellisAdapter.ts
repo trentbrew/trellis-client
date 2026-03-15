@@ -94,11 +94,11 @@ const extractLegacyItemsFromCollectionContent = (content: string | undefined): a
   if (Array.isArray(parsed)) return parsed
 
   if (parsed && typeof parsed === 'object') {
-    const graph = (parsed as any).graph
+    const graph = (parsed as Record<string, any>).graph
     if (graph && typeof graph === 'object' && !Array.isArray(graph)) {
       const nestedCandidates = ['nodes', 'records', 'items', 'data', '@graph']
       for (const k of nestedCandidates) {
-        if (Array.isArray((graph as any)[k])) return (graph as any)[k]
+        if (Array.isArray((graph as Record<string, any>)[k])) return (graph as Record<string, any>)[k]
       }
     }
 
@@ -169,7 +169,7 @@ const downloadTextFile = (filename: string, content: string, mimeType: string) =
 
 export const useTrellisAdapter = () => {
   const instant = useInstantDb()
-  const tx = instant.tx as any
+  const tx = instant.tx as Record<string, any>
   const { currentApp, createCollection, updateCollection, collections } = useInstantData()
 
   const getAuthUserId = async () => {
@@ -190,7 +190,7 @@ export const useTrellisAdapter = () => {
       },
     })
 
-    let settingData = (resp.data as any)?.settings?.[0]
+    let settingData = (resp.data as Record<string, any>)?.settings?.[0]
 
     if (!settingData?.id) {
       const fallbackResp = await instant.queryOnce({
@@ -204,7 +204,7 @@ export const useTrellisAdapter = () => {
           },
         },
       })
-      settingData = (fallbackResp.data as any)?.settings?.[0]
+      settingData = (fallbackResp.data as Record<string, any>)?.settings?.[0]
     }
 
     const value = settingData?.value
@@ -226,7 +226,7 @@ export const useTrellisAdapter = () => {
       },
     })
 
-    const existing = (resp.data as any)?.settings?.[0]
+    const existing = (resp.data as Record<string, any>)?.settings?.[0]
 
     if (existing?.id) {
       await instant.transact([
@@ -307,13 +307,13 @@ export const useTrellisAdapter = () => {
       throw new Error('Invalid Trellis document')
     }
 
-    const rawGraph = (parsed as any)['@graph']
-    const graphObj = (parsed as any).graph
+    const rawGraph = (parsed as Record<string, any>)['@graph']
+    const graphObj = (parsed as Record<string, any>).graph
 
     if (!Array.isArray(rawGraph) && graphObj && typeof graphObj === 'object' && !Array.isArray(graphObj)) {
       const title =
         overrides?.title ||
-        String((graphObj as any)['trellis:title'] ?? (graphObj as any).name ?? (graphObj as any).title ?? 'Imported')
+        String((graphObj as Record<string, any>)['trellis:title'] ?? (graphObj as Record<string, any>).name ?? (graphObj as Record<string, any>).title ?? 'Imported')
 
       const slugBase = slugify(title) || `imported-${Date.now()}`
       const slug = collections.value.some((c) => c.slug === slugBase) ? `${slugBase}-${Date.now()}` : slugBase
