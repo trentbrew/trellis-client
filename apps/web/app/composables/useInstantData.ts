@@ -117,9 +117,9 @@ function getSeededDatabaseContent(options: {
     }
   }
 
-  ;(doc.graph.nodes as any[]).push(mkRecord('First task', 'Todo', 2, 1))
-  ;(doc.graph.nodes as any[]).push(mkRecord('Second task', 'In Progress', 5, 2))
-  ;(doc.graph.nodes as any[]).push(mkRecord('Ship it', 'Done', 8, 3))
+  ;(doc.graph.nodes as Record<string, any>[]).push(mkRecord('First task', 'Todo', 2, 1))
+  ;(doc.graph.nodes as Record<string, any>[]).push(mkRecord('Second task', 'In Progress', 5, 2))
+  ;(doc.graph.nodes as Record<string, any>[]).push(mkRecord('Ship it', 'Done', 8, 3))
 
   return serializeTrellisDocument(doc, true)
 }
@@ -131,7 +131,7 @@ function getSeededDatabaseContent(options: {
 export function useInstantData() {
   const db = useInstantDb()
   const { user } = useInstantAuth()
-  const tx = db.tx as any
+  const tx = db.tx as Record<string, any>
 
   const route = import.meta.client ? useRoute() : null
 
@@ -174,7 +174,7 @@ export function useInstantData() {
           orgsError.value = result.error
           orgsLoading.value = false
         } else if (result.data) {
-          organizations.value = ((result.data as any).organizations || []) as Organization[]
+          organizations.value = ((result.data as Record<string, any>).organizations || []) as Organization[]
           orgsLoading.value = false
         }
       })
@@ -207,7 +207,7 @@ export function useInstantData() {
             },
             (result: any) => {
               if (result.data) {
-                applications.value = ((result.data as any).applications || []) as Application[]
+                applications.value = ((result.data as Record<string, any>).applications || []) as Application[]
               }
               appsLoading.value = false
             },
@@ -244,7 +244,7 @@ export function useInstantData() {
             },
             (result: any) => {
               if (result.data) {
-                const items = (((result.data as any).collections || []) as Collection[]).slice()
+                const items = (((result.data as Record<string, any>).collections || []) as Collection[]).slice()
                 collections.value = items.sort((a, b) => (a.order || 0) - (b.order || 0))
               }
               collectionsLoading.value = false
@@ -306,7 +306,7 @@ export function useInstantData() {
               },
             },
             (result: any) => {
-              const raw = (result.data as any)?.settings?.[0]?.value
+              const raw = (result.data as Record<string, any>)?.settings?.[0]?.value
               const items = Array.isArray(raw) ? (raw as CustomType[]) : []
               customTypes.value = items
               customTypesLoading.value = false
@@ -344,7 +344,7 @@ export function useInstantData() {
               },
             },
             (result: any) => {
-              const raw = (result.data as any)?.settings?.[0]?.value
+              const raw = (result.data as Record<string, any>)?.settings?.[0]?.value
               const items = Array.isArray(raw) ? (raw as Workflow[]) : []
               workflows.value = items
               workflowsLoading.value = false
@@ -474,7 +474,7 @@ export function useInstantData() {
               const settingResp = await db.queryOnce({
                 settings: { $: { where: { settingKey: `user:${authUser.id}:onboardingComplete` } } },
               })
-              const onboardingDone = (settingResp.data as any)?.settings?.[0]?.value
+              const onboardingDone = (settingResp.data as Record<string, any>)?.settings?.[0]?.value
               if (!onboardingDone) {
                 console.info('[useInstantData] Skipping auto-create org: onboarding not complete')
                 return
@@ -486,7 +486,7 @@ export function useInstantData() {
               const orgIdResp = await db.queryOnce({
                 settings: { $: { where: { settingKey: `user:${authUser.id}:lastOrgId` } } },
               })
-              const lastOrgId = (orgIdResp.data as any)?.settings?.[0]?.value
+              const lastOrgId = (orgIdResp.data as Record<string, any>)?.settings?.[0]?.value
               if (typeof lastOrgId === 'string' && lastOrgId) {
                 console.info('[useInstantData] Skipping auto-create org: lastOrgId is set, waiting for subscription')
                 return
@@ -498,7 +498,7 @@ export function useInstantData() {
               const memberResp = await db.queryOnce({
                 members: { $: { where: { userId: authUser.id } } },
               })
-              const memberships = (memberResp.data as any)?.members || []
+              const memberships = (memberResp.data as Record<string, any>)?.members || []
               if (memberships.length > 0) {
                 console.info('[useInstantData] Skipping auto-create org: user has', memberships.length, 'membership(s)')
                 return
@@ -550,14 +550,14 @@ export function useInstantData() {
           if (orgApps.length > 0) return
 
           // Only org owners should auto-create apps
-          if ((org as any).ownerId !== authUser.id) {
+          if ((org as Record<string, any>).ownerId !== authUser.id) {
             console.info('[useInstantData] Skipping auto-create app: user is not org owner')
             return
           }
 
           // Debounce: wait 1.5s for apps to arrive via subscription
           appAutoCreateTimer = setTimeout(async () => {
-            const currentApps = (applications.value || []).filter((a) => a.orgId === (currentOrg.value as any)?.id)
+            const currentApps = (applications.value || []).filter((a) => a.orgId === (currentOrg.value as Record<string, any>)?.id)
             if (currentApps.length > 0 || isAutoCreatingApp.value) return
 
             isAutoCreatingApp.value = true
@@ -628,7 +628,7 @@ export function useInstantData() {
           },
         })
 
-        const existing = (resp.data as any)?.settings?.[0]
+        const existing = (resp.data as Record<string, any>)?.settings?.[0]
         const now = Date.now()
 
         if (existing?.id) {
@@ -768,8 +768,8 @@ export function useInstantData() {
 
     const ownerId = user.value.id
 
-    const name = String((data as any).title || (data as any).name || 'Untitled')
-    const description = String((data as any).description || '')
+    const name = String((data as Record<string, any>).title || (data as Record<string, any>).name || 'Untitled')
+    const description = String((data as Record<string, any>).description || '')
 
     const isDatabase = data.type === 'database'
     const seedSchema = isDatabase ? createSeedSchema(id) : null
@@ -855,7 +855,7 @@ export function useInstantData() {
       },
     })
 
-    const existing = (resp.data as any)?.settings?.[0]
+    const existing = (resp.data as Record<string, any>)?.settings?.[0]
     const now = Date.now()
 
     if (existing?.id) {

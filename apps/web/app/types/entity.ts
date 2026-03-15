@@ -1023,22 +1023,6 @@ export const CATEGORY_OPTIONS: { value: string; label: string; icon: string }[] 
 ]
 
 // ============================================================================
-// Backward Compatibility Aliases
-// ============================================================================
-
-/** @deprecated Use `EntityItemBase` instead. */
-export type CalendarItemBase = EntityItemBase
-
-/** @deprecated Use `Entity` instead. */
-export type CalendarItem = Entity
-
-/** @deprecated Use `EntityType` instead. */
-export type CalendarItemType = EntityType
-
-/** @deprecated Use `ENTITY_TYPE_OPTIONS` instead. */
-export const CALENDAR_ITEM_TYPES = ENTITY_TYPE_OPTIONS
-
-// ============================================================================
 // Property Field System — schema-driven UI field declarations
 // ============================================================================
 

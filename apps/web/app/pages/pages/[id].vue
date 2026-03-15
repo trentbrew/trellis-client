@@ -7,7 +7,7 @@
   const route = useRoute()
   const pageId = computed(() => route.params.id as string)
 
-  const { getPage, updatePage, deletePage, pages, folders, moveToFolder, livePageTitle } = usePageNotes()
+  const { getPage, updatePage: _updatePage, deletePage, pages, folders, moveToFolder, livePageTitle } = usePageNotes()
   const { addPage: addRecentPage } = useRecentPages()
   const { items: allItems } = useTrellisEntities()
   const { register: registerPresence, deregister: deregisterPresence, publishField, getViewers } = usePagePresence()
@@ -37,54 +37,12 @@
 
   useHead({ title: computed(() => currentPage.value?.title || 'Untitled') })
 
-  // ── Auto-save ─────────────────────────────────────────────────────
-  const saveTimeout = ref<ReturnType<typeof setTimeout> | null>(null)
-  const saveStatus = ref<'idle' | 'saving' | 'saved'>('idle')
-  let saveStatusResetTimer: ReturnType<typeof setTimeout> | null = null
-
-  // Snapshot of last saved state — prevents redundant saves and breaks the
-  // post-save SSE-update → re-seed → re-save infinite loop.
-  let _lastSavedSnapshot = ''
-
-  function buildCurrentSnapshot(): string {
-    return JSON.stringify({
-      title: localTitle.value,
-      description: localDescription.value,
-      content: localContent.value,
-      icon: localIcon.value,
-      status: localStatus.value,
-      tags: localTags.value,
-    })
-  }
-
-  function debouncedSave() {
-    if (saveTimeout.value) clearTimeout(saveTimeout.value)
-    saveTimeout.value = setTimeout(async () => {
-      if (!pageId.value) return
-      const snapshot = buildCurrentSnapshot()
-      if (snapshot === _lastSavedSnapshot) return
-      _lastSavedSnapshot = snapshot
-      saveStatus.value = 'saving'
-      console.log('[Page] Saving...', { pageId: pageId.value })
-      try {
-        await updatePage(pageId.value, {
-          title: localTitle.value,
-          description: localDescription.value,
-          content: localContent.value,
-          icon: localIcon.value,
-          status: localStatus.value,
-          tags: localTags.value,
-        })
-        console.log('[Page] Saved successfully')
-        saveStatus.value = 'saved'
-        if (saveStatusResetTimer) clearTimeout(saveStatusResetTimer)
-        saveStatusResetTimer = setTimeout(() => { saveStatus.value = 'idle' }, 2000)
-      } catch (err) {
-        console.error('[Page] Save failed:', err)
-        saveStatus.value = 'idle'
-      }
-    }, 800)
-  }
+  // ── Auto-save via useAutoSave composable ─────────────────────────
+  // useAutoSave is always enabled for pages (they're always in edit mode).
+  // We declare the editable reactive object later (after local refs), then
+  // wire useAutoSave to it. The `triggerSave` function pokes the reactive
+  // to trigger the debounced watcher without manual setTimeout management.
+  const _autoSaveEnabled = ref(true)
 
   onMounted(() => {
     if (pageId.value) {
@@ -94,8 +52,6 @@
   })
 
   onBeforeUnmount(() => {
-    if (saveTimeout.value) clearTimeout(saveTimeout.value)
-    if (saveStatusResetTimer) clearTimeout(saveStatusResetTimer)
     if (_titleLogTimer) clearTimeout(_titleLogTimer)
     if (_descLogTimer) clearTimeout(_descLogTimer)
     if (_contentLogTimer) clearTimeout(_contentLogTimer)
@@ -123,7 +79,6 @@
     const val = (e.target as HTMLInputElement).value
     localTitle.value = val
     livePageTitle.value = { id: pageId.value, title: val }
-    debouncedSave()
     if (_titleLogTimer) clearTimeout(_titleLogTimer)
     _titleLogTimer = setTimeout(() => {
       if (val.trim()) logActivity(`renamed to "${val}"`, 'status_change')
@@ -137,7 +92,6 @@
 
   function onDescriptionUpdate(val: string) {
     localDescription.value = val
-    debouncedSave()
     if (_descLogTimer) clearTimeout(_descLogTimer)
     _descLogTimer = setTimeout(() => {
       logActivity('updated description', 'status_change')
@@ -146,7 +100,6 @@
 
   function onContentUpdate(val: string) {
     localContent.value = val
-    debouncedSave()
     if (_contentLogTimer) clearTimeout(_contentLogTimer)
     _contentLogTimer = setTimeout(() => {
       logActivity('edited content', 'status_change')
@@ -215,7 +168,6 @@
 
   function handleIconChange(icon: string) {
     localIcon.value = icon
-    debouncedSave()
   }
 
   // ── Page status ─────────────────────────────────────────────────
@@ -228,7 +180,7 @@
   const localStatus = ref<PageStatus>('draft')
   const statusPickerOpen = ref(false)
 
-  watch(localStatus, () => debouncedSave())
+  // localStatus changes are picked up by useAutoSave via the editable reactive
 
   const currentStatusOption = computed(() =>
     PAGE_STATUS_OPTIONS.find((o) => o.value === localStatus.value) ?? PAGE_STATUS_OPTIONS[0]!
@@ -237,7 +189,7 @@
   // ── Tags ─────────────────────────────────────────────────────────
   const localTags = ref<string[]>([])
 
-  watch(localTags, () => debouncedSave(), { deep: true })
+  // localTags changes are picked up by useAutoSave via the editable reactive
 
   // ── Right sidebar ─────────────────────────────────────────────────
   const showSidebar = ref(true)
@@ -311,8 +263,6 @@
     localStatus.value = (s && PAGE_STATUS_OPTIONS.some((o) => o.value === s)) ? s : 'draft'
     localTags.value = Array.isArray(page.tags) ? [...page.tags] : []
     localReferences.value = Array.isArray(page.references) ? [...page.references] : []
-    // Initialize snapshot after seeding so watchers don't trigger a spurious save
-    _lastSavedSnapshot = buildCurrentSnapshot()
     _seededPageId.value = page.id
   }
 
@@ -330,34 +280,51 @@
     if (page && page.id === pageId.value) _seedFromPage(page)
   })
 
-  const editablePageRef = reactive({
+  // ── Editable reactive for useAutoSave ────────────────────────────
+  // This reactive object mirrors the local refs so useAutoSave can watch it.
+  // Changes to local refs propagate here via watchers, triggering debounced saves.
+  const editableItem: any = reactive({
     get id() { return pageId.value },
     type: 'page' as const,
-    get title() { return localTitle.value || 'Untitled' },
+    get title() { return localTitle.value },
+    set title(v: string) { localTitle.value = v },
+    get description() { return localDescription.value },
+    set description(v: string) { localDescription.value = v },
+    get content() { return localContent.value },
+    set content(v: string) { localContent.value = v },
+    get icon() { return localIcon.value },
+    set icon(v: string) { localIcon.value = v },
+    get status() { return localStatus.value },
+    set status(v: PageStatus) { localStatus.value = v },
+    get tags() { return localTags.value },
+    set tags(v: string[]) { localTags.value = v },
     references: localReferences.value,
   })
 
-  // Keep editablePageRef.references in sync with localReferences
-  watch(localReferences, (refs) => { editablePageRef.references = refs }, { deep: true })
+  // Keep editableItem.references in sync with localReferences
+  watch(localReferences, (refs) => { editableItem.references = refs }, { deep: true })
 
-  const { addEntityRef, removeRef: removeEntityRef, openEntityRef: handleOpenEntityRef, createAndOpenEntityRef } = useEntityReferences(editablePageRef)
+  // ── Auto-save ─────────────────────────────────────────────────────
+  const { status: saveStatus } = useAutoSave(editableItem, {
+    enabled: _autoSaveEnabled,
+    ignoreKeys: ['references', 'updatedAt', 'createdAt'],
+  })
+
+  const { addEntityRef, removeRef: removeEntityRef, openEntityRef: handleOpenEntityRef, createAndOpenEntityRef } = useEntityReferences(editableItem)
 
   async function handleAddEntityRef(ref: EntityReference) {
     await addEntityRef(ref)
-    debouncedSave()
     logActivity(`linked ${ref.entityType} "${ref.title || ref.entityId}"`, 'status_change')
   }
 
   async function handleCreatedEntityRef(ref: EntityReference) {
     await createAndOpenEntityRef(ref)
-    debouncedSave()
     logActivity(`created and linked ${ref.entityType} "${ref.title || ref.entityId}"`, 'status_change')
   }
 
   async function handleRemoveRef(refId: string) {
-    const ref = editablePageRef.references.find((r: any) => r.id === refId || r.entityId === refId) as EntityReference | undefined
+    const ref = editableItem.references.find((r: any) => r.id === refId || r.entityId === refId) as EntityReference | undefined
     await removeEntityRef(refId)
-    debouncedSave()
     if (ref) {
       logActivity(`unlinked "${ref.title || ref.entityId}"`, 'status_change')
     }
@@ -406,14 +373,17 @@
           <div class="flex items-center gap-1 shrink-0">
             <!-- Save status indicator -->
             <Transition name="fade" mode="out-in">
-              <span
-                v-if="saveStatus !== 'idle'"
-                class="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] text-muted-foreground">
-                <Icon
-                  :name="saveStatus === 'saving' ? 'lucide:loader-2' : 'lucide:check'"
-                  class="h-3 w-3"
-                  :class="saveStatus === 'saving' ? 'animate-spin' : 'text-emerald-500'" />
-                {{ saveStatus === 'saving' ? 'Saving...' : 'Saved' }}
+              <span v-if="saveStatus === 'saving'" key="saving" class="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] text-muted-foreground">
+                <Icon name="lucide:loader-2" class="h-3 w-3 animate-spin" />
+                Saving…
+              </span>
+              <span v-else-if="saveStatus === 'saved'" key="saved" class="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] text-muted-foreground">
+                <Icon name="lucide:check" class="h-3 w-3 text-emerald-500" />
+                Saved
+              </span>
+              <span v-else-if="saveStatus === 'error'" key="error" class="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] text-destructive">
+                <Icon name="lucide:alert-circle" class="h-3 w-3" />
+                Error
               </span>
             </Transition>
 
@@ -733,7 +703,7 @@
             <!-- References tab -->
             <ReferencesSection
               v-if="sidebarTab === 'references'"
-              v-model="editablePageRef.references"
+              v-model="editableItem.references"
               @open-entity="handleOpenEntityRef"
               @remove-ref="handleRemoveRef"
               @add-entity="() => { entityPickerFilterType = undefined; entityPickerOpen = true }"

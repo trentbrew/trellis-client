@@ -133,6 +133,7 @@ export default defineNuxtConfig({
 
   css: [
     '~/assets/css/tailwind.css',
+    '~/assets/css/table-node.scss',
     'katex/dist/katex.min.css',
     '@vue-flow/core/dist/style.css',
     '@vue-flow/core/dist/theme-default.css',

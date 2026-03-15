@@ -8,7 +8,9 @@
   import { TaskList, TaskItem } from '@tiptap/extension-list'
   import CodeBlockLowlight from '@tiptap/extension-code-block-lowlight'
   import { ResizableImageExtension } from '~/lib/resizable-image-extension'
-  import { TableKit } from '@tiptap/extension-table'
+  import { TableKit, TableHandleExtension } from '~/lib/table'
+  import TableHandle from '~/components/editor/table/TableHandle.vue'
+  import TableExtendButtons from '~/components/editor/table/TableExtendButtons.vue'
   import { Mathematics } from '@tiptap/extension-mathematics'
   import { common, createLowlight } from 'lowlight'
   import { Extension, InputRule, Node, mergeAttributes, wrappingInputRule } from '@tiptap/core'
@@ -23,7 +25,7 @@
   import { Collapsible } from '~/lib/collapsible-extension'
   import { TabsContainer, TabItem } from '~/lib/tabs-extension'
   import { Card } from '~/lib/card-extension'
-  import { TableControls } from '~/lib/table-controls-plugin'
+  // TableControls replaced by enhanced table system (TableHandleExtension + Vue components)
   import { EntityEmbed } from '~/lib/entity-embed-extension'
   import { QueryView } from '~/lib/query-view-extension'
   import { UrlEmbed, UrlEmbedPasteHandler } from '~/lib/url-embed-extension'
@@ -408,7 +410,7 @@
             resizable: true,
           },
         }) as any,
-        TableControls as any,
+        TableHandleExtension as any,
       )
     }
     if (mathematicsEnabled) {
@@ -1509,6 +1511,10 @@
         fillHeight ? 'flex-1 min-h-0 overflow-y-auto' : '',
       ]" />
 
+    <!-- Enhanced table controls -->
+    <TableHandle v-if="tablesEnabled && editor" :editor="editor" />
+    <TableExtendButtons v-if="tablesEnabled && editor" :editor="editor" />
+
     <!-- Hidden file input for image upload -->
     <input
       v-if="images"
@@ -1660,8 +1666,15 @@
   /* Table extension styles */
   :deep(.ProseMirror .tableWrapper) {
     margin: 1rem 0;
-    display: table; /* Match table dimensions exactly */
-    overflow: hidden; /* Prevent scrollbars from absolutely positioned buttons */
+    overflow: visible;
+    max-width: 100%;
+    position: relative;
+  }
+
+  :deep(.ProseMirror .table-container) {
+    overflow-x: auto;
+    width: fit-content;
+    max-width: 100%;
     border-radius: calc(var(--radius) - 4px);
     border: 1px solid var(--border);
     background: var(--card);
@@ -1903,8 +1916,11 @@
   }
 
   :deep(hr) {
-    margin: 1.5rem 0 0 0;
+    border: none;
+    border-top: 1px solid var(--border);
+    margin: 0;
     opacity: 1;
+    padding: 1rem 0;
   }
 
   /* ── Syntax Highlighting (lowlight / hljs) ──────────────────────────── */

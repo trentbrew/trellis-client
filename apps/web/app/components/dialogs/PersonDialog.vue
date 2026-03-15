@@ -1,10 +1,7 @@
 <script lang="ts" setup>
-  import type { Entity, PropertyFieldId } from '~/types/entity'
-  import { CATEGORY_OPTIONS, createDefaultItem } from '~/types/entity'
-  import { typeHasField } from '~/config/entityRegistry'
-  import { useComments } from '~/composables/useComments'
-
-  const { user: currentUser } = useInstantAuth()
+  import type { Entity } from '~/types/entity'
+  import { CATEGORY_OPTIONS } from '~/types/entity'
+  import { useEntityDialog } from '~/composables/useEntityDialog'
 
   const props = withDefaults(
     defineProps<{
@@ -34,54 +31,29 @@
     navigateNext: []
   }>()
 
-  const mode = computed(() => props.mode)
-  const isViewMode = computed(() => mode.value === 'view')
-  const isCreateMode = computed(() => mode.value === 'create')
-  const isEditMode = computed(() => mode.value === 'edit')
-
-  const editableItem: any = reactive(createDefaultItem('person'))
-
-  const hasField = (fieldId: PropertyFieldId): boolean => {
-    try {
-      return typeHasField(editableItem.type, fieldId)
-    } catch {
-      return false
-    }
-  }
-
-  const _loadedItemId = ref<string | null>(null)
-  watch(
-    () => props.item?.id,
-    (newId) => {
-      if (newId && newId !== _loadedItemId.value) {
-        const newItem = props.item!
-        const defaults = createDefaultItem(newItem.type)
-        Object.assign(editableItem, { ...defaults, ...newItem })
-        _loadedItemId.value = newId
-      } else if (!newId && isCreateMode.value) {
-        Object.assign(editableItem, { ...createDefaultItem('person') })
-        _loadedItemId.value = null
-      }
+  // ── Shared dialog logic ──────────────────────────────────────────
+  const {
+    mode, isViewMode, isCreateMode, isEditMode,
+    editableItem, hasField, isFormValid,
+    displayActivity, commentsLoading, newComment, handleAddComment,
+    saveStatus, formatLastSaved,
+    entityPickerOpen, entityPickerFilterType,
+    handleAddEntityRef, handleCreatedEntityRef, handleRemoveRef, handleOpenEntityRef,
+    ownerSearch, owners, filteredOwners,
+    currentCategory,
+    closeDialog, handleSave, handleDelete,
+  } = useEntityDialog(
+    props as any,
+    emit as any,
+    {
+      defaultType: 'person',
+      afterInitBlank: (item: any) => { item.socialLinks = [] },
     },
-    { immediate: true },
   )
 
-  // Comments
-  const currentEntityId = computed(() => editableItem.id || undefined)
-  const {
-    displayActivity,
-    addComment: persistComment,
-    loading: commentsLoading,
-  } = useComments(currentEntityId)
-
-  // UI State
-  const newComment = ref('')
+  // ── Person-specific UI state ─────────────────────────────────────
   const categoryOpen = ref(false)
   const ownerOpen = ref(false)
-  const ownerSearch = ref('')
-  const commentsOpen = ref(false)
-  const entityPickerOpen = ref(false)
-  const entityPickerFilterType = ref<string | undefined>(undefined)
   const emailOpen = ref(false)
   const phoneOpen = ref(false)
   const websiteOpen = ref(false)
@@ -91,26 +63,8 @@
   const addressOpen = ref(false)
   const birthdayOpen = ref(false)
   const pronounsOpen = ref(false)
-  const owners = computed(() => props.owners ?? [])
 
-  const filteredOwners = computed(() => {
-    let list = owners.value
-    if (ownerSearch.value) {
-      const s = ownerSearch.value.toLowerCase()
-      list = list.filter((o) => o.name.toLowerCase().includes(s))
-    }
-    if (currentUser.value?.id) {
-      const uid = currentUser.value.id
-      list = [...list].sort((a, b) => (a.id === uid ? -1 : b.id === uid ? 1 : 0))
-    }
-    return list
-  })
-
-  const currentCategory = computed(() => CATEGORY_OPTIONS.find((c) => c.value === editableItem.category))
-
-  const isFormValid = computed(() => !!editableItem.title?.trim())
-
-  // Social links management
+  // ── Social links ─────────────────────────────────────────────────
   const SOCIAL_PLATFORMS = [
     { value: 'twitter', label: 'Twitter / X', icon: 'lucide:twitter' },
     { value: 'linkedin', label: 'LinkedIn', icon: 'lucide:linkedin' },
@@ -133,64 +87,6 @@
 
   const getSocialIcon = (platform: string) => {
     return SOCIAL_PLATFORMS.find((p) => p.value === platform)?.icon || 'lucide:link'
-  }
-
-
-  // Init blank create
-  const initBlankCreateItem = () => {
-    const defaults = createDefaultItem('person')
-    Object.assign(editableItem, {
-      ...defaults,
-      id: '',
-      title: '',
-      description: '',
-      tags: [],
-      category: '',
-      owner: undefined,
-      involved: [],
-      socialLinks: [],
-    })
-  }
-
-  watch(
-    () => props.open,
-    (isOpen) => {
-      if (isOpen && isCreateMode.value && !props.item) initBlankCreateItem()
-    },
-  )
-
-  // Actions
-  const closeDialog = () => {
-    emit('update:open', false)
-    emit('close')
-  }
-
-  const handleSave = () => {
-    emit('save', { ...editableItem } as Entity)
-    closeDialog()
-  }
-
-  const handleDelete = () => {
-    emit('delete', { ...editableItem } as Entity)
-    closeDialog()
-  }
-
-  // Auto-save in edit mode
-  const { status: saveStatus, formatLastSaved } = useAutoSave(editableItem, {
-    enabled: isEditMode,
-  })
-
-  // Bidirectional entity references
-  const { addEntityRef, removeRef: removeEntityRef, openEntityRef: handleOpenEntityRef, createAndOpenEntityRef } = useEntityReferences(editableItem)
-  const handleAddEntityRef = (ref: import('~/types/entity').EntityReference) => addEntityRef(ref)
-  const handleCreatedEntityRef = (ref: import('~/types/entity').EntityReference) => createAndOpenEntityRef(ref)
-  const handleRemoveRef = (refId: string) => removeEntityRef(refId)
-
-  const handleAddComment = async () => {
-    if (newComment.value.trim()) {
-      await persistComment(newComment.value.trim())
-      newComment.value = ''
-    }
   }
 </script>
 
@@ -545,75 +441,30 @@
 
     <!-- Content: Center + Right Sidebar -->
     <div class="flex flex-1 min-h-0 overflow-hidden">
-      <!-- Center Content (summary placeholder, same as other dialogs) -->
+      <!-- Center Content -->
       <div class="flex-1 overflow-y-auto min-w-0">
         <EntitySummaryPanel :model-value="editableItem" :mode="mode" />
       </div>
 
-      <!-- Right Sidebar: References + Comments -->
-      <aside class="w-72 shrink-0 border-l border-border overflow-y-auto hidden md:block">
-        <div class="divide-y divide-border">
-          <!-- References -->
-          <ReferencesSection
-            v-model="editableItem.references"
-            :readonly="isViewMode"
-            @open-entity="handleOpenEntityRef"
-            @remove-ref="handleRemoveRef"
-            @add-entity="() => { entityPickerFilterType = undefined; entityPickerOpen = true }"
-            @add-entity-of-type="(type: string) => { entityPickerFilterType = type; entityPickerOpen = true }" />
-
-          <!-- Comments / Activity -->
-          <div v-if="!isCreateMode" class="p-4 space-y-2">
-            <button
-              type="button"
-              class="w-full flex items-center justify-between text-[10px] font-medium text-muted-foreground uppercase tracking-wide hover:text-foreground transition-colors"
-              @click="commentsOpen = !commentsOpen">
-              <span>Comments / Activity</span>
-              <Icon :name="commentsOpen ? 'lucide:chevron-up' : 'lucide:chevron-down'" class="h-3 w-3" />
-            </button>
-            <div v-if="commentsOpen" class="space-y-2">
-              <div v-if="commentsLoading" class="flex items-center py-2">
-                <Icon name="lucide:loader-2" class="h-3 w-3 animate-spin text-muted-foreground" />
-              </div>
-              <div v-else-if="displayActivity.length" class="space-y-1.5 mb-2">
-                <div v-for="activityItem in displayActivity" :key="activityItem.id" class="flex items-start gap-2">
-                  <div class="w-5 h-5 rounded-full bg-muted flex items-center justify-center shrink-0 mt-0.5">
-                    <Icon
-                      v-if="activityItem.type === 'created'" name="lucide:plus" class="h-2.5 w-2.5 text-muted-foreground" />
-                    <Icon
-                      v-else-if="activityItem.type === 'comment'" name="lucide:message-circle" class="h-2.5 w-2.5 text-muted-foreground" />
-                    <Icon v-else name="lucide:activity" class="h-2.5 w-2.5 text-muted-foreground" />
-                  </div>
-                  <div class="flex-1 min-w-0">
-                    <div class="flex items-baseline gap-1 flex-wrap">
-                      <span class="text-[11px] font-medium">{{ activityItem.authorName }}</span>
-                      <span class="text-[10px] text-muted-foreground">{{ formatRelativeTime(Number(activityItem.createdAt)) }}</span>
-                    </div>
-                    <p v-if="activityItem.content" class="text-xs text-foreground/80 mt-0.5">{{ activityItem.content }}</p>
-                    <p v-else-if="activityItem.type === 'created'" class="text-[10px] text-muted-foreground mt-0.5">created this person</p>
-                  </div>
-                </div>
-              </div>
-              <div class="flex items-center gap-2">
-                <div class="w-5 h-5 rounded-full bg-muted/60 flex items-center justify-center shrink-0">
-                  <Icon name="lucide:user" class="h-2.5 w-2.5 text-muted-foreground" />
-                </div>
-                <input
-                  v-model="newComment"
-                  type="text"
-                  placeholder="Add a comment..."
-                  class="flex-1 text-xs bg-transparent border-none outline-none placeholder:text-muted-foreground/50"
-                  @keydown.enter="newComment.trim() && handleAddComment()" />
-                <button
-                  v-if="newComment.trim()"
-                  class="text-primary hover:text-primary/80 transition-colors"
-                  @click="handleAddComment">
-                  <Icon name="lucide:send" class="h-3 w-3" />
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
+      <!-- Right Sidebar -->
+      <aside class="w-72 shrink-0 border-l border-border overflow-hidden hidden md:flex flex-col">
+        <EntityRightSidebar
+          :references="editableItem.references"
+          :is-view-mode="isViewMode"
+          :is-create-mode="isCreateMode"
+          :display-activity="displayActivity"
+          :comments-loading="commentsLoading"
+          :new-comment="newComment"
+          entity-label="person"
+          :updated-at="editableItem.updatedAt"
+          :created-at="editableItem.createdAt"
+          @update:references="editableItem.references = $event"
+          @update:new-comment="newComment = $event"
+          @open-entity="handleOpenEntityRef"
+          @remove-ref="handleRemoveRef"
+          @add-entity="() => { entityPickerFilterType = undefined; entityPickerOpen = true }"
+          @add-entity-of-type="(type: string) => { entityPickerFilterType = type; entityPickerOpen = true }"
+          @add-comment="handleAddComment" />
       </aside>
     </div>
 

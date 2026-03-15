@@ -1,0 +1,47 @@
+import { Extension } from '@tiptap/core'
+import type { TableHandlesState } from '~/lib/table/table-handle-plugin'
+import { TableHandlePlugin, tableHandlePluginKey } from '~/lib/table/table-handle-plugin'
+
+declare module '@tiptap/core' {
+  interface Commands<ReturnType> {
+    tableHandle: {
+      freezeHandles: () => ReturnType
+      unfreezeHandles: () => ReturnType
+    }
+  }
+
+  interface EditorEvents {
+    tableHandleState: TableHandlesState
+  }
+}
+
+export const TableHandleExtension = Extension.create({
+  name: 'tableHandleExtension',
+
+  addCommands() {
+    return {
+      freezeHandles:
+        () =>
+        ({ tr, dispatch }) => {
+          if (dispatch) tr.setMeta(tableHandlePluginKey, true)
+          return true
+        },
+
+      unfreezeHandles:
+        () =>
+        ({ tr, dispatch }) => {
+          if (dispatch) tr.setMeta(tableHandlePluginKey, false)
+          return true
+        },
+    }
+  },
+
+  addProseMirrorPlugins() {
+    const { editor } = this
+    return [
+      TableHandlePlugin(editor, (state) => {
+        this.editor.emit('tableHandleState', state)
+      }),
+    ]
+  },
+})

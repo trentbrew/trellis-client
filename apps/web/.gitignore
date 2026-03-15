@@ -49,3 +49,7 @@ cablecast-proxy/
 .nuxt/
 .vscode/
 .windsurf/
+
+
+# Authentication tokens
+.npmrc
