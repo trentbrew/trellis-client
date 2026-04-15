@@ -16,9 +16,7 @@
   // Sidebar is hidden when the page explicitly disables it OR the route forces it closed
   // Exception: calendar route always shows sidebar
   const showSidebar = computed(() =>
-    isCalendarRoute.value
-      ? !sidebarDisabled.value
-      : !sidebarDisabled.value && !sidebarCollapse.isForcedCollapsed.value,
+    isCalendarRoute.value ? !sidebarDisabled.value : !sidebarDisabled.value && !sidebarCollapse.isForcedCollapsed.value,
   )
 
   // Layout preference toggle
@@ -43,7 +41,6 @@
   const isResizingRightSidebar = ref(false)
   const MIN_RIGHT_SIDEBAR_WIDTH = 200
   const MAX_RIGHT_SIDEBAR_WIDTH = 600
-
 
   const startRightSidebarResize = (e: MouseEvent) => {
     isResizingRightSidebar.value = true
@@ -153,16 +150,9 @@
     commandDialog.close()
   }
 
-  const rightSidebarCssWidth = computed(() =>
-    isRightSidebarOpen.value ? `${rightSidebarWidth.value}px` : '0px'
-  )
+  const rightSidebarCssWidth = computed(() => (isRightSidebarOpen.value ? `${rightSidebarWidth.value}px` : '0px'))
 
-  watch(
-    [isRightSidebarOpen, rightSidebarWidth],
-    ([open, w]) => setRightSidebarWidth(open ? w : 0),
-    { immediate: true },
-  )
-
+  watch([isRightSidebarOpen, rightSidebarWidth], ([open, w]) => setRightSidebarWidth(open ? w : 0), { immediate: true })
 
   // Group command palette routes by section for better organization
   const commandPaletteGroups = computed(() => {
@@ -223,7 +213,7 @@
 
       <!-- Layout Mode A: Header above sidebar (spans sidebar + content) -->
       <template v-if="headerAboveSidebar">
-        <div class="flex flex-1 flex-col min-w-0 overflow-hidden ">
+        <div class="flex flex-1 flex-col min-w-0 overflow-hidden">
           <AppHeader :above-sidebar="true" />
           <div class="flex flex-1 min-h-0 overflow-hidden rounded-xl bg-transparent pt-0 p-2.5">
             <div class="flex flex-1 min-h-0 overflow-hidden rounded-xl border bg-card/50">
@@ -232,10 +222,12 @@
                 v-if="showIconRail && !railAtBottom"
                 position="left"
                 class="bg-transparent mr-0 border-l border-b border-t rounded-l-xl rounded-lg !rounded-r-none border-r-none!" />
-              <div class="bg-transparent  flex flex-1 min-w-0 overflow-hidden rounded-md! flex-col">
+              <div class="bg-transparent flex flex-1 min-w-0 overflow-hidden rounded-md! flex-col">
                 <div class="flex flex-1 min-h-0 overflow-hidden">
                   <AppSidebar v-if="showSidebar" :header-above="true" class="bg-transparent rounded-xl" />
-                  <div class="flex flex-1 flex-col min-w-0 overflow-hidden p-2.5" :class="showSidebar ? 'pl-0' : 'pl-2.5'">
+                  <div
+                    class="flex flex-1 flex-col min-w-0 overflow-hidden p-2.5"
+                    :class="showSidebar ? 'pl-0' : 'pl-2.5'">
                     <main
                       ref="pageEl"
                       class="page-transition-wrapper bg-card/50 rounded-md flex-1 overflow-y-auto p-0 border relative"
@@ -275,10 +267,7 @@
             </main>
           </div>
           <!-- Bottom rail -->
-          <IconRail
-            v-if="showIconRail && railAtBottom"
-            position="bottom"
-            class="bg-card mt-2.5 rounded-xl shrink-0" />
+          <IconRail v-if="showIconRail && railAtBottom" position="bottom" class="bg-card mt-2.5 rounded-xl shrink-0" />
         </div>
       </template>
 
@@ -301,8 +290,7 @@
             <!-- Drag handle -->
             <div
               class="absolute left-0 top-0 bottom-0 w-1 cursor-col-resize hover:bg-primary/30 active:bg-primary/50 transition-colors z-10"
-              @mousedown.prevent="startRightSidebarResize"
-            />
+              @mousedown.prevent="startRightSidebarResize" />
             <div class="flex-1 overflow-hidden">
               <AgentPanel />
             </div>
@@ -313,42 +301,40 @@
 
     <!-- Layout Spacer: maintains flow when teleported sidebar is open -->
     <Transition name="spacer-width">
-      <div
-        v-if="isRightSidebarOpen"
-        class="shrink-0"
-        :style="{ width: `${rightSidebarWidth}px` }"
-      />
+      <div v-if="isRightSidebarOpen" class="shrink-0" :style="{ width: `${rightSidebarWidth}px` }" />
     </Transition>
   </div>
 </template>
 
 <style scoped>
-/* Sidebar slide-in animation */
-.sidebar-slide-enter-active,
-.sidebar-slide-leave-active {
-  transition: transform 0.25s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.4s ease;
-}
+  /* Sidebar slide-in animation */
+  .sidebar-slide-enter-active,
+  .sidebar-slide-leave-active {
+    transition:
+      transform 0.25s cubic-bezier(0.16, 1, 0.3, 1),
+      opacity 0.4s ease;
+  }
 
-.sidebar-slide-enter-from,
-.sidebar-slide-leave-to {
-  transform: translateX(100%);
-  opacity: 0;
-}
+  .sidebar-slide-enter-from,
+  .sidebar-slide-leave-to {
+    transform: translateX(100%);
+    opacity: 0;
+  }
 
-.sidebar-slide-enter-to,
-.sidebar-slide-leave-from {
-  transform: translateX(0);
-  opacity: 1;
-}
+  .sidebar-slide-enter-to,
+  .sidebar-slide-leave-from {
+    transform: translateX(0);
+    opacity: 1;
+  }
 
-/* Spacer width animation - syncs with sidebar */
-.spacer-width-enter-active,
-.spacer-width-leave-active {
-  transition: width 0.25s cubic-bezier(0.16, 1, 0.3, 1);
-}
+  /* Spacer width animation - syncs with sidebar */
+  .spacer-width-enter-active,
+  .spacer-width-leave-active {
+    transition: width 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+  }
 
-.spacer-width-enter-from,
-.spacer-width-leave-to {
-  width: 0 !important;
-}
+  .spacer-width-enter-from,
+  .spacer-width-leave-to {
+    width: 0 !important;
+  }
 </style>

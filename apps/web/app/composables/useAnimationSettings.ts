@@ -32,9 +32,14 @@ export const useAnimationSettings = () => {
     setAnimationsEnabled(!animationsEnabled.value)
   }
 
+  const resetAnimationSettings = () => {
+    setAnimationsEnabled(true)
+  }
+
   return {
     animationsEnabled: readonly(animationsEnabled),
     setAnimationsEnabled,
     toggleAnimations,
+    resetAnimationSettings,
   }
 }
