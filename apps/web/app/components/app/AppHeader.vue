@@ -2,14 +2,40 @@
   import { getCleanPath } from '~/config/routes'
   import { getPresenceColor } from '~/utils/presenceColor'
 
-  const props = withDefaults(defineProps<{
-    aboveSidebar?: boolean
-    hidePresenceControls?: boolean
-  }>(), {
-    aboveSidebar: false,
-    hidePresenceControls: false,
-  })
+  const props = withDefaults(
+    defineProps<{
+      aboveSidebar?: boolean
+      hidePresenceControls?: boolean
+    }>(),
+    {
+      aboveSidebar: false,
+      hidePresenceControls: false,
+    },
+  )
 
+  const { isTauri, isMacOS, isWindows: _isWindows } = useTauriWindow()
+
+  // Tauri window controls for custom traffic lights
+  const closeWindow = async () => {
+    if (import.meta.client && (window as any).__TAURI__) {
+      const appWindow = (window as any).__TAURI__.window.getCurrentWindow()
+      await appWindow.close()
+    }
+  }
+
+  const minimizeWindow = async () => {
+    if (import.meta.client && (window as any).__TAURI__) {
+      const appWindow = (window as any).__TAURI__.window.getCurrentWindow()
+      await appWindow.minimize()
+    }
+  }
+
+  const toggleFullscreen = async () => {
+    if (import.meta.client && (window as any).__TAURI__) {
+      const appWindow = (window as any).__TAURI__.window.getCurrentWindow()
+      await appWindow.setFullscreen(!(await appWindow.isFullscreen()))
+    }
+  }
 
   const routes = useRoutes()
   const route = useRoute()
@@ -54,8 +80,8 @@
 
     // Add other active members
     const others = (workspaceMembers.value || [])
-      .filter(m => m.userId !== user.value?.id)
-      .map(m => {
+      .filter((m) => m.userId !== user.value?.id)
+      .map((m) => {
         const color = getPresenceColor(m.userId || '')
         return {
           id: m.userId,
@@ -188,30 +214,47 @@
   <!-- App Header: Navigation shell (matches icon rail) -->
   <header
     data-slot="app-header"
-    class="bg-card/0 backdrop-blur-sm border-b-none flex h-14 shrink-0 items-center gap-0 p-0 overflow-hidden sticky top-0">
+    data-tauri-drag-region
+    class="bg-card/0 backdrop-blur-sm border-b-none flex h-14 shrink-0 items-center gap-0 p-0 overflow-hidden sticky top-0"
+    :class="{ 'app-region-drag': isTauri }">
     <!-- Year/Facility Pickers + Breadcrumbs (white area) -->
-    <nav class="flex flex-1 items-center gap-0.5 text-xs px-4 bg-transparent">
-    <!-- Logo / Home -->
-    <div class="flex h-16 w-12 items-center justify-center shrink-0 border-b bg-transparent">
-      <div
-        class="flex h-9 w-9 items-center justify-center rounded-lg transition bg-transparent hover:bg-transparent"
-        :class="isInEditMode ? 'bg-accent-foreground/10 hover:bg-accent-foreground/20' : 'bg-rail-foreground/10 hover:bg-rail-foreground/20'">
-        <AppLogo class="scale-75" :brand-mark="logoMarkForMode" />
+    <nav class="flex flex-1 items-center gap-0.5 text-xs px-4 bg-transparent" data-tauri-drag-region>
+      <!-- macOS custom traffic lights -->
+      <div v-if="isTauri && isMacOS" class="flex items-center gap-2 shrink-0 app-region-no-drag">
+        <button
+          class="w-3 h-3 rounded-full bg-[#FF5F57] hover:bg-[#FF5F57]/80 transition-colors"
+          title="Close"
+          @click="closeWindow" />
+        <button
+          class="w-3 h-3 rounded-full bg-[#FEBC2E] hover:bg-[#FEBC2E]/80 transition-colors"
+          title="Minimize"
+          @click="minimizeWindow" />
+        <button
+          class="w-3 h-3 rounded-full bg-[#28C840] hover:bg-[#28C840]/80 transition-colors"
+          title="Fullscreen"
+          @click="toggleFullscreen" />
       </div>
-    </div>
+      <!-- Logo / Home -->
+      <div class="flex h-16 w-12 items-center justify-center shrink-0 border-b bg-transparent app-region-no-drag">
+        <div
+          class="flex h-9 w-9 items-center justify-center rounded-lg transition bg-transparent hover:bg-transparent"
+          :class="
+            isInEditMode
+              ? 'bg-accent-foreground/10 hover:bg-accent-foreground/20'
+              : 'bg-rail-foreground/10 hover:bg-rail-foreground/20'
+          ">
+          <AppLogo class="scale-75" :brand-mark="logoMarkForMode" />
+        </div>
+      </div>
 
-      <span class="text-muted-foreground/30 mr-3 ml-1 rotate-10 text-lg">
-        /
-      </span>
+      <span class="text-muted-foreground/30 mr-3 ml-1 rotate-10 text-lg">/</span>
 
       <!-- Organization Picker (all authenticated users) -->
       <ClientOnly>
         <OrganizationPicker />
       </ClientOnly>
 
-      <span class="text-muted-foreground/30 mx-3 rotate-10 text-lg">
-        /
-      </span>
+      <span class="text-muted-foreground/30 mx-3 rotate-10 text-lg">/</span>
 
       <!-- Workspace Picker (all members) -->
       <ClientOnly>
@@ -251,10 +294,8 @@
           <Icon name="lucide:refresh-cw" class="h-4 w-4" />
         </UiButton>
       </div>
-
-
     </nav>
-    <div class="flex items-center mr-4 gap-2">
+    <div class="flex items-center mr-4 gap-2 app-region-no-drag">
       <!-- Save Status -->
       <UiSheet>
         <UiSheetTrigger as-child>
@@ -281,7 +322,6 @@
           </div>
         </UiSheetContent>
       </UiSheet>
-
 
       <!-- Notifications Button -->
       <UiDropdownMenu>
@@ -463,15 +503,20 @@
                   :title="u.name + (u.isMe ? ' (you)' : '')">
                   <UiAvatar class="size-6">
                     <UiAvatarImage v-if="u.avatar" :src="u.avatar" :alt="u.name" />
-                    <UiAvatarFallback class="text-[9px] font-bold text-white" :class="u.color.bg">{{ u.initials }}</UiAvatarFallback>
+                    <UiAvatarFallback class="text-[9px] font-bold text-white" :class="u.color.bg">
+                      {{ u.initials }}
+                    </UiAvatarFallback>
                   </UiAvatar>
                   <span
                     v-if="u.isOnline"
-                    class="absolute -bottom-0.5 -right-0.5 h-2 w-2 rounded-full border border-background bg-emerald-500 shadow-[0_0_6px_rgba(16,185,129,0.6)]"
-                  />
+                    class="absolute -bottom-0.5 -right-0.5 h-2 w-2 rounded-full border border-background bg-emerald-500 shadow-[0_0_6px_rgba(16,185,129,0.6)]" />
                 </div>
               </div>
-              <UiButton v-if="canManageMembers" size="icon-xs" variant="outline" class="border-l border-border/40 flex items-center rounded-full -ml-2 px-0">
+              <UiButton
+                v-if="canManageMembers"
+                size="icon-xs"
+                variant="outline"
+                class="border-l border-border/40 flex items-center rounded-full -ml-2 px-0">
                 <Icon name="lucide:plus" class="h-3.5 w-3.5 text-muted-foreground" />
               </UiButton>
             </AppNavLink>
@@ -479,10 +524,6 @@
           <UiTooltipContent side="bottom" :side-offset="8">Manage members</UiTooltipContent>
         </UiTooltip>
       </div>
-
-
-
-
 
       <!-- User Avatar -->
       <ClientOnly>
@@ -492,15 +533,13 @@
               <button
                 type="button"
                 class="relative flex h-8 w-8 shrink-0 items-center justify-center overflow-hidden rounded-full border border-border bg-muted/50 text-xs font-semibold transition-all hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring active:scale-95"
-                aria-label="User menu"
-              >
+                aria-label="User menu">
                 <img
                   v-if="avatarUrl"
                   :src="avatarUrl"
                   :alt="userDisplayName"
                   class="h-full w-full rounded-full object-cover"
-                  referrerpolicy="no-referrer"
-                />
+                  referrerpolicy="no-referrer" />
                 <span v-else class="text-[10px] text-foreground/70">{{ initials }}</span>
               </button>
             </UiDropdownMenuTrigger>
@@ -512,7 +551,9 @@
                 </div>
                 <div class="flex-1 min-w-0">
                   <div class="text-sm font-bold truncate leading-none">{{ userDisplayName }}</div>
-                  <div class="text-[10px] text-muted-foreground truncate mt-1 uppercase tracking-wider font-bold">{{ roleConfig?.label || 'Member' }}</div>
+                  <div class="text-[10px] text-muted-foreground truncate mt-1 uppercase tracking-wider font-bold">
+                    {{ roleConfig?.label || 'Member' }}
+                  </div>
                 </div>
               </div>
 
@@ -530,9 +571,7 @@
                     <Icon :name="isInEditMode ? 'lucide:pencil-off' : 'lucide:pencil'" class="h-4 w-4" />
                     <span>{{ isInEditMode ? 'Exit Edit Mode' : 'Edit Mode' }}</span>
                   </div>
-                  <div
-                    v-if="isInEditMode"
-                    class="h-2 w-2 rounded-full bg-amber-500 animate-pulse" />
+                  <div v-if="isInEditMode" class="h-2 w-2 rounded-full bg-amber-500 animate-pulse" />
                 </UiDropdownMenuItem>
               </template>
 
@@ -549,8 +588,7 @@
           <div class="flex items-center gap-2">
             <div
               class="flex h-8 w-8 items-center justify-center rounded-full bg-muted/50 text-[10px] font-semibold"
-              aria-label="User"
-            >
+              aria-label="User">
               <Icon name="lucide:user" class="h-4 w-4 opacity-50" />
             </div>
             <div class="h-8 w-8 rounded-full bg-primary/20 animate-pulse" />
@@ -561,5 +599,24 @@
       <!-- Member Invite Dialog -->
       <MemberInviteDialog v-model:open="inviteDialogOpen" />
     </div>
+
+    <!-- Windows/Linux custom window controls -->
+    <AppWindowControls />
   </header>
 </template>
+
+<style scoped>
+  /* Tauri window drag region — makes header act as titlebar */
+  .app-region-drag {
+    -webkit-app-region: drag;
+  }
+  .app-region-no-drag,
+  .app-region-drag :deep(button),
+  .app-region-drag :deep(a),
+  .app-region-drag :deep(input),
+  .app-region-drag :deep(select),
+  .app-region-drag :deep([role='button']),
+  .app-region-drag :deep([role='menuitem']) {
+    -webkit-app-region: no-drag;
+  }
+</style>

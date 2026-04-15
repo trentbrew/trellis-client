@@ -687,7 +687,7 @@
       routes.currentSidebarSection.value?.path === '/calendar',
   )
 
-  const isGraphRoute = computed(
+  const _isGraphRoute = computed(
     () =>
       route.path === '/graph' ||
       route.path.startsWith('/graph/') ||
@@ -1042,7 +1042,7 @@
             <div class="flex min-h-0 flex-1 flex-col overflow-y-auto overflow-x-hidden">
               <!-- Sticky sidebar filter -->
               <!-- <div class="sticky top-0 z-10 px-2.5 pt-2.5 pb-2.5" style="background: linear-gradient(to bottom, var(--card) 0%, transparent 100%)"> -->
-              <div v-if="!isCalendarRoute && !isGraphRoute" class="sticky top-0 z-10 px-2.5 pt-2.5 pb-2.5">
+              <div v-if="!isCalendarRoute" class="sticky top-0 z-10 px-2.5 pt-2.5 pb-2.5">
                 <div class="flex items-center gap-1.5">
                   <!-- Toggle placeholder: reserves space equal to the toggle button -->
                   <!-- <div v-if="!sidebarCollapse.isForcedCollapsed.value" class="shrink-0 h-[30px] w-[30px]" /> -->
@@ -1086,17 +1086,12 @@
                   :exit="{ opacity: 0, x: -8 }"
                   :transition="transitionsDisabled ? { duration: 0 } : { duration: 0.22, ease: 'easeOut' }"
                   :class="
-                    isCalendarRoute || isGraphRoute
+                    isCalendarRoute
                       ? 'flex min-h-0 flex-1 flex-col overflow-hidden'
                       : 'flex min-h-0 flex-1 flex-col p-3 pl-2 pt-0 pb-24'
                   ">
-                  <!-- Graph Sidebar Panel (graph route) -->
-                  <template v-if="isGraphRoute">
-                    <GraphSidebarPanel />
-                  </template>
-
                   <!-- Calendar Sidebar Panel (calendar route) -->
-                  <template v-else-if="isCalendarRoute">
+                  <template v-if="isCalendarRoute">
                     <CalendarSidebarPanel />
                   </template>
 

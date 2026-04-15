@@ -14,6 +14,8 @@
   const { register } = useKeyboardShortcuts()
   provideSheetStack()
 
+  const { isDragging, currentDrop } = useEntityDropZone()
+
   // ── Boot-time dialog restore from URL hash ──────────────────────────────────
   // When the page loads with a hash like #entity:task-abc+entity:person-xyz,
   // we open the originating dialog and push any stacked dialogs.
@@ -59,7 +61,10 @@
 
     // Register global keyboard shortcuts via the central registry
     const unregisterPalette = register('command-palette', () => commandDialog.toggle())
-    const unregisterNavigate = register('go-settings', () => { navigateTo('/settings'); return 'Settings' })
+    const unregisterNavigate = register('go-settings', () => {
+      navigateTo('/settings')
+      return 'Settings'
+    })
     const unregisterSidebar = register('toggle-sidebar', () => {
       // Sidebar toggle — uses the sidebar provider's keyboard shortcut
       document.querySelector<HTMLButtonElement>('[data-sidebar="trigger"]')?.click()
@@ -103,5 +108,6 @@
       <NuxtPage />
     </NuxtLayout>
     <DialogStackHost />
+    <GlobalDropOverlay :is-dragging="isDragging" :drop="currentDrop" />
   </div>
 </template>

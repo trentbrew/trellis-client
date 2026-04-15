@@ -1,7 +1,7 @@
 <script setup lang="ts">
-  // Redirect /graph to /graph/dashboard, preserving the org prefix.
+  // Redirect /graph to /graph/visualization, preserving the org prefix.
   const { wp } = useWorkspacePath()
-  await navigateTo(wp('/graph/dashboard'), { replace: true })
+  await navigateTo(wp('/graph/visualization'), { replace: true })
 </script>
 
 <template>

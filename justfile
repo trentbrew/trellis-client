@@ -19,6 +19,10 @@ dev:
     @echo "🚀 Starting Trellis dev server..."
     pnpm --filter ./apps/web dev
 
+desktop:
+    @echo "🚀 Starting Trellis desktop..."
+    pnpm --filter ./apps/desktop dev
+
 # Build all packages
 build:
     pnpm -r build
