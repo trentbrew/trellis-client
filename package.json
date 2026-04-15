@@ -10,6 +10,8 @@
     "dev:web": "pnpm --filter ./apps/web dev",
     "build": "pnpm -r --if-present build",
     "build:web": "pnpm --filter ./apps/web build",
+    "dev:desktop": "pnpm --filter @trellis/desktop dev",
+    "build:desktop": "pnpm --filter @trellis/desktop build",
     "lint": "pnpm -r --if-present lint",
     "lint:fix": "pnpm -r --if-present lint:fix",
     "format": "pnpm -r --if-present format",

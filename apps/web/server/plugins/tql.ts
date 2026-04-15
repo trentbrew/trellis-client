@@ -60,12 +60,14 @@ export function getMutationLog(): MutationLogEntry[] {
 }
 
 export default defineNitroPlugin(async (nitro) => {
-  const dataDir = resolve(process.cwd(), '.data')
+  const dataDir = process.env.TRELLIS_DB_PATH
+    ? resolve(process.env.TRELLIS_DB_PATH, '..')
+    : resolve(process.cwd(), '.data')
   if (!existsSync(dataDir)) {
     mkdirSync(dataDir, { recursive: true })
   }
 
-  const dbPath = resolve(dataDir, 'trellis.db')
+  const dbPath = process.env.TRELLIS_DB_PATH || resolve(dataDir, 'trellis.db')
   const backend = new BetterSqliteBackend({ filename: dbPath })
 
   const kernel = new TrellisKernel({

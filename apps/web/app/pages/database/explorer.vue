@@ -38,7 +38,7 @@
         entities.value = nodes as GraphEntity[]
       }
     } catch (err) {
-      console.error('[graph/explorer] fetch error:', err)
+      console.error('[database/explorer] fetch error:', err)
     } finally {
       loading.value = false
     }
@@ -56,7 +56,7 @@
       await graph.mutate({ action: 'deleteNode', entityId })
       await fetchEntities()
     } catch (err) {
-      console.error('[graph/explorer] delete error:', err)
+      console.error('[database/explorer] delete error:', err)
     }
   }
 
@@ -74,7 +74,7 @@
   <Page
     variant="browse"
     title="Entity Explorer"
-    subtitle="Developer"
+    subtitle="Data"
     description="Browse, search, and inspect graph entities."
     icon="lucide:search"
     :browse="browseState"
@@ -95,7 +95,9 @@
 
     <UiCard>
       <UiCardContent class="p-0">
-        <div v-if="browseState.filteredItems.value.length === 0" class="px-4 py-12 text-center text-sm text-muted-foreground">
+        <div
+          v-if="browseState.filteredItems.value.length === 0"
+          class="px-4 py-12 text-center text-sm text-muted-foreground">
           No entities match your search
         </div>
         <div v-else class="divide-y divide-border">
@@ -104,7 +106,8 @@
             :key="entity['@id']"
             class="flex w-full items-center gap-3 px-4 py-2.5 text-left hover:bg-muted/50 transition-colors"
             @click="openEntity(entity)">
-            <span class="inline-flex items-center rounded-full border px-2 py-0.5 text-[10px] font-medium uppercase tracking-wider text-muted-foreground">
+            <span
+              class="inline-flex items-center rounded-full border px-2 py-0.5 text-[10px] font-medium uppercase tracking-wider text-muted-foreground">
               {{ entity['@type'] }}
             </span>
             <span class="flex-1 truncate text-sm font-medium">{{ entity.title || entity['@id'] }}</span>

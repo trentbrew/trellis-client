@@ -108,7 +108,15 @@
           <div class="w-px h-5 bg-border" />
           <select
             class="h-7 rounded-md border border-input bg-background px-2 text-xs ring-offset-background focus:outline-none focus:ring-1 focus:ring-ring"
-            @change="(e: Event) => { const v = (e.target as HTMLSelectElement).value; if (v) { queryText = v; (e.target as HTMLSelectElement).selectedIndex = 0 } }">
+            @change="
+              (e: Event) => {
+                const v = (e.target as HTMLSelectElement).value
+                if (v) {
+                  queryText = v
+                  ;(e.target as HTMLSelectElement).selectedIndex = 0
+                }
+              }
+            ">
             <option value="">Presets...</option>
             <option v-for="p in presets" :key="p.label" :value="p.query">{{ p.label }}</option>
           </select>
@@ -130,13 +138,19 @@
           @keydown.meta.enter="executeQuery"
           @keydown.ctrl.enter="executeQuery" />
         <div class="flex items-center justify-between px-4 py-1.5 bg-muted/10 text-[10px] text-muted-foreground">
-          <span>Press <kbd class="rounded border px-1 py-0.5">Cmd+Enter</kbd> to run</span>
+          <span>
+            Press
+            <kbd class="rounded border px-1 py-0.5">Cmd+Enter</kbd>
+            to run
+          </span>
           <span v-if="meta">{{ results.length }} rows · {{ meta.executionTime?.toFixed(2) ?? '—' }}ms</span>
         </div>
       </div>
 
       <!-- Error -->
-      <div v-if="error" class="shrink-0 flex items-start gap-2 border-b border-destructive/30 bg-destructive/5 px-4 py-3">
+      <div
+        v-if="error"
+        class="shrink-0 flex items-start gap-2 border-b border-destructive/30 bg-destructive/5 px-4 py-3">
         <Icon name="lucide:alert-circle" class="size-4 text-destructive mt-0.5 shrink-0" />
         <div>
           <p class="text-sm font-medium text-destructive">Query Error</p>
@@ -149,7 +163,10 @@
         <table v-if="results.length > 0" class="w-full text-sm">
           <thead class="sticky top-0 bg-card z-10">
             <tr class="border-b border-border">
-              <th v-for="col in resultColumns" :key="col" class="px-4 py-2 text-left text-xs font-medium text-muted-foreground whitespace-nowrap">
+              <th
+                v-for="col in resultColumns"
+                :key="col"
+                class="px-4 py-2 text-left text-xs font-medium text-muted-foreground whitespace-nowrap">
                 {{ col }}
               </th>
             </tr>
@@ -164,18 +181,24 @@
         </table>
 
         <!-- Empty state when no results and no error -->
-        <div v-else-if="!error && !isRunning" class="flex flex-col items-center justify-center h-full text-muted-foreground">
+        <div
+          v-else-if="!error && !isRunning"
+          class="flex flex-col items-center justify-center h-full text-muted-foreground">
           <Icon name="lucide:terminal" class="size-10 mb-3 opacity-30" />
           <p class="text-sm">Run a query to see results</p>
         </div>
       </div>
 
       <!-- Trace Footer -->
-      <div v-if="meta?.trace && (meta.trace as any[]).length > 0" class="shrink-0 border-t border-border bg-muted/20 px-4 py-2">
+      <div
+        v-if="meta?.trace && (meta.trace as any[]).length > 0"
+        class="shrink-0 border-t border-border bg-muted/20 px-4 py-2">
         <details>
-          <summary class="text-xs font-medium text-muted-foreground cursor-pointer">Execution Trace ({{ (meta.trace as any[]).length }} steps)</summary>
+          <summary class="text-xs font-medium text-muted-foreground cursor-pointer">
+            Execution Trace ({{ (meta.trace as any[]).length }} steps)
+          </summary>
           <div class="mt-2 space-y-1">
-            <div v-for="(step, i) in (meta.trace as any[])" :key="i" class="text-[10px] font-mono text-muted-foreground">
+            <div v-for="(step, i) in meta.trace as any[]" :key="i" class="text-[10px] font-mono text-muted-foreground">
               {{ step.goal }} — {{ step.bindingsCount }} bindings ({{ step.durationMs?.toFixed(2) }}ms)
             </div>
           </div>

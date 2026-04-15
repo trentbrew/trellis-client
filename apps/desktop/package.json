@@ -1,0 +1,20 @@
+{
+  "name": "@trellis/desktop",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "prepare:sidecar": "node scripts/prepare-sidecar.mjs",
+    "dev": "cargo tauri dev",
+    "build": "pnpm --filter @trellis/web build && pnpm prepare:sidecar && cargo tauri build",
+    "build:debug": "pnpm --filter @trellis/web build && pnpm prepare:sidecar && cargo tauri build --debug",
+    "tauri": "cargo tauri"
+  },
+  "dependencies": {
+    "@tauri-apps/api": "^2",
+    "@tauri-apps/plugin-shell": "^2"
+  },
+  "devDependencies": {
+    "@tauri-apps/cli": "^2"
+  }
+}

@@ -15,11 +15,10 @@
   const tooltipSide = computed(() => (isBottom.value ? 'top' : 'right'))
 
   const { isRightSidebarOpen, toggleRightSidebar } = useRightSidebarWidth()
-
 </script>
 
 <template>
-    <!-- Navigation Rail: Always visible with primary navigation routes -->
+  <!-- Navigation Rail: Always visible with primary navigation routes -->
   <nav
     data-slot="icon-rail"
     :class="[
@@ -29,7 +28,6 @@
         : 'flex-col w-16 px-2 py-0 pb-2 border-r-none',
     ]"
     aria-label="Navigation rail">
-
     <!-- Left side group (Bottom mode): Global Search -->
     <div v-if="isBottom" class="flex-1 flex items-center justify-start">
       <UiTooltip>
@@ -38,19 +36,19 @@
             variant="ghost"
             size="icon-sm"
             class="h-9 w-9 rounded-full text-rail-foreground/70 hover:bg-rail-foreground/10 hover:text-rail-foreground transition-all active:scale-95"
-            @click="commandDialog.open()"
-          >
+            @click="commandDialog.open()">
             <Icon name="lucide:search" class="h-4.5 w-4.5 opacity-60" />
           </UiButton>
         </UiTooltipTrigger>
         <UiTooltipContent side="top" :side-offset="8">
-          Search <UiKbd class="ml-2 bg-transparent border-none text-[10px] opacity-50">⌘K</UiKbd>
+          Search
+          <UiKbd class="ml-2 bg-transparent border-none text-[10px] opacity-50">⌘K</UiKbd>
         </UiTooltipContent>
       </UiTooltip>
     </div>
 
     <!-- Navigation Items (Centered in bottom mode) -->
-    <div :class="['flex items-center', isBottom ? 'gap-6' : 'flex-col gap-1.5 pt-3']">
+    <div :class="['flex items-center', isBottom ? 'gap-0' : 'flex-col gap-1.5 pt-3']">
       <!-- Primary Navigation Routes -->
       <div :class="['flex gap-1.5', isBottom ? 'flex-row items-center' : 'flex-col']">
         <template v-for="route in routes.primaryRailRoutes.value" :key="route.path">
@@ -85,7 +83,14 @@
                 </Transition>
               </AppNavLink>
             </UiTooltipTrigger>
-            <UiTooltipContent :side="tooltipSide" :side-offset="8" align="center" :align-offset="0" :avoid-collisions="false">{{ route.label }}</UiTooltipContent>
+            <UiTooltipContent
+              :side="tooltipSide"
+              :side-offset="8"
+              align="center"
+              :align-offset="0"
+              :avoid-collisions="false">
+              {{ route.label }}
+            </UiTooltipContent>
           </UiTooltip>
         </template>
       </div>
@@ -108,7 +113,14 @@
                 <Icon :name="route.icon" class="h-4.5 w-4.5 opacity-60" />
               </NuxtLink>
             </UiTooltipTrigger>
-            <UiTooltipContent :side="tooltipSide" :side-offset="8" align="center" :align-offset="0" :avoid-collisions="false">{{ route.label }}</UiTooltipContent>
+            <UiTooltipContent
+              :side="tooltipSide"
+              :side-offset="8"
+              align="center"
+              :align-offset="0"
+              :avoid-collisions="false">
+              {{ route.label }}
+            </UiTooltipContent>
           </UiTooltip>
         </template>
       </div>
@@ -123,13 +135,13 @@
             variant="ghost"
             size="icon-sm"
             class="h-9 w-9 rounded-full text-rail-foreground/70 hover:bg-rail-foreground/10 hover:text-rail-foreground transition-all active:scale-95 mb-1"
-            @click="commandDialog.open()"
-          >
+            @click="commandDialog.open()">
             <Icon name="lucide:search" class="h-4.5 w-4.5 opacity-60" />
           </UiButton>
         </UiTooltipTrigger>
         <UiTooltipContent side="right" :side-offset="8">
-          Search <UiKbd class="ml-2 bg-transparent border-none text-[10px] opacity-50">⌘K</UiKbd>
+          Search
+          <UiKbd class="ml-2 bg-transparent border-none text-[10px] opacity-50">⌘K</UiKbd>
         </UiTooltipContent>
       </UiTooltip>
 
@@ -143,16 +155,12 @@
             size="icon-sm"
             class="h-8 w-8 shrink-0 rounded-full bg-primary hover:bg-primary/90 text-primary-foreground shadow-lg transition-all active:scale-95"
             :class="{ 'ring-2 ring-primary ring-offset-2 ring-offset-background': isRightSidebarOpen }"
-            @click="toggleRightSidebar"
-          >
+            @click="toggleRightSidebar">
             <Icon name="lucide:bot" class="h-5 w-5" />
           </UiButton>
         </UiTooltipTrigger>
-        <UiTooltipContent side="top" :side-offset="12" align="center">
-          AI Assistant
-        </UiTooltipContent>
+        <UiTooltipContent side="top" :side-offset="12" align="center">AI Assistant</UiTooltipContent>
       </UiTooltip>
     </div>
-
   </nav>
 </template>

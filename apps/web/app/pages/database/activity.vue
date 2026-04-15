@@ -30,7 +30,7 @@
       const result = await $fetch<{ entries: LogEntry[] }>('/api/graph/log')
       entries.value = result.entries || []
     } catch (err) {
-      console.error('[graph/activity] fetch error:', err)
+      console.error('[database/activity] fetch error:', err)
     } finally {
       loading.value = false
     }
@@ -83,7 +83,7 @@
   <Page
     variant="browse"
     title="Activity Log"
-    subtitle="Developer"
+    subtitle="Data"
     description="Recent graph mutations tracked by the TQL engine."
     icon="lucide:scroll-text"
     :browse="browseState"
@@ -109,23 +109,32 @@
     <UiCard v-if="browseState.filteredItems.value.length > 0">
       <UiCardContent class="p-0">
         <div class="divide-y divide-border max-h-[700px] overflow-y-auto">
-          <div v-for="(entry, i) in browseState.filteredItems.value" :key="i" class="flex items-start gap-3 px-4 py-3 hover:bg-muted/30 transition-colors">
+          <div
+            v-for="(entry, i) in browseState.filteredItems.value"
+            :key="i"
+            class="flex items-start gap-3 px-4 py-3 hover:bg-muted/30 transition-colors">
             <div class="mt-0.5">
               <Icon :name="actionStyle(entry.action).icon" class="size-4" :class="actionStyle(entry.action).color" />
             </div>
             <div class="flex-1 min-w-0">
               <div class="flex items-center gap-2">
                 <span class="text-sm font-medium" :class="actionStyle(entry.action).color">{{ entry.action }}</span>
-                <span v-if="entry.entityId" class="font-mono text-[10px] text-muted-foreground truncate">{{ entry.entityId }}</span>
+                <span v-if="entry.entityId" class="font-mono text-[10px] text-muted-foreground truncate">
+                  {{ entry.entityId }}
+                </span>
               </div>
               <div v-if="entry.type" class="mt-0.5">
-                <span class="inline-flex items-center rounded-full border px-1.5 py-0.5 text-[10px] text-muted-foreground">
+                <span
+                  class="inline-flex items-center rounded-full border px-1.5 py-0.5 text-[10px] text-muted-foreground">
                   {{ entry.type }}
                 </span>
               </div>
               <details v-if="entry.data && Object.keys(entry.data).length > 0" class="mt-1">
                 <summary class="text-[10px] text-muted-foreground cursor-pointer">data</summary>
-                <pre class="mt-1 text-[10px] font-mono text-muted-foreground bg-muted/50 rounded p-2 overflow-x-auto max-h-[200px] overflow-y-auto">{{ JSON.stringify(entry.data, null, 2) }}</pre>
+                <pre
+                  class="mt-1 text-[10px] font-mono text-muted-foreground bg-muted/50 rounded p-2 overflow-x-auto max-h-[200px] overflow-y-auto"
+                  >{{ JSON.stringify(entry.data, null, 2) }}</pre
+                >
               </details>
             </div>
             <div class="text-right shrink-0">

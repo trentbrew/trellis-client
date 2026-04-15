@@ -13,6 +13,17 @@
   const { collections } = useInstantData()
   const { serverTypes, isDynamicType, loading: registryLoading } = useOntologyRegistry()
 
+  // Graph health stats
+  const graph = useTrellisGraph()
+  const graphHealth = ref<{ status: string; factCount: number; linkCount: number } | null>(null)
+  onMounted(async () => {
+    try {
+      graphHealth.value = await graph.health()
+    } catch {
+      /* silent */
+    }
+  })
+
   // Platform type IDs for deduplication
   const platformTypeIds = new Set(PLATFORM_TYPES.map((t) => t.id.toLowerCase()))
 
@@ -69,7 +80,7 @@
     :fill-height="true">
     <div class="p-6 space-y-8 max-w-6xl mx-auto">
       <!-- Stats row -->
-      <div class="grid grid-cols-2 sm:grid-cols-4 gap-4">
+      <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-4">
         <div class="rounded-xl border border-border bg-card p-4">
           <div class="text-2xl font-bold">{{ allEntityTypes.length }}</div>
           <div class="text-xs text-muted-foreground mt-1">Entity Types</div>
@@ -79,11 +90,19 @@
           <div class="text-xs text-muted-foreground mt-1">Total Records</div>
         </div>
         <div class="rounded-xl border border-border bg-card p-4">
+          <div class="text-2xl font-bold">{{ graphHealth?.factCount?.toLocaleString() ?? '—' }}</div>
+          <div class="text-xs text-muted-foreground mt-1">Facts</div>
+        </div>
+        <div class="rounded-xl border border-border bg-card p-4">
+          <div class="text-2xl font-bold">{{ graphHealth?.linkCount?.toLocaleString() ?? '—' }}</div>
+          <div class="text-xs text-muted-foreground mt-1">Links</div>
+        </div>
+        <div class="rounded-xl border border-border bg-card p-4">
           <div class="text-2xl font-bold">{{ PLATFORM_TYPES.length }}</div>
           <div class="text-xs text-muted-foreground mt-1">Platform Types</div>
         </div>
         <div class="rounded-xl border border-border bg-card p-4">
-          <div class="text-2xl font-bold">{{ allEntityTypes.filter(t => isDynamicType(t.type)).length }}</div>
+          <div class="text-2xl font-bold">{{ allEntityTypes.filter((t) => isDynamicType(t.type)).length }}</div>
           <div class="text-xs text-muted-foreground mt-1">Custom Types</div>
         </div>
       </div>
@@ -124,7 +143,8 @@
             :key="entry.type"
             :to="`/database/${entry.type}`"
             class="group flex items-center gap-3 rounded-xl border border-border bg-card p-4 hover:bg-accent/50 transition-colors">
-            <div class="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-muted/50 group-hover:bg-accent">
+            <div
+              class="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-muted/50 group-hover:bg-accent">
               <Icon :name="entry.icon" class="h-5 w-5 text-muted-foreground group-hover:text-foreground" />
             </div>
             <div class="min-w-0 flex-1">
@@ -152,7 +172,9 @@
                 </span>
               </div>
             </div>
-            <Icon name="lucide:chevron-right" class="h-4 w-4 text-muted-foreground/40 group-hover:text-muted-foreground shrink-0" />
+            <Icon
+              name="lucide:chevron-right"
+              class="h-4 w-4 text-muted-foreground/40 group-hover:text-muted-foreground shrink-0" />
           </NuxtLink>
         </div>
 
@@ -174,18 +196,24 @@
             :to="`/database/${entry.id.toLowerCase()}`"
             class="group flex items-center gap-3 rounded-xl border border-border/60 bg-card/50 p-4 hover:bg-accent/30 transition-colors">
             <div class="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-muted/30">
-              <Icon :name="entry.icon || 'lucide:cog'" class="h-5 w-5 text-muted-foreground/60 group-hover:text-muted-foreground" />
+              <Icon
+                :name="entry.icon || 'lucide:cog'"
+                class="h-5 w-5 text-muted-foreground/60 group-hover:text-muted-foreground" />
             </div>
             <div class="min-w-0 flex-1">
-              <div class="font-medium text-sm text-muted-foreground group-hover:text-foreground truncate">{{ entry.name }}</div>
+              <div class="font-medium text-sm text-muted-foreground group-hover:text-foreground truncate">
+                {{ entry.name }}
+              </div>
               <div class="flex items-center gap-2 mt-0.5">
-                <span class="text-xs text-muted-foreground/60">
-                  {{ platformCounts.get(entry.id) || 0 }} items
+                <span class="text-xs text-muted-foreground/60">{{ platformCounts.get(entry.id) || 0 }} items</span>
+                <span v-if="entry.description" class="text-[11px] text-muted-foreground/50 truncate hidden sm:inline">
+                  {{ entry.description }}
                 </span>
-                <span v-if="entry.description" class="text-[11px] text-muted-foreground/50 truncate hidden sm:inline">{{ entry.description }}</span>
               </div>
             </div>
-            <Icon name="lucide:chevron-right" class="h-4 w-4 text-muted-foreground/30 group-hover:text-muted-foreground shrink-0" />
+            <Icon
+              name="lucide:chevron-right"
+              class="h-4 w-4 text-muted-foreground/30 group-hover:text-muted-foreground shrink-0" />
           </NuxtLink>
         </div>
       </div>

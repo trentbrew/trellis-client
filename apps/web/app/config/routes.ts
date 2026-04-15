@@ -353,16 +353,14 @@ export const ROUTE_PATHS = {
       selfAssessments: '/app/reports/self-assessments',
     },
   },
-  database: '/database',
-  graph: {
-    root: '/graph',
-    dashboard: '/graph/dashboard',
-    explorer: '/graph/explorer',
-    visualization: '/graph/visualization',
-    query: '/graph/query',
-    ontology: '/graph/ontology',
-    activity: '/graph/activity',
+  database: {
+    root: '/database',
+    explorer: '/database/explorer',
+    query: '/database/query',
+    ontology: '/database/ontology',
+    activity: '/database/activity',
   },
+  graph: '/graph',
   neu: '/neu',
   admin: {
     root: '/admin',
@@ -543,11 +541,7 @@ interface ParsedPath {
   facility: string | null
 }
 
-export function buildNavPath(
-  cleanPath: string,
-  workspace: string | null,
-  app: string | null,
-): string {
+export function buildNavPath(cleanPath: string, workspace: string | null, app: string | null): string {
   if (workspace && app && cleanPath.startsWith('/app')) {
     const subPath = cleanPath.replace(/^\/app/, '')
     return `/${workspace}/${app}${subPath}`
@@ -575,7 +569,36 @@ export function parseFullPath(path: string): ParsedPath {
   const segments = path.split('/').filter(Boolean)
 
   // Check for [workspace]/[app]/... pattern (2+ segments where first is not a known top-level route)
-  const knownTopLevelRoutes = ['docs', 'settings', 'admin', 'auth', 'database', 'collections', 'workflows', 'help', 'workspace', 'welcome', 'onboarding', 'notifications', 'permits', 'types', 'apptool', 'playground', 'components', 'embed', 'archive', 'members', 'learn', 'graph', 'calendar', 'documents', 'invite', 'messages', 'pages', 'w']
+  const knownTopLevelRoutes = [
+    'docs',
+    'settings',
+    'admin',
+    'auth',
+    'database',
+    'collections',
+    'workflows',
+    'help',
+    'workspace',
+    'welcome',
+    'onboarding',
+    'notifications',
+    'permits',
+    'types',
+    'apptool',
+    'playground',
+    'components',
+    'embed',
+    'archive',
+    'members',
+    'learn',
+    'graph',
+    'calendar',
+    'documents',
+    'invite',
+    'messages',
+    'pages',
+    'w',
+  ]
 
   if (segments.length >= 2 && segments[0] && !knownTopLevelRoutes.includes(segments[0])) {
     // It's a workspace/app route: /[workspace]/[app]/path...
@@ -616,7 +639,10 @@ export function stripYearFromPath(path: string): { year: null; cleanPath: string
  * Builds breadcrumbs dynamically from path segments after workspace/app
  * Handles paths: /[workspace]/[app]/path
  */
-export function getBreadcrumbs(path: string, routes: RouteConfig[] = routeConfig): Array<{ label: string; path?: string }> {
+export function getBreadcrumbs(
+  path: string,
+  routes: RouteConfig[] = routeConfig,
+): Array<{ label: string; path?: string }> {
   const breadcrumbs: Array<{ label: string; path?: string }> = []
   const { workspace, app, cleanPath } = parseFullPath(path)
 
