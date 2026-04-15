@@ -68,6 +68,13 @@ export const useLayoutPreferences = () => {
     _persist()
   }
 
+  const resetLayoutPreferences = () => {
+    setHeaderAboveSidebar(true)
+    setIconRailPosition('bottom')
+    setToolbarMode('floating')
+    setShowRecentPages(false)
+  }
+
   return {
     headerAboveSidebar: readonly(headerAboveSidebar),
     setHeaderAboveSidebar,
@@ -78,5 +85,6 @@ export const useLayoutPreferences = () => {
     setToolbarMode,
     showRecentPages: readonly(showRecentPages),
     setShowRecentPages,
+    resetLayoutPreferences,
   }
 }

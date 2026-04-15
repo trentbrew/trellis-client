@@ -1,7 +1,7 @@
 import { resolve } from 'node:path'
 import { readFileSync, existsSync } from 'node:fs'
 import tailwindcss from '@tailwindcss/vite'
-import { findAvailablePort } from './utils/find-port'
+import { ensurePortAvailable } from './utils/find-port'
 
 // Load .env from monorepo root (two levels up from apps/web/)
 // Nuxt only auto-loads .env from the project root (apps/web/), so we
@@ -24,12 +24,8 @@ const DEFAULT_DEV_PORT = 1414
 const parsedDevPort = Number.parseInt(process.env.TRELLIS_PORT || '', 10)
 const PREFERRED_PORT = Number.isFinite(parsedDevPort) ? parsedDevPort : DEFAULT_DEV_PORT
 
-// Find an available port starting from the preferred port, incrementing if needed
-const DEV_PORT = await findAvailablePort(PREFERRED_PORT)
-
-if (DEV_PORT !== PREFERRED_PORT) {
-  console.log(`⚠️  Port ${PREFERRED_PORT} is in use, using port ${DEV_PORT} instead`)
-}
+// Ensure the preferred port is available (kill any process using it)
+const DEV_PORT = await ensurePortAvailable(PREFERRED_PORT)
 
 // https://nuxt.com/docs/api/configuration/nuxt-config
 export default defineNuxtConfig({
@@ -64,8 +60,9 @@ export default defineNuxtConfig({
     instantAppId: process.env.INSTANTDB_APP_ID || process.env.INSTANT_APP_ID || '',
     instantAppSecret: process.env.INSTANTDB_APP_SECRET || '',
     googleClientSecret: process.env.GOOGLE_CLIENT_SECRET || '',
-    googleCalendarRedirectUri: process.env.GOOGLE_CALENDAR_REDIRECT_URI
-      || `http://localhost:${PREFERRED_PORT}/api/integrations/google-calendar/callback`,
+    googleCalendarRedirectUri:
+      process.env.GOOGLE_CALENDAR_REDIRECT_URI ||
+      `http://localhost:${PREFERRED_PORT}/api/integrations/google-calendar/callback`,
     googleCalendarWebhookSecret: process.env.GOOGLE_CALENDAR_WEBHOOK_SECRET || '',
     resendApiKey: process.env.RESEND_API_KEY || '',
     resendFrom: process.env.RESEND_FROM || 'Trellis <noreply@trellis.app>',

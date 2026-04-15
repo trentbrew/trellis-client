@@ -1,4 +1,12 @@
-import type { Organization, Application, Collection, CustomType, Workflow, WorkflowGraph, DatabaseSchema } from '~/types/database'
+import type {
+  Organization,
+  Application,
+  Collection,
+  CustomType,
+  Workflow,
+  WorkflowGraph,
+  DatabaseSchema,
+} from '~/types/database'
 import { pickOrgAndApp } from '~/lib/pickOrgAndApp'
 import { createCollectionGraph, serializeTrellisDocument } from '~/lib/trellis'
 import { createDefaultProjections } from '~/lib/projections'
@@ -132,6 +140,7 @@ export function useInstantData() {
   const db = useInstantDb()
   const { user } = useInstantAuth()
   const tx = db.tx as Record<string, any>
+  const isLocalMode = db.mode === 'local'
 
   const route = import.meta.client ? useRoute() : null
 
@@ -459,7 +468,10 @@ export function useInstantData() {
         [organizations, orgsLoading, user],
         ([orgs, loading, authUser]) => {
           // Clear any pending auto-create when the watcher re-fires
-          if (orgAutoCreateTimer) { clearTimeout(orgAutoCreateTimer); orgAutoCreateTimer = null }
+          if (orgAutoCreateTimer) {
+            clearTimeout(orgAutoCreateTimer)
+            orgAutoCreateTimer = null
+          }
 
           if (loading || isAutoCreatingOrg.value || !authUser?.id) return
           if ((orgs || []).length > 0) return
@@ -469,17 +481,20 @@ export function useInstantData() {
             // Re-check after debounce — orgs may have arrived via subscription
             if ((organizations.value || []).length > 0 || isAutoCreatingOrg.value) return
 
-            // Gate 1: Don't auto-create if onboarding hasn't completed
-            try {
-              const settingResp = await db.queryOnce({
-                settings: { $: { where: { settingKey: `user:${authUser.id}:onboardingComplete` } } },
-              })
-              const onboardingDone = (settingResp.data as Record<string, any>)?.settings?.[0]?.value
-              if (!onboardingDone) {
-                console.info('[useInstantData] Skipping auto-create org: onboarding not complete')
-                return
+            if (!isLocalMode) {
+              try {
+                const settingResp = await db.queryOnce({
+                  settings: { $: { where: { settingKey: `user:${authUser.id}:onboardingComplete` } } },
+                })
+                const onboardingDone = (settingResp.data as Record<string, any>)?.settings?.[0]?.value
+                if (!onboardingDone) {
+                  console.info('[useInstantData] Skipping auto-create org: onboarding not complete')
+                  return
+                }
+              } catch {
+                /* non-fatal — proceed with other checks */
               }
-            } catch (_e) { /* non-fatal — proceed with other checks */ }
+            }
 
             // Gate 2: Don't auto-create if lastOrgId is set (user belongs to an existing org)
             try {
@@ -491,7 +506,9 @@ export function useInstantData() {
                 console.info('[useInstantData] Skipping auto-create org: lastOrgId is set, waiting for subscription')
                 return
               }
-            } catch (_e) { /* non-fatal */ }
+            } catch {
+              /* non-fatal */
+            }
 
             // Gate 3: Don't auto-create if user has memberships (invited to an existing org)
             try {
@@ -503,7 +520,9 @@ export function useInstantData() {
                 console.info('[useInstantData] Skipping auto-create org: user has', memberships.length, 'membership(s)')
                 return
               }
-            } catch (_e) { /* non-fatal */ }
+            } catch {
+              /* non-fatal */
+            }
 
             // Final re-check: orgs may have appeared during the async checks
             if ((organizations.value || []).length > 0) return
@@ -543,7 +562,10 @@ export function useInstantData() {
       watch(
         [currentOrg, applications, appsLoading, user],
         ([org, apps, loading, authUser]) => {
-          if (appAutoCreateTimer) { clearTimeout(appAutoCreateTimer); appAutoCreateTimer = null }
+          if (appAutoCreateTimer) {
+            clearTimeout(appAutoCreateTimer)
+            appAutoCreateTimer = null
+          }
 
           if (!org || loading || isAutoCreatingApp.value || !authUser?.id) return
           const orgApps = (apps || []).filter((a) => a.orgId === org.id)
@@ -557,7 +579,9 @@ export function useInstantData() {
 
           // Debounce: wait 1.5s for apps to arrive via subscription
           appAutoCreateTimer = setTimeout(async () => {
-            const currentApps = (applications.value || []).filter((a) => a.orgId === (currentOrg.value as Record<string, any>)?.id)
+            const currentApps = (applications.value || []).filter(
+              (a) => a.orgId === (currentOrg.value as Record<string, any>)?.id,
+            )
             if (currentApps.length > 0 || isAutoCreatingApp.value) return
 
             isAutoCreatingApp.value = true

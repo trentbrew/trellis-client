@@ -1,8 +1,18 @@
 <script setup lang="ts">
   const { $colorMode: colorMode } = useNuxtApp()
-  const { animationsEnabled, setAnimationsEnabled } = useAnimationSettings()
-  const { headerAboveSidebar, setHeaderAboveSidebar, iconRailPosition, setIconRailPosition, toolbarMode, setToolbarMode, showRecentPages, setShowRecentPages } = useLayoutPreferences()
+  const { $toast } = useNuxtApp()
+  const { animationsEnabled, setAnimationsEnabled, resetAnimationSettings } = useAnimationSettings()
+  const { headerAboveSidebar, setHeaderAboveSidebar, iconRailPosition, setIconRailPosition, toolbarMode, setToolbarMode, showRecentPages, setShowRecentPages, resetLayoutPreferences } = useLayoutPreferences()
   const go = (to: string) => navigateTo(to)
+  const showResetConfirm = ref(false)
+
+  const resetAllSettings = () => {
+    colorMode.preference = 'light'
+    resetAnimationSettings()
+    resetLayoutPreferences()
+    showResetConfirm.value = false
+    $toast?.success('All settings reset to defaults')
+  }
 
   const isDark = computed({
     get: () => colorMode.value === 'dark',
@@ -354,6 +364,32 @@
             </UiCardContent>
           </UiCard>
         </template>
+      </ClientOnly>
+
+      <!-- Reset to Defaults -->
+      <ClientOnly>
+        <UiCard class="border-border/50">
+          <UiCardHeader>
+            <UiCardTitle>Reset to Defaults</UiCardTitle>
+            <UiCardDescription>Restore all appearance settings to their original values.</UiCardDescription>
+          </UiCardHeader>
+          <UiCardContent>
+            <div v-if="!showResetConfirm">
+              <UiButton variant="outline" size="sm" @click="showResetConfirm = true">
+                <Icon name="lucide:rotate-ccw" class="mr-2 size-4" />
+                Reset all settings
+              </UiButton>
+            </div>
+            <div v-else class="flex items-center gap-3">
+              <p class="text-sm text-muted-foreground">Reset everything to defaults?</p>
+              <UiButton variant="outline" size="sm" @click="showResetConfirm = false">Cancel</UiButton>
+              <UiButton variant="default" size="sm" @click="resetAllSettings">
+                <Icon name="lucide:check" class="mr-1.5 size-3.5" />
+                Confirm
+              </UiButton>
+            </div>
+          </UiCardContent>
+        </UiCard>
       </ClientOnly>
 
       <!-- Theme Preset Selector -->

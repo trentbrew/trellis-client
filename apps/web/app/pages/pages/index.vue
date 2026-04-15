@@ -3,15 +3,20 @@
   useHead({ title: 'Pages' })
 
   const { pages, loading, createPage } = usePageNotes()
+  const { wp } = useWorkspacePath()
 
   const firstPage = computed(() => pages.value[0])
 
   // Auto-redirect to the first page if one exists
-  watch([loading, pages], async ([isLoading]) => {
-    if (!isLoading && firstPage.value) {
-      navigateTo(`/pages/${firstPage.value.id}`, { replace: true })
-    }
-  }, { immediate: true })
+  watch(
+    [loading, pages],
+    async ([isLoading]) => {
+      if (!isLoading && firstPage.value) {
+        navigateTo(wp(`/pages/${firstPage.value.id}`), { replace: true })
+      }
+    },
+    { immediate: true },
+  )
 
   const creating = ref(false)
   async function handleCreateFirst() {
@@ -19,7 +24,7 @@
     creating.value = true
     try {
       const id = await createPage({ title: '' })
-      if (id) navigateTo(`/pages/${id}`)
+      if (id) navigateTo(wp(`/pages/${id}`))
     } finally {
       creating.value = false
     }

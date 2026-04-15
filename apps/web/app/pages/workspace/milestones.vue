@@ -1,5 +1,6 @@
 <script setup lang="ts">
   definePageMeta({ layout: 'default' })
-  navigateTo('/workspace/browse?type=milestone', { replace: true })
+  const { wp } = useWorkspacePath()
+  navigateTo(wp('/workspace/browse?type=milestone'), { replace: true })
 </script>
 <template><div /></template>
