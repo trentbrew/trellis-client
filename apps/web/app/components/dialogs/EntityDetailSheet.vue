@@ -11,9 +11,7 @@
 
   const { state, close, setMode, setVariant, updateField } = useGlobalDetailSheetRefs()
 
-  const owners = computed(() => [
-    { id: 'you', name: 'You' },
-  ])
+  const owners = computed(() => [{ id: 'you', name: 'You' }])
 
   const folders = computed(() => ['Work', 'Personal'])
 
@@ -824,9 +822,9 @@
       </Teleport>
     </template>
 
-    <!-- Entity Dialog for task entities -->
+    <!-- Entity Dialog for rich-panel entities (task, email, event, etc.) -->
     <EntityDialog
-      v-if="state.entityType === 'task'"
+      v-if="state.entityType === 'task' || state.entityType === 'email' || state.entityType === 'event'"
       :open="state.isOpen"
       :mode="state.mode === 'create' ? 'create' : 'edit'"
       :item="state.currentNode as any"

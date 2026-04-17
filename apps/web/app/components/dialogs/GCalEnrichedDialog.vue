@@ -43,7 +43,10 @@
   watch(
     googleEventId,
     async (evId) => {
-      if (!evId) { enrichmentId.value = ''; return }
+      if (!evId) {
+        enrichmentId.value = ''
+        return
+      }
       // Use cached value synchronously if available, then confirm async
       const cached = enrichmentUUIDSync(evId)
       if (cached) enrichmentId.value = cached
@@ -183,7 +186,13 @@
   })
 
   // ── References ────────────────────────────────────────────────────────
-  const { addEntityRef, removeRef: removeEntityRef, openEntityRef: handleOpenEntityRef, createAndOpenEntityRef } = useEntityReferences(editableEnrichment as any)
+  const {
+    addEntityRef,
+    removeRef: removeEntityRef,
+    openEntityRef: handleOpenEntityRef,
+    createAndOpenEntityRef,
+    createEntityAndLink,
+  } = useEntityReferences(editableEnrichment as any)
 
   const entityPickerOpen = ref(false)
   const entityPickerFilterType = ref<string | undefined>(undefined)
@@ -202,6 +211,13 @@
     createAndOpenEntityRef(ref)
   }
 
+  const handleCreateEntityOfType = async (type: string, title: string) => {
+    if (!enrichment.value) {
+      await ensureEnrichment(googleEventId.value, props.event?.title ?? '')
+    }
+    void createEntityAndLink(type, title)
+  }
+
   const handleRemoveRef = (refId: string) => removeEntityRef(refId)
 
   // ── Comments / Activity ───────────────────────────────────────────────
@@ -210,7 +226,8 @@
 
   const newComment = ref('')
   const rightSidebarTab = ref<'references' | 'activity'>('references')
-  const rightSidebarW = ref(288)
+  const rightSidebarW = ref(360)
+  const rightSidebarCollapsed = ref(false)
   const isResizingSidebar = ref(false)
 
   const startSidebarResize = (e: PointerEvent) => {
@@ -275,14 +292,26 @@
 
     for (let i = firstDay - 1; i >= 0; i--) {
       const d = daysInPrev - i
-      days.push({ date: d, month: 'prev', full: `${year}-${String(month).padStart(2, '0')}-${String(d).padStart(2, '0')}` })
+      days.push({
+        date: d,
+        month: 'prev',
+        full: `${year}-${String(month).padStart(2, '0')}-${String(d).padStart(2, '0')}`,
+      })
     }
     for (let d = 1; d <= daysInMonth; d++) {
-      days.push({ date: d, month: 'current', full: `${year}-${String(month + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}` })
+      days.push({
+        date: d,
+        month: 'current',
+        full: `${year}-${String(month + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}`,
+      })
     }
     const remaining = 42 - days.length
     for (let d = 1; d <= remaining; d++) {
-      days.push({ date: d, month: 'next', full: `${year}-${String(month + 2).padStart(2, '0')}-${String(d).padStart(2, '0')}` })
+      days.push({
+        date: d,
+        month: 'next',
+        full: `${year}-${String(month + 2).padStart(2, '0')}-${String(d).padStart(2, '0')}`,
+      })
     }
     return days
   })
@@ -295,7 +324,10 @@
   }
 
   const miniCalMonthLabel = computed(() => {
-    return new Date(miniCalYear.value, miniCalMonth.value, 1).toLocaleDateString('en-US', { month: 'long', year: 'numeric' })
+    return new Date(miniCalYear.value, miniCalMonth.value, 1).toLocaleDateString('en-US', {
+      month: 'long',
+      year: 'numeric',
+    })
   })
 
   // ── Formatted date display ────────────────────────────────────────────
@@ -319,7 +351,8 @@
     }
 
     const timePart = startTime ? `${startTime}${endTime ? ` – ${endTime}` : ''}` : ''
-    if (endDate && endDate !== startDate) return `${fmt(startDate)} – ${fmt(endDate)}${timePart ? ` · ${timePart}` : ''}`
+    if (endDate && endDate !== startDate)
+      return `${fmt(startDate)} – ${fmt(endDate)}${timePart ? ` · ${timePart}` : ''}`
     return `${fmt(startDate)}${timePart ? ` · ${timePart}` : ''}`
   })
 
@@ -339,10 +372,10 @@
     dialog-description="View Google Calendar event details and add Trellis enrichment."
     @update:open="close"
     @close="close">
-
     <!-- Header badges: GCal source indicator -->
     <template #header-badges>
-      <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-medium bg-blue-500/10 text-blue-500">
+      <span
+        class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-medium bg-blue-500/10 text-blue-500">
         <Icon name="lucide:lock" class="h-2.5 w-2.5" />
         Read-only from Google
       </span>
@@ -368,7 +401,10 @@
             @click="setPriority(opt.value)">
             <Icon :name="opt.icon" class="h-3.5 w-3.5 text-muted-foreground" />
             <span class="flex-1">{{ opt.label }}</span>
-            <Icon v-if="editableEnrichment.priority === opt.value" name="lucide:check" class="h-3.5 w-3.5 text-primary" />
+            <Icon
+              v-if="editableEnrichment.priority === opt.value"
+              name="lucide:check"
+              class="h-3.5 w-3.5 text-primary" />
           </button>
         </UiPopoverContent>
       </UiPopover>
@@ -391,7 +427,10 @@
             @click="setUrgency(opt.value)">
             <Icon :name="opt.icon" class="h-3.5 w-3.5 text-muted-foreground" />
             <span class="flex-1">{{ opt.label }}</span>
-            <Icon v-if="editableEnrichment.urgency === opt.value" name="lucide:check" class="h-3.5 w-3.5 text-primary" />
+            <Icon
+              v-if="editableEnrichment.urgency === opt.value"
+              name="lucide:check"
+              class="h-3.5 w-3.5 text-primary" />
           </button>
         </UiPopoverContent>
       </UiPopover>
@@ -399,19 +438,24 @@
 
     <!-- Main content area -->
     <div class="flex-1 flex min-h-0 overflow-hidden">
-
       <!-- Left sidebar: mini calendar + frozen GCal schedule details -->
       <aside class="w-64 shrink-0 border-r border-border overflow-y-auto flex flex-col bg-muted/10">
         <div class="p-4 space-y-4">
-
           <!-- Read-only mini calendar -->
           <div class="space-y-1.5">
             <div class="flex items-center justify-between">
-              <p class="text-[10px] font-medium text-muted-foreground uppercase tracking-wide">{{ miniCalMonthLabel }}</p>
+              <p class="text-[10px] font-medium text-muted-foreground uppercase tracking-wide">
+                {{ miniCalMonthLabel }}
+              </p>
             </div>
             <!-- Day-of-week headers -->
             <div class="grid grid-cols-7 gap-px">
-              <span v-for="d in ['S','M','T','W','T','F','S']" :key="d" class="text-center text-[9px] font-medium text-muted-foreground/60 py-0.5">{{ d }}</span>
+              <span
+                v-for="d in ['S', 'M', 'T', 'W', 'T', 'F', 'S']"
+                :key="d"
+                class="text-center text-[9px] font-medium text-muted-foreground/60 py-0.5">
+                {{ d }}
+              </span>
             </div>
             <!-- Day cells -->
             <div class="grid grid-cols-7 gap-px">
@@ -422,7 +466,9 @@
                 :class="[
                   day.month !== 'current' ? 'text-muted-foreground/30' : 'text-foreground',
                   isEventDay(day.full) ? 'bg-primary text-primary-foreground font-semibold rounded-full' : '',
-                ]">{{ day.date }}</div>
+                ]">
+                {{ day.date }}
+              </div>
             </div>
           </div>
 
@@ -473,7 +519,6 @@
 
       <!-- Center: frozen GCal description + editable Trellis notes -->
       <div class="flex-1 flex flex-col min-w-0 overflow-y-auto">
-
         <!-- Frozen GCal description section -->
         <div v-if="event?.description" class="border-b border-border/60 bg-muted/20">
           <div class="px-6 py-4">
@@ -494,32 +539,59 @@
         </div>
       </div>
 
+      <!-- Right sidebar: collapsed strip -->
+      <div
+        v-if="rightSidebarCollapsed"
+        class="shrink-0 border-l border-border flex flex-col items-center py-2 w-10 bg-card/50">
+        <button
+          class="h-7 w-7 rounded-md flex items-center justify-center hover:bg-muted text-muted-foreground hover:text-foreground transition-colors"
+          title="Expand sidebar"
+          @click="rightSidebarCollapsed = false">
+          <Icon name="lucide:panel-right-open" class="h-4 w-4" />
+        </button>
+      </div>
+
       <!-- Right sidebar: References + Activity -->
       <aside
-        class="shrink-0 border-l border-border overflow-hidden flex flex-col relative"
+        v-else
+        class="shrink-0 border-l border-border overflow-hidden flex flex-col relative transition-[width] duration-150"
         :class="isResizingSidebar ? 'select-none' : ''"
         :style="{ width: rightSidebarW + 'px' }">
         <!-- Resize handle -->
         <div
           class="absolute inset-y-0 left-0 w-1 cursor-ew-resize z-10 hover:bg-primary/20 transition-colors"
-          @pointerdown="startSidebarResize" />
+          @pointerdown="startSidebarResize($event)" />
 
         <!-- Tab bar -->
         <div class="flex border-b border-border shrink-0">
           <button
             class="flex-1 px-3 py-2 text-[10px] font-medium uppercase tracking-wide transition-colors"
-            :class="rightSidebarTab === 'references' ? 'text-foreground border-b-2 border-primary' : 'text-muted-foreground hover:text-foreground'"
+            :class="
+              rightSidebarTab === 'references'
+                ? 'text-foreground border-b-2 border-primary'
+                : 'text-muted-foreground hover:text-foreground'
+            "
             @click="rightSidebarTab = 'references'">
             References
           </button>
           <button
             class="flex-1 px-3 py-2 text-[10px] font-medium uppercase tracking-wide transition-colors"
-            :class="rightSidebarTab === 'activity' ? 'text-foreground border-b-2 border-primary' : 'text-muted-foreground hover:text-foreground'"
+            :class="
+              rightSidebarTab === 'activity'
+                ? 'text-foreground border-b-2 border-primary'
+                : 'text-muted-foreground hover:text-foreground'
+            "
             @click="rightSidebarTab = 'activity'">
             Activity
             <span v-if="displayActivity.length" class="ml-1 text-[9px] bg-muted rounded-full px-1.5 py-0.5">
               {{ displayActivity.length }}
             </span>
+          </button>
+          <button
+            class="px-2 flex items-center justify-center text-muted-foreground hover:text-foreground transition-colors shrink-0"
+            title="Collapse sidebar"
+            @click="rightSidebarCollapsed = true">
+            <Icon name="lucide:panel-right-close" class="h-4 w-4" />
           </button>
         </div>
 
@@ -531,8 +603,19 @@
             v-model="editableEnrichment.references"
             @open-entity="handleOpenEntityRef"
             @remove-ref="handleRemoveRef"
-            @add-entity="() => { entityPickerFilterType = undefined; entityPickerOpen = true }"
-            @add-entity-of-type="(type) => { entityPickerFilterType = type; entityPickerOpen = true }" />
+            @add-entity="
+              () => {
+                entityPickerFilterType = undefined
+                entityPickerOpen = true
+              }
+            "
+            @add-entity-of-type="
+              (type) => {
+                entityPickerFilterType = type
+                entityPickerOpen = true
+              }
+            "
+            @create-entity="handleCreateEntityOfType" />
 
           <!-- Activity tab -->
           <div v-if="rightSidebarTab === 'activity'" class="p-4 space-y-2">
@@ -555,10 +638,16 @@
                 <div class="flex-1 min-w-0">
                   <div class="flex items-baseline gap-1 flex-wrap">
                     <span class="text-[11px] font-medium">{{ activityItem.authorName }}</span>
-                    <span class="text-[10px] text-muted-foreground">{{ formatRelativeTime(activityItem.createdAt) }}</span>
+                    <span class="text-[10px] text-muted-foreground">
+                      {{ formatRelativeTime(activityItem.createdAt) }}
+                    </span>
                   </div>
-                  <p v-if="activityItem.content" class="text-xs text-foreground/80 mt-0.5">{{ activityItem.content }}</p>
-                  <p v-else-if="activityItem.type === 'created'" class="text-[10px] text-muted-foreground mt-0.5">added enrichment</p>
+                  <p v-if="activityItem.content" class="text-xs text-foreground/80 mt-0.5">
+                    {{ activityItem.content }}
+                  </p>
+                  <p v-else-if="activityItem.type === 'created'" class="text-[10px] text-muted-foreground mt-0.5">
+                    added enrichment
+                  </p>
                 </div>
               </div>
             </div>
@@ -628,12 +717,12 @@
 </template>
 
 <style scoped>
-.save-fade-enter-active,
-.save-fade-leave-active {
-  transition: opacity 0.15s ease;
-}
-.save-fade-enter-from,
-.save-fade-leave-to {
-  opacity: 0;
-}
+  .save-fade-enter-active,
+  .save-fade-leave-active {
+    transition: opacity 0.15s ease;
+  }
+  .save-fade-enter-from,
+  .save-fade-leave-to {
+    opacity: 0;
+  }
 </style>

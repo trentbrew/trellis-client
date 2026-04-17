@@ -1,7 +1,16 @@
 <script setup lang="ts">
   import FlowEditor from '~/components/Flow/FlowEditor.vue'
   import FlowExecutionPanel from '~/components/Flow/FlowExecutionPanel.vue'
-  import type { WorkflowNodeKind } from '~/types/database'
+  import FlowRunsPanel from '~/components/Flow/FlowRunsPanel.vue'
+  import FlowTriggersPanel from '~/components/Flow/FlowTriggersPanel.vue'
+  import type { WorkflowNodeKind, WorkflowGraph } from '~/types/database'
+  import type { WorkflowRun } from '~/composables/useWorkflowRuns'
+  import {
+    useWorkflowTriggers,
+    type WorkflowTrigger,
+    type TriggerKind,
+    type EntityChangeAction,
+  } from '~/composables/useWorkflowTriggers'
 
   definePageMeta({
     title: 'Workflow',
@@ -60,6 +69,12 @@
 
   // ── Execution ──────────────────────────────────────────────────────────────
   const execution = useWorkflowExecution()
+  const runs = useWorkflowRuns(workflowId)
+  const triggers = useWorkflowTriggers(workflowId)
+  const activeRunId = ref<string | null>(null)
+
+  // ── Sidebar tab ────────────────────────────────────────────────────────────
+  const sidebarTab = ref<'runs' | 'triggers'>('runs')
 
   const hasStartNode = computed<boolean>(() => (workflow.value?.graph?.nodes ?? []).some((n) => n.kind === 'start'))
 
@@ -76,7 +91,128 @@
 
   async function handleRun() {
     if (!workflow.value?.graph || !canRun.value) return
-    await execution.run(workflow.value.graph, {})
+    activeRunId.value = null
+    const input = {}
+    const finalState = await execution.run(workflow.value.graph, input)
+
+    // Persist the run so it shows up in the history panel and in /graph
+    const startedAt = execution.startedAt.value || new Date().toISOString()
+    const finishedAt = new Date().toISOString()
+    const durationMs = new Date(finishedAt).getTime() - new Date(startedAt).getTime()
+    const stepOutputs: Record<string, unknown> = {}
+    for (const [nodeId, out] of Object.entries(execution.stepOutputs.value)) {
+      stepOutputs[nodeId] = (out as { output: unknown })?.output ?? null
+    }
+
+    const saved = await runs.record({
+      workflowId: workflowId.value,
+      workflowName: workflow.value?.name,
+      agentId: 'workflow-ui',
+      status: execution.status.value === 'error' ? 'failed' : 'completed',
+      startedAt,
+      completedAt: finishedAt,
+      durationMs,
+      stepCount: execution.traces.value.length,
+      input,
+      output: finalState?.output ?? null,
+      error: execution.error.value ?? undefined,
+      traces: execution.traces.value,
+      stepOutputs,
+    })
+    if (saved) activeRunId.value = saved.id
+  }
+
+  async function handleRunSelect(run: WorkflowRun) {
+    activeRunId.value = run.id
+    // The list query only returns summary fields — fetch the full run entity
+    // (traces, stepOutputs, error, input/output) on demand.
+    const full = (await runs.get(run.id)) || run
+    execution.loadRun({
+      status: full.status,
+      traces: full.traces,
+      stepOutputs: full.stepOutputs,
+      startedAt: full.startedAt,
+      error: full.error,
+    })
+  }
+
+  async function handleRunRemove(runId: string) {
+    await runs.remove(runId)
+    if (activeRunId.value === runId) {
+      activeRunId.value = null
+      execution.resetState()
+    }
+  }
+
+  // ── Trigger handlers ──────────────────────────────────────────────────────
+  async function handleTriggerCreate(payload: {
+    title: string
+    kind: TriggerKind
+    cron?: string
+    watchType?: string
+    watchAction?: EntityChangeAction
+    watchAttribute?: string
+  }) {
+    const graph = workflow.value?.graph as WorkflowGraph | undefined
+    if (!graph || !workflow.value) return
+    await triggers.create({
+      title: payload.title,
+      workflowId: workflowId.value,
+      workflowName: workflow.value.name,
+      graph,
+      kind: payload.kind,
+      active: true,
+      cron: payload.cron,
+      watchType: payload.watchType,
+      watchAction: payload.watchAction,
+      watchAttribute: payload.watchAttribute,
+    })
+  }
+
+  async function handleTriggerUpdate(ev: { id: string; patch: Partial<WorkflowTrigger> }) {
+    // If re-activating or toggling, also refresh the cached graph so the server
+    // runs the current workflow definition
+    const graph = workflow.value?.graph as WorkflowGraph | undefined
+    const patch: Partial<WorkflowTrigger> = { ...ev.patch }
+    if (graph && ev.patch.active === true) {
+      patch.graph = graph
+      patch.workflowName = workflow.value?.name
+    }
+    await triggers.update(ev.id, patch)
+  }
+
+  async function handleTriggerRemove(id: string) {
+    await triggers.remove(id)
+  }
+
+  async function handleTriggerFire(id: string) {
+    const runId = await triggers.fireNow(id)
+    if (runId) {
+      // Jump to the runs tab so the user sees the result
+      sidebarTab.value = 'runs'
+      await runs.load()
+      activeRunId.value = runId
+      const full = await runs.get(runId)
+      if (full) {
+        execution.loadRun({
+          status: full.status,
+          traces: full.traces,
+          stepOutputs: full.stepOutputs,
+          startedAt: full.startedAt,
+          error: full.error,
+        })
+      }
+    }
+  }
+
+  async function handleCopyWebhook(t: WorkflowTrigger) {
+    const url = triggers.webhookUrl(t)
+    if (!url) return
+    try {
+      await navigator.clipboard.writeText(url)
+    } catch {
+      // ignore clipboard errors (e.g. insecure context)
+    }
   }
 
   // ── Graph validation ─────────────────────────────────────────────────
@@ -264,12 +400,72 @@
         </UiDropdownMenu>
       </div>
 
-      <!-- Canvas + Execution panel -->
+      <!-- Canvas + Runs panel + Execution panel -->
       <div class="flex min-h-0 flex-1 flex-col overflow-hidden">
-        <FlowEditor
-          :workflow-id="workflowId"
-          :execution-node-states="execution.nodeStates.value"
-          class="min-h-0 flex-1" />
+        <div class="flex min-h-0 flex-1 overflow-hidden">
+          <FlowEditor
+            :workflow-id="workflowId"
+            :execution-node-states="execution.nodeStates.value"
+            class="min-h-0 flex-1" />
+
+          <aside class="flex w-72 shrink-0 flex-col overflow-hidden border-l border-border bg-background">
+            <!-- Tab bar -->
+            <div class="flex h-8 shrink-0 items-center border-b border-border">
+              <button
+                type="button"
+                :class="[
+                  'flex-1 h-full text-[11px] font-medium transition-colors',
+                  sidebarTab === 'runs'
+                    ? 'border-b-2 border-primary text-foreground'
+                    : 'text-muted-foreground hover:bg-muted/50 hover:text-foreground',
+                ]"
+                @click="sidebarTab = 'runs'">
+                Runs
+                <span v-if="runs.runs.value.length > 0" class="ml-1 text-muted-foreground">
+                  ({{ runs.runs.value.length }})
+                </span>
+              </button>
+              <button
+                type="button"
+                :class="[
+                  'flex-1 h-full text-[11px] font-medium transition-colors',
+                  sidebarTab === 'triggers'
+                    ? 'border-b-2 border-primary text-foreground'
+                    : 'text-muted-foreground hover:bg-muted/50 hover:text-foreground',
+                ]"
+                @click="sidebarTab = 'triggers'">
+                Triggers
+                <span v-if="triggers.triggers.value.length > 0" class="ml-1 text-muted-foreground">
+                  ({{ triggers.triggers.value.length }})
+                </span>
+              </button>
+            </div>
+
+            <!-- Tab content -->
+            <div class="min-h-0 flex-1">
+              <FlowRunsPanel
+                v-if="sidebarTab === 'runs'"
+                :runs="runs.runs.value"
+                :is-loading="runs.isLoading.value"
+                :active-run-id="activeRunId"
+                @select="handleRunSelect"
+                @remove="handleRunRemove"
+                @refresh="runs.load()" />
+              <FlowTriggersPanel
+                v-else
+                :triggers="triggers.triggers.value"
+                :is-loading="triggers.isLoading.value"
+                :workflow-id="workflowId"
+                :workflow-name="workflow.name"
+                @create="handleTriggerCreate"
+                @update="handleTriggerUpdate"
+                @remove="handleTriggerRemove"
+                @fire="handleTriggerFire"
+                @refresh="triggers.load()"
+                @copy-webhook="handleCopyWebhook" />
+            </div>
+          </aside>
+        </div>
 
         <FlowExecutionPanel
           :status="execution.status.value"

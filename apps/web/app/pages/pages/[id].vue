@@ -370,7 +370,13 @@
     removeRef: removeEntityRef,
     openEntityRef: handleOpenEntityRef,
     createAndOpenEntityRef,
+    createEntityAndLink,
   } = useEntityReferences(editableItem)
+
+  async function handleCreateEntityOfType(type: string, title: string) {
+    const ref = await createEntityAndLink(type, title)
+    logActivity(`created and linked ${ref.entityType} "${ref.title || ref.entityId}"`, 'status_change')
+  }
 
   async function handleAddEntityRef(ref: EntityReference) {
     await addEntityRef(ref)
@@ -816,6 +822,7 @@
                     entityPickerOpen = true
                   }
                 "
+                @create-entity="handleCreateEntityOfType"
                 @add-entity-of-type="
                   (type) => {
                     entityPickerFilterType = type

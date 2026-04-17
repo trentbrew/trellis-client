@@ -33,23 +33,47 @@
 
   // ── Shared dialog logic ──────────────────────────────────────────
   const {
-    mode, isViewMode, isCreateMode, isEditMode,
-    editableItem, hasField, isFormValid,
-    displayActivity, commentsLoading, newComment, handleAddComment,
-    saveStatus, formatLastSaved,
-    entityPickerOpen, entityPickerFilterType,
-    handleAddEntityRef, handleCreatedEntityRef, handleRemoveRef, handleOpenEntityRef,
-    ownerSearch, owners, filteredOwners,
+    mode,
+    isViewMode,
+    isCreateMode,
+    isEditMode,
+    editableItem,
+    hasField,
+    isFormValid,
+    displayActivity,
+    commentsLoading,
+    newComment,
+    handleAddComment,
+    saveStatus,
+    formatLastSaved,
+    entitySummary,
+    isGeneratingSummary,
+    regenerateSummary,
+    entityPickerOpen,
+    entityPickerFilterType,
+    handleAddEntityRef,
+    handleCreatedEntityRef,
+    handleCreateEntityOfType,
+    handleRemoveRef,
+    handleOpenEntityRef,
+    rightSidebarW,
+    rightSidebarCollapsed,
+    isResizingSidebar,
+    startRightSidebarResize,
+    ownerSearch,
+    owners,
+    filteredOwners,
     currentCategory,
-    closeDialog, handleSave, handleDelete,
-  } = useEntityDialog(
-    props as any,
-    emit as any,
-    {
-      defaultType: 'project',
-      afterInitBlank: (item: any) => { item.children = []; item.status = 'active' },
+    closeDialog,
+    handleSave,
+    handleDelete,
+  } = useEntityDialog(props as any, emit as any, {
+    defaultType: 'project',
+    afterInitBlank: (item: any) => {
+      item.children = []
+      item.status = 'active'
     },
-  )
+  })
 
   // ── Project-specific UI state ────────────────────────────────────
   const categoryOpen = ref(false)
@@ -65,10 +89,30 @@
 
   // Status options
   const PROJECT_STATUS_OPTIONS: { value: ProjectStatus; label: string; icon: string; color: string }[] = [
-    { value: 'active', label: 'Active', icon: 'lucide:play', color: 'text-emerald-600 bg-emerald-100 dark:bg-emerald-900/30 dark:text-emerald-400' },
-    { value: 'on-hold', label: 'On Hold', icon: 'lucide:pause', color: 'text-amber-600 bg-amber-100 dark:bg-amber-900/30 dark:text-amber-400' },
-    { value: 'completed', label: 'Completed', icon: 'lucide:check-circle', color: 'text-blue-600 bg-blue-100 dark:bg-blue-900/30 dark:text-blue-400' },
-    { value: 'archived', label: 'Archived', icon: 'lucide:archive', color: 'text-zinc-600 bg-zinc-100 dark:bg-zinc-900/30 dark:text-zinc-400' },
+    {
+      value: 'active',
+      label: 'Active',
+      icon: 'lucide:play',
+      color: 'text-emerald-600 bg-emerald-100 dark:bg-emerald-900/30 dark:text-emerald-400',
+    },
+    {
+      value: 'on-hold',
+      label: 'On Hold',
+      icon: 'lucide:pause',
+      color: 'text-amber-600 bg-amber-100 dark:bg-amber-900/30 dark:text-amber-400',
+    },
+    {
+      value: 'completed',
+      label: 'Completed',
+      icon: 'lucide:check-circle',
+      color: 'text-blue-600 bg-blue-100 dark:bg-blue-900/30 dark:text-blue-400',
+    },
+    {
+      value: 'archived',
+      label: 'Archived',
+      icon: 'lucide:archive',
+      color: 'text-zinc-600 bg-zinc-100 dark:bg-zinc-900/30 dark:text-zinc-400',
+    },
   ]
 
   const currentStatus = computed(() => PROJECT_STATUS_OPTIONS.find((s) => s.value === editableItem.status))
@@ -78,6 +122,12 @@
     const i = editableItem.involved.indexOf(uid)
     if (i === -1) editableItem.involved.push(uid)
     else editableItem.involved.splice(i, 1)
+  }
+
+  // Status selection handler
+  function handleStatusSelect(status: ProjectStatus) {
+    editableItem.status = status
+    statusOpen.value = false
   }
 </script>
 
@@ -94,13 +144,16 @@
     :item-count="editableItem.children?.length || 0"
     :dialog-title="isCreateMode ? 'New Project' : editableItem.title || 'Project'"
     :dialog-description="isCreateMode ? 'Create a new project.' : 'View and edit project details.'"
+    :entity-id="editableItem.id || undefined"
+    :summary="entitySummary"
+    :is-generating-summary="isGeneratingSummary"
     @update:open="emit('update:open', $event)"
     @update:title="editableItem.title = $event"
     @update:description="editableItem.description = $event"
     @close="closeDialog"
     @navigate-prev="emit('navigatePrev')"
-    @navigate-next="emit('navigateNext')">
-
+    @navigate-next="emit('navigateNext')"
+    @regenerate-summary="regenerateSummary">
     <!-- Properties Row -->
     <template #properties>
       <!-- Status -->
@@ -118,7 +171,7 @@
             v-for="opt in PROJECT_STATUS_OPTIONS"
             :key="opt.value"
             class="w-full px-2 py-1.5 text-xs text-left rounded hover:bg-muted flex items-center gap-2"
-            @click="editableItem.status = opt.value; statusOpen = false">
+            @click="handleStatusSelect(opt.value)">
             <Icon :name="opt.icon" class="h-3.5 w-3.5 text-muted-foreground" />
             <span class="flex-1">{{ opt.label }}</span>
             <Icon v-if="editableItem.status === opt.value" name="lucide:check" class="h-3.5 w-3.5 text-primary" />
@@ -129,7 +182,8 @@
       <!-- Category -->
       <UiPopover v-if="hasField('category')" v-model:open="categoryOpen">
         <UiPopoverTrigger as-child>
-          <button class="inline-flex items-center gap-1.5 px-2 py-1 rounded-lg bg-muted/50 hover:bg-muted transition-colors">
+          <button
+            class="inline-flex items-center gap-1.5 px-2 py-1 rounded-lg bg-muted/50 hover:bg-muted transition-colors">
             <Icon :name="currentCategory?.icon || 'lucide:tag'" class="h-3.5 w-3.5" />
             <span>{{ currentCategory?.label || editableItem.category || 'Category' }}</span>
           </button>
@@ -139,7 +193,12 @@
             v-for="opt in CATEGORY_OPTIONS"
             :key="opt.value"
             class="w-full px-2 py-1.5 text-xs text-left rounded hover:bg-muted flex items-center gap-2"
-            @click="() => { editableItem.category = opt.value; categoryOpen = false }">
+            @click="
+              () => {
+                editableItem.category = opt.value
+                categoryOpen = false
+              }
+            ">
             <Icon :name="opt.icon" class="h-3.5 w-3.5 text-muted-foreground" />
             <span class="flex-1">{{ opt.label }}</span>
             <Icon v-if="editableItem.category === opt.value" name="lucide:check" class="h-3.5 w-3.5 text-primary" />
@@ -164,13 +223,23 @@
         <UiPopoverContent align="start" class="w-52 p-1 max-h-64 overflow-hidden">
           <div class="flex items-center gap-2 px-2 py-1.5 border-b border-border mb-1">
             <Icon name="lucide:search" class="h-3.5 w-3.5 text-muted-foreground shrink-0" />
-            <input v-model="ownerSearch" type="text" placeholder="Search..." class="flex-1 bg-transparent text-xs outline-none placeholder:text-muted-foreground/60" />
+            <input
+              v-model="ownerSearch"
+              type="text"
+              placeholder="Search..."
+              class="flex-1 bg-transparent text-xs outline-none placeholder:text-muted-foreground/60" />
           </div>
           <div class="overflow-y-auto max-h-52">
             <button
               v-if="editableItem.owner"
               class="w-full px-2 py-1.5 text-xs text-left rounded hover:bg-muted flex items-center gap-2 text-muted-foreground"
-              @click="() => { editableItem.owner = undefined; ownerOpen = false; ownerSearch = '' }">
+              @click="
+                () => {
+                  editableItem.owner = undefined
+                  ownerOpen = false
+                  ownerSearch = ''
+                }
+              ">
               <Icon name="lucide:x" class="h-3.5 w-3.5" />
               No owner
             </button>
@@ -178,8 +247,15 @@
               v-for="o in filteredOwners"
               :key="o.id"
               class="w-full px-2 py-1.5 text-xs text-left rounded hover:bg-muted flex items-center gap-2"
-              @click="() => { editableItem.owner = o.id; ownerOpen = false; ownerSearch = '' }">
-              <div class="w-5 h-5 rounded-full bg-primary/10 flex items-center justify-center text-[9px] font-medium text-primary">
+              @click="
+                () => {
+                  editableItem.owner = o.id
+                  ownerOpen = false
+                  ownerSearch = ''
+                }
+              ">
+              <div
+                class="w-5 h-5 rounded-full bg-primary/10 flex items-center justify-center text-[9px] font-medium text-primary">
                 {{ o.name.slice(0, 2).toUpperCase() }}
               </div>
               <span class="flex-1">{{ o.name }}</span>
@@ -206,7 +282,11 @@
         <UiPopoverContent align="start" class="w-56 p-1 max-h-64 overflow-hidden">
           <div class="flex items-center gap-2 px-2 py-1.5 border-b border-border mb-1">
             <Icon name="lucide:search" class="h-3.5 w-3.5 text-muted-foreground shrink-0" />
-            <input v-model="involvedSearch" type="text" placeholder="Search..." class="flex-1 bg-transparent text-xs outline-none placeholder:text-muted-foreground/60" />
+            <input
+              v-model="involvedSearch"
+              type="text"
+              placeholder="Search..."
+              class="flex-1 bg-transparent text-xs outline-none placeholder:text-muted-foreground/60" />
           </div>
           <div class="overflow-y-auto max-h-52">
             <button
@@ -226,7 +306,9 @@
 
       <!-- Tags -->
       <span v-if="hasField('tags')" class="w-px h-4 bg-border/60 mx-0.5 shrink-0" />
-      <div v-if="hasField('tags')" class="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-md bg-muted/30 border border-border/40">
+      <div
+        v-if="hasField('tags')"
+        class="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-md bg-muted/30 border border-border/40">
         <TagsSection v-model="editableItem.tags" :readonly="isViewMode" inline />
       </div>
     </template>
@@ -243,15 +325,27 @@
               v-model="editableItem.description"
               placeholder="Add notes about this project..."
               class="w-full h-full min-h-[120px] text-sm bg-transparent outline-none resize-none placeholder:text-muted-foreground/40 leading-relaxed" />
-            <p v-else-if="editableItem.description" class="text-sm text-foreground/80 leading-relaxed whitespace-pre-wrap">{{ editableItem.description }}</p>
+            <p
+              v-else-if="editableItem.description"
+              class="text-sm text-foreground/80 leading-relaxed whitespace-pre-wrap">
+              {{ editableItem.description }}
+            </p>
             <p v-else class="text-sm text-muted-foreground/40 italic">No notes</p>
           </div>
         </div>
       </div>
 
       <!-- Right Sidebar -->
-      <aside class="w-72 shrink-0 border-l border-border overflow-hidden hidden md:flex flex-col">
+      <aside
+        class="shrink-0 border-l border-border overflow-hidden md:flex hidden flex-col relative transition-[width] duration-150"
+        :class="isResizingSidebar ? 'select-none' : ''"
+        :style="{ width: rightSidebarCollapsed ? '40px' : rightSidebarW + 'px' }">
+        <div
+          v-if="!rightSidebarCollapsed"
+          class="absolute inset-y-0 left-0 w-1 cursor-ew-resize z-10 hover:bg-primary/20 transition-colors"
+          @pointerdown="startRightSidebarResize($event)" />
         <EntityRightSidebar
+          v-model:collapsed="rightSidebarCollapsed"
           :references="editableItem.references"
           :is-view-mode="isViewMode"
           :is-create-mode="isCreateMode"
@@ -265,8 +359,19 @@
           @update:new-comment="newComment = $event"
           @open-entity="handleOpenEntityRef"
           @remove-ref="handleRemoveRef"
-          @add-entity="() => { entityPickerFilterType = undefined; entityPickerOpen = true }"
-          @add-entity-of-type="(type: string) => { entityPickerFilterType = type; entityPickerOpen = true }"
+          @add-entity="
+            () => {
+              entityPickerFilterType = undefined
+              entityPickerOpen = true
+            }
+          "
+          @add-entity-of-type="
+            (type: string) => {
+              entityPickerFilterType = type
+              entityPickerOpen = true
+            }
+          "
+          @create-entity="handleCreateEntityOfType"
           @add-comment="handleAddComment" />
       </aside>
     </div>
@@ -325,5 +430,10 @@
   </ContainerDialogShell>
 
   <!-- Entity Reference Picker -->
-  <EntityReferencePicker v-model:open="entityPickerOpen" :exclude-id="editableItem.id" :filter-type="entityPickerFilterType" @select="handleAddEntityRef" @created="handleCreatedEntityRef" />
+  <EntityReferencePicker
+    v-model:open="entityPickerOpen"
+    :exclude-id="editableItem.id"
+    :filter-type="entityPickerFilterType"
+    @select="handleAddEntityRef"
+    @created="handleCreatedEntityRef" />
 </template>

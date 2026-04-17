@@ -12,6 +12,7 @@ export type BrowseViewMode =
   | 'week'
   | 'agenda'
   | 'moodboard'
+  | 'graph'
 
 export type BrowseVariant = 'default' | 'people' | 'media' | 'articles'
 

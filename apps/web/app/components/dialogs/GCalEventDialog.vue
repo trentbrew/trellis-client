@@ -51,9 +51,7 @@
       return fmt(startDate)
     }
 
-    const timePart = startTime
-      ? ` · ${startTime}${endTime ? ` – ${endTime}` : ''}`
-      : ''
+    const timePart = startTime ? ` · ${startTime}${endTime ? ` – ${endTime}` : ''}` : ''
 
     if (endDate && endDate !== startDate) {
       return `${fmt(startDate)} – ${fmt(endDate)}${timePart}`
@@ -98,9 +96,9 @@
         <!-- Description -->
         <div v-if="event?.description" class="flex items-start gap-3">
           <Icon name="lucide:align-left" class="h-4 w-4 text-muted-foreground shrink-0 mt-0.5" />
-          <p class="text-sm text-muted-foreground leading-relaxed whitespace-pre-line line-clamp-6">
-            {{ event.description }}
-          </p>
+          <div
+            class="prose prose-sm max-w-none text-sm text-muted-foreground leading-relaxed line-clamp-3"
+            v-html="event.description" />
         </div>
 
         <!-- Status badge -->
@@ -116,9 +114,7 @@
       <div class="flex items-center justify-between px-6 py-4 border-t border-border/50 bg-muted/20">
         <p class="text-[11px] text-muted-foreground/60">Read-only · Managed by Google Calendar</p>
         <div class="flex items-center gap-2">
-          <UiButton variant="ghost" size="sm" @click="close">
-            Close
-          </UiButton>
+          <UiButton variant="ghost" size="sm" @click="close">Close</UiButton>
           <UiButton
             v-if="event?.htmlLink"
             size="sm"

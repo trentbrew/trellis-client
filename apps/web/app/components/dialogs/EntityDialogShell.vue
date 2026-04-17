@@ -26,11 +26,17 @@
       dialogDescription?: string
       /** Entity ID for per-entity editing presence */
       entityId?: string
+      /** AI-generated summary of the description (optional) */
+      summary?: string
+      /** Whether the summary is currently being generated */
+      isGeneratingSummary?: boolean
     }>(),
     {
       mode: 'edit',
       canNavigatePrev: false,
       canNavigateNext: false,
+      summary: '',
+      isGeneratingSummary: false,
     },
   )
 
@@ -41,6 +47,7 @@
     close: []
     navigatePrev: []
     navigateNext: []
+    regenerateSummary: []
   }>()
 
   const isViewMode = computed(() => props.mode === 'view')
@@ -56,36 +63,49 @@
   const { peerList, peerCount } = useEntityPresence(presenceEntityId)
 
   // ── Stack-aware positioning ─────────────────────────────────────────
-  const { buildContentStyle, overlayClass: stackOverlayClass, stackTransform, isStacked, parentTitle, hideNavigation, onBack, reportDimensions } = useDialogStackAware()
+  const {
+    buildContentStyle,
+    overlayClass: stackOverlayClass,
+    stackTransform,
+    isStacked,
+    parentTitle,
+    hideNavigation,
+    onBack,
+    reportDimensions,
+  } = useDialogStackAware()
 
   // ── Originating-dialog tracking (for backdrop blur on pages route) ──
   const { setOriginatingDialogOpen } = useDialogStack()
   watch(
     () => props.open,
-    (val) => { if (!isStacked.value) setOriginatingDialogOpen(val) },
+    (val) => {
+      if (!isStacked.value) setOriginatingDialogOpen(val)
+    },
     { immediate: true },
   )
-  onUnmounted(() => { if (!isStacked.value) setOriginatingDialogOpen(false) })
+  onUnmounted(() => {
+    if (!isStacked.value) setOriginatingDialogOpen(false)
+  })
 
   // ── Resize logic ──────────────────────────────────────────────────────
   const MIN_W = 640
   const MIN_H = 480
-  const MAX_W = computed(() => window.innerWidth - 64)
-  const MAX_H = computed(() => window.innerHeight - 64)
+  const MAX_W = computed(() => window.innerWidth - 48)
+  const MAX_H = computed(() => window.innerHeight - 48)
   const defaultSize = computed(() => {
     const vpW = window.innerWidth
     const vpH = window.innerHeight
     const aspect = vpW / vpH
-    const scale = 0.82
+    const scale = 0.92
     let w = Math.round(vpW * scale)
     let h = Math.round(vpH * scale)
     // Apply max caps while preserving viewport aspect ratio
-    if (w > 1400) {
-      w = 1400
+    if (w > 1680) {
+      w = 1680
       h = Math.round(w / aspect)
     }
-    if (h > 1000) {
-      h = 1000
+    if (h > 1200) {
+      h = 1200
       w = Math.round(h * aspect)
     }
     return { w, h }
@@ -235,7 +255,13 @@
                     :src="peer.avatar"
                     :alt="peer.name"
                     class="h-6 w-6 rounded-full object-cover" />
-                  <span v-else>{{ String(peer.name || peer.email || '?').charAt(0).toUpperCase() }}</span>
+                  <span v-else>
+                    {{
+                      String(peer.name || peer.email || '?')
+                        .charAt(0)
+                        .toUpperCase()
+                    }}
+                  </span>
                   <span
                     class="absolute -bottom-0.5 -right-0.5 h-2 w-2 rounded-full ring-1 ring-card"
                     :class="peer.editingField ? 'bg-primary animate-pulse' : 'bg-green-500'" />
@@ -281,15 +307,14 @@
             @input="emit('update:title', ($event.target as HTMLInputElement).value)" />
           <h2 v-else class="text-xl font-semibold px-1">{{ title }}</h2>
           <div class="mt-1 px-1">
-            <UiRichTextEditor
-              v-if="!isViewMode"
-              :model-value="description"
-              placeholder="Add a description..."
-              seamless
-              class="opacity-50"
-              @update:model-value="emit('update:description', $event)" />
-            <p v-else-if="description" class="text-sm text-muted-foreground" v-html="description" />
-            <p v-else class="text-sm text-muted-foreground italic">No description</p>
+            <EntityDescriptionBlock
+              :description="description"
+              :summary="summary"
+              :is-generating-summary="isGeneratingSummary"
+              :mode="mode"
+              :entity-id="entityId"
+              @update:description="emit('update:description', $event)"
+              @regenerate-summary="emit('regenerateSummary')" />
           </div>
           <div v-if="$slots['header-tags']" class="mt-2 px-1">
             <slot name="header-tags" />

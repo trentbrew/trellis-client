@@ -1,11 +1,11 @@
 /**
  * LLM-powered entity extraction endpoint.
  *
- * Takes email (or other) text content and uses Gemma 4 via Ollama to
- * extract structured entity candidates and tags.
+ * Takes email / calendar-event / generic text content and uses Gemma 4 via
+ * Ollama to extract structured entity candidates and tags.
  *
  * POST /api/extract-entities-llm
- * Body: { text: string }
+ * Body: { text: string, kind?: 'email' | 'event' | 'generic' }
  * Response: { entities: EntityCandidate[], tags: string[] }
  */
 
@@ -14,21 +14,54 @@ const DEFAULT_MODEL = process.env.TRELLIS_LLM_DEFAULT_MODEL || 'gemma4:e4b'
 
 const MAX_TEXT_LENGTH = 4000
 
+type ContentKind = 'email' | 'event' | 'video' | 'generic'
+
 const SYSTEM_PROMPT = `You are an entity extraction assistant for a personal knowledge graph. Extract structured entities from the provided text. Return ONLY valid JSON with no markdown formatting, no code fences, no explanation.`
 
-function buildUserPrompt(text: string): string {
-  return `Extract entities from this email. For each entity provide:
+const TYPE_LIST = 'person, organization, project, task, event, appointment, trip, deadline, payment'
+
+function sourceLabel(kind: ContentKind): string {
+  switch (kind) {
+    case 'email':
+      return 'email'
+    case 'event':
+      return 'calendar event'
+    case 'video':
+      return 'video transcript'
+    default:
+      return 'text'
+  }
+}
+
+function kindHint(kind: ContentKind): string {
+  switch (kind) {
+    case 'email':
+      return 'Focus on people, organizations, projects, tasks (action items with deadlines), trips (travel plans), payments/invoices, and scheduled events mentioned in the message.'
+    case 'event':
+      return 'Focus on people attending or mentioned, organizations involved, related projects, preparation tasks, and any related trips, payments, or sub-appointments implied by the description.'
+    case 'video':
+      return 'Focus on people mentioned or speaking (hosts, guests, authors), organizations/companies referenced, products or projects named, key concepts or topics, and any events or deadlines discussed. Prefer proper nouns that appear clearly in the transcript. Ignore filler words, "uh"/"um", and generic descriptors.'
+    default:
+      return 'Extract any distinct named entities that would be useful to link in a personal knowledge graph.'
+  }
+}
+
+function buildUserPrompt(text: string, kind: ContentKind): string {
+  const source = sourceLabel(kind)
+  return `Extract entities from this ${source}. For each entity provide:
 - name: the entity's proper name (not generic descriptions)
-- type: one of [person, organization, project, task, event]
+- type: one of [${TYPE_LIST}]
 - confidence: high, medium, or low
 - context: brief phrase explaining why this was extracted
+
+${kindHint(kind)}
 
 Also extract relevant tags (topics, themes, keywords — lowercase, no duplicates).
 
 Return JSON in this exact format:
 {"entities":[{"name":"...","type":"...","confidence":"...","context":"..."}],"tags":["tag1","tag2"]}
 
-Email text:
+${source.charAt(0).toUpperCase() + source.slice(1)} content:
 ---
 ${text}
 ---`
@@ -48,9 +81,20 @@ function stripHtml(html: string): string {
     .trim()
 }
 
+type CandidateType =
+  | 'person'
+  | 'organization'
+  | 'project'
+  | 'task'
+  | 'event'
+  | 'appointment'
+  | 'trip'
+  | 'deadline'
+  | 'payment'
+
 interface EntityCandidate {
   name: string
-  type: 'person' | 'organization' | 'project' | 'task' | 'event'
+  type: CandidateType
   confidence: 'high' | 'medium' | 'low'
   context: string
 }
@@ -60,7 +104,17 @@ interface ExtractionResult {
   tags: string[]
 }
 
-const VALID_TYPES = new Set(['person', 'organization', 'project', 'task', 'event'])
+const VALID_TYPES = new Set<CandidateType>([
+  'person',
+  'organization',
+  'project',
+  'task',
+  'event',
+  'appointment',
+  'trip',
+  'deadline',
+  'payment',
+])
 const VALID_CONFIDENCES = new Set(['high', 'medium', 'low'])
 
 function parseResponse(raw: string): ExtractionResult {
@@ -102,7 +156,7 @@ function parseResponse(raw: string): ExtractionResult {
       if (
         typeof e?.name === 'string' &&
         e.name.trim() &&
-        VALID_TYPES.has(e.type) &&
+        VALID_TYPES.has(e.type as CandidateType) &&
         VALID_CONFIDENCES.has(e.confidence)
       ) {
         entities.push({
@@ -128,11 +182,14 @@ function parseResponse(raw: string): ExtractionResult {
 }
 
 export default defineEventHandler(async (event) => {
-  const body = (await readBody(event)) as { text?: string }
+  const body = (await readBody(event)) as { text?: string; kind?: ContentKind }
 
   if (!body?.text || typeof body.text !== 'string') {
     throw createError({ statusCode: 400, message: '"text" is required' })
   }
+
+  const kind: ContentKind =
+    body.kind === 'email' || body.kind === 'event' || body.kind === 'video' ? body.kind : 'generic'
 
   // Prefer plain text; strip HTML if that's all we have
   let text = body.text
@@ -156,7 +213,7 @@ export default defineEventHandler(async (event) => {
       body: JSON.stringify({
         model: DEFAULT_MODEL,
         system: SYSTEM_PROMPT,
-        prompt: buildUserPrompt(text),
+        prompt: buildUserPrompt(text, kind),
         stream: false,
       }),
     })

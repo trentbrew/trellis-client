@@ -1,4 +1,11 @@
 <script lang="ts" setup>
+  /**
+   * EventContent — renders a calendar event's location preview + notes.
+   *
+   * AI entity/tag suggestions are now surfaced in the right sidebar
+   * (see EntityAISuggestionsPanel mounted from EntityRightSidebar).
+   */
+
   const props = defineProps<{
     modelValue: any
     mode: 'view' | 'create' | 'edit'
@@ -22,8 +29,8 @@
     /google\.com\/maps|maps\.google|maps\.app\.goo\.gl|goo\.gl\/maps|apple\.com\/maps/i.test(locationValue.value),
   )
 
-  const isConferenceUrl = computed(() =>
-    !isMapUrl.value && isUrl.value && /zoom\.us|meet\.google|teams\.microsoft|webex/i.test(locationValue.value),
+  const isConferenceUrl = computed(
+    () => !isMapUrl.value && isUrl.value && /zoom\.us|meet\.google|teams\.microsoft|webex/i.test(locationValue.value),
   )
 
   const locationIcon = computed(() => {
@@ -34,8 +41,11 @@
   })
 
   const mapUrlDomain = computed(() => {
-    try { return new URL(locationValue.value).hostname.replace(/^www\./, '') }
-    catch { return locationValue.value }
+    try {
+      return new URL(locationValue.value).hostname.replace(/^www\./, '')
+    } catch {
+      return locationValue.value
+    }
   })
 
   // For plain-text addresses, embed a Google Maps preview (classic output=embed)
@@ -57,7 +67,6 @@
 
 <template>
   <div class="flex-1 flex flex-col min-h-0 divide-y divide-border">
-
     <!-- Location Preview (only when location is set and embeddable) -->
     <div v-if="hasLocation && (isMapUrl || isConferenceUrl || embedSrc)" class="p-4 space-y-2">
       <div class="flex items-center justify-between">
@@ -96,7 +105,9 @@
               <p class="text-xs font-medium">{{ mapUrlDomain }}</p>
               <p class="text-[10px] text-muted-foreground truncate">{{ item.location }}</p>
             </div>
-            <Icon name="lucide:external-link" class="h-3.5 w-3.5 text-muted-foreground group-hover:text-foreground shrink-0 transition-colors" />
+            <Icon
+              name="lucide:external-link"
+              class="h-3.5 w-3.5 text-muted-foreground group-hover:text-foreground shrink-0 transition-colors" />
           </a>
           <div v-else-if="embedSrc" class="relative">
             <iframe
@@ -137,13 +148,10 @@
         v-else-if="item.content"
         class="prose prose-sm max-w-none text-sm text-foreground flex-1 p-4"
         v-html="item.content" />
-      <div
-        v-else
-        class="flex-1 flex items-center justify-center p-8 text-muted-foreground/40 text-sm italic">
+      <div v-else class="flex-1 flex items-center justify-center p-8 text-muted-foreground/40 text-sm italic">
         No notes
       </div>
     </div>
-
   </div>
 </template>
 

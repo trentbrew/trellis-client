@@ -68,11 +68,7 @@
 
   // Comments
   const currentEntityId = computed(() => editableItem.id || undefined)
-  const {
-    displayActivity,
-    addComment: persistComment,
-    loading: commentsLoading,
-  } = useComments(currentEntityId)
+  const { displayActivity, addComment: persistComment, loading: commentsLoading } = useComments(currentEntityId)
 
   // UI State
   const newComment = ref('')
@@ -142,10 +138,43 @@
     enabled: isEditMode,
   })
 
+  // ── AI summary ──────────────────────────────────────────────────
+  const {
+    ensure: _ensureSummary,
+    regenerate: _regenerateSummary,
+    isGenerating: _isSummaryGenerating,
+  } = useEntitySummary()
+
+  watch(
+    () => [editableItem.id, editableItem.description] as const,
+    () => {
+      if (isCreateMode.value) return
+      if (!editableItem.id || !editableItem.description) return
+      void _ensureSummary(editableItem)
+    },
+    { immediate: true },
+  )
+
+  const entitySummary = computed(() => (editableItem.summary || '').trim())
+  const isGeneratingSummary = computed(() => !!editableItem.id && _isSummaryGenerating(editableItem.id))
+  function regenerateSummary() {
+    if (!editableItem.id) return
+    void _regenerateSummary(editableItem)
+  }
+
   // Bidirectional entity references
-  const { addEntityRef, removeRef: removeEntityRef, openEntityRef: handleOpenEntityRef, createAndOpenEntityRef } = useEntityReferences(editableItem)
+  const {
+    addEntityRef,
+    removeRef: removeEntityRef,
+    openEntityRef: handleOpenEntityRef,
+    createAndOpenEntityRef,
+    createEntityAndLink,
+  } = useEntityReferences(editableItem)
   const handleAddEntityRef = (ref: import('~/types/entity').EntityReference) => addEntityRef(ref)
   const handleCreatedEntityRef = (ref: import('~/types/entity').EntityReference) => createAndOpenEntityRef(ref)
+  const handleCreateEntityOfType = (type: string, title: string) => {
+    void createEntityAndLink(type, title)
+  }
   const handleRemoveRef = (refId: string) => removeEntityRef(refId)
 
   const handleAddComment = async () => {
@@ -176,19 +205,23 @@
     :can-navigate-next="canNavigateNext"
     :dialog-title="isCreateMode ? 'New File' : editableItem.title || 'File'"
     :dialog-description="isCreateMode ? 'Upload a new file.' : 'View and edit file details.'"
+    :entity-id="editableItem.id || undefined"
+    :summary="entitySummary"
+    :is-generating-summary="isGeneratingSummary"
     @update:open="emit('update:open', $event)"
     @update:title="editableItem.title = $event"
     @update:description="editableItem.description = $event"
     @close="closeDialog"
     @navigate-prev="emit('navigatePrev')"
-    @navigate-next="emit('navigateNext')">
-
+    @navigate-next="emit('navigateNext')"
+    @regenerate-summary="regenerateSummary">
     <!-- Properties Row -->
     <template #properties>
       <!-- Category -->
       <UiPopover v-if="hasField('category')" v-model:open="categoryOpen">
         <UiPopoverTrigger as-child>
-          <button class="inline-flex items-center gap-1.5 px-2 py-1 rounded-lg bg-muted/50 hover:bg-muted transition-colors">
+          <button
+            class="inline-flex items-center gap-1.5 px-2 py-1 rounded-lg bg-muted/50 hover:bg-muted transition-colors">
             <Icon :name="currentCategory?.icon || 'lucide:tag'" class="h-3.5 w-3.5" />
             <span>{{ currentCategory?.label || editableItem.category || 'Category' }}</span>
           </button>
@@ -198,7 +231,12 @@
             v-for="opt in CATEGORY_OPTIONS"
             :key="opt.value"
             class="w-full px-2 py-1.5 text-xs text-left rounded hover:bg-muted flex items-center gap-2"
-            @click="() => { editableItem.category = opt.value; categoryOpen = false }">
+            @click="
+              () => {
+                editableItem.category = opt.value
+                categoryOpen = false
+              }
+            ">
             <Icon :name="opt.icon" class="h-3.5 w-3.5 text-muted-foreground" />
             <span class="flex-1">{{ opt.label }}</span>
             <Icon v-if="editableItem.category === opt.value" name="lucide:check" class="h-3.5 w-3.5 text-primary" />
@@ -223,13 +261,23 @@
         <UiPopoverContent align="start" class="w-52 p-1 max-h-64 overflow-hidden">
           <div class="flex items-center gap-2 px-2 py-1.5 border-b border-border mb-1">
             <Icon name="lucide:search" class="h-3.5 w-3.5 text-muted-foreground shrink-0" />
-            <input v-model="ownerSearch" type="text" placeholder="Search..." class="flex-1 bg-transparent text-xs outline-none placeholder:text-muted-foreground/60" />
+            <input
+              v-model="ownerSearch"
+              type="text"
+              placeholder="Search..."
+              class="flex-1 bg-transparent text-xs outline-none placeholder:text-muted-foreground/60" />
           </div>
           <div class="overflow-y-auto max-h-52">
             <button
               v-if="editableItem.owner"
               class="w-full px-2 py-1.5 text-xs text-left rounded hover:bg-muted flex items-center gap-2 text-muted-foreground"
-              @click="() => { editableItem.owner = undefined; ownerOpen = false; ownerSearch = '' }">
+              @click="
+                () => {
+                  editableItem.owner = undefined
+                  ownerOpen = false
+                  ownerSearch = ''
+                }
+              ">
               <Icon name="lucide:x" class="h-3.5 w-3.5" />
               No assignee
             </button>
@@ -237,7 +285,13 @@
               v-for="o in filteredOwners"
               :key="o.id"
               class="w-full px-2 py-1.5 text-xs text-left rounded hover:bg-muted flex items-center gap-2"
-              @click="() => { editableItem.owner = o.id; ownerOpen = false; ownerSearch = '' }">
+              @click="
+                () => {
+                  editableItem.owner = o.id
+                  ownerOpen = false
+                  ownerSearch = ''
+                }
+              ">
               <div class="w-5 h-5 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
                 <Icon name="lucide:user" class="h-3 w-3 text-primary" />
               </div>
@@ -316,8 +370,19 @@
             :readonly="isViewMode"
             @open-entity="handleOpenEntityRef"
             @remove-ref="handleRemoveRef"
-            @add-entity="() => { entityPickerFilterType = undefined; entityPickerOpen = true }"
-            @add-entity-of-type="(type) => { entityPickerFilterType = type; entityPickerOpen = true }" />
+            @add-entity="
+              () => {
+                entityPickerFilterType = undefined
+                entityPickerOpen = true
+              }
+            "
+            @create-entity="handleCreateEntityOfType"
+            @add-entity-of-type="
+              (type) => {
+                entityPickerFilterType = type
+                entityPickerOpen = true
+              }
+            " />
 
           <!-- Comments / Activity -->
           <div v-if="!isCreateMode" class="p-4 space-y-2">
@@ -335,17 +400,29 @@
               <div v-else-if="displayActivity.length" class="space-y-1.5 mb-2">
                 <div v-for="activityItem in displayActivity" :key="activityItem.id" class="flex items-start gap-2">
                   <div class="w-5 h-5 rounded-full bg-muted flex items-center justify-center shrink-0 mt-0.5">
-                    <Icon v-if="activityItem.type === 'created'" name="lucide:plus" class="h-2.5 w-2.5 text-muted-foreground" />
-                    <Icon v-else-if="activityItem.type === 'comment'" name="lucide:message-circle" class="h-2.5 w-2.5 text-muted-foreground" />
+                    <Icon
+                      v-if="activityItem.type === 'created'"
+                      name="lucide:plus"
+                      class="h-2.5 w-2.5 text-muted-foreground" />
+                    <Icon
+                      v-else-if="activityItem.type === 'comment'"
+                      name="lucide:message-circle"
+                      class="h-2.5 w-2.5 text-muted-foreground" />
                     <Icon v-else name="lucide:activity" class="h-2.5 w-2.5 text-muted-foreground" />
                   </div>
                   <div class="flex-1 min-w-0">
                     <div class="flex items-baseline gap-1 flex-wrap">
                       <span class="text-[11px] font-medium">{{ activityItem.authorName }}</span>
-                      <span class="text-[10px] text-muted-foreground">{{ formatRelativeTime(Number(activityItem.createdAt)) }}</span>
+                      <span class="text-[10px] text-muted-foreground">
+                        {{ formatRelativeTime(Number(activityItem.createdAt)) }}
+                      </span>
                     </div>
-                    <p v-if="activityItem.content" class="text-xs text-foreground/80 mt-0.5">{{ activityItem.content }}</p>
-                    <p v-else-if="activityItem.type === 'created'" class="text-[10px] text-muted-foreground mt-0.5">uploaded this file</p>
+                    <p v-if="activityItem.content" class="text-xs text-foreground/80 mt-0.5">
+                      {{ activityItem.content }}
+                    </p>
+                    <p v-else-if="activityItem.type === 'created'" class="text-[10px] text-muted-foreground mt-0.5">
+                      uploaded this file
+                    </p>
                   </div>
                 </div>
               </div>
@@ -359,7 +436,12 @@
                   placeholder="Add a comment..."
                   class="flex-1 text-xs bg-transparent outline-none placeholder:text-muted-foreground/50"
                   @keydown.enter="handleAddComment" />
-                <UiButton v-if="newComment.trim()" variant="ghost" size="icon" class="h-5 w-5 shrink-0" @click="handleAddComment">
+                <UiButton
+                  v-if="newComment.trim()"
+                  variant="ghost"
+                  size="icon"
+                  class="h-5 w-5 shrink-0"
+                  @click="handleAddComment">
                   <Icon name="lucide:send" class="h-3 w-3" />
                 </UiButton>
               </div>
@@ -424,5 +506,10 @@
   </DocumentDialogShell>
 
   <!-- Entity Reference Picker -->
-  <EntityReferencePicker v-model:open="entityPickerOpen" :exclude-id="editableItem.id" :filter-type="entityPickerFilterType" @select="handleAddEntityRef" @created="handleCreatedEntityRef" />
+  <EntityReferencePicker
+    v-model:open="entityPickerOpen"
+    :exclude-id="editableItem.id"
+    :filter-type="entityPickerFilterType"
+    @select="handleAddEntityRef"
+    @created="handleCreatedEntityRef" />
 </template>

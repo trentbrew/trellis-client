@@ -33,23 +33,46 @@
 
   // ── Shared dialog logic ──────────────────────────────────────────
   const {
-    mode, isViewMode, isCreateMode, isEditMode,
-    editableItem, hasField, isFormValid,
-    displayActivity, commentsLoading, newComment, handleAddComment,
-    saveStatus, formatLastSaved,
-    entityPickerOpen, entityPickerFilterType,
-    handleAddEntityRef, handleCreatedEntityRef, handleRemoveRef, handleOpenEntityRef,
-    ownerSearch, owners, filteredOwners,
+    mode,
+    isViewMode,
+    isCreateMode,
+    isEditMode,
+    editableItem,
+    hasField,
+    isFormValid,
+    displayActivity,
+    commentsLoading,
+    newComment,
+    handleAddComment,
+    saveStatus,
+    formatLastSaved,
+    entitySummary,
+    isGeneratingSummary,
+    regenerateSummary,
+    entityPickerOpen,
+    entityPickerFilterType,
+    handleAddEntityRef,
+    handleCreatedEntityRef,
+    handleCreateEntityOfType,
+    handleRemoveRef,
+    handleOpenEntityRef,
+    rightSidebarW,
+    rightSidebarCollapsed,
+    isResizingSidebar,
+    startRightSidebarResize,
+    ownerSearch,
+    owners,
+    filteredOwners,
     currentCategory,
-    closeDialog, handleSave, handleDelete,
-  } = useEntityDialog(
-    props as any,
-    emit as any,
-    {
-      defaultType: 'person',
-      afterInitBlank: (item: any) => { item.socialLinks = [] },
+    closeDialog,
+    handleSave,
+    handleDelete,
+  } = useEntityDialog(props as any, emit as any, {
+    defaultType: 'person',
+    afterInitBlank: (item: any) => {
+      item.socialLinks = []
     },
-  )
+  })
 
   // ── Person-specific UI state ─────────────────────────────────────
   const categoryOpen = ref(false)
@@ -102,13 +125,16 @@
     :can-navigate-next="canNavigateNext"
     :dialog-title="isCreateMode ? 'New Person' : editableItem.title || 'Person'"
     :dialog-description="isCreateMode ? 'Create a new person.' : 'View and edit person details.'"
+    :entity-id="editableItem.id || undefined"
+    :summary="entitySummary"
+    :is-generating-summary="isGeneratingSummary"
     @update:open="emit('update:open', $event)"
     @update:title="editableItem.title = $event"
     @update:description="editableItem.description = $event"
     @close="closeDialog"
     @navigate-prev="emit('navigatePrev')"
-    @navigate-next="emit('navigateNext')">
-
+    @navigate-next="emit('navigateNext')"
+    @regenerate-summary="regenerateSummary">
     <!-- Tags next to Person badge -->
     <template v-if="hasField('tags')" #header-badges>
       <TagsSection v-model="editableItem.tags" :readonly="isViewMode" inline />
@@ -119,7 +145,8 @@
       <!-- Category -->
       <UiPopover v-if="hasField('category')" v-model:open="categoryOpen">
         <UiPopoverTrigger as-child>
-          <button class="inline-flex items-center gap-1.5 px-2 py-1 rounded-lg bg-muted/50 hover:bg-muted transition-colors">
+          <button
+            class="inline-flex items-center gap-1.5 px-2 py-1 rounded-lg bg-muted/50 hover:bg-muted transition-colors">
             <Icon :name="currentCategory?.icon || 'lucide:tag'" class="h-3.5 w-3.5" />
             <span>{{ currentCategory?.label || editableItem.category || 'Category' }}</span>
           </button>
@@ -129,7 +156,12 @@
             v-for="opt in CATEGORY_OPTIONS"
             :key="opt.value"
             class="w-full px-2 py-1.5 text-xs text-left rounded hover:bg-muted flex items-center gap-2"
-            @click="() => { editableItem.category = opt.value; categoryOpen = false }">
+            @click="
+              () => {
+                editableItem.category = opt.value
+                categoryOpen = false
+              }
+            ">
             <Icon :name="opt.icon" class="h-3.5 w-3.5 text-muted-foreground" />
             <span class="flex-1">{{ opt.label }}</span>
             <Icon v-if="editableItem.category === opt.value" name="lucide:check" class="h-3.5 w-3.5 text-primary" />
@@ -164,7 +196,13 @@
             <button
               v-if="editableItem.owner"
               class="w-full px-2 py-1.5 text-xs text-left rounded hover:bg-muted flex items-center gap-2 text-muted-foreground"
-              @click="() => { editableItem.owner = undefined; ownerOpen = false; ownerSearch = '' }">
+              @click="
+                () => {
+                  editableItem.owner = undefined
+                  ownerOpen = false
+                  ownerSearch = ''
+                }
+              ">
               <Icon name="lucide:x" class="h-3.5 w-3.5" />
               No assignee
             </button>
@@ -172,8 +210,15 @@
               v-for="o in filteredOwners"
               :key="o.id"
               class="w-full px-2 py-1.5 text-xs text-left rounded hover:bg-muted flex items-center gap-2"
-              @click="() => { editableItem.owner = o.id; ownerOpen = false; ownerSearch = '' }">
-              <div class="w-5 h-5 rounded-full bg-primary/10 flex items-center justify-center text-[9px] font-medium text-primary">
+              @click="
+                () => {
+                  editableItem.owner = o.id
+                  ownerOpen = false
+                  ownerSearch = ''
+                }
+              ">
+              <div
+                class="w-5 h-5 rounded-full bg-primary/10 flex items-center justify-center text-[9px] font-medium text-primary">
                 {{ o.name.slice(0, 2).toUpperCase() }}
               </div>
               <span class="flex-1">{{ o.name }}</span>
@@ -399,10 +444,7 @@
         </UiPopoverTrigger>
         <UiPopoverContent align="start" class="w-72 p-2 space-y-2">
           <div v-if="editableItem.socialLinks?.length" class="space-y-1.5">
-            <div
-              v-for="(link, i) in editableItem.socialLinks"
-              :key="i"
-              class="flex items-center gap-1.5 group">
+            <div v-for="(link, i) in editableItem.socialLinks" :key="i" class="flex items-center gap-1.5 group">
               <Icon :name="getSocialIcon(link.platform)" class="h-3.5 w-3.5 text-muted-foreground shrink-0" />
               <template v-if="!isViewMode">
                 <select
@@ -421,7 +463,11 @@
                   <Icon name="lucide:x" class="h-3 w-3" />
                 </button>
               </template>
-              <a v-else-if="link.url" :href="link.url" target="_blank" class="text-xs text-primary hover:underline truncate">
+              <a
+                v-else-if="link.url"
+                :href="link.url"
+                target="_blank"
+                class="text-xs text-primary hover:underline truncate">
                 {{ link.username || link.url }}
               </a>
             </div>
@@ -436,7 +482,6 @@
           </button>
         </UiPopoverContent>
       </UiPopover>
-
     </template>
 
     <!-- Content: Center + Right Sidebar -->
@@ -447,8 +492,16 @@
       </div>
 
       <!-- Right Sidebar -->
-      <aside class="w-72 shrink-0 border-l border-border overflow-hidden hidden md:flex flex-col">
+      <aside
+        class="shrink-0 border-l border-border overflow-hidden md:flex hidden flex-col relative transition-[width] duration-150"
+        :class="isResizingSidebar ? 'select-none' : ''"
+        :style="{ width: rightSidebarCollapsed ? '40px' : rightSidebarW + 'px' }">
+        <div
+          v-if="!rightSidebarCollapsed"
+          class="absolute inset-y-0 left-0 w-1 cursor-ew-resize z-10 hover:bg-primary/20 transition-colors"
+          @pointerdown="startRightSidebarResize($event)" />
         <EntityRightSidebar
+          v-model:collapsed="rightSidebarCollapsed"
           :references="editableItem.references"
           :is-view-mode="isViewMode"
           :is-create-mode="isCreateMode"
@@ -462,8 +515,19 @@
           @update:new-comment="newComment = $event"
           @open-entity="handleOpenEntityRef"
           @remove-ref="handleRemoveRef"
-          @add-entity="() => { entityPickerFilterType = undefined; entityPickerOpen = true }"
-          @add-entity-of-type="(type: string) => { entityPickerFilterType = type; entityPickerOpen = true }"
+          @add-entity="
+            () => {
+              entityPickerFilterType = undefined
+              entityPickerOpen = true
+            }
+          "
+          @add-entity-of-type="
+            (type: string) => {
+              entityPickerFilterType = type
+              entityPickerOpen = true
+            }
+          "
+          @create-entity="handleCreateEntityOfType"
           @add-comment="handleAddComment" />
       </aside>
     </div>
@@ -522,5 +586,10 @@
   </ActorDialogShell>
 
   <!-- Entity Reference Picker -->
-  <EntityReferencePicker v-model:open="entityPickerOpen" :exclude-id="editableItem.id" :filter-type="entityPickerFilterType" @select="handleAddEntityRef" @created="handleCreatedEntityRef" />
+  <EntityReferencePicker
+    v-model:open="entityPickerOpen"
+    :exclude-id="editableItem.id"
+    :filter-type="entityPickerFilterType"
+    @select="handleAddEntityRef"
+    @created="handleCreatedEntityRef" />
 </template>

@@ -11,7 +11,7 @@
   "scripts": {
     "build": "nuxt build",
     "clean": "rm -rf .nuxt dist node_modules package-lock.json && pnpm install",
-    "dev": "nuxt dev",
+    "dev": "node scripts/dev-safe.mjs",
     "preinstall": "node -e \"const ua=process.env.npm_config_user_agent||''; if(!ua.includes('pnpm')){console.error('This repo uses pnpm. Run: corepack enable && pnpm install'); process.exit(1)}\"",
     "format": "prettier --write .",
     "generate": "nuxt generate",
@@ -151,6 +151,7 @@
     "y-prosemirror": "1.3.7",
     "y-protocols": "1.0.7",
     "yjs": "13.6.29",
+    "youtube-transcript": "1.3.0",
     "zod": "4.2.1"
   },
   "devDependencies": {

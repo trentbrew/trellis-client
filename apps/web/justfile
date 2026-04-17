@@ -43,4 +43,5 @@ targets:
 
 # Clear Nuxt cache
 clear:
+    -lsof -ti:{{port}} | xargs kill -9 2>/dev/null || true
     rm -rf .nuxt

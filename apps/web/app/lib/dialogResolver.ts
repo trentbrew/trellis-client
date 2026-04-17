@@ -35,6 +35,7 @@ const DIALOG_OVERRIDES: Partial<Record<EntityType, Component>> = {
   note: EntityDialog,
   bookmark: EntityDialog,
   diagram: EntityDialog,
+  email: EntityDialog,
 
   // Slide deck — full presentation view
   slide_deck: SlideDeckDialog,

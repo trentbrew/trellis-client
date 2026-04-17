@@ -1,5 +1,15 @@
 import type { WorkflowGraph, WorkflowNodeDef } from '~/types/database'
-import type { Node as TQLNode, EngineEvent, EngineState, Trace, LLMClient, ToolFn } from '@turtle.tech/tql/graph'
+import type {
+  Node as TQLNode,
+  EngineEvent,
+  EngineState,
+  Trace,
+  LLMClient,
+  ToolFn,
+  Executor,
+  ExecutorTable,
+  ExecResult,
+} from '@turtle.tech/tql/graph'
 import { Graph, Engine } from '@turtle.tech/tql/graph'
 import { createDefaultLLMClient } from '~/lib/llm'
 import { createDefaultWorkflowTools } from '~/lib/workflow-tools'
@@ -76,14 +86,26 @@ function addCompiledNode(graph: Graph, nodeDef: WorkflowNodeDef): void {
     }
 
     case 'memory-read':
-      graph.addNode({ id, kind: 'MemoryRead', data: { key: (data?.key as string) || '' } } as TQLNode)
+      graph.addNode({
+        id,
+        kind: 'MemoryRead',
+        data: {
+          key: (data?.key as string) || '',
+          source: (data?.source as 'state' | 'graph') || 'state',
+        },
+      } as TQLNode)
       break
 
     case 'memory-write':
       graph.addNode({
         id,
         kind: 'MemoryWrite',
-        data: { key: (data?.key as string) || '', from: (data?.from as string) || undefined },
+        data: {
+          key: (data?.key as string) || '',
+          from: (data?.from as string) || undefined,
+          source: (data?.source as 'state' | 'graph') || 'state',
+          entityType: (data?.entityType as string) || undefined,
+        },
       } as TQLNode)
       break
 
@@ -91,6 +113,126 @@ function addCompiledNode(graph: Graph, nodeDef: WorkflowNodeDef): void {
       graph.addNode({ id, kind: 'End' } as TQLNode)
       break
   }
+}
+
+// ─── Graph-aware memory executors ──────────────────────────────────────────────
+
+/** Dot-path reader, used to resolve `from: 'output.text'` against engine state. */
+function pluck(obj: unknown, path: string): unknown {
+  if (!path) return obj
+  return path.split('.').reduce<unknown>((acc, key) => {
+    if (acc == null || typeof acc !== 'object') return undefined
+    return (acc as Record<string, unknown>)[key]
+  }, obj)
+}
+
+/**
+ * Build MemoryRead + MemoryWrite executors that branch on `node.data.source`.
+ *
+ * - `source === 'graph'`  → read/write the Trellis knowledge graph
+ *     (via the `tql_query`, `tql_load_data`, `tql_mutate` tools)
+ * - otherwise             → fall back to the engine's in-memory KV store
+ *
+ * For graph reads, `key` may be either an entity ID (e.g. `entity:note-foo`)
+ * or an EQL-S query starting with `FIND`.
+ *
+ * For graph writes, `key` is an entity ID. The value resolved at the `from`
+ * dot-path is coerced into an entity data object. If the entity already
+ * exists it is updated (partial merge); otherwise it is created.
+ */
+function createGraphMemoryExecutors(tools: Record<string, ToolFn>): Pick<ExecutorTable, 'MemoryRead' | 'MemoryWrite'> {
+  const isGraphMode = (node: TQLNode): boolean => (node.data as { source?: string } | undefined)?.source === 'graph'
+
+  // Pre-resolve the tools we depend on so TypeScript knows they're non-null
+  // and so we fail fast if a caller accidentally strips one of them.
+  const tqlQuery = tools.tql_query
+  const tqlLoadData = tools.tql_load_data
+  const tqlMutate = tools.tql_mutate
+  if (!tqlQuery || !tqlLoadData || !tqlMutate) {
+    throw new Error('Graph-memory executors require tql_query, tql_load_data, and tql_mutate tools to be registered.')
+  }
+
+  const MemoryRead: Executor = async (node, state): Promise<ExecResult> => {
+    const data = (node.data || {}) as { key?: string; source?: 'state' | 'graph' }
+    const key = data.key || ''
+
+    if (isGraphMode(node) && key) {
+      try {
+        let value: unknown
+        if (/^\s*FIND\s/i.test(key)) {
+          const r = (await tqlQuery({ eqls: key })) as { rows?: unknown[]; count?: number }
+          value = r?.rows ?? []
+        } else {
+          const r = (await tqlLoadData({ entityId: key })) as {
+            id?: string
+            data?: unknown | null
+          }
+          value = r?.data ?? null
+        }
+        state.memory ||= {}
+        state.memory[key] = value
+        state.log?.('debug', `memory.read (graph): ${key}`)
+        return { output: { ...state.output, memory: { [key]: value } }, next: 'success' }
+      } catch (err) {
+        state.log?.('error', `memory.read failed: ${(err as Error).message}`)
+        return { output: state.output, next: 'success' }
+      }
+    }
+
+    const v = state.memory?.[key]
+    state.log?.('debug', `memory.read (state): ${key}`)
+    return { output: { ...state.output, memory: { [key]: v } }, next: 'success' }
+  }
+
+  const MemoryWrite: Executor = async (node, state): Promise<ExecResult> => {
+    const data = (node.data || {}) as {
+      key?: string
+      from?: string
+      source?: 'state' | 'graph'
+      entityType?: string
+    }
+    const key = data.key || ''
+    const from = data.from || 'output.text'
+    const val = pluck(state, from)
+
+    if (isGraphMode(node) && key) {
+      try {
+        const fallbackType = data.entityType || 'note'
+        const entityData: Record<string, unknown> =
+          val && typeof val === 'object' && !Array.isArray(val)
+            ? (val as Record<string, unknown>)
+            : { type: fallbackType, content: val == null ? '' : String(val) }
+
+        const existing = (await tqlLoadData({ entityId: key })) as {
+          id?: string
+          data?: unknown | null
+        }
+        const action = existing?.data ? 'updateNode' : 'createNode'
+
+        await tqlMutate({
+          action,
+          entityId: key,
+          type: 'entity',
+          data: entityData,
+        })
+
+        state.memory ||= {}
+        state.memory[key] = val
+        state.log?.('debug', `memory.write (graph): ${key}`, { action })
+        return { output: state.output, next: 'success' }
+      } catch (err) {
+        state.log?.('error', `memory.write failed: ${(err as Error).message}`)
+        return { output: state.output, next: 'success' }
+      }
+    }
+
+    state.memory ||= {}
+    state.memory[key] = val
+    state.log?.('debug', `memory.write (state): ${key}`)
+    return { output: state.output, next: 'success' }
+  }
+
+  return { MemoryRead, MemoryWrite }
 }
 
 // ─── Graph compiler ────────────────────────────────────────────────────────────
@@ -121,9 +263,13 @@ function compileGraph(
     graph.addEdge({ id: e.id, from: e.source, to: e.target, label: e.sourceHandle || e.label || 'default' })
   }
 
+  const tools = options.tools ?? createDefaultWorkflowTools()
+  const { MemoryRead, MemoryWrite } = createGraphMemoryExecutors(tools)
+
   const engine = new Engine(graph, {
     llm: options.llm ?? createDefaultLLMClient(),
-    tools: options.tools ?? createDefaultWorkflowTools(),
+    tools,
+    executors: { MemoryRead, MemoryWrite },
     maxSteps: 50,
     perNodeMs: 60_000,
     onEvent: options.onEvent,
@@ -163,6 +309,7 @@ export function useWorkflowExecution() {
   const stepOutputs = ref<Record<string, StepOutput>>({})
   const finalState = ref<EngineState | null>(null)
   const error = ref<string | null>(null)
+  const startedAt = ref<string | null>(null)
 
   const totalDurationMs = computed<number>(() => {
     if (traces.value.length === 0) return 0
@@ -178,6 +325,7 @@ export function useWorkflowExecution() {
     stepOutputs.value = {}
     finalState.value = null
     error.value = null
+    startedAt.value = null
   }
 
   async function run(
@@ -186,6 +334,7 @@ export function useWorkflowExecution() {
     options: { llm?: LLMClient; tools?: Record<string, ToolFn> } = {},
   ): Promise<EngineState | null> {
     resetState()
+    startedAt.value = new Date().toISOString()
     status.value = 'running'
 
     function handleEvent(ev: EngineEvent) {
@@ -267,6 +416,41 @@ export function useWorkflowExecution() {
     }
   }
 
+  /**
+   * Hydrate the panel from a persisted run. Useful for replaying/inspecting
+   * historical executions without re-running the engine.
+   */
+  function loadRun(run: {
+    status: 'completed' | 'failed' | 'cancelled' | 'running'
+    traces?: Trace[]
+    stepOutputs?: Record<string, unknown>
+    startedAt?: string
+    error?: string
+  }): void {
+    resetState()
+    const ts = run.traces ?? []
+    const outs = run.stepOutputs ?? {}
+    traces.value = [...ts]
+    stepOutputs.value = {}
+    nodeStates.value = {}
+    for (const t of ts) {
+      stepOutputs.value = { ...stepOutputs.value, [t.nodeId]: { output: outs[t.nodeId] ?? null } }
+      nodeStates.value = {
+        ...nodeStates.value,
+        [t.nodeId]: {
+          status: t.error ? 'error' : 'completed',
+          startedAt: t.tStart,
+          completedAt: t.tEnd,
+          durationMs: t.tEnd - t.tStart,
+          error: t.error,
+        },
+      }
+    }
+    startedAt.value = run.startedAt ?? null
+    status.value = run.status === 'running' ? 'running' : run.status === 'failed' ? 'error' : 'completed'
+    error.value = run.error ?? null
+  }
+
   return {
     status,
     activeNodeId,
@@ -276,8 +460,10 @@ export function useWorkflowExecution() {
     stepOutputs,
     finalState,
     error,
+    startedAt,
     totalDurationMs,
     run,
+    loadRun,
     resetState,
     getNodeExecutionClass,
   }

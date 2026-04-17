@@ -25,80 +25,85 @@ function _initStoreFromTql() {
     watch(
       entityIds,
       async (ids) => {
-      if (!ids || ids.length === 0) {
-        _items.value = []
-        _loading.value = false
-        return
-      }
-
-      try {
-        const entityIdList = ids.map((row) => (row as Record<string, string>)['?e']).filter(Boolean) as string[]
-        const rawNodes = await fetchNodes(entityIdList)
-
-        // Build a lookup of entityId → node for resolving link titles
-        const nodeMap = new Map<string, Record<string, any>>()
-        for (const n of rawNodes) {
-          nodeMap.set(n['@id'] as string, n)
+        if (!ids || ids.length === 0) {
+          _items.value = []
+          _loading.value = false
+          return
         }
 
-        _items.value = rawNodes.map((node) => {
-          const fullId = node['@id'] as string
-          const id = stripNamespace(fullId)
-          const { '@id': _ld_id, '@type': _ld_type, _links, ...rest } = node
+        try {
+          const entityIdList = ids.map((row) => (row as Record<string, string>)['?e']).filter(Boolean) as string[]
+          const rawNodes = await fetchNodes(entityIdList)
 
-          // Hydrate entity references from TQL links
-          const links = _links as { outgoing?: Array<{ relation: string; target: string }>; incoming?: Array<{ relation: string; source: string }> } | undefined
-          const LINK_RELATIONS = new Set(['references', 'mentions'])
-          const outgoingRefs: EntityReference[] = (links?.outgoing || [])
-            .filter((l) => LINK_RELATIONS.has(l.relation))
-            .map((l) => {
-              const targetNode = nodeMap.get(l.target)
-              return {
-                kind: 'entity' as const,
-                id: `ref-${l.relation}-${l.target}`,
-                entityId: stripNamespace(l.target),
-                entityType: (targetNode?.['@type'] || targetNode?.type || 'task') as EntityType,
-                title: (targetNode?.title as string) || 'Untitled',
-                direction: 'outgoing' as const,
-              }
-            })
-          const incomingRefs: EntityReference[] = (links?.incoming || [])
-            .filter((l) => LINK_RELATIONS.has(l.relation))
-            .map((l) => {
-              const sourceNode = nodeMap.get(l.source)
-              return {
-                kind: 'entity' as const,
-                id: `ref-${l.relation}-${l.source}`,
-                entityId: stripNamespace(l.source),
-                entityType: (sourceNode?.['@type'] || sourceNode?.type || 'task') as EntityType,
-                title: (sourceNode?.title as string) || 'Untitled',
-                direction: 'incoming' as const,
-              }
-            })
+          // Build a lookup of entityId → node for resolving link titles
+          const nodeMap = new Map<string, Record<string, any>>()
+          for (const n of rawNodes) {
+            nodeMap.set(n['@id'] as string, n)
+          }
 
-          return {
-            id,
-            ...normalizeScalars(rest),
-            type: normalizeScalar(node['@type'] || node.type),
-            startDate: extractYmd(rest.startDate as string | undefined),
-            endDate: extractYmd(rest.endDate as string | undefined) || undefined,
-            tags: normalizeArray(node.tags),
-            involved: normalizeArray(node.involved),
-            reminders: parseJsonArray(node.reminders),
-            checklist: parseJsonArray(node.checklist),
-            checklistContent: normalizeScalar(node.checklistContent) || '',
-            attachments: parseJsonArray(node.attachments),
-            references: [...outgoingRefs, ...incomingRefs],
-          } as unknown as Entity
-        })
-      } catch (err) {
-        console.error('[useTrellisEntities] hydration error:', err)
-      } finally {
-        _loading.value = false
-      }
-    },
-    { immediate: true },
-  )
+          _items.value = rawNodes.map((node) => {
+            const fullId = node['@id'] as string
+            const id = stripNamespace(fullId)
+            const { '@id': _ld_id, '@type': _ld_type, _links, ...rest } = node
+
+            // Hydrate entity references from TQL links
+            const links = _links as
+              | {
+                  outgoing?: Array<{ relation: string; target: string }>
+                  incoming?: Array<{ relation: string; source: string }>
+                }
+              | undefined
+            const LINK_RELATIONS = new Set(['references', 'mentions', 'derivedFrom'])
+            const outgoingRefs: EntityReference[] = (links?.outgoing || [])
+              .filter((l) => LINK_RELATIONS.has(l.relation))
+              .map((l) => {
+                const targetNode = nodeMap.get(l.target)
+                return {
+                  kind: 'entity' as const,
+                  id: `ref-${l.relation}-${l.target}`,
+                  entityId: stripNamespace(l.target),
+                  entityType: (targetNode?.['@type'] || targetNode?.type || 'task') as EntityType,
+                  title: (targetNode?.title as string) || 'Untitled',
+                  direction: 'outgoing' as const,
+                }
+              })
+            const incomingRefs: EntityReference[] = (links?.incoming || [])
+              .filter((l) => LINK_RELATIONS.has(l.relation))
+              .map((l) => {
+                const sourceNode = nodeMap.get(l.source)
+                return {
+                  kind: 'entity' as const,
+                  id: `ref-${l.relation}-${l.source}`,
+                  entityId: stripNamespace(l.source),
+                  entityType: (sourceNode?.['@type'] || sourceNode?.type || 'task') as EntityType,
+                  title: (sourceNode?.title as string) || 'Untitled',
+                  direction: 'incoming' as const,
+                }
+              })
+
+            return {
+              id,
+              ...normalizeScalars(rest),
+              type: normalizeScalar(node['@type'] || node.type),
+              startDate: extractYmd(rest.startDate as string | undefined),
+              endDate: extractYmd(rest.endDate as string | undefined) || undefined,
+              tags: normalizeArray(node.tags),
+              involved: normalizeArray(node.involved),
+              reminders: parseJsonArray(node.reminders),
+              checklist: parseJsonArray(node.checklist),
+              checklistContent: normalizeScalar(node.checklistContent) || '',
+              attachments: parseJsonArray(node.attachments),
+              references: [...outgoingRefs, ...incomingRefs],
+            } as unknown as Entity
+          })
+        } catch (err) {
+          console.error('[useTrellisEntities] hydration error:', err)
+        } finally {
+          _loading.value = false
+        }
+      },
+      { immediate: true },
+    )
 
     // Also sync loading from query
     watch(queryLoading, (v) => {
@@ -120,14 +125,15 @@ function _initStoreFromAdapter(adapter: DataAdapter) {
   let unsub: (() => void) | null = null
 
   const subscribe = (orgId: string | null) => {
-    if (unsub) { unsub(); unsub = null }
+    if (unsub) {
+      unsub()
+      unsub = null
+    }
 
     _loading.value = true
 
     // Build query: scope by orgId when available, otherwise fall back to all visible entities
-    const query = orgId
-      ? { entities: { $: { where: { orgId } } } }
-      : { entities: {} }
+    const query = orgId ? { entities: { $: { where: { orgId } } } } : { entities: {} }
 
     unsub = adapter.subscribeQuery(query, (result) => {
       if (result.error) {
@@ -142,9 +148,7 @@ function _initStoreFromAdapter(adapter: DataAdapter) {
       const items = rawItems.map((item: any) => {
         const { id: itemId, ...fields } = item
         const storedRefs = Array.isArray(fields.references) ? fields.references : []
-        const outgoingRefs = storedRefs.filter(
-          (r: any) => r?.kind === 'entity' && r?.direction !== 'incoming',
-        )
+        const outgoingRefs = storedRefs.filter((r: any) => r?.kind === 'entity' && r?.direction !== 'incoming')
         return {
           id: itemId,
           ...bookmarkUrlFromAdapter(fields),
@@ -186,9 +190,12 @@ function _initStoreFromAdapter(adapter: DataAdapter) {
 
   // Subscribe immediately with current org, re-subscribe when org changes
   subscribe(currentOrg.value?.id || null)
-  watch(() => currentOrg.value?.id, (newOrgId) => {
-    subscribe(newOrgId || null)
-  })
+  watch(
+    () => currentOrg.value?.id,
+    (newOrgId) => {
+      subscribe(newOrgId || null)
+    },
+  )
 }
 
 function _initStore() {
@@ -238,13 +245,10 @@ export function useTrellisEntities() {
           _guestShareIds.value = new Set()
           return
         }
-        adapter.subscribeQuery(
-          { shares: { $: { where: { userId } } } },
-          (result: any) => {
-            const shares = (result.data?.shares || []) as Array<{ entityId: string }>
-            _guestShareIds.value = new Set(shares.map((s) => s.entityId))
-          },
-        )
+        adapter.subscribeQuery({ shares: { $: { where: { userId } } } }, (result: any) => {
+          const shares = (result.data?.shares || []) as Array<{ entityId: string }>
+          _guestShareIds.value = new Set(shares.map((s) => s.entityId))
+        })
       },
       { immediate: true },
     )
@@ -298,9 +302,7 @@ export function useTrellisEntities() {
     const itemId = crypto.randomUUID()
     const { id: _id, references, ...data } = item
     // Only persist outgoing refs at creation — incoming backlinks are computed at load time
-    const outgoingRefs = Array.isArray(references)
-      ? references.filter((r: any) => r?.direction !== 'incoming')
-      : []
+    const outgoingRefs = Array.isArray(references) ? references.filter((r: any) => r?.direction !== 'incoming') : []
     const now = Date.now()
     const ownerId = user.value?.id || (await adapter.getAuth())?.id
     const orgId = currentOrg.value?.id
@@ -318,30 +320,34 @@ export function useTrellisEntities() {
     // the link's update permission is checked, causing isOwner to fail.
     // Use update (upsert) for idempotency so retrying the same ID after a
     // transient timeout converges cleanly instead of failing duplicate-creates.
-    await transactWithRetry([
-      adapter.tx.entities[itemId].update({
-        ...toAdapterPayload(bookmarkUrlToAdapter(data as Record<string, any>)),
-        references: outgoingRefs.length ? toAdapterPayload(outgoingRefs) : null,
-        ownerId,
-        owner: ownerName,
-        orgId: orgId || undefined,
-        visibility: (data as Record<string, any>).visibility || 'org',
-        involved: (data as Record<string, any>).involved?.length ? (data as Record<string, any>).involved : [ownerId],
-        startDate: extractYmd((data as Record<string, any>).startDate) || todayYmdLocal(new Date()),
-        endDate: extractYmd((data as Record<string, any>).endDate) || undefined,
-        allDay: (data as Record<string, any>).allDay ?? true,
-        priority: (data as Record<string, any>).priority || 'medium',
-        createdAt: now,
-        updatedAt: now,
-      }),
-    ], `create entity ${itemId}`)
+    await transactWithRetry(
+      [
+        adapter.tx.entities[itemId].update({
+          ...toAdapterPayload(bookmarkUrlToAdapter(data as Record<string, any>)),
+          references: outgoingRefs.length ? toAdapterPayload(outgoingRefs) : null,
+          ownerId,
+          owner: ownerName,
+          orgId: orgId || undefined,
+          visibility: (data as Record<string, any>).visibility || 'org',
+          involved: (data as Record<string, any>).involved?.length ? (data as Record<string, any>).involved : [ownerId],
+          startDate: extractYmd((data as Record<string, any>).startDate) || todayYmdLocal(new Date()),
+          endDate: extractYmd((data as Record<string, any>).endDate) || undefined,
+          allDay: (data as Record<string, any>).allDay ?? true,
+          priority: (data as Record<string, any>).priority || 'medium',
+          createdAt: now,
+          updatedAt: now,
+        }),
+      ],
+      `create entity ${itemId}`,
+    )
 
     // Step 2: Link entity to the org so CEL permission rules can traverse the
     // link for isOrgMember checks. Now that the entity exists, isOwner passes.
     if (orgId) {
-      await transactWithRetry([
-        adapter.tx.entities[itemId].link({ organization: orgId }),
-      ], `link entity ${itemId} to org ${orgId}`)
+      await transactWithRetry(
+        [adapter.tx.entities[itemId].link({ organization: orgId })],
+        `link entity ${itemId} to org ${orgId}`,
+      )
     }
 
     return itemId
@@ -350,40 +356,45 @@ export function useTrellisEntities() {
   async function updateViaAdapter(item: Entity) {
     const { id: itemId, references, ...fields } = item as Entity & Record<string, any>
     // Only persist outgoing refs — incoming backlinks are computed at load time
-    const outgoingRefs = Array.isArray(references)
-      ? references.filter((r: any) => r?.direction !== 'incoming')
-      : []
+    const outgoingRefs = Array.isArray(references) ? references.filter((r: any) => r?.direction !== 'incoming') : []
     const existing = _items.value.find((i) => i.id === itemId) as Record<string, any> | undefined
     const ownerId = fields.ownerId || existing?.ownerId || user.value?.id || (await adapter.getAuth())?.id
 
     if (!ownerId) {
-      throw new Error(`[useTrellisEntities] Cannot update entity ${itemId}: no ownerId available for permission checks.`)
+      throw new Error(
+        `[useTrellisEntities] Cannot update entity ${itemId}: no ownerId available for permission checks.`,
+      )
     }
 
     // Ensure the current editor is tracked in the involved array
     const currentUserId = user.value?.id
-    const involved = Array.isArray(fields.involved) ? [...fields.involved] : (existing?.involved ? [...existing.involved] : [])
+    const involved = Array.isArray(fields.involved)
+      ? [...fields.involved]
+      : existing?.involved
+        ? [...existing.involved]
+        : []
     if (currentUserId && !involved.includes(currentUserId)) {
       involved.push(currentUserId)
     }
 
-    await transactWithRetry([
-      adapter.tx.entities[itemId].update({
-        ...toAdapterPayload(bookmarkUrlToAdapter(fields as Record<string, any>)),
-        references: outgoingRefs.length ? toAdapterPayload(outgoingRefs) : null,
-        ownerId,
-        involved,
-        startDate: extractYmd(fields.startDate as string | undefined),
-        endDate: extractYmd(fields.endDate as string | undefined) || undefined,
-        updatedAt: Date.now(),
-      }),
-    ], `update entity ${itemId}`)
+    await transactWithRetry(
+      [
+        adapter.tx.entities[itemId].update({
+          ...toAdapterPayload(bookmarkUrlToAdapter(fields as Record<string, any>)),
+          references: outgoingRefs.length ? toAdapterPayload(outgoingRefs) : null,
+          ownerId,
+          involved,
+          startDate: extractYmd(fields.startDate as string | undefined),
+          endDate: extractYmd(fields.endDate as string | undefined) || undefined,
+          updatedAt: Date.now(),
+        }),
+      ],
+      `update entity ${itemId}`,
+    )
   }
 
   async function removeViaAdapter(itemId: string) {
-    await transactWithRetry([
-      adapter.tx.entities[itemId].delete(),
-    ], `delete entity ${itemId}`)
+    await transactWithRetry([adapter.tx.entities[itemId].delete()], `delete entity ${itemId}`)
   }
 
   // ── CRUD: TQL backend (local mode) ──────────────────────────────────
@@ -512,9 +523,7 @@ function sanitizeAdapterValue(value: unknown, seen = new WeakSet<object>()): unk
   if (value instanceof Date) return value.toISOString()
 
   if (Array.isArray(value)) {
-    return value
-      .map((v) => sanitizeAdapterValue(v, seen))
-      .filter((v) => v !== undefined)
+    return value.map((v) => sanitizeAdapterValue(v, seen)).filter((v) => v !== undefined)
   }
 
   if (t === 'object') {
@@ -560,9 +569,7 @@ function normalizeScalar(val: unknown): unknown {
  * and `references` are handled explicitly in the hydration block and
  * never flow through `normalizeScalars()`.
  */
-const MULTI_VALUE_FIELDS = new Set([
-  'children', 'relationships', 'dependsOn', 'counterparties', 'lineItems',
-])
+const MULTI_VALUE_FIELDS = new Set(['children', 'relationships', 'dependsOn', 'counterparties', 'lineItems'])
 
 /** Walk an object and collapse array→scalar for all fields except known multi-value ones */
 function normalizeScalars(obj: Record<string, any>): Record<string, any> {
@@ -579,7 +586,9 @@ function parseJsonArray(val: unknown): any[] {
     try {
       const parsed = JSON.parse(val)
       if (Array.isArray(parsed)) return parsed
-    } catch { /* not JSON */ }
+    } catch {
+      /* not JSON */
+    }
   }
   return normalizeArray(val)
 }
