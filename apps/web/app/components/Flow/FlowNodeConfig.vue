@@ -48,6 +48,7 @@
     { value: 'tql_load_data', label: 'tql_load_data — Load entity data' },
     { value: 'tql_mutate', label: 'tql_mutate — Create/update/link entities' },
     { value: 'send_email', label: 'send_email — Send email via Resend' },
+    { value: 'send_notification', label: 'send_notification — In-app notification (+ email)' },
     { value: 'run_js', label: 'run_js — Sandboxed JS eval' },
   ]
 

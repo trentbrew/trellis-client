@@ -478,6 +478,33 @@
           }
         }
       }
+
+      // Hydrated TQL links live on each entity as `references: EntityReference[]`
+      // (see useTrellisEntities). These are the real `references` / `mentions` /
+      // `derivedFrom` edges from the graph store — we only render outgoing ones
+      // here so each link shows up exactly once.
+      const refs = (node as any).references
+      if (Array.isArray(refs)) {
+        for (const ref of refs) {
+          if (!ref || ref.kind !== 'entity') continue
+          if (ref.direction !== 'outgoing') continue
+          const targetId = ref.entityId
+          if (typeof targetId !== 'string' || !idSet.has(targetId) || targetId === sourceId) continue
+          // Ref id format is `ref-<relation>-<targetWithNs>`; pull the relation back out for the label.
+          const refId: string = typeof ref.id === 'string' ? ref.id : ''
+          const relationLabel = refId.startsWith('ref-') ? refId.slice(4).split('-')[0] || 'references' : 'references'
+          const edgeId = `${sourceId}-${relationLabel}-${targetId}`
+          if (!edges.some((e) => e.id === edgeId)) {
+            edges.push({
+              id: edgeId,
+              source: sourceId,
+              target: targetId,
+              label: relationLabel,
+              dashed: false,
+            })
+          }
+        }
+      }
     }
 
     return edges

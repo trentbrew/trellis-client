@@ -14,23 +14,25 @@ default:
 install:
     pnpm install
 
-# Start Trellis web app dev server
+# Start Trellis web app dev server (kills stale port, auto-recovers missing .nuxt/dev artifacts)
 dev:
-    @echo "🚀 Starting Trellis dev server..."
-    pnpm --filter ./apps/web dev
+    @just -f apps/web/justfile -d apps/web run
 
 # Start desktop app (auto-starts web dev server in background)
 desktop:
     #!/usr/bin/env bash
     set -euo pipefail
-    echo "🚀 Starting Trellis web server..."
+    PORT="${TRELLIS_PORT:-1414}"
+    echo "🚀 Starting Trellis web server on :$PORT..."
+    # Kill any stale process holding the port so dev-safe.mjs can write fresh artifacts
+    lsof -ti:"$PORT" | xargs kill -9 2>/dev/null || true
     pnpm --filter ./apps/web dev &
     WEB_PID=$!
-    echo "⏳ Waiting for web server on :1414..."
-    until curl -s http://localhost:1414/api/graph/health > /dev/null 2>&1; do sleep 1; done
+    trap "kill $WEB_PID 2>/dev/null || true" EXIT
+    echo "⏳ Waiting for web server on :$PORT..."
+    until curl -s "http://localhost:$PORT/api/graph/health" > /dev/null 2>&1; do sleep 1; done
     echo "✅ Web server ready — launching desktop..."
     pnpm --filter ./apps/desktop dev
-    kill $WEB_PID 2>/dev/null || true
 
 # Build all packages
 build:

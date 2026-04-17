@@ -29,6 +29,8 @@ import type {
 import { invokeWorkflowTool, listWorkflowTools } from './workflow-tools'
 import { useTqlKernel, pushMutationLog } from '../plugins/tql'
 import { emitMutation } from './tql-events'
+import { useInstantAdmin } from './instant-admin'
+import { dispatchNotificationEmailAsync } from './notification-email'
 
 // ─── Types mirror of WorkflowGraph from types/database.ts ────────────────────
 
@@ -93,6 +95,16 @@ export interface ExecuteWorkflowOptions {
   skipPersist?: boolean
   /** Override the default agent model (default: gemma4:e4b). */
   defaultModel?: string
+  /**
+   * User to notify when the run completes/fails.
+   * Failures always notify when set. Success notifications are gated on
+   * `notifyOnSuccess` (default: false — only notify on failures).
+   */
+  ownerId?: string
+  /** Org scope for owner notifications. */
+  orgId?: string
+  /** If true, also fire a `workflow_completed` notification on success. */
+  notifyOnSuccess?: boolean
 }
 
 // ─── Server-side LLM client ──────────────────────────────────────────────────
@@ -431,6 +443,95 @@ async function persistRun(run: WorkflowRunResult): Promise<void> {
   emitMutation({ action: 'createNode', entityId: run.id, type: 'entity', agentId, data: stored })
 }
 
+// ─── Owner notifications ─────────────────────────────────────────────────────
+
+/**
+ * Fire-and-forget notification to a workflow's owner when a run completes or
+ * fails. Creates an in-app notification record (via the InstantDB admin SDK)
+ * and dispatches a transactional email through the notification-email pipeline.
+ *
+ * Errors are swallowed so notification delivery never masks a run result.
+ */
+function notifyWorkflowOwner(
+  run: WorkflowRunResult,
+  opts: { ownerId: string; orgId?: string; notifyOnSuccess?: boolean },
+): void {
+  const isFailure = run.status === 'failed'
+  if (!isFailure && !opts.notifyOnSuccess) return
+
+  const db = (() => {
+    try {
+      return useInstantAdmin()
+    } catch (err: any) {
+      console.warn('[workflow-executor] InstantDB admin unavailable, skipping owner notify:', err?.message)
+      return null
+    }
+  })()
+  if (!db) return
+
+  const type = isFailure ? 'workflow_failed' : 'workflow_completed'
+  const name = run.workflowName || run.workflowId
+  const title = isFailure ? `Workflow failed: ${name}` : `Workflow completed: ${name}`
+  const errSnippet = run.error ? run.error.slice(0, 200) : ''
+  const message = isFailure
+    ? errSnippet || 'The run did not finish successfully.'
+    : `Ran ${run.stepCount} step${run.stepCount === 1 ? '' : 's'} in ${(run.durationMs / 1000).toFixed(1)}s.`
+  const actionUrl = `/workflows/${encodeURIComponent(run.workflowId)}/runs/${encodeURIComponent(run.id)}`
+  const orgId = opts.orgId || ''
+
+  const metadata: Record<string, unknown> = {
+    workflowId: run.workflowId,
+    workflowName: run.workflowName,
+    runId: run.id,
+    stepCount: run.stepCount,
+    durationMs: run.durationMs,
+  }
+  if (run.error) metadata.error = run.error
+
+  const notifId = crypto.randomUUID()
+  const now = Date.now()
+
+  // Best-effort: create notification record
+  db.transact(
+    db.tx.notifications[notifId].update({
+      recipientId: opts.ownerId,
+      orgId,
+      type,
+      title,
+      message,
+      actionUrl,
+      icon: isFailure ? 'lucide:triangle-alert' : 'lucide:check-circle-2',
+      variant: isFailure ? 'destructive' : 'success',
+      isRead: false,
+      actorId: run.agentId || 'workflow',
+      actorName: 'Trellis Workflows',
+      metadata,
+      createdAt: now,
+    }),
+  )
+    .then(() => {
+      if (orgId) {
+        db.transact(db.tx.organizations[orgId].link({ notifications: notifId })).catch(() => {
+          /* non-fatal — org may not exist or may not have link schema */
+        })
+      }
+    })
+    .catch((err: any) => {
+      console.warn('[workflow-executor] owner notification create failed (non-fatal):', err?.message || err)
+    })
+
+  // Dispatch email (gated on per-user prefs inside the dispatcher)
+  dispatchNotificationEmailAsync({
+    recipientId: opts.ownerId,
+    type,
+    title,
+    message,
+    actionUrl,
+    actorName: 'Trellis Workflows',
+    metadata,
+  })
+}
+
 // ─── Public API ──────────────────────────────────────────────────────────────
 
 /**
@@ -489,6 +590,19 @@ export async function executeWorkflow(opts: ExecuteWorkflowOptions): Promise<Wor
     } catch (err) {
       // Persistence errors shouldn't mask the actual run result
       console.error('[workflow-executor] persistRun failed:', err)
+    }
+  }
+
+  // Best-effort owner notification (fire-and-forget)
+  if (opts.ownerId) {
+    try {
+      notifyWorkflowOwner(run, {
+        ownerId: opts.ownerId,
+        orgId: opts.orgId,
+        notifyOnSuccess: opts.notifyOnSuccess,
+      })
+    } catch (err) {
+      console.warn('[workflow-executor] notifyWorkflowOwner threw:', err)
     }
   }
 

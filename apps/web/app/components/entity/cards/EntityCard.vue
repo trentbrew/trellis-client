@@ -15,6 +15,8 @@
       editable?: boolean
       /** Owner list for the owner picker */
       owners?: { id: string; name: string }[]
+      /** Custom fields for dynamic entity types — rendered in preview area */
+      fields?: { key: string; label: string; value: unknown }[]
     }>(),
     { layout: 'grid', selected: false, editable: false, owners: () => [] },
   )
@@ -33,19 +35,22 @@
   const isBookmark = computed(() => i.value.type === 'bookmark')
   const isNote = computed(() => i.value.type === 'note')
   const isFile = computed(() => i.value.type === 'file')
+  const isEmail = computed(() => i.value.type === 'email')
   const isOrg = computed(() => i.value.type === 'organization')
+
+  // ─── Transport icon (trip preview) ───
+  const transportIcons: Record<string, string> = {
+    flight: 'lucide:plane',
+    drive: 'lucide:car',
+    train: 'lucide:train-front',
+    bus: 'lucide:bus',
+    other: 'lucide:navigation',
+  }
+  const transportIcon = computed(() => transportIcons[i.value.transportation as string] || 'lucide:arrow-right')
 
   // ─── Preview detection ───
   const thumbnailSrc = computed(() => i.value.thumbnail || null)
   const avatarSrc = computed(() => i.value.logo || i.value.avatar || null)
-  const _hasPreview = computed(() => {
-    if (isBookmark.value) return true
-    if (isNote.value && i.value.content) return true
-    if (isFile.value) return true
-    if (isActor.value) return true
-    return false
-  })
-
   const initials = computed(() => {
     const t = typeof props.item.title === 'string' ? props.item.title : String(props.item.title ?? '')
     return t
@@ -130,16 +135,6 @@
     'on-hold': 'bg-amber-500/10 text-amber-400',
   }
 
-  const categoryColors: Record<string, string> = {
-    work: 'bg-blue-500/10 text-blue-400',
-    personal: 'bg-emerald-500/10 text-emerald-400',
-    health: 'bg-rose-500/10 text-rose-400',
-    travel: 'bg-amber-500/10 text-amber-400',
-    general: 'bg-gray-500/10 text-gray-400',
-    client: 'bg-purple-500/10 text-purple-400',
-    vendor: 'bg-orange-500/10 text-orange-400',
-  }
-
   const priorityColors: Record<string, string> = {
     critical: 'text-red-500',
     high: 'text-orange-500',
@@ -153,14 +148,6 @@
     if (i.value.targetValue && i.value.targetValue > 0)
       return Math.min(100, Math.round(((i.value.currentValue ?? 0) / i.value.targetValue) * 100))
     if (i.value.progress != null) return Math.round(i.value.progress * 100)
-    return null
-  })
-
-  // ─── Metric (budget/payment amounts, sprint velocity) ───
-  const metricDisplay = computed(() => {
-    if ((i.value.type === 'budget' || i.value.type === 'payment') && i.value.amount != null)
-      return `${i.value.currency || '$'}${i.value.amount.toLocaleString()}`
-    if (i.value.type === 'sprint' && i.value.velocity) return `${i.value.velocity} pts`
     return null
   })
 
@@ -179,6 +166,37 @@
     }
   }
 
+  const formatTime = (t: string) => {
+    try {
+      const parts = t.split(':').map(Number)
+      const h = parts[0] ?? 0
+      const m = parts[1] ?? 0
+      const ampm = h >= 12 ? 'PM' : 'AM'
+      const hour = h % 12 || 12
+      return `${hour}:${m.toString().padStart(2, '0')} ${ampm}`
+    } catch {
+      return t
+    }
+  }
+
+  // ─── Stylized date parts for event / appointment preview ───
+  const eventDateParts = computed(() => {
+    if (i.value.type !== 'event' && i.value.type !== 'appointment') return null
+    const dateStr = i.value.startDate
+    if (!dateStr) return null
+    const d = new Date(dateStr + 'T00:00:00')
+    return {
+      dayOfWeek: d.toLocaleDateString('en-US', { weekday: 'short' }).toUpperCase(),
+      day: d.getDate(),
+      month: d.toLocaleDateString('en-US', { month: 'long' }),
+      year: d.getFullYear(),
+      timeRange:
+        i.value.startTime && i.value.endTime
+          ? `${formatTime(i.value.startTime)} – ${formatTime(i.value.endTime)}`
+          : null,
+    }
+  })
+
   const dateDisplay = computed(() => {
     if (!isTemporal.value && !isContainer.value) return null
     const start = i.value.startDate
@@ -187,18 +205,9 @@
     return formatDate(start || end)
   })
 
-  const endDateDisplay = computed(() => {
-    if (!isTemporal.value && !isContainer.value) return null
-    const end = i.value.endDate || i.value.targetDate
-    if (!end || !i.value.startDate) return null
-    return formatDate(end)
-  })
-
   const isCompleted = computed(
     () => isTemporal.value && (i.value.taskStatus === 'completed' || i.value.achieved === true),
   )
-
-  const refCount = computed(() => (i.value.references || []).filter((r: any) => r.kind === 'entity').length)
 
   const recurrenceLabel = computed(() => {
     if (!isTemporal.value) return null
@@ -210,33 +219,11 @@
     return null
   })
 
-  // ─── Inline tag input (footer) ───
-  const showTagInput = ref(false)
-  const cardTagInput = ref('')
-  const tagInputEl = ref<HTMLInputElement | null>(null)
-
   const emit = defineEmits<{
     click: []
     select: [event: MouseEvent]
     'field-update': [fieldId: PropertyFieldId, value: unknown]
   }>()
-
-  const addCardTag = () => {
-    const t = cardTagInput.value.trim()
-    if (t) {
-      const existing = props.item.tags || []
-      if (!existing.includes(t)) {
-        emit('field-update', 'tags', [...existing, t])
-      }
-    }
-    cardTagInput.value = ''
-    showTagInput.value = false
-  }
-
-  const openTagInput = () => {
-    showTagInput.value = true
-    nextTick(() => tagInputEl.value?.focus())
-  }
 </script>
 
 <template>
@@ -290,14 +277,6 @@
       </p>
 
       <div class="flex items-center gap-2 text-xs text-muted-foreground flex-wrap">
-        <span
-          v-if="i.category"
-          :class="[
-            'rounded-full px-1.5 py-0.5 text-[10px] font-medium',
-            categoryColors[i.category] || 'bg-muted text-muted-foreground',
-          ]">
-          {{ i.category }}
-        </span>
         <span v-if="(isTemporal || isContainer) && dateDisplay" class="flex items-center gap-1">
           <Icon name="lucide:calendar" class="h-3 w-3 opacity-50" />
           {{ dateDisplay }}
@@ -318,84 +297,224 @@
   <!-- ═══════ GRID / MOODBOARD LAYOUT ═══════ -->
   <div
     v-else
-    class="group relative flex flex-col rounded-lg border bg-card overflow-hidden cursor-pointer transition-all"
+    class="group relative flex flex-col rounded-xl border bg-card shadow-sm overflow-hidden cursor-pointer transition-all"
     :class="[
       layout === 'moodboard' ? 'mb-3 break-inside-avoid' : '',
       selected
-        ? 'border-primary ring-2 ring-primary/30 bg-primary/2'
+        ? 'border-primary ring-2 ring-primary/30'
         : 'border-border hover:ring-1 hover:ring-primary/30',
     ]"
     @click="$emit('click')">
+    <!-- Select checkbox (absolute, top-left) -->
+    <button
+      v-if="editable"
+      type="button"
+      class="absolute top-2 left-2 z-20 flex h-5 w-5 shrink-0 items-center justify-center rounded border backdrop-blur-sm transition-all"
+      :class="[
+        selected
+          ? 'bg-primary border-primary opacity-100'
+          : 'border-border/60 bg-background/70 opacity-0 group-hover:opacity-100',
+      ]"
+      @click.stop="$emit('select', $event)">
+      <Icon v-if="selected" name="lucide:check" class="h-3 w-3 text-primary-foreground" />
+    </button>
     <!-- Pinned indicator (absolute overlay, documents only) -->
     <div v-if="isDocument && i.pinned" class="absolute top-2 right-2 z-20">
       <Icon name="lucide:pin" class="h-3.5 w-3.5 text-amber-500 drop-shadow" />
     </div>
 
     <!-- ─── Preview: Bookmark thumbnail ─── -->
-    <div
-      v-if="isBookmark"
-      class="overflow-hidden border-b border-border/50"
-      :class="layout === 'grid' ? 'aspect-video' : ''">
+    <div v-if="isBookmark" class="aspect-video overflow-hidden border-b border-border">
       <img
         v-if="thumbnailSrc"
         :src="thumbnailSrc"
         :alt="item.title"
         class="w-full h-full object-cover transition-transform duration-300 group-hover:scale-[1.02]"
         loading="lazy" />
-      <div
-        v-else
-        class="h-full min-h-24 flex flex-col items-center justify-center bg-muted/40 text-muted-foreground/40">
+      <div v-else class="h-full flex flex-col items-center justify-center bg-muted/40 text-muted-foreground/40">
         <Icon name="lucide:globe" class="h-8 w-8" />
         <span class="text-xs font-mono mt-1">{{ getDomain(i.url || '') }}</span>
       </div>
     </div>
 
-    <!-- ─── Preview: File icon ─── -->
-    <div v-else-if="isFile" class="aspect-video bg-muted/40 flex items-center justify-center border-b border-border/50">
-      <Icon :name="fileMeta.icon" :class="['h-10 w-10', fileMeta.color]" />
-    </div>
-
-    <!-- ─── Preview: Note rendered content ─── -->
-    <div v-else-if="isNote" class="relative border-b bg-background/50 border-border">
-      <div
-        class="absolute inset-0 bg-linear-to-b from-transparent via-transparent to-background/50 pointer-events-none z-10" />
+    <!-- ─── Preview: Note / page / template / diagram rendered content ─── -->
+    <div
+      v-else-if="isNote || ['page', 'template', 'diagram'].includes(i.type)"
+      class="aspect-video relative border-b bg-background/50 border-border overflow-hidden">
+      <div class="absolute inset-0 bg-linear-to-b from-transparent via-transparent to-background/50 pointer-events-none z-10" />
       <div
         v-if="i.content"
-        class="prose prose-sm dark:prose-invert max-w-none text-[8px] leading-relaxed p-3 overflow-hidden opacity-50"
-        :class="layout === 'grid' ? 'h-32' : 'h-48'"
+        class="prose prose-sm dark:prose-invert max-w-none text-[8px] leading-relaxed p-3 overflow-hidden opacity-50 h-full"
         v-html="i.content" />
-      <div
-        v-else
-        class="flex items-center justify-center text-muted-foreground/30"
-        :class="layout === 'grid' ? 'h-32' : 'h-48'">
-        <Icon name="lucide:sticky-note" class="h-8 w-8" />
+      <div v-else class="h-full flex items-center justify-center text-muted-foreground/20">
+        <Icon :name="config?.icon || 'lucide:sticky-note'" class="h-8 w-8" />
       </div>
     </div>
 
-    <!-- ─── Preview: Generic document icon (page, template, slide_deck, etc.) ─── -->
+    <!-- ─── Preview: Email ─── -->
+    <div
+      v-else-if="isEmail"
+      class="aspect-video relative border-b border-border bg-muted/10 p-4 flex flex-col gap-2 overflow-hidden">
+      <div class="absolute inset-0 bg-linear-to-b from-transparent via-transparent to-background/70 pointer-events-none z-10" />
+      <div class="flex items-center gap-1.5 min-w-0">
+        <div v-if="i.isRead === false" class="shrink-0 h-1.5 w-1.5 rounded-full bg-blue-500" />
+        <Icon v-else name="lucide:mail-open" class="h-3 w-3 shrink-0 text-muted-foreground/30" />
+        <span class="text-xs truncate" :class="i.isRead === false ? 'font-semibold' : 'text-muted-foreground'">
+          {{ i.from || 'Unknown sender' }}
+        </span>
+        <Icon v-if="i.isStarred" name="lucide:star" class="ml-auto shrink-0 h-3 w-3 text-amber-400 fill-amber-400" />
+      </div>
+      <div v-if="i.to" class="flex items-center gap-1 text-xs text-muted-foreground/50 min-w-0">
+        <Icon name="lucide:corner-down-right" class="h-3 w-3 shrink-0" />
+        <span class="truncate">{{ i.to }}</span>
+      </div>
+      <p class="text-xs text-muted-foreground/60 leading-relaxed line-clamp-3 mt-auto">
+        {{ i.snippet || (i.bodyText ? String(i.bodyText).slice(0, 200) : 'No preview') }}
+      </p>
+    </div>
+
+    <!-- ─── Preview: Event / Appointment — horizontal date visual ─── -->
+    <div
+      v-else-if="(i.type === 'event' || i.type === 'appointment') && isTemporal"
+      class="aspect-video border-b border-border bg-muted/25 flex items-center justify-center overflow-hidden select-none">
+      <template v-if="eventDateParts">
+        <div class="flex items-center gap-5 px-6">
+          <span class="text-6xl font-bold leading-none tabular-nums shrink-0">{{ eventDateParts.day }}</span>
+          <div class="w-px h-12 bg-border/40 shrink-0" />
+          <div class="flex flex-col gap-0.5 min-w-0">
+            <span class="text-[10px] font-bold tracking-widest text-muted-foreground/60 uppercase">
+              {{ eventDateParts.dayOfWeek }}
+            </span>
+            <span class="text-sm font-medium truncate">{{ eventDateParts.month }} {{ eventDateParts.year }}</span>
+            <span v-if="eventDateParts.timeRange" class="text-[10px] text-muted-foreground/50 tabular-nums">
+              {{ eventDateParts.timeRange }}
+            </span>
+          </div>
+        </div>
+      </template>
+      <template v-else>
+        <Icon name="lucide:calendar" class="h-10 w-10 text-muted-foreground/15" />
+      </template>
+    </div>
+
+    <!-- ─── Preview: File (actual content for images/video, icon otherwise) ─── -->
+    <div v-else-if="isFile" class="aspect-video border-b border-border overflow-hidden relative bg-muted/20">
+      <img
+        v-if="i.mimeType?.startsWith('image/') && i.url"
+        :src="i.url"
+        :alt="item.title"
+        class="w-full h-full object-cover"
+        loading="lazy" />
+      <video
+        v-else-if="i.mimeType?.startsWith('video/') && i.url"
+        :src="i.url"
+        class="w-full h-full object-cover"
+        preload="metadata"
+        muted />
+      <div v-else class="h-full flex flex-col items-center justify-center gap-2">
+        <Icon :name="fileMeta.icon" :class="['h-10 w-10', fileMeta.color]" />
+        <span class="text-[10px] text-muted-foreground/50 uppercase tracking-wide font-medium">
+          {{ (i.mimeType || '').split('/')[1] || 'File' }}
+        </span>
+      </div>
+    </div>
+
+    <!-- ─── Preview: Generic document icon (slide_deck, etc.) ─── -->
     <div
       v-else-if="entityClass === 'document'"
-      class="aspect-video bg-muted/40 flex items-center justify-center border-b border-border/50">
-      <Icon :name="config.icon" :class="['h-10 w-10', `text-${config.color}-500/50`]" />
+      class="aspect-video bg-muted/20 flex items-center justify-center border-b border-border">
+      <Icon :name="config?.icon || 'lucide:file-text'" :class="['h-10 w-10', `text-${config?.color || 'gray'}-500/50`]" />
     </div>
 
     <!-- ─── Preview: Actor avatar ─── -->
-    <div
-      v-else-if="isActor"
-      class="aspect-video flex items-center justify-center bg-muted/40 border-b border-border/50">
+    <div v-else-if="isActor" class="aspect-video flex items-center justify-center bg-muted/20 border-b border-border">
       <div
         :class="[
           'flex items-center justify-center text-lg font-semibold overflow-hidden',
-          isOrg ? 'h-12 w-12 rounded-lg' : 'h-12 w-12 rounded-full',
-          `bg-${config.color}-500/10 text-${config.color}-500`,
+          isOrg ? 'h-16 w-16 rounded-xl' : 'h-16 w-16 rounded-full',
+          `bg-${config?.color || 'gray'}-500/10 text-${config?.color || 'gray'}-500`,
         ]">
         <img
           v-if="avatarSrc"
           :src="avatarSrc"
           class="h-full w-full object-cover"
-          :class="isOrg ? 'rounded-lg' : 'rounded-full'"
+          :class="isOrg ? 'rounded-xl' : 'rounded-full'"
           :alt="item.title" />
         <template v-else>{{ initials }}</template>
+      </div>
+    </div>
+
+    <!-- ─── Preview: Other temporal (task, trip, payment, budget, sprint, milestone, etc.) ─── -->
+    <div
+      v-else-if="isTemporal"
+      class="aspect-video border-b border-border bg-muted/20 flex items-center justify-center overflow-hidden">
+      <!-- Trip: origin → destination -->
+      <template v-if="i.type === 'trip' && (i.origin || i.destination)">
+        <div class="flex items-center gap-3 px-4 text-sm font-medium w-full justify-center">
+          <span class="truncate max-w-[38%] text-right">{{ i.origin || '?' }}</span>
+          <div class="flex flex-col items-center shrink-0 gap-0.5">
+            <Icon :name="transportIcon" class="h-4 w-4 text-muted-foreground/50" />
+            <div class="h-px w-6 bg-border/70" />
+          </div>
+          <span class="truncate max-w-[38%]">{{ i.destination || '?' }}</span>
+        </div>
+      </template>
+      <!-- Payment / Budget: amount -->
+      <template v-else-if="(i.type === 'payment' || i.type === 'budget') && i.amount != null">
+        <div class="text-center px-3">
+          <p class="text-2xl font-bold tabular-nums">
+            {{ i.currency || '$' }}{{ Number(i.amount).toLocaleString() }}
+          </p>
+          <p v-if="i.payee || i.budgetStatus" class="text-xs text-muted-foreground mt-0.5 truncate">
+            {{ i.payee || i.budgetStatus }}
+          </p>
+        </div>
+      </template>
+      <!-- Sprint: velocity -->
+      <template v-else-if="i.type === 'sprint' && i.velocity">
+        <div class="text-center">
+          <p class="text-2xl font-bold tabular-nums">{{ i.velocity }}</p>
+          <p class="text-xs text-muted-foreground mt-0.5">velocity pts</p>
+        </div>
+      </template>
+      <!-- Milestone: achieved indicator -->
+      <template v-else-if="i.type === 'milestone'">
+        <div class="flex flex-col items-center gap-2">
+          <Icon name="lucide:flag" :class="['h-10 w-10', i.achieved ? 'text-emerald-500' : 'text-muted-foreground/15']" />
+          <span v-if="i.achieved" class="text-xs font-medium text-emerald-500">Achieved</span>
+        </div>
+      </template>
+      <!-- Generic temporal: type icon -->
+      <template v-else>
+        <Icon :name="config?.icon || 'lucide:calendar'" class="h-10 w-10 text-muted-foreground/15" />
+      </template>
+    </div>
+
+    <!-- ─── Preview: Container progress ─── -->
+    <div v-else-if="isContainer" class="aspect-video border-b border-border bg-muted/20 overflow-hidden">
+      <div v-if="progressPercent != null" class="h-full flex flex-col justify-center px-5 gap-2">
+        <div class="flex items-center justify-between text-xs text-muted-foreground">
+          <span>{{ i.metric || 'Progress' }}</span>
+          <span class="font-semibold tabular-nums text-foreground">{{ progressPercent }}%</span>
+        </div>
+        <div class="h-2 w-full rounded-full bg-muted overflow-hidden">
+          <div class="h-full rounded-full bg-primary transition-all" :style="{ width: `${progressPercent}%` }" />
+        </div>
+      </div>
+      <div v-else class="h-full flex flex-col items-center justify-center text-muted-foreground/15">
+        <Icon :name="config?.icon || 'lucide:folder'" class="h-10 w-10" />
+      </div>
+    </div>
+
+    <!-- ─── Preview: Custom fields (dynamic entity types) ─── -->
+    <div v-else-if="fields?.length" class="aspect-video border-b border-border bg-muted/20 p-4 overflow-hidden">
+      <div class="grid grid-cols-2 gap-x-4 gap-y-3 content-start">
+        <div v-for="field in fields.slice(0, 4)" :key="field.key" class="min-w-0">
+          <p class="text-[9px] font-medium text-muted-foreground/50 uppercase tracking-wide truncate leading-none mb-0.5">
+            {{ field.label }}
+          </p>
+          <p class="text-xs font-medium truncate">{{ field.value ?? '—' }}</p>
+        </div>
       </div>
     </div>
 
@@ -403,42 +522,12 @@
     <div class="p-3 space-y-1.5 flex-1">
       <!-- Meta row -->
       <div class="flex items-center gap-1.5 min-w-0">
-        <template v-if="isBookmark">
-          <img
-            v-if="i.favicon"
-            :src="i.favicon"
-            :alt="i.siteName || ''"
-            class="h-3.5 w-3.5 shrink-0 rounded-sm"
-            @error="($event.target as HTMLImageElement).style.display = 'none'" />
-          <Icon v-else name="lucide:bookmark" class="h-3.5 w-3.5 shrink-0 text-muted-foreground/50" />
-          <span class="text-[11px] text-muted-foreground truncate font-mono">
-            {{ i.siteName || getDomain(i.url || '') }}
-          </span>
-        </template>
-        <template v-else>
-          <Icon :name="config.icon" :class="['h-3.5 w-3.5 shrink-0', `text-${config.color}-500`]" />
-        </template>
-
-        <!-- Category: inline editor or static badge -->
-        <template v-if="i.category">
-          <div v-if="editable" @click.stop>
-            <EntityFieldEditor
-              :field-id="'category'"
-              :model-value="i.category"
-              :entity-type="i.type"
-              compact
-              display="pill"
-              @update:model-value="$emit('field-update', 'category', $event)" />
-          </div>
-          <span
-            v-else
-            :class="[
-              'rounded-full px-1.5 py-0.5 text-[10px] font-medium',
-              categoryColors[i.category] || 'bg-muted text-muted-foreground',
-            ]">
-            {{ i.category }}
-          </span>
-        </template>
+        <Icon
+          :name="config?.icon || 'lucide:layers'"
+          :class="['h-3 w-3 shrink-0', `text-${config?.color || 'gray'}-500`]" />
+        <span class="text-[11px] text-muted-foreground/60 font-medium truncate">
+          {{ config?.label || item.type }}
+        </span>
 
         <div class="flex-1" />
 
@@ -495,8 +584,20 @@
         {{ [i.jobTitle, i.organization].filter(Boolean).join(' · ') }}
       </p>
 
-      <!-- Description -->
+      <!-- Email: from address + date -->
+      <template v-if="isEmail">
+        <p class="text-xs text-muted-foreground flex items-center gap-1 truncate">
+          <Icon name="lucide:user-circle" class="h-3 w-3 shrink-0 opacity-50" />
+          <span class="truncate">{{ i.from || 'Unknown sender' }}</span>
+        </p>
+        <p v-if="i.date" class="text-[10px] text-muted-foreground/50 flex items-center gap-1">
+          <Icon name="lucide:clock" class="h-3 w-3 shrink-0 opacity-50" />
+          {{ new Date(i.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) }}
+        </p>
+      </template>
+      <!-- Description for all other types -->
       <p
+        v-else
         class="text-xs"
         :class="[
           layout === 'moodboard' ? 'line-clamp-4' : 'line-clamp-2',
@@ -523,84 +624,10 @@
         </span>
       </div>
 
-      <!-- Metric (budget/payment amount, sprint velocity) -->
-      <p v-if="metricDisplay" class="text-base font-semibold">{{ metricDisplay }}</p>
-
-      <!-- Progress bar (containers only) -->
-      <div v-if="isContainer && progressPercent != null" class="space-y-1">
-        <div class="flex items-center justify-between text-xs text-muted-foreground">
-          <span>{{ i.metric || 'Progress' }}</span>
-          <span>{{ progressPercent }}%</span>
-        </div>
-        <div class="h-1.5 w-full rounded-full bg-muted overflow-hidden">
-          <div class="h-full rounded-full bg-primary transition-all" :style="{ width: `${progressPercent}%` }" />
-        </div>
-      </div>
 
       <!-- File size -->
       <p v-if="isFile && i.sizeBytes" class="text-xs text-muted-foreground">{{ formatBytes(i.sizeBytes) }}</p>
     </div>
 
-    <!-- ─── Footer ─── -->
-    <div
-      class="flex items-center justify-between text-xs text-muted-foreground px-3 h-9 mt-auto border-t border-border/50">
-      <!-- Left: checkbox + date -->
-      <div class="flex items-center gap-2">
-        <button
-          v-if="editable"
-          type="button"
-          class="flex h-4 w-4 shrink-0 items-center justify-center rounded border transition-colors"
-          :class="[
-            selected ? 'bg-primary border-primary' : 'border-border hover:border-primary/60',
-            selected ? 'opacity-100' : 'opacity-0 group-hover:opacity-100',
-          ]"
-          @click.stop="$emit('select', $event)">
-          <Icon v-if="selected" name="lucide:check" class="h-2.5 w-2.5 text-primary-foreground" />
-        </button>
-        <div class="flex items-center gap-1.5">
-          <Icon v-if="dateDisplay" name="lucide:calendar" class="h-3 w-3 opacity-50" />
-          <span v-if="dateDisplay">{{ dateDisplay }}</span>
-          <template v-if="endDateDisplay">
-            <span class="opacity-40">→</span>
-            <span>{{ endDateDisplay }}</span>
-          </template>
-        </div>
-      </div>
-      <!-- Right: tags + inline tag input -->
-      <div class="flex items-center gap-1.5 min-w-0" @click.stop>
-        <span v-if="isActor && refCount" class="flex items-center gap-0.5 text-[10px] opacity-60">
-          <Icon name="lucide:link" class="h-3 w-3" />
-          {{ refCount }}
-        </span>
-        <template v-if="(item.tags || []).length">
-          <span
-            v-for="tag in item.tags.slice(0, 2)"
-            :key="tag"
-            class="bg-muted/80 px-1.5 py-0.5 rounded text-[10px] font-medium truncate max-w-[80px]">
-            #{{ tag }}
-          </span>
-          <span v-if="item.tags.length > 2" class="text-[10px] opacity-60">+{{ item.tags.length - 2 }}</span>
-        </template>
-        <!-- Inline tag input (visible on click) -->
-        <input
-          v-if="editable && showTagInput"
-          ref="tagInputEl"
-          v-model="cardTagInput"
-          type="text"
-          placeholder="tag..."
-          class="bg-transparent text-[10px] outline-none w-16 placeholder:text-muted-foreground/40"
-          @keydown.enter.prevent="addCardTag"
-          @blur="addCardTag"
-          @keydown.escape.prevent="((showTagInput = false), (cardTagInput = ''))" />
-        <!-- Add tag trigger (visible on hover when no input shown) -->
-        <button
-          v-else-if="editable"
-          type="button"
-          class="flex items-center gap-0.5 text-[10px] text-muted-foreground/40 hover:text-muted-foreground transition-colors opacity-0 group-hover:opacity-100"
-          @click.stop="openTagInput">
-          <Icon name="lucide:hash" class="h-3 w-3" />
-        </button>
-      </div>
-    </div>
   </div>
 </template>

@@ -44,6 +44,9 @@ export default defineEventHandler(async (event) => {
       graph: trigger.graph,
       input,
       agentId,
+      ownerId: trigger.ownerId,
+      orgId: trigger.orgId,
+      notifyOnSuccess: trigger.notifyOnSuccess,
     })
     await recordTriggerFire(trigger.id, {
       runId: run.id,

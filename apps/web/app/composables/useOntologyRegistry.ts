@@ -17,13 +17,16 @@ import { useSSESubscribe } from './useTrellisSSE'
  * appear in the UI — sidebar, browse pages, dialogs — with zero code changes.
  */
 
-import type { EntityClass, EntityType, EntityTypeConfig, EntityClassConfig, PropertyFieldConfig, PropertyFieldId } from '~/types/entity'
+import type {
+  EntityClass,
+  EntityType,
+  EntityTypeConfig,
+  EntityClassConfig,
+  PropertyFieldConfig,
+  PropertyFieldId,
+} from '~/types/entity'
 import type { ProjectionType } from '~/types/database'
-import {
-  ENTITY_CLASSES,
-  getEntityTypeConfig,
-  getAllEntityTypeIds,
-} from '~/config/entityRegistry'
+import { ENTITY_CLASSES, getEntityTypeConfig, getAllEntityTypeIds } from '~/config/entityRegistry'
 
 // ── Types ──────────────────────────────────────────────────────────────
 
@@ -107,9 +110,7 @@ function extractTypeSlug(schemaId: string): string {
 }
 
 function titleCase(str: string): string {
-  return str
-    .replace(/[-_]/g, ' ')
-    .replace(/\b\w/g, (c) => c.toUpperCase())
+  return str.replace(/[-_]/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase())
 }
 
 function pluralize(word: string): string {
@@ -211,10 +212,7 @@ const _error = ref<string | null>(null)
 const _initialized = ref(false)
 
 // Schema IDs that are storage-level (not entity types) — skip them
-const SYSTEM_SCHEMA_IDS = new Set([
-  `trellis:schema/${ENTITY_NAMESPACE}`,
-  'trellis:schema/comment',
-])
+const SYSTEM_SCHEMA_IDS = new Set([`trellis:schema/${ENTITY_NAMESPACE}`, 'trellis:schema/comment'])
 
 /**
  * Fetch core + system ontologies from TQL API.
@@ -374,9 +372,7 @@ export function useOntologyRegistry() {
    * Excludes core (structural) and system (built-in entity) types.
    */
   const dynamicTypes = computed(() => {
-    return Array.from(_serverTypes.value.values()).filter(
-      (t) => !t.tier || t.tier === 'user',
-    )
+    return Array.from(_serverTypes.value.values()).filter((t) => !t.tier || t.tier === 'user')
   })
 
   // App-scoped filtering: only show types whose schemaId is in currentApp.ontologies
@@ -427,6 +423,45 @@ export function useOntologyRegistry() {
   }
 
   /**
+   * Wait until a newly-created ontology becomes visible in the server-type
+   * registry (populated by SSE + refetch). Used right after `POST /api/graph/ontology`
+   * so that subsequent entity creates don't race the schema installation.
+   *
+   * Resolves with `true` once the type appears, or `false` on timeout.
+   */
+  function waitForType(type: string, timeoutMs = 3000): Promise<boolean> {
+    if (_serverTypes.value.has(type)) return Promise.resolve(true)
+
+    return new Promise((resolve) => {
+      let stopWatch: (() => void) | null = null
+      let timeoutId: ReturnType<typeof setTimeout> | null = null
+
+      const done = (ok: boolean) => {
+        if (timeoutId) {
+          clearTimeout(timeoutId)
+          timeoutId = null
+        }
+        if (stopWatch) {
+          stopWatch()
+          stopWatch = null
+        }
+        resolve(ok)
+      }
+
+      // Resolve as soon as the map contains the slug.
+      stopWatch = watch(
+        _serverTypes,
+        (map) => {
+          if (map.has(type)) done(true)
+        },
+        { deep: true, flush: 'post' },
+      )
+
+      timeoutId = setTimeout(() => done(false), timeoutMs)
+    })
+  }
+
+  /**
    * Check if a type is served from the server ontology (not just static).
    */
   function isServerType(type: string): boolean {
@@ -460,7 +495,14 @@ export function useOntologyRegistry() {
           { value: 'createdAt', label: 'Created' },
         ] as { value: string; label: string }[],
         searchFields: ['title', 'description'],
-        tableColumns: [] as { key: string; label: string; valueType: string; align: 'left' | 'right'; isTitle: boolean; sortable: boolean }[],
+        tableColumns: [] as {
+          key: string
+          label: string
+          valueType: string
+          align: 'left' | 'right'
+          isTitle: boolean
+          sortable: boolean
+        }[],
       }
     }
 
@@ -469,21 +511,21 @@ export function useOntologyRegistry() {
     const SEARCHABLE = new Set(['title', 'rich_text', 'url', 'email', 'phone_number', 'select'])
 
     const sortOptions = config.fields
-      .filter(f => SORTABLE.has(f.valueType))
-      .map(f => ({ value: f.name, label: _titleCase(f.name) }))
-    if (!sortOptions.some(o => o.value === 'createdAt')) {
+      .filter((f) => SORTABLE.has(f.valueType))
+      .map((f) => ({ value: f.name, label: _titleCase(f.name) }))
+    if (!sortOptions.some((o) => o.value === 'createdAt')) {
       sortOptions.push({ value: 'createdAt', label: 'Created' })
     }
 
     const baseSearchFields = config.searchFields?.length
       ? [...config.searchFields]
-      : config.fields.filter(f => SEARCHABLE.has(f.valueType)).map(f => f.name)
+      : config.fields.filter((f) => SEARCHABLE.has(f.valueType)).map((f) => f.name)
     if (!baseSearchFields.includes('description')) baseSearchFields.push('description')
     const searchFields = baseSearchFields
 
     const tableColumns = config.fields
-      .filter(f => f.valueType !== 'rich_text' && f.valueType !== 'files')
-      .map(f => ({
+      .filter((f) => f.valueType !== 'rich_text' && f.valueType !== 'files')
+      .map((f) => ({
         key: f.name,
         label: _titleCase(f.name),
         valueType: f.valueType,
@@ -589,6 +631,7 @@ export function useOntologyRegistry() {
     getDynamicEntityTypeConfig,
     getBrowseConfig,
     hasType,
+    waitForType,
     isServerType,
     isDynamicType,
     addFieldToType,

@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 
-import { spawn } from 'node:child_process'
+import { spawn, execSync } from 'node:child_process'
 import { access } from 'node:fs/promises'
 import { constants } from 'node:fs'
 import { resolve } from 'node:path'
@@ -11,6 +11,8 @@ const RECOVERABLE_PATTERNS = [
   '.nuxt/dev/index.mjs',
   'Cannot find module',
   'ERR_MODULE_NOT_FOUND',
+  'worker entry not found',
+  'worker not found',
 ]
 
 let shuttingDown = false
@@ -22,7 +24,35 @@ function log(message) {
 
 function isRecoverableNuxtError(output) {
   const haystack = output.toLowerCase()
-  return RECOVERABLE_PATTERNS.every((pattern) => haystack.includes(pattern.toLowerCase()))
+  return RECOVERABLE_PATTERNS.some((pattern) => haystack.includes(pattern.toLowerCase()))
+}
+
+function cleanupStaleProcesses() {
+  try {
+    log('Cleaning up stale processes and cache...')
+    // Kill any stale nuxt/nitro processes
+    try {
+      execSync('pkill -f "nuxt" 2>/dev/null || true', { stdio: 'ignore' })
+    } catch {
+      // ignore
+    }
+    try {
+      execSync('pkill -f "nitro" 2>/dev/null || true', { stdio: 'ignore' })
+    } catch {
+      // ignore
+    }
+    // Clear .nuxt cache to force regeneration
+    try {
+      execSync('rm -rf .nuxt/.cache .nuxt/dev .output 2>/dev/null || true', { stdio: 'ignore' })
+    } catch {
+      // ignore
+    }
+    // Small delay to let processes fully terminate
+    execSync('sleep 1', { stdio: 'ignore' })
+    log('Cleanup complete')
+  } catch {
+    // Ignore cleanup errors
+  }
 }
 
 async function fileExists(path) {
@@ -38,7 +68,7 @@ function runCommand(bin, args, options = {}) {
   return new Promise((resolvePromise) => {
     const child = spawn(bin, args, {
       stdio: ['inherit', 'pipe', 'pipe'],
-      env: process.env,
+      env: { ...process.env, NITRO_WORKERS: 'false' }, // Disable Nitro workers on Node v24
       ...options,
     })
 
@@ -78,7 +108,7 @@ async function runDevProcess() {
     const args = ['exec', 'nuxi', 'dev', ...process.argv.slice(2)]
     const child = spawn('pnpm', args, {
       stdio: ['inherit', 'pipe', 'pipe'],
-      env: process.env,
+      env: { ...process.env, NITRO_WORKERS: 'false' }, // Disable Nitro workers on Node v24
     })
 
     activeChild = child
@@ -145,6 +175,8 @@ async function main() {
     log(
       `Recovered missing Nuxt dev artifact (${recoveryAttempts}/${MAX_RECOVERY_ATTEMPTS}). Re-preparing and restarting...`,
     )
+
+    cleanupStaleProcesses()
 
     const prepareResult = await runCommand('pnpm', ['exec', 'nuxi', 'prepare'])
     if (prepareResult.code !== 0) {

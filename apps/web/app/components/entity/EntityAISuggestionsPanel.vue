@@ -7,10 +7,54 @@
    * right sidebar of EntityDialog, sitting at the bottom of the References tab.
    */
   import type { EntityType } from '~/types/entity'
+  import type { ProposedField, ProposedInstance, TypeProposal } from '~/types/enrichment'
   import { getEntityTypeConfig } from '~/config/entityRegistry'
   import { useContentEnrichment, type ContentKind, type EnrichmentSuggestion } from '~/composables/useContentEnrichment'
   import { useActiveVideoPlayer } from '~/composables/useActiveVideoPlayer'
   import { parseChapters, parseTranscript } from '~/composables/useYoutubeTranscript'
+
+  /**
+   * Tailwind palette keys offered in the inline color picker. Matches the
+   * list advertised to the LLM server-side in extract-entities-llm.post.ts.
+   */
+  const PALETTE_COLORS = [
+    'slate',
+    'gray',
+    'red',
+    'orange',
+    'amber',
+    'yellow',
+    'lime',
+    'green',
+    'emerald',
+    'teal',
+    'cyan',
+    'sky',
+    'blue',
+    'indigo',
+    'violet',
+    'purple',
+    'fuchsia',
+    'pink',
+    'rose',
+  ] as const
+
+  const ONTOLOGY_VALUE_TYPES = [
+    'title',
+    'rich_text',
+    'number',
+    'select',
+    'multi_select',
+    'status',
+    'date',
+    'checkbox',
+    'url',
+    'email',
+    'phone_number',
+    'people',
+    'files',
+    'relation',
+  ] as const
 
   const props = defineProps<{
     entity: any
@@ -44,6 +88,8 @@
   const {
     suggestions,
     suggestedTags,
+    typeProposals,
+    acceptingTypeSlug,
     scanning,
     error: enrichmentError,
     hasSuggestions,
@@ -52,10 +98,170 @@
     dismiss,
     acceptTag,
     dismissTag,
+    acceptTypeProposal,
+    dismissTypeProposal,
   } = useContentEnrichment({
     kind: resolved.value.kind,
     sourceEntityType: resolved.value.sourceType,
   })
+
+  // ── Type proposal UI state ────────────────────────────────────────────
+  // Which proposal (if any) has its review card expanded.
+  const expandedTypeSlug = ref<string | null>(null)
+  // Whether the color palette popover is open for the expanded card.
+  const paletteOpen = ref(false)
+  // Whether the icon picker dialog is open for the expanded card.
+  const iconPickerOpen = ref(false)
+
+  /**
+   * Per-slug edit state: `overrides` applied on accept. Seeded lazily from
+   * the original proposal when the user first expands the card. Works for
+   * simple cases (rename, swap icon/color, drop fields, uncheck instances)
+   * without needing a dedicated dialog.
+   */
+  interface ProposalEdits {
+    label: string
+    icon: string
+    color: string
+    fields: ProposedField[]
+    instances: { proposed: ProposedInstance; selected: boolean }[]
+  }
+  const proposalEdits = ref<Record<string, ProposalEdits>>({})
+
+  function ensureEdits(proposal: TypeProposal): ProposalEdits {
+    if (!proposalEdits.value[proposal.slug]) {
+      proposalEdits.value[proposal.slug] = {
+        label: proposal.label,
+        icon: proposal.icon,
+        color: proposal.color,
+        fields: proposal.fields.map((f) => ({ ...f })),
+        instances: proposal.exampleInstances.map((i) => ({ proposed: i, selected: true })),
+      }
+    }
+    return proposalEdits.value[proposal.slug]!
+  }
+
+  function toggleExpand(slug: string) {
+    const next = expandedTypeSlug.value === slug ? null : slug
+    // Seed edit state BEFORE mutating the ref so the template renders with
+    // a populated edits object on first paint (avoids a render-phase mutation).
+    if (next) {
+      const proposal = typeProposals.value.find((p) => p.slug === next)
+      if (proposal) ensureEdits(proposal)
+    }
+    expandedTypeSlug.value = next
+    paletteOpen.value = false
+    iconPickerOpen.value = false
+  }
+
+  /**
+   * Template-friendly accessor for the edits object. Returns a stable
+   * placeholder when no edits are seeded yet to avoid render-phase mutations.
+   * `toggleExpand` pre-seeds edits before expansion, so this is only read by
+   * the expanded card itself.
+   */
+  function getEdits(slug: string): ProposalEdits {
+    return (
+      proposalEdits.value[slug] ?? {
+        label: '',
+        icon: '',
+        color: 'violet',
+        fields: [],
+        instances: [],
+      }
+    )
+  }
+
+  function removeField(slug: string, index: number) {
+    const edits = proposalEdits.value[slug]
+    if (!edits) return
+    // Don't let the user delete the title field — downstream scaffolding needs it.
+    if (edits.fields[index]?.valueType === 'title') return
+    edits.fields.splice(index, 1)
+  }
+
+  function setFieldValueType(slug: string, index: number, valueType: string) {
+    const edits = proposalEdits.value[slug]
+    if (!edits) return
+    const field = edits.fields[index]
+    if (!field) return
+    field.valueType = valueType as ProposedField['valueType']
+  }
+
+  async function handleAcceptType(proposal: TypeProposal) {
+    const edits = ensureEdits(proposal)
+    const selectedInstances = edits.instances.filter((i) => i.selected).map((i) => i.proposed)
+    const result = await acceptTypeProposal(
+      proposal,
+      props.entity,
+      {
+        label: edits.label,
+        icon: edits.icon,
+        color: edits.color,
+        fields: edits.fields,
+        instances: selectedInstances,
+      },
+      cacheKeyFor(props.entity),
+    )
+    if (result.ok) {
+      expandedTypeSlug.value = null
+      Reflect.deleteProperty(proposalEdits.value, proposal.slug)
+    } else {
+      console.warn('[EntityAISuggestionsPanel] acceptTypeProposal failed:', result.error)
+    }
+  }
+
+  function handleDismissType(proposal: TypeProposal) {
+    dismissTypeProposal(proposal, cacheKeyFor(props.entity))
+    if (expandedTypeSlug.value === proposal.slug) expandedTypeSlug.value = null
+    Reflect.deleteProperty(proposalEdits.value, proposal.slug)
+  }
+
+  function selectProposalColor(proposal: TypeProposal, color: string) {
+    ensureEdits(proposal).color = color
+    paletteOpen.value = false
+  }
+
+  function setProposalIcon(icon: string) {
+    const slug = expandedTypeSlug.value
+    if (!slug) return
+    const edits = proposalEdits.value[slug]
+    if (!edits) return
+    edits.icon = icon
+  }
+
+  /** Pill / header tint derived from the proposal's Tailwind color key. */
+  function getTypeProposalColor(color: string): { bg: string; fg: string; border: string; bgStrong: string } {
+    // Safelist-resilient since Tailwind JIT sees these in string literals across the template.
+    return {
+      bg: `bg-${color}-500/10`,
+      fg: `text-${color}-600 dark:text-${color}-400`,
+      border: `border-${color}-500/30`,
+      bgStrong: `bg-${color}-500`,
+    }
+  }
+
+  /** Slug preview for the expanded review card (read-only; label drives this). */
+  function slugPreview(proposal: TypeProposal): string {
+    const edits = proposalEdits.value[proposal.slug]
+    return edits
+      ? edits.label
+          .toLowerCase()
+          .replace(/[^a-z0-9]+/g, '-')
+          .replace(/^-+|-+$/g, '')
+          .slice(0, 40) || proposal.slug
+      : proposal.slug
+  }
+
+  function formatProposalSummary(proposal: TypeProposal, edits: ProposalEdits): string {
+    const selectedCount = edits.instances.filter((i) => i.selected).length
+    const parts = [
+      `${edits.fields.length} field${edits.fields.length === 1 ? '' : 's'}`,
+      `${selectedCount} instance${selectedCount === 1 ? '' : 's'}`,
+      proposal.confidence,
+    ]
+    return parts.join(' · ')
+  }
 
   /** Build the text to extract entities from, based on entity type. */
   function buildText(entity: any): string {
@@ -255,6 +461,232 @@
     </div>
 
     <template v-if="!suggestionsCollapsed">
+      <!-- New Type Proposals ─────────────────────────────────────────── -->
+      <div v-if="typeProposals.length" class="space-y-1.5">
+        <div class="flex items-center gap-1.5">
+          <Icon name="lucide:shapes" class="h-3 w-3 text-muted-foreground shrink-0" />
+          <p class="text-[10px] font-medium text-muted-foreground uppercase tracking-wide">
+            New Types · {{ typeProposals.length }}
+          </p>
+        </div>
+
+        <div class="flex flex-col gap-1.5">
+          <div
+            v-for="proposal in typeProposals"
+            :key="proposal.slug"
+            class="group rounded-md border bg-card transition-colors overflow-hidden"
+            :class="[expandedTypeSlug === proposal.slug ? 'border-border' : 'border-border hover:border-border']">
+            <!-- Collapsed pill row -->
+            <button
+              type="button"
+              class="w-full flex items-center gap-2 px-2 py-1.5 text-xs text-left transition-colors hover:bg-muted/40"
+              @click="toggleExpand(proposal.slug)">
+              <div
+                :class="[
+                  'w-5 h-5 rounded flex items-center justify-center shrink-0',
+                  getTypeProposalColor(proposal.color).bg,
+                  getTypeProposalColor(proposal.color).fg,
+                ]">
+                <Icon :name="proposal.icon" class="h-3 w-3" />
+              </div>
+              <span class="font-medium truncate flex-1">{{ proposal.label }}</span>
+              <span
+                class="shrink-0 text-[9px] font-medium text-muted-foreground bg-muted/60 rounded px-1 py-0.5 capitalize">
+                {{ proposal.entityClass }}
+              </span>
+              <span
+                :class="[
+                  'shrink-0 text-[9px] font-medium rounded px-1 py-0.5',
+                  proposal.confidence === 'high'
+                    ? 'text-emerald-600 bg-emerald-500/10'
+                    : 'text-amber-600 bg-amber-500/10',
+                ]">
+                {{ proposal.confidence }}
+              </span>
+              <Icon
+                :name="expandedTypeSlug === proposal.slug ? 'lucide:chevron-up' : 'lucide:chevron-down'"
+                class="h-3 w-3 text-muted-foreground shrink-0" />
+            </button>
+
+            <!-- Expanded review card -->
+            <div
+              v-if="expandedTypeSlug === proposal.slug"
+              class="border-t border-border bg-muted/10 px-2.5 py-2 space-y-2.5">
+              <!-- Description -->
+              <p v-if="proposal.description" class="text-[11px] text-muted-foreground italic">
+                {{ proposal.description }}
+              </p>
+
+              <!-- Header row: icon + color + label -->
+              <div class="flex items-center gap-2">
+                <!-- Icon picker trigger -->
+                <button
+                  type="button"
+                  :class="[
+                    'relative h-8 w-8 rounded-md border flex items-center justify-center transition-colors',
+                    getTypeProposalColor(getEdits(proposal.slug).color).bg,
+                    getTypeProposalColor(getEdits(proposal.slug).color).fg,
+                    getTypeProposalColor(getEdits(proposal.slug).color).border,
+                  ]"
+                  title="Change icon"
+                  @click.stop="iconPickerOpen = true">
+                  <Icon :name="getEdits(proposal.slug).icon" class="h-4 w-4" />
+                </button>
+
+                <!-- Color swatch trigger + popover -->
+                <div class="relative">
+                  <button
+                    type="button"
+                    :class="[
+                      'h-8 w-8 rounded-md border border-border flex items-center justify-center transition-colors hover:border-muted-foreground',
+                    ]"
+                    title="Change color"
+                    @click.stop="paletteOpen = !paletteOpen">
+                    <div
+                      :class="['h-4 w-4 rounded-full', getTypeProposalColor(getEdits(proposal.slug).color).bgStrong]" />
+                  </button>
+                  <div
+                    v-if="paletteOpen"
+                    class="absolute left-0 top-full mt-1 z-20 p-2 rounded-md border border-border bg-popover shadow-md w-[184px]">
+                    <div class="grid grid-cols-7 gap-1">
+                      <button
+                        v-for="c in PALETTE_COLORS"
+                        :key="c"
+                        type="button"
+                        :class="[
+                          'h-5 w-5 rounded-full transition-transform hover:scale-110',
+                          `bg-${c}-500`,
+                          getEdits(proposal.slug).color === c ? 'ring-2 ring-offset-1 ring-foreground' : '',
+                        ]"
+                        :title="c"
+                        @click.stop="selectProposalColor(proposal, c)" />
+                    </div>
+                  </div>
+                </div>
+
+                <!-- Label input -->
+                <input
+                  v-model="getEdits(proposal.slug).label"
+                  type="text"
+                  :placeholder="proposal.label"
+                  class="flex-1 h-8 px-2 text-xs bg-transparent border border-border rounded-md focus:outline-none focus:ring-1 focus:ring-ring" />
+              </div>
+
+              <!-- Slug preview -->
+              <div class="flex items-center gap-1.5 text-[10px] text-muted-foreground font-mono">
+                <Icon name="lucide:hash" class="h-2.5 w-2.5" />
+                <span>trellis:schema/{{ slugPreview(proposal) }}</span>
+              </div>
+
+              <!-- Field list -->
+              <div class="space-y-1">
+                <div
+                  class="flex items-center gap-1.5 text-[10px] font-medium text-muted-foreground uppercase tracking-wide">
+                  <Icon name="lucide:list" class="h-2.5 w-2.5" />
+                  Fields
+                </div>
+                <div class="space-y-1">
+                  <div
+                    v-for="(field, idx) in getEdits(proposal.slug).fields"
+                    :key="`${proposal.slug}-field-${idx}`"
+                    class="flex items-center gap-1.5 text-[11px]">
+                    <input
+                      v-model="getEdits(proposal.slug).fields[idx]!.name"
+                      type="text"
+                      :disabled="field.valueType === 'title'"
+                      class="flex-1 h-6 px-1.5 bg-transparent border border-border rounded focus:outline-none focus:ring-1 focus:ring-ring disabled:opacity-60" />
+                    <select
+                      :value="field.valueType"
+                      :disabled="field.valueType === 'title'"
+                      class="h-6 px-1 bg-transparent border border-border rounded text-[10px] focus:outline-none focus:ring-1 focus:ring-ring disabled:opacity-60"
+                      @change="setFieldValueType(proposal.slug, idx, ($event.target as HTMLSelectElement).value)">
+                      <option v-for="vt in ONTOLOGY_VALUE_TYPES" :key="vt" :value="vt">{{ vt }}</option>
+                    </select>
+                    <label
+                      class="flex items-center gap-1 text-[9px] text-muted-foreground cursor-pointer select-none shrink-0"
+                      :title="field.required ? 'Required' : 'Optional'">
+                      <input v-model="getEdits(proposal.slug).fields[idx]!.required" type="checkbox" class="h-3 w-3" />
+                      req
+                    </label>
+                    <button
+                      type="button"
+                      class="shrink-0 h-5 w-5 flex items-center justify-center rounded hover:bg-destructive/10 text-muted-foreground hover:text-destructive transition-colors"
+                      :disabled="field.valueType === 'title'"
+                      :class="{ 'opacity-30 cursor-not-allowed': field.valueType === 'title' }"
+                      title="Remove field"
+                      @click.stop="removeField(proposal.slug, idx)">
+                      <Icon name="lucide:x" class="h-2.5 w-2.5" />
+                    </button>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Instance list -->
+              <div class="space-y-1">
+                <div
+                  class="flex items-center gap-1.5 text-[10px] font-medium text-muted-foreground uppercase tracking-wide">
+                  <Icon name="lucide:sparkles" class="h-2.5 w-2.5" />
+                  Example Instances
+                </div>
+                <div class="space-y-1">
+                  <label
+                    v-for="(inst, idx) in getEdits(proposal.slug).instances"
+                    :key="`${proposal.slug}-inst-${idx}`"
+                    class="flex items-start gap-2 p-1.5 rounded border border-border/60 cursor-pointer transition-colors hover:bg-muted/30"
+                    :class="{ 'opacity-50': !inst.selected }">
+                    <input v-model="inst.selected" type="checkbox" class="mt-0.5 h-3 w-3 shrink-0" />
+                    <div class="flex-1 min-w-0">
+                      <div class="text-[11px] font-medium truncate">{{ inst.proposed.title }}</div>
+                      <div v-if="inst.proposed.context" class="text-[10px] text-muted-foreground truncate">
+                        {{ inst.proposed.context }}
+                      </div>
+                    </div>
+                  </label>
+                </div>
+              </div>
+
+              <!-- Footer actions -->
+              <div class="flex items-center justify-between gap-2 pt-1 border-t border-border/60">
+                <span class="text-[10px] text-muted-foreground">
+                  {{ formatProposalSummary(proposal, getEdits(proposal.slug)) }}
+                </span>
+                <div class="flex items-center gap-1">
+                  <button
+                    type="button"
+                    class="h-6 px-2 text-[11px] rounded border border-border hover:bg-muted/50 transition-colors"
+                    :disabled="acceptingTypeSlug === proposal.slug"
+                    @click.stop="handleDismissType(proposal)">
+                    Dismiss
+                  </button>
+                  <button
+                    type="button"
+                    class="h-6 px-2 text-[11px] rounded bg-primary text-primary-foreground hover:bg-primary/90 transition-colors flex items-center gap-1 disabled:opacity-50"
+                    :disabled="
+                      acceptingTypeSlug === proposal.slug ||
+                      getEdits(proposal.slug).instances.filter((i) => i.selected).length === 0
+                    "
+                    @click.stop="handleAcceptType(proposal)">
+                    <Icon
+                      v-if="acceptingTypeSlug === proposal.slug"
+                      name="lucide:loader-2"
+                      class="h-3 w-3 animate-spin" />
+                    <Icon v-else name="lucide:check" class="h-3 w-3" />
+                    <span>{{ acceptingTypeSlug === proposal.slug ? 'Creating…' : 'Accept & Create' }}</span>
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Icon picker dialog — single instance, rebinds to whichever proposal is expanded -->
+      <IconPicker
+        v-if="expandedTypeSlug"
+        v-model:open="iconPickerOpen"
+        :model-value="proposalEdits[expandedTypeSlug]?.icon || ''"
+        @update:model-value="setProposalIcon" />
+
       <!-- Entity suggestions -->
       <div v-if="suggestions.length" class="flex flex-wrap gap-1.5">
         <div

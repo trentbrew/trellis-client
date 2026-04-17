@@ -14,8 +14,11 @@ export default defineEventHandler(async (event) => {
   const query = getQuery(event)
   const userId = query.userId as string | undefined
 
-  if (!userId) {
-    throw createError({ statusCode: 400, message: 'userId query param is required' })
+  const config = useRuntimeConfig()
+  const dataMode = (config.public.dataMode || process.env.TRELLIS_DATA_MODE || 'local') as 'local' | 'cloud'
+
+  if (dataMode === 'local') {
+    return { ok: true, org: null, apps: [], lastOrgId: null, lastAppId: null }
   }
 
   const db = useInstantAdmin()

@@ -5,9 +5,15 @@
  * the message author. Uses the admin SDK so it bypasses client permissions.
  * Respects per-user chatNotificationPrefs (skips users who muted the channel).
  *
+ * Emails are NOT sent for `new_message` by default — it's not in the
+ * default email types list — but if a recipient has explicitly enabled
+ * email for `new_message`, the dispatcher will honour it.
+ *
  * Body:
  *   { channelId, channelTitle, orgId, authorId, authorName, content }
  */
+
+import { dispatchNotificationEmailAsync } from '../../utils/notification-email'
 
 interface NotifyMessageBody {
   channelId: string
@@ -42,8 +48,9 @@ export default defineEventHandler(async (event) => {
   })
 
   const skipSet = new Set(body.skipUserIds ?? [])
-  const members = ((membersResult as any)?.members || [])
-    .filter((m: any) => m.userId && m.userId !== body.authorId && !skipSet.has(m.userId))
+  const members = ((membersResult as any)?.members || []).filter(
+    (m: any) => m.userId && m.userId !== body.authorId && !skipSet.has(m.userId),
+  )
 
   if (members.length === 0) return { ok: true, created: 0 }
 
@@ -95,6 +102,18 @@ export default defineEventHandler(async (event) => {
         }),
       )
       created.push(notifId)
+
+      // Dispatch email (the dispatcher short-circuits for `new_message` by default
+      // since it's not in DEFAULT_EMAIL_TYPES — users must opt in explicitly).
+      dispatchNotificationEmailAsync({
+        recipientId,
+        type: 'new_message',
+        title: `#${body.channelTitle}`,
+        message: `${body.authorName}: ${snippet}`,
+        actionUrl: `/messages/${body.channelId}`,
+        actorName: body.authorName,
+        metadata: { channelId: body.channelId, channelTitle: body.channelTitle },
+      })
     } catch (err: any) {
       console.warn(`[chat/notify-message] Failed for ${recipientId}:`, err?.message)
     }

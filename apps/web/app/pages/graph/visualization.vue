@@ -35,6 +35,13 @@
     type: string
   }
 
+  interface MiniNode {
+    id: string
+    x: number
+    y: number
+    color: string
+  }
+
   // ── Config ────────────────────────────────────────────────────────────
 
   const GRAPH = {
@@ -249,18 +256,100 @@
     }
   }
 
-  // ── State ─────────────────────────────────────────────────────────────
+  // ── State (declared early — type visibility computed refs these) ──────
 
   const svgRef = ref<SVGSVGElement | null>(null)
   const graphNodes = ref<SimNode[]>([])
   const graphEdges = ref<GEdge[]>([])
   const loading = ref(true)
-  const nodeCount = computed(() => graphNodes.value.length)
-  const edgeCount = computed(() => graphEdges.value.length)
 
-  const typeLegend = computed(() => {
-    const types = [...new Set(graphNodes.value.map((n) => n.type))]
-    return types.map((t) => ({ type: t, color: ENTITY_COLORS[t] ?? ENTITY_COLORS.backlog! }))
+  // ── Type Visibility (sidebar filter) ──────────────────────────────────
+
+  const typeVisibility = ref<Map<string, boolean>>(new Map())
+
+  const typesInGraph = computed(() => {
+    const counts = new Map<string, number>()
+    for (const node of graphNodes.value) {
+      if (!node.type) continue
+      counts.set(node.type, (counts.get(node.type) || 0) + 1)
+    }
+    const entries: Array<{ type: string; count: number; color: string }> = []
+    for (const [type, count] of counts) {
+      entries.push({ type, count, color: ENTITY_COLORS[type] ?? ENTITY_COLORS.backlog! })
+    }
+    return entries.sort((a, b) => b.count - a.count)
+  })
+
+  watch(
+    typesInGraph,
+    (types) => {
+      let changed = false
+      const next = new Map(typeVisibility.value)
+      for (const { type } of types) {
+        if (!next.has(type)) {
+          next.set(type, true)
+          changed = true
+        }
+      }
+      if (changed) typeVisibility.value = next
+    },
+    { immediate: true },
+  )
+
+  const isTypeVisible = (type: string) => typeVisibility.value.get(type) ?? true
+
+  const toggleType = (type: string) => {
+    const next = new Map(typeVisibility.value)
+    next.set(type, !isTypeVisible(type))
+    typeVisibility.value = next
+  }
+
+  const allTypesVisible = computed(() => typesInGraph.value.every((t) => isTypeVisible(t.type)))
+
+  const toggleAllTypes = () => {
+    const target = !allTypesVisible.value
+    const next = new Map<string, boolean>()
+    for (const { type } of typesInGraph.value) next.set(type, target)
+    typeVisibility.value = next
+  }
+
+  const visibleGraphNodes = computed(() => graphNodes.value.filter((n) => isTypeVisible(n.type)))
+
+  // ── Minimap State ─────────────────────────────────────────────────────
+
+  const minimapNodes = ref<MiniNode[]>([])
+  const minimapBounds = ref({ minX: 0, minY: 0, maxX: 1, maxY: 1 })
+  const viewportTransform = ref({ k: 1, x: 0, y: 0 })
+  const svgSize = ref({ w: 800, h: 600 })
+
+  const MINIMAP_W = 180
+  const MINIMAP_H = 120
+
+  const minimapViewBox = computed(() => {
+    const { minX, minY, maxX, maxY } = minimapBounds.value
+    const pad = 50
+    return {
+      x: minX - pad,
+      y: minY - pad,
+      w: Math.max(1, maxX - minX + pad * 2),
+      h: Math.max(1, maxY - minY + pad * 2),
+    }
+  })
+
+  const minimapViewport = computed(() => {
+    const { k, x, y } = viewportTransform.value
+    const { w: sw, h: sh } = svgSize.value
+    if (k === 0) return { x: 0, y: 0, w: sw, h: sh }
+    return { x: -x / k, y: -y / k, w: sw / k, h: sh / k }
+  })
+
+  // ── Derived stats ─────────────────────────────────────────────────────
+
+  const visibleNodeCount = computed(() => visibleGraphNodes.value.length)
+  const totalNodeCount = computed(() => graphNodes.value.length)
+  const visibleEdgeCount = computed(() => {
+    const ids = new Set(visibleGraphNodes.value.map((n) => n.id))
+    return graphEdges.value.filter((e) => ids.has(e.source) && ids.has(e.target)).length
   })
 
   // ── Fetch ─────────────────────────────────────────────────────────────
@@ -285,7 +374,6 @@
       const nodeList: SimNode[] = []
       const edgeList: GEdge[] = []
 
-      // Deduplicate recurring GCal event instances — keep only one node per series
       const seenSeriesKeys = new Set<string>()
       const deduplicatedNodes = (batchResult.nodes || []).filter((raw) => {
         const key = getRecurringSeriesKey(raw as Record<string, any>)
@@ -333,6 +421,7 @@
   function renderForceGraph(svgEl: SVGSVGElement, nodes: SimNode[], links: GEdge[]): () => void {
     const width = svgEl.clientWidth || 800
     const height = svgEl.clientHeight || 600
+    svgSize.value = { w: width, h: height }
     const opt = cfg(nodes.length)
 
     const svg = select(svgEl)
@@ -343,15 +432,32 @@
     let currentZoom = zoomIdentity
     let raf = 0
 
-    // Zoom
+    // ── Figma-style gestures ──────────────────────────────────────────
+    // Wheel without modifier → pan (x/y)
+    // Ctrl/Meta + wheel or trackpad pinch → zoom
+    // Drag on canvas → pan
     const zoomBehavior = d3Zoom<SVGSVGElement, unknown>()
       .scaleExtent([0.15, 4])
+      .filter((event: any) => {
+        if (event.type === 'mousedown' || event.type === 'pointerdown') return !event.button
+        if (event.type === 'wheel') return event.ctrlKey || event.metaKey
+        return !event.ctrlKey
+      })
       .on('zoom', (event: D3ZoomEvent<SVGSVGElement, unknown>) => {
         currentZoom = event.transform
+        viewportTransform.value = { k: event.transform.k, x: event.transform.x, y: event.transform.y }
         g.attr('transform', String(event.transform))
         draw()
       })
-    svg.call(zoomBehavior)
+
+    svg.call(zoomBehavior).on('dblclick.zoom', null)
+
+    // Plain wheel = pan
+    svg.on('wheel.pan', (event: WheelEvent) => {
+      if (event.ctrlKey || event.metaKey) return
+      event.preventDefault()
+      ;(zoomBehavior as any).translateBy(svg, -event.deltaX, -event.deltaY)
+    })
 
     const simLinks = links.map((l) => ({ ...l })) as SimulationLinkDatum<SimNode>[]
 
@@ -480,12 +586,10 @@
       label.style('display', (d) => (visible(d, box) ? null : 'none'))
       link.style('display', (d) => (visibleLink(d, box) ? null : 'none'))
       edgeLabel.style('display', (d) => (visibleLink(d, box) ? null : 'none'))
-
       const opacity = Math.min(1, Math.max(0.2, (currentZoom.k - 0.15) / 1.5))
       label.style('opacity', opacity)
     }
 
-    // RAF-throttled redraw
     function draw() {
       if (raf) return
       raf = requestAnimationFrame(() => {
@@ -531,6 +635,27 @@
 
       nodeG.attr('transform', (d) => `translate(${d.x ?? 0},${d.y ?? 0})`)
       label.attr('x', (d) => d.x ?? 0).attr('y', (d) => d.y ?? 0)
+
+      // Sync minimap
+      let minX = Infinity,
+        minY = Infinity,
+        maxX = -Infinity,
+        maxY = -Infinity
+      const miniData: MiniNode[] = []
+      for (const n of nodes) {
+        const x = n.x ?? 0
+        const y = n.y ?? 0
+        if (x < minX) minX = x
+        if (y < minY) minY = y
+        if (x > maxX) maxX = x
+        if (y > maxY) maxY = y
+        miniData.push({ id: n.id, x, y, color: nodeColor(n) })
+      }
+      if (isFinite(minX)) {
+        minimapBounds.value = { minX, minY, maxX, maxY }
+        minimapNodes.value = miniData
+      }
+
       draw()
     })
 
@@ -539,18 +664,21 @@
     return () => {
       if (raf) cancelAnimationFrame(raf)
       simulation.stop()
+      svg.on('wheel.pan', null)
     }
   }
 
   // ── Init ──────────────────────────────────────────────────────────────
 
   function initGraph() {
-    if (!svgRef.value || graphNodes.value.length === 0) return
+    if (!svgRef.value || visibleGraphNodes.value.length === 0) return
     if (cleanup) {
       cleanup()
       cleanup = null
     }
-    cleanup = renderForceGraph(svgRef.value, [...graphNodes.value], graphEdges.value)
+    const visibleIds = new Set(visibleGraphNodes.value.map((n) => n.id))
+    const filteredEdges = graphEdges.value.filter((e) => visibleIds.has(e.source) && visibleIds.has(e.target))
+    cleanup = renderForceGraph(svgRef.value, [...visibleGraphNodes.value], filteredEdges)
   }
 
   // ── Lifecycle ─────────────────────────────────────────────────────────
@@ -574,6 +702,14 @@
     nextTick(() => initGraph())
   })
 
+  watch(
+    typeVisibility,
+    () => {
+      nextTick(() => initGraph())
+    },
+    { deep: true },
+  )
+
   onBeforeUnmount(() => {
     if (cleanup) {
       cleanup()
@@ -591,39 +727,92 @@
 
     <!-- Empty -->
     <div
-      v-else-if="nodeCount === 0"
+      v-else-if="totalNodeCount === 0"
       class="flex h-full flex-col items-center justify-center gap-3 text-muted-foreground">
       <Icon name="lucide:network" class="h-12 w-12 opacity-30" />
       <p class="text-sm">No entities in the graph yet.</p>
     </div>
 
     <!-- Visualization -->
-    <template v-else>
-      <!-- SVG canvas -->
-      <svg ref="svgRef" class="absolute inset-0 w-full h-full" style="touch-action: none" />
-
-      <!-- Stats badge -->
-      <div
-        class="absolute bottom-3 right-3 z-10 flex items-center gap-2 text-xs text-muted-foreground bg-card/90 backdrop-blur-sm border border-border rounded-lg px-3 py-1.5 font-mono">
-        <span>{{ nodeCount }} nodes</span>
-        <span v-if="edgeCount > 0" class="opacity-40">·</span>
-        <span v-if="edgeCount > 0">{{ edgeCount }} edges</span>
-      </div>
-
-      <!-- Type legend -->
-      <div
-        v-if="typeLegend.length > 0"
-        class="absolute top-3 right-3 z-10 bg-card/90 backdrop-blur-sm border border-border rounded-lg px-3 py-2 flex flex-col gap-1.5 max-h-60 overflow-y-auto">
-        <div v-for="entry in typeLegend" :key="entry.type" class="flex items-center gap-2">
-          <span class="inline-block w-2.5 h-2.5 rounded-full shrink-0" :style="{ background: entry.color }" />
-          <span class="text-[11px] text-muted-foreground">{{ entry.type }}</span>
+    <div v-else class="flex h-full w-full">
+      <!-- ── Left sidebar: type filters ── -->
+      <div class="w-52 shrink-0 bg-card border-r border-border flex flex-col overflow-hidden z-10">
+        <div class="flex items-center justify-between px-3 py-2.5 border-b border-border/60 shrink-0">
+          <p class="text-[11px] font-medium text-muted-foreground uppercase tracking-wide">Types</p>
+          <button
+            class="text-[10px] text-muted-foreground hover:text-foreground transition-colors"
+            :title="allTypesVisible ? 'Hide all' : 'Show all'"
+            @click="toggleAllTypes">
+            {{ allTypesVisible ? 'Hide all' : 'Show all' }}
+          </button>
+        </div>
+        <div class="flex-1 overflow-y-auto py-1">
+          <label
+            v-for="t in typesInGraph"
+            :key="t.type"
+            class="flex items-center gap-2.5 px-3 py-2 cursor-pointer hover:bg-muted/50 transition-colors"
+            :class="{ 'opacity-40': !isTypeVisible(t.type) }">
+            <input
+              type="checkbox"
+              :checked="isTypeVisible(t.type)"
+              class="h-3.5 w-3.5 rounded border-border shrink-0 accent-primary"
+              @change="toggleType(t.type)" />
+            <span class="inline-block h-2 w-2 rounded-full shrink-0" :style="{ background: t.color }" />
+            <span class="text-xs flex-1 truncate capitalize">{{ t.type }}</span>
+            <span class="text-[10px] text-muted-foreground/60 tabular-nums shrink-0">{{ t.count }}</span>
+          </label>
         </div>
       </div>
 
-      <!-- Zoom hint -->
-      <div class="absolute bottom-3 left-3 z-10 text-[10px] text-muted-foreground/50 select-none">
-        Scroll to zoom · Drag nodes
+      <!-- ── Graph canvas ── -->
+      <div class="relative flex-1 overflow-hidden">
+        <!-- SVG canvas -->
+        <svg ref="svgRef" class="absolute inset-0 w-full h-full" style="touch-action: none" />
+
+        <!-- Minimap (bottom-left) -->
+        <div
+          v-if="minimapNodes.length > 0"
+          class="absolute bottom-3 left-3 z-10 rounded-lg border border-border bg-card/95 backdrop-blur-sm overflow-hidden shadow-sm"
+          :style="{ width: `${MINIMAP_W}px`, height: `${MINIMAP_H}px` }">
+          <svg
+            :viewBox="`${minimapViewBox.x} ${minimapViewBox.y} ${minimapViewBox.w} ${minimapViewBox.h}`"
+            preserveAspectRatio="xMidYMid meet"
+            class="h-full w-full">
+            <!-- Viewport rectangle -->
+            <rect
+              :x="minimapViewport.x"
+              :y="minimapViewport.y"
+              :width="minimapViewport.w"
+              :height="minimapViewport.h"
+              fill="var(--primary)"
+              fill-opacity="0.08"
+              stroke="var(--primary)"
+              stroke-opacity="0.6"
+              :stroke-width="Math.max(2, minimapViewBox.w / 150)" />
+            <!-- Node dots -->
+            <circle
+              v-for="n in minimapNodes"
+              :key="n.id"
+              :cx="n.x"
+              :cy="n.y"
+              :r="Math.max(3, minimapViewBox.w / 120)"
+              :fill="n.color"
+              opacity="0.85" />
+          </svg>
+        </div>
+
+        <!-- Stats badge (bottom-right) -->
+        <div
+          class="absolute bottom-3 right-3 z-10 flex items-center gap-2 text-xs text-muted-foreground bg-card/90 backdrop-blur-sm border border-border rounded-lg px-3 py-1.5 font-mono">
+          <span>
+            {{ visibleNodeCount }}
+            <span v-if="visibleNodeCount !== totalNodeCount" class="opacity-60">/ {{ totalNodeCount }}</span>
+            {{ visibleNodeCount === 1 ? 'node' : 'nodes' }}
+          </span>
+          <span v-if="visibleEdgeCount > 0" class="opacity-40">·</span>
+          <span v-if="visibleEdgeCount > 0">{{ visibleEdgeCount }} {{ visibleEdgeCount === 1 ? 'edge' : 'edges' }}</span>
+        </div>
       </div>
-    </template>
+    </div>
   </div>
 </template>

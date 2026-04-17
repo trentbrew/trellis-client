@@ -4,6 +4,7 @@
   import { useBrowseSelection } from '~/composables/useBrowseSelection'
   import DynamicEntityDialog from '~/components/dialogs/DynamicEntityDialog.vue'
   import GraphView from '~/components/views/GraphView.vue'
+  import EntityCard from '~/components/entity/cards/EntityCard.vue'
 
   definePageMeta({ layout: 'default' })
 
@@ -82,6 +83,13 @@
     if (typeof val === 'object') return JSON.stringify(val)
     return String(val)
   }
+
+  /** Build the fields prop for EntityCard from non-title table columns */
+  function cardFields(item: any) {
+    return tableColumns.value
+      .filter((c) => !c.isTitle)
+      .map((c) => ({ key: c.key, label: c.label, value: item[c.key] ?? null }))
+  }
 </script>
 
 <template>
@@ -114,32 +122,15 @@
 
     <!-- ================= LIST VIEW ================= -->
     <div v-if="viewMode === 'list'" class="flex flex-col gap-2">
-      <div
+      <EntityCard
         v-for="item in filteredItems"
         :key="item.id"
-        class="flex items-center gap-3 px-3 py-2.5 rounded-lg border border-border/50 bg-card hover:bg-muted/30 cursor-pointer transition-colors group"
-        @click="openDetail(item)">
-        <input
-          type="checkbox"
-          class="h-4 w-4 rounded border-border shrink-0 opacity-0 group-hover:opacity-100 transition-opacity"
-          :checked="isSelected(item.id)"
-          @click.stop="toggleSelection(item.id)" />
-        <Icon :name="pageIcon" class="h-4 w-4 shrink-0 text-muted-foreground" />
-        <span class="flex-1 text-sm font-medium truncate">{{ item.title || 'Untitled' }}</span>
-        <span
-          v-for="col in tableColumns.filter((c) => !c.isTitle).slice(0, 3)"
-          :key="col.key"
-          class="text-xs text-muted-foreground shrink-0 hidden sm:block">
-          {{ cellValue(item, col.key) }}
-        </span>
-        <span class="text-xs text-muted-foreground/50 shrink-0">
-          {{
-            item.updatedAt
-              ? new Date(item.updatedAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
-              : ''
-          }}
-        </span>
-      </div>
+        :item="item as any"
+        layout="list"
+        :selected="isSelected(item.id)"
+        :fields="cardFields(item)"
+        @click="openDetail(item)"
+        @select="toggleSelection(item.id, $event)" />
       <div
         v-if="!filteredItems.length"
         class="flex flex-col items-center justify-center h-48 text-muted-foreground gap-3">
@@ -153,30 +144,16 @@
     </div>
 
     <!-- ================= GRID VIEW ================= -->
-    <div v-else-if="viewMode === 'grid'" class="grid gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-      <div
+    <div v-else-if="viewMode === 'grid'" class="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+      <EntityCard
         v-for="item in filteredItems"
         :key="item.id"
-        class="flex flex-col gap-2 p-4 rounded-xl border border-border/50 bg-card hover:bg-muted/20 cursor-pointer transition-colors"
-        @click="openDetail(item)">
-        <div class="flex items-start justify-between gap-2">
-          <Icon :name="pageIcon" class="h-4 w-4 shrink-0 text-muted-foreground mt-0.5" />
-          <input
-            type="checkbox"
-            class="h-4 w-4 rounded border-border shrink-0 opacity-0 hover:opacity-100 transition-opacity"
-            :checked="isSelected(item.id)"
-            @click.stop="toggleSelection(item.id)" />
-        </div>
-        <p class="text-sm font-medium leading-snug line-clamp-2">{{ item.title || 'Untitled' }}</p>
-        <div class="flex flex-wrap gap-1 mt-auto">
-          <span
-            v-for="col in tableColumns.filter((c) => !c.isTitle && (item as any)[c.key]).slice(0, 2)"
-            :key="col.key"
-            class="text-[10px] px-1.5 py-0.5 rounded-full bg-muted text-muted-foreground">
-            {{ cellValue(item, col.key) }}
-          </span>
-        </div>
-      </div>
+        :item="item as any"
+        layout="grid"
+        :selected="isSelected(item.id)"
+        :fields="cardFields(item)"
+        @click="openDetail(item)"
+        @select="toggleSelection(item.id, $event)" />
       <div
         v-if="!filteredItems.length"
         class="col-span-full flex flex-col items-center justify-center h-48 text-muted-foreground gap-3">
