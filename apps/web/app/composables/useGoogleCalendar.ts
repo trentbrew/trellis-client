@@ -45,19 +45,11 @@ export type GCalSyncStatus = 'idle' | 'syncing' | 'error'
 
 function mapGCalEventToEntityData(gcalEvent: GCalEvent, calendarId: string): Record<string, any> {
   const isAllDay = !!gcalEvent.start?.date
-  const startDate = isAllDay
-    ? gcalEvent.start!.date!
-    : gcalEvent.start?.dateTime?.slice(0, 10) || ''
-  const endDate = isAllDay
-    ? gcalEvent.end?.date || startDate
-    : gcalEvent.end?.dateTime?.slice(0, 10) || startDate
+  const startDate = isAllDay ? gcalEvent.start!.date! : gcalEvent.start?.dateTime?.slice(0, 10) || ''
+  const endDate = isAllDay ? gcalEvent.end?.date || startDate : gcalEvent.end?.dateTime?.slice(0, 10) || startDate
 
-  const startTime = !isAllDay && gcalEvent.start?.dateTime
-    ? gcalEvent.start.dateTime.slice(11, 16)
-    : undefined
-  const endTime = !isAllDay && gcalEvent.end?.dateTime
-    ? gcalEvent.end.dateTime.slice(11, 16)
-    : undefined
+  const startTime = !isAllDay && gcalEvent.start?.dateTime ? gcalEvent.start.dateTime.slice(11, 16) : undefined
+  const endTime = !isAllDay && gcalEvent.end?.dateTime ? gcalEvent.end.dateTime.slice(11, 16) : undefined
 
   return {
     type: 'event',
@@ -77,6 +69,7 @@ function mapGCalEventToEntityData(gcalEvent: GCalEvent, calendarId: string): Rec
     googleStatus: gcalEvent.status || 'confirmed',
     googleUpdatedAt: gcalEvent.updated || '',
     gcalDeleted: false,
+    ...(gcalEvent.recurringEventId ? { recurringEventId: gcalEvent.recurringEventId } : {}),
   }
 }
 
@@ -105,21 +98,13 @@ export function useGoogleCalendar() {
 
   // ── Connection accessors ────────────────────────────────────────────
 
-  const connections = computed<IntegrationConnection[]>(() =>
-    getConnections('google-calendar'),
-  )
+  const connections = computed<IntegrationConnection[]>(() => getConnections('google-calendar'))
 
-  const activeConnections = computed(() =>
-    connections.value.filter((c) => c.connectionStatus === 'connected'),
-  )
+  const activeConnections = computed(() => connections.value.filter((c) => c.connectionStatus === 'connected'))
 
-  const connection = computed<IntegrationConnection | undefined>(() =>
-    getConnection('google-calendar'),
-  )
+  const connection = computed<IntegrationConnection | undefined>(() => getConnection('google-calendar'))
 
-  const isConnected = computed(() =>
-    activeConnections.value.length > 0,
-  )
+  const isConnected = computed(() => activeConnections.value.length > 0)
 
   // ── Reactive query: all synced GCal events ──────────────────────────
   // Note: We query all event-type entities and filter client-side for
@@ -132,18 +117,25 @@ export function useGoogleCalendar() {
 
   const gcalEvents = ref<Record<string, any>[]>([])
 
-  watch(allEventIds, async (ids) => {
-    if (!ids || ids.length === 0) { gcalEvents.value = []; return }
-    try {
-      const idList = ids.map((row) => (row as any)['?e'] as string)
-      const nodes = await fetchNodes(idList)
-      // Filter client-side for GCal-synced events
-      gcalEvents.value = nodes.filter((n) => n.source === 'google-calendar')
-    } catch (err) {
-      console.error('[useGoogleCalendar] Failed to hydrate gcal events:', err)
-      gcalEvents.value = []
-    }
-  }, { immediate: true })
+  watch(
+    allEventIds,
+    async (ids) => {
+      if (!ids || ids.length === 0) {
+        gcalEvents.value = []
+        return
+      }
+      try {
+        const idList = ids.map((row) => (row as any)['?e'] as string)
+        const nodes = await fetchNodes(idList)
+        // Filter client-side for GCal-synced events
+        gcalEvents.value = nodes.filter((n) => n.source === 'google-calendar')
+      } catch (err) {
+        console.error('[useGoogleCalendar] Failed to hydrate gcal events:', err)
+        gcalEvents.value = []
+      }
+    },
+    { immediate: true },
+  )
 
   // ── Sync: fetch from Google → upsert into TQL ──────────────────────
 
@@ -157,9 +149,7 @@ export function useGoogleCalendar() {
     if (isSyncing) return
 
     // Sync a specific connection or the primary one
-    const conn = opts?.connectionId
-      ? connections.value.find((c) => c.id === opts.connectionId)
-      : connection.value
+    const conn = opts?.connectionId ? connections.value.find((c) => c.id === opts.connectionId) : connection.value
     if (!conn || conn.connectionStatus !== 'connected') {
       syncError.value = 'Not connected to Google Calendar'
       return
@@ -177,9 +167,7 @@ export function useGoogleCalendar() {
       if (opts?.timeMax) params.set('timeMax', opts.timeMax)
       if (opts?.calendarId) params.set('calendarId', opts.calendarId)
 
-      const response = await $fetch<GCalEventsResponse>(
-        `/api/integrations/google-calendar/events?${params.toString()}`,
-      )
+      const response = await $fetch<GCalEventsResponse>(`/api/integrations/google-calendar/events?${params.toString()}`)
 
       const events = response.items || []
       const calendarId = opts?.calendarId || 'primary'
@@ -238,10 +226,7 @@ export function useGoogleCalendar() {
 
   // ── Enrichment layer ────────────────────────────────────────────────
 
-  async function enrichEvent(
-    googleEventId: string,
-    patch: Record<string, any>,
-  ): Promise<void> {
+  async function enrichEvent(googleEventId: string, patch: Record<string, any>): Promise<void> {
     const enrichId = toEntityId(enrichmentEntityId(googleEventId))
     const gcalId = toEntityId(gcalEntityId(googleEventId))
 
@@ -281,9 +266,7 @@ export function useGoogleCalendar() {
   // ── Disconnect ──────────────────────────────────────────────────────
 
   async function disconnect(connectionId?: string): Promise<void> {
-    const conn = connectionId
-      ? connections.value.find((c) => c.id === connectionId)
-      : connection.value
+    const conn = connectionId ? connections.value.find((c) => c.id === connectionId) : connection.value
     if (!conn) return
 
     try {
@@ -316,7 +299,10 @@ export function useGoogleCalendar() {
   // Stable string of active connection IDs — prevents watcher from
   // re-firing when connection objects change but the ID set hasn't.
   const activeConnIds = computed(() =>
-    activeConnections.value.map((c) => c.id).sort().join(','),
+    activeConnections.value
+      .map((c) => c.id)
+      .sort()
+      .join(','),
   )
 
   async function syncAllConnections() {
@@ -326,17 +312,24 @@ export function useGoogleCalendar() {
   }
 
   if (import.meta.client) {
-    watch(activeConnIds, (ids) => {
-      if (syncInterval) { clearInterval(syncInterval); syncInterval = null }
-      if (!ids) return
+    watch(
+      activeConnIds,
+      (ids) => {
+        if (syncInterval) {
+          clearInterval(syncInterval)
+          syncInterval = null
+        }
+        if (!ids) return
 
-      // Initial sync (serialized, with re-entrancy guard)
-      syncAllConnections()
+        // Initial sync (serialized, with re-entrancy guard)
+        syncAllConnections()
 
-      // Polling interval (fallback — push notifications handled server-side)
-      const intervalMs = activeConnections.value[0]?.syncIntervalMs || 900000
-      syncInterval = setInterval(() => syncAllConnections(), intervalMs)
-    }, { immediate: true })
+        // Polling interval (fallback — push notifications handled server-side)
+        const intervalMs = activeConnections.value[0]?.syncIntervalMs || 900000
+        syncInterval = setInterval(() => syncAllConnections(), intervalMs)
+      },
+      { immediate: true },
+    )
 
     onScopeDispose(() => {
       if (syncInterval) clearInterval(syncInterval)

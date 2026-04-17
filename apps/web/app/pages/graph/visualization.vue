@@ -12,6 +12,7 @@
   import { zoom as d3Zoom, zoomIdentity, type ZoomTransform, type D3ZoomEvent } from 'd3-zoom'
   import { drag as d3Drag } from 'd3-drag'
   import { entityQuery } from '~/lib/tql-namespace'
+  import { getRecurringSeriesKey } from '~/utils/recurrence'
 
   const graph = useTrellisGraph()
 
@@ -283,9 +284,20 @@
 
       const nodeList: SimNode[] = []
       const edgeList: GEdge[] = []
-      const idSet = new Set(ids)
 
-      for (const raw of batchResult.nodes || []) {
+      // Deduplicate recurring GCal event instances — keep only one node per series
+      const seenSeriesKeys = new Set<string>()
+      const deduplicatedNodes = (batchResult.nodes || []).filter((raw) => {
+        const key = getRecurringSeriesKey(raw as Record<string, any>)
+        if (!key) return true
+        if (seenSeriesKeys.has(key)) return false
+        seenSeriesKeys.add(key)
+        return true
+      })
+
+      const idSet = new Set(deduplicatedNodes.map((n) => String(n['@id'] || n.id || '')))
+
+      for (const raw of deduplicatedNodes) {
         const id = String(raw['@id'] || raw.id || '')
         if (!id) continue
         nodeList.push({

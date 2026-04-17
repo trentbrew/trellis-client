@@ -12,11 +12,11 @@
 
 import { resolve } from 'node:path'
 import { mkdirSync, existsSync } from 'node:fs'
-import { TrellisKernel } from '@toolkit/tql'
-import { BetterSqliteBackend } from '@toolkit/tql/persist/better-sqlite'
+import { TrellisKernel } from '@turtle.tech/tql'
+import { BetterSqliteBackend } from '@turtle.tech/tql/persist/better-sqlite'
 import { createWorkspaceConfig } from '../utils/tql-ontologies'
 
-import type { WorkspaceConfig } from '@toolkit/tql'
+import type { WorkspaceConfig } from '@turtle.tech/tql'
 
 // Module-level singleton — accessible from API routes via useTqlKernel()
 let _kernel: TrellisKernel | null = null
@@ -100,6 +100,32 @@ export default defineNitroPlugin(async (nitro) => {
         enrichmentSupport: true,
         syncDirection: 'import',
         requiredScopes: ['https://www.googleapis.com/auth/calendar.readonly'],
+        integrationStatus: 'available',
+      },
+    },
+    {
+      id: 'entity:integration-def-gmail',
+      data: {
+        type: 'integration_definition',
+        title: 'Gmail',
+        description: 'Read, send, and link emails to workspace entities. Threads become part of the graph.',
+        provider: 'Google',
+        category: 'communication',
+        authType: 'oauth',
+        icon: 'simple-icons:gmail',
+        color: '#EA4335',
+        features: ['Read inbox', 'Send + reply', 'Label management', 'Link emails to entities'],
+        docsUrl: 'https://developers.google.com/gmail/api',
+        webhookSupport: true,
+        pushNotificationSupport: true,
+        enrichmentSupport: true,
+        syncDirection: 'bidirectional',
+        requiredScopes: [
+          'https://www.googleapis.com/auth/gmail.readonly',
+          'https://www.googleapis.com/auth/gmail.send',
+          'https://www.googleapis.com/auth/gmail.modify',
+          'https://www.googleapis.com/auth/gmail.labels',
+        ],
         integrationStatus: 'available',
       },
     },

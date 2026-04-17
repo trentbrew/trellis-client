@@ -4,7 +4,6 @@
   "identifier": "app.trellis.desktop",
   "version": "0.1.0",
   "build": {
-    "beforeDevCommand": "cd ../.. && pnpm --filter @trellis/web dev",
     "frontendDist": "../dist-loading",
     "devUrl": "http://localhost:1414"
   },

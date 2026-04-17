@@ -27,12 +27,12 @@ hooks/                 Git/agent lifecycle hooks
 
 Every entity has an **entity class** (structural shape) and an **entity type** (specific kind):
 
-| Class | Description | Example Types |
-|-------|-------------|---------------|
-| **temporal** | Has date/time, lives on calendar | task, event, trip, payment, appointment |
-| **document** | Has rich content body | note, file, page, template, bookmark |
-| **actor** | Represents a person/entity | person, contact, organization |
-| **container** | Groups/organizes entities | project, folder, collection, goal |
+| Class         | Description                      | Example Types                           |
+| ------------- | -------------------------------- | --------------------------------------- |
+| **temporal**  | Has date/time, lives on calendar | task, event, trip, payment, appointment |
+| **document**  | Has rich content body            | note, file, page, template, bookmark    |
+| **actor**     | Represents a person/entity       | person, contact, organization           |
+| **container** | Groups/organizes entities        | project, folder, collection, goal       |
 
 Entity IDs use the format `entity:<slug>`, e.g. `entity:task-1`, `entity:note-meeting`.
 
@@ -42,21 +42,21 @@ Entity IDs use the format `entity:<slug>`, e.g. `entity:task-1`, `entity:note-me
 
 Base URL: `http://localhost:$TRELLIS_PORT/api/graph`
 
-| Method | Endpoint | Purpose |
-|--------|----------|---------|
-| POST | `/query` | EQL-S query (`{ "query": "FIND ..." }`) |
-| GET | `/node/:id` | Fetch single node |
-| POST | `/nodes` | Fetch multiple nodes (`{ "ids": [...] }`) |
-| POST | `/mutate` | Create/update/delete nodes, link |
-| GET | `/ontologies` | List all ontology schemas |
-| GET | `/ontology/:id` | Get single ontology |
-| POST | `/ontology` | Create ontology |
-| PUT | `/ontology/:id` | Update ontology |
-| DELETE | `/ontology/:id` | Delete ontology |
-| GET | `/catalog` | EAV attribute catalog |
-| GET | `/health` | Health check |
-| GET | `/events` | SSE stream of mutations |
-| GET | `/log` | Recent mutation log |
+| Method | Endpoint        | Purpose                                   |
+| ------ | --------------- | ----------------------------------------- |
+| POST   | `/query`        | EQL-S query (`{ "query": "FIND ..." }`)   |
+| GET    | `/node/:id`     | Fetch single node                         |
+| POST   | `/nodes`        | Fetch multiple nodes (`{ "ids": [...] }`) |
+| POST   | `/mutate`       | Create/update/delete nodes, link          |
+| GET    | `/ontologies`   | List all ontology schemas                 |
+| GET    | `/ontology/:id` | Get single ontology                       |
+| POST   | `/ontology`     | Create ontology                           |
+| PUT    | `/ontology/:id` | Update ontology                           |
+| DELETE | `/ontology/:id` | Delete ontology                           |
+| GET    | `/catalog`      | EAV attribute catalog                     |
+| GET    | `/health`       | Health check                              |
+| GET    | `/events`       | SSE stream of mutations                   |
+| GET    | `/log`          | Recent mutation log                       |
 
 ### Mutation Actions
 
@@ -108,6 +108,7 @@ just trellis ontology delete 'trellis:schema/invoice'
 Creating an ontology auto-scaffolds it in the UI — sidebar item, browse page, dialog support — with zero code changes.
 
 **Tier classification** (`--tier`): Controls where the type appears in the database sidebar.
+
 - `system` — Built-in entity type, appears under ENTITIES section (e.g. task, note, person)
 - `user` (or omitted) — User-created custom type, appears under CUSTOM section
 - `core` — Kernel structural types (immutable, code-only — never create these via CLI)
@@ -157,7 +158,7 @@ Context persistence: `~/.trellis/context.json` stores the current org + app. Use
 ## SDK
 
 ```js
-import { TrellisClient } from '@toolkit/trellis-cli'
+import { TrellisClient } from '@turtle.tech/trellis-cli'
 const client = new TrellisClient({ agentId: 'my-agent' })
 
 // The SDK uses the raw entity namespace — app code should use tql-namespace helpers instead
@@ -178,6 +179,7 @@ The MCP server (`packages/trellis-mcp/`) exposes 49 tools (16 graph + 33 platfor
 ### Connect to the MCP Server
 
 **Claude Code** (`.claude/settings.json`):
+
 ```json
 {
   "mcpServers": {
@@ -191,6 +193,7 @@ The MCP server (`packages/trellis-mcp/`) exposes 49 tools (16 graph + 33 platfor
 ```
 
 **OpenCode** (`.opencode.json`):
+
 ```json
 {
   "mcp": {
@@ -211,13 +214,13 @@ When creating ontology fields, use these Notion-compatible value types:
 
 ## Linking Conventions
 
-| Relation | Meaning |
-|----------|---------|
-| `assignedTo` | Task/item → Person |
-| `belongsTo` | Entity → Project/Folder |
-| `references` | Bidirectional reference |
-| `dependsOn` | Task dependency chain |
-| `parentOf` / `childOf` | Container hierarchy |
+| Relation               | Meaning                 |
+| ---------------------- | ----------------------- |
+| `assignedTo`           | Task/item → Person      |
+| `belongsTo`            | Entity → Project/Folder |
+| `references`           | Bidirectional reference |
+| `dependsOn`            | Task dependency chain   |
+| `parentOf` / `childOf` | Container hierarchy     |
 
 ## CLI Purity Rules
 
@@ -239,6 +242,7 @@ just trellis get entity:task-1 --pretty
 ```
 
 **Forbidden patterns:**
+
 - ❌ `just trellis query '...' | node -e "..."`
 - ❌ `just trellis query '...' | python3 -c "..."`
 - ❌ `just trellis query '...' 2>&1 | node -e "..."`
@@ -260,12 +264,13 @@ just trellis get entity:task-1 --pretty
 
 Trellis supports two data modes, toggled via the `TRELLIS_DATA_MODE` env var:
 
-| Mode | Env Value | Auth | Entity Storage | Platform Data |
-|------|-----------|------|----------------|---------------|
-| **Local** (default) | `local` | No login (Obsidian-like) | TQL kernel (SQLite) | instant-local (localStorage) |
-| **Cloud** | `cloud` | Real InstantDB auth | InstantDB `entities` | InstantDB cloud |
+| Mode                | Env Value | Auth                     | Entity Storage       | Platform Data                |
+| ------------------- | --------- | ------------------------ | -------------------- | ---------------------------- |
+| **Local** (default) | `local`   | No login (Obsidian-like) | TQL kernel (SQLite)  | instant-local (localStorage) |
+| **Cloud**           | `cloud`   | Real InstantDB auth      | InstantDB `entities` | InstantDB cloud              |
 
 **Key files:**
+
 - `app/lib/data-adapter/types.ts` — `DataAdapter` interface
 - `app/lib/data-adapter/local-adapter.ts` — wraps instant-local
 - `app/lib/data-adapter/cloud-adapter.ts` — wraps `@instantdb/core`
@@ -275,12 +280,14 @@ Trellis supports two data modes, toggled via the `TRELLIS_DATA_MODE` env var:
 - `composables/useAdapterStatus.ts` — reactive mode/health info
 
 **Env vars** (set in `.env`):
+
 ```
 TRELLIS_DATA_MODE=local          # or 'cloud'
 INSTANT_APP_ID=<your-app-id>     # required for cloud mode
 ```
 
 **Ontology tiering:**
+
 - `core` — immutable, hardcoded in TQL kernel
 - `system` — code-defined, loaded at boot
 - `user` — stored in database (TQL or InstantDB depending on mode), shareable

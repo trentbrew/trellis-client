@@ -1,4 +1,4 @@
-# @toolkit/trellis-cli
+# @turtle.tech/trellis-cli
 
 CLI for agents and humans to CRUD the Trellis graph with realtime sync.
 
@@ -14,18 +14,18 @@ node --import tsx packages/trellis-cli/bin/trellis.mjs health
 
 ## Commands
 
-| Command | Description |
-|---|---|
-| `trellis query <eqls>` | Execute an EQL-S query |
-| `trellis get <entityId>` | Fetch a single node by ID |
-| `trellis create --type <type> --id <id> [--data '{}']` | Create a new node |
-| `trellis update <entityId> --type <type> --data '{}'` | Update an existing node |
-| `trellis delete <entityId>` | Delete a node |
-| `trellis link <e1> <relation> <e2>` | Link two nodes |
-| `trellis watch` | Stream realtime mutation events (SSE) |
-| `trellis health` | Health check |
-| `trellis schema` | List ontologies |
-| `trellis log` | Recent mutation log |
+| Command                                                | Description                           |
+| ------------------------------------------------------ | ------------------------------------- |
+| `trellis query <eqls>`                                 | Execute an EQL-S query                |
+| `trellis get <entityId>`                               | Fetch a single node by ID             |
+| `trellis create --type <type> --id <id> [--data '{}']` | Create a new node                     |
+| `trellis update <entityId> --type <type> --data '{}'`  | Update an existing node               |
+| `trellis delete <entityId>`                            | Delete a node                         |
+| `trellis link <e1> <relation> <e2>`                    | Link two nodes                        |
+| `trellis watch`                                        | Stream realtime mutation events (SSE) |
+| `trellis health`                                       | Health check                          |
+| `trellis schema`                                       | List ontologies                       |
+| `trellis log`                                          | Recent mutation log                   |
 
 ### Aliases
 
@@ -33,19 +33,19 @@ node --import tsx packages/trellis-cli/bin/trellis.mjs health
 
 ## Flags
 
-| Flag | Description |
-|---|---|
-| `--pretty` | Pretty-print JSON output |
+| Flag                | Description                                 |
+| ------------------- | ------------------------------------------- |
+| `--pretty`          | Pretty-print JSON output                    |
 | `--agent-id <name>` | Set agent ID for mutations (default: `cli`) |
-| `--url <url>` | Override API base URL |
+| `--url <url>`       | Override API base URL                       |
 
 ## Environment Variables
 
-| Variable | Default | Description |
-|---|---|---|
-| `TRELLIS_API_URL` | `http://localhost:$TRELLIS_PORT` | Base URL of the Trellis API |
-| `TRELLIS_PORT` | `1414` | Dev server port fallback when `TRELLIS_API_URL` is not set |
-| `TRELLIS_AGENT_ID` | `cli` | Default agent identifier |
+| Variable           | Default                          | Description                                                |
+| ------------------ | -------------------------------- | ---------------------------------------------------------- |
+| `TRELLIS_API_URL`  | `http://localhost:$TRELLIS_PORT` | Base URL of the Trellis API                                |
+| `TRELLIS_PORT`     | `1414`                           | Dev server port fallback when `TRELLIS_API_URL` is not set |
+| `TRELLIS_AGENT_ID` | `cli`                            | Default agent identifier                                   |
 
 ## Examples
 
@@ -75,11 +75,11 @@ The `TrellisClient` class can also be imported directly.
 > **Note:** The CLI/SDK uses the raw `entity` TQL storage namespace. In the Nuxt app code, use `entityId()` / `entityQuery()` helpers from `app/lib/tql-namespace.ts` instead.
 
 ```typescript
-import { TrellisClient } from '@toolkit/trellis-cli'
+import { TrellisClient } from '@turtle.tech/trellis-cli';
 
-const client = new TrellisClient({ agentId: 'my-agent' })
+const client = new TrellisClient({ agentId: 'my-agent' });
 
-const tasks = await client.query('FIND entity AS ?e WHERE ?e.type = "task"')
+const tasks = await client.query('FIND entity AS ?e WHERE ?e.type = "task"');
 await client.createNode('entity:new-task', 'entity', {
   type: 'task',
   title: 'Agent-created task',
@@ -87,15 +87,15 @@ await client.createNode('entity:new-task', 'entity', {
   startDate: '2026-02-11',
   allDay: true,
   priority: 'medium',
-})
+});
 
 // Watch for mutations
 const ac = client.watch((event) => {
-  console.log('Mutation:', event.action, event.entityId)
-})
+  console.log('Mutation:', event.action, event.entityId);
+});
 
 // Stop watching
-ac.abort()
+ac.abort();
 ```
 
 ## Architecture

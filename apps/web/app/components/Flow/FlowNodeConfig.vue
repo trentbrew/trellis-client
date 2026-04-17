@@ -12,21 +12,28 @@
 
   // ── Label ──────────────────────────────────────────────────────────────────
   const editingLabel = ref(String(d.value?.label ?? ''))
-  watch(() => props.node.id, () => {
-    editingLabel.value = String(d.value?.label ?? '')
-    syncRoutes()
-  })
+  watch(
+    () => props.node.id,
+    () => {
+      editingLabel.value = String(d.value?.label ?? '')
+      syncRoutes()
+    },
+  )
   function commitLabel() {
     props.updateNodeData(props.node.id, { label: editingLabel.value })
   }
 
   // ── Agent ──────────────────────────────────────────────────────────────────
+  // Trellis supports two LLM backends (both proxied via /api/llm/generate):
+  //   - Ollama (local, free) — any tag pulled locally (default: gemma4:e4b)
+  //   - Gemini (cloud) — requires GEMINI_API_KEY
   const agentModels = [
-    { value: 'gpt-4o',              label: 'GPT-4o' },
-    { value: 'gpt-4o-mini',         label: 'GPT-4o Mini' },
-    { value: 'claude-3-5-sonnet',   label: 'Claude 3.5 Sonnet' },
-    { value: 'claude-3-5-haiku',    label: 'Claude 3.5 Haiku' },
-    { value: 'gemini-2-0-flash',    label: 'Gemini 2.0 Flash' },
+    { value: 'gemma4:e4b', label: 'Gemma 4 (local, default)' },
+    { value: 'gemma3:latest', label: 'Gemma 3 (local)' },
+    { value: 'llama3.2:latest', label: 'Llama 3.2 (local)' },
+    { value: 'qwen2.5-coder:latest', label: 'Qwen 2.5 Coder (local)' },
+    { value: 'gemini-2.0-flash', label: 'Gemini 2.0 Flash (cloud)' },
+    { value: 'gemini-1.5-pro', label: 'Gemini 1.5 Pro (cloud)' },
   ]
 
   function setAgent(field: string, value: unknown) {
@@ -34,20 +41,29 @@
   }
 
   // ── Tool ───────────────────────────────────────────────────────────────────
+  // Names must match the server registry in server/utils/workflow-tools.ts.
   const toolOptions = [
-    { value: 'run_js',          label: 'run_js — Execute JavaScript' },
-    { value: 'tql_query',       label: 'tql_query — Query the graph' },
-    { value: 'tql_load_data',   label: 'tql_load_data — Load entity data' },
-    { value: 'http_request',    label: 'http_request — HTTP request' },
-    { value: 'send_email',      label: 'send_email — Send email' },
+    { value: 'http_request', label: 'http_request — Fetch a URL' },
+    { value: 'tql_query', label: 'tql_query — Run an EQL-S query' },
+    { value: 'tql_load_data', label: 'tql_load_data — Load entity data' },
+    { value: 'tql_mutate', label: 'tql_mutate — Create/update/link entities' },
+    { value: 'send_email', label: 'send_email — Send email via Resend' },
+    { value: 'run_js', label: 'run_js — Sandboxed JS eval' },
   ]
 
-  interface ToolArg { key: string; value: string }
+  interface ToolArg {
+    key: string
+    value: string
+  }
   const toolArgs = ref<ToolArg[]>([])
 
-  watch(() => props.node.id, () => {
-    toolArgs.value = ((d.value?.args as ToolArg[]) || []).map((a) => ({ ...a }))
-  }, { immediate: true })
+  watch(
+    () => props.node.id,
+    () => {
+      toolArgs.value = ((d.value?.args as ToolArg[]) || []).map((a) => ({ ...a }))
+    },
+    { immediate: true },
+  )
 
   function addArg() {
     toolArgs.value.push({ key: '', value: '' })
@@ -61,7 +77,11 @@
   }
 
   // ── Router ─────────────────────────────────────────────────────────────────
-  interface RouterRoute { id: string; label: string; condition: string }
+  interface RouterRoute {
+    id: string
+    label: string
+    condition: string
+  }
   const routes = ref<RouterRoute[]>([])
 
   function syncRoutes() {
@@ -69,9 +89,7 @@
     if (existing && existing.length > 0) {
       routes.value = existing.map((r) => ({ ...r }))
     } else {
-      routes.value = [
-        { id: 'default', label: 'default', condition: '' },
-      ]
+      routes.value = [{ id: 'default', label: 'default', condition: '' }]
     }
   }
 
@@ -111,12 +129,19 @@
     <!-- Kind badge -->
     <div class="flex items-center gap-2 rounded-lg bg-muted/50 px-3 py-2.5">
       <Icon
-        :name="{
-          start: 'lucide:play', agent: 'lucide:sparkles', tool: 'lucide:wrench',
-          router: 'lucide:git-branch', guard: 'lucide:shield',
-          'memory-read': 'lucide:database', 'memory-write': 'lucide:database-zap',
-          end: 'lucide:flag', note: 'lucide:sticky-note',
-        }[kind] || 'lucide:box'"
+        :name="
+          {
+            start: 'lucide:play',
+            agent: 'lucide:sparkles',
+            tool: 'lucide:wrench',
+            router: 'lucide:git-branch',
+            guard: 'lucide:shield',
+            'memory-read': 'lucide:database',
+            'memory-write': 'lucide:database-zap',
+            end: 'lucide:flag',
+            note: 'lucide:sticky-note',
+          }[kind] || 'lucide:box'
+        "
         class="h-4 w-4 shrink-0 text-muted-foreground" />
       <span class="text-xs font-semibold uppercase tracking-wider text-muted-foreground">{{ kind }}</span>
     </div>
@@ -124,11 +149,7 @@
     <!-- Label (all kinds) -->
     <div class="space-y-1.5">
       <label class="text-xs font-medium text-muted-foreground">Label</label>
-      <input
-        v-model="editingLabel"
-        class="field"
-        @blur="commitLabel"
-        @keydown.enter="commitLabel" />
+      <input v-model="editingLabel" class="field" @blur="commitLabel" @keydown.enter="commitLabel" />
     </div>
 
     <!-- ── Agent ──────────────────────────────────────────────────────────── -->
@@ -161,7 +182,12 @@
           class="field font-mono text-xs"
           placeholder="{{input}}"
           @blur="setAgent('prompt', ($event.target as HTMLTextAreaElement).value)" />
-        <p class="text-[10px] text-muted-foreground">Use <code class="rounded bg-muted px-1">&#123;&#123;input&#125;&#125;</code> and <code class="rounded bg-muted px-1">&#123;&#123;state&#125;&#125;</code></p>
+        <p class="text-[10px] text-muted-foreground">
+          Use
+          <code class="rounded bg-muted px-1">&#123;&#123;input&#125;&#125;</code>
+          and
+          <code class="rounded bg-muted px-1">&#123;&#123;state&#125;&#125;</code>
+        </p>
       </div>
 
       <div class="space-y-2">
@@ -172,11 +198,14 @@
         <input
           type="range"
           :value="(d.temperature as number) ?? 0.7"
-          min="0" max="2" step="0.1"
+          min="0"
+          max="2"
+          step="0.1"
           class="w-full accent-primary"
           @change="setAgent('temperature', parseFloat(($event.target as HTMLInputElement).value))" />
         <div class="flex justify-between text-[10px] text-muted-foreground">
-          <span>Precise (0)</span><span>Creative (2)</span>
+          <span>Precise (0)</span>
+          <span>Creative (2)</span>
         </div>
       </div>
 
@@ -221,20 +250,14 @@
             <Icon name="lucide:plus" class="h-3.5 w-3.5" />
           </button>
         </div>
-        <div v-if="toolArgs.length === 0" class="rounded-lg border border-dashed border-border p-3 text-center text-[11px] text-muted-foreground">
+        <div
+          v-if="toolArgs.length === 0"
+          class="rounded-lg border border-dashed border-border p-3 text-center text-[11px] text-muted-foreground">
           No arguments
         </div>
         <div v-for="(arg, idx) in toolArgs" :key="idx" class="flex items-center gap-1.5">
-          <input
-            v-model="arg.key"
-            class="field flex-1 font-mono text-xs"
-            placeholder="key"
-            @blur="saveArgs" />
-          <input
-            v-model="arg.value"
-            class="field flex-1 font-mono text-xs"
-            placeholder="value"
-            @blur="saveArgs" />
+          <input v-model="arg.key" class="field flex-1 font-mono text-xs" placeholder="key" @blur="saveArgs" />
+          <input v-model="arg.value" class="field flex-1 font-mono text-xs" placeholder="value" @blur="saveArgs" />
           <button type="button" class="icon-action text-destructive" @click="removeArg(idx)">
             <Icon name="lucide:x" class="h-3.5 w-3.5" />
           </button>
@@ -251,14 +274,18 @@
             <Icon name="lucide:plus" class="h-3.5 w-3.5" />
           </button>
         </div>
-        <p class="text-[10px] text-muted-foreground">Each route maps to an outgoing edge. Conditions are evaluated in order; the first match fires.</p>
+        <p class="text-[10px] text-muted-foreground">
+          Each route maps to an outgoing edge. Conditions are evaluated in order; the first match fires.
+        </p>
 
         <div
           v-for="(route, idx) in routes"
           :key="route.id"
           class="rounded-lg border border-border bg-muted/30 p-3 space-y-2">
           <div class="flex items-center gap-1.5">
-            <span class="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground w-14 shrink-0">Label</span>
+            <span class="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground w-14 shrink-0">
+              Label
+            </span>
             <input
               v-model="route.label"
               :disabled="route.id === 'default'"
@@ -275,7 +302,9 @@
             <span v-else class="text-[10px] text-muted-foreground w-5 text-center">↙</span>
           </div>
           <div v-if="route.id !== 'default'" class="flex items-start gap-1.5">
-            <span class="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground w-14 shrink-0 pt-1.5">Condition</span>
+            <span class="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground w-14 shrink-0 pt-1.5">
+              Condition
+            </span>
             <textarea
               v-model="route.condition"
               rows="2"
@@ -284,7 +313,9 @@
               @blur="saveRoutes" />
           </div>
           <div v-else class="flex items-center gap-1.5">
-            <span class="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground w-14 shrink-0">Default</span>
+            <span class="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground w-14 shrink-0">
+              Default
+            </span>
             <span class="text-[11px] text-muted-foreground italic">Fires if no other route matches</span>
           </div>
         </div>
@@ -312,7 +343,11 @@
           placeholder="input.role === 'admin'"
           @blur="setGuard('condition', ($event.target as HTMLTextAreaElement).value)" />
         <p class="text-[10px] text-muted-foreground">
-          Evaluated against the current execution <code class="rounded bg-muted px-1">input</code> and <code class="rounded bg-muted px-1">state</code>.
+          Evaluated against the current execution
+          <code class="rounded bg-muted px-1">input</code>
+          and
+          <code class="rounded bg-muted px-1">state</code>
+          .
         </p>
       </div>
     </template>
@@ -348,7 +383,8 @@
           placeholder="output.text"
           @blur="setMemory('from', ($event.target as HTMLInputElement).value)" />
         <p class="text-[10px] text-muted-foreground">
-          Dot-path into the previous node's output. E.g. <code class="rounded bg-muted px-1">output.text</code>
+          Dot-path into the previous node's output. E.g.
+          <code class="rounded bg-muted px-1">output.text</code>
         </p>
       </div>
     </template>
@@ -387,7 +423,8 @@
         {{ Math.round(node.position.x) }}, {{ Math.round(node.position.y) }}
       </p>
       <p class="font-mono text-[10px] text-muted-foreground break-all">
-        <span class="font-medium not-mono">ID</span> {{ node.id }}
+        <span class="font-medium not-mono">ID</span>
+        {{ node.id }}
       </p>
     </div>
   </div>
@@ -418,7 +455,9 @@
     justify-content: center;
     border-radius: 0.375rem;
     color: var(--muted-foreground);
-    transition: color 0.15s ease, background-color 0.15s ease;
+    transition:
+      color 0.15s ease,
+      background-color 0.15s ease;
   }
   .icon-action:hover {
     background-color: var(--muted);

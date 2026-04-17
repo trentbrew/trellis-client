@@ -1,15 +1,10 @@
 import type { WorkflowGraph, WorkflowNodeDef } from '~/types/database'
-import type {
-  Node as TQLNode,
-  EngineEvent,
-  EngineState,
-  Trace,
-  LLMClient,
-  ToolFn,
-} from '@toolkit/tql/graph'
-import { Graph, Engine } from '@toolkit/tql/graph'
+import type { Node as TQLNode, EngineEvent, EngineState, Trace, LLMClient, ToolFn } from '@turtle.tech/tql/graph'
+import { Graph, Engine } from '@turtle.tech/tql/graph'
+import { createDefaultLLMClient } from '~/lib/llm'
+import { createDefaultWorkflowTools } from '~/lib/workflow-tools'
 
-export type { Trace } from '@toolkit/tql/graph'
+export type { Trace } from '@turtle.tech/tql/graph'
 
 // ─── Condition compiler ────────────────────────────────────────────────────────
 
@@ -30,11 +25,12 @@ function addCompiledNode(graph: Graph, nodeDef: WorkflowNodeDef): void {
   switch (kind) {
     case 'agent':
       graph.addNode({
-        id, kind: 'Agent',
+        id,
+        kind: 'Agent',
         data: {
           system: (data?.system as string) || undefined,
           prompt: (data?.prompt as string) || '{{input}}',
-          model: (data?.model as string) || 'gpt-4o',
+          model: (data?.model as string) || 'gemma4:e4b',
           stream: Boolean(data?.stream),
         },
       } as TQLNode)
@@ -43,8 +39,14 @@ function addCompiledNode(graph: Graph, nodeDef: WorkflowNodeDef): void {
     case 'tool': {
       const rawArgs = (data?.args as { key: string; value: string }[] | undefined) ?? []
       const compiledArgs: Record<string, unknown> = {}
-      for (const { key, value } of rawArgs) { if (key) compiledArgs[key] = value }
-      graph.addNode({ id, kind: 'Tool', data: { name: (data?.toolName as string) || 'run_js', args: compiledArgs } } as TQLNode)
+      for (const { key, value } of rawArgs) {
+        if (key) compiledArgs[key] = value
+      }
+      graph.addNode({
+        id,
+        kind: 'Tool',
+        data: { name: (data?.toolName as string) || 'run_js', args: compiledArgs },
+      } as TQLNode)
       break
     }
 
@@ -54,7 +56,10 @@ function addCompiledNode(graph: Graph, nodeDef: WorkflowNodeDef): void {
       const nonDefault = raw.filter((r) => r.id !== 'default')
       const defaultRoute = raw.find((r) => r.id === 'default')
       const routes = [
-        ...nonDefault.map((r) => ({ label: r.label, when: r.condition ? safeCompileCondition(r.condition) : () => false })),
+        ...nonDefault.map((r) => ({
+          label: r.label,
+          when: r.condition ? safeCompileCondition(r.condition) : () => false,
+        })),
         { label: defaultRoute?.label ?? 'default', when: () => true as boolean },
       ]
       graph.addNode({ id, kind: 'Router', data: { routes } } as TQLNode)
@@ -75,7 +80,11 @@ function addCompiledNode(graph: Graph, nodeDef: WorkflowNodeDef): void {
       break
 
     case 'memory-write':
-      graph.addNode({ id, kind: 'MemoryWrite', data: { key: (data?.key as string) || '', from: (data?.from as string) || undefined } } as TQLNode)
+      graph.addNode({
+        id,
+        kind: 'MemoryWrite',
+        data: { key: (data?.key as string) || '', from: (data?.from as string) || undefined },
+      } as TQLNode)
       break
 
     case 'end':
@@ -94,7 +103,11 @@ function compileGraph(
   const startDef = wfGraph.nodes.find((n) => n.kind === 'start')
   if (!startDef) throw new Error('Workflow has no Start node')
 
-  graph.addNode({ id: startDef.id, kind: 'Agent', data: { system: 'Passthrough.', prompt: '{{input}}', model: 'passthrough' } } as TQLNode)
+  graph.addNode({
+    id: startDef.id,
+    kind: 'Agent',
+    data: { system: 'Passthrough.', prompt: '{{input}}', model: 'passthrough' },
+  } as TQLNode)
 
   for (const nodeDef of wfGraph.nodes) {
     if (nodeDef.kind === 'start' || nodeDef.kind === 'note') continue
@@ -108,11 +121,18 @@ function compileGraph(
     graph.addEdge({ id: e.id, from: e.source, to: e.target, label: e.sourceHandle || e.label || 'default' })
   }
 
-  const engine = new Engine(graph, { llm: options.llm ?? createPassthroughLLM(), tools: options.tools, maxSteps: 50, perNodeMs: 15_000, onEvent: options.onEvent })
+  const engine = new Engine(graph, {
+    llm: options.llm ?? createDefaultLLMClient(),
+    tools: options.tools ?? createDefaultWorkflowTools(),
+    maxSteps: 50,
+    perNodeMs: 60_000,
+    onEvent: options.onEvent,
+  })
   return { engine, startId: startDef.id }
 }
 
-function createPassthroughLLM(): LLMClient {
+/** Passthrough LLM — echoes the prompt. Useful for tests/mocks. */
+export function createPassthroughLLM(): LLMClient {
   return async (req) => ({ text: req.prompt ?? '(no input)' })
 }
 
@@ -181,7 +201,12 @@ export function useWorkflowExecution() {
             const trace = ev.data as Trace | undefined
             nodeStates.value = {
               ...nodeStates.value,
-              [ev.nodeId]: { ...(nodeStates.value[ev.nodeId] ?? {}), status: 'completed', completedAt: ev.ts, durationMs: trace ? trace.tEnd - trace.tStart : undefined },
+              [ev.nodeId]: {
+                ...(nodeStates.value[ev.nodeId] ?? {}),
+                status: 'completed',
+                completedAt: ev.ts,
+                durationMs: trace ? trace.tEnd - trace.tStart : undefined,
+              },
             }
           }
           break
@@ -189,7 +214,11 @@ export function useWorkflowExecution() {
           if (ev.nodeId) {
             nodeStates.value = {
               ...nodeStates.value,
-              [ev.nodeId]: { ...(nodeStates.value[ev.nodeId] ?? {}), status: 'error', error: (ev.data?.error as string) ?? 'Unknown error' },
+              [ev.nodeId]: {
+                ...(nodeStates.value[ev.nodeId] ?? {}),
+                status: 'error',
+                error: (ev.data?.error as string) ?? 'Unknown error',
+              },
             }
           }
           break
@@ -204,7 +233,11 @@ export function useWorkflowExecution() {
     }
 
     try {
-      const { engine, startId } = compileGraph(wfGraph, { llm: options.llm, tools: options.tools, onEvent: handleEvent })
+      const { engine, startId } = compileGraph(wfGraph, {
+        llm: options.llm,
+        tools: options.tools,
+        onEvent: handleEvent,
+      })
       let lastState: EngineState | null = null
       for await (const step of engine.run(startId, input)) {
         lastState = step.state
@@ -223,15 +256,29 @@ export function useWorkflowExecution() {
 
   function getNodeExecutionClass(nodeId: string): string {
     switch (nodeStates.value[nodeId]?.status) {
-      case 'running':   return 'flow-exec--running'
-      case 'completed': return 'flow-exec--completed'
-      case 'error':     return 'flow-exec--errored'
-      default:          return ''
+      case 'running':
+        return 'flow-exec--running'
+      case 'completed':
+        return 'flow-exec--completed'
+      case 'error':
+        return 'flow-exec--errored'
+      default:
+        return ''
     }
   }
 
   return {
-    status, activeNodeId, activeEdgeId, nodeStates, traces, stepOutputs, finalState, error, totalDurationMs,
-    run, resetState, getNodeExecutionClass,
+    status,
+    activeNodeId,
+    activeEdgeId,
+    nodeStates,
+    traces,
+    stepOutputs,
+    finalState,
+    error,
+    totalDurationMs,
+    run,
+    resetState,
+    getNodeExecutionClass,
   }
 }

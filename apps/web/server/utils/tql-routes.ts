@@ -8,7 +8,7 @@
  * them into RouteConfig objects for navigation, sidebar, and breadcrumbs.
  */
 
-import type { RouteDefinition } from '@toolkit/tql'
+import type { RouteDefinition } from '@turtle.tech/tql'
 
 // ============================================================================
 // Home Route — /home
@@ -421,6 +421,73 @@ const calendarRoute: RouteDefinition = {
 }
 
 // ============================================================================
+// Mail Route — /mail
+// ============================================================================
+
+const mailRoute: RouteDefinition = {
+  '@id': 'route:mail',
+  '@type': 'trellis:Route',
+  routePath: '/mail',
+  label: 'Mail',
+  icon: 'lucide:mail',
+  order: 15,
+  inRail: true,
+  railPosition: 'primary',
+  inCommandPalette: true,
+  requiresAuth: true,
+  meta: {
+    title: 'Mail',
+    description: 'Read, send, and link emails to workspace entities',
+    hideSidebar: false,
+    fullWidth: true,
+  },
+  sidebarSections: [
+    {
+      label: 'MAILBOXES',
+      key: 'mail-mailboxes',
+      icon: 'lucide:inbox',
+      collapsible: true,
+      order: 10,
+      items: [
+        { routePath: '/mail?label=INBOX', label: 'Inbox', icon: 'lucide:inbox' },
+        { routePath: '/mail?label=STARRED', label: 'Starred', icon: 'lucide:star' },
+        { routePath: '/mail?label=SENT', label: 'Sent', icon: 'lucide:send' },
+        { routePath: '/mail?label=DRAFT', label: 'Drafts', icon: 'lucide:file-edit' },
+        { routePath: '/mail?label=IMPORTANT', label: 'Important', icon: 'lucide:flag' },
+        { routePath: '/mail?label=TRASH', label: 'Trash', icon: 'lucide:trash-2' },
+      ],
+    },
+    {
+      label: 'LABELS',
+      key: 'mail-labels',
+      icon: 'lucide:tag',
+      collapsible: true,
+      editable: true,
+      order: 20,
+      items: [],
+    },
+  ],
+  children: [
+    {
+      '@id': 'route:mail/compose',
+      '@type': 'trellis:Route',
+      routePath: '/mail/compose',
+      label: 'Compose',
+      icon: 'lucide:pen-square',
+      meta: { title: 'Compose' },
+    },
+    {
+      '@id': 'route:mail/thread',
+      '@type': 'trellis:Route',
+      routePath: '/mail/thread/:threadId',
+      label: 'Thread',
+      icon: 'lucide:mail',
+      meta: { title: 'Thread' },
+    },
+  ],
+}
+
+// ============================================================================
 // Messages Route — /messages
 // ============================================================================
 
@@ -541,7 +608,7 @@ const workflowsRoute: RouteDefinition = {
   label: 'Workflows',
   icon: 'lucide:git-branch',
   order: 40,
-  inRail: false,
+  inRail: true,
   railPosition: 'primary',
   inCommandPalette: true,
   requiresAuth: true,
@@ -772,6 +839,7 @@ export function getRouteDefinitions(): Record<string, RouteDefinition> {
     'route:agent': agentRoute,
     'route:workspace': workspaceRoute,
     'route:calendar': calendarRoute,
+    'route:mail': mailRoute,
     'route:messages': messagesRoute,
     'route:pages': pagesRoute,
     'route:database': databaseRoute,
@@ -787,6 +855,7 @@ export {
   agentRoute,
   workspaceRoute,
   calendarRoute,
+  mailRoute,
   messagesRoute,
   pagesRoute,
   databaseRoute,

@@ -53,9 +53,7 @@ export const useRoutes = () => {
     const server = serverRoutes.value
     if (server.length > 0) {
       // Server routes replace the app-config.jsonld routes; keep static-only routes (docs)
-      const staticOnly = routeConfig.filter(r =>
-        !server.some(s => s.path === r.path),
-      )
+      const staticOnly = routeConfig.filter((r) => !server.some((s) => s.path === r.path))
       return [...server, ...staticOnly]
     }
     return routeConfig
@@ -215,7 +213,11 @@ export const useRoutes = () => {
     const map = new Map<string, RouteConfig>()
 
     // Filter and keep section roots as rail items
-    const filteredSections = filterRoutesByPermissions(effectiveRouteConfig.value, userRole.value, hasFacilityMembership.value)
+    const filteredSections = filterRoutesByPermissions(
+      effectiveRouteConfig.value,
+      userRole.value,
+      hasFacilityMembership.value,
+    )
     filteredSections.forEach((section) => {
       if (section?.path) map.set(section.path, section)
     })
@@ -483,7 +485,12 @@ export const useRoutes = () => {
         dynamicChildren = [...pagesChildren.value]
         break
       case '/database':
-        dynamicChildren = [...systemTypesChildren.value, ...collectionsChildren.value, ...typesChildren.value, ...ontologyTypeChildren.value]
+        dynamicChildren = [
+          ...systemTypesChildren.value,
+          ...collectionsChildren.value,
+          ...typesChildren.value,
+          ...ontologyTypeChildren.value,
+        ]
         break
       case '/workflows':
         dynamicChildren = workflowsChildren.value
@@ -491,7 +498,9 @@ export const useRoutes = () => {
     }
 
     // Merge static children (from config) with dynamic children
-    const adopted = flattenRoutes(effectiveRouteConfig.value).filter((r) => r?.path && r.meta?.sidebarSectionPath === section.path)
+    const adopted = flattenRoutes(effectiveRouteConfig.value).filter(
+      (r) => r?.path && r.meta?.sidebarSectionPath === section.path,
+    )
 
     const allChildren = [...dynamicChildren, ...(section.children || []), ...adopted]
 
@@ -630,63 +639,62 @@ export const useRoutes = () => {
         return true
       })
 
-    const sections = uniqueSectionNodes
-      .map((sectionNode) => {
-        let items: RouteConfig[] = []
+    const sections = uniqueSectionNodes.map((sectionNode) => {
+      let items: RouteConfig[] = []
 
-        // Resolve special items
-        if (sectionNode.specialItems === 'pinned') {
-          items = pinned.getPinnedItems(currentSectionLinks.value)
-        } else if (sectionNode.specialItems === 'pages') {
-          items = [...pagesChildren.value]
-        } else {
-          // Convert child tree nodes to RouteConfig items (including groups with nested children)
-          items = sectionNode.children
-            .filter((child) => child.nodeType === 'item' || child.nodeType === 'group')
-            .map((child) => ({
-              path: child.routePath || '',
-              label: child.label,
-              icon: child.icon,
-              _treeNodeId: child.id,
-              _locked: child.locked,
-              _nodeType: child.nodeType,
-              _children: child.nodeType === 'group' ? child.children : undefined,
-              _collapsed: child.collapsed,
-            }))
-        }
+      // Resolve special items
+      if (sectionNode.specialItems === 'pinned') {
+        items = pinned.getPinnedItems(currentSectionLinks.value)
+      } else if (sectionNode.specialItems === 'pages') {
+        items = [...pagesChildren.value]
+      } else {
+        // Convert child tree nodes to RouteConfig items (including groups with nested children)
+        items = sectionNode.children
+          .filter((child) => child.nodeType === 'item' || child.nodeType === 'group')
+          .map((child) => ({
+            path: child.routePath || '',
+            label: child.label,
+            icon: child.icon,
+            _treeNodeId: child.id,
+            _locked: child.locked,
+            _nodeType: child.nodeType,
+            _children: child.nodeType === 'group' ? child.children : undefined,
+            _collapsed: child.collapsed,
+          }))
+      }
 
-        // Filter out pinned items from non-pinned sections
-        if (sectionNode.specialItems !== 'pinned') {
-          items = items.filter((item) => !pinnedPaths.has(item.path))
-        }
+      // Filter out pinned items from non-pinned sections
+      if (sectionNode.specialItems !== 'pinned') {
+        items = items.filter((item) => !pinnedPaths.has(item.path))
+      }
 
-        // Apply permission filtering
-        items = filterRoutesByPermissions(items, userRole.value, hasFacilityMembership.value)
+      // Apply permission filtering
+      items = filterRoutesByPermissions(items, userRole.value, hasFacilityMembership.value)
 
-        // Apply app-scoped entity type filtering
-        items = items.filter((item) => !item?.path || isRouteEnabledForApp(item.path))
+      // Apply app-scoped entity type filtering
+      items = items.filter((item) => !item?.path || isRouteEnabledForApp(item.path))
 
-        let resolvedItems = items.filter((item) => item?.path && item.visible?.() !== false)
+      let resolvedItems = items.filter((item) => item?.path && item.visible?.() !== false)
 
-        // Apply user-defined item order
-        const key = sectionNode.sectionKey || sectionNode.id
-        resolvedItems = sidebarOrder.applyItemOrder(key, resolvedItems)
+      // Apply user-defined item order
+      const key = sectionNode.sectionKey || sectionNode.id
+      resolvedItems = sidebarOrder.applyItemOrder(key, resolvedItems)
 
-        return {
-          label: sectionNode.label,
-          key: sectionNode.sectionKey || sectionNode.id,
-          icon: sectionNode.icon,
-          collapsible: sectionNode.nodeType === 'section',
-          defaultCollapsed: sectionNode.collapsed,
-          editable: sectionNode.editable,
-          order: sectionNode.order,
-          items: resolvedItems,
-          itemsMode: sectionNode.specialItems || undefined,
-          locked: sectionNode.locked,
-          _treeNodeId: sectionNode.id,
-          _locked: sectionNode.locked,
-        }
-      })
+      return {
+        label: sectionNode.label,
+        key: sectionNode.sectionKey || sectionNode.id,
+        icon: sectionNode.icon,
+        collapsible: sectionNode.nodeType === 'section',
+        defaultCollapsed: sectionNode.collapsed,
+        editable: sectionNode.editable,
+        order: sectionNode.order,
+        items: resolvedItems,
+        itemsMode: sectionNode.specialItems || undefined,
+        locked: sectionNode.locked,
+        _treeNodeId: sectionNode.id,
+        _locked: sectionNode.locked,
+      }
+    })
 
     // Merge in user-created custom sections from localStorage
     const customSections = sidebarOrder.getCustomSections('/workspace')
@@ -752,70 +760,72 @@ export const useRoutes = () => {
     // items would be filtered out with nowhere to land (disappear entirely).
     const hasPinnedSection = section.sidebarSections.some((s) => s.items === 'pinned')
 
-    const resolved = section.sidebarSections
-      .map((sectionDef) => {
-        let items: RouteConfig[] = []
+    const resolved = section.sidebarSections.map((sectionDef) => {
+      let items: RouteConfig[] = []
 
-        if (isDatabase && sectionDef.key === 'database-entities') {
-          // ENTITIES section gets schema.org-derived entity types
-          items = [...entityTypesChildren.value]
-        } else if (isDatabase && sectionDef.key === 'database-system') {
-          // SYSTEM section gets platform constructs
-          items = [...platformTypesChildren.value]
-        } else if (isDatabase && sectionDef.key === 'database-custom') {
-          // CUSTOM section gets collections + custom types + ontology types
-          items = [...collectionsChildren.value, ...typesChildren.value, ...ontologyTypeChildren.value]
-        } else if (sectionDef.key === 'personal-pages') {
-          // PAGES section gets user-created pages
-          items = [...pagesChildren.value]
-        } else if (sectionDef.key === 'workflows') {
-          // WORKFLOWS section gets user-created workflows
-          items = [...workflowsChildren.value]
-        }
-        // Handle special keywords
-        else if (sectionDef.items === 'pinned') {
-          items = pinned.getPinnedItems(currentSectionLinks.value)
-        } else if (sectionDef.items === 'unpinned') {
-          items = pinned.getUnpinnedItems(currentSectionLinks.value)
-        }
-        // Resolve items (can be static array or function)
-        else if (typeof sectionDef.items === 'function') {
-          const result = sectionDef.items()
-          items = Array.isArray(result) ? result : []
-        } else if (Array.isArray(sectionDef.items)) {
-          items = sectionDef.items
-        }
+      if (isDatabase && sectionDef.key === 'database-entities') {
+        // ENTITIES section gets schema.org-derived entity types
+        items = [...entityTypesChildren.value]
+      } else if (isDatabase && sectionDef.key === 'database-system') {
+        // SYSTEM section gets platform constructs
+        items = [...platformTypesChildren.value]
+      } else if (isDatabase && sectionDef.key === 'database-custom') {
+        // CUSTOM section gets collections + custom types + ontology types
+        items = [...collectionsChildren.value, ...typesChildren.value, ...ontologyTypeChildren.value]
+      } else if (isDatabase && sectionDef.key === 'database-tools') {
+        // TOOLS section uses static items from route config (explorer, query, ontology, activity)
+        items = Array.isArray(sectionDef.items) ? [...sectionDef.items] : []
+      } else if (sectionDef.key === 'personal-pages') {
+        // PAGES section gets user-created pages
+        items = [...pagesChildren.value]
+      } else if (sectionDef.key === 'workflows') {
+        // WORKFLOWS section gets user-created workflows
+        items = [...workflowsChildren.value]
+      }
+      // Handle special keywords
+      else if (sectionDef.items === 'pinned') {
+        items = pinned.getPinnedItems(currentSectionLinks.value)
+      } else if (sectionDef.items === 'unpinned') {
+        items = pinned.getUnpinnedItems(currentSectionLinks.value)
+      }
+      // Resolve items (can be static array or function)
+      else if (typeof sectionDef.items === 'function') {
+        const result = sectionDef.items()
+        items = Array.isArray(result) ? result : []
+      } else if (Array.isArray(sectionDef.items)) {
+        items = sectionDef.items
+      }
 
-        // Filter out pinned items from non-pinned sections only when a PINNED
-        // section exists in this route to catch them. Skip for database routes
-        // since those sections manage their own item resolution.
-        if (sectionDef.items !== 'pinned' && !isDatabase && hasPinnedSection) {
-          items = items.filter((item) => !pinnedPaths.has(item.path))
-        }
+      // Filter out pinned items from non-pinned sections only when a PINNED
+      // section exists in this route to catch them. Skip for database routes
+      // since those sections manage their own item resolution.
+      if (sectionDef.items !== 'pinned' && !isDatabase && hasPinnedSection) {
+        items = items.filter((item) => !pinnedPaths.has(item.path))
+      }
 
-        // Apply permission filtering to static items
-        if (Array.isArray(items)) {
-          items = filterRoutesByPermissions(items, userRole.value, hasFacilityMembership.value)
-        }
+      // Apply permission filtering to static items
+      if (Array.isArray(items)) {
+        items = filterRoutesByPermissions(items, userRole.value, hasFacilityMembership.value)
+      }
 
-        // Apply app-scoped entity type filtering
-        items = items.filter((item) => !item?.path || isRouteEnabledForApp(item.path))
+      // Apply app-scoped entity type filtering
+      items = items.filter((item) => !item?.path || isRouteEnabledForApp(item.path))
 
-        let resolvedItems = items.filter((item) => item?.path && item.visible?.() !== false)
+      let resolvedItems = items.filter((item) => item?.path && item.visible?.() !== false)
 
-        // Apply user-defined item order within this section
-        // Only for: workspace sections (all) + database-custom
-        const canReorderItems = isWorkspace || (isDatabase && sectionDef.key === 'database-custom')
-        if (canReorderItems) {
-          resolvedItems = sidebarOrder.applyItemOrder(sectionDef.key, resolvedItems)
-        }
+      // Apply user-defined item order within this section
+      // Only for: workspace sections (all) + database-custom
+      const canReorderItems = isWorkspace || (isDatabase && sectionDef.key === 'database-custom')
+      if (canReorderItems) {
+        resolvedItems = sidebarOrder.applyItemOrder(sectionDef.key, resolvedItems)
+      }
 
-        return {
-          ...sectionDef,
-          items: resolvedItems,
-          itemsMode: sectionDef.items,
-        }
-      })
+      return {
+        ...sectionDef,
+        items: resolvedItems,
+        itemsMode: sectionDef.items,
+      }
+    })
 
     // Merge in user-created custom sections (workspace only)
     if (isWorkspace) {

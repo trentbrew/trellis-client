@@ -3,6 +3,7 @@
   import { getEntityTypeConfig } from '~/config/entityRegistry'
   import { getEntityClass } from '~/types/entity'
   import { stripHtml } from '~/utils/stripHtml'
+  import { formatRecurrenceLabel } from '~/utils/recurrence'
 
   const props = withDefaults(
     defineProps<{
@@ -66,8 +67,7 @@
   }
   const fileMeta = computed(() => {
     const mime = i.value.mimeType || ''
-    for (const [prefix, meta] of Object.entries(mimeIconMap))
-      if (mime.startsWith(prefix)) return meta
+    for (const [prefix, meta] of Object.entries(mimeIconMap)) if (mime.startsWith(prefix)) return meta
     return { icon: 'lucide:file', color: 'text-muted-foreground' }
   })
 
@@ -91,8 +91,7 @@
   const getDomain = (url: string) => {
     try {
       return new URL(url).hostname.replace('www.', '')
-    }
-    catch {
+    } catch {
       return url
     }
   }
@@ -100,29 +99,34 @@
   // ─── Status / priority / category colors ───
   const itemStatus = computed(() => {
     if (isTemporal.value)
-      return i.value.taskStatus || i.value.tripStatus || i.value.paymentStatus
-        || i.value.sprintStatus || i.value.budgetStatus || ''
-    if (isContainer.value)
-      return i.value.status || ''
+      return (
+        i.value.taskStatus ||
+        i.value.tripStatus ||
+        i.value.paymentStatus ||
+        i.value.sprintStatus ||
+        i.value.budgetStatus ||
+        ''
+      )
+    if (isContainer.value) return i.value.status || ''
     return ''
   })
 
   const statusColors: Record<string, string> = {
-    'pending': 'bg-gray-500/10 text-gray-400',
+    pending: 'bg-gray-500/10 text-gray-400',
     'in-progress': 'bg-blue-500/10 text-blue-400',
     'on-track': 'bg-emerald-500/10 text-emerald-400',
     'due-soon': 'bg-amber-500/10 text-amber-400',
-    'overdue': 'bg-red-500/10 text-red-400',
-    'completed': 'bg-emerald-500/10 text-emerald-400',
-    'planning': 'bg-purple-500/10 text-purple-400',
-    'booked': 'bg-blue-500/10 text-blue-400',
-    'active': 'bg-emerald-500/10 text-emerald-400',
-    'cancelled': 'bg-red-500/10 text-red-400',
-    'paid': 'bg-emerald-500/10 text-emerald-400',
-    'draft': 'bg-gray-500/10 text-gray-400',
-    'closed': 'bg-gray-500/10 text-gray-400',
+    overdue: 'bg-red-500/10 text-red-400',
+    completed: 'bg-emerald-500/10 text-emerald-400',
+    planning: 'bg-purple-500/10 text-purple-400',
+    booked: 'bg-blue-500/10 text-blue-400',
+    active: 'bg-emerald-500/10 text-emerald-400',
+    cancelled: 'bg-red-500/10 text-red-400',
+    paid: 'bg-emerald-500/10 text-emerald-400',
+    draft: 'bg-gray-500/10 text-gray-400',
+    closed: 'bg-gray-500/10 text-gray-400',
     'over-budget': 'bg-red-500/10 text-red-400',
-    'archived': 'bg-gray-500/10 text-gray-400',
+    archived: 'bg-gray-500/10 text-gray-400',
     'on-hold': 'bg-amber-500/10 text-amber-400',
   }
 
@@ -170,8 +174,7 @@
   const formatDate = (d: string) => {
     try {
       return new Date(d + 'T00:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
-    }
-    catch {
+    } catch {
       return d
     }
   }
@@ -191,11 +194,21 @@
     return formatDate(end)
   })
 
-  const isCompleted = computed(() => isTemporal.value && (i.value.taskStatus === 'completed' || i.value.achieved === true))
-
-  const refCount = computed(() =>
-    (i.value.references || []).filter((r: any) => r.kind === 'entity').length,
+  const isCompleted = computed(
+    () => isTemporal.value && (i.value.taskStatus === 'completed' || i.value.achieved === true),
   )
+
+  const refCount = computed(() => (i.value.references || []).filter((r: any) => r.kind === 'entity').length)
+
+  const recurrenceLabel = computed(() => {
+    if (!isTemporal.value) return null
+    if (i.value.recurrence?.frequency) return formatRecurrenceLabel(i.value.recurrence)
+    if (i.value._recurringLabel) return i.value._recurringLabel
+    if (i.value.recurringEventId || (i.value.googleEventId && String(i.value.googleEventId).includes('_'))) {
+      return 'Recurring event'
+    }
+    return null
+  })
 
   // ─── Inline tag input (footer) ───
   const showTagInput = ref(false)
@@ -246,17 +259,9 @@
         :alt="item.title"
         class="w-full h-full object-cover"
         :class="isOrg ? 'rounded-md' : 'rounded-full'" />
-      <span
-        v-else-if="isActor"
-        :class="['text-xs font-semibold', `text-${config.color}-500`]">{{ initials }}</span>
-      <Icon
-        v-else-if="isFile"
-        :name="fileMeta.icon"
-        :class="['h-6 w-6', fileMeta.color]" />
-      <Icon
-        v-else
-        :name="config.icon"
-        :class="['h-5 w-5', `text-${config.color}-500`]" />
+      <span v-else-if="isActor" :class="['text-xs font-semibold', `text-${config.color}-500`]">{{ initials }}</span>
+      <Icon v-else-if="isFile" :name="fileMeta.icon" :class="['h-6 w-6', fileMeta.color]" />
+      <Icon v-else :name="config.icon" :class="['h-5 w-5', `text-${config.color}-500`]" />
     </div>
 
     <!-- Content (right) -->
@@ -268,7 +273,10 @@
         <Icon v-if="isDocument && i.pinned" name="lucide:pin" class="h-3 w-3 text-amber-500 shrink-0" />
         <span
           v-if="itemStatus"
-          :class="['ml-auto shrink-0 rounded-full px-1.5 py-0.5 text-[10px] font-medium', statusColors[itemStatus] || 'bg-muted text-muted-foreground']">
+          :class="[
+            'ml-auto shrink-0 rounded-full px-1.5 py-0.5 text-[10px] font-medium',
+            statusColors[itemStatus] || 'bg-muted text-muted-foreground',
+          ]">
           {{ itemStatus }}
         </span>
       </div>
@@ -284,7 +292,10 @@
       <div class="flex items-center gap-2 text-xs text-muted-foreground flex-wrap">
         <span
           v-if="i.category"
-          :class="['rounded-full px-1.5 py-0.5 text-[10px] font-medium', categoryColors[i.category] || 'bg-muted text-muted-foreground']">
+          :class="[
+            'rounded-full px-1.5 py-0.5 text-[10px] font-medium',
+            categoryColors[i.category] || 'bg-muted text-muted-foreground',
+          ]">
           {{ i.category }}
         </span>
         <span v-if="(isTemporal || isContainer) && dateDisplay" class="flex items-center gap-1">
@@ -296,7 +307,9 @@
           <span
             v-for="tag in item.tags.slice(0, 2)"
             :key="tag"
-            class="bg-muted/80 px-1.5 py-0.5 rounded text-[10px] font-medium">#{{ tag }}</span>
+            class="bg-muted/80 px-1.5 py-0.5 rounded text-[10px] font-medium">
+            #{{ tag }}
+          </span>
         </template>
       </div>
     </div>
@@ -338,15 +351,14 @@
     </div>
 
     <!-- ─── Preview: File icon ─── -->
-    <div
-      v-else-if="isFile"
-      class="aspect-video bg-muted/40 flex items-center justify-center border-b border-border/50">
+    <div v-else-if="isFile" class="aspect-video bg-muted/40 flex items-center justify-center border-b border-border/50">
       <Icon :name="fileMeta.icon" :class="['h-10 w-10', fileMeta.color]" />
     </div>
 
     <!-- ─── Preview: Note rendered content ─── -->
     <div v-else-if="isNote" class="relative border-b bg-background/50 border-border">
-      <div class="absolute inset-0 bg-linear-to-b from-transparent via-transparent to-background/50 pointer-events-none z-10" />
+      <div
+        class="absolute inset-0 bg-linear-to-b from-transparent via-transparent to-background/50 pointer-events-none z-10" />
       <div
         v-if="i.content"
         class="prose prose-sm dark:prose-invert max-w-none text-[8px] leading-relaxed p-3 overflow-hidden opacity-50"
@@ -399,7 +411,9 @@
             class="h-3.5 w-3.5 shrink-0 rounded-sm"
             @error="($event.target as HTMLImageElement).style.display = 'none'" />
           <Icon v-else name="lucide:bookmark" class="h-3.5 w-3.5 shrink-0 text-muted-foreground/50" />
-          <span class="text-[11px] text-muted-foreground truncate font-mono">{{ i.siteName || getDomain(i.url || '') }}</span>
+          <span class="text-[11px] text-muted-foreground truncate font-mono">
+            {{ i.siteName || getDomain(i.url || '') }}
+          </span>
         </template>
         <template v-else>
           <Icon :name="config.icon" :class="['h-3.5 w-3.5 shrink-0', `text-${config.color}-500`]" />
@@ -418,7 +432,10 @@
           </div>
           <span
             v-else
-            :class="['rounded-full px-1.5 py-0.5 text-[10px] font-medium', categoryColors[i.category] || 'bg-muted text-muted-foreground']">
+            :class="[
+              'rounded-full px-1.5 py-0.5 text-[10px] font-medium',
+              categoryColors[i.category] || 'bg-muted text-muted-foreground',
+            ]">
             {{ i.category }}
           </span>
         </template>
@@ -436,9 +453,7 @@
               display="pill"
               @update:model-value="$emit('field-update', 'priority', $event)" />
           </div>
-          <span
-            v-else
-            :class="['text-[10px] font-medium', priorityColors[i.priority] || 'text-muted-foreground']">
+          <span v-else :class="['text-[10px] font-medium', priorityColors[i.priority] || 'text-muted-foreground']">
             {{ i.priority }}
           </span>
         </template>
@@ -456,7 +471,10 @@
           </div>
           <span
             v-else
-            :class="['rounded-full px-1.5 py-0.5 text-[10px] font-medium', statusColors[itemStatus] || 'bg-muted text-muted-foreground']">
+            :class="[
+              'rounded-full px-1.5 py-0.5 text-[10px] font-medium',
+              statusColors[itemStatus] || 'bg-muted text-muted-foreground',
+            ]">
             {{ itemStatus }}
           </span>
         </template>
@@ -486,6 +504,12 @@
         ]">
         {{ displayDescription }}
       </p>
+
+      <!-- Recurrence badge -->
+      <div v-if="recurrenceLabel" class="flex items-center gap-1 text-[10px] text-primary/70">
+        <Icon name="lucide:repeat" class="h-3 w-3 shrink-0" />
+        <span class="truncate">{{ recurrenceLabel }}</span>
+      </div>
 
       <!-- Actor contact info -->
       <div v-if="isActor && (i.email || i.phone)" class="flex items-center gap-3 text-xs text-muted-foreground">
@@ -518,7 +542,8 @@
     </div>
 
     <!-- ─── Footer ─── -->
-    <div class="flex items-center justify-between text-xs text-muted-foreground px-3 h-9 mt-auto border-t border-border/50">
+    <div
+      class="flex items-center justify-between text-xs text-muted-foreground px-3 h-9 mt-auto border-t border-border/50">
       <!-- Left: checkbox + date -->
       <div class="flex items-center gap-2">
         <button
@@ -526,9 +551,7 @@
           type="button"
           class="flex h-4 w-4 shrink-0 items-center justify-center rounded border transition-colors"
           :class="[
-            selected
-              ? 'bg-primary border-primary'
-              : 'border-border hover:border-primary/60',
+            selected ? 'bg-primary border-primary' : 'border-border hover:border-primary/60',
             selected ? 'opacity-100' : 'opacity-0 group-hover:opacity-100',
           ]"
           @click.stop="$emit('select', $event)">
@@ -553,10 +576,10 @@
           <span
             v-for="tag in item.tags.slice(0, 2)"
             :key="tag"
-            class="bg-muted/80 px-1.5 py-0.5 rounded text-[10px] font-medium truncate max-w-[80px]">#{{ tag }}</span>
-          <span
-            v-if="item.tags.length > 2"
-            class="text-[10px] opacity-60">+{{ item.tags.length - 2 }}</span>
+            class="bg-muted/80 px-1.5 py-0.5 rounded text-[10px] font-medium truncate max-w-[80px]">
+            #{{ tag }}
+          </span>
+          <span v-if="item.tags.length > 2" class="text-[10px] opacity-60">+{{ item.tags.length - 2 }}</span>
         </template>
         <!-- Inline tag input (visible on click) -->
         <input
@@ -568,7 +591,7 @@
           class="bg-transparent text-[10px] outline-none w-16 placeholder:text-muted-foreground/40"
           @keydown.enter.prevent="addCardTag"
           @blur="addCardTag"
-          @keydown.escape.prevent="showTagInput = false, cardTagInput = ''" />
+          @keydown.escape.prevent="((showTagInput = false), (cardTagInput = ''))" />
         <!-- Add tag trigger (visible on hover when no input shown) -->
         <button
           v-else-if="editable"

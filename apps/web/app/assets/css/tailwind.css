@@ -315,6 +315,13 @@
   html {
     @apply antialiased bg-background text-foreground;
   }
+  /* Tauri frameless window styling - rounded corners */
+  html.tauri {
+    @apply rounded-xl overflow-hidden;
+  }
+  html.tauri body {
+    @apply rounded-xl overflow-hidden;
+  }
   body {
     @apply bg-background text-foreground;
     letter-spacing: var(--tracking-normal);
@@ -323,9 +330,9 @@
   /* Re-enable text selection for interactive elements */
   input,
   textarea,
-  [contenteditable="true"],
+  [contenteditable='true'],
   .selectable,
-  [data-slot="dialog-content"] .ProseMirror {
+  [data-slot='dialog-content'] .ProseMirror {
     user-select: text;
   }
   ::-webkit-scrollbar {
@@ -462,7 +469,9 @@ ul[data-type='taskList'] ul[data-type='taskList']::before {
 /* Save-indicator fade transition (used in all dialog footers) */
 .save-fade-enter-active,
 .save-fade-leave-active {
-  transition: opacity 0.2s ease, transform 0.2s ease;
+  transition:
+    opacity 0.2s ease,
+    transform 0.2s ease;
 }
 .save-fade-enter-from {
   opacity: 0;

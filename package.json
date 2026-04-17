@@ -76,7 +76,7 @@
     "typescript": "^5"
   },
   "overrides": {
-    "@toolkit/ui>vite": "npm:rolldown-vite@latest"
+    "@turtle.tech/ui>vite": "npm:rolldown-vite@latest"
   },
   "workspaces": [
     "apps/*",

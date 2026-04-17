@@ -6,7 +6,7 @@
   import { extractNodeValue, fieldKeyAliases, getStatusBadgeClass, getPriorityDisplay } from '~/lib/ontology'
   import { useGlobalDetailSheet } from '~/composables/useGlobalDetailSheet'
 
-  type CalendarViewMode = 'day' | 'week' | 'month' | 'quarter' | 'year'
+  type CalendarViewMode = 'day' | 'week' | 'month' | 'year'
 
   interface CalendarEvent {
     id: string
@@ -63,8 +63,7 @@
     { value: 'day', label: 'Today', icon: 'lucide:calendar-days' },
     { value: 'week', label: 'Week', icon: 'lucide:calendar-range' },
     { value: 'month', label: 'Month', icon: 'lucide:calendar' },
-    { value: 'quarter', label: 'Quarter', icon: 'lucide:calendar-check' },
-    { value: 'year', label: 'Year', icon: 'lucide:calendar-check' },
+    { value: 'year', label: 'Year', icon: 'lucide:calendar-check-2' },
   ]
 
   const rootEl = ref<HTMLElement | null>(null)
@@ -84,15 +83,15 @@
     _containerRO.observe(rootEl.value)
     containerWidth.value = rootEl.value.getBoundingClientRect().width
   })
-  onUnmounted(() => { _containerRO?.disconnect() })
+  onUnmounted(() => {
+    _containerRO?.disconnect()
+  })
 
   // Weekday label sets: full / medium / compact
   const weekDaysFull = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat']
-  const weekDaysMed  = ['Su',  'Mo',  'Tu',  'We',  'Th',  'Fr',  'Sa']
+  const weekDaysMed = ['Su', 'Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa']
   const weekDaysSingle = ['S', 'M', 'T', 'W', 'T', 'F', 'S']
-  const weekDays = computed(() =>
-    isCompact.value ? weekDaysSingle : isMedium.value ? weekDaysMed : weekDaysFull,
-  )
+  const weekDays = computed(() => (isCompact.value ? weekDaysSingle : isMedium.value ? weekDaysMed : weekDaysFull))
 
   // ── Resizable sidebar ───────────────────────────────────────────────
   const SIDEBAR_MIN = 260
@@ -150,12 +149,11 @@
 
   // Add menu state ('+' button in cells)
   const addMenuDate = ref<Date | null>(null)
-  const isAddMenuOpen = (date: Date): boolean =>
-    !!(addMenuDate.value && isSameDay(addMenuDate.value, date))
+  const isAddMenuOpen = (date: Date): boolean => !!(addMenuDate.value && isSameDay(addMenuDate.value, date))
 
   // Temporal types for the add menu
   const temporalTypeOptions = computed(() =>
-    Object.entries(typeColorMap).map(([key, val]) => ({ typeLabel: key, ...val }))
+    Object.entries(typeColorMap).map(([key, val]) => ({ typeLabel: key, ...val })),
   )
 
   // Open event - emit to parent for UnifiedTaskDialog, fallback to global sheet
@@ -450,9 +448,7 @@
 
     const weekdaysRaw = (unwrapped as any).weekdays
     const weekdays = Array.isArray(weekdaysRaw)
-      ? weekdaysRaw
-          .map((d) => Number(d))
-          .filter((d) => Number.isInteger(d) && d >= 0 && d <= 6)
+      ? weekdaysRaw.map((d) => Number(d)).filter((d) => Number.isInteger(d) && d >= 0 && d <= 6)
       : undefined
 
     return {
@@ -554,9 +550,8 @@
 
     const base = new Date(baseDate)
 
-    const frequency = recurrence.frequency === 'custom'
-      ? getCustomRecurrenceFrequency(recurrence)
-      : recurrence.frequency
+    const frequency =
+      recurrence.frequency === 'custom' ? getCustomRecurrenceFrequency(recurrence) : recurrence.frequency
 
     if (frequency === 'weekdays') {
       let cursor = addDays(base, 1)
@@ -785,8 +780,7 @@
     dragOverDate.value = null
   }
 
-  const isDragOver = (date: Date): boolean =>
-    !!(dragOverDate.value && isSameDay(dragOverDate.value, date))
+  const isDragOver = (date: Date): boolean => !!(dragOverDate.value && isSameDay(dragOverDate.value, date))
 
   const isDayInPast = (date: Date): boolean => {
     const d = new Date(date.getFullYear(), date.getMonth(), date.getDate())
@@ -860,7 +854,11 @@
     maxLanes: number,
   ): { lanes: MultiDayLane[]; overflowPerCol: number[] } => {
     if (!weekDays.length) return { lanes: [], overflowPerCol: Array(7).fill(0) }
-    const weekStart = new Date(weekDays[0]!.date.getFullYear(), weekDays[0]!.date.getMonth(), weekDays[0]!.date.getDate())
+    const weekStart = new Date(
+      weekDays[0]!.date.getFullYear(),
+      weekDays[0]!.date.getMonth(),
+      weekDays[0]!.date.getDate(),
+    )
     const weekEnd = new Date(weekDays[6]!.date.getFullYear(), weekDays[6]!.date.getMonth(), weekDays[6]!.date.getDate())
 
     // Calendar-day difference (immune to DST): normalize both to UTC noon then divide
@@ -1075,9 +1073,15 @@
     recordNodes.value.forEach((node, nodeIndex) => {
       const values = normalizeDateValues(getFieldValue(node, field))
       const recurrence = parseRecurrenceRule(
-        getFieldValue(node, { id: 'recurrence', name: 'recurrence', type: 'text', order: 0, required: false } as DatabaseField)
-        ?? (node as any)['user:recurrence']
-        ?? (node as any).recurrence,
+        getFieldValue(node, {
+          id: 'recurrence',
+          name: 'recurrence',
+          type: 'text',
+          order: 0,
+          required: false,
+        } as DatabaseField) ??
+          (node as any)['user:recurrence'] ??
+          (node as any).recurrence,
       )
 
       // Extract display properties using ontology field key aliases
@@ -1125,9 +1129,7 @@
         const recurringDates = generateRecurringDates(baseStart, recurrence, viewStart, viewEnd)
         recurringDates.forEach((occurrenceStart, recurrenceIndex) => {
           const occurrenceEnd = new Date(occurrenceStart.getTime() + durationMs)
-          const occurrenceRange = durationMs > 0
-            ? { start: occurrenceStart, end: occurrenceEnd }
-            : undefined
+          const occurrenceRange = durationMs > 0 ? { start: occurrenceStart, end: occurrenceEnd } : undefined
 
           out.push({
             id: `${baseEventId}-repeat-${recurrenceIndex + 1}`,
@@ -1181,9 +1183,13 @@
   })
 
   // Keep the shared eventDateIndex in sync so CalendarSidebarPanel can use it
-  watch(eventsByDateKey, (map) => {
-    eventDateIndex.value = new Set(map.keys())
-  }, { immediate: true })
+  watch(
+    eventsByDateKey,
+    (map) => {
+      eventDateIndex.value = new Set(map.keys())
+    },
+    { immediate: true },
+  )
 
   // ── Computed properties that depend on multiDayEvents / eventsByDateKey ──
 
@@ -1564,6 +1570,14 @@
   // Mini calendar days for sidebar (current viewed month)
   const miniCalendarDays = computed(() => getMiniCalendarDays(currentYear.value, currentMonth.value))
 
+  // Quarter groups for the year view (4 columns × 3 months each)
+  const yearQuarters = computed(() => [
+    { label: 'Q1', months: yearMonths.value.slice(0, 3) },
+    { label: 'Q2', months: yearMonths.value.slice(3, 6) },
+    { label: 'Q3', months: yearMonths.value.slice(6, 9) },
+    { label: 'Q4', months: yearMonths.value.slice(9, 12) },
+  ])
+
   // Get months for year view with mini calendar data
   const yearMonths = computed(() => {
     const months: Array<{
@@ -1605,9 +1619,7 @@
   const hasRecurringInstance = (event: CalendarEvent) => event.isRecurringInstance === true
 
   const recurringItemClasses = (event: CalendarEvent) =>
-    hasRecurringInstance(event)
-      ? 'ring-1 ring-primary/20 border border-dashed border-primary/25'
-      : ''
+    hasRecurringInstance(event) ? 'ring-1 ring-primary/20 border border-dashed border-primary/25' : ''
 
   // currentDate defaults to new Date() (today) — no auto-navigation needed
 
@@ -1684,7 +1696,6 @@
       class="m-4" />
 
     <div v-else class="flex flex-col h-full">
-
       <!-- No Date Fields Warning -->
       <div v-if="!dateFields.length" class="flex-1 flex items-center justify-center p-8">
         <div class="text-center max-w-md space-y-4">
@@ -1933,478 +1944,322 @@
         </div>
 
         <!-- Main Calendar Area -->
-        <div class="flex-1 min-w-0 h-full overflow-hidden">
-                <!-- Calendar Header -->
-        <div
-          class="shrink-0 border-b border-border bg-transparent p-0!"
-          :class="isCompact ? 'px-3 py-2' : isMedium ? 'px-4 py-3' : 'px-6 py-4'"
-        >
-          <div class="flex flex-wrap items-center justify-between gap-2 py-2 pr-2">
-
-            <!-- View Mode Switcher + Slot -->
-            <div class="flex items-center gap-2 shrink-0 ml-4">
-              <!-- View Mode Switcher -->
-              <div class="flex items-center rounded-lg p-0">
-                <UiTooltip v-for="option in viewModeOptions" :key="option.value">
-                  <UiTooltipTrigger as-child>
-                    <button
-                      :class="[
-                        'rounded-none transition-all duration-200 text-xs font-medium',
-                        isCompact ? 'h-7 w-7 flex items-center justify-center' : 'px-3 py-1.5',
-                        calendarViewMode === option.value
-                          ? 'border-b border-primary shadow-sm text-foreground'
-                          : 'text-muted-foreground hover:text-foreground hover:bg-background/50',
-                      ]"
-                      @click="calendarViewMode = option.value"
-                    >
-                      <Icon v-if="isCompact" :name="option.icon" class="h-3.5 w-3.5" />
-                      <span v-else>{{ option.label }}</span>
-                    </button>
-                  </UiTooltipTrigger>
-                  <UiTooltipContent v-if="isCompact" side="bottom">{{ option.label }}</UiTooltipContent>
-                </UiTooltip>
+        <div class="flex-1 min-w-0 flex flex-col overflow-hidden">
+          <!-- Calendar Header -->
+          <div
+            class="shrink-0 border-b border-border bg-transparent p-0!"
+            :class="isCompact ? 'px-3 py-2' : isMedium ? 'px-4 py-3' : 'px-6 py-4'">
+            <div class="flex flex-wrap items-center justify-between gap-2 py-2 pr-2">
+              <!-- View Mode Switcher + Slot -->
+              <div class="flex items-center gap-2 shrink-0 ml-4">
+                <!-- View Mode Switcher -->
+                <div class="flex items-center rounded-lg p-0">
+                  <UiTooltip v-for="option in viewModeOptions" :key="option.value">
+                    <UiTooltipTrigger as-child>
+                      <button
+                        :class="[
+                          'rounded-none transition-all duration-200 text-xs font-medium',
+                          isCompact ? 'h-7 w-7 flex items-center justify-center' : 'px-3 py-1.5',
+                          calendarViewMode === option.value
+                            ? 'border-b border-primary shadow-sm text-foreground'
+                            : 'text-muted-foreground hover:text-foreground hover:bg-background/50',
+                        ]"
+                        @click="calendarViewMode = option.value">
+                        <Icon v-if="isCompact" :name="option.icon" class="h-3.5 w-3.5" />
+                        <span v-else>{{ option.label }}</span>
+                      </button>
+                    </UiTooltipTrigger>
+                    <UiTooltipContent v-if="isCompact" side="bottom">{{ option.label }}</UiTooltipContent>
+                  </UiTooltip>
+                </div>
               </div>
-            </div>
 
-            <!-- <h2
+              <!-- <h2
                 class="font-medium text-base truncate"
                 :class="isCompact ? 'text-sm' : 'text-lg'"
               >
                 {{ headerTitle }}
               </h2> -->
 
-            <!--Navigation + Title -->
-            <div class="flex items-center" :class="isCompact ? 'gap-2' : 'gap-3'">
-              <div class="flex items-center">
-                <UiButton variant="ghost" size="icon" class="h-8 w-8 rounded-r-none border-r-0" @click="navigatePrev">
-                  <Icon name="lucide:chevron-left" class="h-4 w-4" />
-                </UiButton>
-                <UiButton variant="ghost" size="sm" class="h-8 rounded-none border-x-none" @click="navigateToday">
-                  {{ isCompact ? '·' : 'Today' }}
-                </UiButton>
-                <UiButton variant="ghost" size="icon" class="h-8 w-8 rounded-l-none border-l-0" @click="navigateNext">
-                  <Icon name="lucide:chevron-right" class="h-4 w-4" />
-                </UiButton>
+              <!--Navigation + Title -->
+              <div class="flex items-center" :class="isCompact ? 'gap-2' : 'gap-3'">
+                <div class="flex items-center">
+                  <UiButton variant="ghost" size="icon" class="h-8 w-8 rounded-r-none border-r-0" @click="navigatePrev">
+                    <Icon name="lucide:chevron-left" class="h-4 w-4" />
+                  </UiButton>
+                  <UiButton variant="ghost" size="sm" class="h-8 rounded-none border-x-none" @click="navigateToday">
+                    {{ isCompact ? '·' : 'Today' }}
+                  </UiButton>
+                  <UiButton variant="ghost" size="icon" class="h-8 w-8 rounded-l-none border-l-0" @click="navigateNext">
+                    <Icon name="lucide:chevron-right" class="h-4 w-4" />
+                  </UiButton>
+                </div>
+
+                <!-- Header Actions Slot -->
+                <slot name="header-actions" />
               </div>
-
-              <!-- Header Actions Slot -->
-              <slot name="header-actions" />
             </div>
-
           </div>
-        </div>
 
-          <Transition :name="transitionDirection === 'right' ? 'slide-left' : 'slide-right'" mode="out-in">
-            <!-- Day View -->
-            <div v-if="calendarViewMode === 'day'" :key="`day-${currentDate.toISOString()}`" class="flex flex-col">
-              <div class="flex-1">
-                <div class="min-h-full p-6">
-                  <!-- Day Events -->
-                  <div class="space-y-3">
-                    <div v-if="getEventsForDay(currentDate).length === 0" class="text-center py-16">
-                      <Icon name="lucide:calendar-check" class="h-12 w-12 mx-auto text-muted-foreground/50 mb-3" />
-                      <div class="text-sm text-muted-foreground">No events scheduled</div>
-                    </div>
+          <div class="flex-1 min-h-0 overflow-hidden">
+            <Transition :name="transitionDirection === 'right' ? 'slide-left' : 'slide-right'" mode="out-in">
+              <!-- Day View — Kanban by type -->
+              <div
+                v-if="calendarViewMode === 'day'"
+                :key="`day-${currentDate.toISOString()}`"
+                class="flex flex-col h-full">
+                <!-- Empty state -->
+                <div
+                  v-if="getEventsForDay(currentDate).length === 0"
+                  class="flex-1 flex flex-col items-center justify-center py-16 text-center">
+                  <Icon name="lucide:calendar-check" class="h-12 w-12 mx-auto text-muted-foreground/50 mb-3" />
+                  <div class="text-sm text-muted-foreground">Nothing scheduled for today</div>
+                </div>
+                <!-- Kanban board -->
+                <div v-else class="flex-1 overflow-x-auto overflow-y-hidden">
+                  <div class="flex gap-3 p-5 h-full items-start">
                     <div
-                      v-for="event in getEventsForDay(currentDate)"
-                      :key="event.id"
-                      class="group relative flex items-start gap-4 p-4 rounded-xl border border-border/50 bg-card/50 hover:bg-card/80 hover:border-border transition-all duration-200 cursor-pointer"
-                      @click="openEventDetail(event)">
-                      <div :class="['w-1 self-stretch rounded-full shrink-0', getStatusColor(event)]" />
-                      <div class="flex-1 min-w-0">
-                        <div class="flex items-start justify-between gap-3">
-                          <div>
-                            <h4 class="font-medium text-sm">{{ event.title }}</h4>
-                            <p v-if="event.typeLabel" class="text-xs text-muted-foreground mt-0.5">
-                              {{ event.typeLabel }}
-                            </p>
-                          </div>
-                          <span :class="['shrink-0 rounded-full px-2.5 py-1 text-xs font-medium', event.badgeClass]">
+                      v-for="group in _getTypeGroupsForDay(currentDate)"
+                      :key="group.typeLabel"
+                      class="flex flex-col w-60 shrink-0 rounded-xl bg-muted/20 border border-border/50 max-h-full">
+                      <!-- Column header -->
+                      <div class="flex items-center gap-2 px-3 py-2.5 border-b border-border/40 shrink-0">
+                        <Icon :name="group.style.icon" :class="['h-3.5 w-3.5 shrink-0', group.style.text]" />
+                        <span class="text-xs font-semibold flex-1 truncate text-foreground/80">
+                          {{ getTypeDisplayLabel(group.typeLabel) }}
+                        </span>
+                        <span
+                          class="text-[10px] font-semibold tabular-nums px-1.5 py-0.5 rounded-full bg-background/60 text-muted-foreground">
+                          {{ group.items.length }}
+                        </span>
+                      </div>
+                      <!-- Cards -->
+                      <div class="flex-1 overflow-y-auto p-2 space-y-2 min-h-0">
+                        <div
+                          v-for="event in group.items"
+                          :key="event.id"
+                          class="relative flex flex-col gap-1.5 p-3 pl-4 rounded-lg border border-border/40 bg-card/70 hover:bg-card hover:border-border/80 transition-all duration-150 cursor-pointer"
+                          @click="openEventDetail(event)">
+                          <!-- Left status stripe -->
+                          <div
+                            :class="[
+                              'absolute left-0 top-2 bottom-2 w-[3px] rounded-full ml-0.5',
+                              getStatusColor(event),
+                            ]" />
+                          <!-- Title -->
+                          <p class="text-[13px] font-medium leading-snug line-clamp-2">{{ event.title }}</p>
+                          <!-- Date chip -->
+                          <span
+                            :class="['self-start rounded-full px-2 py-0.5 text-[10px] font-medium', event.badgeClass]">
                             {{ formatShortDate(event.date) }}
                           </span>
+                          <!-- Footer row -->
+                          <div
+                            v-if="
+                              event.status ||
+                              event.priority ||
+                              event.typeLabel === 'GoogleCalendar' ||
+                              event.isRecurringInstance
+                            "
+                            class="flex items-center gap-1.5 flex-wrap mt-0.5">
+                            <span v-if="event.status" class="text-[10px] text-muted-foreground capitalize">
+                              {{ event.status.replace('-', ' ') }}
+                            </span>
+                            <span v-if="event.priority" class="text-[10px] text-muted-foreground/70 capitalize">
+                              · {{ event.priority }}
+                            </span>
+                            <Icon
+                              v-if="event.isRecurringInstance"
+                              name="lucide:repeat"
+                              class="ml-auto h-2.5 w-2.5 shrink-0 opacity-40" />
+                            <Icon
+                              v-if="event.typeLabel === 'GoogleCalendar'"
+                              name="simple-icons:googlecalendar"
+                              class="ml-auto h-2.5 w-2.5 shrink-0 opacity-50" />
+                          </div>
+                          <!-- Description preview -->
+                          <p
+                            v-if="event.description"
+                            class="text-[11px] text-muted-foreground/60 line-clamp-2 leading-relaxed">
+                            {{ event.description }}
+                          </p>
                         </div>
                       </div>
                     </div>
                   </div>
                 </div>
               </div>
-            </div>
 
-            <!-- Week View -->
-            <div
-              v-else-if="calendarViewMode === 'week'"
-              :key="`week-${currentWeekStart.toISOString()}`"
-              class="h-full flex flex-col">
-              <!-- Week Header -->
-              <div class="shrink-0 grid grid-cols-7 border-b border-border/50">
-                <div
-                  v-for="day in weekViewDays"
-                  :key="day.date.toISOString()"
-                  :class="[
-                    'px-1 text-center border-r border-border/30 last:border-r-0',
-                    isCompact ? 'py-1.5' : isMedium ? 'py-2' : 'py-3',
-                    day.isToday ? 'bg-primary/10 border-b-2 border-b-primary' : '',
-                  ]">
+              <!-- Week View -->
+              <div
+                v-else-if="calendarViewMode === 'week'"
+                :key="`week-${currentWeekStart.toISOString()}`"
+                class="h-full flex flex-col">
+                <!-- Week Header -->
+                <div class="shrink-0 grid grid-cols-7 border-b border-border/50">
                   <div
-                    :class="[
-                      'text-xs uppercase tracking-wide',
-                      day.isToday ? 'text-primary font-semibold' : 'text-muted-foreground',
-                    ]">
-                    {{ day.dayName }}
-                  </div>
-                  <div
-                    :class="[
-                      'font-semibold',
-                      isCompact ? 'mt-0.5 text-sm' : 'mt-1 text-lg',
-                      day.isToday
-                        ? 'mx-auto rounded-full bg-primary text-primary-foreground flex items-center justify-center'
-                        + (isCompact ? ' w-6 h-6 text-xs' : ' w-8 h-8')
-                        : 'text-foreground',
-                    ]">
-                    {{ day.dayNum }}
-                  </div>
-                </div>
-              </div>
-              <!-- Week Body -->
-              <div class="flex-1 overflow-auto">
-                <div class="grid grid-cols-7 min-h-full">
-                  <div
-                    v-for="(day, dayIdx) in weekViewDays"
+                    v-for="day in weekViewDays"
                     :key="day.date.toISOString()"
                     :class="[
-                      'px-2 py-1.5 border-r border-border/30 last:border-r-0 relative group/cell flex flex-col overflow-hidden transition-colors',
-                      day.isToday ? 'bg-primary/5 ring-1 ring-inset ring-primary/20' :
-                        isDayInPast(day.date) ? '' : 'bg-card/40',
-                      isDragOver(day.date) ? 'bg-primary/10 ring-2 ring-inset ring-primary/50' : '',
-                      isHoveredMultiDayCell(day.date) ? 'bg-primary/5' : '',
-                    ]"
-                    @dragover="(e: DragEvent) => onCellDragOver(e, day.date)"
-                    @dragleave="onCellDragLeave"
-                    @drop="(e: DragEvent) => onCellDrop(e, day.date)">
-                    <!-- Hover '+' button with type picker -->
-                    <div class="flex items-center justify-end mb-1 shrink-0">
-                      <UiPopover
-                        :open="isAddMenuOpen(day.date)"
-                        @update:open="(open: boolean) => { addMenuDate = open ? day.date : null }">
-                        <UiPopoverTrigger as-child>
-                          <button
-                            class="h-5 w-5 rounded flex items-center justify-center opacity-0 group-hover/cell:opacity-100 hover:bg-muted transition-all text-muted-foreground hover:text-foreground"
-                            @click.stop="() => { addMenuDate = day.date }">
-                            <Icon name="lucide:plus" class="h-3 w-3" />
-                          </button>
-                        </UiPopoverTrigger>
-                        <UiPopoverContent align="start" side="top" class="w-36 p-1">
-                          <button
-                            v-for="t in temporalTypeOptions"
-                            :key="t.typeLabel"
-                            class="w-full flex items-center gap-2 px-2 py-1.5 rounded-md text-xs hover:bg-muted/50 transition-colors"
-                            @click="() => { addMenuDate = null; emit('create-request', day.date, t.typeLabel) }">
-                            <Icon :name="t.icon" :class="['h-3.5 w-3.5', t.text]" />
-                            <span>{{ t.typeLabel }}</span>
-                          </button>
-                        </UiPopoverContent>
-                      </UiPopover>
-                    </div>
-                    <!-- Multi-day spanning bars -->
-                    <div v-if="getLaneSlotsForDay(weekViewRow, dayIdx).length > 0" class="space-y-0.5 mb-1 shrink-0">
-                      <div
-                        v-for="(slot, laneIdx) in getLaneSlotsForDay(weekViewRow, dayIdx)"
-                        :key="laneIdx"
-                        class="h-5">
-                        <template v-if="slot">
-                          <UiHoverCard :open-delay="400" :close-delay="100">
-                            <UiHoverCardTrigger as-child>
-                              <button
-                                :class="[
-                                  'h-full w-full text-[10px] font-medium truncate transition-all duration-150',
-                                  'hover:brightness-110 hover:shadow-sm',
-                                  slot.style.bg, slot.style.text,
-                                  slot.isStart ? 'rounded-l-md pl-1.5' : 'pl-0.5',
-                                  slot.isEnd ? 'rounded-r-md pr-1.5' : 'pr-0.5',
-                                  slot.isWrapStart ? 'rounded-l-sm border-l-2 border-l-dashed pl-1' : '',
-                                  slot.isWrapEnd ? 'rounded-r-sm border-r-2 border-r-dashed pr-1' : '',
-                                  hoveredMultiDayEventId === slot.event.id ? 'brightness-110 shadow-sm' : '',
-                                ]"
-                                @mouseenter="hoveredMultiDayEventId = slot.event.id"
-                                @mouseleave="hoveredMultiDayEventId = null"
-                                @click.stop="openEventDetail(slot.event)">
-                                <span v-if="slot.isStart || slot.isWrapStart" class="flex items-center gap-1">
-                                  <Icon :name="slot.style.icon" class="h-3 w-3 shrink-0" />
-                                  <span class="truncate">{{ slot.event.title }}</span>
-                                </span>
-                              </button>
-                            </UiHoverCardTrigger>
-                            <UiHoverCardContent class="w-64 p-3" side="top" :side-offset="4">
-                              <div class="space-y-1.5">
-                                <h4 class="text-sm font-semibold leading-tight truncate">{{ slot.event.title }}</h4>
-                                <div class="flex items-center gap-1.5">
-                                  <Icon :name="slot.style.icon" :class="['h-3 w-3 shrink-0', slot.style.text]" />
-                                  <span class="text-xs text-muted-foreground capitalize">{{ slot.event.typeLabel || 'Item' }}</span>
-                                  <span class="text-xs text-muted-foreground">·</span>
-                                  <Icon name="lucide:calendar-days" class="h-3 w-3 opacity-50" />
-                                  <span class="text-[11px] text-muted-foreground">{{ formatEventDateRange(slot.event) }}</span>
-                                </div>
-                                <p v-if="slot.event.description" class="line-clamp-2 text-xs text-muted-foreground leading-relaxed">
-                                  {{ slot.event.description }}
-                                </p>
-                                <div v-if="slot.event.status || slot.event.priority" class="flex items-center gap-1.5 pt-0.5">
-                                  <span v-if="slot.event.status" :class="['text-[10px] px-1.5 py-0.5 rounded font-medium', slot.event.badgeClass]">
-                                    {{ slot.event.status?.replace('-', ' ') }}
-                                  </span>
-                                  <span v-if="slot.event.priority" class="text-[10px] text-muted-foreground capitalize">
-                                    {{ slot.event.priority }}
-                                  </span>
-                                </div>
-                              </div>
-                            </UiHoverCardContent>
-                          </UiHoverCard>
-                        </template>
-                        <div v-else class="h-full" />
-                      </div>
-                    </div>
-                    <!-- Single-day items: individual pills with overflow grouping -->
+                      'px-1 text-center border-r border-border/30 last:border-r-0',
+                      isCompact ? 'py-1.5' : isMedium ? 'py-2' : 'py-3',
+                      day.isToday ? 'bg-primary/10 border-b-2 border-b-primary' : '',
+                    ]">
                     <div
-                      v-if="getVisibleSingleDayItems(day.date, weekViewRow).length > 0"
-                      :class="['flex-1 min-h-0 overflow-hidden space-y-0.5', isDayInPast(day.date) ? 'opacity-50' : '']">
-                      <UiHoverCard
-                        v-for="item in getVisibleSingleDayItems(day.date, weekViewRow)"
-                        :key="item.id"
-                        :open-delay="400"
-                        :close-delay="100">
-                        <UiHoverCardTrigger as-child>
-                          <button
-                            :draggable="item.typeLabel !== 'GoogleCalendar'"
-                            :class="[
-                              'w-full flex items-center gap-1 rounded-md text-[11px] font-medium transition-all duration-150',
-                              isCompact ? 'px-1 py-0.5 justify-center' : 'px-1.5 py-0.5',
-                              'hover:ring-1 hover:ring-primary/30',
-                              item.typeLabel !== 'GoogleCalendar' ? 'cursor-grab active:cursor-grabbing' : 'cursor-pointer',
-                              getTypeStyle(item.typeLabel || '').bg,
-                              getTypeStyle(item.typeLabel || '').text,
-                              recurringItemClasses(item),
-                            ]"
-                            @dragstart="item.typeLabel !== 'GoogleCalendar' ? onDragStart($event as DragEvent, item) : undefined"
-                            @dragend="onDragEnd"
-                            @click.stop="openEventDetail(item)">
-                            <Icon :name="getTypeStyle(item.typeLabel || '').icon" class="h-3 w-3 shrink-0" />
-                            <template v-if="!isCompact">
-                              <Icon v-if="hasRecurringInstance(item)" name="lucide:repeat" class="h-2.5 w-2.5 shrink-0 opacity-60" />
-                              <span v-if="item.recurrenceIndex" class="text-[9px] opacity-50 shrink-0">#{{ item.recurrenceIndex }}</span>
-                              <span class="truncate">{{ item.title }}</span>
-                              <Icon v-if="item.typeLabel === 'GoogleCalendar'" name="simple-icons:googlecalendar" class="ml-auto h-2.5 w-2.5 shrink-0 opacity-70" />
-                            </template>
-                          </button>
-                        </UiHoverCardTrigger>
-                        <UiHoverCardContent class="w-64 p-3" side="top" :side-offset="4">
-                          <div class="space-y-1.5">
-                            <h4 class="text-sm font-semibold leading-tight truncate">{{ item.title }}</h4>
-                            <div class="flex items-center gap-1.5">
-                              <Icon :name="getTypeStyle(item.typeLabel || '').icon" :class="['h-3 w-3 shrink-0', getTypeStyle(item.typeLabel || '').text]" />
-                              <span class="text-xs text-muted-foreground">{{ getTypeDisplayLabel(item.typeLabel) }}</span>
-                              <template v-if="hasRecurringInstance(item)">
-                                <span class="text-xs text-muted-foreground">·</span>
-                                <Icon name="lucide:repeat" class="h-3 w-3 opacity-60" />
-                                <span class="text-[11px] text-muted-foreground">Occurrence #{{ item.recurrenceIndex }}</span>
-                              </template>
-                              <span class="text-xs text-muted-foreground">·</span>
-                              <Icon name="lucide:calendar-days" class="h-3 w-3 opacity-50" />
-                              <span class="text-[11px] text-muted-foreground">{{ formatEventDateRange(item) }}</span>
-                            </div>
-                            <p v-if="item.description" class="line-clamp-2 text-xs text-muted-foreground leading-relaxed">
-                              {{ item.description }}
-                            </p>
-                            <div v-if="item.status || item.priority" class="flex items-center gap-1.5 pt-0.5">
-                              <span v-if="item.status" :class="['text-[10px] px-1.5 py-0.5 rounded font-medium', item.badgeClass]">
-                                {{ item.status?.replace('-', ' ') }}
-                              </span>
-                              <span v-if="item.priority" class="text-[10px] text-muted-foreground capitalize">
-                                {{ item.priority }}
-                              </span>
-                            </div>
-                          </div>
-                        </UiHoverCardContent>
-                      </UiHoverCard>
-                      <!-- Overflow pill -->
-                      <div v-if="getOverflowDayGroup(day.date, weekViewRow)">
-                        <button
-                          :class="[
-                            'w-full flex items-center gap-1 px-1.5 py-0.5 rounded-md text-[11px] font-medium transition-all duration-150',
-                            'hover:ring-1 hover:ring-primary/30 bg-muted/60 text-foreground',
-                          ]"
-                          @click.stop="openDayPopover(day.date)">
-                          <span class="truncate">{{ getOverflowDayGroup(day.date, weekViewRow)!.items.length }} more</span>
-                          <span
-                            v-if="getOverflowDayGroup(day.date, weekViewRow)!.urgentCount > 0"
-                            class="ml-auto shrink-0 inline-flex items-center justify-center w-4 h-4 rounded-full bg-red-500 text-white text-[9px] font-bold leading-none">
-                            {{ getOverflowDayGroup(day.date, weekViewRow)!.urgentCount }}
-                          </span>
-                        </button>
-                        <div class="flex h-[3px] rounded-full overflow-hidden mt-0.5 mx-0.5">
-                          <div
-                            v-for="seg in getOverflowDayGroup(day.date, weekViewRow)!.typeSegments"
-                            :key="seg.label"
-                            :style="{ flex: seg.count, backgroundColor: seg.color }" />
-                        </div>
-                      </div>
+                      :class="[
+                        'text-xs uppercase tracking-wide',
+                        day.isToday ? 'text-primary font-semibold' : 'text-muted-foreground',
+                      ]">
+                      {{ day.dayName }}
                     </div>
-                    <!-- Per-cell overflow indicator for hidden multi-day events -->
-                    <button
-                      v-if="(weekViewRow.overflowPerCol[dayIdx] ?? 0) > 0"
-                      type="button"
-                      class="mt-0.5 text-[10px] text-muted-foreground font-medium hover:text-foreground transition-colors cursor-pointer"
-                      @click.stop="openDayPopover(day.date)">
-                      +{{ weekViewRow.overflowPerCol[dayIdx] ?? 0 }} more
-                    </button>
+                    <div
+                      :class="[
+                        'font-semibold',
+                        isCompact ? 'mt-0.5 text-sm' : 'mt-1 text-lg',
+                        day.isToday
+                          ? 'mx-auto rounded-full bg-primary text-primary-foreground flex items-center justify-center' +
+                            (isCompact ? ' w-6 h-6 text-xs' : ' w-8 h-8')
+                          : 'text-foreground',
+                      ]">
+                      {{ day.dayNum }}
+                    </div>
                   </div>
                 </div>
-              </div>
-            </div>
-
-            <!-- Month View -->
-            <div
-              v-else-if="calendarViewMode === 'month'"
-              :key="`month-${currentYear}-${currentMonth}`"
-              class="h-full flex flex-col">
-              <!-- Month Header -->
-              <div class="shrink-0 grid grid-cols-7 border-b border-border/50">
-                <div
-                  v-for="day in weekDays"
-                  :key="day"
-                  class="px-1 text-center text-xs font-medium text-muted-foreground uppercase tracking-wide"
-                  :class="isCompact ? 'py-1.5' : isMedium ? 'py-2' : 'py-3'">
-                  {{ day }}
-                </div>
-              </div>
-
-              <!-- Month Grid: week-row sub-grids -->
-              <div
-                class="flex-1 grid min-h-0 overflow-hidden max-h-[calc(100vh-256px)]"
-                :style="{ gridTemplateRows: `repeat(${weekRows.length}, minmax(0, 1fr))` }">
-                <div
-                  v-for="(row, rowIdx) in weekRows"
-                  :key="rowIdx"
-                  class="min-h-0 overflow-hidden">
-                  <!-- Day cells grid -->
-                  <div class="grid grid-cols-7 h-full">
+                <!-- Week Body -->
+                <div class="flex-1 overflow-auto">
+                  <div class="grid grid-cols-7 min-h-full">
                     <div
-                      v-for="(day, dayIdx) in row.days"
-                      :key="dayIdx"
+                      v-for="(day, dayIdx) in weekViewDays"
+                      :key="day.date.toISOString()"
                       :class="[
-                        'px-2 py-1.5 border-b border-r border-border/30 relative group/cell flex flex-col overflow-hidden transition-colors',
-                        'last:border-r-0 nth-[7n]:border-r-0',
-                        !day.isCurrentMonth ? 'bg-muted/20' :
-                          day.isToday ? 'bg-primary/5 ring-2 ring-inset ring-primary/30' :
-                          isDayInPast(day.date) ? '' : 'bg-card/40',
+                        'px-2 py-1.5 border-r border-border/30 last:border-r-0 relative group/cell flex flex-col overflow-hidden transition-colors',
+                        day.isToday
+                          ? 'bg-primary/5 ring-1 ring-inset ring-primary/20'
+                          : isDayInPast(day.date)
+                            ? ''
+                            : 'bg-card/40',
                         isDragOver(day.date) ? 'bg-primary/10 ring-2 ring-inset ring-primary/50' : '',
                         isHoveredMultiDayCell(day.date) ? 'bg-primary/5' : '',
                       ]"
                       @dragover="(e: DragEvent) => onCellDragOver(e, day.date)"
                       @dragleave="onCellDragLeave"
                       @drop="(e: DragEvent) => onCellDrop(e, day.date)">
-                      <!-- Day header: number + hover add button -->
-                      <div class="flex items-center justify-between mb-1 shrink-0">
-                        <div
-                          :class="[
-                            day.isToday
-                              ? 'w-6 h-6 rounded-full bg-primary text-primary-foreground flex items-center justify-center text-[11px] font-semibold'
-                              : day.isCurrentMonth
-                                ? 'text-[11px] text-muted-foreground font-medium'
-                                : 'text-[11px] text-muted-foreground/30',
-                          ]">
-                          {{ day.date.getDate() }}
-                        </div>
-                        <!-- Hover '+' button with type picker -->
+                      <!-- Hover '+' button with type picker -->
+                      <div class="flex items-center justify-end mb-1 shrink-0">
                         <UiPopover
-                          v-if="day.isCurrentMonth"
                           :open="isAddMenuOpen(day.date)"
-                          @update:open="(open: boolean) => { addMenuDate = open ? day.date : null }">
+                          @update:open="
+                            (open: boolean) => {
+                              addMenuDate = open ? day.date : null
+                            }
+                          ">
                           <UiPopoverTrigger as-child>
                             <button
                               class="h-5 w-5 rounded flex items-center justify-center opacity-0 group-hover/cell:opacity-100 hover:bg-muted transition-all text-muted-foreground hover:text-foreground"
-                              @click.stop="() => { addMenuDate = day.date }">
+                              @click.stop="
+                                () => {
+                                  addMenuDate = day.date
+                                }
+                              ">
                               <Icon name="lucide:plus" class="h-3 w-3" />
                             </button>
                           </UiPopoverTrigger>
-                          <UiPopoverContent align="end" side="top" class="w-44 p-1">
+                          <UiPopoverContent align="start" side="top" class="w-36 p-1">
                             <button
                               v-for="t in temporalTypeOptions"
                               :key="t.typeLabel"
                               class="w-full flex items-center gap-2 px-2 py-1.5 rounded-md text-xs hover:bg-muted/50 transition-colors"
-                              @click="() => { addMenuDate = null; emit('create-request', day.date, t.typeLabel) }">
+                              @click="
+                                () => {
+                                  addMenuDate = null
+                                  emit('create-request', day.date, t.typeLabel)
+                                }
+                              ">
                               <Icon :name="t.icon" :class="['h-3.5 w-3.5', t.text]" />
                               <span>{{ t.typeLabel }}</span>
                             </button>
                           </UiPopoverContent>
                         </UiPopover>
                       </div>
-                      <!-- Multi-day lane slots (bar segments inside each cell) -->
-                      <div
-                        v-if="getLaneSlotsForDay(row, dayIdx).length"
-                        class="-mx-2 mb-1 shrink-0">
+                      <!-- Multi-day spanning bars -->
+                      <div v-if="getLaneSlotsForDay(weekViewRow, dayIdx).length > 0" class="space-y-0.5 mb-1 shrink-0">
                         <div
-                          v-for="(slot, li) in getLaneSlotsForDay(row, dayIdx)"
-                          :key="`lane-${li}`"
-                          class="h-5 mt-0.5">
-                          <UiHoverCard v-if="slot" :open-delay="400" :close-delay="100">
-                            <UiHoverCardTrigger as-child>
-                              <button
-                                class="w-full h-full flex items-center gap-1 px-1.5 text-[10px] font-medium truncate cursor-pointer transition-all duration-150 hover:brightness-110 hover:shadow-sm"
-                                :class="[
-                                  slot.style.bg,
-                                  slot.style.text,
-                                  slot.isStart ? 'rounded-l-md ml-0.5' : '',
-                                  slot.isEnd ? 'rounded-r-md mr-0.5' : '',
-                                  hoveredMultiDayEventId === slot.event.id ? 'brightness-110 shadow-sm' : '',
-                                ]"
-                                :style="{
-                                  maskImage: slot.isWrapStart && slot.isWrapEnd
-                                    ? 'linear-gradient(to right, transparent, black 16px, black calc(100% - 16px), transparent)'
-                                    : slot.isWrapStart
-                                      ? 'linear-gradient(to right, transparent, black 16px)'
-                                      : slot.isWrapEnd
-                                        ? 'linear-gradient(to left, transparent, black 16px)'
-                                        : undefined,
-                                }"
-                                @mouseenter="hoveredMultiDayEventId = slot.event.id"
-                                @mouseleave="hoveredMultiDayEventId = null"
-                                @click.stop="openEventDetail(slot.event)">
-                                <Icon v-if="slot.isStart || slot.isWrapStart" :name="slot.style.icon" class="h-3 w-3 shrink-0" />
-                                <span v-if="slot.isStart || slot.isWrapStart" class="truncate">{{ slot.event.title }}</span>
-                              </button>
-                            </UiHoverCardTrigger>
-                            <UiHoverCardContent class="w-64 p-3" side="top" :side-offset="4">
-                              <div class="space-y-1.5">
-                                <h4 class="text-sm font-semibold leading-tight truncate">{{ slot.event.title }}</h4>
-                                <div class="flex items-center gap-1.5">
-                                  <Icon :name="slot.style.icon" :class="['h-3 w-3 shrink-0', slot.style.text]" />
-                                  <span class="text-xs text-muted-foreground capitalize">{{ slot.event.typeLabel || 'Item' }}</span>
-                                  <span class="text-xs text-muted-foreground">·</span>
-                                  <Icon name="lucide:calendar-days" class="h-3 w-3 opacity-50" />
-                                  <span class="text-[11px] text-muted-foreground">{{ formatEventDateRange(slot.event) }}</span>
-                                </div>
-                                <p v-if="slot.event.description" class="line-clamp-2 text-xs text-muted-foreground leading-relaxed">
-                                  {{ slot.event.description }}
-                                </p>
-                                <div v-if="slot.event.status || slot.event.priority" class="flex items-center gap-1.5 pt-0.5">
-                                  <span v-if="slot.event.status" :class="['text-[10px] px-1.5 py-0.5 rounded font-medium', slot.event.badgeClass]">
-                                    {{ slot.event.status?.replace('-', ' ') }}
+                          v-for="(slot, laneIdx) in getLaneSlotsForDay(weekViewRow, dayIdx)"
+                          :key="laneIdx"
+                          class="h-5">
+                          <template v-if="slot">
+                            <UiHoverCard :open-delay="400" :close-delay="100">
+                              <UiHoverCardTrigger as-child>
+                                <button
+                                  :class="[
+                                    'h-full w-full text-[10px] font-medium truncate transition-all duration-150',
+                                    'hover:brightness-110 hover:shadow-sm',
+                                    slot.style.bg,
+                                    slot.style.text,
+                                    slot.isStart ? 'rounded-l-md pl-1.5' : 'pl-0.5',
+                                    slot.isEnd ? 'rounded-r-md pr-1.5' : 'pr-0.5',
+                                    slot.isWrapStart ? 'rounded-l-sm border-l-2 border-l-dashed pl-1' : '',
+                                    slot.isWrapEnd ? 'rounded-r-sm border-r-2 border-r-dashed pr-1' : '',
+                                    hoveredMultiDayEventId === slot.event.id ? 'brightness-110 shadow-sm' : '',
+                                  ]"
+                                  @mouseenter="hoveredMultiDayEventId = slot.event.id"
+                                  @mouseleave="hoveredMultiDayEventId = null"
+                                  @click.stop="openEventDetail(slot.event)">
+                                  <span v-if="slot.isStart || slot.isWrapStart" class="flex items-center gap-1">
+                                    <Icon :name="slot.style.icon" class="h-3 w-3 shrink-0" />
+                                    <span class="truncate">{{ slot.event.title }}</span>
                                   </span>
-                                  <span v-if="slot.event.priority" class="text-[10px] text-muted-foreground capitalize">
-                                    {{ slot.event.priority }}
-                                  </span>
+                                </button>
+                              </UiHoverCardTrigger>
+                              <UiHoverCardContent class="w-64 p-3" side="top" :side-offset="4">
+                                <div class="space-y-1.5">
+                                  <h4 class="text-sm font-semibold leading-tight truncate">{{ slot.event.title }}</h4>
+                                  <div class="flex items-center gap-1.5">
+                                    <Icon :name="slot.style.icon" :class="['h-3 w-3 shrink-0', slot.style.text]" />
+                                    <span class="text-xs text-muted-foreground capitalize">
+                                      {{ slot.event.typeLabel || 'Item' }}
+                                    </span>
+                                    <span class="text-xs text-muted-foreground">·</span>
+                                    <Icon name="lucide:calendar-days" class="h-3 w-3 opacity-50" />
+                                    <span class="text-[11px] text-muted-foreground">
+                                      {{ formatEventDateRange(slot.event) }}
+                                    </span>
+                                  </div>
+                                  <p
+                                    v-if="slot.event.description"
+                                    class="line-clamp-2 text-xs text-muted-foreground leading-relaxed">
+                                    {{ slot.event.description }}
+                                  </p>
+                                  <div
+                                    v-if="slot.event.status || slot.event.priority"
+                                    class="flex items-center gap-1.5 pt-0.5">
+                                    <span
+                                      v-if="slot.event.status"
+                                      :class="['text-[10px] px-1.5 py-0.5 rounded font-medium', slot.event.badgeClass]">
+                                      {{ slot.event.status?.replace('-', ' ') }}
+                                    </span>
+                                    <span
+                                      v-if="slot.event.priority"
+                                      class="text-[10px] text-muted-foreground capitalize">
+                                      {{ slot.event.priority }}
+                                    </span>
+                                  </div>
                                 </div>
-                              </div>
-                            </UiHoverCardContent>
-                          </UiHoverCard>
+                              </UiHoverCardContent>
+                            </UiHoverCard>
+                          </template>
+                          <div v-else class="h-full" />
                         </div>
                       </div>
                       <!-- Single-day items: individual pills with overflow grouping -->
                       <div
-                        v-if="getVisibleSingleDayItems(day.date, row).length > 0"
-                        :class="['flex-1 min-h-0 overflow-hidden space-y-0.5', isDayInPast(day.date) ? 'opacity-50' : '']">
-                        <!-- Individual item pills -->
+                        v-if="getVisibleSingleDayItems(day.date, weekViewRow).length > 0"
+                        :class="[
+                          'flex-1 min-h-0 overflow-hidden space-y-0.5',
+                          isDayInPast(day.date) ? 'opacity-50' : '',
+                        ]">
                         <UiHoverCard
-                          v-for="item in getVisibleSingleDayItems(day.date, row)"
+                          v-for="item in getVisibleSingleDayItems(day.date, weekViewRow)"
                           :key="item.id"
                           :open-delay="400"
                           :close-delay="100">
@@ -2415,20 +2270,32 @@
                                 'w-full flex items-center gap-1 rounded-md text-[11px] font-medium transition-all duration-150',
                                 isCompact ? 'px-1 py-0.5 justify-center' : 'px-1.5 py-0.5',
                                 'hover:ring-1 hover:ring-primary/30',
-                                item.typeLabel !== 'GoogleCalendar' ? 'cursor-grab active:cursor-grabbing' : 'cursor-pointer',
+                                item.typeLabel !== 'GoogleCalendar'
+                                  ? 'cursor-grab active:cursor-grabbing'
+                                  : 'cursor-pointer',
                                 getTypeStyle(item.typeLabel || '').bg,
                                 getTypeStyle(item.typeLabel || '').text,
                                 recurringItemClasses(item),
                               ]"
-                              @dragstart="item.typeLabel !== 'GoogleCalendar' ? onDragStart($event as DragEvent, item) : undefined"
+                              @dragstart="
+                                item.typeLabel !== 'GoogleCalendar' ? onDragStart($event as DragEvent, item) : undefined
+                              "
                               @dragend="onDragEnd"
                               @click.stop="openEventDetail(item)">
                               <Icon :name="getTypeStyle(item.typeLabel || '').icon" class="h-3 w-3 shrink-0" />
                               <template v-if="!isCompact">
-                                <Icon v-if="hasRecurringInstance(item)" name="lucide:repeat" class="h-2.5 w-2.5 shrink-0 opacity-60" />
-                                <span v-if="item.recurrenceIndex" class="text-[9px] opacity-50 shrink-0">#{{ item.recurrenceIndex }}</span>
+                                <Icon
+                                  v-if="hasRecurringInstance(item)"
+                                  name="lucide:repeat"
+                                  class="h-2.5 w-2.5 shrink-0 opacity-60" />
+                                <span v-if="item.recurrenceIndex" class="text-[9px] opacity-50 shrink-0">
+                                  #{{ item.recurrenceIndex }}
+                                </span>
                                 <span class="truncate">{{ item.title }}</span>
-                                <Icon v-if="item.typeLabel === 'GoogleCalendar'" name="simple-icons:googlecalendar" class="ml-auto h-2.5 w-2.5 shrink-0 opacity-70" />
+                                <Icon
+                                  v-if="item.typeLabel === 'GoogleCalendar'"
+                                  name="simple-icons:googlecalendar"
+                                  class="ml-auto h-2.5 w-2.5 shrink-0 opacity-70" />
                               </template>
                             </button>
                           </UiHoverCardTrigger>
@@ -2436,22 +2303,32 @@
                             <div class="space-y-1.5">
                               <h4 class="text-sm font-semibold leading-tight truncate">{{ item.title }}</h4>
                               <div class="flex items-center gap-1.5">
-                                <Icon :name="getTypeStyle(item.typeLabel || '').icon" :class="['h-3 w-3 shrink-0', getTypeStyle(item.typeLabel || '').text]" />
-                                <span class="text-xs text-muted-foreground">{{ getTypeDisplayLabel(item.typeLabel) }}</span>
+                                <Icon
+                                  :name="getTypeStyle(item.typeLabel || '').icon"
+                                  :class="['h-3 w-3 shrink-0', getTypeStyle(item.typeLabel || '').text]" />
+                                <span class="text-xs text-muted-foreground">
+                                  {{ getTypeDisplayLabel(item.typeLabel) }}
+                                </span>
                                 <template v-if="hasRecurringInstance(item)">
                                   <span class="text-xs text-muted-foreground">·</span>
                                   <Icon name="lucide:repeat" class="h-3 w-3 opacity-60" />
-                                  <span class="text-[11px] text-muted-foreground">Occurrence #{{ item.recurrenceIndex }}</span>
+                                  <span class="text-[11px] text-muted-foreground">
+                                    Occurrence #{{ item.recurrenceIndex }}
+                                  </span>
                                 </template>
                                 <span class="text-xs text-muted-foreground">·</span>
                                 <Icon name="lucide:calendar-days" class="h-3 w-3 opacity-50" />
                                 <span class="text-[11px] text-muted-foreground">{{ formatEventDateRange(item) }}</span>
                               </div>
-                              <p v-if="item.description" class="line-clamp-2 text-xs text-muted-foreground leading-relaxed">
+                              <p
+                                v-if="item.description"
+                                class="line-clamp-2 text-xs text-muted-foreground leading-relaxed">
                                 {{ item.description }}
                               </p>
                               <div v-if="item.status || item.priority" class="flex items-center gap-1.5 pt-0.5">
-                                <span v-if="item.status" :class="['text-[10px] px-1.5 py-0.5 rounded font-medium', item.badgeClass]">
+                                <span
+                                  v-if="item.status"
+                                  :class="['text-[10px] px-1.5 py-0.5 rounded font-medium', item.badgeClass]">
                                   {{ item.status?.replace('-', ' ') }}
                                 </span>
                                 <span v-if="item.priority" class="text-[10px] text-muted-foreground capitalize">
@@ -2461,164 +2338,506 @@
                             </div>
                           </UiHoverCardContent>
                         </UiHoverCard>
-                        <!-- Overflow: unified "N more" pill with segmented color bar + rich hover preview -->
-                        <UiHoverCard
-                          v-if="getOverflowDayGroup(day.date, row)"
-                          :open-delay="300"
-                          :close-delay="150">
-                          <UiHoverCardTrigger as-child>
-                            <div class="w-full">
-                              <button
-                                :class="[
-                                  'w-full flex items-center gap-1 px-1.5 py-0.5 rounded-md text-[11px] font-medium transition-all duration-150',
-                                  'hover:ring-1 hover:ring-primary/30 bg-muted/60 text-foreground',
-                                ]"
-                                @click.stop="openDayPopover(day.date)">
-                                <span class="truncate">{{ getOverflowDayGroup(day.date, row)!.items.length }} more</span>
-                                <span
-                                  v-if="getOverflowDayGroup(day.date, row)!.urgentCount > 0"
-                                  class="ml-auto shrink-0 inline-flex items-center justify-center w-4 h-4 rounded-full bg-red-500 text-white text-[9px] font-bold leading-none">
-                                  {{ getOverflowDayGroup(day.date, row)!.urgentCount }}
-                                </span>
-                              </button>
-                              <!-- Segmented color bar -->
-                              <div class="flex h-[3px] rounded-full overflow-hidden mt-0.5 mx-0.5">
-                                <div
-                                  v-for="seg in getOverflowDayGroup(day.date, row)!.typeSegments"
-                                  :key="seg.label"
-                                  :style="{ flex: seg.count, backgroundColor: seg.color }" />
-                              </div>
-                            </div>
-                          </UiHoverCardTrigger>
-                          <UiHoverCardContent class="w-72 p-0 max-h-80 overflow-hidden" side="top" :side-offset="4">
-                            <!-- Header -->
-                            <div class="px-3 py-2 border-b border-border bg-muted/30">
-                              <p class="text-xs font-semibold">{{ formatDate(day.date) }}</p>
-                              <p class="text-[10px] text-muted-foreground">
-                                {{ getDayGroup(day.date)?.items.length || 0 }}
-                                {{ (getDayGroup(day.date)?.items.length || 0) === 1 ? 'item' : 'items' }}
-                              </p>
-                            </div>
-                            <!-- Type-grouped items -->
-                            <div class="overflow-y-auto max-h-64 p-1">
-                              <template
-                                v-for="group in getSingleDayTypeGroups(day.date)"
-                                :key="group.typeLabel">
-                                <div class="px-2 pt-2 pb-1 flex items-center gap-1.5">
-                                  <Icon :name="group.style.icon" :class="['h-3 w-3', group.style.text]" />
-                                  <span :class="['text-[10px] font-semibold uppercase tracking-wide', group.style.text]">
-                                    {{ group.typeLabel }}{{ group.items.length > 1 ? 's' : '' }}
-                                  </span>
-                                  <span class="text-[10px] text-muted-foreground">({{ group.items.length }})</span>
-                                </div>
-                                <button
-                                  v-for="event in group.items"
-                                  :key="event.id"
-                                  class="w-full text-left px-2.5 py-2 rounded-md hover:bg-muted/50 transition-colors flex items-start gap-2.5 group/item"
-                                  @click="openEventDetail(event)">
-                                  <div
-                                    :style="{ backgroundColor: group.style.dot }"
-                                    class="w-1.5 h-1.5 rounded-full mt-1.5 shrink-0" />
-                                  <div class="flex-1 min-w-0">
-                                    <p class="text-xs font-medium truncate group-hover/item:text-primary transition-colors">
-                                      {{ event.title }}
-                                    </p>
-                                    <div class="flex items-center gap-2 mt-0.5">
-                                      <span :class="['text-[10px] px-1.5 py-0.5 rounded font-medium', event.badgeClass]">
-                                        {{ event.status?.replace('-', ' ') || 'on track' }}
-                                      </span>
-                                      <span v-if="event.assignee" class="text-[10px] text-muted-foreground truncate">
-                                        {{ event.assignee }}
-                                      </span>
-                                    </div>
-                                  </div>
-                                  <Icon
-                                    name="lucide:chevron-right"
-                                    class="h-3.5 w-3.5 text-muted-foreground/50 group-hover/item:text-primary shrink-0 mt-0.5 transition-colors" />
-                                </button>
-                              </template>
-                            </div>
-                          </UiHoverCardContent>
-                        </UiHoverCard>
+                        <!-- Overflow pill -->
+                        <div v-if="getOverflowDayGroup(day.date, weekViewRow)">
+                          <button
+                            :class="[
+                              'w-full flex items-center gap-1 px-1.5 py-0.5 rounded-md text-[11px] font-medium transition-all duration-150',
+                              'hover:ring-1 hover:ring-primary/30 bg-muted/60 text-foreground',
+                            ]"
+                            @click.stop="openDayPopover(day.date)">
+                            <span class="truncate">
+                              {{ getOverflowDayGroup(day.date, weekViewRow)!.items.length }} more
+                            </span>
+                            <span
+                              v-if="getOverflowDayGroup(day.date, weekViewRow)!.urgentCount > 0"
+                              class="ml-auto shrink-0 inline-flex items-center justify-center w-4 h-4 rounded-full bg-red-500 text-white text-[9px] font-bold leading-none">
+                              {{ getOverflowDayGroup(day.date, weekViewRow)!.urgentCount }}
+                            </span>
+                          </button>
+                          <div class="flex h-[3px] rounded-full overflow-hidden mt-0.5 mx-0.5">
+                            <div
+                              v-for="seg in getOverflowDayGroup(day.date, weekViewRow)!.typeSegments"
+                              :key="seg.label"
+                              :style="{ flex: seg.count, backgroundColor: seg.color }" />
+                          </div>
+                        </div>
                       </div>
                       <!-- Per-cell overflow indicator for hidden multi-day events -->
                       <button
-                        v-if="(row.overflowPerCol[dayIdx] ?? 0) > 0"
+                        v-if="(weekViewRow.overflowPerCol[dayIdx] ?? 0) > 0"
                         type="button"
                         class="mt-0.5 text-[10px] text-muted-foreground font-medium hover:text-foreground transition-colors cursor-pointer"
                         @click.stop="openDayPopover(day.date)">
-                        +{{ row.overflowPerCol[dayIdx] ?? 0 }} more
+                        +{{ weekViewRow.overflowPerCol[dayIdx] ?? 0 }} more
                       </button>
                     </div>
                   </div>
                 </div>
               </div>
-            </div>
 
-            <!-- Year View -->
-            <div v-else-if="calendarViewMode === 'year'" :key="`year-${currentYear}`" class="h-[calc(100vh-12rem)] overflow-auto">
+              <!-- Month View -->
               <div
-                class="grid gap-4 p-6 h-full"
-                :style="{ gridTemplateColumns: `repeat(${isCompact ? 2 : isMedium ? 3 : 4}, minmax(0, 1fr))` }">
-                <div
-                  v-for="month in yearMonths"
-                  :key="month.month"
-                  class="rounded-xl border border-border/50 bg-card/30 p-4 hover:bg-card/50 hover:border-border transition-all duration-200 cursor-pointer"
-                  @click="
-                    () => {
-                      currentDate = new Date(currentYear, month.month, 1)
-                      calendarViewMode = 'month'
-                    }
-                  ">
-                  <!-- Month Header -->
-                  <div class="flex items-center justify-between mb-2">
-                    <h3 class="font-semibold text-sm">{{ month.name }}</h3>
-                    <span
-                      v-if="month.events.length"
-                      class="text-[10px] bg-primary/10 text-primary px-1.5 py-0.5 rounded-full font-medium">
-                      {{ month.events.length }}
-                    </span>
+                v-else-if="calendarViewMode === 'month'"
+                :key="`month-${currentYear}-${currentMonth}`"
+                class="h-full flex flex-col">
+                <!-- Month Header -->
+                <div class="shrink-0 grid grid-cols-7 border-b border-border/50">
+                  <div
+                    v-for="day in weekDays"
+                    :key="day"
+                    class="px-1 text-center text-xs font-medium text-muted-foreground uppercase tracking-wide"
+                    :class="isCompact ? 'py-1.5' : isMedium ? 'py-2' : 'py-3'">
+                    {{ day }}
                   </div>
+                </div>
 
-                  <!-- Mini Calendar Grid -->
-                  <div class="grid grid-cols-7 gap-px text-center h-full pb-4">
-                    <!-- Weekday headers -->
-                    <div
-                      v-for="day in ['S', 'M', 'T', 'W', 'T', 'F', 'S']"
-                      :key="day"
-                      class="text-[8px] font-medium text-muted-foreground/60 py-0.5">
-                      {{ day }}
-                    </div>
-                    <!-- Days -->
-                    <div
-                      v-for="(day, idx) in month.miniDays"
-                      :key="idx"
-                      :class="[
-                        'relative w-5 h-5 text-[9px] flex items-center justify-center rounded-sm',
-                        day.isToday
-                          ? 'bg-primary text-primary-foreground font-bold'
-                          : day.isCurrentMonth
-                            ? day.hasEvents
-                              ? day.hasRecurring
-                                ? 'text-violet-700 dark:text-violet-300 font-semibold ring-1 ring-violet-500/40'
-                                : 'text-foreground font-medium'
-                              : 'text-foreground/70'
-                            : 'text-muted-foreground/30',
-                      ]">
-                      {{ day.day }}
-                      <!-- Event indicator dot -->
-                      <span
-                        v-if="day.hasEvents && day.isCurrentMonth && !day.isToday"
+                <!-- Month Grid: week-row sub-grids -->
+                <div
+                  class="flex-1 grid min-h-0 overflow-hidden"
+                  :style="{ gridTemplateRows: `repeat(${weekRows.length}, minmax(0, 1fr))` }">
+                  <div v-for="(row, rowIdx) in weekRows" :key="rowIdx" class="min-h-0 overflow-hidden">
+                    <!-- Day cells grid -->
+                    <div class="grid grid-cols-7 h-full">
+                      <div
+                        v-for="(day, dayIdx) in row.days"
+                        :key="dayIdx"
                         :class="[
-                          'absolute -bottom-0.5 left-1/2 -translate-x-1/2 w-1 h-1 rounded-full',
-                          day.hasRecurring ? 'bg-violet-500' : 'bg-primary',
-                        ]" />
+                          'px-2 py-1.5 border-b border-r border-border/30 relative group/cell flex flex-col overflow-hidden transition-colors',
+                          'last:border-r-0 nth-[7n]:border-r-0',
+                          !day.isCurrentMonth
+                            ? 'bg-muted/20'
+                            : day.isToday
+                              ? 'bg-primary/5 ring-2 ring-inset ring-primary/30'
+                              : isDayInPast(day.date)
+                                ? ''
+                                : 'bg-card/40',
+                          isDragOver(day.date) ? 'bg-primary/10 ring-2 ring-inset ring-primary/50' : '',
+                          isHoveredMultiDayCell(day.date) ? 'bg-primary/5' : '',
+                        ]"
+                        @dragover="(e: DragEvent) => onCellDragOver(e, day.date)"
+                        @dragleave="onCellDragLeave"
+                        @drop="(e: DragEvent) => onCellDrop(e, day.date)">
+                        <!-- Day header: number + hover add button -->
+                        <div class="flex items-center justify-between mb-1 shrink-0">
+                          <div
+                            :class="[
+                              day.isToday
+                                ? 'w-6 h-6 rounded-full bg-primary text-primary-foreground flex items-center justify-center text-[11px] font-semibold'
+                                : day.isCurrentMonth
+                                  ? 'text-[11px] text-muted-foreground font-medium'
+                                  : 'text-[11px] text-muted-foreground/30',
+                            ]">
+                            {{ day.date.getDate() }}
+                          </div>
+                          <!-- Hover '+' button with type picker -->
+                          <UiPopover
+                            v-if="day.isCurrentMonth"
+                            :open="isAddMenuOpen(day.date)"
+                            @update:open="
+                              (open: boolean) => {
+                                addMenuDate = open ? day.date : null
+                              }
+                            ">
+                            <UiPopoverTrigger as-child>
+                              <button
+                                class="h-5 w-5 rounded flex items-center justify-center opacity-0 group-hover/cell:opacity-100 hover:bg-muted transition-all text-muted-foreground hover:text-foreground"
+                                @click.stop="
+                                  () => {
+                                    addMenuDate = day.date
+                                  }
+                                ">
+                                <Icon name="lucide:plus" class="h-3 w-3" />
+                              </button>
+                            </UiPopoverTrigger>
+                            <UiPopoverContent align="end" side="top" class="w-44 p-1">
+                              <button
+                                v-for="t in temporalTypeOptions"
+                                :key="t.typeLabel"
+                                class="w-full flex items-center gap-2 px-2 py-1.5 rounded-md text-xs hover:bg-muted/50 transition-colors"
+                                @click="
+                                  () => {
+                                    addMenuDate = null
+                                    emit('create-request', day.date, t.typeLabel)
+                                  }
+                                ">
+                                <Icon :name="t.icon" :class="['h-3.5 w-3.5', t.text]" />
+                                <span>{{ t.typeLabel }}</span>
+                              </button>
+                            </UiPopoverContent>
+                          </UiPopover>
+                        </div>
+                        <!-- Multi-day lane slots (bar segments inside each cell) -->
+                        <div v-if="getLaneSlotsForDay(row, dayIdx).length" class="-mx-2 mb-1 shrink-0">
+                          <div
+                            v-for="(slot, li) in getLaneSlotsForDay(row, dayIdx)"
+                            :key="`lane-${li}`"
+                            class="h-5 mt-0.5">
+                            <UiHoverCard v-if="slot" :open-delay="400" :close-delay="100">
+                              <UiHoverCardTrigger as-child>
+                                <button
+                                  class="w-full h-full flex items-center gap-1 px-1.5 text-[10px] font-medium truncate cursor-pointer transition-all duration-150 hover:brightness-110 hover:shadow-sm"
+                                  :class="[
+                                    slot.style.bg,
+                                    slot.style.text,
+                                    slot.isStart ? 'rounded-l-md ml-0.5' : '',
+                                    slot.isEnd ? 'rounded-r-md mr-0.5' : '',
+                                    hoveredMultiDayEventId === slot.event.id ? 'brightness-110 shadow-sm' : '',
+                                  ]"
+                                  :style="{
+                                    maskImage:
+                                      slot.isWrapStart && slot.isWrapEnd
+                                        ? 'linear-gradient(to right, transparent, black 16px, black calc(100% - 16px), transparent)'
+                                        : slot.isWrapStart
+                                          ? 'linear-gradient(to right, transparent, black 16px)'
+                                          : slot.isWrapEnd
+                                            ? 'linear-gradient(to left, transparent, black 16px)'
+                                            : undefined,
+                                  }"
+                                  @mouseenter="hoveredMultiDayEventId = slot.event.id"
+                                  @mouseleave="hoveredMultiDayEventId = null"
+                                  @click.stop="openEventDetail(slot.event)">
+                                  <Icon
+                                    v-if="slot.isStart || slot.isWrapStart"
+                                    :name="slot.style.icon"
+                                    class="h-3 w-3 shrink-0" />
+                                  <span v-if="slot.isStart || slot.isWrapStart" class="truncate">
+                                    {{ slot.event.title }}
+                                  </span>
+                                </button>
+                              </UiHoverCardTrigger>
+                              <UiHoverCardContent class="w-64 p-3" side="top" :side-offset="4">
+                                <div class="space-y-1.5">
+                                  <h4 class="text-sm font-semibold leading-tight truncate">{{ slot.event.title }}</h4>
+                                  <div class="flex items-center gap-1.5">
+                                    <Icon :name="slot.style.icon" :class="['h-3 w-3 shrink-0', slot.style.text]" />
+                                    <span class="text-xs text-muted-foreground capitalize">
+                                      {{ slot.event.typeLabel || 'Item' }}
+                                    </span>
+                                    <span class="text-xs text-muted-foreground">·</span>
+                                    <Icon name="lucide:calendar-days" class="h-3 w-3 opacity-50" />
+                                    <span class="text-[11px] text-muted-foreground">
+                                      {{ formatEventDateRange(slot.event) }}
+                                    </span>
+                                  </div>
+                                  <p
+                                    v-if="slot.event.description"
+                                    class="line-clamp-2 text-xs text-muted-foreground leading-relaxed">
+                                    {{ slot.event.description }}
+                                  </p>
+                                  <div
+                                    v-if="slot.event.status || slot.event.priority"
+                                    class="flex items-center gap-1.5 pt-0.5">
+                                    <span
+                                      v-if="slot.event.status"
+                                      :class="['text-[10px] px-1.5 py-0.5 rounded font-medium', slot.event.badgeClass]">
+                                      {{ slot.event.status?.replace('-', ' ') }}
+                                    </span>
+                                    <span
+                                      v-if="slot.event.priority"
+                                      class="text-[10px] text-muted-foreground capitalize">
+                                      {{ slot.event.priority }}
+                                    </span>
+                                  </div>
+                                </div>
+                              </UiHoverCardContent>
+                            </UiHoverCard>
+                          </div>
+                        </div>
+                        <!-- Single-day items: individual pills with overflow grouping -->
+                        <div
+                          v-if="getVisibleSingleDayItems(day.date, row).length > 0"
+                          :class="[
+                            'flex-1 min-h-0 overflow-hidden space-y-0.5',
+                            isDayInPast(day.date) ? 'opacity-50' : '',
+                          ]">
+                          <!-- Individual item pills -->
+                          <UiHoverCard
+                            v-for="item in getVisibleSingleDayItems(day.date, row)"
+                            :key="item.id"
+                            :open-delay="400"
+                            :close-delay="100">
+                            <UiHoverCardTrigger as-child>
+                              <button
+                                :draggable="item.typeLabel !== 'GoogleCalendar'"
+                                :class="[
+                                  'w-full flex items-center gap-1 rounded-md text-[11px] font-medium transition-all duration-150',
+                                  isCompact ? 'px-1 py-0.5 justify-center' : 'px-1.5 py-0.5',
+                                  'hover:ring-1 hover:ring-primary/30',
+                                  item.typeLabel !== 'GoogleCalendar'
+                                    ? 'cursor-grab active:cursor-grabbing'
+                                    : 'cursor-pointer',
+                                  getTypeStyle(item.typeLabel || '').bg,
+                                  getTypeStyle(item.typeLabel || '').text,
+                                  recurringItemClasses(item),
+                                ]"
+                                @dragstart="
+                                  item.typeLabel !== 'GoogleCalendar'
+                                    ? onDragStart($event as DragEvent, item)
+                                    : undefined
+                                "
+                                @dragend="onDragEnd"
+                                @click.stop="openEventDetail(item)">
+                                <Icon :name="getTypeStyle(item.typeLabel || '').icon" class="h-3 w-3 shrink-0" />
+                                <template v-if="!isCompact">
+                                  <Icon
+                                    v-if="hasRecurringInstance(item)"
+                                    name="lucide:repeat"
+                                    class="h-2.5 w-2.5 shrink-0 opacity-60" />
+                                  <span v-if="item.recurrenceIndex" class="text-[9px] opacity-50 shrink-0">
+                                    #{{ item.recurrenceIndex }}
+                                  </span>
+                                  <span class="truncate">{{ item.title }}</span>
+                                  <Icon
+                                    v-if="item.typeLabel === 'GoogleCalendar'"
+                                    name="simple-icons:googlecalendar"
+                                    class="ml-auto h-2.5 w-2.5 shrink-0 opacity-70" />
+                                </template>
+                              </button>
+                            </UiHoverCardTrigger>
+                            <UiHoverCardContent class="w-64 p-3" side="top" :side-offset="4">
+                              <div class="space-y-1.5">
+                                <h4 class="text-sm font-semibold leading-tight truncate">{{ item.title }}</h4>
+                                <div class="flex items-center gap-1.5">
+                                  <Icon
+                                    :name="getTypeStyle(item.typeLabel || '').icon"
+                                    :class="['h-3 w-3 shrink-0', getTypeStyle(item.typeLabel || '').text]" />
+                                  <span class="text-xs text-muted-foreground">
+                                    {{ getTypeDisplayLabel(item.typeLabel) }}
+                                  </span>
+                                  <template v-if="hasRecurringInstance(item)">
+                                    <span class="text-xs text-muted-foreground">·</span>
+                                    <Icon name="lucide:repeat" class="h-3 w-3 opacity-60" />
+                                    <span class="text-[11px] text-muted-foreground">
+                                      Occurrence #{{ item.recurrenceIndex }}
+                                    </span>
+                                  </template>
+                                  <span class="text-xs text-muted-foreground">·</span>
+                                  <Icon name="lucide:calendar-days" class="h-3 w-3 opacity-50" />
+                                  <span class="text-[11px] text-muted-foreground">
+                                    {{ formatEventDateRange(item) }}
+                                  </span>
+                                </div>
+                                <p
+                                  v-if="item.description"
+                                  class="line-clamp-2 text-xs text-muted-foreground leading-relaxed">
+                                  {{ item.description }}
+                                </p>
+                                <div v-if="item.status || item.priority" class="flex items-center gap-1.5 pt-0.5">
+                                  <span
+                                    v-if="item.status"
+                                    :class="['text-[10px] px-1.5 py-0.5 rounded font-medium', item.badgeClass]">
+                                    {{ item.status?.replace('-', ' ') }}
+                                  </span>
+                                  <span v-if="item.priority" class="text-[10px] text-muted-foreground capitalize">
+                                    {{ item.priority }}
+                                  </span>
+                                </div>
+                              </div>
+                            </UiHoverCardContent>
+                          </UiHoverCard>
+                          <!-- Overflow: unified "N more" pill with segmented color bar + rich hover preview -->
+                          <UiHoverCard v-if="getOverflowDayGroup(day.date, row)" :open-delay="300" :close-delay="150">
+                            <UiHoverCardTrigger as-child>
+                              <div class="w-full">
+                                <button
+                                  :class="[
+                                    'w-full flex items-center gap-1 px-1.5 py-0.5 rounded-md text-[11px] font-medium transition-all duration-150',
+                                    'hover:ring-1 hover:ring-primary/30 bg-muted/60 text-foreground',
+                                  ]"
+                                  @click.stop="openDayPopover(day.date)">
+                                  <span class="truncate">
+                                    {{ getOverflowDayGroup(day.date, row)!.items.length }} more
+                                  </span>
+                                  <span
+                                    v-if="getOverflowDayGroup(day.date, row)!.urgentCount > 0"
+                                    class="ml-auto shrink-0 inline-flex items-center justify-center w-4 h-4 rounded-full bg-red-500 text-white text-[9px] font-bold leading-none">
+                                    {{ getOverflowDayGroup(day.date, row)!.urgentCount }}
+                                  </span>
+                                </button>
+                                <!-- Segmented color bar -->
+                                <div class="flex h-[3px] rounded-full overflow-hidden mt-0.5 mx-0.5">
+                                  <div
+                                    v-for="seg in getOverflowDayGroup(day.date, row)!.typeSegments"
+                                    :key="seg.label"
+                                    :style="{ flex: seg.count, backgroundColor: seg.color }" />
+                                </div>
+                              </div>
+                            </UiHoverCardTrigger>
+                            <UiHoverCardContent class="w-72 p-0 max-h-80 overflow-hidden" side="top" :side-offset="4">
+                              <!-- Header -->
+                              <div class="px-3 py-2 border-b border-border bg-muted/30">
+                                <p class="text-xs font-semibold">{{ formatDate(day.date) }}</p>
+                                <p class="text-[10px] text-muted-foreground">
+                                  {{ getDayGroup(day.date)?.items.length || 0 }}
+                                  {{ (getDayGroup(day.date)?.items.length || 0) === 1 ? 'item' : 'items' }}
+                                </p>
+                              </div>
+                              <!-- Type-grouped items -->
+                              <div class="overflow-y-auto max-h-64 p-1">
+                                <template v-for="group in getSingleDayTypeGroups(day.date)" :key="group.typeLabel">
+                                  <div class="px-2 pt-2 pb-1 flex items-center gap-1.5">
+                                    <Icon :name="group.style.icon" :class="['h-3 w-3', group.style.text]" />
+                                    <span
+                                      :class="['text-[10px] font-semibold uppercase tracking-wide', group.style.text]">
+                                      {{ group.typeLabel }}{{ group.items.length > 1 ? 's' : '' }}
+                                    </span>
+                                    <span class="text-[10px] text-muted-foreground">({{ group.items.length }})</span>
+                                  </div>
+                                  <button
+                                    v-for="event in group.items"
+                                    :key="event.id"
+                                    class="w-full text-left px-2.5 py-2 rounded-md hover:bg-muted/50 transition-colors flex items-start gap-2.5 group/item"
+                                    @click="openEventDetail(event)">
+                                    <div
+                                      :style="{ backgroundColor: group.style.dot }"
+                                      class="w-1.5 h-1.5 rounded-full mt-1.5 shrink-0" />
+                                    <div class="flex-1 min-w-0">
+                                      <p
+                                        class="text-xs font-medium truncate group-hover/item:text-primary transition-colors">
+                                        {{ event.title }}
+                                      </p>
+                                      <div class="flex items-center gap-2 mt-0.5">
+                                        <span
+                                          :class="['text-[10px] px-1.5 py-0.5 rounded font-medium', event.badgeClass]">
+                                          {{ event.status?.replace('-', ' ') || 'on track' }}
+                                        </span>
+                                        <span v-if="event.assignee" class="text-[10px] text-muted-foreground truncate">
+                                          {{ event.assignee }}
+                                        </span>
+                                      </div>
+                                    </div>
+                                    <Icon
+                                      name="lucide:chevron-right"
+                                      class="h-3.5 w-3.5 text-muted-foreground/50 group-hover/item:text-primary shrink-0 mt-0.5 transition-colors" />
+                                  </button>
+                                </template>
+                              </div>
+                            </UiHoverCardContent>
+                          </UiHoverCard>
+                        </div>
+                        <!-- Per-cell overflow indicator for hidden multi-day events -->
+                        <button
+                          v-if="(row.overflowPerCol[dayIdx] ?? 0) > 0"
+                          type="button"
+                          class="mt-0.5 text-[10px] text-muted-foreground font-medium hover:text-foreground transition-colors cursor-pointer"
+                          @click.stop="openDayPopover(day.date)">
+                          +{{ row.overflowPerCol[dayIdx] ?? 0 }} more
+                        </button>
+                      </div>
                     </div>
                   </div>
                 </div>
               </div>
-            </div>
-          </Transition>
+
+              <!-- Year View -->
+              <div v-else-if="calendarViewMode === 'year'" :key="`year-${currentYear}`" class="h-full overflow-auto">
+                <div
+                  class="grid gap-x-4 p-5 h-full"
+                  :style="{ gridTemplateColumns: `repeat(${isCompact ? 2 : 4}, minmax(0, 1fr))` }">
+                  <!-- Each quarter is a full column -->
+                  <div v-for="(quarter, qIdx) in yearQuarters" :key="quarter.label" class="flex flex-col h-full">
+                    <!-- Quarter label — highlighted when it contains the current month -->
+                    <div class="flex items-center gap-1.5 mb-3 px-0.5 shrink-0">
+                      <span
+                        :class="[
+                          'text-[10px] font-semibold uppercase tracking-widest rounded px-2 py-0.5 shrink-0 transition-colors',
+                          qIdx === Math.floor(today.getMonth() / 3) && currentYear === today.getFullYear()
+                            ? 'text-primary bg-primary/15'
+                            : 'text-muted-foreground/50 bg-muted/40',
+                        ]">
+                        {{ quarter.label }}
+                      </span>
+                      <span
+                        :class="[
+                          'flex-1 h-px transition-colors',
+                          qIdx === Math.floor(today.getMonth() / 3) && currentYear === today.getFullYear()
+                            ? 'bg-primary/30'
+                            : 'bg-border/30',
+                        ]" />
+                    </div>
+
+                    <!-- 3 months stacked vertically, filling remaining height -->
+                    <div class="flex flex-col gap-3 flex-1">
+                      <div
+                        v-for="month in quarter.months"
+                        :key="month.month"
+                        :class="[
+                          'flex-1 flex flex-col rounded-xl border p-3 transition-all duration-200 cursor-pointer',
+                          month.month === today.getMonth() && currentYear === today.getFullYear()
+                            ? 'border-primary/50 bg-primary/5 hover:bg-primary/10 hover:border-primary/60'
+                            : 'border-border/50 bg-card/30 hover:bg-card/50 hover:border-border',
+                        ]"
+                        @click="
+                          () => {
+                            currentDate = new Date(currentYear, month.month, 1)
+                            calendarViewMode = 'month'
+                          }
+                        ">
+                        <!-- Month Header -->
+                        <div class="flex items-center justify-between mb-2 shrink-0">
+                          <h3
+                            :class="[
+                              'font-semibold text-sm',
+                              month.month === today.getMonth() && currentYear === today.getFullYear()
+                                ? 'text-primary'
+                                : '',
+                            ]">
+                            {{ month.name }}
+                          </h3>
+                          <span
+                            v-if="month.events.length"
+                            class="text-[10px] bg-primary/10 text-primary px-1.5 py-0.5 rounded-full font-medium">
+                            {{ month.events.length }}
+                          </span>
+                        </div>
+
+                        <!-- Mini Calendar Grid — fills remaining card height -->
+                        <div class="flex-1 min-h-0 overflow-hidden">
+                          <div
+                            class="grid grid-cols-7 gap-px text-center h-full"
+                            style="grid-template-rows: auto repeat(6, 1fr)">
+                            <!-- Weekday headers -->
+                            <div
+                              v-for="wday in ['S', 'M', 'T', 'W', 'T', 'F', 'S']"
+                              :key="wday"
+                              class="text-[8px] font-medium text-muted-foreground/60 py-0.5 flex items-center justify-center">
+                              {{ wday }}
+                            </div>
+                            <!-- Days -->
+                            <div
+                              v-for="(day, idx) in month.miniDays"
+                              :key="idx"
+                              :class="[
+                                'relative min-h-0 text-[9px] flex items-center justify-center rounded-sm overflow-hidden',
+                                day.isToday
+                                  ? 'bg-primary text-primary-foreground font-bold'
+                                  : day.isCurrentMonth
+                                    ? day.hasEvents
+                                      ? day.hasRecurring
+                                        ? 'text-violet-700 dark:text-violet-300 font-semibold ring-1 ring-violet-500/40'
+                                        : 'text-foreground font-medium'
+                                      : 'text-foreground/70'
+                                    : 'text-muted-foreground/30',
+                              ]">
+                              <span class="leading-none">{{ day.day }}</span>
+                              <!-- Event indicator dot -->
+                              <span
+                                v-if="day.hasEvents && day.isCurrentMonth && !day.isToday"
+                                :class="[
+                                  'absolute bottom-0.5 left-1/2 -translate-x-1/2 w-1 h-1 rounded-full',
+                                  day.hasRecurring ? 'bg-violet-500' : 'bg-primary',
+                                ]" />
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </Transition>
+          </div>
         </div>
       </div>
     </div>
