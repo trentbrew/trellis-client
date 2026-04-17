@@ -27,7 +27,10 @@ function preprocessMarkdownDirectives(md: string): string {
     .replace(new RegExp(`^${EMBED_RE.source}$`, 'gm'), (_, src, title) => toEmbedDiv(src, 'embed', 480, title))
     .replace(new RegExp(`^${YOUTUBE_RE.source}$`, 'gm'), (_, id, title) => toEmbedDiv(id, 'youtube', 360, title))
     .replace(new RegExp(`^${SPOTIFY_RE.source}$`, 'gm'), (_, url) => toEmbedDiv(url, 'spotify', 152))
-    .replace(new RegExp(`^${IMAGE_RE.source}$`, 'gm'), (_, src, alt) => `<img src="${src.replace(/"/g, '&quot;')}" alt="${(alt || '').replace(/"/g, '&quot;')}" />`)
+    .replace(
+      new RegExp(`^${IMAGE_RE.source}$`, 'gm'),
+      (_, src, alt) => `<img src="${src.replace(/"/g, '&quot;')}" alt="${(alt || '').replace(/"/g, '&quot;')}" />`,
+    )
 }
 
 /**
@@ -40,7 +43,10 @@ function preprocessHtmlDirectives(html: string): string {
     .replace(p(EMBED_RE), (_, src, title) => toEmbedDiv(src, 'embed', 480, title))
     .replace(p(YOUTUBE_RE), (_, id, title) => toEmbedDiv(id, 'youtube', 360, title))
     .replace(p(SPOTIFY_RE), (_, url) => toEmbedDiv(url, 'spotify', 152))
-    .replace(p(IMAGE_RE), (_, src, alt) => `<img src="${src.replace(/"/g, '&quot;')}" alt="${(alt || '').replace(/"/g, '&quot;')}" />`)
+    .replace(
+      p(IMAGE_RE),
+      (_, src, alt) => `<img src="${src.replace(/"/g, '&quot;')}" alt="${(alt || '').replace(/"/g, '&quot;')}" />`,
+    )
 }
 
 /**
@@ -53,6 +59,38 @@ export function isHtmlContent(content: string): boolean {
 }
 
 /**
+ * Convert marked checkbox list HTML to TipTap TaskList format.
+ * marked produces: <ul><li><input type="checkbox"> text</li></ul>
+ * TipTap expects: <ul data-type="taskList"><li data-type="taskItem" data-checked="false">text</li></ul>
+ *
+ * Only converts <ul> lists that contain checkbox inputs. Non-checkbox lists pass through unchanged.
+ */
+function convertCheckboxesToTaskList(html: string): string {
+  // Match list items with checkboxes. Marked produces:
+  //   <li><input disabled="" type="checkbox"> text</li>
+  //   <li><input checked="" disabled="" type="checkbox"> text</li>
+  // Attributes can appear in any order, so match any <input> inside <li>,
+  // then inspect its attributes to confirm it's a checkbox and check its state.
+  const liInputRe = /<li>(\s*<p>\s*)?<input\b([^>]*)>\s*/gi
+
+  // First pass: convert checkbox list items and track which lists need conversion
+  let hasCheckboxList = false
+  const processed = html.replace(liInputRe, (match, openP, attrs) => {
+    // Only transform inputs that are type="checkbox"
+    if (!/type=["']checkbox["']/i.test(attrs)) return match
+    hasCheckboxList = true
+    const isChecked = /\bchecked(?:=|[\s>])/i.test(attrs)
+    const prefix = openP || ''
+    return `<li data-type="taskItem" data-checked="${isChecked}">${prefix}`
+  })
+
+  if (!hasCheckboxList) return html
+
+  // Second pass: convert <ul> to <ul data-type="taskList"> for lists containing checkboxes
+  return processed.replace(/<ul>([\s\S]*?<li data-type="taskItem"[\s\S]*?)<\/ul>/gi, '<ul data-type="taskList">$1</ul>')
+}
+
+/**
  * Convert markdown text to HTML using marked.
  * If the content already contains HTML tags, preprocess embed directives
  * then return as-is; otherwise convert markdown (with directive preprocessing).
@@ -60,5 +98,6 @@ export function isHtmlContent(content: string): boolean {
 export function markdownToHtml(content: string): string {
   if (!content) return ''
   if (isHtmlContent(content)) return preprocessHtmlDirectives(content)
-  return marked.parse(preprocessMarkdownDirectives(content), { async: false }) as string
+  const html = marked.parse(preprocessMarkdownDirectives(content), { async: false }) as string
+  return convertCheckboxesToTaskList(html)
 }

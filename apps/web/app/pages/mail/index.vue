@@ -11,8 +11,8 @@
    *   │ Label Nav     │ Thread List            │ Message Viewer          │
    *   └───────────────┴────────────────────────┴─────────────────────────┘
    */
-  import { useGmail, type GmailThreadSummary, type GmailThreadFull, type GmailLabel } from '~/composables/useGmail'
-  import { useGlobalDetailSheet } from '~/composables/useGlobalDetailSheet'
+  import { useGmail, type GmailThreadSummary, type GmailThreadFull, type GmailMessage, type GmailLabel } from '~/composables/useGmail'
+  import EmailContent from '~/components/entity/panels/document/EmailContent.vue'
 
   definePageMeta({
     layout: 'default',
@@ -22,8 +22,6 @@
   const router = useRouter()
 
   const { isConnected, connect, fetchThreads, fetchThread, sendMessage, listLabels, persistThreadToTql } = useGmail()
-  const { items: allItems } = useEntities()
-  const detailSheet = useGlobalDetailSheet()
 
   // ── URL-driven state ────────────────────────────────────────────────
   // Label is driven by ?label=INBOX query so the sidebar links work.
@@ -108,31 +106,24 @@
     try {
       const data = await fetchThread(threadId)
       selectedThread.value = data
-
-      // Persist to TQL as email entity, then open in EntityDialog
-      const entityId = await persistThreadToTql(data)
-      // persistThreadToTql returns namespaced id (entity:gmail-xxx), items store stripped ids (gmail-xxx)
-      const strippedId = entityId.replace(/^entity:/, '')
-      const findEntity = () => allItems.value.find((e: any) => e.id === strippedId || e.id === entityId)
-
-      // Entity may not be in the reactive list yet — poll up to ~2s for TQL watcher to fire
-      let entity = findEntity()
-      if (!entity) {
-        for (let i = 0; i < 20 && !entity; i++) {
-          await new Promise((r) => setTimeout(r, 100))
-          entity = findEntity()
-        }
-      }
-      if (entity) {
-        detailSheet.open(entity, { mode: 'view' })
-      } else {
-        console.warn('[mail] Entity not found after persist:', entityId)
-      }
+      persistThreadToTql(data).catch((e) => console.warn('[mail] persist failed:', e))
     } catch (err) {
       console.error('[mail] Failed to open thread:', err)
       selectedThread.value = null
     } finally {
       threadLoading.value = false
+    }
+  }
+
+  function messageAsEntity(msg: GmailMessage) {
+    return {
+      from: msg.from,
+      to: msg.to,
+      cc: msg.cc ?? '',
+      date: msg.date,
+      bodyHtml: msg.bodyHtml,
+      bodyText: msg.bodyText,
+      snippet: msg.snippet,
     }
   }
 
@@ -227,12 +218,6 @@
     const sameDay = d.toDateString() === now.toDateString()
     if (sameDay) return d.toLocaleTimeString(undefined, { hour: 'numeric', minute: '2-digit' })
     return d.toLocaleDateString(undefined, { month: 'short', day: 'numeric' })
-  }
-
-  function sanitizedBody(html: string | undefined): string {
-    // Very lightweight — real sanitization should happen server-side
-    if (!html) return ''
-    return html.replace(/<script[\s\S]*?<\/script>/gi, '')
   }
 
   function _selectLabel(label: string) {
@@ -411,30 +396,12 @@
 
           <!-- Message list -->
           <div class="flex-1 overflow-y-auto">
-            <article
+            <EmailContent
               v-for="msg in selectedThread.messages"
               :key="msg.id"
-              class="px-6 py-5 border-b border-border/40 last:border-b-0">
-              <header class="flex items-start justify-between gap-4 mb-3">
-                <div class="min-w-0">
-                  <div class="flex items-center gap-2">
-                    <div class="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
-                      <span class="text-xs font-semibold text-primary">
-                        {{ formatSender(msg.from).charAt(0).toUpperCase() }}
-                      </span>
-                    </div>
-                    <div class="min-w-0">
-                      <div class="text-sm font-medium truncate">{{ formatSender(msg.from) }}</div>
-                      <div class="text-xs text-muted-foreground truncate">to {{ msg.to }}</div>
-                    </div>
-                  </div>
-                </div>
-                <time class="text-xs text-muted-foreground shrink-0">{{ formatDateShort(msg.date) }}</time>
-              </header>
-              <div
-                class="prose prose-sm dark:prose-invert max-w-none text-sm"
-                v-html="sanitizedBody(msg.bodyHtml) || msg.bodyText || msg.snippet" />
-            </article>
+              :model-value="messageAsEntity(msg)"
+              mode="view"
+              class="border-b border-border/40 last:border-b-0" />
           </div>
 
           <!-- Reply bar -->

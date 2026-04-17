@@ -16,6 +16,8 @@ import * as vm from 'node:vm'
 import { useTqlKernel, pushMutationLog } from '../plugins/tql'
 import { emitMutation } from './tql-events'
 import { sendEmail } from './email'
+import { useInstantAdmin } from './instant-admin'
+import { dispatchNotificationEmailAsync } from './notification-email'
 
 export type ToolArgs = Record<string, unknown>
 
@@ -243,6 +245,104 @@ const run_js: ToolHandler = async (args) => {
   }
 }
 
+/**
+ * Create an in-app notification (and optionally an email). Args:
+ *   {
+ *     recipientId | recipients[],   // user ID(s) to notify
+ *     orgId,                        // organization the notification belongs to
+ *     type,                         // NotificationType string
+ *     title,
+ *     message,
+ *     actionUrl?, icon?, variant?,
+ *     actorName?, metadata?,
+ *     skipEmail?                    // default false
+ *   }
+ *
+ * Mirrors POST /api/notify but runs in-process (no HTTP hop). Emails are
+ * dispatched asynchronously and honour per-user prefs.
+ */
+const send_notification: ToolHandler = async (args, ctx) => {
+  const recipients = Array.isArray(args.recipients)
+    ? (args.recipients as unknown[]).map((r) => asString(r)).filter(Boolean)
+    : args.recipientId
+      ? [asString(args.recipientId)]
+      : []
+
+  const orgId = asString(args.orgId)
+  const type = asString(args.type)
+  const title = asString(args.title)
+  const message = asString(args.message)
+
+  if (recipients.length === 0) throw new Error('send_notification: "recipientId" or "recipients[]" required')
+  if (!orgId) throw new Error('send_notification: "orgId" is required')
+  if (!type) throw new Error('send_notification: "type" is required')
+  if (!title) throw new Error('send_notification: "title" is required')
+  if (!message) throw new Error('send_notification: "message" is required')
+
+  const db = useInstantAdmin()
+  const now = Date.now()
+  const orgName = args.orgName ? asString(args.orgName) : ''
+  const actionUrl = args.actionUrl ? asString(args.actionUrl) : ''
+  const icon = args.icon ? asString(args.icon) : ''
+  const variant = args.variant ? asString(args.variant) : 'default'
+  const actorName = args.actorName ? asString(args.actorName) : ''
+  const actorId = args.actorId ? asString(args.actorId) : ctx.agentId || 'workflow'
+  const metadata = asRecord(args.metadata)
+  const skipEmail = args.skipEmail === true
+
+  const created: string[] = []
+
+  for (const recipientId of recipients) {
+    try {
+      const notifId = crypto.randomUUID()
+      await db.transact(
+        db.tx.notifications[notifId].update({
+          recipientId,
+          orgId,
+          orgName,
+          type,
+          title,
+          message,
+          actionUrl,
+          icon,
+          variant,
+          isRead: false,
+          actorId,
+          actorName,
+          metadata,
+          createdAt: now,
+        }),
+      )
+
+      // Non-fatal org link
+      try {
+        await db.transact(db.tx.organizations[orgId].link({ notifications: notifId }))
+      } catch (linkErr: any) {
+        console.warn(`[send_notification] org link failed for ${notifId} (non-fatal):`, linkErr?.message)
+      }
+
+      if (!skipEmail) {
+        dispatchNotificationEmailAsync({
+          recipientId,
+          type,
+          title,
+          message,
+          actionUrl: actionUrl || undefined,
+          actorName: actorName || undefined,
+          orgName: orgName || undefined,
+          metadata,
+        })
+      }
+
+      created.push(notifId)
+    } catch (err: any) {
+      console.error(`[send_notification] create failed for ${recipientId}:`, err?.message || err)
+    }
+  }
+
+  return { ok: true, created: created.length, ids: created }
+}
+
 // ─── Registry ────────────────────────────────────────────────────────────────
 
 export const workflowTools: Record<string, ToolHandler> = {
@@ -251,6 +351,7 @@ export const workflowTools: Record<string, ToolHandler> = {
   tql_load_data,
   tql_mutate,
   send_email,
+  send_notification,
   run_js,
 }
 

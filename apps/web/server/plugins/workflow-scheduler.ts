@@ -28,10 +28,7 @@ let _tickRunning = false
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 
-async function fireTrigger(
-  trigger: TriggerEntity,
-  input: Record<string, unknown>,
-): Promise<void> {
+async function fireTrigger(trigger: TriggerEntity, input: Record<string, unknown>): Promise<void> {
   const agentId = trigger.agentId || `trigger:${trigger.kind}`
   try {
     const run = await executeWorkflow({
@@ -40,6 +37,9 @@ async function fireTrigger(
       graph: trigger.graph,
       input,
       agentId,
+      ownerId: trigger.ownerId,
+      orgId: trigger.orgId,
+      notifyOnSuccess: trigger.notifyOnSuccess,
     })
     await recordTriggerFire(trigger.id, {
       runId: run.id,
@@ -63,9 +63,7 @@ async function runTick(now: Date = new Date()): Promise<void> {
 
     if (due.length === 0) return
 
-    console.log(
-      `[workflow-scheduler] tick ${now.toISOString()}: ${due.length} schedule trigger(s) due`,
-    )
+    console.log(`[workflow-scheduler] tick ${now.toISOString()}: ${due.length} schedule trigger(s) due`)
 
     // Fire in parallel — each trigger gets its own error isolation
     await Promise.all(
@@ -113,9 +111,7 @@ async function handleMutation(ev: MutationEvent): Promise<void> {
     const matches = triggers.filter((t) => matchesEntityChange(t, ev))
     if (matches.length === 0) return
 
-    console.log(
-      `[workflow-scheduler] entity-change ${ev.action} ${ev.entityId}: ${matches.length} trigger(s) matched`,
-    )
+    console.log(`[workflow-scheduler] entity-change ${ev.action} ${ev.entityId}: ${matches.length} trigger(s) matched`)
 
     for (const trigger of matches) {
       fireTrigger(trigger, {

@@ -166,6 +166,9 @@ export type NotificationType =
   | 'comment'
   | 'entity_updated'
   | 'new_message'
+  | 'workflow_completed'
+  | 'workflow_failed'
+  | 'trigger_fired'
   | 'system'
 
 export type NotificationVariant = 'default' | 'success' | 'warning' | 'destructive' | 'info'

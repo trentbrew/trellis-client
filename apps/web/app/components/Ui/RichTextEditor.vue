@@ -86,7 +86,7 @@
   const emit = defineEmits<{
     'update:modelValue': [value: string]
     'mention-click': [attrs: { id: string; label: string; entityType: string }]
-    'submit': []
+    submit: []
     'add-inline-comment': [{ commentId: string; quotedText: string }]
   }>()
 
@@ -97,10 +97,10 @@
 
   /** SVG placeholder shown while an image upload is in progress. */
   const UPLOAD_PLACEHOLDER_SRC = `data:image/svg+xml,${encodeURIComponent(
-    '<svg xmlns="http://www.w3.org/2000/svg" width="400" height="200" viewBox="0 0 400 200">'
-    + '<rect width="400" height="200" rx="6" fill="%23f4f4f5"/>'
-    + '<text x="200" y="105" text-anchor="middle" font-family="system-ui,sans-serif" font-size="13" fill="%23a1a1aa">Uploading\u2026</text>'
-    + '</svg>',
+    '<svg xmlns="http://www.w3.org/2000/svg" width="400" height="200" viewBox="0 0 400 200">' +
+      '<rect width="400" height="200" rx="6" fill="%23f4f4f5"/>' +
+      '<text x="200" y="105" text-anchor="middle" font-family="system-ui,sans-serif" font-size="13" fill="%23a1a1aa">Uploading\u2026</text>' +
+      '</svg>',
   )}`
 
   /** Prefix for placeholder alt text — used to identify uploading images. */
@@ -162,8 +162,11 @@
       : 'min-h-[100px] focus:outline-none prose-sm prose-p:my-2 prose-headings:my-3 prose-ul:my-2 prose-li:my-1'
 
   // Build entity search for mentions and embeds
-  const entitySearch = (props.mentions || props.embeds) ? useEntitySearch() : null
-  const { create: _createEntity, items: _allEntities } = (props.mentions || props.embeds || props.templates) ? useTrellisEntities() : { create: async () => null, items: ref([]) }
+  const entitySearch = props.mentions || props.embeds ? useEntitySearch() : null
+  const { create: _createEntity, items: _allEntities } =
+    props.mentions || props.embeds || props.templates
+      ? useTrellisEntities()
+      : { create: async () => null, items: ref([]) }
   const tablesEnabled = props.tables !== false
   const mathematicsEnabled = props.mathematics !== false
   const { toolbarMode } = useLayoutPreferences()
@@ -187,10 +190,13 @@
   const adapter = useDataAdapter()
   const collabEnabled = computed(() => !!props.collaborative && !!props.entityId && adapter.mode === 'cloud')
   const initialContent = computed(() => props.modelValue || '')
-  const { ydoc: _ydoc, collabExtensions, connectionStatus: _connectionStatus, isLeader: _isLeader, destroy: destroyCollab } = useCollaborativeEditor(
-    collabEntityId,
-    { initialContent, enabled: collabEnabled },
-  )
+  const {
+    ydoc: _ydoc,
+    collabExtensions,
+    connectionStatus: _connectionStatus,
+    isLeader: _isLeader,
+    destroy: destroyCollab,
+  } = useCollaborativeEditor(collabEntityId, { initialContent, enabled: collabEnabled })
 
   // ── Embed picker state ──────────────────────────────────────────────
   const showEntityPicker = ref(false)
@@ -203,9 +209,7 @@
     const q = entityPickerSearch.value.toLowerCase().trim()
     const items = entitySearch.filteredItems.value as EntitySearchItem[]
     if (!q) return items.slice(0, 20)
-    return items.filter((i) =>
-      i.title?.toLowerCase().includes(q) || i.type?.toLowerCase().includes(q),
-    ).slice(0, 20)
+    return items.filter((i) => i.title?.toLowerCase().includes(q) || i.type?.toLowerCase().includes(q)).slice(0, 20)
   })
 
   function handleEmbedEntity(_editor: any) {
@@ -239,19 +243,27 @@
   }
 
   function selectEntityForEmbed(item: EntitySearchItem) {
-    editor.value?.chain().focus().insertEntityEmbed({
-      entityId: item.id,
-      entityType: item.type,
-      title: item.title || 'Untitled',
-    }).run()
+    editor.value
+      ?.chain()
+      .focus()
+      .insertEntityEmbed({
+        entityId: item.id,
+        entityType: item.type,
+        title: item.title || 'Untitled',
+      })
+      .run()
     showEntityPicker.value = false
   }
 
   function selectTypeForQuery() {
-    editor.value?.chain().focus().insertQueryView({
-      entityType: queryPickerType.value,
-      maxRows: 5,
-    }).run()
+    editor.value
+      ?.chain()
+      .focus()
+      .insertQueryView({
+        entityType: queryPickerType.value,
+        maxRows: 5,
+      })
+      .run()
     showQueryPicker.value = false
   }
 
@@ -339,10 +351,70 @@
   // ── Context menu ─────────────────────────────────────────────────
   const contextMenu = reactive({ visible: false, x: 0, y: 0 })
 
-  function closeContextMenu() { contextMenu.visible = false }
+  function closeContextMenu() {
+    contextMenu.visible = false
+  }
 
-  function onDocClick() { closeContextMenu() }
-  function onDocKeydown(e: KeyboardEvent) { if (e.key === 'Escape') closeContextMenu() }
+  // Context menu action handlers (extracted to avoid multi-line inline JS in template)
+  function ctxSetParagraph() {
+    editor.value?.chain().focus().setParagraph().run()
+    closeContextMenu()
+  }
+  function ctxToggleHeading(level: number) {
+    editor.value
+      ?.chain()
+      .focus()
+      .toggleHeading({ level: level as 1 | 2 | 3 })
+      .run()
+    closeContextMenu()
+  }
+  function ctxToggleBulletList() {
+    editor.value?.chain().focus().toggleBulletList().run()
+    closeContextMenu()
+  }
+  function ctxToggleOrderedList() {
+    editor.value?.chain().focus().toggleOrderedList().run()
+    closeContextMenu()
+  }
+  function ctxToggleTaskList() {
+    editor.value?.chain().focus().toggleTaskList().run()
+    closeContextMenu()
+  }
+  function ctxToggleBlockquote() {
+    editor.value?.chain().focus().toggleBlockquote().run()
+    closeContextMenu()
+  }
+  function ctxToggleCodeBlock() {
+    editor.value?.chain().focus().toggleCodeBlock().run()
+    closeContextMenu()
+  }
+  function ctxToggleBold() {
+    editor.value?.chain().focus().toggleBold().run()
+    closeContextMenu()
+  }
+  function ctxToggleItalic() {
+    editor.value?.chain().focus().toggleItalic().run()
+    closeContextMenu()
+  }
+  function ctxToggleStrike() {
+    editor.value?.chain().focus().toggleStrike().run()
+    closeContextMenu()
+  }
+  function ctxToggleCode() {
+    editor.value?.chain().focus().toggleCode().run()
+    closeContextMenu()
+  }
+  function ctxAddInlineComment() {
+    addInlineComment()
+    closeContextMenu()
+  }
+
+  function onDocClick() {
+    closeContextMenu()
+  }
+  function onDocKeydown(e: KeyboardEvent) {
+    if (e.key === 'Escape') closeContextMenu()
+  }
 
   watch(
     () => contextMenu.visible,
@@ -363,22 +435,33 @@
     group: 'block',
     content: 'block+',
     defining: true,
-    parseHTML() { return [{ tag: 'blockquote' }] },
-    renderHTML({ HTMLAttributes }) { return ['blockquote', mergeAttributes(HTMLAttributes), 0] },
+    parseHTML() {
+      return [{ tag: 'blockquote' }]
+    },
+    renderHTML({ HTMLAttributes }) {
+      return ['blockquote', mergeAttributes(HTMLAttributes), 0]
+    },
     addCommands() {
       return {
-        setBlockquote: () => ({ commands }: any) => commands.wrapIn(this.type),
-        toggleBlockquote: () => ({ commands }: any) => commands.toggleWrap(this.type),
-        unsetBlockquote: () => ({ commands }: any) => commands.lift(this.type),
+        setBlockquote:
+          () =>
+          ({ commands }: any) =>
+            commands.wrapIn(this.type),
+        toggleBlockquote:
+          () =>
+          ({ commands }: any) =>
+            commands.toggleWrap(this.type),
+        unsetBlockquote:
+          () =>
+          ({ commands }: any) =>
+            commands.lift(this.type),
       } as any
     },
     addKeyboardShortcuts() {
       return { 'Mod-Shift-b': () => (this.editor.commands as any).toggleBlockquote() }
     },
     addInputRules() {
-      return [
-        wrappingInputRule({ find: /^\|\s$/, type: this.type }),
-      ]
+      return [wrappingInputRule({ find: /^\|\s$/, type: this.type })]
     },
   })
 
@@ -445,10 +528,7 @@
       )
     }
     if (props.tasklist) {
-      exts.push(
-        TaskList as any,
-        TaskItem.configure({ nested: true }) as any,
-      )
+      exts.push(TaskList as any, TaskItem.configure({ nested: true }) as any)
     }
     if (props.mentions && entitySearch) {
       exts.push(
@@ -457,7 +537,7 @@
             const parsed = parseMentionQuery(query)
             if (parsed?.type) {
               entitySearch.search.value = parsed.name
-              return (entitySearch.filteredItems.value as EntitySearchItem[]).filter(i => i.type === parsed.type)
+              return (entitySearch.filteredItems.value as EntitySearchItem[]).filter((i) => i.type === parsed.type)
             }
             entitySearch.search.value = query
             return entitySearch.filteredItems.value as EntitySearchItem[]
@@ -481,7 +561,7 @@
           chatMode: !!props.chatMode,
           onEmbedEntity: props.embeds ? handleEmbedEntity : undefined,
           onEmbedQuery: props.embeds ? handleEmbedQuery : undefined,
-          onEmbedImage: (props.embeds && props.images) ? handleEmbedImage : undefined,
+          onEmbedImage: props.embeds && props.images ? handleEmbedImage : undefined,
           onEmbedUrl: props.embeds ? handleEmbedUrl : undefined,
           onEmbedImageUrl: props.embeds ? handleEmbedImageUrl : undefined,
           onEmbedYoutube: props.embeds ? handleEmbedYoutube : undefined,
@@ -553,10 +633,14 @@
       const placeholderId = makePlaceholderId()
 
       // Insert a visible placeholder so the user sees immediate feedback
-      editor.value.chain().focus().setImage({
-        src: UPLOAD_PLACEHOLDER_SRC,
-        alt: placeholderId,
-      }).run()
+      editor.value
+        .chain()
+        .focus()
+        .setImage({
+          src: UPLOAD_PLACEHOLDER_SRC,
+          alt: placeholderId,
+        })
+        .run()
 
       try {
         const result = await imageUpload.uploadImage(file)
@@ -656,6 +740,21 @@
         }
 
         const html = clipboardData.getData('text/html')
+        const text = clipboardData.getData('text/plain')
+
+        // Check for markdown checkbox syntax - if present, force markdown conversion
+        // This ensures `- [ ]` and `- [x]` get converted to TipTap TaskList format
+        // Check both text and HTML content for checkbox patterns
+        const checkboxPattern = /-\s*\[[ xX]\]/
+        const hasCheckboxInText = text && checkboxPattern.test(text)
+        const hasCheckboxInHtml = html && (checkboxPattern.test(html) || html.includes('type="checkbox"'))
+
+        if ((hasCheckboxInText || hasCheckboxInHtml) && props.tasklist) {
+          event.preventDefault()
+          const converted = markdownToHtml(text || '')
+          editor.value?.commands.insertContent(converted)
+          return true
+        }
 
         // If pasting HTML that contains external images, let TipTap render it
         // immediately, then re-upload external images to our storage.
@@ -668,7 +767,6 @@
         }
 
         if (html) return false // already has HTML — let TipTap handle it
-        const text = clipboardData.getData('text/plain')
         if (!text) return false
         const converted = markdownToHtml(text)
         if (converted === text) return false // no conversion happened
@@ -706,8 +804,8 @@
           const { $from } = selection
 
           // Check if we're inside a code block
-          const isInCodeBlock = $from.parent.type.name === 'codeBlock' ||
-            $from.node($from.depth - 1)?.type?.name === 'codeBlock'
+          const isInCodeBlock =
+            $from.parent.type.name === 'codeBlock' || $from.node($from.depth - 1)?.type?.name === 'codeBlock'
 
           if (isInCodeBlock) {
             const lineStart = $from.start($from.depth)
@@ -738,7 +836,6 @@
               return true
             }
           }
-
         }
         // Submit on Cmd+Enter (or Ctrl+Enter)
         if (event.key === 'Enter' && (event.metaKey || event.ctrlKey) && props.submitOnEnter) {
@@ -833,9 +930,15 @@
 
   function updateBubbleMenu() {
     const e = editor.value
-    if (!e) { bubbleMenu.visible = false; return }
+    if (!e) {
+      bubbleMenu.visible = false
+      return
+    }
     const { from, to, empty } = e.state.selection
-    if (empty) { bubbleMenu.visible = false; return }
+    if (empty) {
+      bubbleMenu.visible = false
+      return
+    }
     try {
       const startCoords = e.view.coordsAtPos(from)
       const endCoords = e.view.coordsAtPos(to)
@@ -845,16 +948,16 @@
       const MARGIN = 8
       const vw = window.innerWidth
       bubbleMenu.left = Math.max(BUBBLE_HALF_W + MARGIN, Math.min(rawLeft, vw - BUBBLE_HALF_W - MARGIN))
-      bubbleMenu.top = rawTop < 72
-        ? Math.max(startCoords.bottom, endCoords.bottom) + 6
-        : rawTop
+      bubbleMenu.top = rawTop < 72 ? Math.max(startCoords.bottom, endCoords.bottom) + 6 : rawTop
       bubbleMenu.visible = true
     } catch {
       bubbleMenu.visible = false
     }
   }
 
-  function hideBubbleMenu() { bubbleMenu.visible = false }
+  function hideBubbleMenu() {
+    bubbleMenu.visible = false
+  }
 
   watch(
     editor,
@@ -887,7 +990,7 @@
       :editor="editor"
       :nested="true"
       class="drag-handle"
-      @node-change="({ pos }) => currentDragPos = pos"
+      @node-change="({ pos }) => (currentDragPos = pos)"
       @click="onDragHandleClick" />
 
     <!-- Floating selection toolbar -->
@@ -897,7 +1000,6 @@
         class="bubble-menu-bar"
         :style="{ top: `${bubbleMenu.top}px`, left: `${bubbleMenu.left}px` }"
         @mousedown.prevent>
-
         <!-- ── Floating mode: full toolbar ── -->
         <template v-if="toolbarMode === 'floating'">
           <!-- Block type picker -->
@@ -909,45 +1011,168 @@
               </button>
             </UiPopoverTrigger>
             <UiPopoverContent class="w-44 p-1" align="center" side="bottom" :side-offset="6">
-              <button class="bubble-type-option" :class="{ 'is-active': !editor.isActive('heading') && !editor.isActive('bulletList') && !editor.isActive('orderedList') && !editor.isActive('taskList') && !editor.isActive('blockquote') && !editor.isActive('codeBlock') }" @mousedown.prevent="editor.chain().focus().setParagraph().run()"><span class="w-5 font-mono text-[10px] opacity-50">¶</span>Paragraph</button>
-              <button class="bubble-type-option" :class="{ 'is-active': editor.isActive('heading', { level: 1 }) }" @mousedown.prevent="editor.chain().focus().toggleHeading({ level: 1 }).run()"><span class="w-5 font-mono text-[10px] opacity-50">H1</span>Heading 1</button>
-              <button class="bubble-type-option" :class="{ 'is-active': editor.isActive('heading', { level: 2 }) }" @mousedown.prevent="editor.chain().focus().toggleHeading({ level: 2 }).run()"><span class="w-5 font-mono text-[10px] opacity-50">H2</span>Heading 2</button>
-              <button class="bubble-type-option" :class="{ 'is-active': editor.isActive('heading', { level: 3 }) }" @mousedown.prevent="editor.chain().focus().toggleHeading({ level: 3 }).run()"><span class="w-5 font-mono text-[10px] opacity-50">H3</span>Heading 3</button>
-              <button class="bubble-type-option" :class="{ 'is-active': editor.isActive('bulletList') }" @mousedown.prevent="editor.chain().focus().toggleBulletList().run()"><Icon name="lucide:list" class="h-3 w-3 opacity-50" />Bullet List</button>
-              <button class="bubble-type-option" :class="{ 'is-active': editor.isActive('orderedList') }" @mousedown.prevent="editor.chain().focus().toggleOrderedList().run()"><Icon name="lucide:list-ordered" class="h-3 w-3 opacity-50" />Ordered List</button>
-              <button v-if="tasklist" class="bubble-type-option" :class="{ 'is-active': editor.isActive('taskList') }" @mousedown.prevent="editor.chain().focus().toggleTaskList().run()"><Icon name="lucide:list-checks" class="h-3 w-3 opacity-50" />Task List</button>
-              <button class="bubble-type-option" :class="{ 'is-active': editor.isActive('blockquote') }" @mousedown.prevent="editor.chain().focus().toggleBlockquote().run()"><Icon name="lucide:quote" class="h-3 w-3 opacity-50" />Blockquote</button>
-              <button class="bubble-type-option" :class="{ 'is-active': editor.isActive('codeBlock') }" @mousedown.prevent="editor.chain().focus().toggleCodeBlock().run()"><Icon name="lucide:code" class="h-3 w-3 opacity-50" />Code Block</button>
+              <button
+                class="bubble-type-option"
+                :class="{
+                  'is-active':
+                    !editor.isActive('heading') &&
+                    !editor.isActive('bulletList') &&
+                    !editor.isActive('orderedList') &&
+                    !editor.isActive('taskList') &&
+                    !editor.isActive('blockquote') &&
+                    !editor.isActive('codeBlock'),
+                }"
+                @mousedown.prevent="editor.chain().focus().setParagraph().run()">
+                <span class="w-5 font-mono text-[10px] opacity-50">¶</span>
+                Paragraph
+              </button>
+              <button
+                class="bubble-type-option"
+                :class="{ 'is-active': editor.isActive('heading', { level: 1 }) }"
+                @mousedown.prevent="editor.chain().focus().toggleHeading({ level: 1 }).run()">
+                <span class="w-5 font-mono text-[10px] opacity-50">H1</span>
+                Heading 1
+              </button>
+              <button
+                class="bubble-type-option"
+                :class="{ 'is-active': editor.isActive('heading', { level: 2 }) }"
+                @mousedown.prevent="editor.chain().focus().toggleHeading({ level: 2 }).run()">
+                <span class="w-5 font-mono text-[10px] opacity-50">H2</span>
+                Heading 2
+              </button>
+              <button
+                class="bubble-type-option"
+                :class="{ 'is-active': editor.isActive('heading', { level: 3 }) }"
+                @mousedown.prevent="editor.chain().focus().toggleHeading({ level: 3 }).run()">
+                <span class="w-5 font-mono text-[10px] opacity-50">H3</span>
+                Heading 3
+              </button>
+              <button
+                class="bubble-type-option"
+                :class="{ 'is-active': editor.isActive('bulletList') }"
+                @mousedown.prevent="editor.chain().focus().toggleBulletList().run()">
+                <Icon name="lucide:list" class="h-3 w-3 opacity-50" />
+                Bullet List
+              </button>
+              <button
+                class="bubble-type-option"
+                :class="{ 'is-active': editor.isActive('orderedList') }"
+                @mousedown.prevent="editor.chain().focus().toggleOrderedList().run()">
+                <Icon name="lucide:list-ordered" class="h-3 w-3 opacity-50" />
+                Ordered List
+              </button>
+              <button
+                v-if="tasklist"
+                class="bubble-type-option"
+                :class="{ 'is-active': editor.isActive('taskList') }"
+                @mousedown.prevent="editor.chain().focus().toggleTaskList().run()">
+                <Icon name="lucide:list-checks" class="h-3 w-3 opacity-50" />
+                Task List
+              </button>
+              <button
+                class="bubble-type-option"
+                :class="{ 'is-active': editor.isActive('blockquote') }"
+                @mousedown.prevent="editor.chain().focus().toggleBlockquote().run()">
+                <Icon name="lucide:quote" class="h-3 w-3 opacity-50" />
+                Blockquote
+              </button>
+              <button
+                class="bubble-type-option"
+                :class="{ 'is-active': editor.isActive('codeBlock') }"
+                @mousedown.prevent="editor.chain().focus().toggleCodeBlock().run()">
+                <Icon name="lucide:code" class="h-3 w-3 opacity-50" />
+                Code Block
+              </button>
             </UiPopoverContent>
           </UiPopover>
 
           <div class="bubble-sep" />
 
           <!-- Inline marks -->
-          <button class="bubble-btn" :class="{ 'is-active': editor.isActive('bold') }" title="Bold" @click="editor.chain().focus().toggleBold().run()"><Icon name="lucide:bold" class="h-3 w-3" /></button>
-          <button class="bubble-btn" :class="{ 'is-active': editor.isActive('italic') }" title="Italic" @click="editor.chain().focus().toggleItalic().run()"><Icon name="lucide:italic" class="h-3 w-3" /></button>
-          <button class="bubble-btn" :class="{ 'is-active': editor.isActive('strike') }" title="Strikethrough" @click="editor.chain().focus().toggleStrike().run()"><Icon name="lucide:strikethrough" class="h-3 w-3" /></button>
-          <button class="bubble-btn" :class="{ 'is-active': editor.isActive('code') }" title="Inline Code" @click="editor.chain().focus().toggleCode().run()"><Icon name="lucide:code" class="h-3 w-3" /></button>
+          <button
+            class="bubble-btn"
+            :class="{ 'is-active': editor.isActive('bold') }"
+            title="Bold"
+            @click="editor.chain().focus().toggleBold().run()">
+            <Icon name="lucide:bold" class="h-3 w-3" />
+          </button>
+          <button
+            class="bubble-btn"
+            :class="{ 'is-active': editor.isActive('italic') }"
+            title="Italic"
+            @click="editor.chain().focus().toggleItalic().run()">
+            <Icon name="lucide:italic" class="h-3 w-3" />
+          </button>
+          <button
+            class="bubble-btn"
+            :class="{ 'is-active': editor.isActive('strike') }"
+            title="Strikethrough"
+            @click="editor.chain().focus().toggleStrike().run()">
+            <Icon name="lucide:strikethrough" class="h-3 w-3" />
+          </button>
+          <button
+            class="bubble-btn"
+            :class="{ 'is-active': editor.isActive('code') }"
+            title="Inline Code"
+            @click="editor.chain().focus().toggleCode().run()">
+            <Icon name="lucide:code" class="h-3 w-3" />
+          </button>
 
           <div class="bubble-sep" />
 
           <!-- Color / Highlight -->
           <UiPopover>
             <UiPopoverTrigger as-child>
-              <button class="bubble-btn" title="Color &amp; Highlight" style="position:relative">
+              <button class="bubble-btn" title="Color &amp; Highlight" style="position: relative">
                 <Icon name="lucide:palette" class="h-3 w-3" />
-                <span class="absolute bottom-0.5 left-1/2 -translate-x-1/2 h-0.5 w-3 rounded-full" :style="{ backgroundColor: editor.getAttributes('textStyle').color || 'currentColor' }" />
+                <span
+                  class="absolute bottom-0.5 left-1/2 -translate-x-1/2 h-0.5 w-3 rounded-full"
+                  :style="{ backgroundColor: editor.getAttributes('textStyle').color || 'currentColor' }" />
               </button>
             </UiPopoverTrigger>
             <UiPopoverContent class="w-auto p-2" align="center" side="bottom" :side-offset="6">
               <div class="flex flex-col gap-1">
-                <span class="text-[10px] font-medium text-muted-foreground uppercase tracking-wider px-1">Text Color</span>
+                <span class="text-[10px] font-medium text-muted-foreground uppercase tracking-wider px-1">
+                  Text Color
+                </span>
                 <div class="flex gap-1">
-                  <button v-for="c in TEXT_COLORS" :key="c.label" class="h-5 w-5 rounded-full border border-border/50 transition-all hover:scale-110" :class="{ 'ring-1 ring-primary ring-offset-1 ring-offset-background': c.value ? editor.isActive('textStyle', { color: c.value }) : !editor.isActive('textStyle') }" :style="{ backgroundColor: c.value || 'var(--foreground)' }" :title="c.label" @mousedown.prevent="c.value ? editor.chain().focus().setColor(c.value).run() : editor.chain().focus().unsetColor().run()" />
+                  <button
+                    v-for="c in TEXT_COLORS"
+                    :key="c.label"
+                    class="h-5 w-5 rounded-full border border-border/50 transition-all hover:scale-110"
+                    :class="{
+                      'ring-1 ring-primary ring-offset-1 ring-offset-background': c.value
+                        ? editor.isActive('textStyle', { color: c.value })
+                        : !editor.isActive('textStyle'),
+                    }"
+                    :style="{ backgroundColor: c.value || 'var(--foreground)' }"
+                    :title="c.label"
+                    @mousedown.prevent="
+                      c.value
+                        ? editor.chain().focus().setColor(c.value).run()
+                        : editor.chain().focus().unsetColor().run()
+                    " />
                 </div>
-                <span class="text-[10px] font-medium text-muted-foreground uppercase tracking-wider px-1 mt-1">Highlight</span>
+                <span class="text-[10px] font-medium text-muted-foreground uppercase tracking-wider px-1 mt-1">
+                  Highlight
+                </span>
                 <div class="flex gap-1">
-                  <button v-for="h in HIGHLIGHT_COLORS" :key="h.label" class="h-5 w-5 rounded-full border border-border/50 transition-all hover:scale-110" :class="{ 'ring-1 ring-primary ring-offset-1 ring-offset-background': h.value ? editor.isActive('highlight', { color: h.value }) : !editor.isActive('highlight') }" :style="{ backgroundColor: h.value || 'var(--muted)' }" :title="h.label" @mousedown.prevent="h.value ? editor.chain().focus().toggleHighlight({ color: h.value }).run() : editor.chain().focus().unsetHighlight().run()" />
+                  <button
+                    v-for="h in HIGHLIGHT_COLORS"
+                    :key="h.label"
+                    class="h-5 w-5 rounded-full border border-border/50 transition-all hover:scale-110"
+                    :class="{
+                      'ring-1 ring-primary ring-offset-1 ring-offset-background': h.value
+                        ? editor.isActive('highlight', { color: h.value })
+                        : !editor.isActive('highlight'),
+                    }"
+                    :style="{ backgroundColor: h.value || 'var(--muted)' }"
+                    :title="h.label"
+                    @mousedown.prevent="
+                      h.value
+                        ? editor.chain().focus().toggleHighlight({ color: h.value }).run()
+                        : editor.chain().focus().unsetHighlight().run()
+                    " />
                 </div>
               </div>
             </UiPopoverContent>
@@ -960,34 +1185,98 @@
             </UiPopoverTrigger>
             <UiPopoverContent class="w-44 p-1" align="center" side="bottom" :side-offset="6">
               <template v-if="tablesEnabled">
-                <button class="bubble-type-option" @mousedown.prevent="editor.chain().focus().insertTable({ rows: 3, cols: 3, withHeaderRow: true }).run()"><Icon name="lucide:table" class="h-3 w-3 opacity-50" />Insert Table</button>
-                <button v-if="editor.isActive('table')" class="bubble-type-option" @mousedown.prevent="editor.chain().focus().deleteTable().run()"><Icon name="lucide:trash-2" class="h-3 w-3 text-destructive opacity-70" />Delete Table</button>
+                <button
+                  class="bubble-type-option"
+                  @mousedown.prevent="
+                    editor.chain().focus().insertTable({ rows: 3, cols: 3, withHeaderRow: true }).run()
+                  ">
+                  <Icon name="lucide:table" class="h-3 w-3 opacity-50" />
+                  Insert Table
+                </button>
+                <button
+                  v-if="editor.isActive('table')"
+                  class="bubble-type-option"
+                  @mousedown.prevent="editor.chain().focus().deleteTable().run()">
+                  <Icon name="lucide:trash-2" class="h-3 w-3 text-destructive opacity-70" />
+                  Delete Table
+                </button>
               </template>
-              <button v-if="images" class="bubble-type-option" @mousedown.prevent="triggerImageUpload()"><Icon name="lucide:image-plus" class="h-3 w-3 opacity-50" />Insert Image</button>
+              <button v-if="images" class="bubble-type-option" @mousedown.prevent="triggerImageUpload()">
+                <Icon name="lucide:image-plus" class="h-3 w-3 opacity-50" />
+                Insert Image
+              </button>
               <template v-if="mathematicsEnabled">
-                <button class="bubble-type-option" @mousedown.prevent="insertInlineMath()"><Icon name="lucide:calculator" class="h-3 w-3 opacity-50" />Inline Math</button>
-                <button class="bubble-type-option" @mousedown.prevent="insertBlockMath()"><Icon name="lucide:calculator" class="h-3 w-3 opacity-50" />Block Math</button>
+                <button class="bubble-type-option" @mousedown.prevent="insertInlineMath()">
+                  <Icon name="lucide:calculator" class="h-3 w-3 opacity-50" />
+                  Inline Math
+                </button>
+                <button class="bubble-type-option" @mousedown.prevent="insertBlockMath()">
+                  <Icon name="lucide:calculator" class="h-3 w-3 opacity-50" />
+                  Block Math
+                </button>
               </template>
               <div class="h-px bg-border my-1" />
-              <button class="bubble-type-option" :class="{ 'opacity-40 pointer-events-none': !editor.can().undo() }" @mousedown.prevent="editor.chain().focus().undo().run()"><Icon name="lucide:undo" class="h-3 w-3 opacity-50" />Undo</button>
-              <button class="bubble-type-option" :class="{ 'opacity-40 pointer-events-none': !editor.can().redo() }" @mousedown.prevent="editor.chain().focus().redo().run()"><Icon name="lucide:redo" class="h-3 w-3 opacity-50" />Redo</button>
+              <button
+                class="bubble-type-option"
+                :class="{ 'opacity-40 pointer-events-none': !editor.can().undo() }"
+                @mousedown.prevent="editor.chain().focus().undo().run()">
+                <Icon name="lucide:undo" class="h-3 w-3 opacity-50" />
+                Undo
+              </button>
+              <button
+                class="bubble-type-option"
+                :class="{ 'opacity-40 pointer-events-none': !editor.can().redo() }"
+                @mousedown.prevent="editor.chain().focus().redo().run()">
+                <Icon name="lucide:redo" class="h-3 w-3 opacity-50" />
+                Redo
+              </button>
             </UiPopoverContent>
           </UiPopover>
 
           <!-- Comment -->
           <template v-if="inlineComments">
             <div class="bubble-sep" />
-            <button class="bubble-btn" :class="{ 'is-active': editor.isActive('inlineComment') }" title="Add comment" @click="addInlineComment"><Icon name="lucide:message-square" class="h-3 w-3" /></button>
+            <button
+              class="bubble-btn"
+              :class="{ 'is-active': editor.isActive('inlineComment') }"
+              title="Add comment"
+              @click="addInlineComment">
+              <Icon name="lucide:message-square" class="h-3 w-3" />
+            </button>
           </template>
         </template>
 
         <!-- ── Static mode: bold/italic/strike + comment (existing behaviour) ── -->
         <template v-else>
-          <button class="bubble-btn" :class="{ 'is-active': editor.isActive('bold') }" title="Bold" @click="editor.chain().focus().toggleBold().run()"><Icon name="lucide:bold" class="h-3 w-3" /></button>
-          <button class="bubble-btn" :class="{ 'is-active': editor.isActive('italic') }" title="Italic" @click="editor.chain().focus().toggleItalic().run()"><Icon name="lucide:italic" class="h-3 w-3" /></button>
-          <button class="bubble-btn" :class="{ 'is-active': editor.isActive('strike') }" title="Strikethrough" @click="editor.chain().focus().toggleStrike().run()"><Icon name="lucide:strikethrough" class="h-3 w-3" /></button>
+          <button
+            class="bubble-btn"
+            :class="{ 'is-active': editor.isActive('bold') }"
+            title="Bold"
+            @click="editor.chain().focus().toggleBold().run()">
+            <Icon name="lucide:bold" class="h-3 w-3" />
+          </button>
+          <button
+            class="bubble-btn"
+            :class="{ 'is-active': editor.isActive('italic') }"
+            title="Italic"
+            @click="editor.chain().focus().toggleItalic().run()">
+            <Icon name="lucide:italic" class="h-3 w-3" />
+          </button>
+          <button
+            class="bubble-btn"
+            :class="{ 'is-active': editor.isActive('strike') }"
+            title="Strikethrough"
+            @click="editor.chain().focus().toggleStrike().run()">
+            <Icon name="lucide:strikethrough" class="h-3 w-3" />
+          </button>
           <div class="bubble-sep" />
-          <button class="bubble-btn" :class="{ 'is-active': editor.isActive('inlineComment') }" title="Add comment" @click="addInlineComment"><Icon name="lucide:message-square" class="h-3 w-3" /></button>
+          <button
+            class="bubble-btn"
+            :class="{ 'is-active': editor.isActive('inlineComment') }"
+            title="Add comment"
+            @click="addInlineComment">
+            <Icon name="lucide:message-square" class="h-3 w-3" />
+          </button>
         </template>
       </div>
     </Teleport>
@@ -1000,65 +1289,125 @@
         :style="{ top: `${contextMenu.y}px`, left: `${contextMenu.x}px` }"
         @mousedown.stop
         @contextmenu.prevent.stop>
-
         <!-- Block type section -->
         <div class="ctx-label">Turn into</div>
-        <button class="ctx-item" :class="{ 'is-active': !editor.isActive('heading') && !editor.isActive('bulletList') && !editor.isActive('orderedList') && !editor.isActive('taskList') && !editor.isActive('blockquote') && !editor.isActive('codeBlock') }" @mousedown.prevent="editor.chain().focus().setParagraph().run(); closeContextMenu()">
-          <span class="ctx-mono">¶</span> Paragraph
+        <button
+          class="ctx-item"
+          :class="{
+            'is-active':
+              !editor.isActive('heading') &&
+              !editor.isActive('bulletList') &&
+              !editor.isActive('orderedList') &&
+              !editor.isActive('taskList') &&
+              !editor.isActive('blockquote') &&
+              !editor.isActive('codeBlock'),
+          }"
+          @mousedown.prevent="ctxSetParagraph()">
+          <span class="ctx-mono">¶</span>
+          Paragraph
         </button>
-        <button class="ctx-item" :class="{ 'is-active': editor.isActive('heading', { level: 1 }) }" @mousedown.prevent="editor.chain().focus().toggleHeading({ level: 1 }).run(); closeContextMenu()">
-          <span class="ctx-mono">H1</span> Heading 1
+        <button
+          class="ctx-item"
+          :class="{ 'is-active': editor.isActive('heading', { level: 1 }) }"
+          @mousedown.prevent="ctxToggleHeading(1)">
+          <span class="ctx-mono">H1</span>
+          Heading 1
         </button>
-        <button class="ctx-item" :class="{ 'is-active': editor.isActive('heading', { level: 2 }) }" @mousedown.prevent="editor.chain().focus().toggleHeading({ level: 2 }).run(); closeContextMenu()">
-          <span class="ctx-mono">H2</span> Heading 2
+        <button
+          class="ctx-item"
+          :class="{ 'is-active': editor.isActive('heading', { level: 2 }) }"
+          @mousedown.prevent="ctxToggleHeading(2)">
+          <span class="ctx-mono">H2</span>
+          Heading 2
         </button>
-        <button class="ctx-item" :class="{ 'is-active': editor.isActive('heading', { level: 3 }) }" @mousedown.prevent="editor.chain().focus().toggleHeading({ level: 3 }).run(); closeContextMenu()">
-          <span class="ctx-mono">H3</span> Heading 3
+        <button
+          class="ctx-item"
+          :class="{ 'is-active': editor.isActive('heading', { level: 3 }) }"
+          @mousedown.prevent="ctxToggleHeading(3)">
+          <span class="ctx-mono">H3</span>
+          Heading 3
         </button>
-        <button class="ctx-item" :class="{ 'is-active': editor.isActive('bulletList') }" @mousedown.prevent="editor.chain().focus().toggleBulletList().run(); closeContextMenu()">
-          <Icon name="lucide:list" class="ctx-icon" /> Bullet List
+        <button
+          class="ctx-item"
+          :class="{ 'is-active': editor.isActive('bulletList') }"
+          @mousedown.prevent="ctxToggleBulletList()">
+          <Icon name="lucide:list" class="ctx-icon" />
+          Bullet List
         </button>
-        <button class="ctx-item" :class="{ 'is-active': editor.isActive('orderedList') }" @mousedown.prevent="editor.chain().focus().toggleOrderedList().run(); closeContextMenu()">
-          <Icon name="lucide:list-ordered" class="ctx-icon" /> Numbered List
+        <button
+          class="ctx-item"
+          :class="{ 'is-active': editor.isActive('orderedList') }"
+          @mousedown.prevent="ctxToggleOrderedList()">
+          <Icon name="lucide:list-ordered" class="ctx-icon" />
+          Numbered List
         </button>
-        <button v-if="tasklist" class="ctx-item" :class="{ 'is-active': editor.isActive('taskList') }" @mousedown.prevent="editor.chain().focus().toggleTaskList().run(); closeContextMenu()">
-          <Icon name="lucide:list-checks" class="ctx-icon" /> Task List
+        <button
+          v-if="tasklist"
+          class="ctx-item"
+          :class="{ 'is-active': editor.isActive('taskList') }"
+          @mousedown.prevent="ctxToggleTaskList()">
+          <Icon name="lucide:list-checks" class="ctx-icon" />
+          Task List
         </button>
-        <button class="ctx-item" :class="{ 'is-active': editor.isActive('blockquote') }" @mousedown.prevent="editor.chain().focus().toggleBlockquote().run(); closeContextMenu()">
-          <Icon name="lucide:quote" class="ctx-icon" /> Quote
+        <button
+          class="ctx-item"
+          :class="{ 'is-active': editor.isActive('blockquote') }"
+          @mousedown.prevent="ctxToggleBlockquote()">
+          <Icon name="lucide:quote" class="ctx-icon" />
+          Quote
         </button>
-        <button class="ctx-item" :class="{ 'is-active': editor.isActive('codeBlock') }" @mousedown.prevent="editor.chain().focus().toggleCodeBlock().run(); closeContextMenu()">
-          <Icon name="lucide:code" class="ctx-icon" /> Code Block
+        <button
+          class="ctx-item"
+          :class="{ 'is-active': editor.isActive('codeBlock') }"
+          @mousedown.prevent="ctxToggleCodeBlock()">
+          <Icon name="lucide:code" class="ctx-icon" />
+          Code Block
         </button>
 
         <div class="ctx-sep" />
 
         <!-- Inline formatting -->
         <div class="ctx-label">Format</div>
-        <button class="ctx-item" :class="{ 'is-active': editor.isActive('bold') }" @mousedown.prevent="editor.chain().focus().toggleBold().run(); closeContextMenu()">
-          <Icon name="lucide:bold" class="ctx-icon" /> Bold <span class="ctx-shortcut">⌘B</span>
+        <button class="ctx-item" :class="{ 'is-active': editor.isActive('bold') }" @mousedown.prevent="ctxToggleBold()">
+          <Icon name="lucide:bold" class="ctx-icon" />
+          Bold
+          <span class="ctx-shortcut">⌘B</span>
         </button>
-        <button class="ctx-item" :class="{ 'is-active': editor.isActive('italic') }" @mousedown.prevent="editor.chain().focus().toggleItalic().run(); closeContextMenu()">
-          <Icon name="lucide:italic" class="ctx-icon" /> Italic <span class="ctx-shortcut">⌘I</span>
+        <button
+          class="ctx-item"
+          :class="{ 'is-active': editor.isActive('italic') }"
+          @mousedown.prevent="ctxToggleItalic()">
+          <Icon name="lucide:italic" class="ctx-icon" />
+          Italic
+          <span class="ctx-shortcut">⌘I</span>
         </button>
-        <button class="ctx-item" :class="{ 'is-active': editor.isActive('strike') }" @mousedown.prevent="editor.chain().focus().toggleStrike().run(); closeContextMenu()">
-          <Icon name="lucide:strikethrough" class="ctx-icon" /> Strikethrough
+        <button
+          class="ctx-item"
+          :class="{ 'is-active': editor.isActive('strike') }"
+          @mousedown.prevent="ctxToggleStrike()">
+          <Icon name="lucide:strikethrough" class="ctx-icon" />
+          Strikethrough
         </button>
-        <button class="ctx-item" :class="{ 'is-active': editor.isActive('code') }" @mousedown.prevent="editor.chain().focus().toggleCode().run(); closeContextMenu()">
-          <Icon name="lucide:code" class="ctx-icon" /> Inline Code <span class="ctx-shortcut">⌘E</span>
+        <button class="ctx-item" :class="{ 'is-active': editor.isActive('code') }" @mousedown.prevent="ctxToggleCode()">
+          <Icon name="lucide:code" class="ctx-icon" />
+          Inline Code
+          <span class="ctx-shortcut">⌘E</span>
         </button>
 
         <template v-if="inlineComments && !editor.state.selection.empty">
           <div class="ctx-sep" />
-          <button class="ctx-item" @mousedown.prevent="addInlineComment(); closeContextMenu()">
-            <Icon name="lucide:message-square" class="ctx-icon" /> Add comment
+          <button class="ctx-item" @mousedown.prevent="ctxAddInlineComment()">
+            <Icon name="lucide:message-square" class="ctx-icon" />
+            Add comment
           </button>
         </template>
       </div>
     </Teleport>
 
     <!-- Compact Toolbar (shown when toolbarMode is 'static') -->
-    <div v-if="!seamless && toolbarMode === 'static'" class="flex flex-wrap items-center gap-1 border-b bg-transparent px-1.5 py-[2.5px]">
+    <div
+      v-if="!seamless && toolbarMode === 'static'"
+      class="flex flex-wrap items-center gap-1 border-b bg-transparent px-1.5 py-[2.5px]">
       <!-- Text Formatting -->
       <div class="flex items-center">
         <UiTooltip>
@@ -1222,11 +1571,7 @@
             <UiTooltip>
               <UiTooltipTrigger as-child>
                 <UiPopoverTrigger as-child>
-                  <UiButton
-                    size="icon"
-                    variant="ghost"
-                    class="h-7 w-7"
-                    :disabled="!editor.isActive('table')">
+                  <UiButton size="icon" variant="ghost" class="h-7 w-7" :disabled="!editor.isActive('table')">
                     <Icon name="lucide:settings-2" class="h-3.5 w-3.5" />
                   </UiButton>
                 </UiPopoverTrigger>
@@ -1338,10 +1683,7 @@
             <UiTooltip>
               <UiTooltipTrigger as-child>
                 <UiPopoverTrigger as-child>
-                  <UiButton
-                    size="icon"
-                    variant="ghost"
-                    class="h-7 w-7">
+                  <UiButton size="icon" variant="ghost" class="h-7 w-7">
                     <Icon name="lucide:calculator" class="h-3.5 w-3.5" />
                   </UiButton>
                 </UiPopoverTrigger>
@@ -1426,10 +1768,7 @@
           <UiTooltip>
             <UiTooltipTrigger as-child>
               <UiPopoverTrigger as-child>
-                <UiButton
-                  size="icon"
-                  variant="ghost"
-                  class="h-7 w-7 relative">
+                <UiButton size="icon" variant="ghost" class="h-7 w-7 relative">
                   <Icon name="lucide:palette" class="h-3.5 w-3.5" />
                   <span
                     class="absolute bottom-0.5 left-1/2 -translate-x-1/2 h-0.5 w-3.5 rounded-full"
@@ -1441,27 +1780,45 @@
           </UiTooltip>
           <UiPopoverContent class="w-auto p-2" align="start">
             <div class="flex flex-col gap-1">
-              <span class="text-[10px] font-medium text-muted-foreground uppercase tracking-wider px-1">Text Color</span>
+              <span class="text-[10px] font-medium text-muted-foreground uppercase tracking-wider px-1">
+                Text Color
+              </span>
               <div class="flex gap-1">
                 <button
                   v-for="c in TEXT_COLORS"
                   :key="c.label"
                   class="h-5 w-5 rounded-full border border-border/50 transition-all hover:scale-110 focus:outline-none focus:ring-1 focus:ring-ring"
-                  :class="{ 'ring-1 ring-primary ring-offset-1 ring-offset-background': c.value ? editor.isActive('textStyle', { color: c.value }) : !editor.isActive('textStyle') }"
+                  :class="{
+                    'ring-1 ring-primary ring-offset-1 ring-offset-background': c.value
+                      ? editor.isActive('textStyle', { color: c.value })
+                      : !editor.isActive('textStyle'),
+                  }"
                   :style="{ backgroundColor: c.value || 'var(--foreground)' }"
                   :title="c.label"
-                  @click="c.value ? editor.chain().focus().setColor(c.value).run() : editor.chain().focus().unsetColor().run()" />
+                  @click="
+                    c.value ? editor.chain().focus().setColor(c.value).run() : editor.chain().focus().unsetColor().run()
+                  " />
               </div>
-              <span class="text-[10px] font-medium text-muted-foreground uppercase tracking-wider px-1 mt-1">Highlight</span>
+              <span class="text-[10px] font-medium text-muted-foreground uppercase tracking-wider px-1 mt-1">
+                Highlight
+              </span>
               <div class="flex gap-1">
                 <button
                   v-for="h in HIGHLIGHT_COLORS"
                   :key="h.label"
                   class="h-5 w-5 rounded-full border border-border/50 transition-all hover:scale-110 focus:outline-none focus:ring-1 focus:ring-ring"
-                  :class="{ 'ring-1 ring-primary ring-offset-1 ring-offset-background': h.value ? editor.isActive('highlight', { color: h.value }) : !editor.isActive('highlight') }"
+                  :class="{
+                    'ring-1 ring-primary ring-offset-1 ring-offset-background': h.value
+                      ? editor.isActive('highlight', { color: h.value })
+                      : !editor.isActive('highlight'),
+                  }"
                   :style="{ backgroundColor: h.value || 'var(--muted)' }"
                   :title="h.label"
-                  @click="h.value ? editor.chain().focus().toggleHighlight({ color: h.value }).run() : editor.chain().focus().unsetHighlight().run()" />
+                  @click="
+                    h.value
+                      ? editor.chain().focus().toggleHighlight({ color: h.value }).run()
+                      : editor.chain().focus().unsetHighlight().run()
+                  " />
               </div>
             </div>
           </UiPopoverContent>
@@ -1545,13 +1902,20 @@
               type="button"
               class="flex w-full items-center gap-2.5 rounded-md px-2.5 py-2 text-left text-sm hover:bg-accent transition-colors"
               @click="selectEntityForEmbed(item)">
-              <Icon :name="entitySearch?.getIcon(item.type) || 'lucide:file'" class="h-4 w-4 shrink-0 text-muted-foreground" />
+              <Icon
+                :name="entitySearch?.getIcon(item.type) || 'lucide:file'"
+                class="h-4 w-4 shrink-0 text-muted-foreground" />
               <div class="min-w-0 flex-1">
                 <span class="block truncate font-medium">{{ item.title || 'Untitled' }}</span>
               </div>
-              <span class="shrink-0 rounded-full bg-muted px-1.5 py-0.5 text-[10px] font-medium text-muted-foreground capitalize">{{ item.type }}</span>
+              <span
+                class="shrink-0 rounded-full bg-muted px-1.5 py-0.5 text-[10px] font-medium text-muted-foreground capitalize">
+                {{ item.type }}
+              </span>
             </button>
-            <p v-if="!entityPickerItems.length" class="py-4 text-center text-xs text-muted-foreground">No entities found</p>
+            <p v-if="!entityPickerItems.length" class="py-4 text-center text-xs text-muted-foreground">
+              No entities found
+            </p>
           </div>
         </div>
       </UiDialogContent>
@@ -1576,9 +1940,7 @@
               <span class="font-medium truncate">{{ opt.label }}</span>
             </button>
           </div>
-          <UiButton class="w-full shrink-0" size="sm" @click="selectTypeForQuery">
-            Insert
-          </UiButton>
+          <UiButton class="w-full shrink-0" size="sm" @click="selectTypeForQuery">Insert</UiButton>
         </div>
       </UiDialogContent>
     </UiDialog>
@@ -2039,7 +2401,9 @@
     cursor: grab;
     border-radius: 0.25rem;
     color: var(--muted-foreground);
-    transition: background 0.15s ease, color 0.15s ease;
+    transition:
+      background 0.15s ease,
+      color 0.15s ease;
   }
 
   .drag-handle:hover {
@@ -2075,7 +2439,9 @@
     background: color-mix(in oklch, var(--muted) 50%, transparent);
     border-radius: 0.25rem;
     box-shadow: 0 4px 16px color-mix(in oklch, var(--foreground) 10%, transparent);
-    transition: opacity 0.1s ease, transform 0.1s ease;
+    transition:
+      opacity 0.1s ease,
+      transform 0.1s ease;
   }
 
   /* ── Inline Comment mark ─────────────────────────────────────────────── */
@@ -2108,8 +2474,14 @@
   }
 
   @keyframes bubble-in {
-    from { opacity: 0; transform: translateX(-50%) translateY(4px); }
-    to   { opacity: 1; transform: translateX(-50%) translateY(0); }
+    from {
+      opacity: 0;
+      transform: translateX(-50%) translateY(4px);
+    }
+    to {
+      opacity: 1;
+      transform: translateX(-50%) translateY(0);
+    }
   }
 
   .bubble-btn {
@@ -2120,7 +2492,9 @@
     height: 1.75rem;
     border-radius: calc(var(--radius) - 4px);
     color: var(--muted-foreground);
-    transition: background 0.1s ease, color 0.1s ease;
+    transition:
+      background 0.1s ease,
+      color 0.1s ease;
   }
 
   .bubble-btn:hover {
@@ -2177,7 +2551,9 @@
     background: var(--popover);
     border: 1px solid var(--border);
     border-radius: var(--radius);
-    box-shadow: 0 4px 24px rgba(0, 0, 0, 0.15), 0 1px 4px rgba(0, 0, 0, 0.08);
+    box-shadow:
+      0 4px 24px rgba(0, 0, 0, 0.15),
+      0 1px 4px rgba(0, 0, 0, 0.08);
     padding: 4px;
     font-size: 0.8rem;
   }
@@ -2267,7 +2643,9 @@
     height: 18px;
     border-radius: 3px;
     color: transparent;
-    transition: color 0.1s, background 0.1s;
+    transition:
+      color 0.1s,
+      background 0.1s;
     cursor: pointer;
   }
 
@@ -2292,7 +2670,9 @@
     height: 14px;
     border-radius: 3px;
     color: transparent;
-    transition: color 0.1s, background 0.1s;
+    transition:
+      color 0.1s,
+      background 0.1s;
     cursor: pointer;
   }
 
@@ -2321,7 +2701,10 @@
     border: 1px solid var(--border);
     color: var(--muted-foreground);
     opacity: 0;
-    transition: opacity 0.15s, background-color 0.15s, color 0.15s;
+    transition:
+      opacity 0.15s,
+      background-color 0.15s,
+      color 0.15s;
     cursor: pointer;
     box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
     pointer-events: auto !important; /* Ensure they are clickable */
@@ -2374,5 +2757,4 @@
     background-color: currentColor;
     opacity: 0.2;
   }
-
 </style>

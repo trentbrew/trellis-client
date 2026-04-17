@@ -64,11 +64,7 @@ function wrap(content: string): string {
 </body></html>`
 }
 
-export function inviteEmailHtml(opts: {
-  inviterName: string
-  orgName: string
-  inviteUrl: string
-}): string {
+export function inviteEmailHtml(opts: { inviterName: string; orgName: string; inviteUrl: string }): string {
   return wrap(`
     <p style="margin:0 0 8px;font-size:16px;font-weight:600;color:#e5e5e5;">You've been invited to ${opts.orgName}</p>
     <p style="margin:0 0 20px;font-size:14px;color:#999;">${opts.inviterName} invited you to join <strong style="color:#e5e5e5;">${opts.orgName}</strong> on Trellis.</p>
@@ -77,11 +73,7 @@ export function inviteEmailHtml(opts: {
   `)
 }
 
-export function mentionEmailHtml(opts: {
-  actorName: string
-  entityTitle: string
-  actionUrl: string
-}): string {
+export function mentionEmailHtml(opts: { actorName: string; entityTitle: string; actionUrl: string }): string {
   return wrap(`
     <p style="margin:0 0 8px;font-size:16px;font-weight:600;color:#e5e5e5;">You were mentioned</p>
     <p style="margin:0 0 20px;font-size:14px;color:#999;"><strong style="color:#e5e5e5;">${opts.actorName}</strong> mentioned you in <strong style="color:#e5e5e5;">${opts.entityTitle}</strong>.</p>
@@ -103,14 +95,86 @@ export function commentEmailHtml(opts: {
   `)
 }
 
-export function assignedEmailHtml(opts: {
-  actorName: string
-  taskTitle: string
-  actionUrl: string
-}): string {
+export function assignedEmailHtml(opts: { actorName: string; taskTitle: string; actionUrl: string }): string {
   return wrap(`
     <p style="margin:0 0 8px;font-size:16px;font-weight:600;color:#e5e5e5;">Task assigned to you</p>
     <p style="margin:0 0 20px;font-size:14px;color:#999;"><strong style="color:#e5e5e5;">${opts.actorName}</strong> assigned <strong style="color:#e5e5e5;">"${opts.taskTitle}"</strong> to you.</p>
     <a href="${opts.actionUrl}" style="${BTN_STYLE}">View task</a>
+  `)
+}
+
+/**
+ * Minimal HTML-escape for user-supplied strings inserted into templates.
+ * Resend renders HTML verbatim, so we must escape `<`, `>`, `&`, `"`.
+ */
+function esc(value: string): string {
+  return value.replace(
+    /[<>&"']/g,
+    (c) =>
+      ({
+        '<': '&lt;',
+        '>': '&gt;',
+        '&': '&amp;',
+        '"': '&quot;',
+        "'": '&#39;',
+      })[c] || c,
+  )
+}
+
+/**
+ * Generic notification email used when no bespoke template matches the type.
+ * Maps cleanly onto the in-app notification shape (title/message/actionUrl).
+ */
+export function notificationEmailHtml(opts: {
+  title: string
+  message: string
+  actionUrl?: string
+  actorName?: string
+}): string {
+  const byline = opts.actorName
+    ? `<p style="margin:0 0 12px;font-size:13px;color:#666;">From <strong style="color:#aaa;">${esc(opts.actorName)}</strong></p>`
+    : ''
+  const cta = opts.actionUrl ? `<a href="${opts.actionUrl}" style="${BTN_STYLE}">Open in Trellis</a>` : ''
+  return wrap(`
+    <p style="margin:0 0 8px;font-size:16px;font-weight:600;color:#e5e5e5;">${esc(opts.title)}</p>
+    ${byline}
+    <p style="margin:0 0 20px;font-size:14px;color:#999;line-height:1.55;">${esc(opts.message)}</p>
+    ${cta}
+  `)
+}
+
+export function workflowFailedEmailHtml(opts: {
+  workflowName: string
+  error: string
+  runId?: string
+  actionUrl?: string
+}): string {
+  const errBlock = `<blockquote style="margin:0 0 20px;padding:12px 16px;background:#1e1e1e;border-left:3px solid #ef4444;border-radius:4px;font-size:13px;font-family:monospace;color:#f87171;white-space:pre-wrap;word-break:break-word;">${esc(opts.error)}</blockquote>`
+  const meta = opts.runId
+    ? `<p style="margin:0 0 12px;font-size:12px;color:#666;">Run ID: <code style="color:#aaa;">${esc(opts.runId)}</code></p>`
+    : ''
+  const cta = opts.actionUrl ? `<a href="${opts.actionUrl}" style="${BTN_STYLE}">View run</a>` : ''
+  return wrap(`
+    <p style="margin:0 0 8px;font-size:16px;font-weight:600;color:#e5e5e5;">Workflow failed</p>
+    <p style="margin:0 0 12px;font-size:14px;color:#999;"><strong style="color:#e5e5e5;">${esc(opts.workflowName)}</strong> did not finish successfully.</p>
+    ${errBlock}
+    ${meta}
+    ${cta}
+  `)
+}
+
+export function workflowCompletedEmailHtml(opts: {
+  workflowName: string
+  stepCount: number
+  durationMs: number
+  actionUrl?: string
+}): string {
+  const seconds = (opts.durationMs / 1000).toFixed(1)
+  const cta = opts.actionUrl ? `<a href="${opts.actionUrl}" style="${BTN_STYLE}">View run</a>` : ''
+  return wrap(`
+    <p style="margin:0 0 8px;font-size:16px;font-weight:600;color:#e5e5e5;">Workflow completed</p>
+    <p style="margin:0 0 12px;font-size:14px;color:#999;"><strong style="color:#e5e5e5;">${esc(opts.workflowName)}</strong> ran successfully.</p>
+    <p style="margin:0 0 20px;font-size:13px;color:#777;">${opts.stepCount} step${opts.stepCount === 1 ? '' : 's'} · ${seconds}s</p>
+    ${cta}
   `)
 }

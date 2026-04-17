@@ -20,10 +20,11 @@ export const WORKFLOW_TOOL_NAMES = [
   'tql_load_data',
   'tql_mutate',
   'send_email',
+  'send_notification',
   'run_js',
 ] as const
 
-export type WorkflowToolName = typeof WORKFLOW_TOOL_NAMES[number]
+export type WorkflowToolName = (typeof WORKFLOW_TOOL_NAMES)[number]
 
 export interface CreateWorkflowToolsOptions {
   /** Agent ID to attribute mutations to. Defaults to 'workflow'. */

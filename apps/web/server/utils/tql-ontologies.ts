@@ -1044,6 +1044,11 @@ const entityOntology: SchemaDefinition = {
     f('googleStatus', 'rich_text'),
     f('googleUpdatedAt', 'rich_text'),
     f('gcalDeleted', 'checkbox'),
+    // Event participants (persisted from Google Calendar payloads as
+    // "Name <email>" strings so they match the Gmail from/to/cc format
+    // and can be parsed by the same people-from-emails logic).
+    f('organizer', 'rich_text'),
+    f('attendees', 'multi_select'),
     // Email-specific fields (for synced email entities)
     f('subject', 'rich_text'),
     f('snippet', 'rich_text'),

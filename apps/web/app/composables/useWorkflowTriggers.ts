@@ -23,6 +23,12 @@ export interface WorkflowTrigger {
   kind: TriggerKind
   active: boolean
   agentId?: string
+  /** User to notify on workflow_failed (and workflow_completed if notifyOnSuccess). */
+  ownerId?: string
+  /** Organization scope for owner notifications. */
+  orgId?: string
+  /** If true, also notify the owner on successful completion. Default: failures only. */
+  notifyOnSuccess?: boolean
 
   cron?: string
   timezone?: string
@@ -50,6 +56,9 @@ export interface TriggerCreateInput {
   kind: TriggerKind
   active?: boolean
   agentId?: string
+  ownerId?: string
+  orgId?: string
+  notifyOnSuccess?: boolean
   cron?: string
   timezone?: string
   token?: string
@@ -64,10 +73,7 @@ export type TriggerPatch = Partial<Omit<WorkflowTrigger, 'id' | 'createdAt' | 'u
 
 // ─── HTTP helpers ────────────────────────────────────────────────────────────
 
-async function api<T = unknown>(
-  url: string,
-  opts: RequestInit = {},
-): Promise<T> {
+async function api<T = unknown>(url: string, opts: RequestInit = {}): Promise<T> {
   const res = await fetch(url, {
     ...opts,
     headers: { 'Content-Type': 'application/json', ...(opts.headers || {}) },
@@ -86,9 +92,7 @@ export function useWorkflowTriggers(workflowIdRef: Ref<string> | string) {
   const isLoading = ref(false)
   const lastError = ref<string | null>(null)
 
-  const workflowId = computed<string>(() =>
-    typeof workflowIdRef === 'string' ? workflowIdRef : workflowIdRef.value,
-  )
+  const workflowId = computed<string>(() => (typeof workflowIdRef === 'string' ? workflowIdRef : workflowIdRef.value))
 
   async function load(): Promise<void> {
     if (!workflowId.value) {
@@ -112,10 +116,10 @@ export function useWorkflowTriggers(workflowIdRef: Ref<string> | string) {
 
   async function create(input: TriggerCreateInput): Promise<WorkflowTrigger | null> {
     try {
-      const data = await api<{ ok: boolean; trigger: WorkflowTrigger }>(
-        `/api/workflows/triggers`,
-        { method: 'POST', body: JSON.stringify(input) },
-      )
+      const data = await api<{ ok: boolean; trigger: WorkflowTrigger }>(`/api/workflows/triggers`, {
+        method: 'POST',
+        body: JSON.stringify(input),
+      })
       triggers.value = [data.trigger, ...triggers.value]
       return data.trigger
     } catch (err) {

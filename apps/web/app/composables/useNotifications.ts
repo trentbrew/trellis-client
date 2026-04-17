@@ -22,8 +22,21 @@ const NOTIFICATION_META: Record<NotificationType, { icon: string; defaultVariant
   comment: { icon: 'lucide:message-circle', defaultVariant: 'default' },
   entity_updated: { icon: 'lucide:file-edit', defaultVariant: 'default' },
   new_message: { icon: 'lucide:message-square', defaultVariant: 'default' },
+  workflow_completed: { icon: 'lucide:check-circle-2', defaultVariant: 'success' },
+  workflow_failed: { icon: 'lucide:triangle-alert', defaultVariant: 'destructive' },
+  trigger_fired: { icon: 'lucide:zap', defaultVariant: 'info' },
   system: { icon: 'lucide:info', defaultVariant: 'default' },
 }
+
+// Default email-enabled types. Types not in this list default to in-app only.
+const DEFAULT_EMAIL_TYPES: NotificationType[] = [
+  'invite_accepted',
+  'member_joined',
+  'mention',
+  'comment',
+  'entity_updated',
+  'workflow_failed',
+]
 
 export function useNotifications() {
   const db = useInstantDb()
@@ -47,33 +60,40 @@ export function useNotifications() {
   const notificationPrefs = useState<{
     soundEnabled: boolean
     desktopEnabled: boolean
+    emailEnabled: boolean
     mutedTypes: NotificationType[]
+    emailMutedTypes: NotificationType[]
   }>('notifications:prefs', () => ({
     soundEnabled: true,
     desktopEnabled: true,
+    emailEnabled: true,
     mutedTypes: [],
+    emailMutedTypes: [],
   }))
 
   // Load prefs from settings
   if (import.meta.client) {
-    const prefsKey = computed(() => user.value?.id ? `user:${user.value.id}:notificationPrefs` : null)
+    const prefsKey = computed(() => (user.value?.id ? `user:${user.value.id}:notificationPrefs` : null))
 
-    watch(prefsKey, (key) => {
-      if (!key) return
-      db.subscribeQuery(
-        { settings: { $: { where: { settingKey: key } } } },
-        (result: any) => {
+    watch(
+      prefsKey,
+      (key) => {
+        if (!key) return
+        db.subscribeQuery({ settings: { $: { where: { settingKey: key } } } }, (result: any) => {
           const setting = (result.data?.settings || [])[0]
           if (setting?.value) {
             notificationPrefs.value = {
               soundEnabled: setting.value.soundEnabled ?? true,
               desktopEnabled: setting.value.desktopEnabled ?? true,
+              emailEnabled: setting.value.emailEnabled ?? true,
               mutedTypes: setting.value.mutedTypes ?? [],
+              emailMutedTypes: setting.value.emailMutedTypes ?? [],
             }
           }
-        },
-      )
-    }, { immediate: true })
+        })
+      },
+      { immediate: true },
+    )
   }
 
   // ── Computed ─────────────────────────────────────────────────────────
@@ -99,76 +119,75 @@ export function useNotifications() {
       return
     }
 
-    unsub = db.subscribeQuery(
-      {
-        notifications: {
-          $: {
-            where: {
-              recipientId: userId,
+    unsub =
+      db.subscribeQuery(
+        {
+          notifications: {
+            $: {
+              where: {
+                recipientId: userId,
+              },
+              order: { serverCreatedAt: 'desc' as const },
+              limit: 50,
             },
-            order: { serverCreatedAt: 'desc' as const },
-            limit: 50,
           },
         },
-      },
-      (result: any) => {
-        const incoming: Notification[] = (result.data?.notifications || []).map((n: any) => ({
-          ...n,
-          icon: n.icon || NOTIFICATION_META[n.type as NotificationType]?.icon || 'lucide:bell',
-          variant: n.variant || NOTIFICATION_META[n.type as NotificationType]?.defaultVariant || 'default',
-        }))
+        (result: any) => {
+          const incoming: Notification[] = (result.data?.notifications || []).map((n: any) => ({
+            ...n,
+            icon: n.icon || NOTIFICATION_META[n.type as NotificationType]?.icon || 'lucide:bell',
+            variant: n.variant || NOTIFICATION_META[n.type as NotificationType]?.defaultVariant || 'default',
+          }))
 
-        // Detect genuinely new notifications (not just initial load)
-        if (_hasInitialized.value && import.meta.client) {
-          const newItems = incoming.filter(
-            (n) => !_prevIds.value.has(n.id) && !n.isRead,
-          )
-          if (newItems.length > 0) {
-            const first = newItems[0]!
-            const isMuted = notificationPrefs.value.mutedTypes.includes(first.type as NotificationType)
+          // Detect genuinely new notifications (not just initial load)
+          if (_hasInitialized.value && import.meta.client) {
+            const newItems = incoming.filter((n) => !_prevIds.value.has(n.id) && !n.isRead)
+            if (newItems.length > 0) {
+              const first = newItems[0]!
+              const isMuted = notificationPrefs.value.mutedTypes.includes(first.type as NotificationType)
 
-            // Play chime (respect muted types)
-            if (!isMuted && notificationPrefs.value.soundEnabled && chimeAudio) {
-              chimeAudio.currentTime = 0
-              chimeAudio.play().catch(() => {
-                // Autoplay blocked — user hasn't interacted yet
-              })
-            }
+              // Play chime (respect muted types)
+              if (!isMuted && notificationPrefs.value.soundEnabled && chimeAudio) {
+                chimeAudio.currentTime = 0
+                chimeAudio.play().catch(() => {
+                  // Autoplay blocked — user hasn't interacted yet
+                })
+              }
 
-            // Show toast for the first new one
-            if (!isMuted) {
-              $toast?.info(first.title, { description: first.message })
-            }
+              // Show toast for the first new one
+              if (!isMuted) {
+                $toast?.info(first.title, { description: first.message })
+              }
 
-            // Desktop push notification
-            if (
-              !isMuted
-              && notificationPrefs.value.desktopEnabled
-              && typeof Notification !== 'undefined'
-              && Notification.permission === 'granted'
-            ) {
-              const n = new Notification(first.title, {
-                body: first.message,
-                icon: '/favicon.ico',
-              })
-              if (first.actionUrl) {
-                n.onclick = () => {
-                  window.focus()
-                  navigateTo(first.actionUrl!)
+              // Desktop push notification
+              if (
+                !isMuted &&
+                notificationPrefs.value.desktopEnabled &&
+                typeof Notification !== 'undefined' &&
+                Notification.permission === 'granted'
+              ) {
+                const n = new Notification(first.title, {
+                  body: first.message,
+                  icon: '/favicon.ico',
+                })
+                if (first.actionUrl) {
+                  n.onclick = () => {
+                    window.focus()
+                    navigateTo(first.actionUrl!)
+                  }
                 }
               }
             }
           }
-        }
 
-        // Update tracked IDs
-        _prevIds.value = new Set(incoming.map((n) => n.id))
-        _hasInitialized.value = true
+          // Update tracked IDs
+          _prevIds.value = new Set(incoming.map((n) => n.id))
+          _hasInitialized.value = true
 
-        notifications.value = incoming
-        loading.value = false
-      },
-    ) || null
+          notifications.value = incoming
+          loading.value = false
+        },
+      ) || null
   }
 
   if (import.meta.client) {
@@ -196,9 +215,7 @@ export function useNotifications() {
     const unread = notifications.value.filter((n) => !n.isRead)
     if (!unread.length) return
     try {
-      await db.transact(
-        unread.map((n) => db.tx.notifications[n.id].update({ isRead: true })),
-      )
+      await db.transact(unread.map((n) => db.tx.notifications[n.id].update({ isRead: true })))
     } catch (err: any) {
       console.error('[useNotifications] markAllAsRead failed:', err?.message)
     }
@@ -223,19 +240,14 @@ export function useNotifications() {
     try {
       // Check if setting exists
       const existing = await new Promise<any>((resolve) => {
-        const u = db.subscribeQuery(
-          { settings: { $: { where: { settingKey } } } },
-          (result: any) => {
-            u?.()
-            resolve(result.data?.settings?.[0] || null)
-          },
-        )
+        const u = db.subscribeQuery({ settings: { $: { where: { settingKey } } } }, (result: any) => {
+          u?.()
+          resolve(result.data?.settings?.[0] || null)
+        })
       })
 
       if (existing?.id) {
-        await db.transact([
-          db.tx.settings[existing.id].update({ value: merged, updatedAt: Date.now() }),
-        ])
+        await db.transact([db.tx.settings[existing.id].update({ value: merged, updatedAt: Date.now() })])
       } else {
         const id = crypto.randomUUID()
         await db.transact([
@@ -287,5 +299,6 @@ export function useNotifications() {
     // Helpers
     timeAgo,
     NOTIFICATION_META,
+    DEFAULT_EMAIL_TYPES,
   }
 }

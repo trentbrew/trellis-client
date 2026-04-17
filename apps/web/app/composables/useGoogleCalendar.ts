@@ -55,6 +55,16 @@ function mapGCalEventToEntityData(
   const startTime = !isAllDay && gcalEvent.start?.dateTime ? gcalEvent.start.dateTime.slice(11, 16) : undefined
   const endTime = !isAllDay && gcalEvent.end?.dateTime ? gcalEvent.end.dateTime.slice(11, 16) : undefined
 
+  // Serialize organizer + attendees as "Name <email>" so downstream
+  // people-from-emails parsing works uniformly across Gmail + GCal.
+  const formatParticipant = (p: { email?: string; displayName?: string } | undefined): string | undefined => {
+    if (!p?.email) return undefined
+    const name = (p.displayName || '').trim()
+    return name ? `${name} <${p.email}>` : p.email
+  }
+  const organizerStr = formatParticipant(gcalEvent.organizer)
+  const attendeesArr = (gcalEvent.attendees || []).map((a) => formatParticipant(a)).filter((s): s is string => !!s)
+
   return {
     type: 'event',
     title: gcalEvent.summary || '(No title)',
@@ -73,6 +83,8 @@ function mapGCalEventToEntityData(
     googleStatus: gcalEvent.status || 'confirmed',
     googleUpdatedAt: gcalEvent.updated || '',
     gcalDeleted: false,
+    ...(organizerStr ? { organizer: organizerStr } : {}),
+    ...(attendeesArr.length > 0 ? { attendees: attendeesArr } : {}),
     ...(gcalEvent.recurringEventId ? { recurringEventId: gcalEvent.recurringEventId } : {}),
     ...(connectionId ? { connectionId } : {}),
   }

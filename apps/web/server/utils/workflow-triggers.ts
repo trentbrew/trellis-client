@@ -45,6 +45,12 @@ export interface TriggerEntity {
   active: boolean
   /** Agent ID used when the trigger fires (defaults to `trigger:<kind>`). */
   agentId?: string
+  /** User ID of the trigger owner — notified on workflow_failed / workflow_completed. */
+  ownerId?: string
+  /** Organization the trigger belongs to — used as the `orgId` on owner notifications. */
+  orgId?: string
+  /** If true, also notify the owner on successful completion (default: only failures). */
+  notifyOnSuccess?: boolean
 
   // Schedule kind
   cron?: string
@@ -96,6 +102,9 @@ function serializeTrigger(trigger: TriggerEntity): Record<string, unknown> {
   }
   if (trigger.workflowName) stored.workflowName = trigger.workflowName
   if (trigger.agentId) stored.agentId = trigger.agentId
+  if (trigger.ownerId) stored.ownerId = trigger.ownerId
+  if (trigger.orgId) stored.orgId = trigger.orgId
+  if (typeof trigger.notifyOnSuccess === 'boolean') stored.notifyOnSuccess = trigger.notifyOnSuccess
 
   if (trigger.cron) stored.cron = trigger.cron
   if (trigger.timezone) stored.timezone = trigger.timezone
@@ -137,6 +146,9 @@ function deserializeTrigger(id: string, raw: Record<string, unknown>): TriggerEn
     kind: ((raw.kind as TriggerKind) || 'schedule') as TriggerKind,
     active: Boolean(raw.active),
     agentId: (raw.agentId as string) || undefined,
+    ownerId: (raw.ownerId as string) || undefined,
+    orgId: (raw.orgId as string) || undefined,
+    notifyOnSuccess: typeof raw.notifyOnSuccess === 'boolean' ? (raw.notifyOnSuccess as boolean) : undefined,
     cron: (raw.cron as string) || undefined,
     timezone: (raw.timezone as string) || undefined,
     token: (raw.token as string) || undefined,
@@ -267,6 +279,9 @@ export async function createTrigger(
     kind: input.kind,
     active: input.active ?? true,
     agentId: input.agentId,
+    ownerId: input.ownerId,
+    orgId: input.orgId,
+    notifyOnSuccess: input.notifyOnSuccess,
     cron: input.cron,
     timezone: input.timezone,
     token: input.kind === 'webhook' ? input.token || generateWebhookToken() : input.token,

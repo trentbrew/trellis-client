@@ -4,10 +4,17 @@
  * Creates notification records via the admin SDK (bypasses client perms).
  * Supports single recipient or batch (multiple recipients with the same content).
  *
+ * After each record is persisted, an email is dispatched asynchronously
+ * via `dispatchNotificationEmailAsync` — it respects per-user email prefs
+ * and defaults to off for types outside `DEFAULT_EMAIL_TYPES`.
+ *
  * Body:
  *   Single:  { recipientId, orgId, type, title, message, ... }
  *   Batch:   { recipients: string[], orgId, type, title, message, ... }
+ *   Add `skipEmail: true` to suppress email delivery for this call only.
  */
+
+import { dispatchNotificationEmailAsync } from '../utils/notification-email'
 
 interface NotifyBody {
   recipientId?: string
@@ -23,6 +30,8 @@ interface NotifyBody {
   actorId?: string
   actorName?: string
   metadata?: Record<string, any>
+  /** If true, skip the email dispatch step. Default false. */
+  skipEmail?: boolean
 }
 
 export default defineEventHandler(async (event) => {
@@ -32,11 +41,7 @@ export default defineEventHandler(async (event) => {
     throw createError({ statusCode: 400, message: 'orgId, type, title, and message are required' })
   }
 
-  const recipientIds = body.recipients?.length
-    ? body.recipients
-    : body.recipientId
-      ? [body.recipientId]
-      : []
+  const recipientIds = body.recipients?.length ? body.recipients : body.recipientId ? [body.recipientId] : []
 
   if (!recipientIds.length) {
     throw createError({ statusCode: 400, message: 'recipientId or recipients[] is required' })
@@ -71,11 +76,23 @@ export default defineEventHandler(async (event) => {
 
       // Link to organization (non-fatal)
       try {
-        await db.transact(
-          db.tx.organizations[body.orgId].link({ notifications: notifId }),
-        )
+        await db.transact(db.tx.organizations[body.orgId].link({ notifications: notifId }))
       } catch (linkErr: any) {
         console.warn(`[notify] Org link failed for notification ${notifId} (non-fatal):`, linkErr?.message)
+      }
+
+      // Fire email asynchronously — respects per-user prefs, never blocks the response
+      if (!body.skipEmail) {
+        dispatchNotificationEmailAsync({
+          recipientId,
+          type: body.type,
+          title: body.title,
+          message: body.message,
+          actionUrl: body.actionUrl,
+          actorName: body.actorName,
+          orgName: body.orgName,
+          metadata: body.metadata,
+        })
       }
 
       created.push(notifId)

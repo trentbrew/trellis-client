@@ -12,6 +12,10 @@
  */
 
 import type { EntityReference, EntityType } from '~/types/entity'
+import type { ProposedField, ProposedInstance, TypeProposal } from '~/types/enrichment'
+import { entityId as toEntityId } from '~/lib/tql-namespace'
+
+export type { TypeProposal, ProposedField, ProposedInstance } from '~/types/enrichment'
 
 /**
  * Expanded entity candidate types the LLM can extract. Keep in sync with
@@ -52,11 +56,18 @@ export type ContentKind = 'email' | 'event' | 'video' | 'generic'
 interface CachedResult {
   suggestions: EnrichmentSuggestion[]
   tags: string[]
+  typeProposals: TypeProposal[]
 }
 
 // Module-level cache keyed by `${kind}::${cacheKey}` so email + event
 // never collide on a shared threadId or similar.
 const cache = new Map<string, CachedResult>()
+
+/**
+ * Per-entity record of dismissed proposals so we never re-surface a rejected
+ * type in the same session. Keyed by `${kind}::${cacheKey}` → set of slugs.
+ */
+const dismissedTypeSlugs = new Map<string, Set<string>>()
 
 interface UseContentEnrichmentOptions {
   /**
@@ -75,13 +86,19 @@ interface UseContentEnrichmentOptions {
 export function useContentEnrichment(options: UseContentEnrichmentOptions) {
   const { items: allItems, create: createEntity, update: updateEntity } = useEntities()
   const { enrich: enrichEntityInBackground } = useEntityAutoFill()
+  const { allTypeIds, getEntityConfig, waitForType, refresh: refreshOntologies } = useOntologyRegistry()
+  const { mutate: mutateGraph } = useTrellisGraph()
 
   const suggestions = ref<EnrichmentSuggestion[]>([])
   const suggestedTags = ref<string[]>([])
+  const typeProposals = ref<TypeProposal[]>([])
   const scanning = ref(false)
   const error = ref<string | null>(null)
+  const acceptingTypeSlug = ref<string | null>(null)
 
-  const hasSuggestions = computed(() => suggestions.value.length > 0 || suggestedTags.value.length > 0)
+  const hasSuggestions = computed(
+    () => suggestions.value.length > 0 || suggestedTags.value.length > 0 || typeProposals.value.length > 0,
+  )
 
   /**
    * Match a candidate against existing graph entities.
@@ -172,6 +189,7 @@ export function useContentEnrichment(options: UseContentEnrichmentOptions) {
     if (cached) {
       suggestions.value = cached.suggestions
       suggestedTags.value = existingTags ? cached.tags.filter((t) => !existingTags.includes(t)) : cached.tags
+      typeProposals.value = filterDismissed(ck, cached.typeProposals)
       return
     }
 
@@ -180,10 +198,24 @@ export function useContentEnrichment(options: UseContentEnrichmentOptions) {
     scanning.value = true
     error.value = null
 
+    // Snapshot the user's current types so the LLM doesn't re-propose
+    // things the graph already knows about.
+    const existingTypeSlugs = allTypeIds.value
+    const existingTypeLabelsList = existingTypeSlugs.map((slug) => getEntityConfig(slug)?.label || slug).filter(Boolean)
+
     try {
-      const data = await $fetch<{ entities: ContentEntityCandidate[]; tags: string[] }>('/api/extract-entities-llm', {
+      const data = await $fetch<{
+        entities: ContentEntityCandidate[]
+        tags: string[]
+        typeProposals?: TypeProposal[]
+      }>('/api/extract-entities-llm', {
         method: 'POST',
-        body: { text, kind: options.kind },
+        body: {
+          text,
+          kind: options.kind,
+          existingTypes: existingTypeSlugs,
+          existingTypeLabels: existingTypeLabelsList,
+        },
       })
 
       const matched = (data.entities || []).map((c) => {
@@ -192,18 +224,32 @@ export function useContentEnrichment(options: UseContentEnrichmentOptions) {
         return firstMentionAt !== undefined ? { ...base, firstMentionAt } : base
       })
       const tags = (data.tags || []).filter((t) => !(existingTags || []).includes(t))
+      const proposalsRaw = Array.isArray(data.typeProposals) ? data.typeProposals : []
 
       suggestions.value = matched
       suggestedTags.value = tags
+      typeProposals.value = filterDismissed(ck, proposalsRaw)
 
-      cache.set(ck, { suggestions: matched, tags: data.tags || [] })
+      cache.set(ck, {
+        suggestions: matched,
+        tags: data.tags || [],
+        typeProposals: proposalsRaw,
+      })
     } catch (err: any) {
       error.value = err?.data?.message || err?.message || 'Extraction failed'
       suggestions.value = []
       suggestedTags.value = []
+      typeProposals.value = []
     } finally {
       scanning.value = false
     }
+  }
+
+  /** Strip out any type proposals the user has already dismissed this session. */
+  function filterDismissed(ck: string, list: TypeProposal[]): TypeProposal[] {
+    const dismissed = dismissedTypeSlugs.get(ck)
+    if (!dismissed || dismissed.size === 0) return list
+    return list.filter((p) => !dismissed.has(p.slug))
   }
 
   /**
@@ -300,9 +346,182 @@ export function useContentEnrichment(options: UseContentEnrichmentOptions) {
     suggestedTags.value = suggestedTags.value.filter((t) => t !== tag)
   }
 
+  /**
+   * Dismiss a proposed type — removes it from the visible list AND records
+   * the slug in the session-level dismissal set so re-scans won't re-surface it.
+   */
+  function dismissTypeProposal(proposal: TypeProposal, sourceCacheKey?: string) {
+    typeProposals.value = typeProposals.value.filter((p) => p.slug !== proposal.slug)
+    if (sourceCacheKey) {
+      const ck = cacheKeyFor(sourceCacheKey)
+      if (!dismissedTypeSlugs.has(ck)) dismissedTypeSlugs.set(ck, new Set())
+      dismissedTypeSlugs.get(ck)!.add(proposal.slug)
+    }
+  }
+
+  /**
+   * Accept a proposed type:
+   *   1. POST /api/graph/ontology with the (possibly-edited) schema, tier 'user'.
+   *   2. Wait for the new type to appear in the registry (SSE-driven).
+   *   3. Create each selected instance and wire up reciprocal references
+   *      to the source entity.
+   *
+   * Caller can customise the schema (rename label, tweak fields, pick icon/color)
+   * and the subset of instances via the `overrides` param.
+   */
+  async function acceptTypeProposal(
+    proposal: TypeProposal,
+    sourceEntity: any,
+    overrides?: {
+      label?: string
+      labelPlural?: string
+      icon?: string
+      color?: string
+      fields?: ProposedField[]
+      instances?: ProposedInstance[]
+    },
+    sourceCacheKey?: string,
+  ): Promise<{ ok: true; schemaId: string; createdIds: string[] } | { ok: false; error: string }> {
+    if (acceptingTypeSlug.value === proposal.slug) {
+      return { ok: false, error: 'Already accepting this proposal' }
+    }
+    acceptingTypeSlug.value = proposal.slug
+
+    const finalLabel = overrides?.label?.trim() || proposal.label
+    const finalLabelPlural = overrides?.labelPlural?.trim() || proposal.labelPlural
+    const finalIcon = overrides?.icon?.trim() || proposal.icon
+    const finalColor = overrides?.color?.trim() || proposal.color
+    const finalFields = overrides?.fields?.length ? overrides.fields : proposal.fields
+    const finalInstances = overrides?.instances ?? proposal.exampleInstances
+
+    const schemaId = `trellis:schema/${proposal.slug}`
+    const schema = {
+      '@id': schemaId,
+      '@type': 'trellis:Schema',
+      version: '1.0.0',
+      tier: 'user' as const,
+      entityClass: proposal.entityClass,
+      label: finalLabel,
+      labelPlural: finalLabelPlural,
+      icon: finalIcon,
+      color: finalColor,
+      description: proposal.description || undefined,
+      fields: finalFields,
+    }
+
+    // ── Step 1: create the ontology ────────────────────────────────────
+    try {
+      await $fetch('/api/graph/ontology', {
+        method: 'POST',
+        body: { schema, agentId: 'ai-suggest' },
+      })
+    } catch (err: any) {
+      // 409 means the schema already exists — treat as soft success.
+      const status = err?.statusCode ?? err?.response?.status
+      if (status !== 409) {
+        acceptingTypeSlug.value = null
+        return { ok: false, error: err?.data?.message || err?.message || 'Failed to create type' }
+      }
+    }
+
+    // ── Step 2: wait for SSE → registry to pick up the new type ────────
+    // Trigger a refetch in case SSE is slow/dropped; waitForType resolves
+    // immediately if the type was already visible from a prior run.
+    refreshOntologies().catch(() => {})
+    const appeared = await waitForType(proposal.slug, 3000)
+    if (!appeared) {
+      // Non-fatal — mutations to the namespace still succeed; the sidebar
+      // will catch up on the next SSE tick.
+      console.warn(`[useContentEnrichment] type ${proposal.slug} not in registry after 3s`)
+    }
+
+    // ── Step 3: create each selected instance + reciprocal refs ────────
+    // References are stored as TQL links (not entity attrs) — see
+    // useTrellisEntities hydration, which folds links with relation
+    // 'references' | 'mentions' | 'derivedFrom' into `entity.references`
+    // with both `outgoing` and `incoming` directions. We link once per
+    // instance; hydration handles both sides.
+    const createdIds: string[] = []
+    const sourceFullId = sourceEntity?.id ? toEntityId(sourceEntity.id) : null
+
+    for (const inst of finalInstances) {
+      try {
+        const payload: Record<string, any> = {
+          type: proposal.slug,
+          title: inst.title,
+        }
+        if (inst.properties) {
+          for (const [k, v] of Object.entries(inst.properties)) {
+            if (k === 'title') continue // already in payload
+            payload[k] = v
+          }
+        }
+        const newId = await createEntity(payload as any)
+        createdIds.push(newId)
+
+        // Canonical bidirectional link via TQL graph API.
+        if (sourceFullId) {
+          try {
+            await mutateGraph({
+              action: 'link',
+              e1: sourceFullId,
+              relation: 'references',
+              e2: toEntityId(newId),
+            })
+          } catch (linkErr: any) {
+            console.warn(
+              `[useContentEnrichment] failed to link ${sourceEntity.id} → ${newId}:`,
+              linkErr?.message || linkErr,
+            )
+          }
+        }
+
+        // Mirror the link optimistically into the in-memory `sourceEntity.references`
+        // so the References section in the currently-open dialog updates instantly
+        // (the authoritative state arrives via SSE + hydration shortly after).
+        if (!Array.isArray(sourceEntity.references)) sourceEntity.references = []
+        const alreadyLinked = sourceEntity.references.some((r: any) => r?.kind === 'entity' && r?.entityId === newId)
+        if (!alreadyLinked) {
+          sourceEntity.references.push({
+            kind: 'entity',
+            id: `ref-references-${toEntityId(newId)}`,
+            entityId: newId,
+            entityType: proposal.slug as EntityType,
+            title: inst.title,
+            direction: 'outgoing',
+          } satisfies EntityReference)
+        }
+      } catch (err: any) {
+        console.warn(`[useContentEnrichment] failed to create instance "${inst.title}":`, err?.message || err)
+      }
+    }
+
+    // `updateEntity` is no longer needed for refs — TQL links are the source
+    // of truth. Kept imported because the existing `accept()` method still
+    // uses it.
+    void updateEntity
+    void allItems
+
+    // ── Step 4: remove the accepted proposal from state + cache ────────
+    typeProposals.value = typeProposals.value.filter((p) => p.slug !== proposal.slug)
+    if (sourceCacheKey) {
+      const ck = cacheKeyFor(sourceCacheKey)
+      const cached = cache.get(ck)
+      if (cached) {
+        cached.typeProposals = cached.typeProposals.filter((p) => p.slug !== proposal.slug)
+        cache.set(ck, cached)
+      }
+    }
+
+    acceptingTypeSlug.value = null
+    return { ok: true, schemaId, createdIds }
+  }
+
   return {
     suggestions,
     suggestedTags,
+    typeProposals,
+    acceptingTypeSlug,
     scanning,
     error,
     hasSuggestions,
@@ -311,5 +530,7 @@ export function useContentEnrichment(options: UseContentEnrichmentOptions) {
     dismiss,
     acceptTag,
     dismissTag,
+    acceptTypeProposal,
+    dismissTypeProposal,
   }
 }

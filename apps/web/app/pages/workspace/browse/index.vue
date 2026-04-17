@@ -292,7 +292,7 @@
         <!-- Grid view for group -->
         <div
           v-if="viewMode === 'grid' || !['grid', 'list', 'table'].includes(viewMode)"
-          class="grid gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+          class="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
           <EntityCard
             v-for="item in group.items"
             :key="item.id"
@@ -333,7 +333,7 @@
       <!-- Grid -->
       <div
         v-if="viewMode === 'grid' || !['grid', 'list', 'table', 'moodboard'].includes(viewMode)"
-        class="grid gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+        class="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
         <EntityCard
           v-for="item in filteredItems"
           :key="item.id"
@@ -361,7 +361,7 @@
       </div>
 
       <!-- Moodboard -->
-      <div v-else-if="viewMode === 'moodboard'" class="columns-2 sm:columns-3 lg:columns-4 xl:columns-5 gap-3">
+      <div v-else-if="viewMode === 'moodboard'" class="columns-2 sm:columns-3 lg:columns-4 xl:columns-5 gap-4">
         <EntityCard
           v-for="item in filteredItems"
           :key="item.id"

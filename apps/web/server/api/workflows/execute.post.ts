@@ -34,6 +34,9 @@ export default defineEventHandler(async (event) => {
     agentId?: string
     skipPersist?: boolean
     defaultModel?: string
+    ownerId?: string
+    orgId?: string
+    notifyOnSuccess?: boolean
   }
 
   if (!body?.workflowId || typeof body.workflowId !== 'string') {
@@ -55,6 +58,9 @@ export default defineEventHandler(async (event) => {
       agentId: body.agentId,
       skipPersist: body.skipPersist,
       defaultModel: body.defaultModel,
+      ownerId: body.ownerId,
+      orgId: body.orgId,
+      notifyOnSuccess: body.notifyOnSuccess,
     })
 
     return { ok: true, run }
