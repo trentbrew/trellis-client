@@ -1,6 +1,7 @@
 <script lang="ts" setup>
   import type { EntityReference, EntityType } from '~/types/entity'
   import { getEntityTypeConfig } from '~/config/entityRegistry'
+  import { extractYoutubeId, parseTranscript, useYoutubeTranscript } from '~/composables/useYoutubeTranscript'
 
   interface EntitySuggestion {
     name: string
@@ -32,6 +33,42 @@
       return url.value
     }
   })
+
+  // ── YouTube detection + transcript auto-fetch ────────────────────────
+  // A bookmark whose URL resolves to a YouTube video gets special treatment:
+  // a transcript sidebar synced to the player. The transcript is persisted
+  // on the entity so extraction, search, and subsequent opens are instant.
+  const youtubeVideoId = computed(() => extractYoutubeId(url.value))
+  const isYoutube = computed(() => !!youtubeVideoId.value)
+  // parseTranscript handles all 3 storage shapes (array-of-objects,
+  // JSON string, TQL flattened dot-paths) so we stay correct across
+  // fresh fetches and reloads from the graph.
+  const hasTranscript = computed(() => parseTranscript(item.value).length > 0)
+  const { ensureTranscriptOnEntity, isFetching: isFetchingTranscript } = useYoutubeTranscript()
+  const transcriptError = ref('')
+
+  async function ensureTranscript() {
+    if (!isYoutube.value || !item.value?.id) return
+    if (hasTranscript.value) return
+    transcriptError.value = ''
+    const result = await ensureTranscriptOnEntity(item.value)
+    if (!result) {
+      // Distinguish between "no transcript available" and transient failure —
+      // either way, we surface a non-blocking message under the player.
+      transcriptError.value = 'Transcript unavailable for this video'
+    }
+  }
+
+  // Re-run whenever the URL changes (new video pasted, entity hydrated).
+  watch(
+    () => [item.value?.id, youtubeVideoId.value] as const,
+    () => {
+      if (isYoutube.value && !hasTranscript.value) {
+        void ensureTranscript()
+      }
+    },
+    { immediate: true },
+  )
 
   // ── Entity suggestions ───────────────────────────────────────────────
   const { items: allItems, create: createEntity, update: updateEntity } = useEntities()
@@ -101,9 +138,7 @@
 
     // Add outgoing reference on this bookmark → target entity
     if (!item.value.references) item.value.references = []
-    const alreadyLinked = item.value.references.some(
-      (r: any) => r.kind === 'entity' && r.entityId === entityId,
-    )
+    const alreadyLinked = item.value.references.some((r: any) => r.kind === 'entity' && r.entityId === entityId)
     if (!alreadyLinked) {
       const ref: EntityReference = {
         kind: 'entity',
@@ -289,7 +324,6 @@
 
 <template>
   <div class="flex-1 flex flex-col min-h-0">
-
     <!-- ================= CREATE: URL-first input ================= -->
     <template v-if="mode === 'create' && !url">
       <div class="flex-1 flex items-center justify-center p-8">
@@ -299,11 +333,14 @@
               <Icon name="lucide:link" class="h-6 w-6 text-sky-500" />
             </div>
             <p class="text-sm font-medium">Add a bookmark</p>
-            <p class="text-xs text-muted-foreground">Paste or type a URL to save it. We'll grab the title and details automatically.</p>
+            <p class="text-xs text-muted-foreground">
+              Paste or type a URL to save it. We'll grab the title and details automatically.
+            </p>
           </div>
 
           <div class="relative">
-            <div class="flex items-center gap-2 rounded-lg border border-border bg-card px-3 py-2.5 focus-within:ring-2 focus-within:ring-primary/30 focus-within:border-primary/50 transition-all">
+            <div
+              class="flex items-center gap-2 rounded-lg border border-border bg-card px-3 py-2.5 focus-within:ring-2 focus-within:ring-primary/30 focus-within:border-primary/50 transition-all">
               <Icon v-if="!unfurling" name="lucide:globe" class="h-4 w-4 text-muted-foreground shrink-0" />
               <Icon v-else name="lucide:loader-2" class="h-4 w-4 text-muted-foreground shrink-0 animate-spin" />
               <input
@@ -312,7 +349,6 @@
                 placeholder="https://..."
                 class="flex-1 bg-transparent text-sm outline-none placeholder:text-muted-foreground/50 font-mono"
                 :disabled="unfurling"
-
                 @keydown="handleUrlKeydown"
                 @paste="handleUrlPaste" />
               <button
@@ -361,9 +397,7 @@
       </div>
 
       <!-- Suggested entities from page -->
-      <div
-        v-if="hasSuggestions || scanning"
-        class="px-4 py-2.5 border-b border-border bg-muted/20 shrink-0 space-y-2">
+      <div v-if="hasSuggestions || scanning" class="px-4 py-2.5 border-b border-border bg-muted/20 shrink-0 space-y-2">
         <div class="flex items-center justify-between">
           <p class="text-[11px] font-medium text-muted-foreground uppercase tracking-wide flex items-center gap-1.5">
             <Icon name="lucide:sparkles" class="h-3 w-3 text-amber-500" />
@@ -389,7 +423,8 @@
                 <Icon :name="getSuggestionIcon(s.type)" class="h-3 w-3" />
               </div>
               <span class="truncate max-w-[140px]">{{ s.name }}</span>
-              <span class="shrink-0 text-[9px] font-medium text-muted-foreground bg-muted/60 rounded px-1 py-0.5 capitalize">
+              <span
+                class="shrink-0 text-[9px] font-medium text-muted-foreground bg-muted/60 rounded px-1 py-0.5 capitalize">
                 {{ s.type }}
               </span>
               <button
@@ -442,15 +477,39 @@
         </template>
       </div>
 
-      <!-- Iframe preview -->
-      <div v-if="!iframeError" class="flex-1 relative min-h-0">
+      <!-- YouTube video with transcript — replace iframe with synced
+           transcript sidebar + IFrame Player API-controlled player. -->
+      <YoutubeVideoPanel v-if="isYoutube && hasTranscript" ref="youtubePanel" :entity="item" />
+
+      <!-- YouTube video, transcript still loading — show iframe for now;
+           the transcript UI swaps in as soon as cues arrive. -->
+      <div v-else-if="isYoutube && isFetchingTranscript(youtubeVideoId || '')" class="flex-1 relative min-h-0">
         <div
-          v-if="iframeLoading"
-          class="absolute inset-0 flex items-center justify-center bg-background/80 z-10">
+          class="absolute top-2 left-2 z-10 flex items-center gap-1.5 px-2 py-1 rounded-md bg-background/80 backdrop-blur-sm border border-border text-[10px] text-muted-foreground">
+          <Icon name="lucide:loader-2" class="h-3 w-3 animate-spin" />
+          Fetching transcript…
+        </div>
+        <iframe
+          :src="embedUrl"
+          :title="item.title || 'Bookmark preview'"
+          class="w-full h-full border-0"
+          allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture"
+          loading="lazy" />
+      </div>
+
+      <!-- Non-video or transcript-unavailable bookmark — standard iframe preview -->
+      <div v-else-if="!iframeError" class="flex-1 relative min-h-0">
+        <div v-if="iframeLoading" class="absolute inset-0 flex items-center justify-center bg-background/80 z-10">
           <div class="flex flex-col items-center gap-2 text-muted-foreground">
             <Icon name="lucide:loader-2" class="h-5 w-5 animate-spin" />
             <span class="text-xs">Loading preview...</span>
           </div>
+        </div>
+        <div
+          v-if="isYoutube && transcriptError"
+          class="absolute top-2 left-2 z-10 flex items-center gap-1.5 px-2 py-1 rounded-md bg-background/80 backdrop-blur-sm border border-border text-[10px] text-muted-foreground">
+          <Icon name="lucide:info" class="h-3 w-3" />
+          {{ transcriptError }}
         </div>
         <iframe
           :src="embedUrl"
@@ -458,7 +517,9 @@
           class="w-full h-full border-0"
           :sandbox="isEmbedService ? undefined : 'allow-scripts allow-same-origin allow-popups allow-forms'"
           :referrerpolicy="isEmbedService ? undefined : 'no-referrer'"
-          :allow="isEmbedService ? 'autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture' : undefined"
+          :allow="
+            isEmbedService ? 'autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture' : undefined
+          "
           loading="lazy"
           @load="onIframeLoad"
           @error="onIframeError" />
@@ -499,11 +560,14 @@
             <Icon name="lucide:link" class="h-6 w-6 text-sky-500" />
           </div>
           <p class="text-sm font-medium">Add a URL</p>
-          <p class="text-xs text-muted-foreground">Paste or type a URL to save it. We'll grab the title and details automatically.</p>
+          <p class="text-xs text-muted-foreground">
+            Paste or type a URL to save it. We'll grab the title and details automatically.
+          </p>
         </div>
 
         <div class="relative">
-          <div class="flex items-center gap-2 rounded-lg border border-border bg-card px-3 py-2.5 focus-within:ring-2 focus-within:ring-primary/30 focus-within:border-primary/50 transition-all">
+          <div
+            class="flex items-center gap-2 rounded-lg border border-border bg-card px-3 py-2.5 focus-within:ring-2 focus-within:ring-primary/30 focus-within:border-primary/50 transition-all">
             <Icon v-if="!unfurling" name="lucide:globe" class="h-4 w-4 text-muted-foreground shrink-0" />
             <Icon v-else name="lucide:loader-2" class="h-4 w-4 text-muted-foreground shrink-0 animate-spin" />
             <input

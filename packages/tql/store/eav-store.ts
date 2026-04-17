@@ -119,7 +119,10 @@ export class EAVStore {
         let isDupe = false;
         for (const idx of attrIndices) {
           const existing = this.facts[idx];
-          if (existing && existing.v === fact.v) { isDupe = true; break; }
+          if (existing && existing.v === fact.v) {
+            isDupe = true;
+            break;
+          }
         }
         if (isDupe) continue;
       }
@@ -132,6 +135,12 @@ export class EAVStore {
 
   addLinks(links: Link[]): void {
     for (const link of links) {
+      // Dedupe: skip if (e1, a, e2) triple already exists. The index uses
+      // Sets so it's already deduped, but this.links is the array read by
+      // getAllLinks() and leaks duplicates to the API layer.
+      const existingTargets = this.linkIndex.get(link.e1)?.get(link.a);
+      if (existingTargets?.has(link.e2)) continue;
+
       this.links.push(link);
       this.updateLinkIndexes(link);
     }

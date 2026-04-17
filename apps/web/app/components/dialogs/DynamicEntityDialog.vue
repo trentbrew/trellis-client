@@ -85,6 +85,30 @@
 
   // ── Auto-save in edit mode ──────────────────────────────────────────
 
+  // ── AI summary ──────────────────────────────────────────────────────
+  const {
+    ensure: _ensureSummary,
+    regenerate: _regenerateSummary,
+    isGenerating: _isSummaryGenerating,
+  } = useEntitySummary()
+
+  watch(
+    () => [editableItem.id, editableItem.description] as const,
+    () => {
+      if (isCreateMode.value) return
+      if (!editableItem.id || !editableItem.description) return
+      void _ensureSummary(editableItem)
+    },
+    { immediate: true },
+  )
+
+  const entitySummary = computed(() => (editableItem.summary || '').trim())
+  const isGeneratingSummary = computed(() => !!editableItem.id && _isSummaryGenerating(editableItem.id))
+  function regenerateSummary() {
+    if (!editableItem.id) return
+    void _regenerateSummary(editableItem)
+  }
+
   const { status: saveStatus, formatLastSaved } = useAutoSave(editableItem, {
     enabled: isEditMode,
     beforeSave: (item) => {
@@ -95,11 +119,7 @@
   // ── Comments ────────────────────────────────────────────────────────
 
   const currentEntityId = computed(() => editableItem.id || undefined)
-  const {
-    displayActivity,
-    addComment: persistComment,
-    loading: commentsLoading,
-  } = useComments(currentEntityId)
+  const { displayActivity, addComment: persistComment, loading: commentsLoading } = useComments(currentEntityId)
 
   const newComment = ref('')
   const handleAddComment = async () => {
@@ -120,9 +140,18 @@
 
   // ── Entity references ───────────────────────────────────────────────
 
-  const { addEntityRef, removeRef: removeEntityRef, openEntityRef: handleOpenEntityRef, createAndOpenEntityRef } = useEntityReferences(editableItem)
+  const {
+    addEntityRef,
+    removeRef: removeEntityRef,
+    openEntityRef: handleOpenEntityRef,
+    createAndOpenEntityRef,
+    createEntityAndLink,
+  } = useEntityReferences(editableItem)
   const handleAddEntityRef = (ref: EntityReference) => addEntityRef(ref)
   const handleCreatedEntityRef = (ref: EntityReference) => createAndOpenEntityRef(ref)
+  const handleCreateEntityOfType = (type: string, title: string) => {
+    void createEntityAndLink(type, title)
+  }
   const handleRemoveRef = (refId: string) => removeEntityRef(refId)
 
   const entityPickerOpen = ref(false)
@@ -131,7 +160,7 @@
   // ── Sidebar state ───────────────────────────────────────────────────
 
   const rightSidebarTab = ref<'references' | 'activity'>('references')
-  const rightSidebarW = ref(288)
+  const rightSidebarW = ref(360)
   const rightSidebarCollapsed = ref(false)
   const isResizingSidebar = ref(false)
 
@@ -206,7 +235,9 @@
         required: f.required || false,
         description: f.description || '',
         selectOptions: (f.selectOptions as { name: string; color?: string }[]) || [],
-        relation: f.relation ? { targetSchema: f.relation.targetSchema, cardinality: f.relation.cardinality } : undefined,
+        relation: f.relation
+          ? { targetSchema: f.relation.targetSchema, cardinality: f.relation.cardinality }
+          : undefined,
       }))
   })
 
@@ -228,13 +259,9 @@
   // Split into property fields (inline row) and content fields (main area)
   const PROPERTY_VALUE_TYPES = new Set(['select', 'multi_select', 'status', 'date', 'checkbox', 'people', 'number'])
 
-  const propertyFields = computed(() =>
-    schemaFields.value.filter((f) => PROPERTY_VALUE_TYPES.has(f.valueType)),
-  )
+  const propertyFields = computed(() => schemaFields.value.filter((f) => PROPERTY_VALUE_TYPES.has(f.valueType)))
 
-  const bodyFields = computed(() =>
-    schemaFields.value.filter((f) => !PROPERTY_VALUE_TYPES.has(f.valueType)),
-  )
+  const bodyFields = computed(() => schemaFields.value.filter((f) => !PROPERTY_VALUE_TYPES.has(f.valueType)))
 
   // ── Popover state per property field (keyed by field name) ──────────
 
@@ -289,6 +316,22 @@
       .trim()
   }
 
+  // ── Field value helpers ─────────────────────────────────────────────
+
+  function handleSelectOption(fieldName: string, optionName: string) {
+    editableItem[fieldName] = optionName
+    setPopoverOpen(fieldName, false)
+  }
+
+  function handleClearSelect(fieldName: string) {
+    editableItem[fieldName] = ''
+    setPopoverOpen(fieldName, false)
+  }
+
+  function handleToggleCheckbox(fieldName: string) {
+    editableItem[fieldName] = !editableItem[fieldName]
+  }
+
   // ── Save / Delete / Close ──────────────────────────────────────────
 
   const closeDialog = () => {
@@ -330,14 +373,20 @@
     :can-navigate-prev="canNavigatePrev"
     :can-navigate-next="canNavigateNext"
     :dialog-title="isCreateMode ? `New ${typeConfig.label}` : editableItem.title || typeConfig.label"
-    :dialog-description="isCreateMode ? `Create a new ${typeConfig.label.toLowerCase()}.` : `View and edit ${typeConfig.label.toLowerCase()} details.`"
+    :dialog-description="
+      isCreateMode
+        ? `Create a new ${typeConfig.label.toLowerCase()}.`
+        : `View and edit ${typeConfig.label.toLowerCase()} details.`
+    "
+    :summary="entitySummary"
+    :is-generating-summary="isGeneratingSummary"
     @update:open="emit('update:open', $event)"
     @update:title="editableItem.title = $event"
     @update:description="editableItem.description = $event"
     @close="closeDialog"
     @navigate-prev="emit('navigatePrev')"
-    @navigate-next="emit('navigateNext')">
-
+    @navigate-next="emit('navigateNext')"
+    @regenerate-summary="regenerateSummary">
     <!-- Header badges: Tags -->
     <template #header-badges>
       <template v-if="editableItem.tags">
@@ -350,209 +399,253 @@
     <template v-if="propertyFields.length > 0 || isUserTier" #properties>
       <template v-for="field in propertyFields" :key="field.name">
         <div class="group/field relative inline-flex items-center">
-        <!-- ── Select (with dropdown if options exist) ──────────────── -->
-        <UiPopover
-          v-if="field.valueType === 'select' && field.selectOptions.length > 0"
-          :open="isPopoverOpen(field.name)"
-          @update:open="setPopoverOpen(field.name, $event)">
-          <UiPopoverTrigger as-child>
-            <button
-              class="inline-flex items-center gap-1.5 px-2 py-1 rounded-lg transition-colors"
-              :class="editableItem[field.name] ? 'bg-muted/50 hover:bg-muted' : 'border border-dashed border-muted-foreground/40 text-muted-foreground hover:border-muted-foreground/60 hover:bg-muted/30'">
-              <Icon :name="getFieldIcon(field.valueType)" class="h-3.5 w-3.5" />
-              <span class="text-xs">{{ editableItem[field.name] || titleCase(field.name) }}</span>
-              <span v-if="field.required && !editableItem[field.name]" class="text-destructive text-[9px]">*</span>
-            </button>
-          </UiPopoverTrigger>
-          <UiPopoverContent align="start" class="w-44 p-1">
-            <button
-              v-for="opt in field.selectOptions"
-              :key="opt.name"
-              class="w-full px-2 py-1.5 text-xs text-left rounded hover:bg-muted flex items-center gap-2"
-              @click="editableItem[field.name] = opt.name; setPopoverOpen(field.name, false)">
-              <span
-                v-if="opt.color"
-                class="w-2 h-2 rounded-full shrink-0"
-                :style="{ backgroundColor: opt.color }" />
-              <span class="flex-1">{{ opt.name }}</span>
-              <Icon v-if="editableItem[field.name] === opt.name" name="lucide:check" class="h-3.5 w-3.5 text-primary" />
-            </button>
-            <button
-              v-if="editableItem[field.name]"
-              class="w-full px-2 py-1.5 text-xs text-left rounded hover:bg-muted text-muted-foreground border-t border-border mt-1 pt-1.5"
-              @click="editableItem[field.name] = ''; setPopoverOpen(field.name, false)">
-              Clear
-            </button>
-          </UiPopoverContent>
-        </UiPopover>
-
-        <!-- Select fallback (no options — free text) -->
-        <div v-else-if="field.valueType === 'select'" class="inline-flex items-center gap-1.5 px-2 py-1 rounded-lg bg-muted/30">
-          <Icon :name="getFieldIcon(field.valueType)" class="h-3.5 w-3.5 text-muted-foreground" />
-          <input
-            v-if="!isViewMode"
-            v-model="editableItem[field.name]"
-            type="text"
-            :placeholder="titleCase(field.name)"
-            class="bg-transparent text-xs outline-none w-20 placeholder:text-muted-foreground/50" />
-          <span v-else class="text-xs">{{ editableItem[field.name] || titleCase(field.name) }}</span>
-        </div>
-
-        <!-- ── Status (with colored dropdown) ───────────────────────── -->
-        <UiPopover
-          v-else-if="field.valueType === 'status' && field.selectOptions.length > 0"
-          :open="isPopoverOpen(field.name)"
-          @update:open="setPopoverOpen(field.name, $event)">
-          <UiPopoverTrigger as-child>
-            <button
-              class="inline-flex items-center gap-1.5 px-2 py-1 rounded-lg transition-colors"
-              :class="editableItem[field.name] ? 'bg-muted/50 hover:bg-muted' : 'border border-dashed border-muted-foreground/40 text-muted-foreground hover:border-muted-foreground/60 hover:bg-muted/30'">
-              <span
+          <!-- ── Select (with dropdown if options exist) ──────────────── -->
+          <UiPopover
+            v-if="field.valueType === 'select' && field.selectOptions.length > 0"
+            :open="isPopoverOpen(field.name)"
+            @update:open="setPopoverOpen(field.name, $event)">
+            <UiPopoverTrigger as-child>
+              <button
+                class="inline-flex items-center gap-1.5 px-2 py-1 rounded-lg transition-colors"
+                :class="
+                  editableItem[field.name]
+                    ? 'bg-muted/50 hover:bg-muted'
+                    : 'border border-dashed border-muted-foreground/40 text-muted-foreground hover:border-muted-foreground/60 hover:bg-muted/30'
+                ">
+                <Icon :name="getFieldIcon(field.valueType)" class="h-3.5 w-3.5" />
+                <span class="text-xs">{{ editableItem[field.name] || titleCase(field.name) }}</span>
+                <span v-if="field.required && !editableItem[field.name]" class="text-destructive text-[9px]">*</span>
+              </button>
+            </UiPopoverTrigger>
+            <UiPopoverContent align="start" class="w-44 p-1">
+              <button
+                v-for="opt in field.selectOptions"
+                :key="opt.name"
+                class="w-full px-2 py-1.5 text-xs text-left rounded hover:bg-muted flex items-center gap-2"
+                @click="handleSelectOption(field.name, opt.name)">
+                <span v-if="opt.color" class="w-2 h-2 rounded-full shrink-0" :style="{ backgroundColor: opt.color }" />
+                <span class="flex-1">{{ opt.name }}</span>
+                <Icon
+                  v-if="editableItem[field.name] === opt.name"
+                  name="lucide:check"
+                  class="h-3.5 w-3.5 text-primary" />
+              </button>
+              <button
                 v-if="editableItem[field.name]"
-                class="w-2 h-2 rounded-full shrink-0"
-                :style="{ backgroundColor: field.selectOptions.find(o => o.name === editableItem[field.name])?.color || 'var(--color-muted-foreground)' }" />
-              <Icon v-else name="lucide:circle-dot" class="h-3.5 w-3.5" />
-              <span class="text-xs">{{ editableItem[field.name] || titleCase(field.name) }}</span>
-            </button>
-          </UiPopoverTrigger>
-          <UiPopoverContent align="start" class="w-44 p-1">
-            <button
-              v-for="opt in field.selectOptions"
-              :key="opt.name"
-              class="w-full px-2 py-1.5 text-xs text-left rounded hover:bg-muted flex items-center gap-2"
-              @click="editableItem[field.name] = opt.name; setPopoverOpen(field.name, false)">
-              <span
-                class="w-2.5 h-2.5 rounded-full shrink-0"
-                :style="{ backgroundColor: opt.color || 'var(--color-muted-foreground)' }" />
-              <span class="flex-1">{{ opt.name }}</span>
-              <Icon v-if="editableItem[field.name] === opt.name" name="lucide:check" class="h-3.5 w-3.5 text-primary" />
-            </button>
-          </UiPopoverContent>
-        </UiPopover>
+                class="w-full px-2 py-1.5 text-xs text-left rounded hover:bg-muted text-muted-foreground border-t border-border mt-1 pt-1.5"
+                @click="handleClearSelect(field.name)">
+                Clear
+              </button>
+            </UiPopoverContent>
+          </UiPopover>
 
-        <!-- Status fallback (free text) -->
-        <div v-else-if="field.valueType === 'status'" class="inline-flex items-center gap-1.5 px-2 py-1 rounded-lg bg-muted/30">
-          <Icon name="lucide:circle-dot" class="h-3.5 w-3.5 text-muted-foreground" />
-          <input
-            v-if="!isViewMode"
-            v-model="editableItem[field.name]"
-            type="text"
-            :placeholder="titleCase(field.name)"
-            class="bg-transparent text-xs outline-none w-20 placeholder:text-muted-foreground/50" />
-          <span v-else class="text-xs">{{ editableItem[field.name] || titleCase(field.name) }}</span>
-        </div>
-
-        <!-- ── Multi-select (chip-style dropdown) ───────────────────── -->
-        <UiPopover
-          v-else-if="field.valueType === 'multi_select'"
-          :open="isPopoverOpen(field.name)"
-          @update:open="setPopoverOpen(field.name, $event)">
-          <UiPopoverTrigger as-child>
-            <button
-              class="inline-flex items-center gap-1 px-2 py-1 rounded-lg transition-colors"
-              :class="Array.isArray(editableItem[field.name]) && editableItem[field.name].length ? 'bg-muted/50 hover:bg-muted' : 'border border-dashed border-muted-foreground/40 text-muted-foreground hover:border-muted-foreground/60 hover:bg-muted/30'">
-              <Icon :name="getFieldIcon(field.valueType)" class="h-3.5 w-3.5" />
-              <template v-if="Array.isArray(editableItem[field.name]) && editableItem[field.name].length">
-                <span
-                  v-for="val in editableItem[field.name].slice(0, 3)"
-                  :key="val"
-                  class="inline-flex items-center px-1.5 py-0 rounded text-[10px] bg-primary/10 text-primary">
-                  {{ val }}
-                </span>
-                <span v-if="editableItem[field.name].length > 3" class="text-[10px] text-muted-foreground">
-                  +{{ editableItem[field.name].length - 3 }}
-                </span>
-              </template>
-              <span v-else class="text-xs">{{ titleCase(field.name) }}</span>
-            </button>
-          </UiPopoverTrigger>
-          <UiPopoverContent align="start" class="w-48 p-1">
-            <button
-              v-for="opt in field.selectOptions"
-              :key="opt.name"
-              class="w-full px-2 py-1.5 text-xs text-left rounded hover:bg-muted flex items-center gap-2"
-              @click="toggleMultiSelectValue(field.name, opt.name)">
-              <Icon
-                :name="isMultiSelectSelected(field.name, opt.name) ? 'lucide:check-square' : 'lucide:square'"
-                class="h-3.5 w-3.5"
-                :class="isMultiSelectSelected(field.name, opt.name) ? 'text-primary' : 'text-muted-foreground'" />
-              <span
-                v-if="opt.color"
-                class="w-2 h-2 rounded-full shrink-0"
-                :style="{ backgroundColor: opt.color }" />
-              <span class="flex-1">{{ opt.name }}</span>
-            </button>
-          </UiPopoverContent>
-        </UiPopover>
-
-        <!-- ── Date ─────────────────────────────────────────────────── -->
-        <div v-else-if="field.valueType === 'date'" class="inline-flex items-center gap-1.5 px-2 py-1 rounded-lg bg-muted/30">
-          <Icon :name="getFieldIcon(field.valueType)" class="h-3.5 w-3.5 text-muted-foreground" />
-          <input
-            v-if="!isViewMode"
-            v-model="editableItem[field.name]"
-            type="date"
-            class="bg-transparent text-xs outline-none placeholder:text-muted-foreground/50" />
-          <span v-else-if="editableItem[field.name]" class="text-xs">
-            {{ new Date(editableItem[field.name]).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) }}
-          </span>
-          <span v-else class="text-xs text-muted-foreground/50">{{ titleCase(field.name) }}</span>
-        </div>
-
-        <!-- ── Number ───────────────────────────────────────────────── -->
-        <UiPopover
-          v-else-if="field.valueType === 'number'"
-          :open="isPopoverOpen(field.name)"
-          @update:open="setPopoverOpen(field.name, $event)">
-          <UiPopoverTrigger as-child>
-            <button
-              class="inline-flex items-center gap-1.5 px-2 py-1 rounded-lg transition-colors"
-              :class="editableItem[field.name] != null && editableItem[field.name] !== '' ? 'bg-muted/50 hover:bg-muted' : 'border border-dashed border-muted-foreground/40 text-muted-foreground hover:border-muted-foreground/60 hover:bg-muted/30'">
-              <Icon :name="getFieldIcon(field.valueType)" class="h-3.5 w-3.5" />
-              <span class="text-xs">{{ editableItem[field.name] != null && editableItem[field.name] !== '' ? editableItem[field.name] : titleCase(field.name) }}</span>
-            </button>
-          </UiPopoverTrigger>
-          <UiPopoverContent align="start" class="w-40 p-2">
+          <!-- Select fallback (no options — free text) -->
+          <div
+            v-else-if="field.valueType === 'select'"
+            class="inline-flex items-center gap-1.5 px-2 py-1 rounded-lg bg-muted/30">
+            <Icon :name="getFieldIcon(field.valueType)" class="h-3.5 w-3.5 text-muted-foreground" />
             <input
-              v-model.number="editableItem[field.name]"
-              type="number"
+              v-if="!isViewMode"
+              v-model="editableItem[field.name]"
+              type="text"
               :placeholder="titleCase(field.name)"
-              class="w-full h-7 rounded-md border border-border bg-transparent text-xs px-2 outline-none"
-              @keydown.enter="setPopoverOpen(field.name, false)" />
-          </UiPopoverContent>
-        </UiPopover>
+              class="bg-transparent text-xs outline-none w-20 placeholder:text-muted-foreground/50" />
+            <span v-else class="text-xs">{{ editableItem[field.name] || titleCase(field.name) }}</span>
+          </div>
 
-        <!-- ── Checkbox ─────────────────────────────────────────────── -->
-        <button
-          v-else-if="field.valueType === 'checkbox'"
-          class="inline-flex items-center gap-1.5 px-2 py-1 rounded-lg text-xs transition-colors"
-          :class="editableItem[field.name] ? 'bg-primary/10 text-primary' : 'text-muted-foreground hover:text-foreground hover:bg-muted/50'"
-          :disabled="isViewMode"
-          @click="editableItem[field.name] = !editableItem[field.name]">
-          <Icon :name="editableItem[field.name] ? 'lucide:check-square' : 'lucide:square'" class="h-3.5 w-3.5" />
-          <span>{{ titleCase(field.name) }}</span>
-        </button>
+          <!-- ── Status (with colored dropdown) ───────────────────────── -->
+          <UiPopover
+            v-else-if="field.valueType === 'status' && field.selectOptions.length > 0"
+            :open="isPopoverOpen(field.name)"
+            @update:open="setPopoverOpen(field.name, $event)">
+            <UiPopoverTrigger as-child>
+              <button
+                class="inline-flex items-center gap-1.5 px-2 py-1 rounded-lg transition-colors"
+                :class="
+                  editableItem[field.name]
+                    ? 'bg-muted/50 hover:bg-muted'
+                    : 'border border-dashed border-muted-foreground/40 text-muted-foreground hover:border-muted-foreground/60 hover:bg-muted/30'
+                ">
+                <span
+                  v-if="editableItem[field.name]"
+                  class="w-2 h-2 rounded-full shrink-0"
+                  :style="{
+                    backgroundColor:
+                      field.selectOptions.find((o) => o.name === editableItem[field.name])?.color ||
+                      'var(--color-muted-foreground)',
+                  }" />
+                <Icon v-else name="lucide:circle-dot" class="h-3.5 w-3.5" />
+                <span class="text-xs">{{ editableItem[field.name] || titleCase(field.name) }}</span>
+              </button>
+            </UiPopoverTrigger>
+            <UiPopoverContent align="start" class="w-44 p-1">
+              <button
+                v-for="opt in field.selectOptions"
+                :key="opt.name"
+                class="w-full px-2 py-1.5 text-xs text-left rounded hover:bg-muted flex items-center gap-2"
+                @click="handleSelectOption(field.name, opt.name)">
+                <span
+                  class="w-2.5 h-2.5 rounded-full shrink-0"
+                  :style="{ backgroundColor: opt.color || 'var(--color-muted-foreground)' }" />
+                <span class="flex-1">{{ opt.name }}</span>
+                <Icon
+                  v-if="editableItem[field.name] === opt.name"
+                  name="lucide:check"
+                  class="h-3.5 w-3.5 text-primary" />
+              </button>
+            </UiPopoverContent>
+          </UiPopover>
 
-        <!-- ── People (text fallback) ───────────────────────────────── -->
-        <div v-else-if="field.valueType === 'people'" class="inline-flex items-center gap-1.5 px-2 py-1 rounded-lg bg-muted/30">
-          <Icon :name="getFieldIcon(field.valueType)" class="h-3.5 w-3.5 text-muted-foreground" />
-          <input
-            v-if="!isViewMode"
-            v-model="editableItem[field.name]"
-            type="text"
-            :placeholder="titleCase(field.name)"
-            class="bg-transparent text-xs outline-none w-24 placeholder:text-muted-foreground/50" />
-          <span v-else class="text-xs">{{ editableItem[field.name] || titleCase(field.name) }}</span>
-        </div>
+          <!-- Status fallback (free text) -->
+          <div
+            v-else-if="field.valueType === 'status'"
+            class="inline-flex items-center gap-1.5 px-2 py-1 rounded-lg bg-muted/30">
+            <Icon name="lucide:circle-dot" class="h-3.5 w-3.5 text-muted-foreground" />
+            <input
+              v-if="!isViewMode"
+              v-model="editableItem[field.name]"
+              type="text"
+              :placeholder="titleCase(field.name)"
+              class="bg-transparent text-xs outline-none w-20 placeholder:text-muted-foreground/50" />
+            <span v-else class="text-xs">{{ editableItem[field.name] || titleCase(field.name) }}</span>
+          </div>
 
-        <!-- Trash button — user-tier edit mode only -->
-        <button
-          v-if="isUserTier && !isViewMode"
-          class="ml-0.5 h-5 w-5 rounded flex items-center justify-center text-muted-foreground/0 group-hover/field:text-muted-foreground/50 hover:text-destructive! hover:bg-destructive/10 transition-colors"
-          :title="`Remove ${titleCase(field.name)} field`"
-          @click.stop="removeFieldFromType(typeConfig.schemaId, field.name)">
-          <Icon name="lucide:x" class="h-3 w-3" />
-        </button>
+          <!-- ── Multi-select (chip-style dropdown) ───────────────────── -->
+          <UiPopover
+            v-else-if="field.valueType === 'multi_select'"
+            :open="isPopoverOpen(field.name)"
+            @update:open="setPopoverOpen(field.name, $event)">
+            <UiPopoverTrigger as-child>
+              <button
+                class="inline-flex items-center gap-1 px-2 py-1 rounded-lg transition-colors"
+                :class="
+                  Array.isArray(editableItem[field.name]) && editableItem[field.name].length
+                    ? 'bg-muted/50 hover:bg-muted'
+                    : 'border border-dashed border-muted-foreground/40 text-muted-foreground hover:border-muted-foreground/60 hover:bg-muted/30'
+                ">
+                <Icon :name="getFieldIcon(field.valueType)" class="h-3.5 w-3.5" />
+                <template v-if="Array.isArray(editableItem[field.name]) && editableItem[field.name].length">
+                  <span
+                    v-for="val in editableItem[field.name].slice(0, 3)"
+                    :key="val"
+                    class="inline-flex items-center px-1.5 py-0 rounded text-[10px] bg-primary/10 text-primary">
+                    {{ val }}
+                  </span>
+                  <span v-if="editableItem[field.name].length > 3" class="text-[10px] text-muted-foreground">
+                    +{{ editableItem[field.name].length - 3 }}
+                  </span>
+                </template>
+                <span v-else class="text-xs">{{ titleCase(field.name) }}</span>
+              </button>
+            </UiPopoverTrigger>
+            <UiPopoverContent align="start" class="w-48 p-1">
+              <button
+                v-for="opt in field.selectOptions"
+                :key="opt.name"
+                class="w-full px-2 py-1.5 text-xs text-left rounded hover:bg-muted flex items-center gap-2"
+                @click="toggleMultiSelectValue(field.name, opt.name)">
+                <Icon
+                  :name="isMultiSelectSelected(field.name, opt.name) ? 'lucide:check-square' : 'lucide:square'"
+                  class="h-3.5 w-3.5"
+                  :class="isMultiSelectSelected(field.name, opt.name) ? 'text-primary' : 'text-muted-foreground'" />
+                <span v-if="opt.color" class="w-2 h-2 rounded-full shrink-0" :style="{ backgroundColor: opt.color }" />
+                <span class="flex-1">{{ opt.name }}</span>
+              </button>
+            </UiPopoverContent>
+          </UiPopover>
+
+          <!-- ── Date ─────────────────────────────────────────────────── -->
+          <div
+            v-else-if="field.valueType === 'date'"
+            class="inline-flex items-center gap-1.5 px-2 py-1 rounded-lg bg-muted/30">
+            <Icon :name="getFieldIcon(field.valueType)" class="h-3.5 w-3.5 text-muted-foreground" />
+            <input
+              v-if="!isViewMode"
+              v-model="editableItem[field.name]"
+              type="date"
+              class="bg-transparent text-xs outline-none placeholder:text-muted-foreground/50" />
+            <span v-else-if="editableItem[field.name]" class="text-xs">
+              {{
+                new Date(editableItem[field.name]).toLocaleDateString('en-US', {
+                  month: 'short',
+                  day: 'numeric',
+                  year: 'numeric',
+                })
+              }}
+            </span>
+            <span v-else class="text-xs text-muted-foreground/50">{{ titleCase(field.name) }}</span>
+          </div>
+
+          <!-- ── Number ───────────────────────────────────────────────── -->
+          <UiPopover
+            v-else-if="field.valueType === 'number'"
+            :open="isPopoverOpen(field.name)"
+            @update:open="setPopoverOpen(field.name, $event)">
+            <UiPopoverTrigger as-child>
+              <button
+                class="inline-flex items-center gap-1.5 px-2 py-1 rounded-lg transition-colors"
+                :class="
+                  editableItem[field.name] != null && editableItem[field.name] !== ''
+                    ? 'bg-muted/50 hover:bg-muted'
+                    : 'border border-dashed border-muted-foreground/40 text-muted-foreground hover:border-muted-foreground/60 hover:bg-muted/30'
+                ">
+                <Icon :name="getFieldIcon(field.valueType)" class="h-3.5 w-3.5" />
+                <span class="text-xs">
+                  {{
+                    editableItem[field.name] != null && editableItem[field.name] !== ''
+                      ? editableItem[field.name]
+                      : titleCase(field.name)
+                  }}
+                </span>
+              </button>
+            </UiPopoverTrigger>
+            <UiPopoverContent align="start" class="w-40 p-2">
+              <input
+                v-model.number="editableItem[field.name]"
+                type="number"
+                :placeholder="titleCase(field.name)"
+                class="w-full h-7 rounded-md border border-border bg-transparent text-xs px-2 outline-none"
+                @keydown.enter="setPopoverOpen(field.name, false)" />
+            </UiPopoverContent>
+          </UiPopover>
+
+          <!-- ── Checkbox ─────────────────────────────────────────────── -->
+          <button
+            v-else-if="field.valueType === 'checkbox'"
+            class="inline-flex items-center gap-1.5 px-2 py-1 rounded-lg text-xs transition-colors"
+            :class="
+              editableItem[field.name]
+                ? 'bg-primary/10 text-primary'
+                : 'text-muted-foreground hover:text-foreground hover:bg-muted/50'
+            "
+            :disabled="isViewMode"
+            @click="handleToggleCheckbox(field.name)">
+            <Icon :name="editableItem[field.name] ? 'lucide:check-square' : 'lucide:square'" class="h-3.5 w-3.5" />
+            <span>{{ titleCase(field.name) }}</span>
+          </button>
+
+          <!-- ── People (text fallback) ───────────────────────────────── -->
+          <div
+            v-else-if="field.valueType === 'people'"
+            class="inline-flex items-center gap-1.5 px-2 py-1 rounded-lg bg-muted/30">
+            <Icon :name="getFieldIcon(field.valueType)" class="h-3.5 w-3.5 text-muted-foreground" />
+            <input
+              v-if="!isViewMode"
+              v-model="editableItem[field.name]"
+              type="text"
+              :placeholder="titleCase(field.name)"
+              class="bg-transparent text-xs outline-none w-24 placeholder:text-muted-foreground/50" />
+            <span v-else class="text-xs">{{ editableItem[field.name] || titleCase(field.name) }}</span>
+          </div>
+
+          <!-- Trash button — user-tier edit mode only -->
+          <button
+            v-if="isUserTier && !isViewMode"
+            class="ml-0.5 h-5 w-5 rounded flex items-center justify-center text-muted-foreground/0 group-hover/field:text-muted-foreground/50 hover:text-destructive! hover:bg-destructive/10 transition-colors"
+            :title="`Remove ${titleCase(field.name)} field`"
+            @click.stop="removeFieldFromType(typeConfig.schemaId, field.name)">
+            <Icon name="lucide:x" class="h-3 w-3" />
+          </button>
         </div>
       </template>
 
@@ -560,7 +653,7 @@
       <AddPropertyPopover
         v-if="isUserTier && !isViewMode"
         :schema-id="typeConfig.schemaId"
-        :existing-field-names="schemaFields.map(f => f.name)"
+        :existing-field-names="schemaFields.map((f) => f.name)"
         @added="() => {}" />
     </template>
 
@@ -622,7 +715,10 @@
                   mathematics
                   templates
                   :entity-id="editableItem.id" />
-                <div v-else-if="editableItem[field.name]" class="prose prose-sm max-w-none" v-html="editableItem[field.name]" />
+                <div
+                  v-else-if="editableItem[field.name]"
+                  class="prose prose-sm max-w-none"
+                  v-html="editableItem[field.name]" />
                 <p v-else class="text-sm text-muted-foreground/50 italic">No content</p>
               </div>
             </div>
@@ -728,7 +824,8 @@
                 <p class="text-[11px] text-muted-foreground mb-2">
                   Linked entities are shown in the References sidebar.
                   <template v-if="field.relation?.targetSchema">
-                    Target: <code class="text-[10px] bg-muted/50 px-1 py-0.5 rounded">{{ field.relation.targetSchema }}</code>
+                    Target:
+                    <code class="text-[10px] bg-muted/50 px-1 py-0.5 rounded">{{ field.relation.targetSchema }}</code>
                   </template>
                 </p>
                 <button
@@ -796,17 +893,27 @@
         <div class="flex border-b border-border shrink-0">
           <button
             class="flex-1 px-3 py-2 text-[10px] font-medium uppercase tracking-wide transition-colors"
-            :class="rightSidebarTab === 'references' ? 'text-foreground border-b-2 border-primary' : 'text-muted-foreground hover:text-foreground'"
+            :class="
+              rightSidebarTab === 'references'
+                ? 'text-foreground border-b-2 border-primary'
+                : 'text-muted-foreground hover:text-foreground'
+            "
             @click="rightSidebarTab = 'references'">
             References
           </button>
           <button
             v-if="!isCreateMode"
             class="flex-1 px-3 py-2 text-[10px] font-medium uppercase tracking-wide transition-colors"
-            :class="rightSidebarTab === 'activity' ? 'text-foreground border-b-2 border-primary' : 'text-muted-foreground hover:text-foreground'"
+            :class="
+              rightSidebarTab === 'activity'
+                ? 'text-foreground border-b-2 border-primary'
+                : 'text-muted-foreground hover:text-foreground'
+            "
             @click="rightSidebarTab = 'activity'">
             Activity
-            <span v-if="displayActivity.length" class="ml-1 text-[9px] bg-muted rounded-full px-1.5 py-0.5">{{ displayActivity.length }}</span>
+            <span v-if="displayActivity.length" class="ml-1 text-[9px] bg-muted rounded-full px-1.5 py-0.5">
+              {{ displayActivity.length }}
+            </span>
           </button>
           <!-- Collapse button -->
           <button
@@ -825,8 +932,19 @@
             :readonly="isViewMode"
             @open-entity="handleOpenEntityRef"
             @remove-ref="handleRemoveRef"
-            @add-entity="() => { entityPickerFilterType = undefined; entityPickerOpen = true }"
-            @add-entity-of-type="(type: string) => { entityPickerFilterType = type; entityPickerOpen = true }" />
+            @add-entity="
+              () => {
+                entityPickerFilterType = undefined
+                entityPickerOpen = true
+              }
+            "
+            @create-entity="handleCreateEntityOfType"
+            @add-entity-of-type="
+              (type: string) => {
+                entityPickerFilterType = type
+                entityPickerOpen = true
+              }
+            " />
           <!-- Activity tab -->
           <div v-if="rightSidebarTab === 'activity' && !isCreateMode" class="p-4 space-y-2">
             <div v-if="commentsLoading" class="flex items-center py-2">
@@ -925,11 +1043,7 @@
           <UiDropdownMenuContent align="end" class="w-40">
             <UiDropdownMenuItem icon="lucide:share" title="Share" @click="showShareDialog = true" />
             <UiDropdownMenuSeparator />
-            <UiDropdownMenuItem
-              icon="lucide:trash-2"
-              title="Delete"
-              variant="destructive"
-              @click="handleDelete" />
+            <UiDropdownMenuItem icon="lucide:trash-2" title="Delete" variant="destructive" @click="handleDelete" />
           </UiDropdownMenuContent>
         </UiDropdownMenu>
       </template>
@@ -941,7 +1055,12 @@
   </EntityDialogShell>
 
   <!-- Entity Reference Picker -->
-  <EntityReferencePicker v-model:open="entityPickerOpen" :exclude-id="editableItem.id" :filter-type="entityPickerFilterType" @select="handleAddEntityRef" @created="handleCreatedEntityRef" />
+  <EntityReferencePicker
+    v-model:open="entityPickerOpen"
+    :exclude-id="editableItem.id"
+    :filter-type="entityPickerFilterType"
+    @select="handleAddEntityRef"
+    @created="handleCreatedEntityRef" />
 
   <!-- Share Dialog -->
   <ShareDialog

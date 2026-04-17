@@ -90,31 +90,29 @@ export function useGmail() {
 
   const connections = computed<IntegrationConnection[]>(() => getConnections('gmail'))
 
-  const activeConnections = computed(() =>
-    connections.value.filter((c) => c.connectionStatus === 'connected'),
-  )
+  const activeConnections = computed(() => connections.value.filter((c) => c.connectionStatus === 'connected'))
 
   const connection = computed<IntegrationConnection | undefined>(() => getConnection('gmail'))
 
   const isConnected = computed(() => activeConnections.value.length > 0)
 
   function resolveConnectionId(connectionId?: string): string | null {
-    const conn = connectionId
-      ? connections.value.find((c) => c.id === connectionId)
-      : connection.value
+    const conn = connectionId ? connections.value.find((c) => c.id === connectionId) : connection.value
     if (!conn || conn.connectionStatus !== 'connected') return null
     return conn.id.startsWith('entity:') ? conn.id : `entity:${conn.id}`
   }
 
   // ── Thread list ──────────────────────────────────────────────────
 
-  async function fetchThreads(opts: {
-    labelId?: string
-    q?: string
-    maxResults?: number
-    pageToken?: string
-    connectionId?: string
-  } = {}): Promise<GmailThreadSummary[]> {
+  async function fetchThreads(
+    opts: {
+      labelId?: string
+      q?: string
+      maxResults?: number
+      pageToken?: string
+      connectionId?: string
+    } = {},
+  ): Promise<{ threads: GmailThreadSummary[]; nextPageToken?: string }> {
     const connId = resolveConnectionId(opts.connectionId)
     if (!connId) throw new Error('Not connected to Gmail')
 
@@ -127,7 +125,7 @@ export function useGmail() {
     const response = await $fetch<{ threads: GmailThreadSummary[]; nextPageToken?: string }>(
       `/api/integrations/gmail/messages?${params.toString()}`,
     )
-    return response.threads || []
+    return { threads: response.threads || [], nextPageToken: response.nextPageToken }
   }
 
   // ── Single thread ────────────────────────────────────────────────
@@ -182,13 +180,10 @@ export function useGmail() {
     if (!connId) throw new Error('Not connected to Gmail')
 
     try {
-      const response = await $fetch<{ ok: boolean; label: GmailLabel }>(
-        '/api/integrations/gmail/labels',
-        {
-          method: 'POST',
-          body: { connectionId: connId, action: 'create', name },
-        },
-      )
+      const response = await $fetch<{ ok: boolean; label: GmailLabel }>('/api/integrations/gmail/labels', {
+        method: 'POST',
+        body: { connectionId: connId, action: 'create', name },
+      })
       return response.label
     } catch (err) {
       console.error('[useGmail] Failed to create label:', err)
@@ -228,13 +223,19 @@ export function useGmail() {
    *
    * Entity ID: `entity:gmail-<threadId>`
    */
-  async function persistThreadToTql(thread: GmailThreadFull): Promise<string> {
+  async function persistThreadToTql(thread: GmailThreadFull, connectionId?: string): Promise<string> {
     const firstMsg = thread.messages[0]
     if (!firstMsg) throw new Error('Thread has no messages')
 
     const eid = toEntityId(`gmail-${thread.id}`)
 
-    const data = {
+    // Resolve provenance connection up-front so we can persist the id as an
+    // attribute on the email (for multi-account disambiguation) and then
+    // create the graph edge after the node exists.
+    const conn = connectionId ? connections.value.find((c) => c.id === connectionId) : connection.value
+    const connEntityId = conn ? (conn.id.startsWith('entity:') ? conn.id : toEntityId(conn.id)) : undefined
+
+    const data: Record<string, any> = {
       type: 'email',
       title: firstMsg.subject || '(no subject)',
       subject: firstMsg.subject,
@@ -254,6 +255,7 @@ export function useGmail() {
       gmailMessageId: firstMsg.id,
       gmailThreadId: thread.id,
       pinned: false,
+      ...(connEntityId ? { connectionId: connEntityId } : {}),
     }
 
     await mutate({
@@ -262,6 +264,17 @@ export function useGmail() {
       type: 'entity',
       data,
     })
+
+    // Provenance edge: persisted email → source integration connection.
+    // Idempotent — kernel dedupes duplicate edges.
+    if (connEntityId) {
+      await mutate({
+        action: 'link',
+        e1: eid,
+        relation: 'derivedFrom',
+        e2: connEntityId,
+      })
+    }
 
     return eid
   }
@@ -277,9 +290,7 @@ export function useGmail() {
     relation: 'references' | 'mentions' = 'references',
   ): Promise<void> {
     const emailEntityId = await persistThreadToTql(thread)
-    const targetId = targetEntityId.startsWith('entity:')
-      ? targetEntityId
-      : toEntityId(targetEntityId)
+    const targetId = targetEntityId.startsWith('entity:') ? targetEntityId : toEntityId(targetEntityId)
 
     await mutate({
       action: 'link',
@@ -302,9 +313,7 @@ export function useGmail() {
   }
 
   async function disconnect(connectionId?: string): Promise<void> {
-    const conn = connectionId
-      ? connections.value.find((c) => c.id === connectionId)
-      : connection.value
+    const conn = connectionId ? connections.value.find((c) => c.id === connectionId) : connection.value
     if (!conn) return
 
     try {

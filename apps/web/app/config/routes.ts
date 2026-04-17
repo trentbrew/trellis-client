@@ -360,6 +360,10 @@ export const ROUTE_PATHS = {
     ontology: '/database/ontology',
     activity: '/database/activity',
   },
+  contacts: {
+    root: '/contacts',
+    person: (id: string) => `/contacts/${id}`,
+  },
   graph: '/graph',
   neu: '/neu',
   admin: {
@@ -593,6 +597,7 @@ export function parseFullPath(path: string): ParsedPath {
     'learn',
     'graph',
     'calendar',
+    'contacts',
     'documents',
     'invite',
     'messages',

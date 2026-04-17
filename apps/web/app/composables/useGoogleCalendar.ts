@@ -43,7 +43,11 @@ export type GCalSyncStatus = 'idle' | 'syncing' | 'error'
 
 // ── GCal event → TQL entity mapping ──────────────────────────────────
 
-function mapGCalEventToEntityData(gcalEvent: GCalEvent, calendarId: string): Record<string, any> {
+function mapGCalEventToEntityData(
+  gcalEvent: GCalEvent,
+  calendarId: string,
+  connectionId?: string,
+): Record<string, any> {
   const isAllDay = !!gcalEvent.start?.date
   const startDate = isAllDay ? gcalEvent.start!.date! : gcalEvent.start?.dateTime?.slice(0, 10) || ''
   const endDate = isAllDay ? gcalEvent.end?.date || startDate : gcalEvent.end?.dateTime?.slice(0, 10) || startDate
@@ -70,6 +74,7 @@ function mapGCalEventToEntityData(gcalEvent: GCalEvent, calendarId: string): Rec
     googleUpdatedAt: gcalEvent.updated || '',
     gcalDeleted: false,
     ...(gcalEvent.recurringEventId ? { recurringEventId: gcalEvent.recurringEventId } : {}),
+    ...(connectionId ? { connectionId } : {}),
   }
 }
 
@@ -173,10 +178,13 @@ export function useGoogleCalendar() {
       const calendarId = opts?.calendarId || 'primary'
       let upsertCount = 0
 
+      // Resolve the connection entity id for provenance linking
+      const connEntityId = conn.id.startsWith('entity:') ? conn.id : toEntityId(conn.id)
+
       for (const gcalEvent of events) {
         if (!gcalEvent.id) continue
 
-        const entityData = mapGCalEventToEntityData(gcalEvent, calendarId)
+        const entityData = mapGCalEventToEntityData(gcalEvent, calendarId, connEntityId)
         const eid = toEntityId(gcalEntityId(gcalEvent.id))
 
         await mutate({
@@ -185,6 +193,16 @@ export function useGoogleCalendar() {
           type: 'entity',
           data: entityData,
         })
+
+        // Provenance edge: synced event → source integration connection.
+        // Idempotent — the kernel dedupes duplicate edges.
+        await mutate({
+          action: 'link',
+          e1: eid,
+          relation: 'derivedFrom',
+          e2: connEntityId,
+        })
+
         upsertCount++
       }
 

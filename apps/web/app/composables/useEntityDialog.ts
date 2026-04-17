@@ -35,11 +35,7 @@ export interface UseEntityDialogOptions {
   beforeSave?: (_item: any) => void | Promise<void>
 }
 
-export function useEntityDialog(
-  props: EntityDialogProps,
-  emit: EntityDialogEmit,
-  options: UseEntityDialogOptions,
-) {
+export function useEntityDialog(props: EntityDialogProps, emit: EntityDialogEmit, options: UseEntityDialogOptions) {
   const { user: currentUser } = useInstantAuth()
 
   // ── Mode ─────────────────────────────────────────────────────────
@@ -111,11 +107,7 @@ export function useEntityDialog(
 
   // ── Comments ─────────────────────────────────────────────────────
   const currentEntityId = computed(() => editableItem.id || undefined)
-  const {
-    displayActivity,
-    addComment: persistComment,
-    loading: commentsLoading,
-  } = useComments(currentEntityId)
+  const { displayActivity, addComment: persistComment, loading: commentsLoading } = useComments(currentEntityId)
 
   const newComment = ref('')
   async function handleAddComment() {
@@ -131,22 +123,82 @@ export function useEntityDialog(
     beforeSave: options.beforeSave,
   })
 
+  // ── AI summary ──────────────────────────────────────────────────
+  // Lazy-generates a 1–3 sentence summary of the entity's description
+  // (persisted as `summary`). Rendered in the dialog header; composable
+  // dedupes via source-hash, so the watcher is safe to fire often.
+  const {
+    ensure: _ensureSummary,
+    regenerate: _regenerateSummary,
+    isGenerating: _isSummaryGenerating,
+  } = useEntitySummary()
+
+  watch(
+    () => [editableItem.id, editableItem.description] as const,
+    () => {
+      if (isCreateMode.value) return
+      if (!editableItem.id || !editableItem.description) return
+      void _ensureSummary(editableItem)
+    },
+    { immediate: true },
+  )
+
+  const entitySummary = computed(() => (editableItem.summary || '').trim())
+  const isGeneratingSummary = computed(() => !!editableItem.id && _isSummaryGenerating(editableItem.id))
+  function regenerateSummary() {
+    if (!editableItem.id) return
+    void _regenerateSummary(editableItem)
+  }
+
   // ── Entity references ────────────────────────────────────────────
   const {
     addEntityRef,
     removeRef: removeEntityRef,
     openEntityRef: handleOpenEntityRef,
     createAndOpenEntityRef,
+    createEntityAndLink,
   } = useEntityReferences(editableItem)
 
   const entityPickerOpen = ref(false)
   const entityPickerFilterType = ref<string | undefined>(undefined)
+
+  // ── Right sidebar layout ─────────────────────────────────────────
+  const rightSidebarW = ref(360)
+  const rightSidebarCollapsed = ref(false)
+  const isResizingSidebar = ref(false)
+
+  function startRightSidebarResize(e: PointerEvent) {
+    e.preventDefault()
+    e.stopPropagation()
+    const el = e.currentTarget as HTMLElement
+    el.setPointerCapture(e.pointerId)
+    isResizingSidebar.value = true
+    const startX = e.clientX
+    const startW = rightSidebarW.value
+    document.body.style.cursor = 'ew-resize'
+    const onMove = (ev: PointerEvent) => {
+      const dx = ev.clientX - startX
+      rightSidebarW.value = Math.max(240, Math.min(560, startW - dx))
+    }
+    const onUp = () => {
+      isResizingSidebar.value = false
+      document.body.style.cursor = ''
+      el.releasePointerCapture(e.pointerId)
+      el.removeEventListener('pointermove', onMove)
+      el.removeEventListener('pointerup', onUp)
+    }
+    el.addEventListener('pointermove', onMove)
+    el.addEventListener('pointerup', onUp)
+  }
 
   function handleAddEntityRef(ref: EntityReference) {
     addEntityRef(ref)
   }
   function handleCreatedEntityRef(ref: EntityReference) {
     createAndOpenEntityRef(ref)
+  }
+  function handleCreateEntityOfType(type: string, title: string) {
+    void createEntityAndLink(type, title)
   }
   function handleRemoveRef(refId: string) {
     removeEntityRef(refId)
@@ -215,13 +267,25 @@ export function useEntityDialog(
     saveStatus,
     formatLastSaved,
 
+    // AI summary
+    entitySummary,
+    isGeneratingSummary,
+    regenerateSummary,
+
     // Entity references
     entityPickerOpen,
     entityPickerFilterType,
     handleAddEntityRef,
     handleCreatedEntityRef,
+    handleCreateEntityOfType,
     handleRemoveRef,
     handleOpenEntityRef,
+
+    // Right sidebar layout
+    rightSidebarW,
+    rightSidebarCollapsed,
+    isResizingSidebar,
+    startRightSidebarResize,
 
     // Owners
     ownerSearch,

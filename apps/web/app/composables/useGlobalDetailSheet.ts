@@ -11,6 +11,7 @@ export type DetailSheetVariant = 'sheet' | 'dialog' | 'fullscreen'
 export type EntityDetailVariant =
   | 'task'
   | 'event'
+  | 'email'
   | 'payment'
   | 'deadline'
   | 'reminder'
@@ -104,6 +105,7 @@ export function useGlobalDetailSheet(): GlobalDetailSheetState & GlobalDetailShe
     const typeMap: Record<string, EntityDetailVariant> = {
       task: 'task',
       event: 'event',
+      email: 'email',
       payment: 'payment',
       deadline: 'deadline',
       reminder: 'reminder',

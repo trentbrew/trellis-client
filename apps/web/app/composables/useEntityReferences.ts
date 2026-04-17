@@ -1,8 +1,10 @@
 import type { Entity, EntityReference, EntityType, Reference } from '~/types/entity'
-import { isEntityReference } from '~/types/entity'
+import { createDefaultItem, isEntityReference } from '~/types/entity'
 import { getCurrentInstance } from 'vue'
 import { DIALOG_ENTITY_CONTEXT_KEY } from '~/composables/useDialogStack'
 import { entityId as toEntityId } from '~/lib/tql-namespace'
+import { useEntities } from '~/composables/useEntities'
+import { getEntityTypeConfig } from '~/config/entityRegistry'
 
 /**
  * Composable for bidirectional entity reference management.
@@ -26,11 +28,14 @@ export function useEntityReferences(
   // Provide entity context so nested TipTap NodeViews (e.g. MentionChip)
   // can navigate to referenced entities via the dialog stack.
   if (getCurrentInstance()) {
-    provide(DIALOG_ENTITY_CONTEXT_KEY, reactive({
-      id: computed(() => editableItem.id),
-      title: computed(() => editableItem.title),
-      type: computed(() => editableItem.type),
-    }))
+    provide(
+      DIALOG_ENTITY_CONTEXT_KEY,
+      reactive({
+        id: computed(() => editableItem.id),
+        title: computed(() => editableItem.title),
+        type: computed(() => editableItem.type),
+      }),
+    )
   }
 
   /**
@@ -41,9 +46,7 @@ export function useEntityReferences(
     if (!editableItem.references) editableItem.references = []
 
     // Prevent duplicate outgoing references
-    const exists = editableItem.references.some(
-      (r) => isEntityReference(r) && r.entityId === ref.entityId,
-    )
+    const exists = editableItem.references.some((r) => isEntityReference(r) && r.entityId === ref.entityId)
     if (exists) return
 
     // 1. Add to local state for immediate UI feedback
@@ -164,10 +167,42 @@ export function useEntityReferences(
     dialogStack.push(ref.entityId, ref.entityType, targetItem)
   }
 
+  /**
+   * Create a new entity of the given type + title, then link it as a reference
+   * and open it in a stacked dialog for further editing.
+   */
+  async function createEntityAndLink(type: EntityType | string, rawTitle?: string) {
+    const entityType = type as EntityType
+    let label = entityType as string
+    try {
+      label = getEntityTypeConfig(entityType).label
+    } catch {
+      // fall back to raw type
+    }
+    const title = (rawTitle || '').trim() || `New ${label}`
+
+    const { create: createItem } = useEntities()
+    const defaults = createDefaultItem(entityType)
+    const newItem = { ...defaults, title } as Entity
+    const realId = await createItem(newItem)
+
+    const ref: EntityReference = {
+      kind: 'entity',
+      id: `ref-${crypto.randomUUID().slice(0, 8)}`,
+      entityId: realId,
+      entityType,
+      title,
+      direction: 'outgoing',
+    }
+    await createAndOpenEntityRef(ref)
+    return ref
+  }
+
   return {
     addEntityRef,
     removeRef,
     openEntityRef,
+    createEntityAndLink,
     createAndOpenEntityRef,
   }
 }

@@ -488,6 +488,52 @@ const mailRoute: RouteDefinition = {
 }
 
 // ============================================================================
+// Contacts Route — /contacts
+// ============================================================================
+
+const contactsRoute: RouteDefinition = {
+  '@id': 'route:contacts',
+  '@type': 'trellis:Route',
+  routePath: '/contacts',
+  label: 'Contacts',
+  icon: 'lucide:contact',
+  order: 18,
+  inRail: true,
+  railPosition: 'primary',
+  inCommandPalette: true,
+  requiresAuth: true,
+  meta: {
+    title: 'Contacts',
+    description: 'Manage your contacts, people, and organizations',
+    hideSidebar: false,
+  },
+  sidebarSections: [
+    {
+      label: 'CONTACTS',
+      key: 'contacts-all',
+      icon: 'lucide:users',
+      collapsible: true,
+      order: 10,
+      items: [
+        { routePath: '/contacts', label: 'All Contacts', icon: 'lucide:users' },
+        { routePath: '/contacts?type=person', label: 'People', icon: 'lucide:user' },
+        { routePath: '/contacts?type=organization', label: 'Organizations', icon: 'lucide:building-2' },
+      ],
+    },
+  ],
+  children: [
+    {
+      '@id': 'route:contacts/person',
+      '@type': 'trellis:Route',
+      routePath: '/contacts/:id',
+      label: 'Contact',
+      icon: 'lucide:user',
+      meta: { title: 'Contact' },
+    },
+  ],
+}
+
+// ============================================================================
 // Messages Route — /messages
 // ============================================================================
 
@@ -839,6 +885,7 @@ export function getRouteDefinitions(): Record<string, RouteDefinition> {
     'route:agent': agentRoute,
     'route:workspace': workspaceRoute,
     'route:calendar': calendarRoute,
+    'route:contacts': contactsRoute,
     'route:mail': mailRoute,
     'route:messages': messagesRoute,
     'route:pages': pagesRoute,
@@ -855,6 +902,7 @@ export {
   agentRoute,
   workspaceRoute,
   calendarRoute,
+  contactsRoute,
   mailRoute,
   messagesRoute,
   pagesRoute,

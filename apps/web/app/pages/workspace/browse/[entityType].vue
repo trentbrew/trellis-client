@@ -3,6 +3,7 @@
   import { useBrowsePage } from '~/composables/useBrowsePage'
   import { useBrowseSelection } from '~/composables/useBrowseSelection'
   import DynamicEntityDialog from '~/components/dialogs/DynamicEntityDialog.vue'
+  import GraphView from '~/components/views/GraphView.vue'
 
   definePageMeta({ layout: 'default' })
 
@@ -14,7 +15,9 @@
   const typeConfig = computed(() => getEntityConfig(entityType.value))
   const browseConfig = computed(() => getBrowseConfig(entityType.value))
 
-  const pageTitle = computed(() => (typeConfig.value as any)?.labelPlural || (typeConfig.value as any)?.label || entityType.value)
+  const pageTitle = computed(
+    () => (typeConfig.value as any)?.labelPlural || (typeConfig.value as any)?.label || entityType.value,
+  )
   const pageIcon = computed(() => (typeConfig.value as any)?.icon || 'lucide:database')
   const pageColor = computed(() => (typeConfig.value as any)?.color || 'violet')
 
@@ -25,10 +28,20 @@
   // ---------------------------------------------------------------------------
 
   const {
-    items, filteredItems, browseState, viewMode,
-    viewOpen, viewingItem, openDetail, handleNewItem,
-    canPrev, canNext, navPrev, navNext,
-    handleUpdate, handleDelete,
+    items,
+    filteredItems,
+    browseState,
+    viewMode,
+    viewOpen,
+    viewingItem,
+    openDetail,
+    handleNewItem,
+    canPrev,
+    canNext,
+    navPrev,
+    navNext,
+    handleUpdate,
+    handleDelete,
   } = useBrowsePage({
     entityType,
     searchFields: computed(() => browseConfig.value.searchFields).value,
@@ -41,18 +54,20 @@
   // ---------------------------------------------------------------------------
 
   const {
-    isSelected, toggle: toggleSelection, clearSelection,
-    selectedItems, selectionCount,
-    handleBatchDelete, handleBatchDuplicate,
+    isSelected,
+    toggle: toggleSelection,
+    clearSelection,
+    selectedItems,
+    selectionCount,
+    handleBatchDelete,
+    handleBatchDuplicate,
   } = useBrowseSelection(filteredItems)
 
   // ---------------------------------------------------------------------------
   // Stats
   // ---------------------------------------------------------------------------
 
-  const stats = computed<PageStat[]>(() => [
-    { label: 'Total', value: items.value.length, icon: pageIcon.value },
-  ])
+  const stats = computed<PageStat[]>(() => [{ label: 'Total', value: items.value.length, icon: pageIcon.value }])
 
   // ---------------------------------------------------------------------------
   // Table columns from schema
@@ -87,8 +102,8 @@
       { mode: 'list', label: 'List', icon: 'lucide:list' },
       { mode: 'table', label: 'Table', icon: 'lucide:table' },
       { mode: 'grid', label: 'Grid', icon: 'lucide:grid-3x3' },
+      { mode: 'graph', label: 'Graph', icon: 'lucide:git-fork' },
     ]">
-
     <!-- Toolbar Actions -->
     <template #toolbarActions>
       <UiButton @click="handleNewItem()">
@@ -112,16 +127,22 @@
         <Icon :name="pageIcon" class="h-4 w-4 shrink-0 text-muted-foreground" />
         <span class="flex-1 text-sm font-medium truncate">{{ item.title || 'Untitled' }}</span>
         <span
-          v-for="col in tableColumns.filter(c => !c.isTitle).slice(0, 3)"
+          v-for="col in tableColumns.filter((c) => !c.isTitle).slice(0, 3)"
           :key="col.key"
           class="text-xs text-muted-foreground shrink-0 hidden sm:block">
           {{ cellValue(item, col.key) }}
         </span>
         <span class="text-xs text-muted-foreground/50 shrink-0">
-          {{ item.updatedAt ? new Date(item.updatedAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) : '' }}
+          {{
+            item.updatedAt
+              ? new Date(item.updatedAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
+              : ''
+          }}
         </span>
       </div>
-      <div v-if="!filteredItems.length" class="flex flex-col items-center justify-center h-48 text-muted-foreground gap-3">
+      <div
+        v-if="!filteredItems.length"
+        class="flex flex-col items-center justify-center h-48 text-muted-foreground gap-3">
         <Icon :name="pageIcon" class="h-8 w-8 text-muted-foreground/30" />
         <p class="text-sm">No {{ pageTitle.toLowerCase() }} yet</p>
         <UiButton size="sm" variant="outline" @click="handleNewItem()">
@@ -149,14 +170,16 @@
         <p class="text-sm font-medium leading-snug line-clamp-2">{{ item.title || 'Untitled' }}</p>
         <div class="flex flex-wrap gap-1 mt-auto">
           <span
-            v-for="col in tableColumns.filter(c => !c.isTitle && (item as any)[c.key]).slice(0, 2)"
+            v-for="col in tableColumns.filter((c) => !c.isTitle && (item as any)[c.key]).slice(0, 2)"
             :key="col.key"
             class="text-[10px] px-1.5 py-0.5 rounded-full bg-muted text-muted-foreground">
             {{ cellValue(item, col.key) }}
           </span>
         </div>
       </div>
-      <div v-if="!filteredItems.length" class="col-span-full flex flex-col items-center justify-center h-48 text-muted-foreground gap-3">
+      <div
+        v-if="!filteredItems.length"
+        class="col-span-full flex flex-col items-center justify-center h-48 text-muted-foreground gap-3">
         <Icon :name="pageIcon" class="h-8 w-8 text-muted-foreground/30" />
         <p class="text-sm">No {{ pageTitle.toLowerCase() }} yet</p>
         <UiButton size="sm" variant="outline" @click="handleNewItem()">
@@ -204,12 +227,18 @@
               <span v-else class="text-muted-foreground">{{ cellValue(item, col.key) }}</span>
             </td>
             <td class="py-2 px-3 text-right text-muted-foreground text-xs whitespace-nowrap">
-              {{ item.updatedAt ? new Date(item.updatedAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) : '—' }}
+              {{
+                item.updatedAt
+                  ? new Date(item.updatedAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
+                  : '—'
+              }}
             </td>
           </tr>
         </tbody>
       </table>
-      <div v-if="!filteredItems.length" class="flex flex-col items-center justify-center h-48 text-muted-foreground gap-3">
+      <div
+        v-if="!filteredItems.length"
+        class="flex flex-col items-center justify-center h-48 text-muted-foreground gap-3">
         <Icon :name="pageIcon" class="h-8 w-8 text-muted-foreground/30" />
         <p class="text-sm">No {{ pageTitle.toLowerCase() }} yet</p>
         <UiButton size="sm" variant="outline" @click="handleNewItem()">
@@ -219,9 +248,21 @@
       </div>
     </div>
 
+    <!-- ================= GRAPH VIEW ================= -->
+    <div
+      v-else-if="viewMode === 'graph'"
+      class="h-[calc(100vh-200px)] -mx-4 -mb-4 rounded-lg border border-border/50 bg-card/30 overflow-hidden">
+      <GraphView :entities="filteredItems" @open-entity="openDetail" />
+    </div>
+
     <!-- Results count -->
-    <div class="text-xs text-muted-foreground mt-4 pt-4 border-t border-border pb-10">
-      Showing {{ filteredItems.length }} {{ filteredItems.length === 1 ? ((typeConfig as any)?.label || entityType) : ((typeConfig as any)?.labelPlural || pageTitle.toLowerCase()) }}
+    <div v-if="viewMode !== 'graph'" class="text-xs text-muted-foreground mt-4 pt-4 border-t border-border pb-10">
+      Showing {{ filteredItems.length }}
+      {{
+        filteredItems.length === 1
+          ? (typeConfig as any)?.label || entityType
+          : (typeConfig as any)?.labelPlural || pageTitle.toLowerCase()
+      }}
     </div>
 
     <!-- Selection Bar -->
@@ -237,7 +278,7 @@
       v-if="viewOpen && viewingItem && typeConfig && 'dynamic' in typeConfig"
       :open="viewOpen"
       :item="viewingItem"
-      :type-config="(typeConfig as any)"
+      :type-config="typeConfig as any"
       :can-navigate-prev="canPrev"
       :can-navigate-next="canNext"
       @navigate-prev="navPrev"
@@ -245,7 +286,6 @@
       @save="handleUpdate"
       @delete="handleDelete"
       @close="viewOpen = false" />
-
   </Page>
 
   <div v-else class="flex h-full items-center justify-center">
@@ -253,9 +293,7 @@
       <UiCardContent class="p-6 text-center">
         <Icon name="lucide:alert-circle" class="mx-auto h-12 w-12 text-muted-foreground/50" />
         <h2 class="mt-4 text-lg font-semibold">Type Not Found</h2>
-        <p class="mt-2 text-sm text-muted-foreground">
-          The entity type "{{ entityType }}" is not registered.
-        </p>
+        <p class="mt-2 text-sm text-muted-foreground">The entity type "{{ entityType }}" is not registered.</p>
         <UiButton class="mt-4" variant="outline" @click="$router.back()">
           <Icon name="lucide:arrow-left" class="mr-2 h-4 w-4" />
           Go Back

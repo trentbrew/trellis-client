@@ -40,23 +40,51 @@
   const threads = ref<GmailThreadSummary[]>([])
   const threadsLoading = ref(false)
   const threadsError = ref<string | null>(null)
+  const nextPageToken = ref<string | undefined>(undefined)
+  const loadingMore = ref(false)
+  const PAGE_SIZE = 100
+
+  const hasMore = computed(() => !!nextPageToken.value)
 
   async function loadThreads() {
     if (!isConnected.value) return
     threadsLoading.value = true
     threadsError.value = null
+    nextPageToken.value = undefined
     try {
-      const data = await fetchThreads({
+      const { threads: data, nextPageToken: token } = await fetchThreads({
         labelId: activeLabel.value,
         q: searchQuery.value || undefined,
-        maxResults: 50,
+        maxResults: PAGE_SIZE,
       })
       threads.value = data
+      nextPageToken.value = token
     } catch (err: any) {
       threadsError.value = err?.message || 'Failed to load mail'
       threads.value = []
     } finally {
       threadsLoading.value = false
+    }
+  }
+
+  async function loadMore() {
+    if (!isConnected.value || !nextPageToken.value || loadingMore.value) return
+    loadingMore.value = true
+    try {
+      const { threads: more, nextPageToken: token } = await fetchThreads({
+        labelId: activeLabel.value,
+        q: searchQuery.value || undefined,
+        maxResults: PAGE_SIZE,
+        pageToken: nextPageToken.value,
+      })
+      // Dedupe by id in case Gmail returns overlap at page boundary
+      const existing = new Set(threads.value.map((t) => t.id))
+      threads.value = [...threads.value, ...more.filter((t) => !existing.has(t.id))]
+      nextPageToken.value = token
+    } catch (err: any) {
+      threadsError.value = err?.message || 'Failed to load more mail'
+    } finally {
+      loadingMore.value = false
     }
   }
 
@@ -87,14 +115,18 @@
       const strippedId = entityId.replace(/^entity:/, '')
       const findEntity = () => allItems.value.find((e: any) => e.id === strippedId || e.id === entityId)
 
-      // Entity may not be in the reactive list yet — wait a tick for TQL watcher to fire
+      // Entity may not be in the reactive list yet — poll up to ~2s for TQL watcher to fire
       let entity = findEntity()
       if (!entity) {
-        await nextTick()
-        entity = findEntity()
+        for (let i = 0; i < 20 && !entity; i++) {
+          await new Promise((r) => setTimeout(r, 100))
+          entity = findEntity()
+        }
       }
       if (entity) {
         detailSheet.open(entity, { mode: 'view' })
+      } else {
+        console.warn('[mail] Entity not found after persist:', entityId)
       }
     } catch (err) {
       console.error('[mail] Failed to open thread:', err)
@@ -317,6 +349,21 @@
               </div>
             </li>
           </ul>
+
+          <!-- Load more -->
+          <div v-if="threads.length > 0 && hasMore" class="p-3 border-t border-border/40">
+            <UiButton size="sm" variant="outline" class="w-full" :disabled="loadingMore" @click="loadMore">
+              <Icon
+                :name="loadingMore ? 'lucide:loader-2' : 'lucide:chevron-down'"
+                class="w-4 h-4 mr-1.5"
+                :class="{ 'animate-spin': loadingMore }" />
+              {{ loadingMore ? 'Loading…' : 'Load more' }}
+            </UiButton>
+          </div>
+
+          <div v-else-if="threads.length > 0 && !hasMore" class="p-3 text-center text-[11px] text-muted-foreground/60">
+            No more threads
+          </div>
         </div>
       </div>
 

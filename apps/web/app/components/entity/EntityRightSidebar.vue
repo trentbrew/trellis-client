@@ -18,53 +18,111 @@
     entityLabel?: string
     updatedAt?: string | number
     createdAt?: string | number
+    /** Full editable entity — used by the embedded AI suggestions panel. */
+    item?: any
+    /** Whether the sidebar is collapsed into a narrow strip. */
+    collapsed?: boolean
   }>()
 
   const emit = defineEmits<{
     'update:references': [refs: Reference[]]
     'update:newComment': [val: string]
+    'update:collapsed': [val: boolean]
     'open-entity': [ref: EntityReference]
     'remove-ref': [refId: string]
     'add-entity': []
     'add-entity-of-type': [type: string]
+    'create-entity': [type: string, title: string]
     'add-comment': []
   }>()
 
   const activeTab = ref<'references' | 'activity'>('references')
+
+  function toggleCollapsed() {
+    emit('update:collapsed', !props.collapsed)
+  }
 </script>
 
 <template>
-  <div class="flex flex-col h-full overflow-hidden">
+  <!-- Collapsed strip — just an expand button + activity count badge -->
+  <div v-if="collapsed" class="flex flex-col items-center h-full py-2 overflow-hidden">
+    <button
+      class="h-7 w-7 rounded-md flex items-center justify-center hover:bg-muted text-muted-foreground hover:text-foreground transition-colors"
+      title="Expand sidebar"
+      @click="toggleCollapsed">
+      <Icon name="lucide:panel-right-open" class="h-4 w-4" />
+    </button>
+    <button
+      v-if="!isCreateMode && displayActivity.length"
+      class="mt-2 h-7 w-7 rounded-md flex items-center justify-center hover:bg-muted text-muted-foreground hover:text-foreground transition-colors relative"
+      title="Activity"
+      @click="
+        () => {
+          activeTab = 'activity'
+          toggleCollapsed()
+        }
+      ">
+      <Icon name="lucide:activity" class="h-4 w-4" />
+      <span
+        class="absolute -top-0.5 -right-0.5 text-[8px] font-medium bg-primary text-primary-foreground rounded-full h-3.5 min-w-3.5 px-1 flex items-center justify-center">
+        {{ displayActivity.length }}
+      </span>
+    </button>
+  </div>
+
+  <div v-else class="flex flex-col h-full overflow-hidden">
     <!-- Tab bar -->
     <div class="flex border-b border-border shrink-0">
       <button
         class="flex-1 px-3 py-2 text-[10px] font-medium uppercase tracking-wide transition-colors"
-        :class="activeTab === 'references' ? 'text-foreground border-b-2 border-primary' : 'text-muted-foreground hover:text-foreground'"
+        :class="
+          activeTab === 'references'
+            ? 'text-foreground border-b-2 border-primary'
+            : 'text-muted-foreground hover:text-foreground'
+        "
         @click="activeTab = 'references'">
         References
       </button>
       <button
         v-if="!isCreateMode"
         class="flex-1 px-3 py-2 text-[10px] font-medium uppercase tracking-wide transition-colors"
-        :class="activeTab === 'activity' ? 'text-foreground border-b-2 border-primary' : 'text-muted-foreground hover:text-foreground'"
+        :class="
+          activeTab === 'activity'
+            ? 'text-foreground border-b-2 border-primary'
+            : 'text-muted-foreground hover:text-foreground'
+        "
         @click="activeTab = 'activity'">
         Activity
-        <span v-if="displayActivity.length" class="ml-1 text-[9px] bg-muted rounded-full px-1.5 py-0.5">{{ displayActivity.length }}</span>
+        <span v-if="displayActivity.length" class="ml-1 text-[9px] bg-muted rounded-full px-1.5 py-0.5">
+          {{ displayActivity.length }}
+        </span>
+      </button>
+      <button
+        class="px-2 flex items-center justify-center text-muted-foreground hover:text-foreground transition-colors shrink-0"
+        title="Collapse sidebar"
+        @click="toggleCollapsed">
+        <Icon name="lucide:panel-right-close" class="h-4 w-4" />
       </button>
     </div>
 
     <!-- Tab content -->
     <div class="flex-1 overflow-y-auto">
       <!-- References tab -->
-      <ReferencesSection
-        v-if="activeTab === 'references'"
-        :model-value="references"
-        :readonly="isViewMode"
-        @update:model-value="emit('update:references', $event)"
-        @open-entity="emit('open-entity', $event)"
-        @remove-ref="emit('remove-ref', $event)"
-        @add-entity="emit('add-entity')"
-        @add-entity-of-type="emit('add-entity-of-type', $event)" />
+      <template v-if="activeTab === 'references'">
+        <ReferencesSection
+          :model-value="references"
+          :readonly="isViewMode"
+          @update:model-value="emit('update:references', $event)"
+          @open-entity="emit('open-entity', $event)"
+          @remove-ref="emit('remove-ref', $event)"
+          @add-entity="emit('add-entity')"
+          @add-entity-of-type="emit('add-entity-of-type', $event)"
+          @create-entity="(type: string, title: string) => emit('create-entity', type, title)" />
+
+        <!-- AI Suggestions — sits at the bottom of References so scans are
+             discoverable alongside the existing reference list. -->
+        <EntityAISuggestionsPanel v-if="item && !isCreateMode" :entity="item" />
+      </template>
 
       <!-- Activity tab -->
       <div v-if="activeTab === 'activity' && !isCreateMode" class="p-3 pb-0 space-y-2 flex flex-col h-full">
@@ -106,7 +164,9 @@
               <div class="flex-1 min-w-0">
                 <div class="flex items-baseline gap-1 flex-wrap">
                   <span class="text-[11px] font-medium">{{ activityItem.authorName }}</span>
-                  <span class="text-[10px] text-muted-foreground">{{ formatRelativeTime(activityItem.createdAt) }}</span>
+                  <span class="text-[10px] text-muted-foreground">
+                    {{ formatRelativeTime(activityItem.createdAt) }}
+                  </span>
                 </div>
                 <p v-if="activityItem.content" class="text-xs text-foreground/80 mt-0.5">{{ activityItem.content }}</p>
                 <p v-else-if="activityItem.type === 'created'" class="text-[10px] text-muted-foreground mt-0.5">

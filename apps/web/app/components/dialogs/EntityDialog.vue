@@ -1,18 +1,10 @@
 <script lang="ts" setup>
-  import type {
-    Entity,
-    EntityType,
-    PropertyFieldId,
-  } from '~/types/entity'
-  import {
-    ENTITY_TYPE_OPTIONS,
-    createDefaultItem,
-  } from '~/types/entity'
+  import type { Entity, EntityType, PropertyFieldId } from '~/types/entity'
+  import { ENTITY_TYPE_OPTIONS, createDefaultItem } from '~/types/entity'
   import { useEntityFormulas } from '~/composables/useEntityFormulas'
   import { typeHasField } from '~/config/entityRegistry'
   import { useComments } from '~/composables/useComments'
   import { extractYmd, parseYmdLocal, todayYmdLocal } from '~/utils/date'
-
 
   const colorMode = useColorMode()
   const isDark = computed(() => colorMode.value === 'dark')
@@ -108,11 +100,37 @@
 
   // Comments composable — wired to current item's ID
   const currentEntityId = computed(() => editableItem.id || undefined)
+  const { displayActivity, addComment: persistComment, loading: commentsLoading } = useComments(currentEntityId)
+
+  // ── AI summary ──────────────────────────────────────────────────────
+  // Lazy-generates a clean 1–3 sentence summary of the entity's description
+  // (stored on the entity as `summary`). Shown in the dialog header under
+  // the title, with a toggle to view the original. Works for any entity
+  // type that has a `description` field.
   const {
-    displayActivity,
-    addComment: persistComment,
-    loading: commentsLoading,
-  } = useComments(currentEntityId)
+    ensure: ensureSummary,
+    regenerate: regenerateSummaryFn,
+    isGenerating: isSummaryGenerating,
+  } = useEntitySummary()
+
+  watch(
+    () => [editableItem.id, editableItem.description] as const,
+    () => {
+      if (isCreateMode.value) return
+      if (!editableItem.id || !editableItem.description) return
+      // Fire-and-forget; composable dedupes via source hash.
+      void ensureSummary(editableItem)
+    },
+    { immediate: true },
+  )
+
+  const entitySummary = computed(() => (editableItem.summary || '').trim())
+  const generatingSummary = computed(() => !!editableItem.id && isSummaryGenerating(editableItem.id))
+
+  function handleRegenerateSummary() {
+    if (!editableItem.id) return
+    void regenerateSummaryFn(editableItem)
+  }
 
   // UI State
   const newComment = ref('')
@@ -124,7 +142,8 @@
 
   // Sidebar state
   const leftSidebarW = ref(288)
-  const rightSidebarW = ref(288)
+  const rightSidebarW = ref(360)
+  const rightSidebarCollapsed = ref(false)
   const isResizingSidebar = ref(false)
 
   const startSidebarResize = (side: 'left' | 'right', e: PointerEvent) => {
@@ -171,7 +190,6 @@
     if (!Number.isFinite(h) || !Number.isFinite(m)) return base
     return new Date(base.getFullYear(), base.getMonth(), base.getDate(), h, m)
   }
-
 
   watch(
     () => props.item,
@@ -258,7 +276,10 @@
         isRecurring: false,
       }
     }
-    const start = combineDateAndTime(extractYmd(editableItem.startDate), editableItem.allDay ? undefined : editableItem.startTime)
+    const start = combineDateAndTime(
+      extractYmd(editableItem.startDate),
+      editableItem.allDay ? undefined : editableItem.startTime,
+    )
     if (!start) {
       return {
         scheduleText: 'Unscheduled',
@@ -298,7 +319,10 @@
   // Event temporal status (Upcoming / In progress / X days ago)
   const eventTemporalStatus = computed(() => {
     if (editableItem.type !== 'event' || !editableItem.startDate) return null
-    const startDate = combineDateAndTime(extractYmd(editableItem.startDate), editableItem.allDay ? undefined : editableItem.startTime)
+    const startDate = combineDateAndTime(
+      extractYmd(editableItem.startDate),
+      editableItem.allDay ? undefined : editableItem.startTime,
+    )
     if (!startDate) return null
 
     const now = new Date()
@@ -306,7 +330,8 @@
     const endDate = endRaw ? combineDateAndTime(endRaw, editableItem.allDay ? undefined : editableItem.endTime) : null
 
     // Use end-of-day for all-day events
-    const effectiveEnd = endDate || new Date(startDate.getFullYear(), startDate.getMonth(), startDate.getDate(), 23, 59, 59)
+    const effectiveEnd =
+      endDate || new Date(startDate.getFullYear(), startDate.getMonth(), startDate.getDate(), 23, 59, 59)
 
     if (now < startDate) {
       return { label: 'Upcoming', icon: 'lucide:calendar-clock', colorClass: 'bg-blue-500/15 text-blue-600' }
@@ -315,8 +340,10 @@
       return { label: 'In progress', icon: 'lucide:radio', colorClass: 'bg-emerald-500/15 text-emerald-600' }
     }
     const daysAgo = Math.floor((now.getTime() - effectiveEnd.getTime()) / 86_400_000)
-    if (daysAgo === 0) return { label: 'Ended today', icon: 'lucide:clock', colorClass: 'bg-muted/50 text-muted-foreground' }
-    if (daysAgo === 1) return { label: 'Yesterday', icon: 'lucide:clock', colorClass: 'bg-muted/50 text-muted-foreground' }
+    if (daysAgo === 0)
+      return { label: 'Ended today', icon: 'lucide:clock', colorClass: 'bg-muted/50 text-muted-foreground' }
+    if (daysAgo === 1)
+      return { label: 'Yesterday', icon: 'lucide:clock', colorClass: 'bg-muted/50 text-muted-foreground' }
     return { label: `${daysAgo} days ago`, icon: 'lucide:clock', colorClass: 'bg-muted/50 text-muted-foreground' }
   })
 
@@ -388,7 +415,9 @@
           actorName: (currentUser.value as any)?.name || (currentUser.value as any)?.email || '',
           metadata: { entityId: editableItem.id, subtype: 'assigned' },
         },
-      }).catch(() => { /* non-fatal */ })
+      }).catch(() => {
+        /* non-fatal */
+      })
       _prevOwner = newOwner
     },
   )
@@ -397,9 +426,18 @@
   useImageLinks(editableItem)
 
   // Bidirectional entity references
-  const { addEntityRef, removeRef: removeEntityRef, openEntityRef: handleOpenEntityRef, createAndOpenEntityRef } = useEntityReferences(editableItem)
+  const {
+    addEntityRef,
+    removeRef: removeEntityRef,
+    openEntityRef: handleOpenEntityRef,
+    createAndOpenEntityRef,
+    createEntityAndLink,
+  } = useEntityReferences(editableItem)
   const handleAddEntityRef = (ref: import('~/types/entity').EntityReference) => addEntityRef(ref)
   const handleCreatedEntityRef = (ref: import('~/types/entity').EntityReference) => createAndOpenEntityRef(ref)
+  const handleCreateEntityOfType = (type: string, title: string) => {
+    void createEntityAndLink(type, title)
+  }
   const handleRemoveRef = (refId: string) => removeEntityRef(refId)
   const handleAddComment = async () => {
     if (newComment.value.trim()) {
@@ -426,7 +464,36 @@
     if (hasField('metric')) return true
     if (hasField('location')) return true
     if (hasField('eventSubtype')) return true
+    // Email: always show pills (from / to / date / labels)
+    if (editableItem.type === 'email') return true
     return false
+  })
+
+  // ── Email helpers ───────────────────────────────────────────────────
+  const emailFromName = computed(() => {
+    const raw = editableItem.from || ''
+    const match = /^(.+?)\s*<(.+)>$/.exec(raw)
+    return (match?.[1] || raw).replace(/["']/g, '').trim()
+  })
+
+  const emailFromAddress = computed(() => {
+    const raw = editableItem.from || ''
+    const match = /^(.+?)\s*<(.+)>$/.exec(raw)
+    return match?.[2] || raw
+  })
+
+  const emailDate = computed(() => {
+    const iso = editableItem.date || ''
+    if (!iso) return ''
+    const d = new Date(iso)
+    if (Number.isNaN(d.getTime())) return ''
+    return d.toLocaleDateString(undefined, {
+      month: 'short',
+      day: 'numeric',
+      year: 'numeric',
+      hour: 'numeric',
+      minute: '2-digit',
+    })
   })
 
   const switchType = (newType: EntityType) => {
@@ -475,12 +542,15 @@
         ? `Create a new ${currentType?.label?.toLowerCase()}.`
         : `View and edit ${currentType?.label?.toLowerCase()} details.`
     "
+    :summary="entitySummary"
+    :is-generating-summary="generatingSummary"
     @update:open="emit('update:open', $event)"
     @update:title="editableItem.title = $event"
     @update:description="editableItem.description = $event"
     @close="closeDialog"
     @navigate-prev="emit('navigatePrev')"
-    @navigate-next="emit('navigateNext')">
+    @navigate-next="emit('navigateNext')"
+    @regenerate-summary="handleRegenerateSummary">
     <!-- Header badges: Pin + Event Type (for events) + Schedule badge (edit mode) -->
     <template #header-badges>
       <!-- Pin toggle -->
@@ -558,7 +628,61 @@
 
     <!-- Properties Row (full-width, above sidebars) -->
     <template v-if="hasVisibleProperties" #properties>
+      <!-- Email-specific pills (read-only metadata from Gmail) -->
+      <template v-if="editableItem.type === 'email'">
+        <span
+          v-if="emailFromName"
+          class="inline-flex items-center gap-1.5 px-2 py-1 rounded-lg bg-muted/50 text-xs max-w-[220px]"
+          :title="emailFromAddress">
+          <Icon name="lucide:user" class="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
+          <span class="truncate">{{ emailFromName }}</span>
+        </span>
+        <span
+          v-if="editableItem.to"
+          class="inline-flex items-center gap-1.5 px-2 py-1 rounded-lg bg-muted/50 text-xs max-w-[260px]"
+          :title="editableItem.to">
+          <Icon name="lucide:send" class="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
+          <span class="truncate">to {{ editableItem.to }}</span>
+        </span>
+        <span
+          v-if="editableItem.cc"
+          class="inline-flex items-center gap-1.5 px-2 py-1 rounded-lg bg-muted/50 text-xs max-w-[220px]"
+          :title="editableItem.cc">
+          <Icon name="lucide:users" class="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
+          <span class="truncate">cc {{ editableItem.cc }}</span>
+        </span>
+        <span v-if="emailDate" class="inline-flex items-center gap-1.5 px-2 py-1 rounded-lg bg-muted/50 text-xs">
+          <Icon name="lucide:calendar" class="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
+          <span class="whitespace-nowrap">{{ emailDate }}</span>
+        </span>
+        <button
+          class="inline-flex items-center gap-1.5 px-2 py-1 rounded-lg transition-colors text-xs"
+          :class="
+            editableItem.isStarred
+              ? 'bg-amber-500/10 text-amber-600'
+              : 'bg-muted/50 hover:bg-muted text-muted-foreground'
+          "
+          :disabled="isViewMode"
+          :title="editableItem.isStarred ? 'Starred' : 'Star email'"
+          @click="!isViewMode && (editableItem.isStarred = !editableItem.isStarred)">
+          <Icon :name="editableItem.isStarred ? 'lucide:star' : 'lucide:star-off'" class="h-3.5 w-3.5 shrink-0" />
+          {{ editableItem.isStarred ? 'Starred' : 'Star' }}
+        </button>
+        <button
+          class="inline-flex items-center gap-1.5 px-2 py-1 rounded-lg transition-colors text-xs"
+          :class="
+            editableItem.isRead ? 'bg-muted/50 text-muted-foreground hover:bg-muted' : 'bg-primary/10 text-primary'
+          "
+          :disabled="isViewMode"
+          :title="editableItem.isRead ? 'Mark as unread' : 'Mark as read'"
+          @click="!isViewMode && (editableItem.isRead = !editableItem.isRead)">
+          <Icon :name="editableItem.isRead ? 'lucide:mail-open' : 'lucide:mail'" class="h-3.5 w-3.5 shrink-0" />
+          {{ editableItem.isRead ? 'Read' : 'Unread' }}
+        </button>
+      </template>
+
       <EntityPropertyPills
+        v-else
         v-model:editable-item="editableItem"
         :has-field="hasField"
         :is-view-mode="isViewMode"
@@ -576,14 +700,16 @@
 
     <!-- Right sidebar: tabbed references + activity -->
     <aside
-      class="shrink-0 border-l border-border overflow-hidden flex flex-col relative"
+      class="shrink-0 border-l border-border overflow-hidden flex flex-col relative transition-[width] duration-150"
       :class="isResizingSidebar ? 'select-none' : ''"
-      :style="{ width: rightSidebarW + 'px' }">
+      :style="{ width: rightSidebarCollapsed ? '40px' : rightSidebarW + 'px' }">
       <!-- Resize handle -->
       <div
+        v-if="!rightSidebarCollapsed"
         class="absolute inset-y-0 left-0 w-1 cursor-ew-resize z-10 hover:bg-primary/20 transition-colors"
         @pointerdown="startSidebarResize('right', $event)" />
       <EntityRightSidebar
+        v-model:collapsed="rightSidebarCollapsed"
         :references="editableItem.references"
         :is-view-mode="isViewMode"
         :is-create-mode="isCreateMode"
@@ -593,12 +719,24 @@
         :entity-label="currentType?.label?.toLowerCase()"
         :updated-at="editableItem.updatedAt"
         :created-at="editableItem.createdAt"
+        :item="editableItem"
         @update:references="editableItem.references = $event"
         @update:new-comment="newComment = $event"
         @open-entity="handleOpenEntityRef"
         @remove-ref="handleRemoveRef"
-        @add-entity="() => { entityPickerFilterType = undefined; entityPickerOpen = true }"
-        @add-entity-of-type="(type) => { entityPickerFilterType = type; entityPickerOpen = true }"
+        @add-entity="
+          () => {
+            entityPickerFilterType = undefined
+            entityPickerOpen = true
+          }
+        "
+        @add-entity-of-type="
+          (type) => {
+            entityPickerFilterType = type
+            entityPickerOpen = true
+          }
+        "
+        @create-entity="handleCreateEntityOfType"
         @add-comment="handleAddComment" />
     </aside>
 
@@ -644,11 +782,7 @@
           <UiDropdownMenuContent align="end" class="w-40">
             <UiDropdownMenuItem icon="lucide:share" title="Share" @click="showShareDialog = true" />
             <UiDropdownMenuSeparator />
-            <UiDropdownMenuItem
-              icon="lucide:trash-2"
-              title="Delete"
-              variant="destructive"
-              @click="handleDelete" />
+            <UiDropdownMenuItem icon="lucide:trash-2" title="Delete" variant="destructive" @click="handleDelete" />
           </UiDropdownMenuContent>
         </UiDropdownMenu>
       </template>
@@ -660,7 +794,12 @@
   </EntityDialogShell>
 
   <!-- Entity Reference Picker -->
-  <EntityReferencePicker v-model:open="entityPickerOpen" :exclude-id="editableItem.id" :filter-type="entityPickerFilterType" @select="handleAddEntityRef" @created="handleCreatedEntityRef" />
+  <EntityReferencePicker
+    v-model:open="entityPickerOpen"
+    :exclude-id="editableItem.id"
+    :filter-type="entityPickerFilterType"
+    @select="handleAddEntityRef"
+    @created="handleCreatedEntityRef" />
 
   <!-- Share Dialog -->
   <ShareDialog

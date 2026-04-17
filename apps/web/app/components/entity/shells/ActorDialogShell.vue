@@ -22,11 +22,19 @@
       canNavigateNext?: boolean
       dialogTitle?: string
       dialogDescription?: string
+      /** Entity ID (used for presence + summary toggle reset) */
+      entityId?: string
+      /** AI-generated summary of the description (optional) */
+      summary?: string
+      /** Whether the summary is currently being generated */
+      isGeneratingSummary?: boolean
     }>(),
     {
       mode: 'edit',
       canNavigatePrev: false,
       canNavigateNext: false,
+      summary: '',
+      isGeneratingSummary: false,
     },
   )
 
@@ -37,6 +45,7 @@
     close: []
     navigatePrev: []
     navigateNext: []
+    regenerateSummary: []
   }>()
 
   const isViewMode = computed(() => props.mode === 'view')
@@ -48,7 +57,16 @@
   }
 
   // ── Stack-aware positioning ─────────────────────────────────────────
-  const { buildContentStyle, overlayClass: stackOverlayClass, stackTransform, isStacked, parentTitle, hideNavigation, onBack, reportDimensions } = useDialogStackAware()
+  const {
+    buildContentStyle,
+    overlayClass: stackOverlayClass,
+    stackTransform,
+    isStacked,
+    parentTitle,
+    hideNavigation,
+    onBack,
+    reportDimensions,
+  } = useDialogStackAware()
 
   // ── Resize logic ──────────────────────────────────────────────────────
   const MIN_W = 480
@@ -79,14 +97,17 @@
   const dialogW = ref(DEFAULT_W.value)
   const dialogH = ref(DEFAULT_H.value)
 
-  watch(() => props.open, (val) => {
-    if (val) {
-      dialogW.value = Math.min(DEFAULT_W.value, MAX_W.value)
-      dialogH.value = Math.min(DEFAULT_H.value, MAX_H.value)
-      propsExpanded.value = false
-      nextTick(checkPropsOverflow)
-    }
-  })
+  watch(
+    () => props.open,
+    (val) => {
+      if (val) {
+        dialogW.value = Math.min(DEFAULT_W.value, MAX_W.value)
+        dialogH.value = Math.min(DEFAULT_H.value, MAX_H.value)
+        propsExpanded.value = false
+        nextTick(checkPropsOverflow)
+      }
+    },
+  )
 
   const clampW = (v: number) => Math.max(MIN_W, Math.min(v, MAX_W.value))
   const clampH = (v: number) => Math.max(MIN_H, Math.min(v, MAX_H.value))
@@ -105,8 +126,14 @@
     const startW = dialogW.value
     const startH = dialogH.value
     const cursorMap: Record<Edge, string> = {
-      n: 'ns-resize', s: 'ns-resize', e: 'ew-resize', w: 'ew-resize',
-      ne: 'nesw-resize', sw: 'nesw-resize', nw: 'nwse-resize', se: 'nwse-resize',
+      n: 'ns-resize',
+      s: 'ns-resize',
+      e: 'ew-resize',
+      w: 'ew-resize',
+      ne: 'nesw-resize',
+      sw: 'nesw-resize',
+      nw: 'nwse-resize',
+      se: 'nwse-resize',
     }
     document.body.style.cursor = cursorMap[edge]
     const onMove = (ev: PointerEvent) => {
@@ -170,7 +197,6 @@
       class="p-0! gap-0! overflow-hidden rounded-xl border border-border bg-card shadow-2xl flex! flex-col relative"
       @pointer-down-outside="preventOutsideClose"
       @interact-outside="preventOutsideClose">
-
       <!-- Resize handles -->
       <div class="absolute inset-x-2 top-0 h-1 cursor-ns-resize z-50" @pointerdown="startResize('n', $event)" />
       <div class="absolute inset-x-2 bottom-0 h-1 cursor-ns-resize z-50" @pointerdown="startResize('s', $event)" />
@@ -198,7 +224,9 @@
         <div :class="isStacked && parentTitle ? 'px-4 pt-2 pb-3' : 'px-4 pt-4 pb-3'">
           <div class="flex items-center justify-between gap-3 mb-3">
             <div class="flex items-center gap-2 min-w-0">
-              <span v-if="typeBadge" class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-medium bg-primary/10 text-primary">
+              <span
+                v-if="typeBadge"
+                class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-medium bg-primary/10 text-primary">
                 <Icon :name="typeBadge.icon" class="h-3 w-3" />
                 {{ typeBadge.label }}
               </span>
@@ -206,10 +234,20 @@
             </div>
             <div class="flex items-center gap-1 shrink-0">
               <template v-if="!isCreateMode && !hideNavigation">
-                <UiButton variant="ghost" size="icon" class="h-7 w-7" :disabled="!canNavigatePrev" @click="emit('navigatePrev')">
+                <UiButton
+                  variant="ghost"
+                  size="icon"
+                  class="h-7 w-7"
+                  :disabled="!canNavigatePrev"
+                  @click="emit('navigatePrev')">
                   <Icon name="lucide:chevron-up" class="h-4 w-4" />
                 </UiButton>
-                <UiButton variant="ghost" size="icon" class="h-7 w-7" :disabled="!canNavigateNext" @click="emit('navigateNext')">
+                <UiButton
+                  variant="ghost"
+                  size="icon"
+                  class="h-7 w-7"
+                  :disabled="!canNavigateNext"
+                  @click="emit('navigateNext')">
                   <Icon name="lucide:chevron-down" class="h-4 w-4" />
                 </UiButton>
               </template>
@@ -227,9 +265,15 @@
             @input="emit('update:title', ($event.target as HTMLInputElement).value)" />
           <h2 v-else class="text-xl font-semibold px-1">{{ title }}</h2>
           <div class="mt-1 px-1">
-            <UiRichTextEditor v-if="!isViewMode" :model-value="description" placeholder="Role, title, or bio..." seamless @update:model-value="emit('update:description', $event)" />
-            <p v-else-if="description" class="text-sm text-muted-foreground" v-html="description" />
-            <p v-else class="text-sm text-muted-foreground/50 italic">No description</p>
+            <EntityDescriptionBlock
+              :description="description"
+              :summary="summary"
+              :is-generating-summary="isGeneratingSummary"
+              :mode="mode"
+              :entity-id="entityId"
+              placeholder="Role, title, or bio..."
+              @update:description="emit('update:description', $event)"
+              @regenerate-summary="emit('regenerateSummary')" />
           </div>
           <div v-if="$slots['header-tags']" class="mt-2 px-1">
             <slot name="header-tags" />
@@ -253,7 +297,9 @@
             class="inline-flex items-center justify-center h-6 w-6 rounded-md bg-muted/50 hover:bg-muted transition-colors shrink-0 ml-0.5"
             :title="propsExpanded ? 'Show less' : 'Show all properties'"
             @click="propsExpanded = !propsExpanded">
-            <Icon :name="propsExpanded ? 'lucide:chevron-up' : 'lucide:more-horizontal'" class="h-3.5 w-3.5 text-muted-foreground" />
+            <Icon
+              :name="propsExpanded ? 'lucide:chevron-up' : 'lucide:more-horizontal'"
+              class="h-3.5 w-3.5 text-muted-foreground" />
           </button>
         </div>
       </div>

@@ -16,6 +16,7 @@
     removeRef: [id: string]
     addEntity: []
     addEntityOfType: [type: string]
+    createEntity: [type: string, title: string]
   }>()
 
   // ── Dynamic entity type list from ontology registry ──────────────────
@@ -24,15 +25,51 @@
 
   const availableEntityTypes = computed(() => {
     return serverTypes.value
-      .filter(t => t.tier !== 'core')
+      .filter((t) => t.tier !== 'core')
       .sort((a, b) => a.label.localeCompare(b.label))
-      .map(t => ({
+      .map((t) => ({
         type: t.type,
         label: t.label,
         icon: t.icon,
         color: t.color,
       }))
   })
+
+  // ── Add-reference popover state ──────────────────────────────────────
+  const addMenuOpen = ref(false)
+  const addSearch = ref('')
+  const addSearchInput = ref<HTMLInputElement | null>(null)
+
+  const filteredAddTypes = computed(() => {
+    const q = addSearch.value.trim().toLowerCase()
+    if (!q) return availableEntityTypes.value
+    return availableEntityTypes.value.filter(
+      (t) => t.label.toLowerCase().includes(q) || t.type.toLowerCase().includes(q),
+    )
+  })
+
+  watch(addMenuOpen, (open) => {
+    if (open) {
+      addSearch.value = ''
+      nextTick(() => addSearchInput.value?.focus())
+    }
+  })
+
+  function handlePickType(type: string) {
+    addMenuOpen.value = false
+    emit('addEntityOfType', type)
+  }
+
+  function handleCreateType(type: string) {
+    const title = addSearch.value.trim()
+    addMenuOpen.value = false
+    emit('createEntity', type, title)
+  }
+
+  function handleBrowseAll() {
+    addMenuOpen.value = false
+    emit('addEntity')
+  }
 
   const references = computed({
     get: () => props.modelValue ?? [],
@@ -103,11 +140,16 @@
     other: 'lucide:paperclip',
   }
 
-  const getFileIcon = (ref: FileReference): string =>
-    FILE_TYPE_ICONS[ref.fileType] || 'lucide:paperclip'
+  const getFileIcon = (ref: FileReference): string => FILE_TYPE_ICONS[ref.fileType] || 'lucide:paperclip'
 
   const getFileLabel = (ref: FileReference): string => {
-    const labels: Record<string, string> = { image: 'Image', pdf: 'PDF', spreadsheet: 'Sheet', document: 'Doc', other: 'File' }
+    const labels: Record<string, string> = {
+      image: 'Image',
+      pdf: 'PDF',
+      spreadsheet: 'Sheet',
+      document: 'Doc',
+      other: 'File',
+    }
     return labels[ref.fileType] || 'File'
   }
 
@@ -142,7 +184,6 @@
       window.open(ref.url, '_blank', 'noopener')
     }
   }
-
 </script>
 
 <template>
@@ -150,33 +191,72 @@
     <!-- Header with add button -->
     <div class="flex items-center justify-between">
       <p class="text-xs font-medium text-muted-foreground uppercase tracking-wide">References</p>
-      <!-- "+" dropdown (always shown when not readonly) -->
-      <UiDropdownMenu v-if="!readonly">
-        <UiDropdownMenuTrigger as-child>
+      <!-- "+" popover (sticky search + filtered types + inline create) -->
+      <UiPopover v-if="!readonly" v-model:open="addMenuOpen">
+        <UiPopoverTrigger as-child>
           <button
             class="h-5 w-5 rounded flex items-center justify-center hover:bg-muted text-muted-foreground hover:text-foreground transition-colors"
             title="Add reference">
             <Icon name="lucide:plus" class="h-3.5 w-3.5" />
           </button>
-        </UiDropdownMenuTrigger>
-        <UiDropdownMenuContent align="end" :side-offset="4" class="w-48 max-h-64 overflow-y-auto p-1">
-          <UiDropdownMenuItem
-            v-for="opt in availableEntityTypes"
-            :key="opt.type"
-            class="gap-2 text-xs"
-            @select="emit('addEntityOfType', opt.type)">
-            <div :class="['w-5 h-5 rounded flex items-center justify-center shrink-0', `bg-${opt.color}-500/10`]">
-              <Icon :name="opt.icon" :class="['h-3 w-3', `text-${opt.color}-500`]" />
+        </UiPopoverTrigger>
+        <UiPopoverContent align="end" :side-offset="4" class="w-60 p-0 overflow-hidden">
+          <div class="flex flex-col max-h-72">
+            <!-- Sticky search at top -->
+            <div class="sticky top-0 z-10 flex items-center gap-2 px-2.5 py-2 border-b border-border bg-popover">
+              <Icon name="lucide:search" class="h-3.5 w-3.5 text-muted-foreground shrink-0" />
+              <input
+                ref="addSearchInput"
+                v-model="addSearch"
+                type="text"
+                placeholder="Search types…"
+                class="flex-1 bg-transparent text-xs outline-none placeholder:text-muted-foreground min-w-0"
+                @keydown.enter.prevent="filteredAddTypes[0] && handleCreateType(filteredAddTypes[0].type)" />
+              <button
+                v-if="addSearch"
+                class="text-muted-foreground hover:text-foreground shrink-0"
+                @click="addSearch = ''">
+                <Icon name="lucide:x" class="h-3 w-3" />
+              </button>
             </div>
-            <span class="flex-1">{{ opt.label }}</span>
-          </UiDropdownMenuItem>
-          <UiDropdownMenuSeparator />
-          <UiDropdownMenuItem class="gap-2 text-xs text-muted-foreground" @select="emit('addEntity')">
-            <Icon name="lucide:search" class="h-3 w-3" />
-            <span>Browse all…</span>
-          </UiDropdownMenuItem>
-        </UiDropdownMenuContent>
-      </UiDropdownMenu>
+
+            <!-- Scrollable type list -->
+            <div class="flex-1 overflow-y-auto p-1">
+              <div v-if="!filteredAddTypes.length" class="px-3 py-6 text-center">
+                <p class="text-[11px] text-muted-foreground">No matching types</p>
+              </div>
+              <div
+                v-for="opt in filteredAddTypes"
+                :key="opt.type"
+                class="group flex items-center gap-2 px-2 py-1.5 rounded text-xs cursor-pointer hover:bg-muted">
+                <div class="flex-1 flex items-center gap-2 min-w-0" @click="handlePickType(opt.type)">
+                  <div :class="['w-5 h-5 rounded flex items-center justify-center shrink-0', `bg-${opt.color}-500/10`]">
+                    <Icon :name="opt.icon" :class="['h-3 w-3', `text-${opt.color}-500`]" />
+                  </div>
+                  <span class="flex-1 truncate">{{ opt.label }}</span>
+                </div>
+                <button
+                  class="h-5 px-1.5 rounded text-[10px] font-medium text-muted-foreground hover:bg-primary/10 hover:text-primary opacity-0 group-hover:opacity-100 transition-opacity flex items-center gap-1 shrink-0"
+                  :title="addSearch ? `Create new ${opt.label} \u201C${addSearch}\u201D` : `Create new ${opt.label}`"
+                  @click.stop="handleCreateType(opt.type)">
+                  <Icon name="lucide:plus" class="h-3 w-3" />
+                  <span>New</span>
+                </button>
+              </div>
+            </div>
+
+            <!-- Footer: browse all -->
+            <div class="border-t border-border p-1 shrink-0">
+              <button
+                class="w-full flex items-center gap-2 px-2 py-1.5 rounded text-xs text-muted-foreground hover:bg-muted hover:text-foreground"
+                @click="handleBrowseAll">
+                <Icon name="lucide:search" class="h-3 w-3" />
+                <span>Browse all…</span>
+              </button>
+            </div>
+          </div>
+        </UiPopoverContent>
+      </UiPopover>
     </div>
 
     <!-- Outgoing references — full-width cards with preview -->
@@ -195,7 +275,8 @@
               <div
                 v-if="getEntityHtmlContent(ref as EntityReference)"
                 class="relative w-full h-20 overflow-hidden bg-muted/30 border-b border-border/30 shrink-0">
-                <div class="absolute inset-0 bg-linear-to-b from-transparent via-transparent to-card/80 pointer-events-none z-10" />
+                <div
+                  class="absolute inset-0 bg-linear-to-b from-transparent via-transparent to-card/80 pointer-events-none z-10" />
                 <DiagramEmbedPreview
                   v-if="isDiagramRef(ref as EntityReference)"
                   :source="getEntityHtmlContent(ref as EntityReference)"
@@ -213,11 +294,17 @@
                 <div class="flex-1 min-w-0 items-center h-full">
                   <div class="flex items-center gap-1.5 mb-0.5 h-full">
                     <span class="text-xs font-medium truncate flex-1">{{ getRefName(ref) }}</span>
-                    <span v-if="getRefBadge(ref)" class="text-[9px] px-1.5 py-0.5 rounded bg-muted-foreground/10 text-muted-foreground capitalize shrink-0">
+                    <span
+                      v-if="getRefBadge(ref)"
+                      class="text-[9px] px-1.5 py-0.5 rounded bg-muted-foreground/10 text-muted-foreground capitalize shrink-0">
                       {{ getRefBadge(ref) }}
                     </span>
                   </div>
-                  <p v-if="!getEntityHtmlContent(ref as EntityReference) && getEntityContentPreview(ref as EntityReference)" class="text-[11px] text-muted-foreground line-clamp-2 leading-relaxed">
+                  <p
+                    v-if="
+                      !getEntityHtmlContent(ref as EntityReference) && getEntityContentPreview(ref as EntityReference)
+                    "
+                    class="text-[11px] text-muted-foreground line-clamp-2 leading-relaxed">
                     {{ getEntityContentPreview(ref as EntityReference) }}
                   </p>
                 </div>
@@ -242,7 +329,9 @@
           <div class="flex-1 min-w-0">
             <div class="flex items-center gap-1.5">
               <span class="text-xs font-medium truncate flex-1">{{ getRefName(ref) }}</span>
-              <span v-if="getRefBadge(ref)" class="text-[9px] px-1.5 py-0.5 rounded bg-muted-foreground/10 text-muted-foreground capitalize shrink-0">
+              <span
+                v-if="getRefBadge(ref)"
+                class="text-[9px] px-1.5 py-0.5 rounded bg-muted-foreground/10 text-muted-foreground capitalize shrink-0">
                 {{ getRefBadge(ref) }}
               </span>
             </div>
@@ -280,7 +369,8 @@
               <div
                 v-if="getEntityHtmlContent(ref as EntityReference)"
                 class="relative w-full h-20 overflow-hidden bg-muted/30 border-b border-border/30 shrink-0">
-                <div class="absolute inset-0 bg-linear-to-b from-transparent via-transparent to-card/80 pointer-events-none z-10" />
+                <div
+                  class="absolute inset-0 bg-linear-to-b from-transparent via-transparent to-card/80 pointer-events-none z-10" />
                 <DiagramEmbedPreview
                   v-if="isDiagramRef(ref as EntityReference)"
                   :source="getEntityHtmlContent(ref as EntityReference)"
@@ -292,17 +382,26 @@
                   v-html="getEntityHtmlContent(ref as EntityReference)" />
               </div>
               <div class="flex items-start gap-2.5 p-2.5">
-                <div :class="['w-7 h-7 rounded-md flex items-center justify-center shrink-0', getEntityColor(ref as EntityReference)]">
+                <div
+                  :class="[
+                    'w-7 h-7 rounded-md flex items-center justify-center shrink-0',
+                    getEntityColor(ref as EntityReference),
+                  ]">
                   <Icon :name="getEntityIcon(ref as EntityReference)" class="h-3.5 w-3.5" />
                 </div>
                 <div class="flex-1 min-w-0">
                   <div class="flex items-center gap-1.5 mb-0.5">
                     <span class="text-xs font-medium truncate flex-1">{{ (ref as EntityReference).title }}</span>
-                    <span class="text-[9px] px-1.5 py-0.5 rounded bg-muted-foreground/10 text-muted-foreground capitalize shrink-0">
+                    <span
+                      class="text-[9px] px-1.5 py-0.5 rounded bg-muted-foreground/10 text-muted-foreground capitalize shrink-0">
                       {{ getEntityLabel(ref as EntityReference) }}
                     </span>
                   </div>
-                  <p v-if="!getEntityHtmlContent(ref as EntityReference) && getEntityContentPreview(ref as EntityReference)" class="text-[11px] text-muted-foreground line-clamp-2 leading-relaxed">
+                  <p
+                    v-if="
+                      !getEntityHtmlContent(ref as EntityReference) && getEntityContentPreview(ref as EntityReference)
+                    "
+                    class="text-[11px] text-muted-foreground line-clamp-2 leading-relaxed">
                     {{ getEntityContentPreview(ref as EntityReference) }}
                   </p>
                 </div>

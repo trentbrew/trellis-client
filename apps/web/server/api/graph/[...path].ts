@@ -70,7 +70,7 @@ export default defineEventHandler(async (event) => {
   // Replaces health + schema + catalog for orientation in a single call.
   if (method === 'GET' && route === 'summary') {
     const store = kernel.getStore()
-    const limitParam = parseInt((event.node.req.url?.match(/[?&]limit=(\d+)/)?.[1]) || '10')
+    const limitParam = parseInt(event.node.req.url?.match(/[?&]limit=(\d+)/)?.[1] || '10')
     const limit = isNaN(limitParam) ? 10 : limitParam
 
     // Count facts and links
@@ -278,7 +278,10 @@ export default defineEventHandler(async (event) => {
 
     // Execute an EQL-S query string
     if (!query || typeof query !== 'string') {
-      throw createError({ statusCode: 400, message: 'Request body must include "query" (EQL-S string) or "projection" (projection ID)' })
+      throw createError({
+        statusCode: 400,
+        message: 'Request body must include "query" (EQL-S string) or "projection" (projection ID)',
+      })
     }
 
     try {
@@ -389,7 +392,10 @@ export default defineEventHandler(async (event) => {
     const agent: string = agentId || 'browser'
 
     if (!schema || !schema['@id'] || !schema.version || !Array.isArray(schema.fields)) {
-      throw createError({ statusCode: 400, message: 'Request body must include "schema" with @id, version, and fields[]' })
+      throw createError({
+        statusCode: 400,
+        message: 'Request body must include "schema" with @id, version, and fields[]',
+      })
     }
 
     // Ensure @type is set
@@ -398,7 +404,13 @@ export default defineEventHandler(async (event) => {
     try {
       await kernel.createOntology(schema, { agentId: agent })
       pushMutationLog({ action: 'createOntology', entityId: schema['@id'], data: { version: schema.version } })
-      emitMutation({ action: 'createOntology', entityId: schema['@id'], type: 'ontology', agentId: agent, data: schema })
+      emitMutation({
+        action: 'createOntology',
+        entityId: schema['@id'],
+        type: 'ontology',
+        agentId: agent,
+        data: schema,
+      })
       return { ok: true, id: schema['@id'] }
     } catch (err: any) {
       throw createError({ statusCode: 409, message: err.message })
@@ -464,6 +476,653 @@ export default defineEventHandler(async (event) => {
         throw createError({ statusCode: 404, message: err.message })
       }
       throw createError({ statusCode: 500, message: err.message })
+    }
+  }
+
+  // ─── POST /api/graph/backfill-integration-edges ────────────────────
+  // One-shot backfill: scan all entities with a `source` attribute and
+  // link them to the corresponding `integration_connection` node via a
+  // `derivedFrom` edge. Idempotent thanks to EAV store link dedupe.
+  //
+  // Body: { dryRun?: boolean, agentId?: string }
+  if (method === 'POST' && route === 'backfill-integration-edges') {
+    const body = await readBody(event).catch(() => ({}))
+    const agent: string = body?.agentId || 'backfill'
+    const dryRun: boolean = !!body?.dryRun
+
+    const store = kernel.getStore()
+
+    // Known source → integrationId map. Extend as new integrations ship.
+    // Keys are the `source` attribute values written by each sync path.
+    const SOURCE_TO_INTEGRATION: Record<string, string> = {
+      'google-calendar': 'google-calendar',
+      'google-calendar-enrichment': 'google-calendar',
+      gmail: 'gmail',
+    }
+
+    // 1. Collect integration_connection nodes, group by integrationId.
+    // Prefer connections with connectionStatus='connected', else fall
+    // back to the first one we find (connections in 'configuring' state
+    // still represent a real user intent).
+    const connByIntegration = new Map<string, { id: string; status: string }[]>()
+    const factsByEntity = new Map<string, Array<{ a: string; v: unknown }>>()
+    for (const fact of store.getAllFacts()) {
+      if (!factsByEntity.has(fact.e)) factsByEntity.set(fact.e, [])
+      factsByEntity.get(fact.e)!.push({ a: fact.a, v: fact.v })
+    }
+
+    for (const [entityId, facts] of factsByEntity) {
+      // Entities have two 'type' facts: the kernel namespace ('entity')
+      // and the user's data type. Use .some() to match either.
+      const isConn = facts.some((f) => f.a === 'type' && f.v === 'integration_connection')
+      if (!isConn) continue
+      const integrationId = String(facts.find((f) => f.a === 'integrationId')?.v || '')
+      if (!integrationId) continue
+      const status = String(facts.find((f) => f.a === 'connectionStatus')?.v || 'configuring')
+      if (!connByIntegration.has(integrationId)) connByIntegration.set(integrationId, [])
+      connByIntegration.get(integrationId)!.push({ id: entityId, status })
+    }
+
+    // Optional explicit mapping from the caller: integrationId → connection entity id.
+    // Use this when there are multiple connections for the same integration
+    // and you want to disambiguate the auto-linking target.
+    const defaultsFromBody: Record<string, string> = body?.defaultByIntegration || {}
+
+    // Resolve a single canonical connection per integration only when there's
+    // exactly one active connection OR the caller explicitly chose one.
+    // Multi-connection integrations without an explicit default will skip
+    // orphans that don't carry a `connectionId` attribute — safer than
+    // blindly attributing events to the wrong account.
+    const singleConn = new Map<string, string>()
+    for (const [integrationId, conns] of connByIntegration) {
+      if (defaultsFromBody[integrationId]) {
+        singleConn.set(integrationId, defaultsFromBody[integrationId]!)
+        continue
+      }
+      const connected = conns.filter((c) => c.status === 'connected')
+      if (connected.length === 1) singleConn.set(integrationId, connected[0]!.id)
+      else if (conns.length === 1) singleConn.set(integrationId, conns[0]!.id)
+    }
+
+    // Known set of all valid connection ids (for validating the
+    // `connectionId` attribute we now write on each synced entity).
+    const allConnIds = new Set<string>()
+    for (const conns of connByIntegration.values()) {
+      for (const c of conns) allConnIds.add(c.id)
+    }
+
+    // 2. Collect existing derivedFrom edges so we can report skipped counts.
+    const existingDerivedFrom = new Map<string, Set<string>>() // e1 -> Set<e2>
+    for (const link of store.getAllLinks()) {
+      if (link.a !== 'derivedFrom') continue
+      if (!existingDerivedFrom.has(link.e1)) existingDerivedFrom.set(link.e1, new Set())
+      existingDerivedFrom.get(link.e1)!.add(link.e2)
+    }
+
+    const byIntegration: Record<
+      string,
+      {
+        linked: number
+        alreadyLinked: number
+        noConnection: number
+        ambiguous: number
+      }
+    > = {}
+    let totalLinked = 0
+    let totalAlreadyLinked = 0
+    let totalNoConnection = 0
+    let totalAmbiguous = 0
+
+    // 3. Scan entities with a `source` attribute matching a known integration.
+    for (const [entityId, facts] of factsByEntity) {
+      if (!entityId.startsWith('entity:')) continue
+      const sourceFact = facts.find((f) => f.a === 'source')
+      if (!sourceFact) continue
+      const source = String(sourceFact.v)
+      const integrationId = SOURCE_TO_INTEGRATION[source]
+      if (!integrationId) continue
+
+      const bucket = (byIntegration[integrationId] ||= {
+        linked: 0,
+        alreadyLinked: 0,
+        noConnection: 0,
+        ambiguous: 0,
+      })
+
+      // Resolve target connection, preferring any attribute already written
+      // by sync code. Fall back to the single/default connection lookup.
+      const attrConnId = facts.find((f) => f.a === 'connectionId')?.v as string | undefined
+      let connId: string | undefined
+      if (attrConnId && allConnIds.has(attrConnId)) {
+        connId = attrConnId
+      } else if (singleConn.has(integrationId)) {
+        connId = singleConn.get(integrationId)!
+      }
+
+      if (!connId) {
+        const connCount = connByIntegration.get(integrationId)?.length || 0
+        if (connCount === 0) {
+          bucket.noConnection++
+          totalNoConnection++
+        } else {
+          bucket.ambiguous++
+          totalAmbiguous++
+        }
+        continue
+      }
+
+      if (existingDerivedFrom.get(entityId)?.has(connId)) {
+        bucket.alreadyLinked++
+        totalAlreadyLinked++
+        continue
+      }
+
+      if (!dryRun) {
+        try {
+          await kernel.link(entityId, 'derivedFrom', connId, { agentId: agent })
+          emitMutation({
+            action: 'link',
+            entityId: `${entityId} -> ${connId}`,
+            agentId: agent,
+            data: { relation: 'derivedFrom', e1: entityId, e2: connId },
+          })
+        } catch (err: any) {
+          console.error(`[backfill] link failed for ${entityId} -> ${connId}:`, err.message)
+          continue
+        }
+      }
+      bucket.linked++
+      totalLinked++
+    }
+
+    pushMutationLog({
+      action: 'backfill-integration-edges',
+      data: {
+        linked: totalLinked,
+        alreadyLinked: totalAlreadyLinked,
+        noConnection: totalNoConnection,
+        ambiguous: totalAmbiguous,
+        dryRun,
+      },
+    })
+
+    return {
+      ok: true,
+      dryRun,
+      totals: {
+        linked: totalLinked,
+        alreadyLinked: totalAlreadyLinked,
+        noConnection: totalNoConnection,
+        ambiguous: totalAmbiguous,
+      },
+      byIntegration,
+      connectionsByIntegration: Object.fromEntries(
+        Array.from(connByIntegration.entries()).map(([k, v]) => [k, v.map((c) => ({ id: c.id, status: c.status }))]),
+      ),
+      autoResolved: Object.fromEntries(singleConn),
+      hint:
+        totalAmbiguous > 0
+          ? 'Some entities could not be linked because multiple connections exist for their integration and they have no `connectionId` attribute. Pass `defaultByIntegration: { "<integrationId>": "<connection entity id>" }` in the body to resolve them, or re-sync from each connection so the sync code writes the attribute.'
+          : undefined,
+    }
+  }
+
+  // ─── POST /api/graph/backfill-gcal-attribution ─────────────────────
+  // Multi-account GCal attribution: for each active google-calendar
+  // connection, fetch its events from Google, build a map of
+  // googleEventId → connection, and link each TQL event to the
+  // connection that actually owns it. Idempotent.
+  //
+  // Body: { dryRun?: boolean, timeMin?: string, timeMax?: string, agentId?: string }
+  if (method === 'POST' && route === 'backfill-gcal-attribution') {
+    const body = await readBody(event).catch(() => ({}))
+    const agent: string = body?.agentId || 'backfill-gcal'
+    const dryRun: boolean = !!body?.dryRun
+    // Default to a 2-year window centered on today. Widen if users have older data.
+    const twoYearsMs = 2 * 365 * 24 * 60 * 60 * 1000
+    const timeMin: string = body?.timeMin || new Date(Date.now() - twoYearsMs).toISOString()
+    const timeMax: string = body?.timeMax || new Date(Date.now() + twoYearsMs).toISOString()
+
+    const store = kernel.getStore()
+
+    // 1. Enumerate connected google-calendar connections
+    const gcalConns: Array<{ entityId: string; email: string }> = []
+    const factsByEntity = new Map<string, Array<{ a: string; v: unknown }>>()
+    for (const fact of store.getAllFacts()) {
+      if (!factsByEntity.has(fact.e)) factsByEntity.set(fact.e, [])
+      factsByEntity.get(fact.e)!.push({ a: fact.a, v: fact.v })
+    }
+
+    for (const [entityId, facts] of factsByEntity) {
+      if (!facts.some((f) => f.a === 'type' && f.v === 'integration_connection')) continue
+      const integrationId = String(facts.find((f) => f.a === 'integrationId')?.v || '')
+      if (integrationId !== 'google-calendar') continue
+      const status = String(facts.find((f) => f.a === 'connectionStatus')?.v || '')
+      if (status !== 'connected') continue
+      const email = String(facts.find((f) => f.a === 'accountEmail')?.v || '')
+      gcalConns.push({ entityId, email })
+    }
+
+    if (gcalConns.length === 0) {
+      return { ok: true, dryRun, message: 'No connected google-calendar connections found.', linked: 0 }
+    }
+
+    // 2. For each connection, list its calendars and fetch events.
+    // Build: googleEventId → { connEntityId, byOrganizer, conflicts }
+    // Attribution strategy: prefer the connection whose email matches
+    // event.organizer.email (definitive ownership). Fall back to first
+    // connection that returned the event.
+    const eventOwnership = new Map<string, { connEntityId: string; byOrganizer: boolean; conflicts: string[] }>()
+    const perConnection: Record<
+      string,
+      { calendarsScanned: number; eventsFetched: number; ownedByOrganizer: number; error?: string }
+    > = {}
+
+    // Case-insensitive email → connection map for organizer matching
+    const connByEmail = new Map<string, string>()
+    for (const c of gcalConns) {
+      if (c.email) connByEmail.set(c.email.toLowerCase(), c.entityId)
+    }
+
+    for (const conn of gcalConns) {
+      const connReport = (perConnection[conn.entityId] = {
+        calendarsScanned: 0,
+        eventsFetched: 0,
+        ownedByOrganizer: 0,
+      })
+      try {
+        const calList = await $fetch<{ items?: Array<{ id: string; primary?: boolean }> }>(
+          `/api/integrations/google-calendar/events?connectionId=${encodeURIComponent(conn.entityId)}&listCalendars=true`,
+        )
+        const calendars = calList.items || []
+        connReport.calendarsScanned = calendars.length
+
+        for (const cal of calendars) {
+          if (!cal.id) continue
+          try {
+            const eventsResp = await $fetch<{
+              items?: Array<{ id: string; organizer?: { email?: string } }>
+            }>(
+              `/api/integrations/google-calendar/events?connectionId=${encodeURIComponent(conn.entityId)}&calendarId=${encodeURIComponent(cal.id)}&timeMin=${encodeURIComponent(timeMin)}&timeMax=${encodeURIComponent(timeMax)}`,
+            )
+            const items = eventsResp.items || []
+            connReport.eventsFetched += items.length
+
+            for (const evt of items) {
+              if (!evt.id) continue
+              const organizerEmail = evt.organizer?.email?.toLowerCase()
+              const organizerConnId = organizerEmail ? connByEmail.get(organizerEmail) : undefined
+              const isOrganizerMatch = organizerConnId === conn.entityId
+
+              const existing = eventOwnership.get(evt.id)
+              if (!existing) {
+                eventOwnership.set(evt.id, {
+                  connEntityId: organizerConnId || conn.entityId,
+                  byOrganizer: !!organizerConnId,
+                  conflicts: [],
+                })
+                if (isOrganizerMatch) connReport.ownedByOrganizer++
+              } else {
+                if (existing.connEntityId !== conn.entityId && !existing.conflicts.includes(conn.entityId)) {
+                  existing.conflicts.push(conn.entityId)
+                }
+                // Upgrade first-wins record if we now see the true organizer
+                if (isOrganizerMatch && !existing.byOrganizer) {
+                  existing.connEntityId = conn.entityId
+                  existing.byOrganizer = true
+                  connReport.ownedByOrganizer++
+                }
+              }
+            }
+          } catch (err: any) {
+            console.warn(
+              `[backfill-gcal] Failed calendar ${cal.id} on ${conn.entityId}:`,
+              err?.statusMessage || err?.message,
+            )
+          }
+        }
+      } catch (err: any) {
+        connReport.error = err?.statusMessage || err?.message || 'Unknown error'
+        console.error(`[backfill-gcal] Connection ${conn.entityId} failed:`, connReport.error)
+      }
+    }
+
+    // 3. Existing derivedFrom edges for dedupe
+    const existingDerivedFrom = new Map<string, Set<string>>()
+    for (const link of store.getAllLinks()) {
+      if (link.a !== 'derivedFrom') continue
+      if (!existingDerivedFrom.has(link.e1)) existingDerivedFrom.set(link.e1, new Set())
+      existingDerivedFrom.get(link.e1)!.add(link.e2)
+    }
+
+    // 4. Scan TQL gcal events and attribute each
+    let linked = 0
+    let alreadyLinked = 0
+    let attrUpdated = 0
+    let attributedByOrganizer = 0
+    let attributedByFirstWins = 0
+    let notFoundInGoogle = 0
+    let conflicted = 0
+    const sampleNotFound: string[] = []
+
+    for (const [entityId, facts] of factsByEntity) {
+      if (!entityId.startsWith('entity:')) continue
+      const source = facts.find((f) => f.a === 'source')?.v
+      if (source !== 'google-calendar') continue
+      const googleEventId = facts.find((f) => f.a === 'googleEventId')?.v as string | undefined
+      if (!googleEventId) continue
+
+      const ownership = eventOwnership.get(googleEventId)
+      if (!ownership) {
+        notFoundInGoogle++
+        if (sampleNotFound.length < 5) sampleNotFound.push(entityId)
+        continue
+      }
+
+      if (ownership.conflicts.length > 0) conflicted++
+      if (ownership.byOrganizer) attributedByOrganizer++
+      else attributedByFirstWins++
+
+      const targetConn = ownership.connEntityId
+
+      // Update connectionId attribute if missing or different
+      const currentAttr = facts.find((f) => f.a === 'connectionId')?.v
+      if (currentAttr !== targetConn) {
+        if (!dryRun) {
+          try {
+            await kernel.updateNode(entityId, { connectionId: targetConn }, 'entity', { agentId: agent })
+          } catch (err: any) {
+            console.error(`[backfill-gcal] updateNode failed for ${entityId}:`, err.message)
+          }
+        }
+        attrUpdated++
+      }
+
+      // Create derivedFrom edge if missing
+      if (existingDerivedFrom.get(entityId)?.has(targetConn)) {
+        alreadyLinked++
+        continue
+      }
+      if (!dryRun) {
+        try {
+          await kernel.link(entityId, 'derivedFrom', targetConn, { agentId: agent })
+          emitMutation({
+            action: 'link',
+            entityId: `${entityId} -> ${targetConn}`,
+            agentId: agent,
+            data: { relation: 'derivedFrom', e1: entityId, e2: targetConn },
+          })
+        } catch (err: any) {
+          console.error(`[backfill-gcal] link failed for ${entityId} -> ${targetConn}:`, err.message)
+          continue
+        }
+      }
+      linked++
+    }
+
+    pushMutationLog({
+      action: 'backfill-gcal-attribution',
+      data: {
+        linked,
+        alreadyLinked,
+        attrUpdated,
+        attributedByOrganizer,
+        attributedByFirstWins,
+        notFoundInGoogle,
+        conflicted,
+        dryRun,
+      },
+    })
+
+    return {
+      ok: true,
+      dryRun,
+      timeWindow: { timeMin, timeMax },
+      connections: gcalConns.map((c) => ({ entityId: c.entityId, email: c.email })),
+      perConnection,
+      totals: {
+        linked,
+        alreadyLinked,
+        attrUpdated,
+        attributedByOrganizer,
+        attributedByFirstWins,
+        notFoundInGoogle,
+        conflicted,
+      },
+      hint:
+        notFoundInGoogle > 0
+          ? `${notFoundInGoogle} events in TQL were not found in any connected Google calendar within the time window. They may have been deleted on Google's side, or be outside the window. Widen with timeMin/timeMax to capture older events.`
+          : undefined,
+      sampleNotFound: sampleNotFound.length > 0 ? sampleNotFound : undefined,
+    }
+  }
+
+  // ─── GET /api/graph/embeddings ──────────────────────────────────────
+  // Returns a compact payload of every entity's embedding vector keyed
+  // by entity id. The `embedding` attribute is stored as many single-float
+  // facts (one per dimension), so we reconstruct them here before sending
+  // over the wire.
+  //
+  // Query params:
+  //   ?ids=entity:a,entity:b   — restrict to specific ids (optional)
+  //
+  // Response: { model: string, dimensions: number, vectors: Record<string, number[]> }
+  if (method === 'GET' && route === 'embeddings') {
+    const url = getRequestURL(event)
+    const idsParam = url.searchParams.get('ids') || ''
+    const idFilter = idsParam
+      ? new Set(
+          idsParam
+            .split(',')
+            .map((s) => s.trim())
+            .filter(Boolean),
+        )
+      : null
+
+    const store = kernel.getStore()
+    const vectorsByEntity = new Map<string, number[]>()
+    let model: string | null = null
+
+    for (const fact of store.getAllFacts()) {
+      if (!fact.e.startsWith('entity:')) continue
+      if (idFilter && !idFilter.has(fact.e)) continue
+      if (fact.a === 'embedding' && typeof fact.v === 'number') {
+        if (!vectorsByEntity.has(fact.e)) vectorsByEntity.set(fact.e, [])
+        vectorsByEntity.get(fact.e)!.push(fact.v)
+      } else if (fact.a === 'embeddingModel' && !model && typeof fact.v === 'string') {
+        model = fact.v
+      }
+    }
+
+    const vectors: Record<string, number[]> = {}
+    let dimensions = 0
+    for (const [id, vec] of vectorsByEntity) {
+      vectors[id] = vec
+      if (vec.length > dimensions) dimensions = vec.length
+    }
+
+    return {
+      ok: true,
+      model: model || 'unknown',
+      dimensions,
+      count: vectorsByEntity.size,
+      vectors,
+    }
+  }
+
+  // ─── POST /api/graph/backfill-embeddings ────────────────────────────
+  // Generate and persist semantic embeddings on every user entity.
+  //
+  // For each entity, we concatenate title + type + description + notes +
+  // location + tags into a single "source text", hash it, and embed via
+  // the local Ollama proxy (/api/llm/embed, default model nomic-embed-text).
+  // The vector and its source hash are written back as attributes:
+  //   - embedding:       number[]  (768 floats for nomic-embed-text)
+  //   - embeddingModel:  string    (model identifier)
+  //   - embeddingHash:   string    (fnv-1a of the source text)
+  //
+  // Re-running is idempotent: entities whose current embeddingHash matches
+  // their current source text are skipped. Pass `force: true` to re-embed
+  // everything (e.g. after a model change).
+  //
+  // Body: { model?: string, batchSize?: number, force?: boolean,
+  //         limit?: number, dryRun?: boolean, agentId?: string }
+  if (method === 'POST' && route === 'backfill-embeddings') {
+    const body = await readBody(event).catch(() => ({}))
+    const agent: string = body?.agentId || 'backfill-embeddings'
+    const dryRun: boolean = !!body?.dryRun
+    const force: boolean = !!body?.force
+    const model: string = body?.model || process.env.TRELLIS_EMBED_MODEL || 'nomic-embed-text'
+    const batchSize: number = Math.max(1, Math.min(64, Number(body?.batchSize) || 16))
+    const limit: number = Math.max(0, Number(body?.limit) || 0) // 0 = no limit
+
+    const store = kernel.getStore()
+
+    // 1. Collect all user entity facts in a single pass.
+    const factsByEntity = new Map<string, Array<{ a: string; v: unknown }>>()
+    for (const fact of store.getAllFacts()) {
+      if (!fact.e.startsWith('entity:')) continue
+      if (!factsByEntity.has(fact.e)) factsByEntity.set(fact.e, [])
+      factsByEntity.get(fact.e)!.push({ a: fact.a, v: fact.v })
+    }
+
+    // Build the text we'll embed. Keep it short, content-focused, and
+    // stable across runs so the hash dedupe works.
+    const SOURCE_FIELDS = ['title', 'type', 'description', 'notes', 'location', 'summary', 'category']
+    const buildSourceText = (facts: Array<{ a: string; v: unknown }>): string => {
+      const parts: string[] = []
+      for (const field of SOURCE_FIELDS) {
+        const vals = facts.filter((f) => f.a === field).map((f) => f.v)
+        for (const v of vals) {
+          if (typeof v === 'string' && v.trim()) parts.push(v.trim())
+        }
+      }
+      // Tags are useful semantic anchors too.
+      const tags = facts.filter((f) => f.a === 'tags').map((f) => f.v)
+      for (const t of tags) {
+        if (typeof t === 'string') parts.push(`#${t}`)
+      }
+      return parts.join(' \u2014 ')
+    }
+
+    // FNV-1a 32-bit hash — fast, adequate for cache-key purposes.
+    const hashString = (s: string): string => {
+      let h = 0x811c9dc5
+      for (let i = 0; i < s.length; i++) {
+        h ^= s.charCodeAt(i)
+        h = (h + ((h << 1) + (h << 4) + (h << 7) + (h << 8) + (h << 24))) >>> 0
+      }
+      return h.toString(16).padStart(8, '0')
+    }
+
+    // 2. Decide which entities need embedding.
+    interface PendingEmbed {
+      entityId: string
+      text: string
+      hash: string
+    }
+    const pending: PendingEmbed[] = []
+    let skipped = 0
+    let noContent = 0
+
+    for (const [entityId, facts] of factsByEntity) {
+      const text = buildSourceText(facts)
+      if (!text) {
+        noContent++
+        continue
+      }
+      const hash = hashString(`${model}:${text}`)
+      if (!force) {
+        const existingHash = facts.find((f) => f.a === 'embeddingHash')?.v
+        const hasVector = facts.some((f) => f.a === 'embedding')
+        if (existingHash === hash && hasVector) {
+          skipped++
+          continue
+        }
+      }
+      pending.push({ entityId, text, hash })
+      if (limit > 0 && pending.length >= limit) break
+    }
+
+    if (dryRun || pending.length === 0) {
+      return {
+        ok: true,
+        dryRun,
+        model,
+        totals: {
+          embedded: 0,
+          skipped,
+          noContent,
+          pending: pending.length,
+          total: factsByEntity.size,
+        },
+      }
+    }
+
+    // 3. Embed in batches via the local endpoint. We call ourselves through
+    //    $fetch so the model / host config lives in one place.
+    let embedded = 0
+    let failed = 0
+    const errors: string[] = []
+
+    for (let i = 0; i < pending.length; i += batchSize) {
+      const batch = pending.slice(i, i + batchSize)
+      let vectors: number[][]
+      try {
+        const res = await $fetch<{ embeddings: number[][] }>('/api/llm/embed', {
+          method: 'POST',
+          body: { model, input: batch.map((b) => b.text) },
+        })
+        vectors = res.embeddings
+      } catch (err: any) {
+        failed += batch.length
+        errors.push(`batch ${i}-${i + batch.length}: ${err?.message || String(err)}`)
+        continue
+      }
+
+      for (let j = 0; j < batch.length; j++) {
+        const pendingItem = batch[j]!
+        const vec = vectors[j]
+        if (!Array.isArray(vec) || vec.length === 0) {
+          failed++
+          continue
+        }
+        try {
+          await kernel.updateNode(
+            pendingItem.entityId,
+            {
+              embedding: vec,
+              embeddingModel: model,
+              embeddingHash: pendingItem.hash,
+            },
+            'entity',
+            { agentId: agent },
+          )
+          embedded++
+        } catch (err: any) {
+          failed++
+          errors.push(`${pendingItem.entityId}: ${err?.message || String(err)}`)
+        }
+      }
+    }
+
+    pushMutationLog({
+      action: 'backfill-embeddings',
+      data: { model, embedded, skipped, failed, noContent, total: factsByEntity.size },
+    })
+
+    return {
+      ok: true,
+      model,
+      totals: {
+        embedded,
+        skipped,
+        failed,
+        noContent,
+        pending: pending.length,
+        total: factsByEntity.size,
+      },
+      errors: errors.length > 0 ? errors.slice(0, 10) : undefined,
     }
   }
 

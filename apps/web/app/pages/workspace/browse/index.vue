@@ -6,6 +6,7 @@
   import { useBrowsePage } from '~/composables/useBrowsePage'
   import { useBrowseSelection } from '~/composables/useBrowseSelection'
   import EntityDialog from '~/components/dialogs/EntityDialog.vue'
+  import GraphView from '~/components/views/GraphView.vue'
   import { deduplicateRecurringEntities } from '~/utils/recurrence'
 
   definePageMeta({ layout: 'default' })
@@ -123,6 +124,7 @@
       { mode: 'grid', label: 'Grid', icon: 'lucide:grid-3x3' },
       { mode: 'list', label: 'List', icon: 'lucide:list' },
       { mode: 'table', label: 'Table', icon: 'lucide:table' },
+      { mode: 'graph', label: 'Graph', icon: 'lucide:git-fork' },
     ]
     if (isAllMode.value) return base
     const cfg = getEntityTypeConfig(activeTypeParam.value as EntityType)
@@ -267,10 +269,17 @@
       </UiDropdownMenu>
     </template>
 
-    <!-- ── Content: grouped or flat ── -->
+    <!-- ── Content: graph / grouped / flat ── -->
+
+    <!-- Graph view — takes precedence over grouping since a graph is one canvas -->
+    <template v-if="viewMode === 'graph'">
+      <div class="h-[calc(100vh-200px)] -mx-4 -mb-4 rounded-lg border border-border/50 bg-card/30 overflow-hidden">
+        <GraphView :entities="filteredItems" @open-entity="openDetail" />
+      </div>
+    </template>
 
     <!-- Grouped by class view -->
-    <template v-if="groupByClass && groupedItems">
+    <template v-else-if="groupByClass && groupedItems">
       <div v-for="group in groupedItems" :key="group.class" class="mb-8">
         <!-- Group header -->
         <div class="flex items-center gap-2 mb-3">
@@ -455,8 +464,8 @@
       </div>
     </template>
 
-    <!-- Results count -->
-    <div class="text-xs text-muted-foreground mt-4 pt-4 border-t border-border pb-10">
+    <!-- Results count (hidden in graph mode since the graph has its own stats badge) -->
+    <div v-if="viewMode !== 'graph'" class="text-xs text-muted-foreground mt-4 pt-4 border-t border-border pb-10">
       Showing {{ filteredItems.length }} {{ filteredItems.length === 1 ? 'item' : 'items' }}
       <span v-if="browseState.searchQuery.value">for "{{ browseState.searchQuery.value }}"</span>
     </div>

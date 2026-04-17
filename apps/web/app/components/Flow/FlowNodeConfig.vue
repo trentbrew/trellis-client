@@ -355,26 +355,73 @@
     <!-- ── Memory Read ─────────────────────────────────────────────────────── -->
     <template v-if="kind === 'memory-read'">
       <div class="space-y-1.5">
-        <label class="text-xs font-medium text-muted-foreground">Key</label>
+        <label class="text-xs font-medium text-muted-foreground">Source</label>
+        <select
+          :value="(d.source as string) || 'state'"
+          class="field"
+          @change="setMemory('source', ($event.target as HTMLSelectElement).value)">
+          <option value="state">State — ephemeral in-memory KV</option>
+          <option value="graph">Trellis Graph — persistent entities</option>
+        </select>
+      </div>
+
+      <div class="space-y-1.5">
+        <label class="text-xs font-medium text-muted-foreground">
+          {{ (d.source as string) === 'graph' ? 'Entity ID or EQL-S Query' : 'Key' }}
+        </label>
         <input
           :value="(d.key as string) || ''"
           class="field font-mono text-sm"
-          placeholder="context_key"
+          :placeholder="
+            (d.source as string) === 'graph' ? 'entity:note-foo OR FIND entity AS ?e WHERE ...' : 'context_key'
+          "
           @blur="setMemory('key', ($event.target as HTMLInputElement).value)" />
-        <p class="text-[10px] text-muted-foreground">Value is injected into the next node's input.</p>
+        <p v-if="(d.source as string) === 'graph'" class="text-[10px] text-muted-foreground">
+          Reads from the Trellis knowledge graph. If the value starts with
+          <code class="rounded bg-muted px-1">FIND</code>
+          it's run as an EQL-S query; otherwise it's treated as an entity ID.
+        </p>
+        <p v-else class="text-[10px] text-muted-foreground">Value is injected into the next node's input.</p>
       </div>
     </template>
 
     <!-- ── Memory Write ────────────────────────────────────────────────────── -->
     <template v-if="kind === 'memory-write'">
       <div class="space-y-1.5">
-        <label class="text-xs font-medium text-muted-foreground">Key</label>
+        <label class="text-xs font-medium text-muted-foreground">Target</label>
+        <select
+          :value="(d.source as string) || 'state'"
+          class="field"
+          @change="setMemory('source', ($event.target as HTMLSelectElement).value)">
+          <option value="state">State — ephemeral in-memory KV</option>
+          <option value="graph">Trellis Graph — creates/updates an entity</option>
+        </select>
+      </div>
+
+      <div class="space-y-1.5">
+        <label class="text-xs font-medium text-muted-foreground">
+          {{ (d.source as string) === 'graph' ? 'Entity ID' : 'Key' }}
+        </label>
         <input
           :value="(d.key as string) || ''"
           class="field font-mono text-sm"
-          placeholder="context_key"
+          :placeholder="(d.source as string) === 'graph' ? 'entity:note-summary' : 'context_key'"
           @blur="setMemory('key', ($event.target as HTMLInputElement).value)" />
+        <p v-if="(d.source as string) === 'graph'" class="text-[10px] text-muted-foreground">
+          If the entity exists, it's updated (partial merge). Otherwise it's created.
+        </p>
       </div>
+
+      <div v-if="(d.source as string) === 'graph'" class="space-y-1.5">
+        <label class="text-xs font-medium text-muted-foreground">Entity Type (on create)</label>
+        <input
+          :value="(d.entityType as string) || ''"
+          class="field font-mono text-sm"
+          placeholder="note"
+          @blur="setMemory('entityType', ($event.target as HTMLInputElement).value)" />
+        <p class="text-[10px] text-muted-foreground">Used only if the value isn't already an entity object.</p>
+      </div>
+
       <div class="space-y-1.5">
         <label class="text-xs font-medium text-muted-foreground">From (dot path)</label>
         <input
