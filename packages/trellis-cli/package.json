@@ -1,5 +1,5 @@
 {
-  "name": "@toolkit/trellis-cli",
+  "name": "@turtle.tech/trellis-cli",
   "version": "0.1.0",
   "private": true,
   "type": "module",

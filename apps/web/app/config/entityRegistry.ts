@@ -863,6 +863,26 @@ const ENTITY_TYPES: Record<EntityType, EntityTypeConfig> = {
     searchFields: ['title', 'description', 'content'],
   },
 
+  email: {
+    type: 'email',
+    class: 'document',
+    label: 'Email',
+    labelPlural: 'Emails',
+    icon: 'lucide:mail',
+    color: 'rose',
+    projections: ['list', 'table'],
+    defaultProjection: 'list',
+    dialogShell: 'document',
+    panels: {
+      properties: 'EmailProperties',
+      content: 'EmailContent',
+      footerActions: ['pin', 'archive', 'delete'],
+    },
+    propertyFields: fields('pin', 'tags'),
+    defaultSortField: 'date',
+    searchFields: ['title', 'subject', 'from', 'to', 'snippet'],
+  },
+
   // ── Actor ────────────────────────────────────────────────────────────────
 
   person: {

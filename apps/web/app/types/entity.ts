@@ -44,7 +44,7 @@ export type TemporalEntityType =
   | 'sprint'
   | 'budget'
 
-export type DocumentEntityType = 'note' | 'file' | 'page' | 'template' | 'slide_deck' | 'bookmark' | 'diagram'
+export type DocumentEntityType = 'note' | 'file' | 'page' | 'template' | 'slide_deck' | 'bookmark' | 'diagram' | 'email'
 
 export type ActorEntityType = 'person' | 'contact' | 'organization' | 'vendor'
 
@@ -239,8 +239,16 @@ export type ProjectStatus = 'active' | 'on-hold' | 'completed' | 'archived'
 export type EventType = EventSubtype
 
 export const DEFAULT_CATEGORIES = [
-  'general', 'work', 'personal', 'meeting', 'review',
-  'appointment', 'deadline', 'health', 'finance', 'travel',
+  'general',
+  'work',
+  'personal',
+  'meeting',
+  'review',
+  'appointment',
+  'deadline',
+  'health',
+  'finance',
+  'travel',
 ] as const
 
 export type DefaultCategory = (typeof DEFAULT_CATEGORIES)[number]
@@ -477,6 +485,28 @@ export interface BookmarkItem extends EntityItemBase {
   pinned: boolean
 }
 
+export interface EmailItem extends EntityItemBase {
+  type: 'email'
+  subject?: string
+  snippet?: string
+  from?: string
+  to?: string
+  cc?: string
+  bcc?: string
+  date?: string
+  labelIds?: string[]
+  threadId?: string
+  messageId?: string
+  isRead?: boolean
+  isStarred?: boolean
+  bodyText?: string
+  bodyHtml?: string
+  source?: string
+  gmailMessageId?: string
+  gmailThreadId?: string
+  pinned: boolean
+}
+
 export interface DiagramItem extends EntityItemBase {
   type: 'diagram'
   content?: string
@@ -584,7 +614,7 @@ export type TemporalEntity =
   | SprintItem
   | BudgetItem
 
-export type DocumentEntity = NoteItem | FileItem | PageItem | TemplateItem | SlideDeckItem | BookmarkItem
+export type DocumentEntity = NoteItem | FileItem | PageItem | TemplateItem | SlideDeckItem | BookmarkItem | EmailItem
 
 export type ActorEntity = PersonItem | ContactItem | OrganizationItem | VendorItem
 
@@ -623,7 +653,15 @@ const TEMPORAL_TYPES: Set<string> = new Set<TemporalEntityType>([
   'sprint',
   'budget',
 ])
-const DOCUMENT_TYPES: Set<string> = new Set<DocumentEntityType>(['note', 'file', 'page', 'template', 'slide_deck', 'bookmark'])
+const DOCUMENT_TYPES: Set<string> = new Set<DocumentEntityType>([
+  'note',
+  'file',
+  'page',
+  'template',
+  'slide_deck',
+  'bookmark',
+  'email',
+])
 const ACTOR_TYPES: Set<string> = new Set<ActorEntityType>(['person', 'contact', 'organization', 'vendor'])
 const CONTAINER_TYPES: Set<string> = new Set<ContainerEntityType>(['project', 'folder', 'collection', 'goal'])
 
@@ -653,6 +691,7 @@ export const isNote = (entity: Entity): entity is NoteItem => entity.type === 'n
 export const isFile = (entity: Entity): entity is FileItem => entity.type === 'file'
 export const isSlideDeck = (entity: Entity): entity is SlideDeckItem => entity.type === 'slide_deck'
 export const isBookmark = (entity: Entity): entity is BookmarkItem => entity.type === 'bookmark'
+export const isEmail = (entity: Entity): entity is EmailItem => entity.type === 'email'
 export const isPerson = (entity: Entity): entity is PersonItem => entity.type === 'person'
 export const isOrganization = (entity: Entity): entity is OrganizationItem => entity.type === 'organization'
 export const isProject = (entity: Entity): entity is ProjectItem => entity.type === 'project'
@@ -792,6 +831,29 @@ export const createDefaultBookmark = (): BookmarkItem => ({
   pinned: false,
 })
 
+export const createDefaultEmail = (): EmailItem => ({
+  ...createDefaultBase(),
+  type: 'email',
+  subject: undefined,
+  snippet: undefined,
+  from: undefined,
+  to: undefined,
+  cc: undefined,
+  bcc: undefined,
+  date: undefined,
+  labelIds: [],
+  threadId: undefined,
+  messageId: undefined,
+  isRead: false,
+  isStarred: false,
+  bodyText: undefined,
+  bodyHtml: undefined,
+  source: 'gmail',
+  gmailMessageId: undefined,
+  gmailThreadId: undefined,
+  pinned: false,
+})
+
 export const createDefaultPerson = (): PersonItem => ({
   ...createDefaultBase(),
   type: 'person',
@@ -892,6 +954,8 @@ export const createDefaultItem = (type: EntityType | string): Entity => {
       return createDefaultFile()
     case 'bookmark':
       return createDefaultBookmark()
+    case 'email':
+      return createDefaultEmail()
     case 'person':
       return createDefaultPerson()
     case 'organization':
@@ -936,41 +1000,156 @@ export const ENTITY_TYPE_OPTIONS: { value: EntityType; label: string; icon: stri
 ]
 
 export const PRIORITY_OPTIONS: { value: Priority; label: string; icon: string; color: string }[] = [
-  { value: 'critical', label: 'Critical', icon: 'lucide:alert-octagon', color: 'text-red-600 bg-red-100 dark:bg-red-900/30 dark:text-red-400' },
-  { value: 'high', label: 'High', icon: 'lucide:arrow-up', color: 'text-orange-600 bg-orange-100 dark:bg-orange-900/30 dark:text-orange-400' },
-  { value: 'medium', label: 'Medium', icon: 'lucide:minus', color: 'text-amber-600 bg-amber-100 dark:bg-amber-900/30 dark:text-amber-400' },
-  { value: 'low', label: 'Low', icon: 'lucide:arrow-down', color: 'text-blue-600 bg-blue-100 dark:bg-blue-900/30 dark:text-blue-400' },
+  {
+    value: 'critical',
+    label: 'Critical',
+    icon: 'lucide:alert-octagon',
+    color: 'text-red-600 bg-red-100 dark:bg-red-900/30 dark:text-red-400',
+  },
+  {
+    value: 'high',
+    label: 'High',
+    icon: 'lucide:arrow-up',
+    color: 'text-orange-600 bg-orange-100 dark:bg-orange-900/30 dark:text-orange-400',
+  },
+  {
+    value: 'medium',
+    label: 'Medium',
+    icon: 'lucide:minus',
+    color: 'text-amber-600 bg-amber-100 dark:bg-amber-900/30 dark:text-amber-400',
+  },
+  {
+    value: 'low',
+    label: 'Low',
+    icon: 'lucide:arrow-down',
+    color: 'text-blue-600 bg-blue-100 dark:bg-blue-900/30 dark:text-blue-400',
+  },
 ]
 
 export const URGENCY_OPTIONS: { value: Urgency; label: string; icon: string; color: string }[] = [
-  { value: 'urgent', label: 'Urgent', icon: 'lucide:zap', color: 'text-red-600 bg-red-100 dark:bg-red-900/30 dark:text-red-400' },
-  { value: 'not-urgent', label: 'Not Urgent', icon: 'lucide:clock', color: 'text-slate-600 bg-slate-100 dark:bg-slate-900/30 dark:text-slate-400' },
+  {
+    value: 'urgent',
+    label: 'Urgent',
+    icon: 'lucide:zap',
+    color: 'text-red-600 bg-red-100 dark:bg-red-900/30 dark:text-red-400',
+  },
+  {
+    value: 'not-urgent',
+    label: 'Not Urgent',
+    icon: 'lucide:clock',
+    color: 'text-slate-600 bg-slate-100 dark:bg-slate-900/30 dark:text-slate-400',
+  },
 ]
 
 export const TASK_STATUS_OPTIONS: { value: TaskStatus; label: string; icon: string; color: string }[] = [
-  { value: 'pending', label: 'Pending', icon: 'lucide:circle', color: 'text-slate-500 bg-slate-100 dark:bg-slate-800 dark:text-slate-400' },
-  { value: 'in-progress', label: 'In Progress', icon: 'lucide:loader', color: 'text-blue-600 bg-blue-100 dark:bg-blue-900/30 dark:text-blue-400' },
-  { value: 'on-track', label: 'On Track', icon: 'lucide:trending-up', color: 'text-emerald-600 bg-emerald-100 dark:bg-emerald-900/30 dark:text-emerald-400' },
-  { value: 'due-soon', label: 'Due Soon', icon: 'lucide:alarm-clock', color: 'text-amber-600 bg-amber-100 dark:bg-amber-900/30 dark:text-amber-400' },
-  { value: 'overdue', label: 'Overdue', icon: 'lucide:alert-triangle', color: 'text-red-600 bg-red-100 dark:bg-red-900/30 dark:text-red-400' },
-  { value: 'completed', label: 'Completed', icon: 'lucide:check-circle', color: 'text-emerald-600 bg-emerald-100 dark:bg-emerald-900/30 dark:text-emerald-400' },
+  {
+    value: 'pending',
+    label: 'Pending',
+    icon: 'lucide:circle',
+    color: 'text-slate-500 bg-slate-100 dark:bg-slate-800 dark:text-slate-400',
+  },
+  {
+    value: 'in-progress',
+    label: 'In Progress',
+    icon: 'lucide:loader',
+    color: 'text-blue-600 bg-blue-100 dark:bg-blue-900/30 dark:text-blue-400',
+  },
+  {
+    value: 'on-track',
+    label: 'On Track',
+    icon: 'lucide:trending-up',
+    color: 'text-emerald-600 bg-emerald-100 dark:bg-emerald-900/30 dark:text-emerald-400',
+  },
+  {
+    value: 'due-soon',
+    label: 'Due Soon',
+    icon: 'lucide:alarm-clock',
+    color: 'text-amber-600 bg-amber-100 dark:bg-amber-900/30 dark:text-amber-400',
+  },
+  {
+    value: 'overdue',
+    label: 'Overdue',
+    icon: 'lucide:alert-triangle',
+    color: 'text-red-600 bg-red-100 dark:bg-red-900/30 dark:text-red-400',
+  },
+  {
+    value: 'completed',
+    label: 'Completed',
+    icon: 'lucide:check-circle',
+    color: 'text-emerald-600 bg-emerald-100 dark:bg-emerald-900/30 dark:text-emerald-400',
+  },
 ]
 
 export const EVENT_TYPE_OPTIONS: { value: EventSubtype; label: string; icon: string; color: string }[] = [
-  { value: 'meeting', label: 'Meeting', icon: 'lucide:users', color: 'text-blue-600 bg-blue-100 dark:bg-blue-900/30 dark:text-blue-400' },
-  { value: 'appointment', label: 'Appointment', icon: 'lucide:calendar-check', color: 'text-emerald-600 bg-emerald-100 dark:bg-emerald-900/30 dark:text-emerald-400' },
-  { value: 'training', label: 'Training', icon: 'lucide:graduation-cap', color: 'text-purple-600 bg-purple-100 dark:bg-purple-900/30 dark:text-purple-400' },
-  { value: 'deadline', label: 'Deadline', icon: 'lucide:alert-circle', color: 'text-red-600 bg-red-100 dark:bg-red-900/30 dark:text-red-400' },
-  { value: 'social', label: 'Social', icon: 'lucide:party-popper', color: 'text-pink-600 bg-pink-100 dark:bg-pink-900/30 dark:text-pink-400' },
-  { value: 'other', label: 'Other', icon: 'lucide:calendar', color: 'text-slate-600 bg-slate-100 dark:bg-slate-900/30 dark:text-slate-400' },
+  {
+    value: 'meeting',
+    label: 'Meeting',
+    icon: 'lucide:users',
+    color: 'text-blue-600 bg-blue-100 dark:bg-blue-900/30 dark:text-blue-400',
+  },
+  {
+    value: 'appointment',
+    label: 'Appointment',
+    icon: 'lucide:calendar-check',
+    color: 'text-emerald-600 bg-emerald-100 dark:bg-emerald-900/30 dark:text-emerald-400',
+  },
+  {
+    value: 'training',
+    label: 'Training',
+    icon: 'lucide:graduation-cap',
+    color: 'text-purple-600 bg-purple-100 dark:bg-purple-900/30 dark:text-purple-400',
+  },
+  {
+    value: 'deadline',
+    label: 'Deadline',
+    icon: 'lucide:alert-circle',
+    color: 'text-red-600 bg-red-100 dark:bg-red-900/30 dark:text-red-400',
+  },
+  {
+    value: 'social',
+    label: 'Social',
+    icon: 'lucide:party-popper',
+    color: 'text-pink-600 bg-pink-100 dark:bg-pink-900/30 dark:text-pink-400',
+  },
+  {
+    value: 'other',
+    label: 'Other',
+    icon: 'lucide:calendar',
+    color: 'text-slate-600 bg-slate-100 dark:bg-slate-900/30 dark:text-slate-400',
+  },
 ]
 
 export const TRIP_STATUS_OPTIONS: { value: TripStatus; label: string; icon: string; color: string }[] = [
-  { value: 'planning', label: 'Planning', icon: 'lucide:map', color: 'text-blue-600 bg-blue-100 dark:bg-blue-900/30 dark:text-blue-400' },
-  { value: 'booked', label: 'Booked', icon: 'lucide:ticket', color: 'text-emerald-600 bg-emerald-100 dark:bg-emerald-900/30 dark:text-emerald-400' },
-  { value: 'in-progress', label: 'In Progress', icon: 'lucide:plane', color: 'text-amber-600 bg-amber-100 dark:bg-amber-900/30 dark:text-amber-400' },
-  { value: 'completed', label: 'Completed', icon: 'lucide:check-circle', color: 'text-slate-600 bg-slate-100 dark:bg-slate-900/30 dark:text-slate-400' },
-  { value: 'cancelled', label: 'Cancelled', icon: 'lucide:x-circle', color: 'text-red-600 bg-red-100 dark:bg-red-900/30 dark:text-red-400' },
+  {
+    value: 'planning',
+    label: 'Planning',
+    icon: 'lucide:map',
+    color: 'text-blue-600 bg-blue-100 dark:bg-blue-900/30 dark:text-blue-400',
+  },
+  {
+    value: 'booked',
+    label: 'Booked',
+    icon: 'lucide:ticket',
+    color: 'text-emerald-600 bg-emerald-100 dark:bg-emerald-900/30 dark:text-emerald-400',
+  },
+  {
+    value: 'in-progress',
+    label: 'In Progress',
+    icon: 'lucide:plane',
+    color: 'text-amber-600 bg-amber-100 dark:bg-amber-900/30 dark:text-amber-400',
+  },
+  {
+    value: 'completed',
+    label: 'Completed',
+    icon: 'lucide:check-circle',
+    color: 'text-slate-600 bg-slate-100 dark:bg-slate-900/30 dark:text-slate-400',
+  },
+  {
+    value: 'cancelled',
+    label: 'Cancelled',
+    icon: 'lucide:x-circle',
+    color: 'text-red-600 bg-red-100 dark:bg-red-900/30 dark:text-red-400',
+  },
 ]
 
 export const TRANSPORT_OPTIONS: { value: TransportMode; label: string; icon: string }[] = [
@@ -982,24 +1161,84 @@ export const TRANSPORT_OPTIONS: { value: TransportMode; label: string; icon: str
 ]
 
 export const PAYMENT_STATUS_OPTIONS: { value: PaymentStatus; label: string; icon: string; color: string }[] = [
-  { value: 'pending', label: 'Pending', icon: 'lucide:clock', color: 'text-amber-600 bg-amber-100 dark:bg-amber-900/30 dark:text-amber-400' },
-  { value: 'paid', label: 'Paid', icon: 'lucide:check-circle', color: 'text-emerald-600 bg-emerald-100 dark:bg-emerald-900/30 dark:text-emerald-400' },
-  { value: 'overdue', label: 'Overdue', icon: 'lucide:alert-triangle', color: 'text-red-600 bg-red-100 dark:bg-red-900/30 dark:text-red-400' },
-  { value: 'cancelled', label: 'Cancelled', icon: 'lucide:x-circle', color: 'text-slate-600 bg-slate-100 dark:bg-slate-900/30 dark:text-slate-400' },
+  {
+    value: 'pending',
+    label: 'Pending',
+    icon: 'lucide:clock',
+    color: 'text-amber-600 bg-amber-100 dark:bg-amber-900/30 dark:text-amber-400',
+  },
+  {
+    value: 'paid',
+    label: 'Paid',
+    icon: 'lucide:check-circle',
+    color: 'text-emerald-600 bg-emerald-100 dark:bg-emerald-900/30 dark:text-emerald-400',
+  },
+  {
+    value: 'overdue',
+    label: 'Overdue',
+    icon: 'lucide:alert-triangle',
+    color: 'text-red-600 bg-red-100 dark:bg-red-900/30 dark:text-red-400',
+  },
+  {
+    value: 'cancelled',
+    label: 'Cancelled',
+    icon: 'lucide:x-circle',
+    color: 'text-slate-600 bg-slate-100 dark:bg-slate-900/30 dark:text-slate-400',
+  },
 ]
 
 export const SPRINT_STATUS_OPTIONS: { value: SprintStatus; label: string; icon: string; color: string }[] = [
-  { value: 'planning', label: 'Planning', icon: 'lucide:map', color: 'text-blue-600 bg-blue-100 dark:bg-blue-900/30 dark:text-blue-400' },
-  { value: 'active', label: 'Active', icon: 'lucide:play', color: 'text-emerald-600 bg-emerald-100 dark:bg-emerald-900/30 dark:text-emerald-400' },
-  { value: 'completed', label: 'Completed', icon: 'lucide:check-circle', color: 'text-slate-600 bg-slate-100 dark:bg-slate-900/30 dark:text-slate-400' },
-  { value: 'cancelled', label: 'Cancelled', icon: 'lucide:x-circle', color: 'text-red-600 bg-red-100 dark:bg-red-900/30 dark:text-red-400' },
+  {
+    value: 'planning',
+    label: 'Planning',
+    icon: 'lucide:map',
+    color: 'text-blue-600 bg-blue-100 dark:bg-blue-900/30 dark:text-blue-400',
+  },
+  {
+    value: 'active',
+    label: 'Active',
+    icon: 'lucide:play',
+    color: 'text-emerald-600 bg-emerald-100 dark:bg-emerald-900/30 dark:text-emerald-400',
+  },
+  {
+    value: 'completed',
+    label: 'Completed',
+    icon: 'lucide:check-circle',
+    color: 'text-slate-600 bg-slate-100 dark:bg-slate-900/30 dark:text-slate-400',
+  },
+  {
+    value: 'cancelled',
+    label: 'Cancelled',
+    icon: 'lucide:x-circle',
+    color: 'text-red-600 bg-red-100 dark:bg-red-900/30 dark:text-red-400',
+  },
 ]
 
 export const BUDGET_STATUS_OPTIONS: { value: BudgetStatus; label: string; icon: string; color: string }[] = [
-  { value: 'draft', label: 'Draft', icon: 'lucide:file-edit', color: 'text-slate-600 bg-slate-100 dark:bg-slate-900/30 dark:text-slate-400' },
-  { value: 'active', label: 'Active', icon: 'lucide:play', color: 'text-emerald-600 bg-emerald-100 dark:bg-emerald-900/30 dark:text-emerald-400' },
-  { value: 'closed', label: 'Closed', icon: 'lucide:check-circle', color: 'text-blue-600 bg-blue-100 dark:bg-blue-900/30 dark:text-blue-400' },
-  { value: 'over-budget', label: 'Over Budget', icon: 'lucide:alert-triangle', color: 'text-red-600 bg-red-100 dark:bg-red-900/30 dark:text-red-400' },
+  {
+    value: 'draft',
+    label: 'Draft',
+    icon: 'lucide:file-edit',
+    color: 'text-slate-600 bg-slate-100 dark:bg-slate-900/30 dark:text-slate-400',
+  },
+  {
+    value: 'active',
+    label: 'Active',
+    icon: 'lucide:play',
+    color: 'text-emerald-600 bg-emerald-100 dark:bg-emerald-900/30 dark:text-emerald-400',
+  },
+  {
+    value: 'closed',
+    label: 'Closed',
+    icon: 'lucide:check-circle',
+    color: 'text-blue-600 bg-blue-100 dark:bg-blue-900/30 dark:text-blue-400',
+  },
+  {
+    value: 'over-budget',
+    label: 'Over Budget',
+    icon: 'lucide:alert-triangle',
+    color: 'text-red-600 bg-red-100 dark:bg-red-900/30 dark:text-red-400',
+  },
 ]
 
 export const CURRENCY_OPTIONS: { value: string; label: string }[] = [

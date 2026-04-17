@@ -79,15 +79,15 @@
   const showSidebar = computed(() => selectedNodes.value.length > 0)
 
   const nodeKindIcon: Record<WorkflowNodeKind, string> = {
-    'start': 'lucide:play',
-    'agent': 'lucide:sparkles',
-    'tool': 'lucide:wrench',
-    'router': 'lucide:git-branch',
-    'guard': 'lucide:shield',
+    start: 'lucide:play',
+    agent: 'lucide:sparkles',
+    tool: 'lucide:wrench',
+    router: 'lucide:git-branch',
+    guard: 'lucide:shield',
     'memory-read': 'lucide:database',
     'memory-write': 'lucide:database-zap',
-    'end': 'lucide:flag',
-    'note': 'lucide:sticky-note',
+    end: 'lucide:flag',
+    note: 'lucide:sticky-note',
   }
 
   const paletteItems: { kind: WorkflowNodeKind; label: string; color: string; group: 'flow' | 'utility' }[] = [
@@ -163,7 +163,9 @@
       nodes.value = nodes.value.map((n) => ({
         ...n,
         class: states?.[n.id]
-          ? ({ running: 'flow-exec--running', completed: 'flow-exec--completed', error: 'flow-exec--errored' }[states[n.id]!.status] ?? undefined)
+          ? ({ running: 'flow-exec--running', completed: 'flow-exec--completed', error: 'flow-exec--errored' }[
+              states[n.id]!.status
+            ] ?? undefined)
           : undefined,
       }))
     },
@@ -416,7 +418,7 @@
     flex-direction: column;
     width: 100%;
     height: 100%;
-    background-color: var(--background);
+    background-color: transparent;
   }
 
   :deep(.vue-flow__node) {
@@ -482,7 +484,14 @@
   }
 
   @keyframes flow-pulse {
-    0%, 100% { box-shadow: 0 0 0 2px color-mix(in oklch, var(--primary) 60%, transparent); }
-    50%       { box-shadow: 0 0 0 4px color-mix(in oklch, var(--primary) 30%, transparent), 0 0 18px color-mix(in oklch, var(--primary) 20%, transparent); }
+    0%,
+    100% {
+      box-shadow: 0 0 0 2px color-mix(in oklch, var(--primary) 60%, transparent);
+    }
+    50% {
+      box-shadow:
+        0 0 0 4px color-mix(in oklch, var(--primary) 30%, transparent),
+        0 0 18px color-mix(in oklch, var(--primary) 20%, transparent);
+    }
   }
 </style>

@@ -30,6 +30,7 @@
     file: defineAsyncComponent(() => import('./document/FileContent.vue')),
     bookmark: defineAsyncComponent(() => import('./document/BookmarkContent.vue')),
     diagram: defineAsyncComponent(() => import('~/components/editor/DiagramContent.vue')),
+    email: defineAsyncComponent(() => import('./document/EmailContent.vue')),
     goal: defineAsyncComponent(() => import('./container/GoalContent.vue')),
   }
 

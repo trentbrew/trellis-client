@@ -7,6 +7,7 @@
   })
 
   const router = useRouter()
+  const { wp } = useWorkspacePath()
   const { currentApp, workflows, createWorkflow } = useInstantData()
 
   const creating = ref<string | null>(null)
@@ -14,7 +15,7 @@
   const handleCreate = async () => {
     creating.value = 'blank'
     const id = await createWorkflow({ name: 'Untitled Workflow', icon: 'lucide:workflow', active: true })
-    await router.push(`/workflows/${id}`)
+    await router.push(wp(`/workflows/${id}`))
     creating.value = null
   }
 
@@ -28,7 +29,7 @@
       active: false,
       graph: tpl.graph,
     })
-    await router.push(`/workflows/${id}`)
+    await router.push(wp(`/workflows/${id}`))
     creating.value = null
   }
 
@@ -55,7 +56,6 @@
     description="Automations and orchestration"
     icon="lucide:workflow"
     :fill-height="true">
-
     <!-- No app selected -->
     <div v-if="!currentApp" class="flex h-full items-center justify-center p-8">
       <div class="text-center max-w-md">
@@ -72,9 +72,11 @@
           {{ (workflows?.length || 0) === 0 ? 'Get started' : 'New Workflow' }}
         </h2>
         <p class="text-muted-foreground text-sm">
-          {{ (workflows?.length || 0) === 0
-            ? 'Automate tasks, run agents, and connect your data — pick a template or start blank.'
-            : 'Choose a template or start from scratch.' }}
+          {{
+            (workflows?.length || 0) === 0
+              ? 'Automate tasks, run agents, and connect your data — pick a template or start blank.'
+              : 'Choose a template or start from scratch.'
+          }}
         </p>
       </div>
 
@@ -86,15 +88,24 @@
           @click="handleCreate">
           <div class="flex items-center justify-between">
             <div class="flex h-9 w-9 items-center justify-center rounded-lg bg-muted">
-              <Icon name="lucide:plus" class="h-5 w-5 text-muted-foreground group-hover:text-primary transition-colors" />
+              <Icon
+                name="lucide:plus"
+                class="h-5 w-5 text-muted-foreground group-hover:text-primary transition-colors" />
             </div>
-            <span class="text-[10px] font-semibold uppercase tracking-wider px-2 py-0.5 rounded-full bg-zinc-500/15 text-zinc-400">Blank</span>
+            <span
+              class="text-[10px] font-semibold uppercase tracking-wider px-2 py-0.5 rounded-full bg-zinc-500/15 text-zinc-400">
+              Blank
+            </span>
           </div>
           <div>
             <p class="font-semibold text-sm leading-tight mb-1">Blank Workflow</p>
-            <p class="text-xs text-muted-foreground leading-snug">Start from a single Start node and build your own flow.</p>
+            <p class="text-xs text-muted-foreground leading-snug">
+              Start from a single Start node and build your own flow.
+            </p>
           </div>
-          <div v-if="creating === 'blank'" class="absolute inset-0 flex items-center justify-center rounded-xl bg-background/60 backdrop-blur-sm">
+          <div
+            v-if="creating === 'blank'"
+            class="absolute inset-0 flex items-center justify-center rounded-xl bg-background/60 backdrop-blur-sm">
             <Icon name="lucide:loader-circle" class="h-5 w-5 animate-spin text-primary" />
           </div>
         </button>
@@ -110,7 +121,11 @@
             <div class="flex h-9 w-9 items-center justify-center rounded-lg bg-muted">
               <Icon :name="tpl.icon" class="h-5 w-5 text-muted-foreground group-hover:text-primary transition-colors" />
             </div>
-            <span :class="['text-[10px] font-semibold uppercase tracking-wider px-2 py-0.5 rounded-full', triggerColor[tpl.trigger]]">
+            <span
+              :class="[
+                'text-[10px] font-semibold uppercase tracking-wider px-2 py-0.5 rounded-full',
+                triggerColor[tpl.trigger],
+              ]">
               {{ triggerLabel[tpl.trigger] }}
             </span>
           </div>
@@ -119,9 +134,16 @@
             <p class="text-xs text-muted-foreground leading-snug">{{ tpl.description }}</p>
           </div>
           <div class="flex flex-wrap gap-1 mt-auto">
-            <span v-for="tag in tpl.tags" :key="tag" class="text-[10px] px-1.5 py-0.5 rounded bg-muted text-muted-foreground">{{ tag }}</span>
+            <span
+              v-for="tag in tpl.tags"
+              :key="tag"
+              class="text-[10px] px-1.5 py-0.5 rounded bg-muted text-muted-foreground">
+              {{ tag }}
+            </span>
           </div>
-          <div v-if="creating === tpl.id" class="absolute inset-0 flex items-center justify-center rounded-xl bg-background/60 backdrop-blur-sm">
+          <div
+            v-if="creating === tpl.id"
+            class="absolute inset-0 flex items-center justify-center rounded-xl bg-background/60 backdrop-blur-sm">
             <Icon name="lucide:loader-circle" class="h-5 w-5 animate-spin text-primary" />
           </div>
         </button>

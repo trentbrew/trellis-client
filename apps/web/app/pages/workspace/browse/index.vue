@@ -6,6 +6,7 @@
   import { useBrowsePage } from '~/composables/useBrowsePage'
   import { useBrowseSelection } from '~/composables/useBrowseSelection'
   import EntityDialog from '~/components/dialogs/EntityDialog.vue'
+  import { deduplicateRecurringEntities } from '~/utils/recurrence'
 
   definePageMeta({ layout: 'default' })
   useHead({ title: 'Browse | Workspace' })
@@ -20,12 +21,10 @@
 
   // All static entity type configs for pill bar
   const allEntityTypes = getAllEntityTypes()
-  const ALL_TYPE_IDS = allEntityTypes.map(t => t.type) as EntityType[]
+  const ALL_TYPE_IDS = allEntityTypes.map((t) => t.type) as EntityType[]
 
   // The type(s) fed into useBrowsePage
-  const activeTypes = computed<string[]>(() =>
-    isAllMode.value ? ALL_TYPE_IDS : [activeTypeParam.value],
-  )
+  const activeTypes = computed<string[]>(() => (isAllMode.value ? ALL_TYPE_IDS : [activeTypeParam.value]))
 
   function selectType(type: string) {
     const q = type === 'all' ? {} : { type }
@@ -35,11 +34,21 @@
   // ── Browse data ───────────────────────────────────────────────────────────
 
   const {
-    items, allItems, filteredItems,
-    browseState, viewMode,
-    viewOpen, viewingItem, openDetail, handleNewItem,
-    canPrev, canNext, navPrev, navNext,
-    handleUpdate, handleDelete,
+    items,
+    allItems,
+    filteredItems,
+    browseState,
+    viewMode,
+    viewOpen,
+    viewingItem,
+    openDetail,
+    handleNewItem,
+    canPrev,
+    canNext,
+    navPrev,
+    navNext,
+    handleUpdate,
+    handleDelete,
   } = useBrowsePage({
     entityType: activeTypes,
     searchFields: ['title', 'description', 'content'],
@@ -55,23 +64,31 @@
   // ── Multi-select ─────────────────────────────────────────────────────────
 
   const {
-    isSelected, toggle: toggleSelection, clearSelection,
-    selectedItems, selectionCount,
-    handleFieldUpdate, handleBatchDelete, handleBatchDuplicate,
+    isSelected,
+    toggle: toggleSelection,
+    clearSelection,
+    selectedItems,
+    selectionCount,
+    handleFieldUpdate,
+    handleBatchDelete,
+    handleBatchDuplicate,
   } = useBrowseSelection(filteredItems)
 
   // ── Type filter pills ─────────────────────────────────────────────────────
 
-  // Count entities by type from the full unfiltered store
+  // Deduplicated view of all items for accurate sidebar counts
+  const deduplicatedAll = computed(() => deduplicateRecurringEntities(allItems.value))
+
+  // Count entities by type — uses deduplicated list so recurring series count as 1
   const typeCounts = computed(() => {
     const counts: Record<string, number> = {}
-    for (const item of allItems.value) {
+    for (const item of deduplicatedAll.value) {
       counts[item.type] = (counts[item.type] || 0) + 1
     }
     return counts
   })
 
-  const totalCount = computed(() => allItems.value.length)
+  const totalCount = computed(() => deduplicatedAll.value.length)
 
   // ── Grouping ──────────────────────────────────────────────────────────────
 
@@ -95,8 +112,8 @@
       groups[cls].push(item)
     }
     return classOrder
-      .filter(cls => (groups[cls]?.length ?? 0) > 0)
-      .map(cls => ({ class: cls, ...CLASS_META[cls], items: groups[cls] ?? [] }))
+      .filter((cls) => (groups[cls]?.length ?? 0) > 0)
+      .map((cls) => ({ class: cls, ...CLASS_META[cls], items: groups[cls] ?? [] }))
   })
 
   // ── Adaptive view modes ───────────────────────────────────────────────────
@@ -111,9 +128,12 @@
     const cfg = getEntityTypeConfig(activeTypeParam.value as EntityType)
     if (!cfg) return base
     const extra: { mode: BrowseViewMode; label: string; icon: string }[] = []
-    if (cfg.projections.includes('kanban')) extra.push({ mode: 'kanban', label: 'Kanban', icon: 'lucide:layout-dashboard' })
-    if (cfg.projections.includes('moodboard')) extra.push({ mode: 'moodboard', label: 'Moodboard', icon: 'lucide:layout-masonry' })
-    if (cfg.projections.includes('timeline')) extra.push({ mode: 'timeline', label: 'Timeline', icon: 'lucide:gantt-chart' })
+    if (cfg.projections.includes('kanban'))
+      extra.push({ mode: 'kanban', label: 'Kanban', icon: 'lucide:layout-dashboard' })
+    if (cfg.projections.includes('moodboard'))
+      extra.push({ mode: 'moodboard', label: 'Moodboard', icon: 'lucide:layout-masonry' })
+    if (cfg.projections.includes('timeline'))
+      extra.push({ mode: 'timeline', label: 'Timeline', icon: 'lucide:gantt-chart' })
     return [...base, ...extra]
   })
 
@@ -122,7 +142,7 @@
   const stats = computed<PageStat[]>(() => {
     if (isAllMode.value) {
       const classCounts = { temporal: 0, document: 0, actor: 0, container: 0 } as Record<string, number>
-      for (const item of allItems.value) {
+      for (const item of deduplicatedAll.value) {
         const cls = (getEntityTypeConfig(item.type as EntityType) as any)?.class
         if (cls) classCounts[cls] = (classCounts[cls] ?? 0) + 1
       }
@@ -135,9 +155,7 @@
       ]
     }
     const cfg = getEntityTypeConfig(activeTypeParam.value as EntityType)
-    return [
-      { label: cfg?.labelPlural ?? 'Items', value: items.value.length, icon: cfg?.icon ?? 'lucide:layers' },
-    ]
+    return [{ label: cfg?.labelPlural ?? 'Items', value: items.value.length, icon: cfg?.icon ?? 'lucide:layers' }]
   })
 
   // ── New item picker ───────────────────────────────────────────────────────
@@ -204,7 +222,6 @@
     :fill-height="true"
     :browse="browseState"
     :view-mode-options="viewModeOptions">
-
     <!-- ── Toolbar: New button + Group toggle ── -->
     <template #toolbarActions>
       <!-- Group by class toggle (only in all mode) -->
@@ -219,9 +236,7 @@
       </UiButton>
 
       <!-- Single type: simple New button -->
-      <UiButton
-        v-if="!isAllMode && activeTypeCfg"
-        @click="handleNewItem(activeTypeParam)">
+      <UiButton v-if="!isAllMode && activeTypeCfg" @click="handleNewItem(activeTypeParam)">
         <Icon name="lucide:plus" class="mr-2 h-4 w-4" />
         New {{ activeTypeCfg.label }}
       </UiButton>
@@ -236,7 +251,9 @@
           </UiButton>
         </UiDropdownMenuTrigger>
         <UiDropdownMenuContent align="end" class="w-56 max-h-80 overflow-y-auto">
-          <UiDropdownMenuLabel class="text-xs text-muted-foreground uppercase tracking-wide">Create new…</UiDropdownMenuLabel>
+          <UiDropdownMenuLabel class="text-xs text-muted-foreground uppercase tracking-wide">
+            Create new…
+          </UiDropdownMenuLabel>
           <UiDropdownMenuSeparator />
           <UiDropdownMenuItem
             v-for="t in allEntityTypes"
@@ -264,7 +281,9 @@
         </div>
 
         <!-- Grid view for group -->
-        <div v-if="viewMode === 'grid' || !['grid', 'list', 'table'].includes(viewMode)" class="grid gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+        <div
+          v-if="viewMode === 'grid' || !['grid', 'list', 'table'].includes(viewMode)"
+          class="grid gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
           <EntityCard
             v-for="item in group.items"
             :key="item.id"
@@ -292,7 +311,9 @@
         </div>
       </div>
 
-      <div v-if="filteredItems.length === 0" class="flex flex-col items-center justify-center h-48 text-muted-foreground gap-3">
+      <div
+        v-if="filteredItems.length === 0"
+        class="flex flex-col items-center justify-center h-48 text-muted-foreground gap-3">
         <Icon name="lucide:search-x" class="h-8 w-8 text-muted-foreground/30" />
         <p class="text-sm">No results</p>
       </div>
@@ -300,9 +321,10 @@
 
     <!-- Flat views (no grouping, or single type selected) -->
     <template v-else>
-
       <!-- Grid -->
-      <div v-if="viewMode === 'grid' || !['grid', 'list', 'table', 'moodboard'].includes(viewMode)" class="grid gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+      <div
+        v-if="viewMode === 'grid' || !['grid', 'list', 'table', 'moodboard'].includes(viewMode)"
+        class="grid gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
         <EntityCard
           v-for="item in filteredItems"
           :key="item.id"
@@ -313,10 +335,16 @@
           @click="openDetail(item)"
           @select="toggleSelection(item.id, $event)"
           @field-update="(fieldId: PropertyFieldId, value: unknown) => handleFieldUpdate(item, fieldId, value)" />
-        <div v-if="!filteredItems.length" class="col-span-full flex flex-col items-center justify-center h-48 text-muted-foreground gap-3">
+        <div
+          v-if="!filteredItems.length"
+          class="col-span-full flex flex-col items-center justify-center h-48 text-muted-foreground gap-3">
           <Icon name="lucide:search-x" class="h-6 w-6 text-muted-foreground/30" />
           <p class="text-sm">{{ browseState.searchQuery.value ? 'No results for your search' : 'Nothing here yet' }}</p>
-          <UiButton v-if="!isAllMode && activeTypeCfg" size="sm" variant="outline" @click="handleNewItem(activeTypeParam)">
+          <UiButton
+            v-if="!isAllMode && activeTypeCfg"
+            size="sm"
+            variant="outline"
+            @click="handleNewItem(activeTypeParam)">
             <Icon name="lucide:plus" class="mr-1.5 h-3.5 w-3.5" />
             New {{ activeTypeCfg.label }}
           </UiButton>
@@ -352,7 +380,9 @@
           @click="openDetail(item)"
           @select="toggleSelection(item.id, $event)"
           @field-update="(fieldId: PropertyFieldId, value: unknown) => handleFieldUpdate(item, fieldId, value)" />
-        <div v-if="!filteredItems.length" class="flex flex-col items-center justify-center h-48 text-muted-foreground gap-3">
+        <div
+          v-if="!filteredItems.length"
+          class="flex flex-col items-center justify-center h-48 text-muted-foreground gap-3">
           <Icon name="lucide:search-x" class="h-6 w-6 text-muted-foreground/30" />
           <p class="text-sm">{{ browseState.searchQuery.value ? 'No results for your search' : 'Nothing here yet' }}</p>
         </div>
@@ -397,9 +427,18 @@
                   {{ getEntityTypeConfig(item.type as EntityType)?.label ?? item.type }}
                 </span>
               </td>
-              <td class="py-2 px-3 text-muted-foreground text-xs">{{ (item as any).taskStatus || (item as any).status || '—' }}</td>
+              <td class="py-2 px-3 text-muted-foreground text-xs">
+                {{ (item as any).taskStatus || (item as any).status || '—' }}
+              </td>
               <td class="py-2 px-3 text-muted-foreground text-xs whitespace-nowrap">
-                {{ (item as any).startDate ? new Date((item as any).startDate + 'T00:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) : '—' }}
+                {{
+                  (item as any).startDate
+                    ? new Date((item as any).startDate + 'T00:00:00').toLocaleDateString('en-US', {
+                        month: 'short',
+                        day: 'numeric',
+                      })
+                    : '—'
+                }}
               </td>
               <td class="py-2 px-3">
                 <Icon v-if="(item as any).pinned" name="lucide:pin" class="h-3 w-3 text-amber-500" />
@@ -407,18 +446,19 @@
             </tr>
           </tbody>
         </table>
-        <div v-if="!filteredItems.length" class="flex flex-col items-center justify-center h-48 text-muted-foreground gap-3">
+        <div
+          v-if="!filteredItems.length"
+          class="flex flex-col items-center justify-center h-48 text-muted-foreground gap-3">
           <Icon name="lucide:search-x" class="h-6 w-6 text-muted-foreground/30" />
           <p class="text-sm">{{ browseState.searchQuery.value ? 'No results for your search' : 'Nothing here yet' }}</p>
         </div>
       </div>
-
     </template>
 
     <!-- Results count -->
     <div class="text-xs text-muted-foreground mt-4 pt-4 border-t border-border pb-10">
       Showing {{ filteredItems.length }} {{ filteredItems.length === 1 ? 'item' : 'items' }}
-      <span v-if="browseState.searchQuery.value"> for "{{ browseState.searchQuery.value }}"</span>
+      <span v-if="browseState.searchQuery.value">for "{{ browseState.searchQuery.value }}"</span>
     </div>
 
     <!-- Selection Bar -->
@@ -441,6 +481,5 @@
       @save="handleUpdate"
       @delete="handleDelete"
       @close="viewOpen = false" />
-
   </Page>
 </template>

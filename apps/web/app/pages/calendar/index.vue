@@ -32,8 +32,8 @@
   // Per-account visibility toggles — shared with CalendarSidebarPanel
   const { selectedTypes, hiddenGcalAccounts, reset: resetSidebarState } = useCalendarSidebarState()
 
-  const showGcalEvents = computed(() =>
-    gcalConnected.value && hiddenGcalAccounts.value.size < gcalAccounts.value.length,
+  const showGcalEvents = computed(
+    () => gcalConnected.value && hiddenGcalAccounts.value.size < gcalAccounts.value.length,
   )
 
   // ── Connection success/error toast on redirect back from OAuth ──────
@@ -98,7 +98,10 @@
       ...getTypesForClass('container'),
     ]
     return allTypes
-      .filter(t => typeHasField(t.type, 'startDate') || typeHasField(t.type, 'endDate') || typeHasField(t.type, 'targetDate'))
+      .filter(
+        (t) =>
+          typeHasField(t.type, 'startDate') || typeHasField(t.type, 'endDate') || typeHasField(t.type, 'targetDate'),
+      )
       .sort((a, b) => a.label.localeCompare(b.label))
   })
 
@@ -108,7 +111,9 @@
 
   const filteredItems = computed(() => {
     if (selectedTypes.value.size === 0) return []
-    return items.value.filter(i => selectedTypes.value.has(i.type))
+    // Exclude GCal-sourced entities — they are rendered separately via visibleGcalEvents
+    // to avoid duplicates (these entities are also stored in TQL by useGoogleCalendar)
+    return items.value.filter((i) => selectedTypes.value.has(i.type) && (i as any).source !== 'google-calendar')
   })
 
   // ---------------------------------------------------------------------------
@@ -137,9 +142,10 @@
           '@id': `gcal:${node.googleEventId || node['@id']}`,
           '@type': 'GoogleCalendar',
           'trellis:title': (node.title as string) || '(No title)',
-          'user:dueDate': endDate && endDate !== startDate
-            ? { start: `${startDate}T00:00:00`, end: `${endDate}T00:00:00` }
-            : `${startDate}T00:00:00`,
+          'user:dueDate':
+            endDate && endDate !== startDate
+              ? { start: `${startDate}T00:00:00`, end: `${endDate}T00:00:00` }
+              : `${startDate}T00:00:00`,
           'user:recurrence': undefined,
           'user:status': 'google-calendar',
           'user:priority': undefined,
@@ -177,9 +183,7 @@
   const gcalViewingEvent = ref<Record<string, any> | null>(null)
   const viewingItem = computed<Entity | null>(() => {
     if (!_viewingItemId.value) return null
-    return items.value.find((i) => i.id === _viewingItemId.value)
-      ?? _pendingNewItem.value
-      ?? null
+    return items.value.find((i) => i.id === _viewingItemId.value) ?? _pendingNewItem.value ?? null
   })
 
   const taskOwners = [
@@ -327,9 +331,6 @@
       @close="viewDialogOpen = false" />
 
     <!-- Google Calendar Event Dialog (enriched) -->
-    <GCalEnrichedDialog
-      v-model:open="gcalDialogOpen"
-      :event="gcalViewingEvent" />
-
+    <GCalEnrichedDialog v-model:open="gcalDialogOpen" :event="gcalViewingEvent" />
   </Page>
 </template>

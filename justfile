@@ -19,9 +19,18 @@ dev:
     @echo "🚀 Starting Trellis dev server..."
     pnpm --filter ./apps/web dev
 
+# Start desktop app (auto-starts web dev server in background)
 desktop:
-    @echo "🚀 Starting Trellis desktop..."
+    #!/usr/bin/env bash
+    set -euo pipefail
+    echo "🚀 Starting Trellis web server..."
+    pnpm --filter ./apps/web dev &
+    WEB_PID=$!
+    echo "⏳ Waiting for web server on :1414..."
+    until curl -s http://localhost:1414/api/graph/health > /dev/null 2>&1; do sleep 1; done
+    echo "✅ Web server ready — launching desktop..."
     pnpm --filter ./apps/desktop dev
+    kill $WEB_PID 2>/dev/null || true
 
 # Build all packages
 build:

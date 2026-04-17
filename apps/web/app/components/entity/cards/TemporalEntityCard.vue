@@ -1,6 +1,7 @@
 <script setup lang="ts">
   import type { Entity } from '~/types/entity'
   import { getEntityTypeConfig } from '~/config/entityRegistry'
+  import { formatRecurrenceLabel } from '~/utils/recurrence'
 
   const props = defineProps<{
     item: Entity
@@ -20,19 +21,19 @@
   }
 
   const statusColors: Record<string, string> = {
-    'pending': 'bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-400',
+    pending: 'bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-400',
     'in-progress': 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400',
     'on-track': 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400',
     'due-soon': 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400',
-    'overdue': 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400',
-    'completed': 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400',
-    'planning': 'bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-400',
-    'booked': 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400',
-    'active': 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400',
-    'cancelled': 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400',
-    'paid': 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400',
-    'draft': 'bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-400',
-    'closed': 'bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-400',
+    overdue: 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400',
+    completed: 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400',
+    planning: 'bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-400',
+    booked: 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400',
+    active: 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400',
+    cancelled: 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400',
+    paid: 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400',
+    draft: 'bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-400',
+    closed: 'bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-400',
     'over-budget': 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400',
   }
 
@@ -48,12 +49,15 @@
 
   const isCompleted = computed(() => {
     const i = props.item as any
-    return i.taskStatus === 'completed' || (i.achieved === true)
+    return i.taskStatus === 'completed' || i.achieved === true
   })
 
   const formatDate = (d: string) => {
-    try { return new Date(d + 'T00:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) }
-    catch { return d }
+    try {
+      return new Date(d + 'T00:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
+    } catch {
+      return d
+    }
   }
 
   // Type-specific display value (amount for budgets/payments, velocity for sprints)
@@ -66,6 +70,19 @@
     }
     if (i.type === 'sprint' && i.velocity) {
       return `${i.velocity} pts`
+    }
+    return null
+  })
+
+  const recurrenceLabel = computed(() => {
+    const i = props.item as any
+    // Native Trellis recurring event (has a RecurrenceRule object)
+    if (i.recurrence?.frequency) return formatRecurrenceLabel(i.recurrence)
+    // Deduplicated GCal recurring event (has virtual label from deduplication)
+    if (i._recurringLabel) return i._recurringLabel
+    // GCal recurring instance that hasn't been deduplicated yet
+    if (i.recurringEventId || (i.googleEventId && String(i.googleEventId).includes('_'))) {
+      return 'Recurring event'
     }
     return null
   })
@@ -84,11 +101,18 @@
           <div :class="['flex h-7 w-7 items-center justify-center rounded-lg', `bg-${config.color}-500/10`]">
             <Icon :name="config.icon" :class="['h-3.5 w-3.5', `text-${config.color}-500`]" />
           </div>
-          <span v-if="(item as any).category" class="rounded-full px-1.5 py-0.5 text-[10px] font-medium bg-muted text-muted-foreground truncate">
+          <span
+            v-if="(item as any).category"
+            class="rounded-full px-1.5 py-0.5 text-[10px] font-medium bg-muted text-muted-foreground truncate">
             {{ (item as any).category }}
           </span>
         </div>
-        <span v-if="itemStatus" :class="['rounded-full px-1.5 py-0.5 text-[10px] font-medium shrink-0', statusColors[itemStatus] || 'bg-muted text-muted-foreground']">
+        <span
+          v-if="itemStatus"
+          :class="[
+            'rounded-full px-1.5 py-0.5 text-[10px] font-medium shrink-0',
+            statusColors[itemStatus] || 'bg-muted text-muted-foreground',
+          ]">
           {{ itemStatus }}
         </span>
       </div>
@@ -107,7 +131,15 @@
       <p v-if="item.description" class="text-sm text-muted-foreground line-clamp-2">{{ item.description }}</p>
 
       <!-- Sprint goal -->
-      <p v-if="(item as any).sprintGoal" class="text-sm text-muted-foreground line-clamp-2">{{ (item as any).sprintGoal }}</p>
+      <p v-if="(item as any).sprintGoal" class="text-sm text-muted-foreground line-clamp-2">
+        {{ (item as any).sprintGoal }}
+      </p>
+
+      <!-- Recurrence badge -->
+      <div v-if="recurrenceLabel" class="flex items-center gap-1 text-[10px] text-primary/70">
+        <Icon name="lucide:repeat" class="h-3 w-3 shrink-0" />
+        <span class="truncate">{{ recurrenceLabel }}</span>
+      </div>
 
       <!-- Footer: date + tags -->
       <div class="flex items-center justify-between text-xs text-muted-foreground border-t border-border/50 pt-2">
@@ -120,7 +152,10 @@
           </template>
         </div>
         <div class="flex items-center gap-1">
-          <span v-for="tag in (item.tags || []).slice(0, 2)" :key="tag" class="bg-muted/80 px-1.5 py-0.5 rounded-md text-[10px] font-medium">
+          <span
+            v-for="tag in (item.tags || []).slice(0, 2)"
+            :key="tag"
+            class="bg-muted/80 px-1.5 py-0.5 rounded-md text-[10px] font-medium">
             #{{ tag }}
           </span>
           <span v-if="(item.tags || []).length > 2" class="text-[10px] text-muted-foreground/60">

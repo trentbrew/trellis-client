@@ -3,6 +3,7 @@ import { createDefaultItem } from '~/types/entity'
 import { useBrowse, type BrowseState, type BrowseViewMode, type BrowseSortOption } from '~/composables/useBrowse'
 import { useDialogUrl } from '~/composables/useDialogUrl'
 import { useHashDialogRestore } from '~/composables/useHashDialogRestore'
+import { deduplicateRecurringEntities } from '~/utils/recurrence'
 
 // ── Types ──────────────────────────────────────────────────────────────
 
@@ -103,7 +104,7 @@ export function useBrowsePage(options: UseBrowsePageOptions): UseBrowsePageRetur
   // Active type — pages can mutate this to switch card layouts dynamically
   const initialType = (() => {
     const raw = isRef(entityType) ? entityType.value : entityType
-    return Array.isArray(raw) ? raw[0] ?? '' : raw
+    return Array.isArray(raw) ? (raw[0] ?? '') : raw
   })()
   const activeType = ref<string>(initialType)
 
@@ -111,18 +112,13 @@ export function useBrowsePage(options: UseBrowsePageOptions): UseBrowsePageRetur
   // Data source
   // ---------------------------------------------------------------------------
 
-  const {
-    items: allItems,
-    create: createItem,
-    update: updateItem,
-    remove: removeItem,
-  } = useEntities()
+  const { items: allItems, create: createItem, update: updateItem, remove: removeItem } = useEntities()
 
   const items = computed<Entity[]>(() => {
     const typeSet = resolvedTypes.value
     let result = allItems.value.filter((i) => typeSet.has(i.type))
     if (itemFilter) result = result.filter(itemFilter)
-    return result
+    return deduplicateRecurringEntities(result) as Entity[]
   })
 
   // ---------------------------------------------------------------------------
@@ -153,9 +149,7 @@ export function useBrowsePage(options: UseBrowsePageOptions): UseBrowsePageRetur
   // Falls back to _pendingNewItem for newly created items before store hydration.
   const viewingItem = computed<Entity | null>(() => {
     if (!_viewingItemId.value) return null
-    return allItems.value.find((i) => i.id === _viewingItemId.value)
-      ?? _pendingNewItem.value
-      ?? null
+    return allItems.value.find((i) => i.id === _viewingItemId.value) ?? _pendingNewItem.value ?? null
   })
 
   function openDetail(item: Entity) {
@@ -187,9 +181,7 @@ export function useBrowsePage(options: UseBrowsePageOptions): UseBrowsePageRetur
   // ---------------------------------------------------------------------------
 
   const viewingIndex = computed(() =>
-    viewingItem.value
-      ? filteredItems.value.findIndex((i) => i.id === viewingItem.value?.id)
-      : -1,
+    viewingItem.value ? filteredItems.value.findIndex((i) => i.id === viewingItem.value?.id) : -1,
   )
 
   const canPrev = computed(() => viewingIndex.value > 0)
@@ -239,9 +231,7 @@ export function useBrowsePage(options: UseBrowsePageOptions): UseBrowsePageRetur
       const isTimeout = /transaction timed out|operation[- ]timed[- ]out/i.test(message)
       console.error('[useBrowsePage] failed to create new item:', error)
       $toast?.error('Could not create item', {
-        description: isTimeout
-          ? 'InstantDB timed out. Please try again in a moment.'
-          : message,
+        description: isTimeout ? 'InstantDB timed out. Please try again in a moment.' : message,
       })
     }
   }

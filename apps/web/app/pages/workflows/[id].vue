@@ -5,12 +5,12 @@
 
   definePageMeta({
     title: 'Workflow',
-    layout: 'fullscreen',
     middleware: ['auth'],
   })
 
   const route = useRoute()
   const router = useRouter()
+  const { wp } = useWorkspacePath()
   const workflowId = computed(() => String(route.params.id || ''))
 
   const { currentApp, workflows, updateWorkflow, deleteWorkflow } = useInstantData()
@@ -55,19 +55,15 @@
   async function handleDelete() {
     if (!workflow.value) return
     await deleteWorkflow(workflow.value.id)
-    await router.push('/workflows')
+    await router.push(wp('/workflows'))
   }
 
   // ── Execution ──────────────────────────────────────────────────────────────
   const execution = useWorkflowExecution()
 
-  const hasStartNode = computed<boolean>(() =>
-    (workflow.value?.graph?.nodes ?? []).some((n) => n.kind === 'start'),
-  )
+  const hasStartNode = computed<boolean>(() => (workflow.value?.graph?.nodes ?? []).some((n) => n.kind === 'start'))
 
-  const canRun = computed<boolean>(() =>
-    hasStartNode.value && execution.status.value !== 'running',
-  )
+  const canRun = computed<boolean>(() => hasStartNode.value && execution.status.value !== 'running')
 
   /** Map nodeId → { label, kind } for the execution panel's display. */
   const nodeMap = computed(() => {
@@ -92,7 +88,10 @@
     if (!graph.nodes.some((n) => n.kind === 'end')) w.push('No End node')
     if (graph.nodes.length > 1) {
       const connected = new Set<string>()
-      for (const e of graph.edges) { connected.add(e.source); connected.add(e.target) }
+      for (const e of graph.edges) {
+        connected.add(e.source)
+        connected.add(e.target)
+      }
       const isolated = graph.nodes.filter((n) => !connected.has(n.id))
       if (isolated.length > 0) w.push(`${isolated.length} isolated node${isolated.length > 1 ? 's' : ''}`)
     }
@@ -143,7 +142,7 @@
           <Icon name="lucide:alert-circle" class="mx-auto mb-4 h-16 w-16 text-muted-foreground" />
           <h2 class="mb-2 text-2xl font-bold">Workflow Not Found</h2>
           <UiButton as-child>
-            <NuxtLink to="/workflows">Back to Workflows</NuxtLink>
+            <NuxtLink :to="wp('/workflows')">Back to Workflows</NuxtLink>
           </UiButton>
         </div>
       </div>
@@ -161,7 +160,7 @@
       <!-- Header bar -->
       <div class="flex h-11 shrink-0 items-center gap-2 border-b border-border bg-background px-3">
         <UiButton variant="ghost" size="icon-sm" as-child>
-          <NuxtLink to="/workflows">
+          <NuxtLink :to="wp('/workflows')">
             <Icon name="lucide:arrow-left" class="h-4 w-4" />
           </NuxtLink>
         </UiButton>
@@ -202,9 +201,7 @@
               <span>{{ execution.status.value === 'running' ? 'Running' : 'Run' }}</span>
             </UiButton>
           </UiTooltipTrigger>
-          <UiTooltipContent v-if="!hasStartNode" side="bottom">
-            Add a Start node to run this workflow
-          </UiTooltipContent>
+          <UiTooltipContent v-if="!hasStartNode" side="bottom">Add a Start node to run this workflow</UiTooltipContent>
         </UiTooltip>
 
         <!-- Active toggle -->
@@ -228,7 +225,8 @@
         <!-- Validation warnings badge -->
         <UiTooltip v-if="validationWarnings.length > 0">
           <UiTooltipTrigger as-child>
-            <div class="flex cursor-default items-center gap-1 rounded-md bg-amber-500/10 px-2 py-1 text-xs text-amber-500">
+            <div
+              class="flex cursor-default items-center gap-1 rounded-md bg-amber-500/10 px-2 py-1 text-xs text-amber-500">
               <Icon name="lucide:triangle-alert" class="h-3 w-3" />
               <span>{{ validationWarnings.length }}</span>
             </div>

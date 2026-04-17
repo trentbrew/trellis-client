@@ -92,6 +92,7 @@ just trellis ontology delete 'trellis:schema/invoice' --agent-id cascade
 ## Entity ID Convention
 
 All entities use the `entity:` TQL storage namespace prefix (historical) followed by the item ID:
+
 - `entity:task-1`
 - `entity:bm-1` (bookmarks)
 - `entity:note-1`
@@ -102,19 +103,23 @@ All entities use the `entity:` TQL storage namespace prefix (historical) followe
 ## Agent ID
 
 Pass `--agent-id <name>` to track which agent made a mutation. This flows through to:
+
 - TQL kernel's MiddlewareContext
 - Mutation log (`just trellis log`)
 - SSE events (visible in `just trellis-watch`)
 
 ## SDK Usage
 
-Import `TrellisClient` from `@toolkit/trellis-cli` for programmatic access:
+Import `TrellisClient` from `@turtle.tech/trellis-cli` for programmatic access:
 
 ```js
-import { TrellisClient } from '@toolkit/trellis-cli'
-const client = new TrellisClient({ agentId: 'my-agent' })
+import { TrellisClient } from '@turtle.tech/trellis-cli';
+const client = new TrellisClient({ agentId: 'my-agent' });
 // SDK uses the raw entity namespace — app code should use tql-namespace helpers
-await client.createNode('entity:new', 'entity', { type: 'task', title: 'Hello' })
+await client.createNode('entity:new', 'entity', {
+  type: 'task',
+  title: 'Hello',
+});
 ```
 
 ## Platform CRUD
@@ -178,16 +183,16 @@ just trellis create --type entity --id entity:meeting-notes \
 
 ### Platform ID Conventions
 
-| Resource | ID Format | Example |
-|----------|-----------|---------|
-| Organization | `platform:org/<slug>` | `platform:org/media-cms` |
-| App/World | `platform:app/<slug>` | `platform:app/production` |
-| Collection | `platform:collection/<slug>` | `platform:collection/episodes` |
-| Page | `platform:page/<slug>-<ts>` | `platform:page/dashboard-mlx6yjnj` |
-| Tag | `platform:tag/<slug>` | `platform:tag/priority` |
-| Workflow | `platform:workflow/<slug>-<ts>` | `platform:workflow/auto-triage-mlx6yv0g` |
-| Comment | `comment:<uuid>` | `comment:1890044d-...` |
-| Setting | `platform:setting/<scope>/<key>` | `platform:setting/app/theme` |
+| Resource     | ID Format                        | Example                                  |
+| ------------ | -------------------------------- | ---------------------------------------- |
+| Organization | `platform:org/<slug>`            | `platform:org/media-cms`                 |
+| App/World    | `platform:app/<slug>`            | `platform:app/production`                |
+| Collection   | `platform:collection/<slug>`     | `platform:collection/episodes`           |
+| Page         | `platform:page/<slug>-<ts>`      | `platform:page/dashboard-mlx6yjnj`       |
+| Tag          | `platform:tag/<slug>`            | `platform:tag/priority`                  |
+| Workflow     | `platform:workflow/<slug>-<ts>`  | `platform:workflow/auto-triage-mlx6yv0g` |
+| Comment      | `comment:<uuid>`                 | `comment:1890044d-...`                   |
+| Setting      | `platform:setting/<scope>/<key>` | `platform:setting/app/theme`             |
 
 ### Idempotent Creates
 
