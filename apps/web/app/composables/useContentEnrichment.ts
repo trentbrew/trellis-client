@@ -51,7 +51,7 @@ export interface EnrichmentSuggestion {
   firstMentionAt?: number
 }
 
-export type ContentKind = 'email' | 'event' | 'video' | 'generic'
+export type ContentKind = 'email' | 'event' | 'video' | 'file' | 'generic'
 
 interface CachedResult {
   suggestions: EnrichmentSuggestion[]

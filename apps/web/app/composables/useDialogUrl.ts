@@ -49,7 +49,8 @@ export function useDialogUrl() {
     const current = route.hash
     if (newHash === current) return
     // Use replace so back button doesn't create a history entry per keystroke
-    router.replace({ hash: newHash || undefined })
+    // Preserve the current path and query params when clearing hash
+    router.replace({ path: route.path, query: route.query, hash: newHash || undefined })
   }
 
   /** Add an entity ID to the end of the hash stack */

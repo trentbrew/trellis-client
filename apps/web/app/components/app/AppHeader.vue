@@ -9,7 +9,7 @@
     }>(),
     {
       aboveSidebar: false,
-      hidePresenceControls: false,
+      hidePresenceControls: true,
     },
   )
 

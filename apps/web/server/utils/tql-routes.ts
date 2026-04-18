@@ -725,9 +725,9 @@ const settingsRoute: RouteDefinition = {
       order: 10,
       items: [
         {
-          routePath: '/settings/project',
-          label: 'Project',
-          icon: 'lucide:folder',
+          routePath: '/settings/profile',
+          label: 'Profile',
+          icon: 'lucide:user',
           permissions: { minRole: 'admin', permission: 'admin' },
         },
         {

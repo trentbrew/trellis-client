@@ -389,8 +389,8 @@ export const ROUTE_PATHS = {
   },
   settings: {
     root: '/settings',
-    project: '/settings/project',
-    profile: '/settings/profile',
+    project: '/settings/profile',
+    profile: '/settings/project',
     appearance: '/settings/appearance',
     theme: '/settings/theme',
     notifications: '/settings/notifications',

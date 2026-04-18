@@ -435,6 +435,21 @@ export interface NoteItem extends EntityItemBase {
   pinned: boolean
 }
 
+/** File category — derived from MIME type or extension */
+export type FileCategory =
+  | 'image'
+  | 'video'
+  | 'audio'
+  | 'document'
+  | 'spreadsheet'
+  | 'presentation'
+  | 'code'
+  | 'archive'
+  | 'font'
+  | 'model'
+  | 'data'
+  | 'other'
+
 export interface FileItem extends EntityItemBase {
   type: 'file'
   mimeType: string
@@ -442,6 +457,54 @@ export interface FileItem extends EntityItemBase {
   url?: string
   storagePath?: string
   pinned: boolean
+  /** Auto-classified file category (image, video, audio, document, code…) */
+  fileCategory?: FileCategory
+  /** Lowercase file extension without dot (e.g. 'pdf', 'png') */
+  fileExtension?: string
+
+  // ── Category-specific enrichment metadata (populated by AI pipeline) ─
+
+  // Image
+  imageWidth?: number
+  imageHeight?: number
+  dominantColors?: string[]
+  altText?: string
+
+  // Video
+  videoDuration?: number       // seconds
+  videoWidth?: number
+  videoHeight?: number
+  videoCodec?: string
+  videoThumbnailUrl?: string
+
+  // Audio
+  audioDuration?: number       // seconds
+  audioBitrate?: number        // kbps
+  audioChannels?: number
+  artist?: string
+  album?: string
+  genre?: string
+
+  // Code
+  codeLanguage?: string        // e.g. 'typescript', 'python'
+  lineCount?: number
+
+  // Document (PDF, DOCX, etc.)
+  pageCount?: number
+  wordCount?: number
+  documentAuthor?: string
+
+  // Spreadsheet
+  sheetCount?: number
+  rowCount?: number
+
+  // Archive
+  archiveEntryCount?: number
+  uncompressedSize?: number
+
+  // AI enrichment summary (universal — any category)
+  aiSummary?: string
+  aiTags?: string[]
 }
 
 export type PageStatus = 'draft' | 'published' | 'archived'
@@ -891,6 +954,8 @@ export const createDefaultFile = (): FileItem => ({
   url: undefined,
   storagePath: undefined,
   pinned: false,
+  fileCategory: undefined,
+  fileExtension: undefined,
 })
 
 export const createDefaultSprint = (): SprintItem => ({
@@ -1369,6 +1434,8 @@ export interface EntityTypeConfig {
   class: EntityClass
   label: string
   labelPlural: string
+  /** Short description shown in page headers and tooltips */
+  description?: string
   icon: string
   color: string // Tailwind color token (e.g. 'blue', 'emerald')
   projections: ProjectionType[]

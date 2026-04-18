@@ -16,7 +16,7 @@ const ROUTE_PERMISSIONS: Record<string, { minRole: UserRole; permission: 'read' 
   '/database': { minRole: 'admin', permission: 'read' },
   '/graph': { minRole: 'admin', permission: 'read' },
   '/members': { minRole: 'admin', permission: 'admin' },
-  '/settings/project': { minRole: 'admin', permission: 'admin' },
+  '/settings/profile': { minRole: 'admin', permission: 'admin' },
   '/settings/pages': { minRole: 'admin', permission: 'admin' },
   '/settings/integrations': { minRole: 'admin', permission: 'admin' },
   '/settings/marketplace': { minRole: 'admin', permission: 'admin' },
@@ -34,13 +34,14 @@ export default defineNuxtRouteMiddleware((to) => {
   const path = to.path
 
   // Skip non-app routes (handle both flat and /w/:orgSlug prefixed paths)
-  if (path.startsWith('/auth/') || path.startsWith('/invite/') || path === '/onboarding' || path.startsWith('/welcome')) return
+  if (path.startsWith('/auth/') || path.startsWith('/invite/') || path === '/onboarding' || path.startsWith('/welcome'))
+    return
 
   // Strip /w/:orgSlug/ prefix for permission matching
   const cleanPath = getCleanPath(path)
 
   // Find matching permission rule (exact match or prefix match for nested routes)
-  let matchedPermission: typeof ROUTE_PERMISSIONS[string] | null = null
+  let matchedPermission: (typeof ROUTE_PERMISSIONS)[string] | null = null
 
   // Check exact match first
   if (ROUTE_PERMISSIONS[cleanPath]) {
@@ -67,7 +68,9 @@ export default defineNuxtRouteMiddleware((to) => {
   const allowed = canAccessRoute(userRole.value, matchedPermission)
 
   if (!allowed) {
-    console.warn(`[permissions] Blocked ${userRole.value} from accessing ${cleanPath} (requires ${matchedPermission.minRole}+)`)
+    console.warn(
+      `[permissions] Blocked ${userRole.value} from accessing ${cleanPath} (requires ${matchedPermission.minRole}+)`,
+    )
     // For settings sub-pages, fall back to a non-admin settings page rather than workspace
     if (cleanPath.startsWith('/settings')) {
       return navigateTo('/settings/notifications', { replace: true })

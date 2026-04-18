@@ -217,6 +217,18 @@
     @regenerate-summary="regenerateSummary">
     <!-- Properties Row -->
     <template #properties>
+      <!-- Type (MIME) -->
+      <div v-if="editableItem.mimeType" class="inline-flex items-center gap-1.5 px-2 py-1 rounded-lg bg-muted/50">
+        <Icon name="lucide:file-text" class="h-3.5 w-3.5" />
+        <span class="font-mono text-[10px]">{{ editableItem.mimeType.split('/')[1] || editableItem.mimeType }}</span>
+      </div>
+
+      <!-- Size -->
+      <div v-if="editableItem.sizeBytes" class="inline-flex items-center gap-1.5 px-2 py-1 rounded-lg bg-muted/50">
+        <Icon name="lucide:hard-drive" class="h-3.5 w-3.5" />
+        <span>{{ formatSize(editableItem.sizeBytes) }}</span>
+      </div>
+
       <!-- Category -->
       <UiPopover v-if="hasField('category')" v-model:open="categoryOpen">
         <UiPopoverTrigger as-child>
@@ -302,6 +314,14 @@
         </UiPopoverContent>
       </UiPopover>
 
+      <!-- Last Edited -->
+      <div
+        v-if="editableItem.updatedAt && !isCreateMode"
+        class="inline-flex items-center gap-1.5 px-2 py-1 rounded-lg bg-muted/50">
+        <Icon name="lucide:clock" class="h-3.5 w-3.5" />
+        <span>{{ formatRelativeTime(Number(editableItem.updatedAt)) }}</span>
+      </div>
+
       <!-- Pin -->
       <button
         v-if="hasField('pin')"
@@ -320,22 +340,6 @@
       <!-- Metadata sidebar -->
       <aside class="w-56 shrink-0 border-r border-border overflow-y-auto bg-muted/5">
         <div class="p-4 space-y-4">
-          <!-- File info -->
-          <div class="space-y-1.5">
-            <p class="text-[10px] font-medium text-muted-foreground uppercase tracking-wide">File Info</p>
-            <div v-if="editableItem.mimeType" class="text-xs text-foreground/80 space-y-1">
-              <div class="flex items-center justify-between">
-                <span class="text-muted-foreground">Type</span>
-                <span class="font-mono text-[10px]">{{ editableItem.mimeType }}</span>
-              </div>
-              <div v-if="editableItem.sizeBytes" class="flex items-center justify-between">
-                <span class="text-muted-foreground">Size</span>
-                <span>{{ formatSize(editableItem.sizeBytes) }}</span>
-              </div>
-            </div>
-            <p v-else class="text-[11px] text-muted-foreground/50 italic">No file attached</p>
-          </div>
-
           <!-- Tags -->
           <div class="space-y-1.5">
             <p class="text-[10px] font-medium text-muted-foreground uppercase tracking-wide">Tags</p>
