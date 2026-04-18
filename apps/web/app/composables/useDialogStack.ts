@@ -36,6 +36,14 @@ export interface DialogEntityContext {
 }
 export const DIALOG_ENTITY_CONTEXT_KEY: InjectionKey<DialogEntityContext> = Symbol('dialog-entity-context')
 
+/**
+ * Injection key for context-specific navigation handler.
+ * When provided (e.g. by the graph visualization page), mention/reference
+ * clicks call this instead of pushing onto the dialog stack. Return true to
+ * signal the navigation was handled and default stack behavior should skip.
+ */
+export const ENTITY_NAVIGATE_KEY: InjectionKey<(entityId: string) => boolean> = Symbol('entity-navigate')
+
 /** Module-level singleton state — shared across all consumers */
 const stack = ref<DialogStackEntry[]>([])
 

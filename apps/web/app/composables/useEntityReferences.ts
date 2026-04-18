@@ -1,7 +1,7 @@
 import type { Entity, EntityReference, EntityType, Reference } from '~/types/entity'
 import { createDefaultItem, isEntityReference } from '~/types/entity'
 import { getCurrentInstance } from 'vue'
-import { DIALOG_ENTITY_CONTEXT_KEY } from '~/composables/useDialogStack'
+import { DIALOG_ENTITY_CONTEXT_KEY, ENTITY_NAVIGATE_KEY } from '~/composables/useDialogStack'
 import { entityId as toEntityId } from '~/lib/tql-namespace'
 import { useEntities } from '~/composables/useEntities'
 import { getEntityTypeConfig } from '~/config/entityRegistry'
@@ -27,6 +27,7 @@ export function useEntityReferences(
 
   // Provide entity context so nested TipTap NodeViews (e.g. MentionChip)
   // can navigate to referenced entities via the dialog stack.
+  const customNavigate = getCurrentInstance() ? inject(ENTITY_NAVIGATE_KEY, null) : null
   if (getCurrentInstance()) {
     provide(
       DIALOG_ENTITY_CONTEXT_KEY,
@@ -101,6 +102,9 @@ export function useEntityReferences(
    * Open a referenced entity in a stacked dialog.
    */
   function openEntityRef(ref: EntityReference) {
+    // Context-specific navigation (e.g. graph page pans/zooms instead of stacking)
+    if (customNavigate && customNavigate(ref.entityId)) return
+
     const targetItem = allItems.value.find((e: Entity) => e.id === ref.entityId)
     if (!targetItem) {
       if (import.meta.dev) console.debug('[useEntityReferences] Entity not found for ref:', ref.entityId)
@@ -158,6 +162,9 @@ export function useEntityReferences(
       // Fallback: construct a minimal entity so the dialog can still open
       targetItem = { id: ref.entityId, type: ref.entityType as EntityType, title: ref.title } as Entity
     }
+
+    // Context-specific navigation (e.g. graph)
+    if (customNavigate && customNavigate(ref.entityId)) return
 
     // 3. Push onto the dialog stack
     const dialogStack = useDialogStack()
