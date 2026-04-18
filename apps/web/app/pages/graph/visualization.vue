@@ -1098,6 +1098,22 @@
         <!-- SVG canvas -->
         <svg ref="svgRef" class="absolute inset-0 w-full h-full" style="touch-action: none" />
 
+        <!-- Layout Toggle (top-left) -->
+        <div class="absolute top-3 left-3 z-10 flex items-center gap-1 bg-card/90 backdrop-blur-sm border border-border rounded-lg p-1 pointer-events-auto shadow-sm">
+          <button 
+            @click="currentLayout = 'physics'" 
+            class="px-2.5 py-1 rounded text-[11px] font-medium transition-colors"
+            :class="currentLayout === 'physics' ? 'bg-primary text-primary-foreground' : 'text-muted-foreground hover:bg-muted hover:text-foreground'">
+            Physics
+          </button>
+          <button 
+            @click="currentLayout = 'type'" 
+            class="px-2.5 py-1 rounded text-[11px] font-medium transition-colors"
+            :class="currentLayout === 'type' ? 'bg-primary text-primary-foreground' : 'text-muted-foreground hover:bg-muted hover:text-foreground'">
+            By Type
+          </button>
+        </div>
+
         <!-- Hover preview popup -->
         <div
           v-if="hoveredNodeMeta"
@@ -1155,24 +1171,7 @@
         </div>
 
         <!-- Controls & Stats badge (bottom-right) -->
-        <div class="absolute bottom-3 right-3 z-10 flex items-center gap-3">
-          <!-- Layout Toggle -->
-          <div class="flex items-center gap-1 bg-card/90 backdrop-blur-sm border border-border rounded-lg p-1 pointer-events-auto">
-            <button 
-              @click="currentLayout = 'physics'" 
-              class="px-2.5 py-1 rounded text-[11px] font-medium transition-colors"
-              :class="currentLayout === 'physics' ? 'bg-primary text-primary-foreground' : 'text-muted-foreground hover:bg-muted hover:text-foreground'">
-              Physics
-            </button>
-            <button 
-              @click="currentLayout = 'type'" 
-              class="px-2.5 py-1 rounded text-[11px] font-medium transition-colors"
-              :class="currentLayout === 'type' ? 'bg-primary text-primary-foreground' : 'text-muted-foreground hover:bg-muted hover:text-foreground'">
-              By Type
-            </button>
-          </div>
-
-          <div
+        <div class="absolute bottom-3 right-3 z-10 flex items-center gap-3">          <div
             class="flex items-center gap-2 text-xs text-muted-foreground bg-card/90 backdrop-blur-sm border border-border rounded-lg px-3 py-1.5 font-mono">
             <span>
               {{ visibleNodeCount }}

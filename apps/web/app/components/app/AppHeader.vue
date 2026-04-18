@@ -37,16 +37,24 @@
     }
   }
 
-  const routes = useRoutes()
   const route = useRoute()
   const pinnedItems = usePinnedItems()
-  const { currentApp, updateCollection: updateCollectionData, getCollectionBySlug } = useInstantData()
+  const {
+    currentApp,
+    organizations,
+    applications,
+    updateCollection: updateCollectionData,
+    getCollectionBySlug,
+  } = useInstantData()
+
+  // Hide pickers when there's only one org/app — vault-feel UX with zero chrome
+  const showOrgPicker = computed(() => (organizations.value?.length || 0) > 1)
+  const showAppPicker = computed(() => (applications.value?.length || 0) > 1)
   const { logoMarkForMode } = useBrandConfig()
   const { userRole: _userRole, roleConfig } = useUserRole()
   const { isInEditMode, toggleEditMode, canToggleEditMode, canManageMembers, isAdmin: _isAdmin } = useAdminUI()
   const { totalMembers: _totalMembers, members: workspaceMembers, isUserOnline } = usePresence()
   const _isResizing = useState<boolean>('isSidebarResizing', () => false)
-  const commandDialog = useCommandDialog()
 
   // User avatar and auth
   const { user, signOut } = useInstantAuth()
@@ -203,8 +211,8 @@
     data-tauri-drag-region
     class="bg-card/0 backdrop-blur-sm border-b-none flex h-14 shrink-0 items-center gap-0 p-0 overflow-hidden sticky top-0"
     :class="{ 'app-region-drag': isTauri }">
-    <!-- Year/Facility Pickers + Breadcrumbs (white area) -->
-    <nav class="flex flex-1 items-center gap-0.5 text-xs px-4 bg-transparent" data-tauri-drag-region>
+    <!-- Left: traffic lights + logo + (conditional) org/app pickers -->
+    <nav class="flex shrink-0 items-center gap-0.5 text-xs px-4 bg-transparent" data-tauri-drag-region>
       <!-- macOS custom traffic lights -->
       <div v-if="isTauri && isMacOS" class="flex items-center gap-2 shrink-0 app-region-no-drag">
         <button
@@ -233,37 +241,31 @@
         </div>
       </div>
 
-      <span class="text-muted-foreground/30 mr-3 ml-1 rotate-10 text-lg">/</span>
-
-      <!-- Organization Picker (all authenticated users) -->
-      <ClientOnly>
-        <OrganizationPicker />
-      </ClientOnly>
-
-      <span class="text-muted-foreground/30 mx-3 rotate-10 text-lg">/</span>
-
-      <!-- Workspace Picker (all members) -->
-      <ClientOnly>
-        <AppPicker />
-      </ClientOnly>
-
-      <!-- Path breadcrumbs -->
-      <template v-for="(item, i) in routes.breadcrumbs.value" :key="i">
-        <template v-if="item?.label">
-          <span class="text-muted-foreground/50 mx-3 rotate-10 text-lg">/</span>
-          <AppNavLink
-            v-if="item.path && i !== routes.breadcrumbs.value.length - 1"
-            :to="item.path"
-            class="text-muted-foreground hover:text-foreground transition-colors">
-            {{ item.label }}
-          </AppNavLink>
-          <span v-else class="text-foreground/90 font-medium">
-            {{ item.label }}
-          </span>
-        </template>
+      <!-- Organization Picker — hidden in single-org accounts (vault UX) -->
+      <template v-if="showOrgPicker">
+        <span class="text-muted-foreground/30 mr-3 ml-1 rotate-10 text-lg">/</span>
+        <ClientOnly>
+          <OrganizationPicker />
+        </ClientOnly>
       </template>
 
-      <div v-if="showCollectionActions" class="flex items-center gap-1 ml-2">
+      <!-- Workspace Picker — hidden in single-app accounts (vault UX) -->
+      <template v-if="showAppPicker">
+        <span class="text-muted-foreground/30 mx-3 rotate-10 text-lg">/</span>
+        <ClientOnly>
+          <AppPicker />
+        </ClientOnly>
+      </template>
+
+      <!-- Breadcrumbs have been moved in-page (see AppBreadcrumbs.vue) to keep the header globally stable. -->
+    </nav>
+
+    <!-- Center: Omnibox (search + command palette trigger) -->
+    <AppOmnibox class="mx-2" />
+
+    <!-- Right: actions (collection actions, save status, notifications, members, avatar) -->
+    <div class="flex shrink-0 items-center mr-4 gap-2 app-region-no-drag">
+      <div v-if="showCollectionActions" class="flex items-center gap-1 mr-1">
         <UiButton
           v-if="canEditCollectionSchema"
           variant="ghost"
@@ -280,8 +282,7 @@
           <Icon name="lucide:refresh-cw" class="h-4 w-4" />
         </UiButton>
       </div>
-    </nav>
-    <div class="flex items-center mr-4 gap-2 app-region-no-drag">
+
       <!-- Save Status -->
       <UiSheet>
         <UiSheetTrigger as-child>
@@ -309,16 +310,7 @@
         </UiSheetContent>
       </UiSheet>
 
-      <!-- Global Search -->
-      <UiButton
-        variant="ghost"
-        size="sm"
-        class="h-8 px-3 text-muted-foreground hover:text-foreground bg-transparent hover:bg-muted/50 transition-all active:scale-95 mr-1 gap-2"
-        @click="commandDialog.open()">
-        <Icon name="lucide:search" class="h-4 w-4" />
-        <span class="text-xs">Search</span>
-        <UiKbd class="ml-1 bg-muted/50 border-none text-[10px] h-5 px-1.5">⌘K</UiKbd>
-      </UiButton>
+      <!-- Global Search lives in center AppOmnibox now (⌘K still works globally). -->
 
       <!-- Trellis (local) notifications — TQL graph-backed -->
       <NotificationBell />
@@ -435,6 +427,11 @@
 
       <!-- Member Invite Dialog -->
       <MemberInviteDialog v-model:open="inviteDialogOpen" />
+
+      <!-- Quick Create (persistent '+' button) -->
+      <ClientOnly>
+        <QuickCreateButton variant="primary" />
+      </ClientOnly>
     </div>
 
     <!-- Windows/Linux custom window controls -->

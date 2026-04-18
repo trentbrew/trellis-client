@@ -18,11 +18,7 @@ import type {
   NotificationStatus,
   TrellisNotification,
 } from '~/types/notification'
-import {
-  NOTIFICATION_KIND_VISUALS,
-  NOTIFICATION_SOUND_FILES,
-  resolveNotificationVisual,
-} from '~/types/notification'
+import { NOTIFICATION_KIND_VISUALS, NOTIFICATION_SOUND_FILES, resolveNotificationVisual } from '~/types/notification'
 import { useSSESubscribe } from '~/composables/useTrellisSSE'
 import { useTrellisGraph } from '~/composables/useTrellisGraph'
 
@@ -66,30 +62,36 @@ function parseMetadata(raw: unknown): Record<string, any> | undefined {
 }
 
 function rowToNotification(row: Record<string, any>): TrellisNotification {
-  const id = (row['@id'] || row.id || '').toString()
+  // EQL-S RETURN clause produces keys like ?n.title, ?n.body, etc.
+  // Helper to get value from either ?n.field or field key
+  const get = (field: string): any => {
+    return row[`?n.${field}`] ?? row[field]
+  }
+  // Entity ID comes from ?n (the base variable) or @id
+  const id = row['?n'] || row['@id'] || row.id || ''
   return {
-    id,
-    title: row.title || '',
-    body: row.body,
-    kind: (row.kind || 'info') as TrellisNotification['kind'],
-    source: (row.source || 'system') as TrellisNotification['source'],
-    sourceId: row.sourceId,
-    priority: (row.priority || 'normal') as TrellisNotification['priority'],
-    status: (row.status || 'unread') as NotificationStatus,
-    readAt: row.readAt,
-    snoozeUntil: row.snoozeUntil,
-    archivedAt: row.archivedAt,
-    icon: row.icon,
-    color: row.color,
-    sound: row.sound,
-    entityId: row.entityId,
-    entityType: row.entityType,
-    url: row.url,
-    actions: parseActions(row.actions),
-    metadata: parseMetadata(row.metadata),
-    groupKey: row.groupKey,
-    createdAt: row.createdAt || new Date().toISOString(),
-    updatedAt: row.updatedAt,
+    id: id.toString(),
+    title: get('title') || '',
+    body: get('body'),
+    kind: (get('kind') || 'info') as TrellisNotification['kind'],
+    source: (get('source') || 'system') as TrellisNotification['source'],
+    sourceId: get('sourceId'),
+    priority: (get('priority') || 'normal') as TrellisNotification['priority'],
+    status: (get('status') || 'unread') as NotificationStatus,
+    readAt: get('readAt'),
+    snoozeUntil: get('snoozeUntil'),
+    archivedAt: get('archivedAt'),
+    icon: get('icon'),
+    color: get('color'),
+    sound: get('sound'),
+    entityId: get('entityId'),
+    entityType: get('entityType'),
+    url: get('url'),
+    actions: parseActions(get('actions')),
+    metadata: parseMetadata(get('metadata')),
+    groupKey: get('groupKey'),
+    createdAt: get('createdAt') || new Date().toISOString(),
+    updatedAt: get('updatedAt'),
   }
 }
 
@@ -125,7 +127,7 @@ export function useTrellisNotifications() {
   async function refresh() {
     try {
       const result = await queryOnce(
-        `FIND ${NOTIFICATION_TYPE} AS ?n ORDER BY ?n.createdAt DESC LIMIT 100`,
+        `FIND ${NOTIFICATION_TYPE} AS ?n RETURN ?n.title, ?n.body, ?n.kind, ?n.source, ?n.sourceId, ?n.priority, ?n.status, ?n.readAt, ?n.snoozeUntil, ?n.archivedAt, ?n.icon, ?n.color, ?n.sound, ?n.entityId, ?n.entityType, ?n.url, ?n.actions, ?n.metadata, ?n.groupKey, ?n.createdAt, ?n.updatedAt ORDER BY ?n.createdAt DESC LIMIT 100`,
       )
       const next = (result.data || []).map(rowToNotification)
       const incoming = next.filter((n) => !_lastSeenIds.has(n.id) && n.status === 'unread')
@@ -177,10 +179,10 @@ export function useTrellisNotifications() {
 
   async function emit(input: CreateNotificationInput): Promise<TrellisNotification | null> {
     try {
-      const res = await $fetch<{ ok: boolean; notification: TrellisNotification }>(
-        '/api/notifications',
-        { method: 'POST', body: input },
-      )
+      const res = await $fetch<{ ok: boolean; notification: TrellisNotification }>('/api/notifications', {
+        method: 'POST',
+        body: input,
+      })
       return res.notification
     } catch (err: any) {
       console.error('[useTrellisNotifications] emit failed:', err?.message)

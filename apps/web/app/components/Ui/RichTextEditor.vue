@@ -1407,7 +1407,7 @@
     <!-- Compact Toolbar (shown when toolbarMode is 'static') -->
     <div
       v-if="!seamless && toolbarMode === 'static'"
-      class="flex flex-wrap items-center gap-1 border-b bg-transparent px-1.5 py-[2.5px]">
+      class="hidden flex flex-wrap items-center gap-1 border-b bg-transparent px-1.5 py-[2.5px]">
       <!-- Text Formatting -->
       <div class="flex items-center">
         <UiTooltip>
