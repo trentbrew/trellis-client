@@ -45,7 +45,8 @@
   const { userRole: _userRole, roleConfig } = useUserRole()
   const { isInEditMode, toggleEditMode, canToggleEditMode, canManageMembers, isAdmin: _isAdmin } = useAdminUI()
   const { totalMembers: _totalMembers, members: workspaceMembers, isUserOnline } = usePresence()
-  const isResizing = useState<boolean>('isSidebarResizing', () => false)
+  const _isResizing = useState<boolean>('isSidebarResizing', () => false)
+  const commandDialog = useCommandDialog()
 
   // User avatar and auth
   const { user, signOut } = useInstantAuth()
@@ -193,21 +194,6 @@
   }
 
   // No watch needed - currentCollection is reactive via computed()
-
-  // Realtime notifications
-  const {
-    notifications,
-    unreadCount,
-    notificationBadgeVariant,
-    markAsRead,
-    markAllAsRead,
-    timeAgo: notifTimeAgo,
-  } = useNotifications()
-
-  const handleNotificationClick = (notification: any) => {
-    if (!notification.isRead) markAsRead(notification.id)
-    if (notification.actionUrl) navigateTo(notification.actionUrl)
-  }
 </script>
 
 <template>
@@ -323,171 +309,19 @@
         </UiSheetContent>
       </UiSheet>
 
+      <!-- Global Search -->
+      <UiButton
+        variant="ghost"
+        size="sm"
+        class="h-8 px-3 text-muted-foreground hover:text-foreground bg-transparent hover:bg-muted/50 transition-all active:scale-95 mr-1 gap-2"
+        @click="commandDialog.open()">
+        <Icon name="lucide:search" class="h-4 w-4" />
+        <span class="text-xs">Search</span>
+        <UiKbd class="ml-1 bg-muted/50 border-none text-[10px] h-5 px-1.5">⌘K</UiKbd>
+      </UiButton>
+
       <!-- Trellis (local) notifications — TQL graph-backed -->
       <NotificationBell />
-
-      <!-- Notifications Button -->
-      <UiDropdownMenu>
-        <UiDropdownMenuTrigger as-child>
-          <UiButton
-            variant="outline"
-            size="icon-sm"
-            class="text-muted-foreground hover:text-foreground bg-transparent! relative transition-transform active:scale-95 mr-1 rounded-full!">
-            <Icon name="lucide:bell" class="h-4 w-4" />
-            <Motion
-              v-if="unreadCount > 0"
-              :initial="{ scale: 0, opacity: 0 }"
-              :animate="{ scale: 1, opacity: 1 }"
-              :transition="isResizing ? { duration: 0 } : undefined"
-              class="absolute -top-1 -right-1 flex h-4.5 w-4.5 items-center justify-center rounded-full text-[10px] font-bold ring-2 ring-card"
-              :class="[
-                notificationBadgeVariant === 'destructive'
-                  ? 'bg-destructive text-destructive-foreground'
-                  : notificationBadgeVariant === 'warning'
-                    ? 'bg-warning text-warning-foreground'
-                    : notificationBadgeVariant === 'success'
-                      ? 'bg-success text-success-foreground'
-                      : 'bg-primary text-primary-foreground',
-              ]">
-              {{ unreadCount }}
-            </Motion>
-          </UiButton>
-        </UiDropdownMenuTrigger>
-        <UiDropdownMenuContent align="end" class="w-[400px] p-0 overflow-hidden shadow-2xl border-border/50">
-          <div class="p-4 border-b bg-muted/20 flex items-center justify-between">
-            <div>
-              <UiDropdownMenuLabel class="p-0 font-bold text-base tracking-tight">Notifications</UiDropdownMenuLabel>
-              <p class="text-[11px] text-muted-foreground leading-none mt-1">
-                You have {{ unreadCount }} unread messages
-              </p>
-            </div>
-            <UiButton
-              variant="ghost"
-              size="xs"
-              class="text-[10px] h-7 px-3 font-semibold hover:bg-primary/10 hover:text-primary transition-colors"
-              @click="markAllAsRead">
-              Mark all as read
-            </UiButton>
-          </div>
-          <div class="max-h-[480px] overflow-y-auto custom-scrollbar">
-            <template v-if="notifications.length > 0">
-              <div
-                v-for="notification in notifications"
-                :key="notification.id"
-                class="relative flex cursor-pointer gap-4 border-b p-4 transition-all duration-300 group last:border-0"
-                :class="[
-                  !notification.isRead
-                    ? notification.variant === 'destructive'
-                      ? 'bg-destructive/6 hover:bg-destructive/8'
-                      : notification.variant === 'warning'
-                        ? 'bg-warning/6 hover:bg-warning/8'
-                        : notification.variant === 'success'
-                          ? 'bg-success/6 hover:bg-success/8'
-                          : 'bg-primary/6 hover:bg-primary/8'
-                    : 'bg-transparent hover:bg-muted/30',
-                ]"
-                @click="handleNotificationClick(notification)">
-                <!-- Indicator Bar -->
-                <div
-                  v-if="!notification.isRead"
-                  class="absolute left-0 top-2 bottom-2 w-1 rounded-r-full transition-all duration-300 group-hover:w-1.5"
-                  :class="[
-                    notification.variant === 'destructive'
-                      ? 'bg-destructive'
-                      : notification.variant === 'warning'
-                        ? 'bg-warning'
-                        : notification.variant === 'success'
-                          ? 'bg-success'
-                          : 'bg-primary',
-                  ]"></div>
-
-                <!-- Icon Container -->
-                <div
-                  class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl shadow-sm ring-1 transition-all duration-300 group-hover:scale-110 group-hover:rotate-3"
-                  :class="[
-                    notification.variant === 'destructive'
-                      ? 'bg-destructive/20 text-destructive ring-destructive/30 shadow-destructive/10'
-                      : notification.variant === 'warning'
-                        ? 'bg-warning/20 text-warning ring-warning/30 shadow-warning/10'
-                        : notification.variant === 'success'
-                          ? 'bg-success/20 text-success ring-success/30 shadow-success/10'
-                          : 'bg-primary/20 text-primary ring-primary/30 shadow-primary/10',
-                  ]">
-                  <Icon :name="notification.icon || 'lucide:bell'" class="h-5 w-5" />
-                </div>
-
-                <div class="flex-1 min-w-0 space-y-1.5">
-                  <div class="flex items-center justify-between">
-                    <span
-                      class="text-sm font-semibold tracking-tight truncate transition-colors duration-300"
-                      :class="!notification.isRead ? 'text-foreground' : 'text-muted-foreground/80'">
-                      {{ notification.title }}
-                    </span>
-                    <span
-                      class="text-[10px] font-bold text-muted-foreground/60 uppercase tracking-widest tabular-nums whitespace-nowrap ml-2">
-                      {{ notifTimeAgo(notification.createdAt) }}
-                    </span>
-                  </div>
-                  <p
-                    class="text-xs text-muted-foreground line-clamp-2 leading-relaxed opacity-90 group-hover:opacity-100 transition-opacity">
-                    {{ notification.message }}
-                  </p>
-
-                  <div class="pt-1 flex items-center justify-between">
-                    <div class="flex items-center gap-2">
-                      <span
-                        v-if="notification.orgName"
-                        class="rounded-md px-1.5 py-0.5 text-[9px] font-semibold tracking-wide text-muted-foreground/70 bg-muted/50 ring-1 ring-border/30 truncate max-w-[140px]">
-                        {{ notification.orgName }}
-                      </span>
-                      <span
-                        class="rounded-md px-1.5 py-0.5 text-[9px] font-black uppercase tracking-[0.1em] shadow-xs ring-1"
-                        :class="[
-                          notification.variant === 'destructive'
-                            ? 'bg-destructive/15 text-destructive ring-destructive/30'
-                            : notification.variant === 'warning'
-                              ? 'bg-warning/15 text-warning ring-warning/30'
-                              : notification.variant === 'success'
-                                ? 'bg-success/15 text-success ring-success/30'
-                                : 'bg-muted text-muted-foreground ring-border/50',
-                        ]">
-                        {{ notification.variant === 'default' ? 'system' : notification.variant }}
-                      </span>
-                    </div>
-
-                    <UiButton
-                      v-if="notification.actionUrl"
-                      variant="ghost"
-                      size="xs"
-                      class="h-7 px-2.5 text-[10px] font-black uppercase tracking-wider text-primary hover:bg-primary/10 opacity-0 group-hover:opacity-100 translate-x-2 group-hover:translate-x-0 transition-all duration-300 active:scale-95"
-                      @click.stop="handleNotificationClick(notification)">
-                      Open
-                      <Icon name="lucide:chevron-right" class="ml-1 h-3.5 w-3.5" />
-                    </UiButton>
-                  </div>
-                </div>
-              </div>
-            </template>
-            <div v-else class="flex flex-col items-center justify-center py-16 text-muted-foreground">
-              <div class="relative mb-4">
-                <Icon name="lucide:bell" class="h-12 w-12 opacity-10" />
-                <Icon name="lucide:check" class="absolute -bottom-1 -right-1 h-5 w-5 text-emerald-500 opacity-50" />
-              </div>
-              <p class="text-sm font-bold tracking-tight">All caught up!</p>
-              <p class="text-xs opacity-60">No new notifications for you</p>
-            </div>
-          </div>
-          <div v-if="notifications.length > 0" class="p-3 border-t bg-muted/5 text-center">
-            <UiButton
-              variant="ghost"
-              size="sm"
-              class="w-full text-xs font-bold text-muted-foreground hover:text-primary transition-colors hover:bg-primary/5"
-              @click="navigateTo('/notifications')">
-              View all activity
-            </UiButton>
-          </div>
-        </UiDropdownMenuContent>
-      </UiDropdownMenu>
 
       <!-- Workspace Members & Presence -->
       <div v-if="!props.hidePresenceControls && workspaceUsers.length > 0" class="flex items-center ml-2 mr-1">

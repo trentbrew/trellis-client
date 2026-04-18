@@ -2468,7 +2468,10 @@
                           </UiPopover>
                         </div>
                         <!-- Multi-day lane slots (bar segments inside each cell) -->
-                        <div v-if="getLaneSlotsForDay(row, dayIdx).length" class="-mx-2 mb-1 shrink-0">
+                        <div
+                          v-if="getLaneSlotsForDay(row, dayIdx).length"
+                          class="-mx-2 mb-1 shrink-0"
+                          :class="{ '-translate-y-[3px]': day.isToday }">
                           <div
                             v-for="(slot, li) in getLaneSlotsForDay(row, dayIdx)"
                             :key="`lane-${li}`"
