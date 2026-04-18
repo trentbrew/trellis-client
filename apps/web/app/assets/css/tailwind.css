@@ -490,7 +490,7 @@ body.is-resizing * {
 }
 
 .prose hr {
-  @apply border-border! mb-0! mt-12!;
+  @apply border-border! mb-0! pb-0! mt-6!;
 }
 
 /* Vue Flow Theme Overrides */

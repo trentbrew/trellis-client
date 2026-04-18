@@ -1,6 +1,6 @@
 <script lang="ts" setup>
   import { useAppNavigate } from '~/composables/useAppNavigate'
-  import { getSidebarSection, getCleanPath } from '~/config/routes'
+  import { getCleanPath, getSidebarSection } from '~/config/routes'
 
   // Builder mode visual wrapper + role checks
   const { isInEditMode: _isInEditMode } = useAdminUI()
@@ -23,7 +23,6 @@
   const { headerAboveSidebar, iconRailPosition } = useLayoutPreferences()
   const railAtBottom = computed(() => iconRailPosition.value === 'bottom')
 
-  const commandDialog = useCommandDialog()
   const routes = useRoutes()
   const appNavigate = useAppNavigate()
   const { wp } = useWorkspacePath()
@@ -145,34 +144,9 @@
     { immediate: true, flush: 'post' },
   )
 
-  const navigateTo = async (path: string) => {
-    await appNavigate.navigate(wp(path))
-    commandDialog.close()
-  }
-
   const rightSidebarCssWidth = computed(() => (isRightSidebarOpen.value ? `${rightSidebarWidth.value}px` : '0px'))
 
   watch([isRightSidebarOpen, rightSidebarWidth], ([open, w]) => setRightSidebarWidth(open ? w : 0), { immediate: true })
-
-  // Group command palette routes by section for better organization
-  const commandPaletteGroups = computed(() => {
-    const groups = new Map<string, typeof routes.commandPaletteRoutes.value>()
-
-    routes.commandPaletteRoutes.value.forEach((routeItem) => {
-      const section = getSidebarSection(routeItem.path)
-      const sectionLabel = section?.label || 'Other'
-
-      if (!groups.has(sectionLabel)) {
-        groups.set(sectionLabel, [])
-      }
-      groups.get(sectionLabel)!.push(routeItem)
-    })
-
-    return Array.from(groups.entries()).map(([label, routeItems]) => ({
-      label,
-      routes: routeItems,
-    }))
-  })
 </script>
 
 <template>
@@ -182,34 +156,7 @@
     :style="{ '--right-sidebar-width': rightSidebarCssWidth }">
     <!-- App body: icon rail + sidebar + content + right sidebar -->
     <div class="flex flex-1 min-h-0 overflow-hidden">
-      <!-- Command Dialog -->
-      <UiCommandDialog
-        :open="commandDialog.isOpen.value"
-        title="Command Palette"
-        description="Search for pages and navigate quickly"
-        @update:open="(val) => (commandDialog.isOpen.value = val)">
-        <UiCommandInput placeholder="Run a command or search..." />
-        <UiCommandList>
-          <UiCommandEmpty>No results found.</UiCommandEmpty>
-          <template v-for="group in commandPaletteGroups" :key="group.label">
-            <UiCommandGroup :heading="group.label">
-              <template v-for="routeItem in group.routes" :key="routeItem?.path || ''">
-                <UiCommandItem
-                  v-if="routeItem?.path"
-                  :value="`${group.label} ${routeItem.label}`"
-                  @select="() => navigateTo(routeItem.path)">
-                  <Icon :name="routeItem.icon || 'lucide:circle'" class="h-4 w-4" />
-                  <span>{{ routeItem.label }}</span>
-                  <span class="sr-only">{{ group.label }} {{ routeItem.searchKeywords?.join(' ') }}</span>
-                  <UiCommandShortcut v-if="routes.getRouteBadge(routeItem)">
-                    {{ routes.getRouteBadge(routeItem) }}
-                  </UiCommandShortcut>
-                </UiCommandItem>
-              </template>
-            </UiCommandGroup>
-          </template>
-        </UiCommandList>
-      </UiCommandDialog>
+      <!-- Global omnibox lives inside AppHeader via <AppOmnibox />. -->
 
       <!-- Layout Mode A: Header above sidebar (spans sidebar + content) -->
       <template v-if="headerAboveSidebar">

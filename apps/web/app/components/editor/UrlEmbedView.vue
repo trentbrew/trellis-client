@@ -37,10 +37,14 @@
 
     if (inputMode.value === 'image') {
       props.deleteNode()
-      props.editor.chain().focus().insertContent({
-        type: 'image',
-        attrs: { src: url, alt: '', title: '' },
-      }).run()
+      props.editor
+        .chain()
+        .focus()
+        .insertContent({
+          type: 'image',
+          attrs: { src: url, alt: '', title: '' },
+        })
+        .run()
     } else if (inputMode.value === 'youtube') {
       const id = extractYoutubeId(url)
       props.updateAttributes({ src: id, title: title.value || 'YouTube', mode: 'youtube', height: 360 })
@@ -48,7 +52,11 @@
       props.updateAttributes({ src: url, title: title.value || 'Spotify', mode: 'spotify', height: 152 })
     } else {
       let resolvedTitle = title.value || url
-      try { resolvedTitle = new URL(url).hostname } catch { /* leave as url */ }
+      try {
+        resolvedTitle = new URL(url).hostname
+      } catch {
+        /* leave as url */
+      }
       props.updateAttributes({ src: url, title: resolvedTitle, mode: 'embed' })
     }
   }
@@ -185,7 +193,11 @@
     if (mode.value === 'youtube') return src.value ? `youtube.com/watch?v=${src.value}` : 'YouTube'
     if (mode.value === 'spotify') return 'Spotify'
     if (src.value) {
-      try { return new URL(src.value).hostname } catch { return src.value }
+      try {
+        return new URL(src.value).hostname
+      } catch {
+        return src.value
+      }
     }
     return 'Embed'
   })
@@ -223,28 +235,16 @@
           Image
         </button>
       </div>
-      <button
-        type="button"
-        class="url-embed-confirm-btn"
-        :disabled="!isValidUrl"
-        title="Confirm"
-        @click="confirm">
+      <button type="button" class="url-embed-confirm-btn" :disabled="!isValidUrl" title="Confirm" @click="confirm">
         <Icon name="lucide:arrow-right" class="h-3.5 w-3.5" />
       </button>
-      <button
-        type="button"
-        class="url-embed-cancel-btn"
-        title="Cancel (Esc)"
-        @click="props.deleteNode()">
+      <button type="button" class="url-embed-cancel-btn" title="Cancel (Esc)" @click="props.deleteNode()">
         <Icon name="lucide:x" class="h-3.5 w-3.5" />
       </button>
     </div>
 
     <!-- ── Iframe state ── -->
-    <div
-      v-else
-      class="url-embed-iframe-state"
-      :class="{ 'url-embed-iframe-state--selected': selected }">
+    <div v-else class="url-embed-iframe-state" :class="{ 'url-embed-iframe-state--selected': selected }">
       <!-- Header bar -->
       <div class="url-embed-header">
         <img
@@ -256,11 +256,7 @@
         <Icon v-else name="lucide:globe" class="h-3.5 w-3.5 text-muted-foreground shrink-0" />
         <span class="url-embed-title">{{ displayTitle }}</span>
         <div class="url-embed-actions">
-          <button
-            type="button"
-            class="url-embed-action-btn"
-            title="Open in new tab"
-            @click.stop="openInNewTab">
+          <button type="button" class="url-embed-action-btn" title="Open in new tab" @click.stop="openInNewTab">
             <Icon name="lucide:external-link" class="h-3 w-3" />
           </button>
           <button
@@ -285,14 +281,11 @@
           :title="displayTitle"
           frameborder="0"
           allowfullscreen
-          sandbox="allow-scripts allow-same-origin allow-presentation allow-popups allow-forms"
+          sandbox="allow-scripts allow-same-origin allow-popups allow-forms"
           class="url-embed-iframe" />
         <!-- Transparent overlay: captures mouse events so the drag handle can detect this block.
              Clicking the overlay hides it, allowing direct iframe interaction. -->
-        <div
-          v-if="!iframeInteractive"
-          class="url-embed-iframe-overlay"
-          @click.stop="activateIframe" />
+        <div v-if="!iframeInteractive" class="url-embed-iframe-overlay" @click.stop="activateIframe" />
       </div>
 
       <!-- Resize handle (hidden for fixed-aspect modes) -->
@@ -360,7 +353,9 @@
     font-size: 0.6875rem;
     font-weight: 500;
     padding: 0.1875rem 0.5rem;
-    transition: background 120ms, color 120ms;
+    transition:
+      background 120ms,
+      color 120ms;
   }
 
   .url-embed-mode-btn.is-active {
@@ -380,7 +375,10 @@
     flex-shrink: 0;
     height: 1.625rem;
     justify-content: center;
-    transition: background 120ms, color 120ms, border-color 120ms;
+    transition:
+      background 120ms,
+      color 120ms,
+      border-color 120ms;
     width: 1.625rem;
   }
 
@@ -406,7 +404,9 @@
     border: 1px solid hsl(var(--border));
     border-radius: 0.5rem;
     overflow: hidden;
-    transition: border-color 150ms, box-shadow 150ms;
+    transition:
+      border-color 150ms,
+      box-shadow 150ms;
   }
 
   .url-embed-iframe-state--selected {
@@ -458,7 +458,10 @@
     justify-content: center;
     opacity: 0;
     padding: 0;
-    transition: opacity 150ms, color 150ms, background 150ms;
+    transition:
+      opacity 150ms,
+      color 150ms,
+      background 150ms;
     width: 1.25rem;
   }
 

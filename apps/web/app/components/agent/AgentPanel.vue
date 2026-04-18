@@ -1,35 +1,40 @@
 <script setup lang="ts">
-const { messages, isStreaming, error, sendMessage, createThread } = useAgent()
+  const { messages, isStreaming, error, sendMessage, createThread } = useAgent()
+  const { setRightSidebarOpen } = useRightSidebarWidth()
 
-const messageContainer = ref<HTMLElement | null>(null)
+  const messageContainer = ref<HTMLElement | null>(null)
 
-// Auto-scroll to bottom when new messages arrive
-watch(
-  () => messages.value.length,
-  () => {
-    nextTick(() => {
-      if (messageContainer.value) {
-        messageContainer.value.scrollTop = messageContainer.value.scrollHeight
-      }
-    })
+  const handleClose = () => {
+    setRightSidebarOpen(false)
   }
-)
 
-// Scroll on mount if there are existing messages
-onMounted(() => {
-  if (messages.value.length > 0 && messageContainer.value) {
-    messageContainer.value.scrollTop = messageContainer.value.scrollHeight
+  // Auto-scroll to bottom when new messages arrive
+  watch(
+    () => messages.value.length,
+    () => {
+      nextTick(() => {
+        if (messageContainer.value) {
+          messageContainer.value.scrollTop = messageContainer.value.scrollHeight
+        }
+      })
+    },
+  )
+
+  // Scroll on mount if there are existing messages
+  onMounted(() => {
+    if (messages.value.length > 0 && messageContainer.value) {
+      messageContainer.value.scrollTop = messageContainer.value.scrollHeight
+    }
+  })
+
+  const handleSend = (message: string) => {
+    const plain = message.replace(/<[^>]+>/g, '').trim()
+    if (plain) sendMessage(plain)
   }
-})
 
-const handleSend = (message: string) => {
-  const plain = message.replace(/<[^>]+>/g, '').trim()
-  if (plain) sendMessage(plain)
-}
-
-function handleNewThread() {
-  createThread()
-}
+  function handleNewThread() {
+    createThread()
+  }
 </script>
 
 <template>
@@ -38,26 +43,40 @@ function handleNewThread() {
     <div class="shrink-0 border-b border-border p-3 flex items-center justify-between">
       <div class="flex items-center gap-2">
         <Icon name="lucide:bot" class="h-4 w-4 text-primary" />
-        <span class="font-medium text-sm">Graph Assistant</span>
+        <span class="font-medium text-sm">Agent</span>
       </div>
-      <UiTooltip>
-        <UiTooltipTrigger as-child>
-          <UiButton
-            size="sm"
-            variant="ghost"
-            class="text-muted-foreground hover:text-foreground"
-            @click="handleNewThread">
-            <Icon name="lucide:plus" class="h-3.5 w-3.5" />
-          </UiButton>
-        </UiTooltipTrigger>
-        <UiTooltipContent side="bottom" :side-offset="8">New thread</UiTooltipContent>
-      </UiTooltip>
+      <div class="flex items-center gap-1">
+        <UiTooltip>
+          <UiTooltipTrigger as-child>
+            <UiButton
+              size="sm"
+              variant="ghost"
+              class="text-muted-foreground hover:text-foreground"
+              aria-label="New thread"
+              @click="handleNewThread">
+              <Icon name="lucide:plus" class="h-3.5 w-3.5" />
+            </UiButton>
+          </UiTooltipTrigger>
+          <UiTooltipContent side="bottom" :side-offset="8">New thread</UiTooltipContent>
+        </UiTooltip>
+        <UiTooltip>
+          <UiTooltipTrigger as-child>
+            <UiButton
+              size="sm"
+              variant="ghost"
+              class="text-muted-foreground hover:text-foreground"
+              aria-label="Close agent panel"
+              @click="handleClose">
+              <Icon name="lucide:x" class="h-3.5 w-3.5" />
+            </UiButton>
+          </UiTooltipTrigger>
+          <UiTooltipContent side="bottom" :side-offset="8">Close</UiTooltipContent>
+        </UiTooltip>
+      </div>
     </div>
 
     <!-- Message List -->
-    <div
-      ref="messageContainer"
-      class="flex-1 overflow-y-auto p-4 space-y-4 ">
+    <div ref="messageContainer" class="flex-1 overflow-y-auto p-4 space-y-4">
       <!-- Empty state -->
       <div v-if="messages.length === 0" class="flex flex-col items-center justify-center h-full text-center px-4">
         <div class="h-12 w-12 rounded-full bg-primary/10 flex items-center justify-center mb-3">
@@ -88,11 +107,7 @@ function handleNewThread() {
 
       <!-- Messages -->
       <template v-else>
-        <AgentMessage
-          v-for="msg in messages"
-          :key="msg.id"
-          :message="msg"
-        />
+        <AgentMessage v-for="msg in messages" :key="msg.id" :message="msg" />
 
         <!-- Streaming indicator -->
         <div v-if="isStreaming" class="flex gap-2 items-start">
@@ -109,7 +124,9 @@ function handleNewThread() {
         </div>
 
         <!-- Error -->
-        <div v-if="error" class="p-3 rounded-lg bg-destructive/10 border border-destructive/20 text-destructive text-sm">
+        <div
+          v-if="error"
+          class="p-3 rounded-lg bg-destructive/10 border border-destructive/20 text-destructive text-sm">
           <div class="flex items-start gap-2">
             <Icon name="lucide:alert-circle" class="h-4 w-4 mt-0.5 shrink-0" />
             <div>{{ error }}</div>
@@ -119,24 +136,22 @@ function handleNewThread() {
     </div>
 
     <!-- Input -->
-    <AgentInput
-      :disabled="isStreaming"
-      @send="handleSend"
-    />
+    <AgentInput :disabled="isStreaming" @send="handleSend" />
   </div>
 </template>
 
 <style scoped>
-@keyframes bounce {
-  0%, 100% {
-    transform: translateY(0);
+  @keyframes bounce {
+    0%,
+    100% {
+      transform: translateY(0);
+    }
+    50% {
+      transform: translateY(-4px);
+    }
   }
-  50% {
-    transform: translateY(-4px);
-  }
-}
 
-.animate-bounce {
-  animation: bounce 1s ease-in-out infinite;
-}
+  .animate-bounce {
+    animation: bounce 1s ease-in-out infinite;
+  }
 </style>
