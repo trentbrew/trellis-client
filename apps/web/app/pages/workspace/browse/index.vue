@@ -195,6 +195,11 @@
     isAllMode.value ? null : getEntityTypeConfig(activeTypeParam.value as EntityType),
   )
 
+  const pageDescription = computed(() => {
+    if (isAllMode.value) return 'Browse all entities across your workspace.'
+    return activeTypeCfg.value?.description ?? ''
+  })
+
   // ── Sidebar injection ─────────────────────────────────────────────────────
 
   const pageSidebar = usePageSidebar()
@@ -218,7 +223,8 @@
     :icon="pageIcon"
     :icon-class="pageIconClass"
     search-placeholder="Search everything..."
-    :hide-header="true"
+    :description="pageDescription"
+    :hide-header="false"
     :stats="stats"
     :show-view-switcher="true"
     :fill-height="true"

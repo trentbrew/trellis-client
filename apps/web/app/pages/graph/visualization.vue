@@ -13,8 +13,13 @@
   import { drag as d3Drag } from 'd3-drag'
   import { entityQuery } from '~/lib/tql-namespace'
   import { getRecurringSeriesKey } from '~/utils/recurrence'
+  import { useGraphTypesSidebar, colorTokenToHex } from '~/composables/useGraphTypesSidebar'
+  import { getEntityTypeConfig } from '~/config/entityRegistry'
+  import EntityDialog from '~/components/dialogs/EntityDialog.vue'
 
   const graph = useTrellisGraph()
+  const graphTypesSidebar = useGraphTypesSidebar()
+  const { items: allEntities } = useTrellisEntities()
 
   // ── Types ─────────────────────────────────────────────────────────────
 
@@ -129,6 +134,10 @@
   // ── Helpers ───────────────────────────────────────────────────────────
 
   function nodeColor(n: SimNode): string {
+    try {
+      const cfg = getEntityTypeConfig(n.type as any)
+      if (cfg?.color) return colorTokenToHex(cfg.color)
+    } catch {}
     if (ENTITY_COLORS[n.type]) return ENTITY_COLORS[n.type]!
     return ENTITY_COLORS[n.status ?? 'backlog'] ?? ENTITY_COLORS.backlog!
   }
@@ -265,55 +274,106 @@
 
   // ── Type Visibility (sidebar filter) ──────────────────────────────────
 
-  const typeVisibility = ref<Map<string, boolean>>(new Map())
-
   const typesInGraph = computed(() => {
     const counts = new Map<string, number>()
     for (const node of graphNodes.value) {
       if (!node.type) continue
       counts.set(node.type, (counts.get(node.type) || 0) + 1)
     }
-    const entries: Array<{ type: string; count: number; color: string }> = []
+    const entries: Array<{ type: string; count: number; color: string; icon: string; label: string }> = []
     for (const [type, count] of counts) {
-      entries.push({ type, count, color: ENTITY_COLORS[type] ?? ENTITY_COLORS.backlog! })
+      const cfg = graphTypesSidebar.resolveConfig(type)
+      entries.push({ type, count, color: cfg.color, icon: cfg.icon, label: cfg.label })
     }
     return entries.sort((a, b) => b.count - a.count)
   })
 
   watch(
     typesInGraph,
-    (types) => {
-      let changed = false
-      const next = new Map(typeVisibility.value)
-      for (const { type } of types) {
-        if (!next.has(type)) {
-          next.set(type, true)
-          changed = true
-        }
-      }
-      if (changed) typeVisibility.value = next
+    (entries) => {
+      graphTypesSidebar.setEntries(entries)
     },
     { immediate: true },
   )
 
-  const isTypeVisible = (type: string) => typeVisibility.value.get(type) ?? true
+  const visibleGraphNodes = computed(() =>
+    graphNodes.value.filter((n) => graphTypesSidebar.isVisible(n.type)),
+  )
 
-  const toggleType = (type: string) => {
-    const next = new Map(typeVisibility.value)
-    next.set(type, !isTypeVisible(type))
-    typeVisibility.value = next
+  // ── Interaction State ─────────────────────────────────────────────────
+
+  const hoveredNodeId = ref<string | null>(null)
+  const hoverPos = ref({ x: 0, y: 0 })
+  const selectedEntityId = ref<string | null>(null)
+  const dialogOpen = ref(false)
+  const { setOriginHash, clearHash } = useDialogUrl()
+
+  const hoveredNode = computed(() => {
+    if (!hoveredNodeId.value) return null
+    return graphNodes.value.find((n) => n.id === hoveredNodeId.value) ?? null
+  })
+
+  const hoveredNodeMeta = computed(() => {
+    const n = hoveredNode.value
+    if (!n) return null
+    const cfg = graphTypesSidebar.resolveConfig(n.type)
+    return {
+      label: n.label,
+      type: n.type,
+      typeLabel: cfg.label,
+      icon: cfg.icon,
+      color: colorTokenToHex(cfg.color),
+      status: n.status,
+    }
+  })
+
+  const connectedEdgeSet = computed(() => {
+    const set = new Set<string>()
+    if (!hoveredNodeId.value) return set
+    for (const e of graphEdges.value) {
+      if (e.source === hoveredNodeId.value || e.target === hoveredNodeId.value) {
+        set.add(`${e.source}→${e.target}→${e.type}`)
+      }
+    }
+    return set
+  })
+
+  const neighborSet = computed(() => {
+    const set = new Set<string>()
+    if (!hoveredNodeId.value) return set
+    set.add(hoveredNodeId.value)
+    for (const e of graphEdges.value) {
+      if (e.source === hoveredNodeId.value) set.add(e.target)
+      if (e.target === hoveredNodeId.value) set.add(e.source)
+    }
+    return set
+  })
+
+  const dialogItem = computed(() => {
+    if (!selectedEntityId.value) return null
+    const found = allEntities.value.find((e) => e.id === selectedEntityId.value)
+    if (found) return found
+    const n = graphNodes.value.find((nn) => nn.id === selectedEntityId.value)
+    if (!n) return null
+    return { id: n.id, type: n.type, title: n.label } as any
+  })
+
+  watch(dialogOpen, (open) => {
+    if (!open) {
+      selectedEntityId.value = null
+      clearHash()
+    }
+  })
+
+  // Expose a hook the renderer calls when zoom should focus a node
+  let _zoomToNode: ((id: string) => void) | null = null
+
+  function openNodeDialog(id: string) {
+    selectedEntityId.value = id
+    dialogOpen.value = true
+    setOriginHash(id)
+    _zoomToNode?.(id)
   }
-
-  const allTypesVisible = computed(() => typesInGraph.value.every((t) => isTypeVisible(t.type)))
-
-  const toggleAllTypes = () => {
-    const target = !allTypesVisible.value
-    const next = new Map<string, boolean>()
-    for (const { type } of typesInGraph.value) next.set(type, target)
-    typeVisibility.value = next
-  }
-
-  const visibleGraphNodes = computed(() => graphNodes.value.filter((n) => isTypeVisible(n.type)))
 
   // ── Minimap State ─────────────────────────────────────────────────────
 
@@ -452,6 +512,16 @@
 
     svg.call(zoomBehavior).on('dblclick.zoom', null)
 
+    _zoomToNode = (id: string) => {
+      const node = nodes.find((n) => n.id === id)
+      if (!node) return
+      const nx = node.x ?? width / 2
+      const ny = node.y ?? height / 2
+      const targetK = Math.max(currentZoom.k, 1.4)
+      const t = zoomIdentity.translate(width / 2 - nx * targetK, height / 2 - ny * targetK).scale(targetK)
+      svg.transition().duration(450).call(zoomBehavior.transform as any, t)
+    }
+
     // Plain wheel = pan
     svg.on('wheel.pan', (event: WheelEvent) => {
       if (event.ctrlKey || event.metaKey) return
@@ -485,12 +555,12 @@
       .attr('stroke-width', 1)
       .attr('stroke-opacity', opt.link)
 
-    // Edge labels
+    // Edge labels — always bound; default opacity gated by density
     const edgeLabel = g
       .append('g')
       .attr('class', 'edge-labels')
       .selectAll<SVGTextElement, (typeof simLinks)[number]>('text')
-      .data(opt.edge ? simLinks : [])
+      .data(simLinks)
       .join('text')
       .text((d) => (d as any).type as string)
       .attr('font-size', '8px')
@@ -498,6 +568,7 @@
       .attr('text-anchor', 'middle')
       .attr('pointer-events', 'none')
       .attr('dy', '-4')
+      .attr('opacity', opt.edge ? 1 : 0)
 
     // Cardinality markers layer
     const cardinalityG = g.append('g').attr('class', 'cardinality')
@@ -544,8 +615,95 @@
       })
     }
 
-    // Tooltip
-    nodeG.append('title').text((d) => `${d.label}\n${d.type}\n${d.id}`)
+    // Hover + click
+    nodeG
+      .on('mouseenter', (event: MouseEvent, d) => {
+        hoveredNodeId.value = d.id
+        const rect = svgEl.getBoundingClientRect()
+        hoverPos.value = { x: event.clientX - rect.left, y: event.clientY - rect.top }
+        applyHighlight()
+      })
+      .on('mousemove', (event: MouseEvent) => {
+        const rect = svgEl.getBoundingClientRect()
+        hoverPos.value = { x: event.clientX - rect.left, y: event.clientY - rect.top }
+      })
+      .on('mouseleave', () => {
+        hoveredNodeId.value = null
+        applyHighlight()
+      })
+      .on('click', (event: MouseEvent, d) => {
+        event.stopPropagation()
+        openNodeDialog(d.id)
+      })
+
+    function drawCardinalities() {
+      cardinalityG.selectAll('*').remove()
+      const hid = hoveredNodeId.value
+      const drawAll = opt.card
+      if (!drawAll && !hid) return
+      for (const sl of simLinks) {
+        const s = sl.source as SimNode
+        const t = sl.target as SimNode
+        if (!drawAll && hid && s.id !== hid && t.id !== hid) continue
+        const sx = s.x ?? 0,
+          sy = s.y ?? 0
+        const tx = t.x ?? 0,
+          ty = t.y ?? 0
+        const dx = tx - sx,
+          dy = ty - sy
+        const len = Math.sqrt(dx * dx + dy * dy)
+        if (len < 1) continue
+        const angle = Math.atan2(dy, dx)
+        const rel = (sl as any).type as string
+        const [srcCard, tgtCard] = EDGE_CARDINALITY[rel] ?? ['1', '*']
+        const inset = 14
+        drawCardinality(cardinalityG, srcCard!, sx + (dx / len) * inset, sy + (dy / len) * inset, angle)
+        drawCardinality(cardinalityG, tgtCard!, tx - (dx / len) * inset, ty - (dy / len) * inset, angle + Math.PI)
+      }
+    }
+
+    function applyHighlight() {
+      drawCardinalities()
+      const hid = hoveredNodeId.value
+      if (!hid) {
+        nodeG.attr('opacity', 1)
+        link.attr('stroke-opacity', opt.link).attr('stroke', 'var(--border, var(--muted-foreground))').attr('stroke-width', 1)
+        edgeLabel.attr('opacity', opt.edge ? 1 : 0)
+        return
+      }
+      const neighbors = new Set<string>([hid])
+      for (const l of simLinks) {
+        const s = (l.source as SimNode).id ?? (l.source as any)
+        const t = (l.target as SimNode).id ?? (l.target as any)
+        if (s === hid) neighbors.add(String(t))
+        if (t === hid) neighbors.add(String(s))
+      }
+      nodeG.attr('opacity', (d) => (neighbors.has(d.id) ? 1 : 0.12))
+      link
+        .attr('stroke', (d: any) => {
+          const s = (d.source as SimNode).id ?? d.source
+          const tt = (d.target as SimNode).id ?? d.target
+          return s === hid || tt === hid ? 'var(--primary)' : 'var(--border, var(--muted-foreground))'
+        })
+        .attr('stroke-width', (d: any) => {
+          const s = (d.source as SimNode).id ?? d.source
+          const tt = (d.target as SimNode).id ?? d.target
+          return s === hid || tt === hid ? 2 : 0.5
+        })
+        .attr('stroke-opacity', (d: any) => {
+          const s = (d.source as SimNode).id ?? d.source
+          const tt = (d.target as SimNode).id ?? d.target
+          return s === hid || tt === hid ? 0.9 : 0.08
+        })
+      edgeLabel.attr('opacity', (d: any) => {
+        const s = (d.source as SimNode).id ?? d.source
+        const tt = (d.target as SimNode).id ?? d.target
+        return s === hid || tt === hid ? 1 : 0.05
+      })
+    }
+
+    // Expose for external watcher
+    ;(svgEl as any).__applyHighlight = applyHighlight
 
     // Labels
     const label = g
@@ -610,28 +768,7 @@
         .attr('x', (d) => ((d.source as SimNode).x! + (d.target as SimNode).x!) / 2)
         .attr('y', (d) => ((d.source as SimNode).y! + (d.target as SimNode).y!) / 2)
 
-      // Cardinality markers
-      if (opt.card) {
-        cardinalityG.selectAll('*').remove()
-        for (const sl of simLinks) {
-          const s = sl.source as SimNode
-          const t = sl.target as SimNode
-          const sx = s.x ?? 0,
-            sy = s.y ?? 0
-          const tx = t.x ?? 0,
-            ty = t.y ?? 0
-          const dx = tx - sx,
-            dy = ty - sy
-          const len = Math.sqrt(dx * dx + dy * dy)
-          if (len < 1) continue
-          const angle = Math.atan2(dy, dx)
-          const rel = (sl as any).type as string
-          const [srcCard, tgtCard] = EDGE_CARDINALITY[rel] ?? ['1', '*']
-          const inset = 14
-          drawCardinality(cardinalityG, srcCard!, sx + (dx / len) * inset, sy + (dy / len) * inset, angle)
-          drawCardinality(cardinalityG, tgtCard!, tx - (dx / len) * inset, ty - (dy / len) * inset, angle + Math.PI)
-        }
-      }
+      drawCardinalities()
 
       nodeG.attr('transform', (d) => `translate(${d.x ?? 0},${d.y ?? 0})`)
       label.attr('x', (d) => d.x ?? 0).attr('y', (d) => d.y ?? 0)
@@ -665,6 +802,7 @@
       if (raf) cancelAnimationFrame(raf)
       simulation.stop()
       svg.on('wheel.pan', null)
+      _zoomToNode = null
     }
   }
 
@@ -684,6 +822,7 @@
   // ── Lifecycle ─────────────────────────────────────────────────────────
 
   onMounted(async () => {
+    graphTypesSidebar.activate()
     await fetchGraphData()
     await nextTick()
     initGraph()
@@ -703,7 +842,7 @@
   })
 
   watch(
-    typeVisibility,
+    () => graphTypesSidebar.state.value.visibility,
     () => {
       nextTick(() => initGraph())
     },
@@ -711,6 +850,7 @@
   )
 
   onBeforeUnmount(() => {
+    graphTypesSidebar.deactivate()
     if (cleanup) {
       cleanup()
       cleanup = null
@@ -735,39 +875,34 @@
 
     <!-- Visualization -->
     <div v-else class="flex h-full w-full">
-      <!-- ── Left sidebar: type filters ── -->
-      <div class="w-52 shrink-0 bg-card border-r border-border flex flex-col overflow-hidden z-10">
-        <div class="flex items-center justify-between px-3 py-2.5 border-b border-border/60 shrink-0">
-          <p class="text-[11px] font-medium text-muted-foreground uppercase tracking-wide">Types</p>
-          <button
-            class="text-[10px] text-muted-foreground hover:text-foreground transition-colors"
-            :title="allTypesVisible ? 'Hide all' : 'Show all'"
-            @click="toggleAllTypes">
-            {{ allTypesVisible ? 'Hide all' : 'Show all' }}
-          </button>
-        </div>
-        <div class="flex-1 overflow-y-auto py-1">
-          <label
-            v-for="t in typesInGraph"
-            :key="t.type"
-            class="flex items-center gap-2.5 px-3 py-2 cursor-pointer hover:bg-muted/50 transition-colors"
-            :class="{ 'opacity-40': !isTypeVisible(t.type) }">
-            <input
-              type="checkbox"
-              :checked="isTypeVisible(t.type)"
-              class="h-3.5 w-3.5 rounded border-border shrink-0 accent-primary"
-              @change="toggleType(t.type)" />
-            <span class="inline-block h-2 w-2 rounded-full shrink-0" :style="{ background: t.color }" />
-            <span class="text-xs flex-1 truncate capitalize">{{ t.type }}</span>
-            <span class="text-[10px] text-muted-foreground/60 tabular-nums shrink-0">{{ t.count }}</span>
-          </label>
-        </div>
-      </div>
-
       <!-- ── Graph canvas ── -->
       <div class="relative flex-1 overflow-hidden">
         <!-- SVG canvas -->
         <svg ref="svgRef" class="absolute inset-0 w-full h-full" style="touch-action: none" />
+
+        <!-- Hover preview popup -->
+        <div
+          v-if="hoveredNodeMeta"
+          class="pointer-events-none absolute z-20 rounded-lg border border-border bg-card/95 backdrop-blur-sm shadow-md px-3 py-2 text-xs min-w-[180px] max-w-[260px]"
+          :style="{
+            left: Math.min(hoverPos.x + 14, 9999) + 'px',
+            top: Math.min(hoverPos.y + 14, 9999) + 'px',
+          }">
+          <div class="flex items-center gap-2 mb-1">
+            <span
+              class="inline-flex h-5 w-5 items-center justify-center rounded shrink-0"
+              :style="{ background: hoveredNodeMeta.color + '22', color: hoveredNodeMeta.color }">
+              <Icon :name="hoveredNodeMeta.icon" class="h-3 w-3" />
+            </span>
+            <span class="text-[10px] uppercase tracking-wide text-muted-foreground">{{ hoveredNodeMeta.typeLabel }}</span>
+            <span
+              v-if="hoveredNodeMeta.status"
+              class="text-[10px] px-1.5 py-0.5 rounded bg-muted text-muted-foreground ml-auto">
+              {{ hoveredNodeMeta.status }}
+            </span>
+          </div>
+          <div class="text-sm font-medium text-foreground truncate">{{ hoveredNodeMeta.label }}</div>
+        </div>
 
         <!-- Minimap (bottom-left) -->
         <div
@@ -814,5 +949,13 @@
         </div>
       </div>
     </div>
+
+    <!-- Entity dialog (right-side) -->
+    <EntityDialog
+      v-if="dialogItem"
+      v-model:open="dialogOpen"
+      mode="edit"
+      :item="dialogItem"
+      @close="dialogOpen = false" />
   </div>
 </template>

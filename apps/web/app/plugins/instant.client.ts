@@ -47,6 +47,14 @@ export default defineNuxtPlugin(async () => {
     console.info(`✓ DataAdapter active (mode: ${db.mode}, entities: ${db.entityBackend}, ontologies: ${db.ontologyBackend})`)
   }
 
+  // ── Initialize local file storage directory ────────────────────────
+  // Ensures ~/.nodebook/files/ exists. Idempotent — safe to call every boot.
+  if (dataMode === 'local') {
+    $fetch('/api/storage/init-local', { method: 'POST' }).catch((err) => {
+      console.warn('[instant.client] Could not init local storage dir:', err?.message || err)
+    })
+  }
+
   return {
     provide: {
       instantDb: db,

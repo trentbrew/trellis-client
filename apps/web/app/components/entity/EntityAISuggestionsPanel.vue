@@ -78,6 +78,7 @@
     if (entityType === 'bookmark' && parseTranscript(entity).length > 0) {
       return { kind: 'video', sourceType: 'bookmark' as EntityType }
     }
+    if (entityType === 'file') return { kind: 'file', sourceType: 'file' as EntityType }
     return { kind: 'generic', sourceType: (entityType as EntityType) || 'entity' }
   }
 
@@ -305,6 +306,20 @@
         parts.push(`Transcript:\n${transcriptText}`)
         return parts.join('\n\n')
       }
+    }
+
+    if (entity.type === 'file') {
+      const parts: string[] = []
+      if (entity.title) parts.push(`Filename: ${entity.title}`)
+      if (entity.fileCategory) parts.push(`Category: ${entity.fileCategory}`)
+      if (entity.fileExtension) parts.push(`Extension: .${entity.fileExtension}`)
+      if (entity.mimeType) parts.push(`MIME: ${entity.mimeType}`)
+      if (entity.description) parts.push(`Description: ${entity.description}`)
+      if (entity.documentAuthor) parts.push(`Author: ${entity.documentAuthor}`)
+      if (entity.codeLanguage) parts.push(`Language: ${entity.codeLanguage}`)
+      if (entity.artist) parts.push(`Artist: ${entity.artist}`)
+      if (entity.aiSummary) parts.push(entity.aiSummary)
+      return parts.join('\n')
     }
 
     // Generic fallback — whatever text fields the entity has.

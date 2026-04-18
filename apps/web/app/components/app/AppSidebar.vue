@@ -127,6 +127,8 @@
 
   const { customTypes } = useInstantData()
 
+  const { state: graphTypesState } = useGraphTypesSidebar()
+
   const activeTypeContext = computed(() => {
     const path = route.path
     if (path.startsWith('/types/system/')) {
@@ -1632,6 +1634,10 @@
                       </div>
                     </div>
                   </template>
+
+                  <AppSidebarGraphTypes
+                    v-else-if="graphTypesState.active && !isTypesSection"
+                    class="h-full" />
 
                   <div
                     v-else-if="!filteredDynamicSidebarSections && filteredPinnedItems.length === 0 && !isTypesSection"

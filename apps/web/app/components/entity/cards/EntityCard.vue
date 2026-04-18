@@ -4,6 +4,8 @@
   import { getEntityClass } from '~/types/entity'
   import { stripHtml } from '~/utils/stripHtml'
   import { formatRecurrenceLabel } from '~/utils/recurrence'
+  import { getFileCategoryMeta, type FileCategory } from '~/utils/fileClassification'
+  import * as XLSX from 'xlsx'
 
   const props = withDefaults(
     defineProps<{
@@ -61,19 +63,37 @@
       .toUpperCase()
   })
 
-  // ─── File type icons ───
-  const mimeIconMap: Record<string, { icon: string; color: string }> = {
-    'application/pdf': { icon: 'lucide:file-text', color: 'text-red-500' },
-    'image/': { icon: 'lucide:image', color: 'text-purple-500' },
-    'video/': { icon: 'lucide:video', color: 'text-blue-500' },
-    'audio/': { icon: 'lucide:music', color: 'text-pink-500' },
-    'text/': { icon: 'lucide:file-code', color: 'text-emerald-500' },
-    'application/vnd': { icon: 'lucide:file-spreadsheet', color: 'text-green-500' },
-  }
+  // ─── File type metadata ───
   const fileMeta = computed(() => {
-    const mime = i.value.mimeType || ''
-    for (const [prefix, meta] of Object.entries(mimeIconMap)) if (mime.startsWith(prefix)) return meta
-    return { icon: 'lucide:file', color: 'text-muted-foreground' }
+    const category = (i.value.fileCategory as FileCategory) || 'other'
+    return getFileCategoryMeta(category)
+  })
+
+  // ─── Spreadsheet / CSV thumbnail data ───
+  const isTableFile = computed(() =>
+    i.value.fileCategory === 'spreadsheet' || i.value.fileExtension === 'csv'
+  )
+  const cardTableData = ref<{ headers: string[], rows: any[][] } | null>(null)
+
+  watchEffect(async () => {
+    if (!isTableFile.value || !i.value.url) {
+      cardTableData.value = null
+      return
+    }
+    try {
+      const res = await fetch(i.value.url)
+      if (!res.ok) return
+      const ab = await res.arrayBuffer()
+      const wb = XLSX.read(ab, { type: 'array' })
+      const ws = wb.Sheets[wb.SheetNames[0] as string]
+      const json = XLSX.utils.sheet_to_json<any[]>(ws, { header: 1 })
+      cardTableData.value = {
+        headers: (json[0] || []).map(String),
+        rows: json.slice(1, 8), // only 7 rows needed for the thumbnail
+      }
+    } catch {
+      cardTableData.value = null
+    }
   })
 
   // ─── Content helpers ───
@@ -247,7 +267,7 @@
         class="w-full h-full object-cover"
         :class="isOrg ? 'rounded-md' : 'rounded-full'" />
       <span v-else-if="isActor" :class="['text-xs font-semibold', `text-${config.color}-500`]">{{ initials }}</span>
-      <Icon v-else-if="isFile" :name="fileMeta.icon" :class="['h-6 w-6', fileMeta.color]" />
+      <Icon v-else-if="isFile" :name="fileMeta.icon" :class="['h-6 w-6', `text-${fileMeta.color}-500`]" />
       <Icon v-else :name="config.icon" :class="['h-5 w-5', `text-${config.color}-500`]" />
     </div>
 
@@ -397,24 +417,52 @@
       </template>
     </div>
 
-    <!-- ─── Preview: File (actual content for images/video, icon otherwise) ─── -->
+    <!-- ─── Preview: File (actual content for images/video/pdf, table thumbnail, icon otherwise) ─── -->
     <div v-else-if="isFile" class="aspect-video border-b border-border overflow-hidden relative bg-muted/20">
       <img
         v-if="i.mimeType?.startsWith('image/') && i.url"
         :src="i.url"
         :alt="item.title"
-        class="w-full h-full object-cover"
+        class="w-full h-full object-cover pointer-events-none"
         loading="lazy" />
+      <iframe
+        v-else-if="i.mimeType === 'application/pdf' && i.url"
+        :src="i.url + '#toolbar=0&navpanes=0&scrollbar=0'"
+        class="w-full h-full border-0 pointer-events-none" />
       <video
         v-else-if="i.mimeType?.startsWith('video/') && i.url"
         :src="i.url"
-        class="w-full h-full object-cover"
+        class="w-full h-full object-cover pointer-events-none"
         preload="metadata"
         muted />
+      <!-- Spreadsheet / CSV table thumbnail -->
+      <div v-else-if="isTableFile && cardTableData" class="absolute inset-0 overflow-hidden bg-card pointer-events-none">
+        <table class="w-full text-[8px] border-collapse">
+          <thead class="bg-muted sticky top-0">
+            <tr>
+              <th v-for="(col, c) in cardTableData.headers.slice(0, 8)" :key="c"
+                class="px-1.5 py-0.5 text-left font-semibold text-muted-foreground border-b border-border truncate max-w-[60px]">
+                {{ col }}
+              </th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr v-for="(row, r) in cardTableData.rows" :key="r"
+              :class="r % 2 === 0 ? 'bg-card' : 'bg-muted/30'">
+              <td v-for="(_, c) in cardTableData.headers.slice(0, 8)" :key="c"
+                class="px-1.5 py-0.5 truncate max-w-[60px] text-muted-foreground border-b border-border/30">
+                {{ row[c] ?? '' }}
+              </td>
+            </tr>
+          </tbody>
+        </table>
+        <!-- Fade overlay at bottom to indicate more rows -->
+        <div class="absolute bottom-0 inset-x-0 h-8 bg-gradient-to-t from-card to-transparent" />
+      </div>
       <div v-else class="h-full flex flex-col items-center justify-center gap-2">
-        <Icon :name="fileMeta.icon" :class="['h-10 w-10', fileMeta.color]" />
+        <Icon :name="fileMeta.icon" :class="['h-10 w-10', `text-${fileMeta.color}-500`]" />
         <span class="text-[10px] text-muted-foreground/50 uppercase tracking-wide font-medium">
-          {{ (i.mimeType || '').split('/')[1] || 'File' }}
+          {{ i.fileExtension || fileMeta.label }}
         </span>
       </div>
     </div>

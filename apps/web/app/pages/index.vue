@@ -5,6 +5,90 @@
 
   const instant = useInstantDb()
 
+  const heroGridCols = 12
+  const heroGridRows = 7
+  const heroGridCells = Array.from({ length: heroGridCols * heroGridRows }, (_, index) => ({
+    id: index,
+    col: (index % heroGridCols) + 1,
+    row: Math.floor(index / heroGridCols) + 1,
+  }))
+
+  interface HeroDemo {
+    id: 'tasks' | 'graph' | 'calendar' | 'notes'
+    eyebrow: string
+    title: string
+    description: string
+    column: string
+    row: string
+    gradientClass: string
+    metrics?: { label: string; value: string }[]
+    list?: string[]
+    chips?: string[]
+    relations?: { from: string; to: string }[]
+    schedule?: { day: string; label: string; tone: string }[]
+    bullets?: string[]
+  }
+
+  const heroDemos: HeroDemo[] = [
+    {
+      id: 'tasks',
+      eyebrow: 'Tasks',
+      title: 'Daily Focus',
+      description: 'The work for today, the blockers, and the linked project context in one pane.',
+      column: '1 / span 5',
+      row: '1 / span 4',
+      gradientClass: 'from-sky-500/18 via-cyan-500/8 to-transparent',
+      metrics: [
+        { label: 'Today', value: '7' },
+        { label: 'Blocked', value: '2' },
+      ],
+      list: ['Ship onboarding polish', 'Review graph schema', 'Prep launch notes'],
+    },
+    {
+      id: 'graph',
+      eyebrow: 'Graph',
+      title: 'Context Map',
+      description: 'People, docs, and decisions stay queryable instead of falling into separate silos.',
+      column: '6 / span 4',
+      row: '2 / span 3',
+      gradientClass: 'from-violet-500/18 via-fuchsia-500/8 to-transparent',
+      chips: ['launch-plan', 'meeting-note', 'assignedTo', 'decision-log'],
+      relations: [
+        { from: 'Project', to: 'Tasks' },
+        { from: 'Notes', to: 'People' },
+        { from: 'Docs', to: 'Launch' },
+      ],
+    },
+    {
+      id: 'calendar',
+      eyebrow: 'Calendar',
+      title: 'Launch Rhythm',
+      description: 'Milestones, reviews, and follow-ups share the same timeline.',
+      column: '10 / span 3',
+      row: '1 / span 4',
+      gradientClass: 'from-amber-500/18 via-orange-500/8 to-transparent',
+      schedule: [
+        { day: 'Mon', label: 'Review', tone: 'bg-amber-500/55' },
+        { day: 'Tue', label: 'Notes', tone: 'bg-sky-500/55' },
+        { day: 'Thu', label: 'Launch', tone: 'bg-emerald-500/55' },
+      ],
+    },
+    {
+      id: 'notes',
+      eyebrow: 'Notes',
+      title: 'Ops Snapshot',
+      description: 'A working brief that stays linked back to the entities it describes.',
+      column: '2 / span 7',
+      row: '5 / span 2',
+      gradientClass: 'from-emerald-500/18 via-teal-500/8 to-transparent',
+      bullets: [
+        'Decisions sync instantly across the graph',
+        'Updates stay attached to projects and owners',
+        'Agents can query the same structure the UI uses',
+      ],
+    },
+  ]
+
   onMounted(async () => {
     const user = await instant.getAuth()
     if (user) {
@@ -50,12 +134,142 @@
 
       <!-- Hero Visual -->
       <div class="mx-auto mt-16 max-w-5xl">
-        <div class="aspect-video rounded-2xl border border-border bg-gradient-to-br from-card/60 to-muted/40 shadow-2xl overflow-hidden flex items-center justify-center backdrop-blur-sm">
-          <div class="text-center px-6 space-y-4">
-            <AppLogo size="64" class="mx-auto opacity-50" />
-            <div class="text-sm font-medium text-muted-foreground">Graph Visualization</div>
-            <div class="text-xs text-muted-foreground/60 max-w-sm mx-auto">
-              Everything is an entity with typed properties and semantic links
+        <div class="space-y-3 md:hidden">
+          <UiCard
+            v-for="demo in heroDemos"
+            :key="`${demo.id}-mobile`"
+            class="overflow-hidden border-border/70 bg-card/80 shadow-xl backdrop-blur-sm"
+          >
+            <UiCardContent class="relative space-y-4 p-5">
+              <div :class="['pointer-events-none absolute inset-0 bg-linear-to-br', demo.gradientClass]" />
+              <div class="relative space-y-2">
+                <p class="text-[11px] font-semibold uppercase tracking-[0.22em] text-muted-foreground/80">
+                  {{ demo.eyebrow }}
+                </p>
+                <h3 class="text-lg font-semibold tracking-tight">{{ demo.title }}</h3>
+                <p class="text-sm leading-relaxed text-muted-foreground">
+                  {{ demo.description }}
+                </p>
+              </div>
+            </UiCardContent>
+          </UiCard>
+        </div>
+
+        <div class="relative hidden md:block">
+          <div class="relative overflow-hidden rounded-[28px] border border-border/70 bg-card/65 p-4 shadow-2xl backdrop-blur-sm">
+            <div class="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_top,hsl(var(--primary)/0.12),transparent_50%)]" />
+            <div class="relative grid grid-cols-12 auto-rows-[72px] gap-4 lg:auto-rows-[76px]">
+              <div
+                v-for="cell in heroGridCells"
+                :key="cell.id"
+                class="rounded-[18px] border border-border/45 bg-background/[0.035]"
+                :style="{
+                  gridColumn: `${cell.col} / span 1`,
+                  gridRow: `${cell.row} / span 1`,
+                }"
+              />
+
+              <section
+                v-for="demo in heroDemos"
+                :key="demo.id"
+                class="group relative z-10 overflow-hidden rounded-[24px] border border-border/80 bg-background/92 p-5 shadow-[0_20px_60px_-36px_rgba(15,23,42,0.55)] backdrop-blur"
+                :style="{
+                  gridColumn: demo.column,
+                  gridRow: demo.row,
+                }"
+              >
+                <div :class="['pointer-events-none absolute inset-0 bg-linear-to-br', demo.gradientClass]" />
+                <div class="pointer-events-none absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-foreground/12 to-transparent" />
+
+                <div class="relative flex h-full flex-col">
+                  <div class="space-y-1.5">
+                    <p class="text-[11px] font-semibold uppercase tracking-[0.22em] text-muted-foreground/80">
+                      {{ demo.eyebrow }}
+                    </p>
+                    <h3 class="text-xl font-semibold tracking-tight">{{ demo.title }}</h3>
+                    <p class="max-w-sm text-sm leading-relaxed text-muted-foreground">
+                      {{ demo.description }}
+                    </p>
+                  </div>
+
+                  <template v-if="demo.id === 'tasks'">
+                    <div class="mt-5 flex items-end gap-3">
+                      <div
+                        v-for="metric in demo.metrics"
+                        :key="metric.label"
+                        class="min-w-0 flex-1 rounded-2xl border border-border/60 bg-background/60 px-3 py-2.5"
+                      >
+                        <div class="text-xl font-semibold tracking-tight">{{ metric.value }}</div>
+                        <div class="text-[11px] uppercase tracking-[0.16em] text-muted-foreground/70">{{ metric.label }}</div>
+                      </div>
+                    </div>
+                    <div class="mt-4 space-y-2">
+                      <div
+                        v-for="item in demo.list"
+                        :key="item"
+                        class="flex items-center gap-2 rounded-xl border border-border/55 bg-background/50 px-3 py-2 text-sm"
+                      >
+                        <span class="h-2 w-2 rounded-full bg-sky-500/80" />
+                        <span>{{ item }}</span>
+                      </div>
+                    </div>
+                  </template>
+
+                  <template v-else-if="demo.id === 'graph'">
+                    <div class="mt-5 flex flex-wrap gap-2">
+                      <span
+                        v-for="chip in demo.chips"
+                        :key="chip"
+                        class="rounded-full border border-border/60 bg-background/65 px-2.5 py-1 text-[11px] text-muted-foreground"
+                      >
+                        {{ chip }}
+                      </span>
+                    </div>
+                    <div class="mt-4 space-y-2.5">
+                      <div
+                        v-for="relation in demo.relations"
+                        :key="`${relation.from}-${relation.to}`"
+                        class="flex items-center gap-2 text-sm"
+                      >
+                        <span class="rounded-lg border border-border/60 bg-background/65 px-2.5 py-1">{{ relation.from }}</span>
+                        <span class="h-px flex-1 bg-border/70" />
+                        <span class="rounded-lg border border-border/60 bg-background/65 px-2.5 py-1">{{ relation.to }}</span>
+                      </div>
+                    </div>
+                  </template>
+
+                  <template v-else-if="demo.id === 'calendar'">
+                    <div class="mt-5 space-y-2.5">
+                      <div
+                        v-for="slot in demo.schedule"
+                        :key="slot.day"
+                        class="rounded-2xl border border-border/60 bg-background/60 px-3 py-2.5"
+                      >
+                        <div class="flex items-center justify-between text-[11px] uppercase tracking-[0.16em] text-muted-foreground/75">
+                          <span>{{ slot.day }}</span>
+                          <span>{{ slot.label }}</span>
+                        </div>
+                        <div class="mt-2 h-2 rounded-full bg-muted/70">
+                          <div :class="['h-2 rounded-full', slot.tone]" />
+                        </div>
+                      </div>
+                    </div>
+                  </template>
+
+                  <template v-else>
+                    <div class="mt-5 grid flex-1 gap-2 sm:grid-cols-3">
+                      <div
+                        v-for="bullet in demo.bullets"
+                        :key="bullet"
+                        class="flex items-start gap-2 rounded-2xl border border-border/60 bg-background/60 px-3 py-3 text-sm leading-relaxed"
+                      >
+                        <span class="mt-1 h-2 w-2 shrink-0 rounded-full bg-emerald-500/80" />
+                        <span>{{ bullet }}</span>
+                      </div>
+                    </div>
+                  </template>
+                </div>
+              </section>
             </div>
           </div>
         </div>

@@ -315,9 +315,16 @@ export default defineEventHandler(async (event) => {
           if (!entityId || !type) {
             throw createError({ statusCode: 400, message: 'createNode requires "entityId" and "type"' })
           }
-          await kernel.createNode(entityId, data || {}, type, { agentId: agent })
-          pushMutationLog({ action: 'createNode', entityId, type, data })
-          emitMutation({ action: 'createNode', entityId, type, agentId: agent, data })
+          const nodeData = data || {}
+          if (!nodeData.ownerId) {
+            nodeData.ownerId = agent
+          }
+          if (!nodeData.owner) {
+            nodeData.owner = agent
+          }
+          await kernel.createNode(entityId, nodeData, type, { agentId: agent })
+          pushMutationLog({ action: 'createNode', entityId, type, data: nodeData })
+          emitMutation({ action: 'createNode', entityId, type, agentId: agent, data: nodeData })
           return { ok: true, entityId }
         }
 
@@ -325,9 +332,16 @@ export default defineEventHandler(async (event) => {
           if (!entityId || !type) {
             throw createError({ statusCode: 400, message: 'updateNode requires "entityId" and "type"' })
           }
-          await kernel.updateNode(entityId, data || {}, type, { agentId: agent })
-          pushMutationLog({ action: 'updateNode', entityId, type, data })
-          emitMutation({ action: 'updateNode', entityId, type, agentId: agent, data })
+          const updateData = data || {}
+          if (!updateData.ownerId) {
+            updateData.ownerId = agent
+          }
+          if (!updateData.owner) {
+            updateData.owner = agent
+          }
+          await kernel.updateNode(entityId, updateData, type, { agentId: agent })
+          pushMutationLog({ action: 'updateNode', entityId, type, data: updateData })
+          emitMutation({ action: 'updateNode', entityId, type, agentId: agent, data: updateData })
           return { ok: true, entityId }
         }
 

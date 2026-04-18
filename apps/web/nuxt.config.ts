@@ -160,6 +160,9 @@ export default defineNuxtConfig({
     resolve: {
       dedupe: ['vue-sonner'],
     },
+    server: {
+      hmr: { overlay: false },
+    },
   },
 
   app: {
@@ -190,6 +193,6 @@ export default defineNuxtConfig({
   },
 
   routeRules: {
-    '/settings': { redirect: '/settings/project' },
+    '/settings': { redirect: '/settings/profile' },
   },
 })
