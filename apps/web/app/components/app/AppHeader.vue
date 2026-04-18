@@ -323,6 +323,9 @@
         </UiSheetContent>
       </UiSheet>
 
+      <!-- Trellis (local) notifications — TQL graph-backed -->
+      <NotificationBell />
+
       <!-- Notifications Button -->
       <UiDropdownMenu>
         <UiDropdownMenuTrigger as-child>

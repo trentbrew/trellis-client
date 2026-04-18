@@ -1097,6 +1097,58 @@ const commentOntology: SchemaDefinition = {
 }
 
 // ============================================================================
+// Notification — in-app notifications from graph ops, email, calendar, jobs, alerts
+// ============================================================================
+
+export const NOTIFICATION_NAMESPACE = 'notification'
+
+const notificationOntology: SchemaDefinition = {
+  '@id': `trellis:schema/${NOTIFICATION_NAMESPACE}`,
+  '@type': 'trellis:Schema',
+  version: '1.0.0',
+  tier: 'system',
+  fields: [
+    f('title', 'title', { required: true }),
+    f('body', 'rich_text'),
+    // Visual kind — drives icon + color + sound selection
+    f('kind', 'select', {
+      required: true,
+      selectOptions: ['success', 'error', 'warning', 'info', 'reminder', 'email', 'calendar', 'alert', 'ops', 'job'],
+    }),
+    // Origin system that produced the notification
+    f('source', 'select', {
+      required: true,
+      selectOptions: ['system', 'email', 'calendar', 'graph', 'job', 'ops', 'workflow', 'ai', 'user'],
+    }),
+    f('sourceId', 'rich_text'),
+    f('priority', 'select', { selectOptions: ['critical', 'high', 'normal', 'low'], defaultValue: 'normal' }),
+    f('status', 'select', {
+      selectOptions: ['unread', 'read', 'archived', 'snoozed'],
+      required: true,
+      defaultValue: 'unread',
+    }),
+    f('readAt', 'date'),
+    f('snoozeUntil', 'date'),
+    f('archivedAt', 'date'),
+    // Optional visual overrides
+    f('icon', 'rich_text'),
+    f('color', 'rich_text'),
+    f('sound', 'select', { selectOptions: ['success', 'fail', 'reminder', 'email', 'none'] }),
+    // Link to a related entity (for deep-link CTA + filtering)
+    f('entityId', 'rich_text'),
+    f('entityType', 'rich_text'),
+    f('url', 'url'),
+    // CTA actions serialized as JSON: [{ id, label, kind, ... }]
+    f('actions', 'rich_text'),
+    // Raw payload for source-specific metadata (JSON)
+    f('metadata', 'rich_text'),
+    f('groupKey', 'rich_text'),
+    f('createdAt', 'date'),
+    f('updatedAt', 'date'),
+  ],
+}
+
+// ============================================================================
 // All entity type ontologies — keyed by schema ID
 // ============================================================================
 
@@ -1304,6 +1356,7 @@ export function createWorkspaceConfig(): WorkspaceConfig {
         // System ontologies
         [`trellis:schema/${ENTITY_NAMESPACE}`]: entityOntology,
         'trellis:schema/comment': commentOntology,
+        [`trellis:schema/${NOTIFICATION_NAMESPACE}`]: notificationOntology,
         [`trellis:schema/${SIDEBAR_NODE_NAMESPACE}`]: sidebarNodeOntology,
         // Chat ontologies
         'trellis:schema/channel': channelOntology,
@@ -1360,6 +1413,7 @@ export function createWorkspaceConfig(): WorkspaceConfig {
 export {
   entityOntology,
   commentOntology,
+  notificationOntology,
   sidebarNodeOntology,
   entityTypeOntologies,
   taskOntology,

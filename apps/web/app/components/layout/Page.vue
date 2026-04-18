@@ -254,8 +254,20 @@
   // Variant configurations - single source of truth
   const VARIANT_CONFIGS: Record<PageVariant, VariantConfig> = {
     canvas: { showHeader: false, showTabs: false, contentPadding: 'p-0', maxWidth: '', showToolbar: false },
-    prose: { showHeader: true, showTabs: false, contentPadding: 'px-8 pb-6 pt-0', maxWidth: 'max-w-full', showToolbar: false },
-    settings: { showHeader: true, showTabs: true, contentPadding: 'px-8 pb-12 pt-6', maxWidth: 'max-w-full', showToolbar: false },
+    prose: {
+      showHeader: true,
+      showTabs: false,
+      contentPadding: 'px-8 pb-6 pt-0',
+      maxWidth: 'max-w-full',
+      showToolbar: false,
+    },
+    settings: {
+      showHeader: true,
+      showTabs: true,
+      contentPadding: 'px-8 pb-12 pt-6',
+      maxWidth: 'max-w-full',
+      showToolbar: false,
+    },
     sidebar: { showHeader: false, showTabs: false, contentPadding: 'p-0', maxWidth: '', showToolbar: false },
     browse: { showHeader: true, showTabs: false, contentPadding: 'px-8 py-6 pt-0', maxWidth: '', showToolbar: true },
     filesystem: { showHeader: false, showTabs: false, contentPadding: 'p-0', maxWidth: '', showToolbar: false },
@@ -633,7 +645,9 @@
 
               <div class="flex-1 min-w-0">
                 <!-- Subtitle with optional back button and icon -->
-                <div v-if="subtitle || showBackButton || icon || dataSource" class="inline-flex items-center gap-0.5 mb-0">
+                <div
+                  v-if="subtitle || showBackButton || icon || dataSource"
+                  class="inline-flex items-center gap-0.5 mb-0">
                   <BackButton v-if="showBackButton" />
                   <Icon v-if="icon" :name="icon" class="mr-2 h-4 w-4 text-muted-foreground/70" />
                   <p v-if="subtitle" class="text-xs uppercase tracking-wide text-muted-foreground/80">
@@ -645,7 +659,9 @@
                     :to="dataSourceLink"
                     class="inline-flex items-center gap-1 text-xs text-muted-foreground/60 hover:text-primary transition-colors group"
                     title="View in database">
-                    <Icon name="lucide:database" class="size-3 text-muted-foreground/40 group-hover:text-primary transition-colors" />
+                    <Icon
+                      name="lucide:database"
+                      class="size-3 text-muted-foreground/40 group-hover:text-primary transition-colors" />
                     <span class="uppercase tracking-wide">{{ dataSourceLabel }}</span>
                   </NuxtLink>
                 </div>
@@ -803,10 +819,10 @@
         <div
           v-if="variantConfig.showToolbar"
           ref="stickyRef"
-          class="sticky -top-px z-40 transition-all duration-200 rounded-t-lg backdrop-blur-2xl"
+          class="sticky -top-px z-40 transition-all duration-50 rounded-t-lg"
           :class="[
             isStuck
-              ? 'bg-card/50 border-b border-border'
+              ? 'border-b! border-border bg-background/25 backdrop-blur-3xl'
               : 'bg-transparent border-b-transparent',
             transparent ? 'bg-transparent backdrop-blur-none' : '',
           ]">
@@ -815,7 +831,7 @@
               <!-- View Mode Switcher (hidden for feed variant) -->
               <div
                 v-if="showViewSwitcher && !isFeed"
-                class="flex items-center rounded-lg border border-border bg-card/25 p-0.5 shrink-0">
+                class="flex items-center rounded-lg border border-border bg-card/0 backdrop-blur-lg p-0.5 shrink-0">
                 <slot name="viewSwitcher">
                   <button
                     v-for="option in effectiveViewModeOptions"
@@ -834,7 +850,9 @@
                     :disabled="option.disabled"
                     @click="setViewMode(option.mode, option.disabled)">
                     <Icon :name="option.icon" class="h-4 w-4" />
-                    <span v-if="browse?.viewMode.value === option.mode" class="hidden sm:inline">{{ option.label }}</span>
+                    <span v-if="browse?.viewMode.value === option.mode" class="hidden sm:inline">
+                      {{ option.label }}
+                    </span>
                     <span
                       v-if="option.suggested && browse?.viewMode.value !== option.mode"
                       class="h-1.5 w-1.5 rounded-full bg-primary/60 absolute -top-0.5 -right-0.5" />
@@ -843,7 +861,7 @@
               </div>
 
               <!-- Search Input -->
-              <div class="relative flex-1 w-full rounded-lg">
+              <div class="relative flex-1 w-full rounded-lg bg-card/0 backdrop-blur-xl">
                 <Icon
                   name="lucide:search"
                   class="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground pointer-events-none" />
@@ -871,7 +889,7 @@
                       <UiButton
                         variant="outline"
                         size="sm"
-                        class="gap-1.5 bg-card max-w-[480px]"
+                        class="gap-1.5 bg-card/0 backdrop-blur max-w-[480px]"
                         :class="advancedFilters.hasActiveFilters.value ? 'border-primary/50 text-primary' : ''">
                         <Icon name="lucide:filter" class="h-4 w-4 shrink-0" />
                         <template v-if="advancedFilters.hasActiveFilters.value">

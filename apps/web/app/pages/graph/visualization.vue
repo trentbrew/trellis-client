@@ -5,6 +5,8 @@
     forceManyBody,
     forceCenter,
     forceCollide,
+    forceX,
+    forceY,
     type SimulationNodeDatum,
     type SimulationLinkDatum,
   } from 'd3-force'
@@ -16,10 +18,17 @@
   import { useGraphTypesSidebar, colorTokenToHex } from '~/composables/useGraphTypesSidebar'
   import { getEntityTypeConfig } from '~/config/entityRegistry'
   import EntityDialog from '~/components/dialogs/EntityDialog.vue'
+  import { ENTITY_NAVIGATE_KEY } from '~/composables/useDialogStack'
 
   const graph = useTrellisGraph()
   const graphTypesSidebar = useGraphTypesSidebar()
   const { items: allEntities } = useTrellisEntities()
+
+  const currentLayout = ref<'physics' | 'type'>('physics')
+
+  watch(currentLayout, () => {
+    nextTick(() => initGraph())
+  })
 
   // ── Types ─────────────────────────────────────────────────────────────
 
@@ -365,8 +374,13 @@
     }
   })
 
+  watch(selectedEntityId, () => {
+    _applySelection?.()
+  })
+
   // Expose a hook the renderer calls when zoom should focus a node
   let _zoomToNode: ((id: string) => void) | null = null
+  let _applySelection: (() => void) | null = null
 
   function openNodeDialog(id: string) {
     selectedEntityId.value = id
@@ -374,6 +388,18 @@
     setOriginHash(id)
     _zoomToNode?.(id)
   }
+
+  // Intercept mention/reference clicks inside the inset panel:
+  // swap panel content to the referenced entity and pan/zoom to it
+  // instead of stacking a new dialog.
+  provide(ENTITY_NAVIGATE_KEY, (id: string): boolean => {
+    const exists = graphNodes.value.some((n) => n.id === id)
+    if (!exists) return false
+    selectedEntityId.value = id
+    setOriginHash(id)
+    _zoomToNode?.(id)
+    return true
+  })
 
   // ── Minimap State ─────────────────────────────────────────────────────
 
@@ -474,6 +500,47 @@
     }
   }
 
+  // ── Graph State Persistence ────────────────────────────────────────────
+
+  const STORAGE_KEY = 'trellis:graph:layout'
+
+  interface GraphCache {
+    /** Hash of sorted node IDs — invalidate when data changes */
+    hash: string
+    positions: Record<string, { x: number; y: number }>
+    zoom?: { k: number; x: number; y: number }
+  }
+
+  function computeHash(nodes: SimNode[]): string {
+    // Simple hash: sorted IDs joined, then a quick numeric hash
+    // We append the layout type so switching layouts invalidates the position cache
+    const str = nodes.map((n) => n.id).sort().join('|') + '::' + currentLayout.value
+    let h = 0
+    for (let i = 0; i < str.length; i++) h = ((h << 5) - h + str.charCodeAt(i)) | 0
+    return String(h)
+  }
+
+  function loadCache(hash: string): GraphCache | null {
+    try {
+      const raw = sessionStorage.getItem(STORAGE_KEY)
+      if (!raw) return null
+      const cache: GraphCache = JSON.parse(raw)
+      return cache.hash === hash ? cache : null
+    } catch { return null }
+  }
+
+  function saveCache(cache: GraphCache) {
+    try { sessionStorage.setItem(STORAGE_KEY, JSON.stringify(cache)) } catch {}
+  }
+
+  function savePositions(nodes: SimNode[], hash: string, zoomT?: { k: number; x: number; y: number }) {
+    const positions: Record<string, { x: number; y: number }> = {}
+    for (const n of nodes) {
+      if (n.x != null && n.y != null) positions[n.id] = { x: n.x, y: n.y }
+    }
+    saveCache({ hash, positions, zoom: zoomT })
+  }
+
   // ── Renderer ──────────────────────────────────────────────────────────
 
   let cleanup: (() => void) | null = null
@@ -483,6 +550,33 @@
     const height = svgEl.clientHeight || 600
     svgSize.value = { w: width, h: height }
     const opt = cfg(nodes.length)
+    const hash = computeHash(nodes)
+    const cache = loadCache(hash)
+
+    // ── Seed positions ──────────────────────────────────────────────
+    // If we have a cache, restore positions instantly.
+    // Otherwise, scatter nodes in a large circle so they gracefully
+    // gravitate inward (instead of exploding outward from center).
+    const hasCached = cache && Object.keys(cache.positions).length > 0
+    const cx = width / 2
+    const cy = height / 2
+
+    if (hasCached) {
+      for (const n of nodes) {
+        const p = cache.positions[n.id]
+        if (p) { n.x = p.x; n.y = p.y }
+      }
+    } else {
+      // Scatter in a wide circle — radius proportional to node count
+      const baseRadius = Math.max(width, height) * 1.5
+      const goldenAngle = Math.PI * (3 - Math.sqrt(5)) // ≈137.5°
+      for (let i = 0; i < nodes.length; i++) {
+        const r = baseRadius * Math.sqrt((i + 1) / nodes.length)
+        const theta = i * goldenAngle
+        nodes[i]!.x = cx + r * Math.cos(theta)
+        nodes[i]!.y = cy + r * Math.sin(theta)
+      }
+    }
 
     const svg = select(svgEl)
     svg.selectAll('*').remove()
@@ -507,18 +601,62 @@
         currentZoom = event.transform
         viewportTransform.value = { k: event.transform.k, x: event.transform.x, y: event.transform.y }
         g.attr('transform', String(event.transform))
+        // Persist zoom transform
+        savePositions(nodes, hash, { k: event.transform.k, x: event.transform.x, y: event.transform.y })
         draw()
       })
 
     svg.call(zoomBehavior).on('dblclick.zoom', null)
 
+    svg.on('click', () => {
+      if (selectedEntityId.value) {
+        selectedEntityId.value = null
+        dialogOpen.value = false
+        applyHighlight()
+      }
+    })
+
+    // Restore cached zoom transform
+    if (cache?.zoom) {
+      svg.call(zoomBehavior.transform as any, zoomIdentity.translate(cache.zoom.x, cache.zoom.y).scale(cache.zoom.k))
+    }
+
     _zoomToNode = (id: string) => {
       const node = nodes.find((n) => n.id === id)
       if (!node) return
-      const nx = node.x ?? width / 2
-      const ny = node.y ?? height / 2
-      const targetK = Math.max(currentZoom.k, 1.4)
-      const t = zoomIdentity.translate(width / 2 - nx * targetK, height / 2 - ny * targetK).scale(targetK)
+
+      // Collect the selected node + all connected neighbors
+      const neighborNodes: SimNode[] = [node]
+      for (const l of simLinks) {
+        const s = l.source as SimNode
+        const t = l.target as SimNode
+        if (s.id === id && !neighborNodes.includes(t)) neighborNodes.push(t)
+        if (t.id === id && !neighborNodes.includes(s)) neighborNodes.push(s)
+      }
+
+      // Compute bounding box of all relevant nodes
+      let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity
+      for (const n of neighborNodes) {
+        const x = n.x ?? 0
+        const y = n.y ?? 0
+        if (x < minX) minX = x
+        if (y < minY) minY = y
+        if (x > maxX) maxX = x
+        if (y > maxY) maxY = y
+      }
+
+      // Add padding around the bounding box
+      const pad = 80
+      minX -= pad; minY -= pad; maxX += pad; maxY += pad
+
+      const bboxW = maxX - minX
+      const bboxH = maxY - minY
+      const cx = (minX + maxX) / 2
+      const cy = (minY + maxY) / 2
+
+      // Compute scale to fit, clamped to [0.2, 2.0]
+      const targetK = Math.min(2.0, Math.max(0.2, Math.min(width / bboxW, height / bboxH)))
+      const t = zoomIdentity.translate(width / 2 - cx * targetK, height / 2 - cy * targetK).scale(targetK)
       svg.transition().duration(450).call(zoomBehavior.transform as any, t)
     }
 
@@ -531,18 +669,53 @@
 
     const simLinks = links.map((l) => ({ ...l })) as SimulationLinkDatum<SimNode>[]
 
-    // Simulation
+    // Simulation — tweak initial energy based on whether we have cached positions
+    const startAlpha = hasCached ? 0.02 : 0.6
+    const decayRate = hasCached ? opt.decay * 2 : opt.decay * 0.6
+
     const simulation = forceSimulation<SimNode>(nodes)
-      .force(
-        'link',
-        forceLink<SimNode, SimulationLinkDatum<SimNode>>(simLinks)
-          .id((d) => d.id)
-          .distance(opt.dist),
-      )
-      .force('charge', forceManyBody<SimNode>().strength(opt.charge))
-      .force('center', forceCenter(width / 2, height / 2))
-      .force('collide', forceCollide<SimNode>(opt.collide))
-      .alphaDecay(opt.decay)
+
+    if (currentLayout.value === 'type') {
+      const uniqueTypes = Array.from(new Set(nodes.map((n) => n.type)))
+      const cx = width / 2
+      const cy = height / 2
+      const r = Math.min(width, height) * 0.4
+      
+      const typePositions = new Map<string, { x: number; y: number }>()
+      uniqueTypes.forEach((t, i) => {
+        const theta = (i / uniqueTypes.length) * Math.PI * 2
+        typePositions.set(t, {
+          x: cx + r * Math.cos(theta),
+          y: cy + r * Math.sin(theta),
+        })
+      })
+
+      simulation
+        .force(
+          'link',
+          forceLink<SimNode, SimulationLinkDatum<SimNode>>(simLinks)
+            .id((d) => d.id)
+            .distance(opt.dist)
+            .strength(0.02) // Weak links keep clusters from pulling uniformly together
+        )
+        .force('charge', forceManyBody<SimNode>().strength(opt.charge * 0.5))
+        .force('collide', forceCollide<SimNode>(opt.collide))
+        .force('x', forceX<SimNode>((d) => typePositions.get(d.type)?.x ?? cx).strength(0.3))
+        .force('y', forceY<SimNode>((d) => typePositions.get(d.type)?.y ?? cy).strength(0.3))
+    } else {
+      simulation
+        .force(
+          'link',
+          forceLink<SimNode, SimulationLinkDatum<SimNode>>(simLinks)
+            .id((d) => d.id)
+            .distance(opt.dist),
+        )
+        .force('charge', forceManyBody<SimNode>().strength(opt.charge))
+        .force('center', forceCenter(width / 2, height / 2))
+        .force('collide', forceCollide<SimNode>(opt.collide))
+    }
+
+    simulation.alpha(startAlpha).alphaDecay(decayRate)
 
     // Links layer
     const link = g
@@ -554,6 +727,7 @@
       .attr('stroke', 'var(--border, var(--muted-foreground))')
       .attr('stroke-width', 1)
       .attr('stroke-opacity', opt.link)
+      .style('transition', 'stroke 0.25s ease-out, stroke-width 0.25s ease-out, stroke-opacity 0.25s ease-out')
 
     // Edge labels — always bound; default opacity gated by density
     const edgeLabel = g
@@ -569,6 +743,7 @@
       .attr('pointer-events', 'none')
       .attr('dy', '-4')
       .attr('opacity', opt.edge ? 1 : 0)
+      .style('transition', 'opacity 0.25s ease-out')
 
     // Cardinality markers layer
     const cardinalityG = g.append('g').attr('class', 'cardinality')
@@ -581,13 +756,26 @@
       .data(nodes)
       .join('g')
       .style('cursor', 'pointer')
+      .style('transition', 'opacity 0.25s ease-out')
 
     nodeG
       .append('circle')
+      .attr('class', 'node-core')
       .attr('r', (d) => nodeRadius(d))
       .attr('fill', (d) => nodeColor(d))
       .attr('stroke', 'var(--background)')
       .attr('stroke-width', 1.5)
+
+    // Selection ring (hidden by default)
+    nodeG
+      .append('circle')
+      .attr('class', 'node-ring')
+      .attr('r', (d) => nodeRadius(d) + 4)
+      .attr('fill', 'none')
+      .attr('stroke', 'var(--primary)')
+      .attr('stroke-width', 2)
+      .attr('opacity', 0)
+      .attr('pointer-events', 'none')
 
     // Icons
     if (opt.icon) {
@@ -639,12 +827,18 @@
     function drawCardinalities() {
       cardinalityG.selectAll('*').remove()
       const hid = hoveredNodeId.value
+      const sid = selectedEntityId.value
+      
+      const activeIds = new Set<string>()
+      if (hid) activeIds.add(hid)
+      if (sid) activeIds.add(sid)
+      
       const drawAll = opt.card
-      if (!drawAll && !hid) return
+      if (!drawAll && activeIds.size === 0) return
       for (const sl of simLinks) {
         const s = sl.source as SimNode
         const t = sl.target as SimNode
-        if (!drawAll && hid && s.id !== hid && t.id !== hid) continue
+        if (!drawAll && !activeIds.has(s.id) && !activeIds.has(t.id)) continue
         const sx = s.x ?? 0,
           sy = s.y ?? 0
         const tx = t.x ?? 0,
@@ -665,45 +859,61 @@
     function applyHighlight() {
       drawCardinalities()
       const hid = hoveredNodeId.value
-      if (!hid) {
+      const sid = selectedEntityId.value
+      
+      const activeIds = new Set<string>()
+      if (hid) activeIds.add(hid)
+      if (sid) activeIds.add(sid)
+
+      if (activeIds.size === 0) {
         nodeG.attr('opacity', 1)
         link.attr('stroke-opacity', opt.link).attr('stroke', 'var(--border, var(--muted-foreground))').attr('stroke-width', 1)
         edgeLabel.attr('opacity', opt.edge ? 1 : 0)
         return
       }
-      const neighbors = new Set<string>([hid])
+      
+      const neighbors = new Set<string>(activeIds)
       for (const l of simLinks) {
-        const s = (l.source as SimNode).id ?? (l.source as any)
-        const t = (l.target as SimNode).id ?? (l.target as any)
-        if (s === hid) neighbors.add(String(t))
-        if (t === hid) neighbors.add(String(s))
+        const s = String((l.source as SimNode).id ?? (l.source as any))
+        const t = String((l.target as SimNode).id ?? (l.target as any))
+        if (activeIds.has(s)) neighbors.add(t)
+        if (activeIds.has(t)) neighbors.add(s)
       }
+      
       nodeG.attr('opacity', (d) => (neighbors.has(d.id) ? 1 : 0.12))
       link
         .attr('stroke', (d: any) => {
-          const s = (d.source as SimNode).id ?? d.source
-          const tt = (d.target as SimNode).id ?? d.target
-          return s === hid || tt === hid ? 'var(--primary)' : 'var(--border, var(--muted-foreground))'
+          const s = String((d.source as SimNode).id ?? d.source)
+          const tt = String((d.target as SimNode).id ?? d.target)
+          return activeIds.has(s) || activeIds.has(tt) ? 'var(--primary)' : 'var(--border, var(--muted-foreground))'
         })
         .attr('stroke-width', (d: any) => {
-          const s = (d.source as SimNode).id ?? d.source
-          const tt = (d.target as SimNode).id ?? d.target
-          return s === hid || tt === hid ? 2 : 0.5
+          const s = String((d.source as SimNode).id ?? d.source)
+          const tt = String((d.target as SimNode).id ?? d.target)
+          return activeIds.has(s) || activeIds.has(tt) ? 2 : 0.5
         })
         .attr('stroke-opacity', (d: any) => {
-          const s = (d.source as SimNode).id ?? d.source
-          const tt = (d.target as SimNode).id ?? d.target
-          return s === hid || tt === hid ? 0.9 : 0.08
+          const s = String((d.source as SimNode).id ?? d.source)
+          const tt = String((d.target as SimNode).id ?? d.target)
+          return activeIds.has(s) || activeIds.has(tt) ? 0.9 : 0.08
         })
       edgeLabel.attr('opacity', (d: any) => {
-        const s = (d.source as SimNode).id ?? d.source
-        const tt = (d.target as SimNode).id ?? d.target
-        return s === hid || tt === hid ? 1 : 0.05
+        const s = String((d.source as SimNode).id ?? d.source)
+        const tt = String((d.target as SimNode).id ?? d.target)
+        return activeIds.has(s) || activeIds.has(tt) ? 1 : 0.05
       })
     }
 
     // Expose for external watcher
     ;(svgEl as any).__applyHighlight = applyHighlight
+
+    _applySelection = () => {
+      const sid = selectedEntityId.value
+      nodeG.select('circle.node-ring').attr('opacity', (d: any) => (d.id === sid ? 1 : 0))
+      // Keep edges highlighted while a node is selected
+      applyHighlight()
+    }
+    _applySelection()
 
     // Labels
     const label = g
@@ -722,7 +932,7 @@
     // Drag
     const dragBehavior = d3Drag<SVGGElement, SimNode>()
       .on('start', (event, d) => {
-        if (!event.active) simulation.alphaTarget(0.3).restart()
+        if (!event.active) simulation.alphaTarget(0.02).restart()
         d.fx = d.x
         d.fy = d.y
       })
@@ -794,15 +1004,23 @@
       }
 
       draw()
+
+      // Persist positions once the simulation has settled
+      if (simulation.alpha() < 0.01) {
+        savePositions(nodes, hash, { k: currentZoom.k, x: currentZoom.x, y: currentZoom.y })
+      }
     })
 
     draw()
 
     return () => {
+      // Save final positions before teardown
+      savePositions(nodes, hash, { k: currentZoom.k, x: currentZoom.x, y: currentZoom.y })
       if (raf) cancelAnimationFrame(raf)
       simulation.stop()
       svg.on('wheel.pan', null)
       _zoomToNode = null
+      _applySelection = null
     }
   }
 
@@ -936,24 +1154,43 @@
           </svg>
         </div>
 
-        <!-- Stats badge (bottom-right) -->
-        <div
-          class="absolute bottom-3 right-3 z-10 flex items-center gap-2 text-xs text-muted-foreground bg-card/90 backdrop-blur-sm border border-border rounded-lg px-3 py-1.5 font-mono">
-          <span>
-            {{ visibleNodeCount }}
-            <span v-if="visibleNodeCount !== totalNodeCount" class="opacity-60">/ {{ totalNodeCount }}</span>
-            {{ visibleNodeCount === 1 ? 'node' : 'nodes' }}
-          </span>
-          <span v-if="visibleEdgeCount > 0" class="opacity-40">·</span>
-          <span v-if="visibleEdgeCount > 0">{{ visibleEdgeCount }} {{ visibleEdgeCount === 1 ? 'edge' : 'edges' }}</span>
+        <!-- Controls & Stats badge (bottom-right) -->
+        <div class="absolute bottom-3 right-3 z-10 flex items-center gap-3">
+          <!-- Layout Toggle -->
+          <div class="flex items-center gap-1 bg-card/90 backdrop-blur-sm border border-border rounded-lg p-1 pointer-events-auto">
+            <button 
+              @click="currentLayout = 'physics'" 
+              class="px-2.5 py-1 rounded text-[11px] font-medium transition-colors"
+              :class="currentLayout === 'physics' ? 'bg-primary text-primary-foreground' : 'text-muted-foreground hover:bg-muted hover:text-foreground'">
+              Physics
+            </button>
+            <button 
+              @click="currentLayout = 'type'" 
+              class="px-2.5 py-1 rounded text-[11px] font-medium transition-colors"
+              :class="currentLayout === 'type' ? 'bg-primary text-primary-foreground' : 'text-muted-foreground hover:bg-muted hover:text-foreground'">
+              By Type
+            </button>
+          </div>
+
+          <div
+            class="flex items-center gap-2 text-xs text-muted-foreground bg-card/90 backdrop-blur-sm border border-border rounded-lg px-3 py-1.5 font-mono">
+            <span>
+              {{ visibleNodeCount }}
+              <span v-if="visibleNodeCount !== totalNodeCount" class="opacity-60">/ {{ totalNodeCount }}</span>
+              {{ visibleNodeCount === 1 ? 'node' : 'nodes' }}
+            </span>
+            <span v-if="visibleEdgeCount > 0" class="opacity-40">·</span>
+            <span v-if="visibleEdgeCount > 0">{{ visibleEdgeCount }} {{ visibleEdgeCount === 1 ? 'edge' : 'edges' }}</span>
+          </div>
         </div>
       </div>
     </div>
 
-    <!-- Entity dialog (right-side) -->
+    <!-- Entity inspector (inset right sidebar) -->
     <EntityDialog
       v-if="dialogItem"
       v-model:open="dialogOpen"
+      variant="inset"
       mode="edit"
       :item="dialogItem"
       @close="dialogOpen = false" />

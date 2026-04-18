@@ -828,6 +828,7 @@
       if (!activeId) {
         nodeGroup.attr('opacity', 1)
         link.attr('stroke-opacity', 0.4).attr('stroke-width', (d: D3Link) => (d.dashed ? 1 : 1.5))
+        linkLabel.attr('opacity', 0.6)
         return
       }
       const active = neighbors.get(activeId) || new Set<string>()
@@ -841,6 +842,10 @@
           const connected = (d.source as any).id === activeId || (d.target as any).id === activeId
           return connected ? 2.5 : d.dashed ? 1 : 1.5
         })
+      linkLabel.attr('opacity', (d: D3Link) => {
+        const connected = (d.source as any).id === activeId || (d.target as any).id === activeId
+        return connected ? 1 : 0.15
+      })
     }
 
     nodeGroup

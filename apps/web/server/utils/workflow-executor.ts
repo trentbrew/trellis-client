@@ -31,6 +31,7 @@ import { useTqlKernel, pushMutationLog } from '../plugins/tql'
 import { emitMutation } from './tql-events'
 import { useInstantAdmin } from './instant-admin'
 import { dispatchNotificationEmailAsync } from './notification-email'
+import { createNotification } from './notification-service'
 
 // ─── Types mirror of WorkflowGraph from types/database.ts ────────────────────
 
@@ -532,6 +533,66 @@ function notifyWorkflowOwner(
   })
 }
 
+/**
+ * Emit an in-app Trellis notification (local-first notification bell + toast)
+ * for a workflow run. Runs in parallel with `notifyWorkflowOwner` (cloud/email)
+ * so both surfaces see the event.
+ */
+function notifyWorkflowTrellis(run: WorkflowRunResult, notifyOnSuccess?: boolean): void {
+  const isFailure = run.status === 'failed'
+  if (!isFailure && !notifyOnSuccess) return
+
+  const name = run.workflowName || run.workflowId
+  const title = isFailure ? `Workflow failed: ${name}` : `Workflow completed: ${name}`
+  const durationSec = (run.durationMs / 1000).toFixed(1)
+  const body = isFailure
+    ? run.error
+      ? run.error.slice(0, 200)
+      : 'Run did not finish successfully.'
+    : `${run.stepCount} step${run.stepCount === 1 ? '' : 's'} in ${durationSec}s`
+  const actionUrl = `/workflows/${encodeURIComponent(run.workflowId)}/runs/${encodeURIComponent(run.id)}`
+
+  createNotification(
+    {
+      title,
+      body,
+      kind: isFailure ? 'error' : 'success',
+      source: 'workflow',
+      sourceId: `workflow-run:${run.id}`,
+      priority: isFailure ? 'high' : 'normal',
+      url: actionUrl,
+      entityId: run.id,
+      entityType: 'workflow-run',
+      actions: [
+        { id: 'open', kind: 'link', label: 'Open run', icon: 'lucide:external-link', target: actionUrl },
+        isFailure
+          ? {
+              id: 'retry',
+              kind: 'api',
+              label: 'Retry',
+              icon: 'lucide:refresh-cw',
+              apiPath: '/api/workflows/execute',
+              apiMethod: 'POST',
+              apiBody: { workflowId: run.workflowId },
+            }
+          : { id: 'dismiss', kind: 'dismiss', label: 'Dismiss', icon: 'lucide:x' },
+      ],
+      metadata: {
+        workflowId: run.workflowId,
+        workflowName: run.workflowName,
+        runId: run.id,
+        stepCount: run.stepCount,
+        durationMs: run.durationMs,
+        ...(run.error ? { error: run.error } : {}),
+      },
+      groupKey: `workflow:${run.workflowId}`,
+    },
+    { agentId: 'workflow-server' },
+  ).catch((err: any) => {
+    console.warn('[workflow-executor] trellis notification failed (non-fatal):', err?.message || err)
+  })
+}
+
 // ─── Public API ──────────────────────────────────────────────────────────────
 
 /**
@@ -593,7 +654,7 @@ export async function executeWorkflow(opts: ExecuteWorkflowOptions): Promise<Wor
     }
   }
 
-  // Best-effort owner notification (fire-and-forget)
+  // Best-effort owner notification (fire-and-forget) — cloud/email path
   if (opts.ownerId) {
     try {
       notifyWorkflowOwner(run, {
@@ -604,6 +665,13 @@ export async function executeWorkflow(opts: ExecuteWorkflowOptions): Promise<Wor
     } catch (err) {
       console.warn('[workflow-executor] notifyWorkflowOwner threw:', err)
     }
+  }
+
+  // In-app Trellis notification (local-first bell + toast)
+  try {
+    notifyWorkflowTrellis(run, opts.notifyOnSuccess)
+  } catch (err) {
+    console.warn('[workflow-executor] notifyWorkflowTrellis threw:', err)
   }
 
   return run

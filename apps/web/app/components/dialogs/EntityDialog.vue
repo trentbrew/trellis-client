@@ -24,6 +24,7 @@
       owners?: { id: string; name: string }[]
       folders?: string[]
       defaultStartDate?: string
+      variant?: 'dialog' | 'inset'
     }>(),
     {
       mode: 'edit',
@@ -34,6 +35,7 @@
       owners: () => [],
       folders: () => [],
       defaultStartDate: undefined,
+      variant: 'dialog',
     },
   )
 
@@ -174,6 +176,18 @@
 
   const owners = computed(() => props.owners ?? [])
   const folders = computed(() => props.folders ?? [])
+
+  const isInset = computed(() => props.variant === 'inset')
+  const activeInsetTab = ref<'preview' | 'properties' | 'references' | 'activity'>('preview')
+  const insetTabs = computed(() => {
+    const base = [
+      { id: 'preview' as const, label: 'Preview' },
+      { id: 'properties' as const, label: 'Properties' },
+      { id: 'references' as const, label: 'References' },
+    ]
+    if (!isCreateMode.value) base.push({ id: 'activity' as any, label: 'Activity' })
+    return base
+  })
 
   const currentType = computed(() => ENTITY_TYPE_OPTIONS.find((t) => t.value === editableItem.type))
 
@@ -526,6 +540,7 @@
 <template>
   <EntityDialogShell
     :open="open"
+    :variant="variant"
     :title="editableItem.title"
     :description="editableItem.description"
     :mode="mode"
@@ -606,9 +621,9 @@
       </template>
     </template>
 
-    <!-- Schedule Sidebar (left, collapsible via date badge) -->
+    <!-- Schedule Sidebar (left, collapsible via date badge) — hidden in inset -->
     <aside
-      v-if="hasField('startDate')"
+      v-if="hasField('startDate') && !isInset"
       class="shrink-0 border-r border-border overflow-y-auto hidden md:block transition-all duration-200 relative"
       :class="[schedulePanelOpen ? '' : 'w-0 border-r-0! overflow-hidden', isResizingSidebar ? 'select-none' : '']"
       :style="schedulePanelOpen ? { width: leftSidebarW + 'px' } : {}">
@@ -626,8 +641,8 @@
         :is-dark="isDark" />
     </aside>
 
-    <!-- Properties Row (full-width, above sidebars) -->
-    <template v-if="hasVisibleProperties" #properties>
+    <!-- Properties Row (full-width, above sidebars) — hidden in inset (tabs carry props) -->
+    <template v-if="hasVisibleProperties && !isInset" #properties>
       <!-- Email-specific pills (read-only metadata from Gmail) -->
       <template v-if="editableItem.type === 'email'">
         <span
@@ -693,13 +708,14 @@
         @toggle-schedule="schedulePanelOpen = !schedulePanelOpen" />
     </template>
 
-    <!-- Center: type-specific content panel -->
-    <div class="flex-1 flex flex-col min-w-0 overflow-y-auto">
+    <!-- Center: type-specific content panel (non-inset) -->
+    <div v-if="!isInset" class="flex-1 flex flex-col min-w-0 overflow-y-auto">
       <EntityContentPanel v-model="editableItem" :mode="mode" />
     </div>
 
-    <!-- Right sidebar: tabbed references + activity -->
+    <!-- Right sidebar: tabbed references + activity (non-inset) -->
     <aside
+      v-if="!isInset"
       class="shrink-0 border-l border-border overflow-hidden flex flex-col relative transition-[width] duration-150"
       :class="isResizingSidebar ? 'select-none' : ''"
       :style="{ width: rightSidebarCollapsed ? '40px' : rightSidebarW + 'px' }">
@@ -739,6 +755,140 @@
         @create-entity="handleCreateEntityOfType"
         @add-comment="handleAddComment" />
     </aside>
+
+    <!-- ═══ Inset tabbed layout (narrow sidebar mode) ═══ -->
+    <div v-if="isInset" class="flex-1 flex flex-col min-w-0 overflow-hidden">
+      <!-- Tab bar -->
+      <div class="flex border-b border-border shrink-0">
+        <button
+          v-for="tab in insetTabs"
+          :key="tab.id"
+          class="flex-1 px-2 py-2 text-[10px] font-medium uppercase tracking-wide transition-colors"
+          :class="
+            activeInsetTab === tab.id
+              ? 'text-foreground border-b-2 border-primary'
+              : 'text-muted-foreground hover:text-foreground'
+          "
+          @click="activeInsetTab = tab.id as any">
+          {{ tab.label }}
+          <span
+            v-if="tab.id === 'activity' && !isCreateMode && displayActivity.length"
+            class="ml-1 text-[9px] bg-muted rounded-full px-1.5 py-0.5">
+            {{ displayActivity.length }}
+          </span>
+        </button>
+      </div>
+
+      <!-- Tab content -->
+      <div class="flex-1 overflow-hidden min-h-0">
+        <!-- Preview -->
+        <div v-if="activeInsetTab === 'preview'" class="h-full flex flex-col overflow-y-auto">
+          <EntityContentPanel v-model="editableItem" :mode="mode" />
+        </div>
+
+        <!-- Properties -->
+        <EntityPropertiesTab
+          v-else-if="activeInsetTab === 'properties'"
+          v-model:editable-item="editableItem"
+          v-model:selected-repeat="selectedRepeat"
+          :has-field="hasField"
+          :is-view-mode="isViewMode"
+          :is-dark="isDark"
+          :owners="owners"
+          :folders="folders"
+          :schedule-description="scheduleDescription" />
+
+        <!-- References -->
+        <div v-else-if="activeInsetTab === 'references'" class="h-full overflow-y-auto">
+          <ReferencesSection
+            :model-value="editableItem.references"
+            :readonly="isViewMode"
+            @update:model-value="editableItem.references = $event"
+            @open-entity="handleOpenEntityRef"
+            @remove-ref="handleRemoveRef"
+            @add-entity="
+              () => {
+                entityPickerFilterType = undefined
+                entityPickerOpen = true
+              }
+            "
+            @add-entity-of-type="
+              (type: string) => {
+                entityPickerFilterType = type
+                entityPickerOpen = true
+              }
+            "
+            @create-entity="handleCreateEntityOfType" />
+          <EntityAISuggestionsPanel v-if="!isCreateMode" :entity="editableItem" />
+        </div>
+
+        <!-- Activity -->
+        <div
+          v-else-if="activeInsetTab === 'activity' && !isCreateMode"
+          class="p-3 pb-0 space-y-2 flex flex-col h-full">
+          <div class="flex items-center gap-2 border border-border bg-card py-3 px-2 rounded-lg shrink-0">
+            <div class="w-5 h-5 rounded-full bg-muted/60 flex items-center justify-center shrink-0">
+              <Icon name="lucide:user" class="h-2.5 w-2.5 text-muted-foreground" />
+            </div>
+            <input
+              :value="newComment"
+              type="text"
+              placeholder="Add a comment..."
+              class="flex-1 text-xs bg-transparent border-none outline-none placeholder:text-muted-foreground/50"
+              @input="newComment = ($event.target as HTMLInputElement).value"
+              @keydown.enter="newComment.trim() && handleAddComment()" />
+            <button
+              v-if="newComment.trim()"
+              class="text-primary hover:text-primary/80 transition-colors shrink-0"
+              @click="handleAddComment">
+              <Icon name="lucide:send" class="h-3 w-3" />
+            </button>
+          </div>
+          <div class="flex-1 overflow-y-auto space-y-2 min-h-0 px-1 pt-2">
+            <div v-if="commentsLoading" class="flex items-center gap-2 py-2">
+              <Icon name="lucide:loader-2" class="h-3 w-3 animate-spin text-muted-foreground" />
+              <span class="text-xs text-muted-foreground">Loading…</span>
+            </div>
+            <template v-else-if="displayActivity.length">
+              <div v-for="activityItem in displayActivity" :key="activityItem.id" class="flex items-start gap-2">
+                <div
+                  class="w-5 h-5 rounded-full flex items-center justify-center shrink-0 mt-0.5 text-white bg-muted-foreground/40">
+                  <Icon v-if="activityItem.type === 'created'" name="lucide:plus" class="h-2.5 w-2.5" />
+                  <Icon
+                    v-else-if="activityItem.type === 'comment'"
+                    name="lucide:message-circle"
+                    class="h-2.5 w-2.5" />
+                  <Icon
+                    v-else-if="activityItem.type === 'status_change'"
+                    name="lucide:edit-3"
+                    class="h-2.5 w-2.5" />
+                  <Icon v-else name="lucide:activity" class="h-2.5 w-2.5" />
+                </div>
+                <div class="flex-1 min-w-0">
+                  <div class="flex items-baseline gap-1 flex-wrap">
+                    <span class="text-[11px] font-medium">{{ activityItem.authorName }}</span>
+                    <span class="text-[10px] text-muted-foreground">
+                      {{ formatRelativeTime(activityItem.createdAt) }}
+                    </span>
+                  </div>
+                  <p v-if="activityItem.content" class="text-xs text-foreground/80 mt-0.5">
+                    {{ activityItem.content }}
+                  </p>
+                  <p
+                    v-else-if="activityItem.type === 'created'"
+                    class="text-[10px] text-muted-foreground mt-0.5">
+                    created this {{ currentType?.label?.toLowerCase() || 'item' }}
+                  </p>
+                </div>
+              </div>
+            </template>
+            <div v-else class="py-4 text-center">
+              <p class="text-xs text-muted-foreground italic">No activity yet</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
 
     <!-- Footer -->
     <template #footer-left>
