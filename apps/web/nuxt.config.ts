@@ -67,10 +67,15 @@ export default defineNuxtConfig({
     gmailRedirectUri:
       process.env.GMAIL_REDIRECT_URI || `http://localhost:${PREFERRED_PORT}/api/integrations/gmail/callback`,
     gmailWebhookSecret: process.env.GMAIL_WEBHOOK_SECRET || '',
+    githubClientSecret: process.env.GITHUB_CLIENT_SECRET || '',
+    githubRedirectUri:
+      process.env.GITHUB_REDIRECT_URI || `http://localhost:${PREFERRED_PORT}/api/integrations/github/callback`,
+    githubWebhookSecret: process.env.GITHUB_WEBHOOK_SECRET || '',
     resendApiKey: process.env.RESEND_API_KEY || '',
     resendFrom: process.env.RESEND_FROM || 'Trellis <noreply@trellis.app>',
     public: {
       googleClientId: process.env.GOOGLE_CLIENT_ID,
+      githubClientId: process.env.GITHUB_CLIENT_ID || '',
       dataMode: process.env.TRELLIS_DATA_MODE || 'local',
       instantAppId: process.env.INSTANTDB_APP_ID || process.env.INSTANT_APP_ID || '',
       trellisPort: DEV_PORT,

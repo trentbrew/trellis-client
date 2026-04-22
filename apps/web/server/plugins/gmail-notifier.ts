@@ -1,11 +1,17 @@
 /**
  * Gmail Notifier
  *
- * Background poller that watches every connected Gmail account and emits
- * in-app notifications for new unread threads.
+ * Background poller that watches every connected Gmail account and:
+ *   1. Persists newly-arrived unread threads as `email` entities in TQL.
+ *   2. Runs an AI enrichment pass (summary, entity extraction, importance
+ *      classification, topical labels) and caches the result on the entity.
+ *   3. Emits an in-app notification whose body + priority reflect the AI
+ *      output — so the bell shows a clean preview and important emails ring
+ *      louder than newsletters.
  *
  * - Poll interval: 3 minutes (initial delay 30s after boot).
- * - Dedupes by (source=email, sourceId=threadId): won't double-notify.
+ * - Dedupes by (source=email, sourceId=`threadId:internalDate`): won't
+ *   double-notify on replies to an already-seen thread.
  * - Updates connection.lastSyncAt after each successful poll to checkpoint.
  */
 
@@ -13,28 +19,23 @@ import { useTqlKernel } from './tql'
 import { getValidAccessToken } from '../api/integrations/gmail/_credentials'
 import { createNotification, createSystemAlert } from '../utils/notification-service'
 import { NOTIFICATION_NAMESPACE } from '../utils/tql-ontologies'
+import { ingestThread, importanceToNotificationPriority } from '../utils/gmail-ingest'
+import { normalizeThread, type GmailMessageRaw } from '../utils/gmail-mime'
 
 const POLL_INTERVAL_MS = 3 * 60 * 1000
 const INITIAL_DELAY_MS = 30 * 1000
 const MAX_THREADS_PER_POLL = 25
+// Hard cap on enrichments per poll — LLM calls are cheap locally but we
+// don't want a 100-thread backlog to stall the notifier. Excess threads
+// still notify (using raw snippet) and get enriched on open via the manual
+// Scan button.
+const MAX_ENRICHMENTS_PER_POLL = 10
 
 let _handle: NodeJS.Timeout | null = null
 let _running = false
 
 // ─── Types ─────────────────────────────────────────────────────────────────
 
-interface GmailHeader {
-  name: string
-  value: string
-}
-interface GmailMessageRaw {
-  id: string
-  threadId: string
-  labelIds?: string[]
-  snippet?: string
-  internalDate?: string
-  payload?: { headers?: GmailHeader[] }
-}
 interface GmailThreadRef {
   id: string
   snippet?: string
@@ -49,12 +50,6 @@ interface ConnectionRow {
 }
 
 // ─── Helpers ───────────────────────────────────────────────────────────────
-
-function getHeader(headers: GmailHeader[] | undefined, name: string): string {
-  if (!headers) return ''
-  const h = headers.find((x) => x.name.toLowerCase() === name.toLowerCase())
-  return h?.value || ''
-}
 
 function prettyFrom(raw: string): string {
   if (!raw) return 'Unknown sender'
@@ -113,53 +108,37 @@ function alreadyNotifiedThreadIds(): Set<string> {
   }
 }
 
-async function fetchUnreadThreadMetas(accessToken: string): Promise<
-  Array<{
-    threadId: string
-    subject: string
-    from: string
-    snippet: string
-    internalDate: number
-  }>
-> {
+/**
+ * List the unread INBOX thread refs for the given account. Cheap single call
+ * that returns just the thread IDs + snippets — we fetch full bodies only
+ * for threads we haven't seen yet (see `fetchFullThread`).
+ */
+async function listUnreadThreadRefs(accessToken: string): Promise<GmailThreadRef[]> {
   const headers = { Authorization: `Bearer ${accessToken}` }
-
-  // Only fetch unread threads in INBOX — most efficient query for our use.
   const listUrl =
     `https://gmail.googleapis.com/gmail/v1/users/me/threads` +
     `?maxResults=${MAX_THREADS_PER_POLL}&labelIds=INBOX&labelIds=UNREAD`
-
   const listRes = await $fetch<{ threads?: GmailThreadRef[] }>(listUrl, { headers })
-  const refs = listRes.threads || []
-  if (refs.length === 0) return []
+  return listRes.threads || []
+}
 
-  const metas = await Promise.all(
-    refs.map(async (ref) => {
-      try {
-        const thread = await $fetch<{ id: string; messages: GmailMessageRaw[] }>(
-          `https://gmail.googleapis.com/gmail/v1/users/me/threads/${encodeURIComponent(ref.id)}` +
-            `?format=metadata&metadataHeaders=Subject&metadataHeaders=From&metadataHeaders=Date`,
-          { headers },
-        )
-        const messages = thread.messages || []
-        if (messages.length === 0) return null
-        const lastMsg = messages[messages.length - 1]!
-        const hdrs = lastMsg.payload?.headers
-        return {
-          threadId: thread.id,
-          subject: getHeader(hdrs, 'Subject') || '(no subject)',
-          from: getHeader(hdrs, 'From'),
-          snippet: ref.snippet || lastMsg.snippet || '',
-          internalDate: lastMsg.internalDate ? Number(lastMsg.internalDate) : 0,
-        }
-      } catch (err) {
-        console.warn('[gmail-notifier] failed to hydrate thread', ref.id, err)
-        return null
-      }
-    }),
-  )
-
-  return metas.filter((m): m is NonNullable<typeof m> => m !== null)
+/**
+ * Fetch the full (body-bearing) thread for a given id, normalized into the
+ * shared `NormalizedGmailThread` shape. Returns null on failure.
+ */
+async function fetchFullThread(accessToken: string, threadId: string) {
+  const headers = { Authorization: `Bearer ${accessToken}` }
+  try {
+    const raw = await $fetch<{ id: string; messages: GmailMessageRaw[] }>(
+      `https://gmail.googleapis.com/gmail/v1/users/me/threads/${encodeURIComponent(threadId)}?format=full`,
+      { headers },
+    )
+    if (!raw.messages || raw.messages.length === 0) return null
+    return normalizeThread(raw)
+  } catch (err) {
+    console.warn('[gmail-notifier] failed to fetch full thread', threadId, err)
+    return null
+  }
 }
 
 async function pollConnection(conn: ConnectionRow, notifiedIds: Set<string>): Promise<number> {
@@ -198,33 +177,75 @@ async function pollConnection(conn: ConnectionRow, notifiedIds: Set<string>): Pr
   }
 
   const lastSyncMs = conn.lastSyncAt ? Date.parse(conn.lastSyncAt) : 0
-  const metas = await fetchUnreadThreadMetas(accessToken)
+  const refs = await listUnreadThreadRefs(accessToken)
 
   let emitted = 0
-  for (const m of metas) {
-    // Unique per (thread, latest-message) — new replies bump internalDate, so
-    // replies on an already-notified thread still surface a fresh notification.
-    const sourceId = `${m.threadId}:${m.internalDate || 0}`
-    if (notifiedIds.has(sourceId)) continue
-    if (lastSyncMs && m.internalDate && m.internalDate <= lastSyncMs) continue
+  let enrichedSoFar = 0
 
-    const fromName = prettyFrom(m.from)
+  for (const ref of refs) {
+    // Stage 1: cheap dedupe using just the ref.id and our already-notified
+    // set. We can't know internalDate without fetching the thread, so the
+    // uniqueness check below happens post-fetch.
+    // Skip entirely if every source id starting with `${ref.id}:` is already
+    // notified — handled after fetch via the composed sourceId.
+
+    // Stage 2: fetch full thread so we have body text for ingest + enrich.
+    const thread = await fetchFullThread(accessToken, ref.id)
+    if (!thread) continue
+
+    const lastMsg = thread.messages[thread.messages.length - 1]!
+    const internalDate = lastMsg.internalDate || 0
+    const sourceId = `${thread.id}:${internalDate}`
+
+    if (notifiedIds.has(sourceId)) continue
+    if (lastSyncMs && internalDate && internalDate <= lastSyncMs) continue
+
+    const fromName = prettyFrom(lastMsg.from)
+
+    // Stage 3: persist + enrich. Enrichment is capped per poll so a big
+    // backlog doesn't stall the notifier. Over-cap threads still notify
+    // (with the raw snippet) and get enriched on open via the Scan button.
+    const shouldEnrich = enrichedSoFar < MAX_ENRICHMENTS_PER_POLL
+    let enrichment: Awaited<ReturnType<typeof ingestThread>>['enrichment'] = null
+    try {
+      if (shouldEnrich) {
+        const result = await ingestThread(thread, conn.id)
+        enrichment = result.enrichment
+        enrichedSoFar++
+      } else {
+        // Persist without enrichment — still gets the entity into the graph
+        // for linking, and enrichment will kick in via the client "Scan"
+        // button on first open.
+        await ingestThread({ ...thread, messages: thread.messages.slice(0, 1) }, conn.id).catch((err) =>
+          console.warn('[gmail-notifier] persist-without-enrich failed:', err),
+        )
+      }
+    } catch (err) {
+      console.warn('[gmail-notifier] ingest failed for', thread.id, err)
+    }
+
+    // Stage 4: notify. Body prefers the AI summary over the raw snippet;
+    // priority mirrors the AI importance classification.
+    const notificationPriority = enrichment ? importanceToNotificationPriority(enrichment.importance) : 'normal'
+    const notificationBody =
+      (enrichment?.summary || '').trim() || lastMsg.snippet || (fromName ? `From ${fromName}` : undefined)
+
     await createNotification(
       {
-        title: m.subject || `New email from ${fromName}`,
-        body: m.snippet || (fromName ? `From ${fromName}` : undefined),
+        title: lastMsg.subject || `New email from ${fromName}`,
+        body: notificationBody,
         kind: 'email',
         source: 'email',
         sourceId,
-        priority: 'normal',
-        url: `/mail?label=INBOX&thread=${encodeURIComponent(m.threadId)}`,
+        priority: notificationPriority,
+        url: `/mail?label=INBOX&thread=${encodeURIComponent(thread.id)}`,
         actions: [
           {
             id: 'open',
             kind: 'link',
             label: 'Open',
             icon: 'lucide:external-link',
-            target: `/mail?label=INBOX&thread=${encodeURIComponent(m.threadId)}`,
+            target: `/mail?label=INBOX&thread=${encodeURIComponent(thread.id)}`,
           },
           { id: 'mark-read', kind: 'mark_read', label: 'Mark read', icon: 'lucide:check' },
           { id: 'snooze-1h', kind: 'snooze', label: 'Snooze 1h', icon: 'lucide:clock', minutes: 60 },
@@ -232,9 +253,12 @@ async function pollConnection(conn: ConnectionRow, notifiedIds: Set<string>): Pr
         metadata: {
           connectionId: conn.id,
           accountEmail: conn.email,
-          from: m.from,
+          from: lastMsg.from,
           fromName,
-          internalDate: m.internalDate,
+          internalDate,
+          summary: enrichment?.summary,
+          aiLabels: enrichment?.aiLabels,
+          importance: enrichment?.importance,
         },
         groupKey: `email:${conn.id}`,
       },

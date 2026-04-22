@@ -253,6 +253,79 @@ export function useContentEnrichment(options: UseContentEnrichmentOptions) {
   }
 
   /**
+   * Hydrate suggestions/tags/proposals from persisted entity fields instead
+   * of calling the LLM. Used by email entities where the gmail-notifier has
+   * already run extraction on ingest — the panel can render instantly with
+   * no scanning spinner.
+   *
+   * Writes into the module cache so subsequent `extract()` calls on the same
+   * key are no-ops (same short-circuit as the in-memory cache path).
+   *
+   * @param source raw persisted values — typically JSON-encoded strings for
+   *        `suggestions`/`typeProposals` plus a `tags` string[].
+   * @param key stable cache key (same value the panel passes to `extract()`).
+   * @param existingTags tags already on the entity — excluded from suggestions.
+   */
+  function hydrateFromPersisted(
+    source: { suggestions?: unknown; tags?: unknown; typeProposals?: unknown },
+    key: string,
+    existingTags?: string[],
+  ): void {
+    const ck = cacheKeyFor(key)
+
+    // Parse `aiSuggestions` — stored as JSON string of EnrichmentSuggestion[].
+    // Re-match each candidate against the current graph so `status=matched`
+    // reflects the user's latest state (e.g. they may have created a Person
+    // manually since the LLM ran).
+    let hydratedSuggestions: EnrichmentSuggestion[] = []
+    try {
+      const raw = typeof source.suggestions === 'string' ? JSON.parse(source.suggestions) : source.suggestions
+      if (Array.isArray(raw)) {
+        hydratedSuggestions = raw
+          .map((entry) => {
+            const candidate: ContentEntityCandidate | null =
+              entry && entry.candidate && typeof entry.candidate === 'object' ? (entry.candidate as any) : null
+            if (!candidate?.name || !candidate?.type) return null
+            return matchCandidate(candidate)
+          })
+          .filter((s): s is EnrichmentSuggestion => s !== null)
+      }
+    } catch {
+      hydratedSuggestions = []
+    }
+
+    // Parse tags — simple string[].
+    const rawTags: string[] = Array.isArray(source.tags)
+      ? source.tags.filter((t): t is string => typeof t === 'string' && t.length > 0)
+      : []
+    const filteredTags = existingTags ? rawTags.filter((t) => !existingTags.includes(t)) : rawTags
+
+    // Parse typeProposals — stored as JSON string of TypeProposal[].
+    let hydratedProposals: TypeProposal[] = []
+    try {
+      const raw = typeof source.typeProposals === 'string' ? JSON.parse(source.typeProposals) : source.typeProposals
+      if (Array.isArray(raw)) hydratedProposals = raw as TypeProposal[]
+    } catch {
+      hydratedProposals = []
+    }
+
+    suggestions.value = hydratedSuggestions
+    suggestedTags.value = filteredTags
+    typeProposals.value = filterDismissed(ck, hydratedProposals)
+
+    cache.set(ck, {
+      suggestions: hydratedSuggestions,
+      tags: rawTags,
+      typeProposals: hydratedProposals,
+    })
+  }
+
+  /** Force a fresh scan, bypassing the cache. Used by the manual "Scan" button. */
+  function invalidateCache(key: string): void {
+    cache.delete(cacheKeyFor(key))
+  }
+
+  /**
    * Accept a suggestion: link to existing entity, or create + link a new one.
    * Mutates `sourceEntity.references` in place and creates the reciprocal
    * backlink on the target entity.
@@ -526,6 +599,8 @@ export function useContentEnrichment(options: UseContentEnrichmentOptions) {
     error,
     hasSuggestions,
     extract,
+    hydrateFromPersisted,
+    invalidateCache,
     accept,
     dismiss,
     acceptTag,

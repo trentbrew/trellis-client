@@ -10,9 +10,8 @@
     type SimulationNodeDatum,
     type SimulationLinkDatum,
   } from 'd3-force'
-  import { select, type Selection } from 'd3-selection'
+  import { select } from 'd3-selection'
   import { zoom as d3Zoom, zoomIdentity, type ZoomTransform, type D3ZoomEvent } from 'd3-zoom'
-  import { drag as d3Drag } from 'd3-drag'
   import { entityQuery } from '~/lib/tql-namespace'
   import { getRecurringSeriesKey } from '~/utils/recurrence'
   import { useGraphTypesSidebar, colorTokenToHex } from '~/composables/useGraphTypesSidebar'
@@ -47,13 +46,6 @@
     source: string
     target: string
     type: string
-  }
-
-  interface MiniNode {
-    id: string
-    x: number
-    y: number
-    color: string
   }
 
   // ── Config ────────────────────────────────────────────────────────────
@@ -199,15 +191,9 @@
     )
   }
 
-  // ── Cardinality Drawing ───────────────────────────────────────────────
+  // ── Cardinality Drawing (canvas) ──────────────────────────────────────
 
-  function drawCardinality(
-    parent: Selection<SVGGElement, unknown, null, undefined>,
-    card: string,
-    x: number,
-    y: number,
-    angle: number,
-  ) {
+  function drawCardinalityCanvas(ctx: CanvasRenderingContext2D, card: string, x: number, y: number, angle: number) {
     const sz = 6
     const cos = Math.cos(angle)
     const sin = Math.sin(angle)
@@ -215,70 +201,48 @@
     const py = cos
 
     if (card === '1') {
-      parent
-        .append('line')
-        .attr('x1', x + px * sz)
-        .attr('y1', y + py * sz)
-        .attr('x2', x - px * sz)
-        .attr('y2', y - py * sz)
-        .attr('stroke', 'var(--muted-foreground)')
-        .attr('stroke-width', 1.2)
+      ctx.beginPath()
+      ctx.moveTo(x + px * sz, y + py * sz)
+      ctx.lineTo(x - px * sz, y - py * sz)
+      ctx.stroke()
     } else if (card === '*') {
       for (const offset of [-1, 0, 1]) {
-        parent
-          .append('line')
-          .attr('x1', x)
-          .attr('y1', y)
-          .attr('x2', x + cos * sz * 1.2 + px * sz * offset * 0.7)
-          .attr('y2', y + sin * sz * 1.2 + py * sz * offset * 0.7)
-          .attr('stroke', 'var(--muted-foreground)')
-          .attr('stroke-width', 1.2)
+        ctx.beginPath()
+        ctx.moveTo(x, y)
+        ctx.lineTo(x + cos * sz * 1.2 + px * sz * offset * 0.7, y + sin * sz * 1.2 + py * sz * offset * 0.7)
+        ctx.stroke()
       }
     } else if (card === '0..1') {
-      parent
-        .append('circle')
-        .attr('cx', x + cos * sz)
-        .attr('cy', y + sin * sz)
-        .attr('r', 3)
-        .attr('fill', 'none')
-        .attr('stroke', 'var(--muted-foreground)')
-        .attr('stroke-width', 1.2)
-      parent
-        .append('line')
-        .attr('x1', x + px * sz)
-        .attr('y1', y + py * sz)
-        .attr('x2', x - px * sz)
-        .attr('y2', y - py * sz)
-        .attr('stroke', 'var(--muted-foreground)')
-        .attr('stroke-width', 1.2)
+      ctx.beginPath()
+      ctx.arc(x + cos * sz, y + sin * sz, 3, 0, Math.PI * 2)
+      ctx.stroke()
+      ctx.beginPath()
+      ctx.moveTo(x + px * sz, y + py * sz)
+      ctx.lineTo(x - px * sz, y - py * sz)
+      ctx.stroke()
     } else if (card === '1..*') {
-      parent
-        .append('line')
-        .attr('x1', x + px * sz)
-        .attr('y1', y + py * sz)
-        .attr('x2', x - px * sz)
-        .attr('y2', y - py * sz)
-        .attr('stroke', 'var(--muted-foreground)')
-        .attr('stroke-width', 1.2)
-      const forkBase = { x: x + cos * sz, y: y + sin * sz }
+      ctx.beginPath()
+      ctx.moveTo(x + px * sz, y + py * sz)
+      ctx.lineTo(x - px * sz, y - py * sz)
+      ctx.stroke()
+      const fx = x + cos * sz
+      const fy = y + sin * sz
       for (const offset of [-1, 0, 1]) {
-        parent
-          .append('line')
-          .attr('x1', forkBase.x)
-          .attr('y1', forkBase.y)
-          .attr('x2', forkBase.x + cos * sz * 0.8 + px * sz * offset * 0.7)
-          .attr('y2', forkBase.y + sin * sz * 0.8 + py * sz * offset * 0.7)
-          .attr('stroke', 'var(--muted-foreground)')
-          .attr('stroke-width', 1.2)
+        ctx.beginPath()
+        ctx.moveTo(fx, fy)
+        ctx.lineTo(fx + cos * sz * 0.8 + px * sz * offset * 0.7, fy + sin * sz * 0.8 + py * sz * offset * 0.7)
+        ctx.stroke()
       }
     }
   }
 
   // ── State (declared early — type visibility computed refs these) ──────
 
-  const svgRef = ref<SVGSVGElement | null>(null)
-  const graphNodes = ref<SimNode[]>([])
-  const graphEdges = ref<GEdge[]>([])
+  const canvasWrapRef = ref<HTMLDivElement | null>(null)
+  const canvasRef = ref<HTMLCanvasElement | null>(null)
+  const minimapCanvasRef = ref<HTMLCanvasElement | null>(null)
+  const graphNodes = shallowRef<SimNode[]>([])
+  const graphEdges = shallowRef<GEdge[]>([])
   const loading = ref(true)
 
   // ── Type Visibility (sidebar filter) ──────────────────────────────────
@@ -305,9 +269,7 @@
     { immediate: true },
   )
 
-  const visibleGraphNodes = computed(() =>
-    graphNodes.value.filter((n) => graphTypesSidebar.isVisible(n.type)),
-  )
+  const visibleGraphNodes = computed(() => graphNodes.value.filter((n) => graphTypesSidebar.isVisible(n.type)))
 
   // ── Interaction State ─────────────────────────────────────────────────
 
@@ -334,28 +296,6 @@
       color: colorTokenToHex(cfg.color),
       status: n.status,
     }
-  })
-
-  const connectedEdgeSet = computed(() => {
-    const set = new Set<string>()
-    if (!hoveredNodeId.value) return set
-    for (const e of graphEdges.value) {
-      if (e.source === hoveredNodeId.value || e.target === hoveredNodeId.value) {
-        set.add(`${e.source}→${e.target}→${e.type}`)
-      }
-    }
-    return set
-  })
-
-  const neighborSet = computed(() => {
-    const set = new Set<string>()
-    if (!hoveredNodeId.value) return set
-    set.add(hoveredNodeId.value)
-    for (const e of graphEdges.value) {
-      if (e.source === hoveredNodeId.value) set.add(e.target)
-      if (e.target === hoveredNodeId.value) set.add(e.source)
-    }
-    return set
   })
 
   const dialogItem = computed(() => {
@@ -401,33 +341,10 @@
     return true
   })
 
-  // ── Minimap State ─────────────────────────────────────────────────────
-
-  const minimapNodes = ref<MiniNode[]>([])
-  const minimapBounds = ref({ minX: 0, minY: 0, maxX: 1, maxY: 1 })
-  const viewportTransform = ref({ k: 1, x: 0, y: 0 })
-  const svgSize = ref({ w: 800, h: 600 })
-
+  // ── Minimap dimensions ────────────────────────────────────────────────
+  // Minimap renders directly to its own canvas — no Vue reactive intermediates.
   const MINIMAP_W = 180
   const MINIMAP_H = 120
-
-  const minimapViewBox = computed(() => {
-    const { minX, minY, maxX, maxY } = minimapBounds.value
-    const pad = 50
-    return {
-      x: minX - pad,
-      y: minY - pad,
-      w: Math.max(1, maxX - minX + pad * 2),
-      h: Math.max(1, maxY - minY + pad * 2),
-    }
-  })
-
-  const minimapViewport = computed(() => {
-    const { k, x, y } = viewportTransform.value
-    const { w: sw, h: sh } = svgSize.value
-    if (k === 0) return { x: 0, y: 0, w: sw, h: sh }
-    return { x: -x / k, y: -y / k, w: sw / k, h: sh / k }
-  })
 
   // ── Derived stats ─────────────────────────────────────────────────────
 
@@ -440,8 +357,14 @@
 
   // ── Fetch ─────────────────────────────────────────────────────────────
 
+  // Tracks whether we've completed the first fetch. After that, refreshes
+  // run silently in the background — we must NOT flip `loading` back to
+  // true, which would unmount the canvas (the loading spinner lives in a
+  // `v-if` branch) and force a full renderer teardown on every SSE bump.
+  const hasLoadedOnce = ref(false)
+
   const fetchGraphData = async () => {
-    loading.value = true
+    if (!hasLoadedOnce.value) loading.value = true
     try {
       const result = await graph.queryOnce(entityQuery('?e'))
       const ids = result.data.map((row) => String((row as any)['?e']))
@@ -497,6 +420,7 @@
       console.error('[graph/visualization] fetch error:', err)
     } finally {
       loading.value = false
+      hasLoadedOnce.value = true
     }
   }
 
@@ -514,7 +438,13 @@
   function computeHash(nodes: SimNode[]): string {
     // Simple hash: sorted IDs joined, then a quick numeric hash
     // We append the layout type so switching layouts invalidates the position cache
-    const str = nodes.map((n) => n.id).sort().join('|') + '::' + currentLayout.value
+    const str =
+      nodes
+        .map((n) => n.id)
+        .sort()
+        .join('|') +
+      '::' +
+      currentLayout.value
     let h = 0
     for (let i = 0; i < str.length; i++) h = ((h << 5) - h + str.charCodeAt(i)) | 0
     return String(h)
@@ -526,177 +456,192 @@
       if (!raw) return null
       const cache: GraphCache = JSON.parse(raw)
       return cache.hash === hash ? cache : null
-    } catch { return null }
+    } catch {
+      return null
+    }
   }
 
   function saveCache(cache: GraphCache) {
-    try { sessionStorage.setItem(STORAGE_KEY, JSON.stringify(cache)) } catch {}
+    try {
+      sessionStorage.setItem(STORAGE_KEY, JSON.stringify(cache))
+    } catch {}
   }
 
   function savePositions(nodes: SimNode[], hash: string, zoomT?: { k: number; x: number; y: number }) {
-    const positions: Record<string, { x: number; y: number }> = {}
+    // Merge with any existing cache so positions for nodes that are
+    // currently hidden (via sidebar filter) aren't lost when we
+    // overwrite. The hash is stable across visibility toggles.
+    const existing = loadCache(hash)
+    const positions: Record<string, { x: number; y: number }> = existing ? { ...existing.positions } : {}
     for (const n of nodes) {
       if (n.x != null && n.y != null) positions[n.id] = { x: n.x, y: n.y }
     }
     saveCache({ hash, positions, zoom: zoomT })
   }
 
-  // ── Renderer ──────────────────────────────────────────────────────────
+  // ── Renderer (Canvas) ─────────────────────────────────────────────────
+  // One HiDPI canvas for the main graph + a smaller one for the minimap.
+  // A single RAF loop drives both physics and drawing. The loop idles
+  // itself once the simulation settles and nothing is hovered/selected;
+  // any interaction (pointer move, zoom, visibility change) schedules a
+  // new frame via `ensureRaf()`.
 
   let cleanup: (() => void) | null = null
 
-  function renderForceGraph(svgEl: SVGSVGElement, nodes: SimNode[], links: GEdge[]): () => void {
-    const width = svgEl.clientWidth || 800
-    const height = svgEl.clientHeight || 600
-    svgSize.value = { w: width, h: height }
+  function renderForceGraph(
+    wrap: HTMLDivElement,
+    canvas: HTMLCanvasElement,
+    minimapCanvas: HTMLCanvasElement | null,
+    nodes: SimNode[],
+    links: GEdge[],
+  ): () => void {
+    // Render-loop state — declared up-front so callbacks that close over
+    // these (ResizeObserver, zoom.on, icon onload, etc.) don't hit a
+    // temporal dead zone when they fire before the bottom of this fn.
+    let raf = 0
+    let needsRender = true
+    let idleFrames = 0
+    let minimapFrameCount = 0
+
+    let width = wrap.clientWidth || 800
+    let height = wrap.clientHeight || 600
     const opt = cfg(nodes.length)
-    const hash = computeHash(nodes)
+    // Hash uses ALL known nodes (not the visible subset) so toggling
+    // type visibility doesn't invalidate the cached layout.
+    const hash = computeHash(graphNodes.value)
     const cache = loadCache(hash)
 
-    // ── Seed positions ──────────────────────────────────────────────
-    // If we have a cache, restore positions instantly.
-    // Otherwise, scatter nodes in a large circle so they gracefully
-    // gravitate inward (instead of exploding outward from center).
-    const hasCached = cache && Object.keys(cache.positions).length > 0
-    const cx = width / 2
-    const cy = height / 2
-
+    // ── Seed positions ────────────────────────────────────────────────
+    const hasCached = !!cache && Object.keys(cache.positions).length > 0
     if (hasCached) {
       for (const n of nodes) {
-        const p = cache.positions[n.id]
-        if (p) { n.x = p.x; n.y = p.y }
+        const p = cache!.positions[n.id]
+        if (p) {
+          n.x = p.x
+          n.y = p.y
+        }
       }
     } else {
-      // Scatter in a wide circle — radius proportional to node count
       const baseRadius = Math.max(width, height) * 1.5
-      const goldenAngle = Math.PI * (3 - Math.sqrt(5)) // ≈137.5°
+      const goldenAngle = Math.PI * (3 - Math.sqrt(5))
+      const scx = width / 2
+      const scy = height / 2
       for (let i = 0; i < nodes.length; i++) {
         const r = baseRadius * Math.sqrt((i + 1) / nodes.length)
         const theta = i * goldenAngle
-        nodes[i]!.x = cx + r * Math.cos(theta)
-        nodes[i]!.y = cy + r * Math.sin(theta)
+        nodes[i]!.x = scx + r * Math.cos(theta)
+        nodes[i]!.y = scy + r * Math.sin(theta)
       }
     }
 
-    const svg = select(svgEl)
-    svg.selectAll('*').remove()
-    svg.attr('width', '100%').attr('height', '100%')
+    // ── Canvas setup (DPR-aware) ──────────────────────────────────────
+    const dpr = Math.max(1, Math.min(window.devicePixelRatio || 1, 2))
+    const ctx = canvas.getContext('2d', { alpha: true })
+    if (!ctx) return () => {}
 
-    const g = svg.append('g')
-    let currentZoom = zoomIdentity
-    let raf = 0
+    function applyCanvasSize() {
+      width = wrap.clientWidth || width
+      height = wrap.clientHeight || height
+      canvas.width = Math.round(width * dpr)
+      canvas.height = Math.round(height * dpr)
+      canvas.style.width = width + 'px'
+      canvas.style.height = height + 'px'
+    }
+    applyCanvasSize()
 
-    // ── Figma-style gestures ──────────────────────────────────────────
-    // Wheel without modifier → pan (x/y)
-    // Ctrl/Meta + wheel or trackpad pinch → zoom
-    // Drag on canvas → pan
-    const zoomBehavior = d3Zoom<SVGSVGElement, unknown>()
-      .scaleExtent([0.15, 4])
-      .filter((event: any) => {
-        if (event.type === 'mousedown' || event.type === 'pointerdown') return !event.button
-        if (event.type === 'wheel') return event.ctrlKey || event.metaKey
-        return !event.ctrlKey
-      })
-      .on('zoom', (event: D3ZoomEvent<SVGSVGElement, unknown>) => {
-        currentZoom = event.transform
-        viewportTransform.value = { k: event.transform.k, x: event.transform.x, y: event.transform.y }
-        g.attr('transform', String(event.transform))
-        // Persist zoom transform
-        savePositions(nodes, hash, { k: event.transform.k, x: event.transform.x, y: event.transform.y })
-        draw()
-      })
-
-    svg.call(zoomBehavior).on('dblclick.zoom', null)
-
-    svg.on('click', () => {
-      if (selectedEntityId.value) {
-        selectedEntityId.value = null
-        dialogOpen.value = false
-        applyHighlight()
-      }
+    // Re-render on container resize (debounced via RAF)
+    const ro = new ResizeObserver(() => {
+      applyCanvasSize()
+      needsRender = true
+      ensureRaf()
     })
+    ro.observe(wrap)
 
-    // Restore cached zoom transform
-    if (cache?.zoom) {
-      svg.call(zoomBehavior.transform as any, zoomIdentity.translate(cache.zoom.x, cache.zoom.y).scale(cache.zoom.k))
+    // Resolve theme colors once from CSS to avoid per-draw getComputedStyle
+    const cs = getComputedStyle(wrap)
+    const readVar = (name: string, fallback: string) => {
+      const v = cs.getPropertyValue(name).trim()
+      return v || fallback
+    }
+    const bgCol = readVar('--background', '#0a0a0a')
+    const mutedCol = readVar('--muted-foreground', '#94a3b8')
+    const borderCol = readVar('--border', mutedCol)
+    const primaryCol = readVar('--primary', '#3b82f6')
+
+    // Pre-compute per-node color, radius, and id→node lookup
+    // (constant for a render session)
+    const colorCache = new Map<string, string>()
+    const radiusCache = new Map<string, number>()
+    const nodeById = new Map<string, SimNode>()
+    for (const n of nodes) {
+      colorCache.set(n.id, nodeColor(n))
+      radiusCache.set(n.id, nodeRadius(n))
+      nodeById.set(n.id, n)
     }
 
-    _zoomToNode = (id: string) => {
-      const node = nodes.find((n) => n.id === id)
-      if (!node) return
-
-      // Collect the selected node + all connected neighbors
-      const neighborNodes: SimNode[] = [node]
-      for (const l of simLinks) {
-        const s = l.source as SimNode
-        const t = l.target as SimNode
-        if (s.id === id && !neighborNodes.includes(t)) neighborNodes.push(t)
-        if (t.id === id && !neighborNodes.includes(s)) neighborNodes.push(s)
+    // ── Icon bitmap cache: rasterize each unique entity icon once ─────
+    const iconBitmaps = new Map<string, HTMLImageElement>()
+    function loadIconBitmap(type: string) {
+      if (iconBitmaps.has(type)) return
+      const path = ENTITY_ICONS[type]
+      if (!path) return
+      const iconPx = 48
+      const svg =
+        `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" width="${iconPx}" height="${iconPx}" fill="none" stroke="${bgCol}" stroke-width="1.5">` +
+        path.replace(/currentColor/g, bgCol) +
+        `</svg>`
+      const blob = new Blob([svg], { type: 'image/svg+xml' })
+      const url = URL.createObjectURL(blob)
+      const img = new Image()
+      img.onload = () => {
+        URL.revokeObjectURL(url)
+        iconBitmaps.set(type, img)
+        needsRender = true
+        ensureRaf()
       }
-
-      // Compute bounding box of all relevant nodes
-      let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity
-      for (const n of neighborNodes) {
-        const x = n.x ?? 0
-        const y = n.y ?? 0
-        if (x < minX) minX = x
-        if (y < minY) minY = y
-        if (x > maxX) maxX = x
-        if (y > maxY) maxY = y
-      }
-
-      // Add padding around the bounding box
-      const pad = 80
-      minX -= pad; minY -= pad; maxX += pad; maxY += pad
-
-      const bboxW = maxX - minX
-      const bboxH = maxY - minY
-      const cx = (minX + maxX) / 2
-      const cy = (minY + maxY) / 2
-
-      // Compute scale to fit, clamped to [0.2, 2.0]
-      const targetK = Math.min(2.0, Math.max(0.2, Math.min(width / bboxW, height / bboxH)))
-      const t = zoomIdentity.translate(width / 2 - cx * targetK, height / 2 - cy * targetK).scale(targetK)
-      svg.transition().duration(450).call(zoomBehavior.transform as any, t)
+      img.onerror = () => URL.revokeObjectURL(url)
+      img.src = url
+    }
+    if (opt.icon) {
+      const uniqueTypes = new Set<string>()
+      for (const n of nodes) uniqueTypes.add(n.type)
+      for (const t of uniqueTypes) loadIconBitmap(t)
     }
 
-    // Plain wheel = pan
-    svg.on('wheel.pan', (event: WheelEvent) => {
-      if (event.ctrlKey || event.metaKey) return
-      event.preventDefault()
-      ;(zoomBehavior as any).translateBy(svg, -event.deltaX, -event.deltaY)
-    })
+    // ── Adjacency for fast hover highlighting ─────────────────────────
+    const adjacency = new Map<string, Set<string>>()
+    for (const e of links) {
+      if (!adjacency.has(e.source)) adjacency.set(e.source, new Set())
+      if (!adjacency.has(e.target)) adjacency.set(e.target, new Set())
+      adjacency.get(e.source)!.add(e.target)
+      adjacency.get(e.target)!.add(e.source)
+    }
 
+    // ── Simulation ────────────────────────────────────────────────────
     const simLinks = links.map((l) => ({ ...l })) as SimulationLinkDatum<SimNode>[]
-
-    // Simulation — tweak initial energy based on whether we have cached positions
     const startAlpha = hasCached ? 0.02 : 0.6
     const decayRate = hasCached ? opt.decay * 2 : opt.decay * 0.6
+    const alphaMin = 0.003
+    const cx = width / 2
+    const cy = height / 2
 
-    const simulation = forceSimulation<SimNode>(nodes)
+    const simulation = forceSimulation<SimNode>(nodes).alphaMin(alphaMin).alpha(startAlpha).alphaDecay(decayRate)
 
     if (currentLayout.value === 'type') {
       const uniqueTypes = Array.from(new Set(nodes.map((n) => n.type)))
-      const cx = width / 2
-      const cy = height / 2
       const r = Math.min(width, height) * 0.4
-      
       const typePositions = new Map<string, { x: number; y: number }>()
       uniqueTypes.forEach((t, i) => {
         const theta = (i / uniqueTypes.length) * Math.PI * 2
-        typePositions.set(t, {
-          x: cx + r * Math.cos(theta),
-          y: cy + r * Math.sin(theta),
-        })
+        typePositions.set(t, { x: cx + r * Math.cos(theta), y: cy + r * Math.sin(theta) })
       })
-
       simulation
         .force(
           'link',
           forceLink<SimNode, SimulationLinkDatum<SimNode>>(simLinks)
             .id((d) => d.id)
             .distance(opt.dist)
-            .strength(0.02) // Weak links keep clusters from pulling uniformly together
+            .strength(0.02),
         )
         .force('charge', forceManyBody<SimNode>().strength(opt.charge * 0.5))
         .force('collide', forceCollide<SimNode>(opt.collide))
@@ -711,284 +656,504 @@
             .distance(opt.dist),
         )
         .force('charge', forceManyBody<SimNode>().strength(opt.charge))
-        .force('center', forceCenter(width / 2, height / 2))
+        .force('center', forceCenter(cx, cy))
         .force('collide', forceCollide<SimNode>(opt.collide))
     }
 
-    simulation.alpha(startAlpha).alphaDecay(decayRate)
+    // We drive ticks ourselves from the RAF loop so rendering + physics
+    // stay in lockstep with the browser's frame budget.
+    simulation.stop()
 
-    // Links layer
-    const link = g
-      .append('g')
-      .attr('class', 'links')
-      .selectAll<SVGLineElement, SimulationLinkDatum<SimNode>>('line')
-      .data(simLinks)
-      .join('line')
-      .attr('stroke', 'var(--border, var(--muted-foreground))')
-      .attr('stroke-width', 1)
-      .attr('stroke-opacity', opt.link)
-      .style('transition', 'stroke 0.25s ease-out, stroke-width 0.25s ease-out, stroke-opacity 0.25s ease-out')
+    // ── Zoom / pan ────────────────────────────────────────────────────
+    let currentZoom: ZoomTransform = zoomIdentity
+    let dragCandidate: SimNode | null = null
+    const canvasSel = select(canvas as unknown as Element)
 
-    // Edge labels — always bound; default opacity gated by density
-    const edgeLabel = g
-      .append('g')
-      .attr('class', 'edge-labels')
-      .selectAll<SVGTextElement, (typeof simLinks)[number]>('text')
-      .data(simLinks)
-      .join('text')
-      .text((d) => (d as any).type as string)
-      .attr('font-size', '8px')
-      .attr('fill', 'var(--muted-foreground)')
-      .attr('text-anchor', 'middle')
-      .attr('pointer-events', 'none')
-      .attr('dy', '-4')
-      .attr('opacity', opt.edge ? 1 : 0)
-      .style('transition', 'opacity 0.25s ease-out')
-
-    // Cardinality markers layer
-    const cardinalityG = g.append('g').attr('class', 'cardinality')
-
-    // Nodes
-    const nodeG = g
-      .append('g')
-      .attr('class', 'nodes')
-      .selectAll<SVGGElement, SimNode>('g')
-      .data(nodes)
-      .join('g')
-      .style('cursor', 'pointer')
-      .style('transition', 'opacity 0.25s ease-out')
-
-    nodeG
-      .append('circle')
-      .attr('class', 'node-core')
-      .attr('r', (d) => nodeRadius(d))
-      .attr('fill', (d) => nodeColor(d))
-      .attr('stroke', 'var(--background)')
-      .attr('stroke-width', 1.5)
-
-    // Selection ring (hidden by default)
-    nodeG
-      .append('circle')
-      .attr('class', 'node-ring')
-      .attr('r', (d) => nodeRadius(d) + 4)
-      .attr('fill', 'none')
-      .attr('stroke', 'var(--primary)')
-      .attr('stroke-width', 2)
-      .attr('opacity', 0)
-      .attr('pointer-events', 'none')
-
-    // Icons
-    if (opt.icon) {
-      nodeG.each(function (d) {
-        const r = nodeRadius(d)
-        const path = ENTITY_ICONS[d.type]
-        if (!path) return
-        const iconSize = r * 1.1
-        select(this)
-          .append('svg')
-          .attr('viewBox', '0 0 20 20')
-          .attr('width', iconSize)
-          .attr('height', iconSize)
-          .attr('x', -iconSize / 2)
-          .attr('y', -iconSize / 2)
-          .attr('fill', 'none')
-          .attr('pointer-events', 'none')
-          .html(path)
-          .selectAll('path, g, rect, circle')
-          .attr('stroke', 'var(--background)')
-          .attr('fill', function () {
-            const el = this as SVGElement
-            return el.getAttribute('fill') === 'currentColor' ? 'var(--background)' : el.getAttribute('fill')
-          })
+    const zoomBehavior = d3Zoom<HTMLCanvasElement, unknown>()
+      .scaleExtent([0.15, 4])
+      .filter((event: any) => {
+        // Don't let zoom swallow a pointer-down on a node; we use that
+        // for node dragging below.
+        if (event.type === 'mousedown' || event.type === 'pointerdown') {
+          if (dragCandidate) return false
+          return !event.button
+        }
+        if (event.type === 'wheel') return event.ctrlKey || event.metaKey
+        return !event.ctrlKey
       })
+      .on('zoom', (event: D3ZoomEvent<HTMLCanvasElement, unknown>) => {
+        currentZoom = event.transform
+        needsRender = true
+        schedulePersist()
+        ensureRaf()
+      })
+
+    canvasSel.call(zoomBehavior as any).on('dblclick.zoom', null)
+    // NOTE: initial zoom transform is applied at the bottom of this fn,
+    // after `persistTimer`, `miniCtx`, etc. are in scope. Applying it
+    // here would synchronously fire the 'zoom' handler and hit a TDZ.
+
+    // Plain wheel = pan
+    const onWheelPan = (event: WheelEvent) => {
+      if (event.ctrlKey || event.metaKey) return
+      event.preventDefault()
+      ;(zoomBehavior as any).translateBy(canvasSel, -event.deltaX, -event.deltaY)
     }
+    canvas.addEventListener('wheel', onWheelPan, { passive: false })
 
-    // Hover + click
-    nodeG
-      .on('mouseenter', (event: MouseEvent, d) => {
-        hoveredNodeId.value = d.id
-        const rect = svgEl.getBoundingClientRect()
-        hoverPos.value = { x: event.clientX - rect.left, y: event.clientY - rect.top }
-        applyHighlight()
-      })
-      .on('mousemove', (event: MouseEvent) => {
-        const rect = svgEl.getBoundingClientRect()
-        hoverPos.value = { x: event.clientX - rect.left, y: event.clientY - rect.top }
-      })
-      .on('mouseleave', () => {
-        hoveredNodeId.value = null
-        applyHighlight()
-      })
-      .on('click', (event: MouseEvent, d) => {
-        event.stopPropagation()
-        openNodeDialog(d.id)
-      })
+    // ── Pointer interaction: hover, click, drag ───────────────────────
+    let dragActive = false
+    let dragStartX = 0
+    let dragStartY = 0
+    let pendingPointerId: number | null = null
 
-    function drawCardinalities() {
-      cardinalityG.selectAll('*').remove()
-      const hid = hoveredNodeId.value
-      const sid = selectedEntityId.value
-      
-      const activeIds = new Set<string>()
-      if (hid) activeIds.add(hid)
-      if (sid) activeIds.add(sid)
-      
-      const drawAll = opt.card
-      if (!drawAll && activeIds.size === 0) return
-      for (const sl of simLinks) {
-        const s = sl.source as SimNode
-        const t = sl.target as SimNode
-        if (!drawAll && !activeIds.has(s.id) && !activeIds.has(t.id)) continue
-        const sx = s.x ?? 0,
-          sy = s.y ?? 0
-        const tx = t.x ?? 0,
-          ty = t.y ?? 0
-        const dx = tx - sx,
-          dy = ty - sy
-        const len = Math.sqrt(dx * dx + dy * dy)
-        if (len < 1) continue
-        const angle = Math.atan2(dy, dx)
-        const rel = (sl as any).type as string
-        const [srcCard, tgtCard] = EDGE_CARDINALITY[rel] ?? ['1', '*']
-        const inset = 14
-        drawCardinality(cardinalityG, srcCard!, sx + (dx / len) * inset, sy + (dy / len) * inset, angle)
-        drawCardinality(cardinalityG, tgtCard!, tx - (dx / len) * inset, ty - (dy / len) * inset, angle + Math.PI)
+    function toWorld(clientX: number, clientY: number) {
+      const rect = canvas.getBoundingClientRect()
+      const sx = clientX - rect.left
+      const sy = clientY - rect.top
+      return {
+        x: (sx - currentZoom.x) / currentZoom.k,
+        y: (sy - currentZoom.y) / currentZoom.k,
+        screenX: sx,
+        screenY: sy,
       }
     }
 
-    function applyHighlight() {
-      drawCardinalities()
-      const hid = hoveredNodeId.value
-      const sid = selectedEntityId.value
-      
-      const activeIds = new Set<string>()
-      if (hid) activeIds.add(hid)
-      if (sid) activeIds.add(sid)
+    function pickNode(worldX: number, worldY: number): SimNode | null {
+      // Linear scan — for N ≤ ~2k this is faster than a quadtree rebuild.
+      let best: SimNode | null = null
+      let bestD2 = Infinity
+      for (const n of nodes) {
+        const nx = n.x ?? 0
+        const ny = n.y ?? 0
+        const dx = nx - worldX
+        const dy = ny - worldY
+        const d2 = dx * dx + dy * dy
+        const r = (radiusCache.get(n.id) ?? 7) + 2
+        if (d2 <= r * r && d2 < bestD2) {
+          bestD2 = d2
+          best = n
+        }
+      }
+      return best
+    }
 
-      if (activeIds.size === 0) {
-        nodeG.attr('opacity', 1)
-        link.attr('stroke-opacity', opt.link).attr('stroke', 'var(--border, var(--muted-foreground))').attr('stroke-width', 1)
-        edgeLabel.attr('opacity', opt.edge ? 1 : 0)
+    function kick(alpha: number) {
+      if (simulation.alpha() < alpha) simulation.alpha(alpha)
+      needsRender = true
+      ensureRaf()
+    }
+
+    const onPointerMove = (event: PointerEvent) => {
+      if (dragActive && dragCandidate) {
+        const w = toWorld(event.clientX, event.clientY)
+        dragCandidate.fx = w.x
+        dragCandidate.fy = w.y
+        kick(0.04)
         return
       }
-      
-      const neighbors = new Set<string>(activeIds)
-      for (const l of simLinks) {
-        const s = String((l.source as SimNode).id ?? (l.source as any))
-        const t = String((l.target as SimNode).id ?? (l.target as any))
-        if (activeIds.has(s)) neighbors.add(t)
-        if (activeIds.has(t)) neighbors.add(s)
+      // Promote a pending press into a drag once the pointer actually moves.
+      if (dragCandidate && !dragActive) {
+        if (Math.hypot(event.clientX - dragStartX, event.clientY - dragStartY) > 3) {
+          dragActive = true
+          simulation.alphaTarget(0.04)
+          kick(0.04)
+        }
       }
-      
-      nodeG.attr('opacity', (d) => (neighbors.has(d.id) ? 1 : 0.12))
-      link
-        .attr('stroke', (d: any) => {
-          const s = String((d.source as SimNode).id ?? d.source)
-          const tt = String((d.target as SimNode).id ?? d.target)
-          return activeIds.has(s) || activeIds.has(tt) ? 'var(--primary)' : 'var(--border, var(--muted-foreground))'
-        })
-        .attr('stroke-width', (d: any) => {
-          const s = String((d.source as SimNode).id ?? d.source)
-          const tt = String((d.target as SimNode).id ?? d.target)
-          return activeIds.has(s) || activeIds.has(tt) ? 2 : 0.5
-        })
-        .attr('stroke-opacity', (d: any) => {
-          const s = String((d.source as SimNode).id ?? d.source)
-          const tt = String((d.target as SimNode).id ?? d.target)
-          return activeIds.has(s) || activeIds.has(tt) ? 0.9 : 0.08
-        })
-      edgeLabel.attr('opacity', (d: any) => {
-        const s = String((d.source as SimNode).id ?? d.source)
-        const tt = String((d.target as SimNode).id ?? d.target)
-        return activeIds.has(s) || activeIds.has(tt) ? 1 : 0.05
-      })
+
+      const w = toWorld(event.clientX, event.clientY)
+      hoverPos.value = { x: w.screenX, y: w.screenY }
+      const n = pickNode(w.x, w.y)
+      const nid = n?.id ?? null
+      if (nid !== hoveredNodeId.value) {
+        // Pin the newly-hovered node so physics can't shove it out from
+        // under the cursor. Release whichever node was hovered before.
+        const prevId = hoveredNodeId.value
+        if (prevId) {
+          const prev = nodeById.get(prevId)
+          if (prev && !(dragCandidate && dragCandidate.id === prevId)) {
+            prev.fx = null
+            prev.fy = null
+          }
+        }
+        if (n) {
+          n.fx = n.x
+          n.fy = n.y
+        }
+        hoveredNodeId.value = nid
+        canvas.style.cursor = nid ? 'pointer' : ''
+        needsRender = true
+        ensureRaf()
+      }
     }
 
-    // Expose for external watcher
-    ;(svgEl as any).__applyHighlight = applyHighlight
-
-    _applySelection = () => {
-      const sid = selectedEntityId.value
-      nodeG.select('circle.node-ring').attr('opacity', (d: any) => (d.id === sid ? 1 : 0))
-      // Keep edges highlighted while a node is selected
-      applyHighlight()
-    }
-    _applySelection()
-
-    // Labels
-    const label = g
-      .append('g')
-      .attr('class', 'labels')
-      .selectAll<SVGTextElement, SimNode>('text')
-      .data(opt.label ? nodes : [])
-      .join('text')
-      .text((d) => (d.label.length > 18 ? d.label.slice(0, 18) + '…' : d.label))
-      .attr('font-size', '10px')
-      .attr('fill', 'var(--muted-foreground)')
-      .attr('text-anchor', 'middle')
-      .attr('pointer-events', 'none')
-      .attr('dy', '2.2em')
-
-    // Drag
-    const dragBehavior = d3Drag<SVGGElement, SimNode>()
-      .on('start', (event, d) => {
-        if (!event.active) simulation.alphaTarget(0.02).restart()
-        d.fx = d.x
-        d.fy = d.y
-      })
-      .on('drag', (event, d) => {
-        d.fx = event.x
-        d.fy = event.y
-      })
-      .on('end', (event, d) => {
-        if (!event.active) simulation.alphaTarget(0)
-        d.fx = null
-        d.fy = null
-      })
-    nodeG.call(dragBehavior)
-
-    // Viewport culling
-    function refresh() {
-      const box = viewBounds(currentZoom, width, height)
-      nodeG.style('display', (d) => (visible(d, box) ? null : 'none'))
-      label.style('display', (d) => (visible(d, box) ? null : 'none'))
-      link.style('display', (d) => (visibleLink(d, box) ? null : 'none'))
-      edgeLabel.style('display', (d) => (visibleLink(d, box) ? null : 'none'))
-      const opacity = Math.min(1, Math.max(0.2, (currentZoom.k - 0.15) / 1.5))
-      label.style('opacity', opacity)
+    const onPointerDown = (event: PointerEvent) => {
+      if (event.button !== 0) return
+      const w = toWorld(event.clientX, event.clientY)
+      const n = pickNode(w.x, w.y)
+      if (n) {
+        dragCandidate = n
+        dragStartX = event.clientX
+        dragStartY = event.clientY
+        pendingPointerId = event.pointerId
+        try {
+          canvas.setPointerCapture(event.pointerId)
+        } catch {}
+      }
     }
 
-    function draw() {
-      if (raf) return
-      raf = requestAnimationFrame(() => {
-        raf = 0
-        refresh()
-      })
+    const onPointerUp = (event: PointerEvent) => {
+      if (pendingPointerId != null) {
+        try {
+          canvas.releasePointerCapture(pendingPointerId)
+        } catch {}
+        pendingPointerId = null
+      }
+      const candidate = dragCandidate
+      const wasDragging = dragActive
+      dragCandidate = null
+      dragActive = false
+
+      if (candidate) {
+        if (wasDragging) {
+          simulation.alphaTarget(0)
+          // If the cursor is still over the node, keep it pinned under
+          // the hover-lock; otherwise release it to the simulation.
+          if (candidate.id !== hoveredNodeId.value) {
+            candidate.fx = null
+            candidate.fy = null
+          }
+        } else {
+          // Small-move press → click.
+          const moved = Math.hypot(event.clientX - dragStartX, event.clientY - dragStartY)
+          if (moved < 3) openNodeDialog(candidate.id)
+        }
+      } else {
+        // Click on empty canvas → deselect
+        if (selectedEntityId.value) {
+          selectedEntityId.value = null
+          dialogOpen.value = false
+          needsRender = true
+          ensureRaf()
+        }
+      }
     }
 
-    // Tick
-    simulation.on('tick', () => {
-      link
-        .attr('x1', (d) => (d.source as SimNode).x ?? 0)
-        .attr('y1', (d) => (d.source as SimNode).y ?? 0)
-        .attr('x2', (d) => (d.target as SimNode).x ?? 0)
-        .attr('y2', (d) => (d.target as SimNode).y ?? 0)
+    const onPointerLeave = () => {
+      if (dragActive) return
+      if (hoveredNodeId.value) {
+        const prev = nodeById.get(hoveredNodeId.value)
+        if (prev && !(dragCandidate && dragCandidate.id === prev.id)) {
+          prev.fx = null
+          prev.fy = null
+        }
+        hoveredNodeId.value = null
+        canvas.style.cursor = ''
+        needsRender = true
+        ensureRaf()
+      }
+    }
 
-      edgeLabel
-        .attr('x', (d) => ((d.source as SimNode).x! + (d.target as SimNode).x!) / 2)
-        .attr('y', (d) => ((d.source as SimNode).y! + (d.target as SimNode).y!) / 2)
+    canvas.addEventListener('pointermove', onPointerMove)
+    canvas.addEventListener('pointerdown', onPointerDown)
+    canvas.addEventListener('pointerup', onPointerUp)
+    canvas.addEventListener('pointercancel', onPointerUp)
+    canvas.addEventListener('pointerleave', onPointerLeave)
 
-      drawCardinalities()
-
-      nodeG.attr('transform', (d) => `translate(${d.x ?? 0},${d.y ?? 0})`)
-      label.attr('x', (d) => d.x ?? 0).attr('y', (d) => d.y ?? 0)
-
-      // Sync minimap
+    // ── Zoom-to-node (used by dialog entity navigation) ───────────────
+    _zoomToNode = (id: string) => {
+      const node = nodes.find((n) => n.id === id)
+      if (!node) return
+      const neighborNodes: SimNode[] = [node]
+      for (const l of simLinks) {
+        const s = l.source as SimNode
+        const t = l.target as SimNode
+        if (s.id === id && !neighborNodes.includes(t)) neighborNodes.push(t)
+        if (t.id === id && !neighborNodes.includes(s)) neighborNodes.push(s)
+      }
       let minX = Infinity,
         minY = Infinity,
         maxX = -Infinity,
         maxY = -Infinity
-      const miniData: MiniNode[] = []
+      for (const n of neighborNodes) {
+        const x = n.x ?? 0
+        const y = n.y ?? 0
+        if (x < minX) minX = x
+        if (y < minY) minY = y
+        if (x > maxX) maxX = x
+        if (y > maxY) maxY = y
+      }
+      const pad = 80
+      minX -= pad
+      minY -= pad
+      maxX += pad
+      maxY += pad
+      const bboxW = maxX - minX
+      const bboxH = maxY - minY
+      const ccx = (minX + maxX) / 2
+      const ccy = (minY + maxY) / 2
+      const targetK = Math.min(2.0, Math.max(0.2, Math.min(width / bboxW, height / bboxH)))
+      const t = zoomIdentity.translate(width / 2 - ccx * targetK, height / 2 - ccy * targetK).scale(targetK)
+      canvasSel
+        .transition()
+        .duration(450)
+        .call(zoomBehavior.transform as any, t)
+    }
+
+    // Selection/highlight just requests a redraw; the render fn inspects
+    // current Vue state each frame.
+    _applySelection = () => {
+      needsRender = true
+      ensureRaf()
+    }
+
+    // Re-render when hover/select change from outside (e.g. ENTITY_NAVIGATE_KEY)
+    const stopHoverWatch = watch([hoveredNodeId, selectedEntityId], () => {
+      needsRender = true
+      ensureRaf()
+    })
+
+    // ── Position persistence (throttled) ──────────────────────────────
+    let persistTimer: ReturnType<typeof setTimeout> | null = null
+    function schedulePersist() {
+      if (persistTimer) return
+      persistTimer = setTimeout(() => {
+        persistTimer = null
+        savePositions(nodes, hash, { k: currentZoom.k, x: currentZoom.x, y: currentZoom.y })
+      }, 400)
+    }
+
+    // ── Render loop ───────────────────────────────────────────────────
+    // (raf/needsRender/idleFrames/minimapFrameCount hoisted above)
+
+    function frame() {
+      raf = 0
+      const alpha = simulation.alpha()
+      const active = alpha > alphaMin || dragActive
+
+      if (active) {
+        simulation.tick()
+        needsRender = true
+        idleFrames = 0
+      }
+
+      if (needsRender) {
+        needsRender = false
+        draw()
+        minimapFrameCount++
+        if (minimapFrameCount >= 12 || !active) {
+          minimapFrameCount = 0
+          drawMinimap()
+        }
+        if (!active) {
+          // Persist final state once when the graph settles.
+          savePositions(nodes, hash, { k: currentZoom.k, x: currentZoom.x, y: currentZoom.y })
+        }
+      } else {
+        idleFrames++
+        if (idleFrames > 30) return // stop RAF; interactions will resume it
+      }
+
+      raf = requestAnimationFrame(frame)
+    }
+
+    function ensureRaf() {
+      if (raf) return
+      idleFrames = 0
+      raf = requestAnimationFrame(frame)
+    }
+
+    function draw() {
+      if (!ctx) return
+      const pxW = canvas.width
+      const pxH = canvas.height
+
+      // Clear + apply DPR + zoom transform in a single setTransform.
+      ctx.setTransform(1, 0, 0, 1, 0, 0)
+      ctx.clearRect(0, 0, pxW, pxH)
+      ctx.setTransform(dpr * currentZoom.k, 0, 0, dpr * currentZoom.k, dpr * currentZoom.x, dpr * currentZoom.y)
+
+      const box = viewBounds(currentZoom, width, height)
+      const hid = hoveredNodeId.value
+      const sid = selectedEntityId.value
+      const activeIds = hid || sid ? new Set<string>([hid, sid].filter(Boolean) as string[]) : null
+
+      // Expand neighbor set once if something is active
+      let neighbors: Set<string> | null = null
+      if (activeIds) {
+        neighbors = new Set(activeIds)
+        for (const id of activeIds) {
+          const adj = adjacency.get(id)
+          if (adj) for (const nb of adj) neighbors.add(nb)
+        }
+      }
+
+      // ── Edges ───────────────────────────────────────────────────────
+      if (activeIds) {
+        // Dim pass — everything not touching an active node
+        ctx.globalAlpha = 0.08
+        ctx.strokeStyle = borderCol
+        ctx.lineWidth = 0.5
+        ctx.beginPath()
+        for (const l of simLinks) {
+          if (!visibleLink(l, box)) continue
+          const s = l.source as SimNode
+          const t = l.target as SimNode
+          if (activeIds.has(s.id) || activeIds.has(t.id)) continue
+          ctx.moveTo(s.x!, s.y!)
+          ctx.lineTo(t.x!, t.y!)
+        }
+        ctx.stroke()
+
+        // Highlight pass — primary stroke on connected edges
+        ctx.globalAlpha = 0.9
+        ctx.strokeStyle = primaryCol
+        ctx.lineWidth = 2
+        ctx.beginPath()
+        for (const l of simLinks) {
+          if (!visibleLink(l, box)) continue
+          const s = l.source as SimNode
+          const t = l.target as SimNode
+          if (!(activeIds.has(s.id) || activeIds.has(t.id))) continue
+          ctx.moveTo(s.x!, s.y!)
+          ctx.lineTo(t.x!, t.y!)
+        }
+        ctx.stroke()
+      } else {
+        ctx.globalAlpha = opt.link
+        ctx.strokeStyle = borderCol
+        ctx.lineWidth = 1
+        ctx.beginPath()
+        for (const l of simLinks) {
+          if (!visibleLink(l, box)) continue
+          const s = l.source as SimNode
+          const t = l.target as SimNode
+          ctx.moveTo(s.x!, s.y!)
+          ctx.lineTo(t.x!, t.y!)
+        }
+        ctx.stroke()
+      }
+      ctx.globalAlpha = 1
+
+      // ── Cardinality markers ─────────────────────────────────────────
+      // Only render for the active subset (always) or the whole graph
+      // when density is low enough to afford it.
+      if (activeIds || opt.card) {
+        ctx.strokeStyle = mutedCol
+        ctx.fillStyle = mutedCol
+        ctx.lineWidth = 1.2
+        for (const sl of simLinks) {
+          const s = sl.source as SimNode
+          const t = sl.target as SimNode
+          if (activeIds && !activeIds.has(s.id) && !activeIds.has(t.id)) continue
+          if (!visibleLink(sl, box)) continue
+          const sx = s.x ?? 0
+          const sy = s.y ?? 0
+          const tx = t.x ?? 0
+          const ty = t.y ?? 0
+          const dx = tx - sx
+          const dy = ty - sy
+          const len = Math.sqrt(dx * dx + dy * dy)
+          if (len < 1) continue
+          const angle = Math.atan2(dy, dx)
+          const rel = (sl as any).type as string
+          const [srcCard, tgtCard] = EDGE_CARDINALITY[rel] ?? ['1', '*']
+          const inset = 14
+          drawCardinalityCanvas(ctx, srcCard!, sx + (dx / len) * inset, sy + (dy / len) * inset, angle)
+          drawCardinalityCanvas(ctx, tgtCard!, tx - (dx / len) * inset, ty - (dy / len) * inset, angle + Math.PI)
+        }
+      }
+
+      // ── Edge labels (only when zoomed in enough) ────────────────────
+      if (opt.edge && currentZoom.k > 0.6) {
+        ctx.fillStyle = mutedCol
+        ctx.font = '8px system-ui, sans-serif'
+        ctx.textAlign = 'center'
+        ctx.textBaseline = 'alphabetic'
+        for (const l of simLinks) {
+          if (!visibleLink(l, box)) continue
+          const s = l.source as SimNode
+          const t = l.target as SimNode
+          ctx.globalAlpha = activeIds && !(activeIds.has(s.id) || activeIds.has(t.id)) ? 0.05 : 0.9
+          ctx.fillText((l as any).type as string, ((s.x ?? 0) + (t.x ?? 0)) / 2, ((s.y ?? 0) + (t.y ?? 0)) / 2 - 4)
+        }
+        ctx.globalAlpha = 1
+      }
+
+      // ── Nodes ───────────────────────────────────────────────────────
+      ctx.lineWidth = 1.5
+      ctx.strokeStyle = bgCol
+      for (const n of nodes) {
+        if (!visible(n, box)) continue
+        const r = radiusCache.get(n.id) ?? 7
+        const dimmed = activeIds && !neighbors!.has(n.id)
+        const x = n.x!
+        const y = n.y!
+        ctx.globalAlpha = dimmed ? 0.15 : 1
+        ctx.fillStyle = colorCache.get(n.id) ?? '#888'
+        ctx.beginPath()
+        ctx.arc(x, y, r, 0, Math.PI * 2)
+        ctx.fill()
+        ctx.stroke()
+
+        // Selection ring
+        if (n.id === sid) {
+          ctx.globalAlpha = 1
+          ctx.beginPath()
+          ctx.arc(x, y, r + 4, 0, Math.PI * 2)
+          ctx.strokeStyle = primaryCol
+          ctx.lineWidth = 2
+          ctx.stroke()
+          ctx.strokeStyle = bgCol
+          ctx.lineWidth = 1.5
+        }
+
+        // Icon (drawn only when zoomed in enough and node isn't dimmed)
+        if (opt.icon && currentZoom.k > 0.55 && !dimmed) {
+          const img = iconBitmaps.get(n.type)
+          if (img && img.complete && img.naturalWidth > 0) {
+            const iconSize = r * 1.1
+            ctx.drawImage(img, x - iconSize / 2, y - iconSize / 2, iconSize, iconSize)
+          }
+        }
+      }
+      ctx.globalAlpha = 1
+
+      // ── Labels ──────────────────────────────────────────────────────
+      if (opt.label && currentZoom.k > 0.35) {
+        const labelOpacity = Math.min(1, Math.max(0.2, (currentZoom.k - 0.15) / 1.5))
+        ctx.globalAlpha = labelOpacity
+        ctx.fillStyle = mutedCol
+        ctx.font = '10px system-ui, sans-serif'
+        ctx.textAlign = 'center'
+        ctx.textBaseline = 'alphabetic'
+        for (const n of nodes) {
+          if (!visible(n, box)) continue
+          if (activeIds && !neighbors!.has(n.id)) continue
+          const r = radiusCache.get(n.id) ?? 7
+          const label = n.label.length > 18 ? n.label.slice(0, 18) + '…' : n.label
+          ctx.fillText(label, n.x!, n.y! + r + 12)
+        }
+        ctx.globalAlpha = 1
+      }
+    }
+
+    // ── Minimap ───────────────────────────────────────────────────────
+    const miniCtx = minimapCanvas?.getContext('2d', { alpha: true }) ?? null
+    if (minimapCanvas) {
+      minimapCanvas.width = Math.round(MINIMAP_W * dpr)
+      minimapCanvas.height = Math.round(MINIMAP_H * dpr)
+      minimapCanvas.style.width = MINIMAP_W + 'px'
+      minimapCanvas.style.height = MINIMAP_H + 'px'
+    }
+
+    function drawMinimap() {
+      if (!miniCtx || !minimapCanvas) return
+      // Bounds
+      let minX = Infinity,
+        minY = Infinity,
+        maxX = -Infinity,
+        maxY = -Infinity
       for (const n of nodes) {
         const x = n.x ?? 0
         const y = n.y ?? 0
@@ -996,29 +1161,78 @@
         if (y < minY) minY = y
         if (x > maxX) maxX = x
         if (y > maxY) maxY = y
-        miniData.push({ id: n.id, x, y, color: nodeColor(n) })
       }
-      if (isFinite(minX)) {
-        minimapBounds.value = { minX, minY, maxX, maxY }
-        minimapNodes.value = miniData
+      if (!isFinite(minX)) return
+      const pad = 50
+      const viewX = minX - pad
+      const viewY = minY - pad
+      const viewW = Math.max(1, maxX - minX + pad * 2)
+      const viewH = Math.max(1, maxY - minY + pad * 2)
+      const sx = MINIMAP_W / viewW
+      const sy = MINIMAP_H / viewH
+      const s = Math.min(sx, sy)
+      const offsetX = (MINIMAP_W - viewW * s) / 2
+      const offsetY = (MINIMAP_H - viewH * s) / 2
+
+      miniCtx.setTransform(1, 0, 0, 1, 0, 0)
+      miniCtx.clearRect(0, 0, minimapCanvas.width, minimapCanvas.height)
+      miniCtx.setTransform(dpr * s, 0, 0, dpr * s, dpr * (offsetX - viewX * s), dpr * (offsetY - viewY * s))
+
+      // Viewport rect
+      const vk = currentZoom.k || 1
+      const vx = -currentZoom.x / vk
+      const vy = -currentZoom.y / vk
+      const vw = width / vk
+      const vh = height / vk
+      // Stroke/dot radii are expressed in world units; dividing by the
+      // world→minimap scale `s` keeps them at a constant on-screen size.
+      miniCtx.fillStyle = primaryCol
+      miniCtx.globalAlpha = 0.08
+      miniCtx.fillRect(vx, vy, vw, vh)
+      miniCtx.globalAlpha = 0.6
+      miniCtx.strokeStyle = primaryCol
+      miniCtx.lineWidth = 1.5 / s
+      miniCtx.strokeRect(vx, vy, vw, vh)
+
+      // Node dots — target ~1.6px on screen
+      miniCtx.globalAlpha = 0.85
+      const dotR = 1.6 / s
+      for (const n of nodes) {
+        miniCtx.fillStyle = colorCache.get(n.id) ?? '#888'
+        miniCtx.beginPath()
+        miniCtx.arc(n.x!, n.y!, dotR, 0, Math.PI * 2)
+        miniCtx.fill()
       }
+      miniCtx.globalAlpha = 1
+    }
 
-      draw()
+    // Apply the cached zoom transform now that every local the
+    // 'zoom' handler closes over is initialized.
+    if (cache?.zoom) {
+      canvasSel.call(
+        zoomBehavior.transform as any,
+        zoomIdentity.translate(cache.zoom.x, cache.zoom.y).scale(cache.zoom.k),
+      )
+    }
 
-      // Persist positions once the simulation has settled
-      if (simulation.alpha() < 0.01) {
-        savePositions(nodes, hash, { k: currentZoom.k, x: currentZoom.x, y: currentZoom.y })
-      }
-    })
-
-    draw()
+    // Start the loop
+    ensureRaf()
 
     return () => {
-      // Save final positions before teardown
+      // Save final state before teardown
       savePositions(nodes, hash, { k: currentZoom.k, x: currentZoom.x, y: currentZoom.y })
       if (raf) cancelAnimationFrame(raf)
+      if (persistTimer) clearTimeout(persistTimer)
       simulation.stop()
-      svg.on('wheel.pan', null)
+      ro.disconnect()
+      stopHoverWatch()
+      canvas.removeEventListener('wheel', onWheelPan)
+      canvas.removeEventListener('pointermove', onPointerMove)
+      canvas.removeEventListener('pointerdown', onPointerDown)
+      canvas.removeEventListener('pointerup', onPointerUp)
+      canvas.removeEventListener('pointercancel', onPointerUp)
+      canvas.removeEventListener('pointerleave', onPointerLeave)
+      canvasSel.on('.zoom', null)
       _zoomToNode = null
       _applySelection = null
     }
@@ -1027,14 +1241,20 @@
   // ── Init ──────────────────────────────────────────────────────────────
 
   function initGraph() {
-    if (!svgRef.value || visibleGraphNodes.value.length === 0) return
+    if (!canvasWrapRef.value || !canvasRef.value || visibleGraphNodes.value.length === 0) return
     if (cleanup) {
       cleanup()
       cleanup = null
     }
     const visibleIds = new Set(visibleGraphNodes.value.map((n) => n.id))
     const filteredEdges = graphEdges.value.filter((e) => visibleIds.has(e.source) && visibleIds.has(e.target))
-    cleanup = renderForceGraph(svgRef.value, [...visibleGraphNodes.value], filteredEdges)
+    cleanup = renderForceGraph(
+      canvasWrapRef.value,
+      canvasRef.value,
+      minimapCanvasRef.value,
+      [...visibleGraphNodes.value],
+      filteredEdges,
+    )
   }
 
   // ── Lifecycle ─────────────────────────────────────────────────────────
@@ -1042,33 +1262,59 @@
   onMounted(async () => {
     graphTypesSidebar.activate()
     await fetchGraphData()
+    lastTopologyFingerprint = topologyFingerprint()
     await nextTick()
     initGraph()
   })
+
+  // Fingerprint of the current graph topology — node IDs + edge tuples.
+  // Re-init the renderer only when this actually changes, so noisy SSE
+  // `mutation` bumps (which can fire on unrelated writes) don't restart
+  // the physics every click.
+  let lastTopologyFingerprint = ''
+  function topologyFingerprint(): string {
+    const ids = graphNodes.value
+      .map((n) => n.id)
+      .sort()
+      .join('|')
+    const edges = graphEdges.value
+      .map((e) => `${e.source}>${e.target}:${e.type}`)
+      .sort()
+      .join('|')
+    return ids + '||' + edges
+  }
 
   watch(
     () => graph.graphVersion.value,
     async () => {
       await fetchGraphData()
+      const fp = topologyFingerprint()
+      if (fp === lastTopologyFingerprint) return // no structural change
+      lastTopologyFingerprint = fp
       await nextTick()
       initGraph()
     },
   )
 
-  watch([graphNodes, graphEdges], () => {
-    nextTick(() => initGraph())
-  })
-
+  // Visibility toggles from the sidebar re-init the graph with the new
+  // filtered set. `toggle()` in useGraphTypesSidebar replaces the whole
+  // visibility object, so a shallow ref-equality watch is all we need.
+  // Coalesce rapid toggles (e.g. "hide all") into a single re-init.
+  let visibilityTimer: ReturnType<typeof setTimeout> | null = null
   watch(
     () => graphTypesSidebar.state.value.visibility,
     () => {
-      nextTick(() => initGraph())
+      if (visibilityTimer) clearTimeout(visibilityTimer)
+      visibilityTimer = setTimeout(() => {
+        visibilityTimer = null
+        initGraph()
+      }, 50)
     },
-    { deep: true },
   )
 
   onBeforeUnmount(() => {
     graphTypesSidebar.deactivate()
+    if (visibilityTimer) clearTimeout(visibilityTimer)
     if (cleanup) {
       cleanup()
       cleanup = null
@@ -1094,22 +1340,30 @@
     <!-- Visualization -->
     <div v-else class="flex h-full w-full">
       <!-- ── Graph canvas ── -->
-      <div class="relative flex-1 overflow-hidden">
-        <!-- SVG canvas -->
-        <svg ref="svgRef" class="absolute inset-0 w-full h-full" style="touch-action: none" />
+      <div ref="canvasWrapRef" class="relative flex-1 overflow-hidden">
+        <canvas ref="canvasRef" class="absolute inset-0 h-full w-full" style="touch-action: none" />
 
         <!-- Layout Toggle (top-left) -->
-        <div class="absolute top-3 left-3 z-10 flex items-center gap-1 bg-card/90 backdrop-blur-sm border border-border rounded-lg p-1 pointer-events-auto shadow-sm">
-          <button 
-            @click="currentLayout = 'physics'" 
+        <div
+          class="absolute top-3 left-3 z-10 flex items-center gap-1 bg-card/90 backdrop-blur-sm border border-border rounded-lg p-1 pointer-events-auto shadow-sm">
+          <button
+            @click="currentLayout = 'physics'"
             class="px-2.5 py-1 rounded text-[11px] font-medium transition-colors"
-            :class="currentLayout === 'physics' ? 'bg-primary text-primary-foreground' : 'text-muted-foreground hover:bg-muted hover:text-foreground'">
+            :class="
+              currentLayout === 'physics'
+                ? 'bg-primary text-primary-foreground'
+                : 'text-muted-foreground hover:bg-muted hover:text-foreground'
+            ">
             Physics
           </button>
-          <button 
-            @click="currentLayout = 'type'" 
+          <button
+            @click="currentLayout = 'type'"
             class="px-2.5 py-1 rounded text-[11px] font-medium transition-colors"
-            :class="currentLayout === 'type' ? 'bg-primary text-primary-foreground' : 'text-muted-foreground hover:bg-muted hover:text-foreground'">
+            :class="
+              currentLayout === 'type'
+                ? 'bg-primary text-primary-foreground'
+                : 'text-muted-foreground hover:bg-muted hover:text-foreground'
+            ">
             By Type
           </button>
         </div>
@@ -1128,7 +1382,9 @@
               :style="{ background: hoveredNodeMeta.color + '22', color: hoveredNodeMeta.color }">
               <Icon :name="hoveredNodeMeta.icon" class="h-3 w-3" />
             </span>
-            <span class="text-[10px] uppercase tracking-wide text-muted-foreground">{{ hoveredNodeMeta.typeLabel }}</span>
+            <span class="text-[10px] uppercase tracking-wide text-muted-foreground">
+              {{ hoveredNodeMeta.typeLabel }}
+            </span>
             <span
               v-if="hoveredNodeMeta.status"
               class="text-[10px] px-1.5 py-0.5 rounded bg-muted text-muted-foreground ml-auto">
@@ -1138,40 +1394,17 @@
           <div class="text-sm font-medium text-foreground truncate">{{ hoveredNodeMeta.label }}</div>
         </div>
 
-        <!-- Minimap (bottom-left) -->
+        <!-- Minimap (bottom-left) — rendered directly to canvas by the renderer -->
         <div
-          v-if="minimapNodes.length > 0"
-          class="absolute bottom-3 left-3 z-10 rounded-lg border border-border bg-card/95 backdrop-blur-sm overflow-hidden shadow-sm"
+          v-show="totalNodeCount > 0"
+          class="absolute bottom-3 left-3 z-10 overflow-hidden rounded-lg border border-border bg-card/95 shadow-sm backdrop-blur-sm"
           :style="{ width: `${MINIMAP_W}px`, height: `${MINIMAP_H}px` }">
-          <svg
-            :viewBox="`${minimapViewBox.x} ${minimapViewBox.y} ${minimapViewBox.w} ${minimapViewBox.h}`"
-            preserveAspectRatio="xMidYMid meet"
-            class="h-full w-full">
-            <!-- Viewport rectangle -->
-            <rect
-              :x="minimapViewport.x"
-              :y="minimapViewport.y"
-              :width="minimapViewport.w"
-              :height="minimapViewport.h"
-              fill="var(--primary)"
-              fill-opacity="0.08"
-              stroke="var(--primary)"
-              stroke-opacity="0.6"
-              :stroke-width="Math.max(2, minimapViewBox.w / 150)" />
-            <!-- Node dots -->
-            <circle
-              v-for="n in minimapNodes"
-              :key="n.id"
-              :cx="n.x"
-              :cy="n.y"
-              :r="Math.max(3, minimapViewBox.w / 120)"
-              :fill="n.color"
-              opacity="0.85" />
-          </svg>
+          <canvas ref="minimapCanvasRef" class="block h-full w-full" />
         </div>
 
         <!-- Controls & Stats badge (bottom-right) -->
-        <div class="absolute bottom-3 right-3 z-10 flex items-center gap-3">          <div
+        <div class="absolute bottom-3 right-3 z-10 flex items-center gap-3">
+          <div
             class="flex items-center gap-2 text-xs text-muted-foreground bg-card/90 backdrop-blur-sm border border-border rounded-lg px-3 py-1.5 font-mono">
             <span>
               {{ visibleNodeCount }}
@@ -1179,7 +1412,9 @@
               {{ visibleNodeCount === 1 ? 'node' : 'nodes' }}
             </span>
             <span v-if="visibleEdgeCount > 0" class="opacity-40">·</span>
-            <span v-if="visibleEdgeCount > 0">{{ visibleEdgeCount }} {{ visibleEdgeCount === 1 ? 'edge' : 'edges' }}</span>
+            <span v-if="visibleEdgeCount > 0">
+              {{ visibleEdgeCount }} {{ visibleEdgeCount === 1 ? 'edge' : 'edges' }}
+            </span>
           </div>
         </div>
       </div>

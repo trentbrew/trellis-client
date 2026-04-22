@@ -30,8 +30,23 @@
       summary?: string
       /** Whether the summary is currently being generated */
       isGeneratingSummary?: boolean
-      /** Presentation variant: 'dialog' (portal overlay) or 'inset' (inline panel) */
-      variant?: 'dialog' | 'inset'
+      /**
+       * Entity type identifier (e.g. 'email', 'task'). Used by the shell to
+       * specialize behaviour for certain types — currently:
+       * - 'email' → render description as a read-only AI summary (no editable
+       *   textarea), since summaries are owned by the gmail ingest pipeline.
+       */
+      itemType?: string
+      /**
+       * Presentation variant.
+       * - 'dialog': portal overlay modal (default)
+       * - 'inset': narrow (420px) right-anchored panel with tabbed layout
+       * - 'inline': fills its parent container; same 3-column layout as 'dialog'
+       *   but rendered inline without the UiDialog portal, resize handles, or
+       *   stack-aware chrome. Use this when embedding the entity UI inside a
+       *   page (e.g. the mail viewer).
+       */
+      variant?: 'dialog' | 'inset' | 'inline'
     }>(),
     {
       mode: 'edit',
@@ -39,11 +54,16 @@
       canNavigateNext: false,
       summary: '',
       isGeneratingSummary: false,
+      itemType: undefined,
       variant: 'dialog',
     },
   )
 
+  /** Whether the description block should render as read-only AI summary. */
+  const isAiOnlyDescription = computed(() => props.itemType === 'email')
+
   const isInset = computed(() => props.variant === 'inset')
+  const isInline = computed(() => props.variant === 'inline')
 
   const emit = defineEmits<{
     'update:open': [value: boolean]
@@ -80,16 +100,18 @@
   } = useDialogStackAware()
 
   // ── Originating-dialog tracking (for backdrop blur on pages route) ──
+  // Only the modal 'dialog' variant participates in the stack — 'inset' and
+  // 'inline' render inline and must not influence modal backdrop state.
   const { setOriginatingDialogOpen } = useDialogStack()
   watch(
     () => props.open,
     (val) => {
-      if (!isStacked.value && !isInset.value) setOriginatingDialogOpen(val)
+      if (!isStacked.value && !isInset.value && !isInline.value) setOriginatingDialogOpen(val)
     },
     { immediate: true },
   )
   onUnmounted(() => {
-    if (!isStacked.value && !isInset.value) setOriginatingDialogOpen(false)
+    if (!isStacked.value && !isInset.value && !isInline.value) setOriginatingDialogOpen(false)
   })
 
   // ── Resize logic ──────────────────────────────────────────────────────
@@ -199,8 +221,109 @@
 </script>
 
 <template>
+  <!-- ═══ Inline variant — fills parent container, no portal/modal ═══ -->
+  <div v-if="isInline" v-show="open" class="h-full w-full flex flex-col bg-card overflow-hidden relative">
+    <h2 class="sr-only">{{ dialogTitle || title || 'Item' }}</h2>
+    <p class="sr-only">{{ dialogDescription || 'Item details.' }}</p>
+
+    <!-- Header -->
+    <div class="shrink-0 border-b border-border">
+      <div class="px-4 pt-4 pb-3">
+        <div class="flex items-center justify-between gap-3 mb-3">
+          <div class="flex items-center gap-2 min-w-0">
+            <span
+              v-if="typeBadge"
+              class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-medium bg-primary/10 text-primary">
+              <Icon :name="typeBadge.icon" class="h-3 w-3" />
+              {{ typeBadge.label }}
+            </span>
+            <slot name="header-badges" />
+          </div>
+          <div class="flex items-center gap-1 shrink-0">
+            <template v-if="!isCreateMode">
+              <UiButton
+                variant="ghost"
+                size="icon"
+                class="h-7 w-7"
+                :disabled="!canNavigatePrev"
+                title="Previous"
+                @click="emit('navigatePrev')">
+                <Icon name="lucide:chevron-up" class="h-4 w-4" />
+              </UiButton>
+              <UiButton
+                variant="ghost"
+                size="icon"
+                class="h-7 w-7"
+                :disabled="!canNavigateNext"
+                title="Next"
+                @click="emit('navigateNext')">
+                <Icon name="lucide:chevron-down" class="h-4 w-4" />
+              </UiButton>
+            </template>
+            <UiButton variant="ghost" size="icon" class="h-7 w-7" title="Close" @click="closeDialog">
+              <Icon name="lucide:x" class="h-4 w-4" />
+            </UiButton>
+          </div>
+        </div>
+        <input
+          v-if="!isViewMode"
+          :value="title"
+          type="text"
+          :placeholder="titlePlaceholder || 'Item name...'"
+          spellcheck="false"
+          class="w-full text-xl font-semibold bg-transparent border border-transparent outline-none placeholder:text-muted-foreground/50 focus:ring-0 hover:border-border hover:bg-muted/20 focus:border-border focus:bg-muted/20 rounded-md px-2 py-0 -mx-1 transition-all"
+          @input="emit('update:title', ($event.target as HTMLInputElement).value)" />
+        <h2 v-else class="text-xl font-semibold px-1">{{ title }}</h2>
+        <div class="mt-1 px-1">
+          <EntityDescriptionBlock
+            :description="description"
+            :summary="summary"
+            :is-generating-summary="isGeneratingSummary"
+            :mode="mode"
+            :entity-id="entityId"
+            :ai-only="isAiOnlyDescription"
+            @update:description="emit('update:description', $event)"
+            @regenerate-summary="emit('regenerateSummary')" />
+        </div>
+        <div v-if="$slots['header-tags']" class="mt-2 px-1">
+          <slot name="header-tags" />
+        </div>
+      </div>
+    </div>
+
+    <!-- Properties Row -->
+    <div v-if="$slots.properties" class="bg-card px-4 py-2.5 border-b border-border shrink-0">
+      <div class="flex items-center gap-1.5 text-xs overflow-x-auto scrollbar-none whitespace-nowrap">
+        <slot name="properties" />
+        <slot name="properties-tags" />
+        <slot name="extension-properties" />
+      </div>
+    </div>
+
+    <!-- Comments -->
+    <div v-if="$slots.comments" class="shrink-0 border-b border-border">
+      <slot name="comments" />
+    </div>
+
+    <!-- Content Area — 3-column layout delegated to default slot -->
+    <div class="flex-1 flex min-h-0 overflow-hidden">
+      <slot />
+    </div>
+
+    <!-- Footer -->
+    <div class="border-t border-border px-4 py-3 shrink-0 bg-muted/10 flex items-center justify-between">
+      <div class="flex items-center gap-3 text-xs text-muted-foreground">
+        <slot name="footer-left" />
+      </div>
+      <div class="flex items-center gap-2">
+        <slot name="footer-right" />
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══ Inset variant — narrow right panel with tabbed layout ═══ -->
   <div
-    v-if="isInset"
+    v-else-if="isInset"
     v-show="open"
     class="absolute inset-y-0 right-0 w-[420px] z-20 flex flex-col bg-card/80 backdrop-blur-xl border-l border-border shadow-xl overflow-hidden">
     <h2 class="sr-only">{{ dialogTitle || title || 'Item' }}</h2>
@@ -241,6 +364,7 @@
             :is-generating-summary="isGeneratingSummary"
             :mode="mode"
             :entity-id="entityId"
+            :ai-only="isAiOnlyDescription"
             @update:description="emit('update:description', $event)"
             @regenerate-summary="emit('regenerateSummary')" />
         </div>
@@ -367,6 +491,7 @@
               :is-generating-summary="isGeneratingSummary"
               :mode="mode"
               :entity-id="entityId"
+              :ai-only="isAiOnlyDescription"
               @update:description="emit('update:description', $event)"
               @regenerate-summary="emit('regenerateSummary')" />
           </div>

@@ -76,7 +76,7 @@ export interface SendMessageOptions {
 // ── Composable ────────────────────────────────────────────────────────
 
 export function useGmail() {
-  const { mutate } = useTrellisGraph()
+  const { mutate, fetchNode } = useTrellisGraph()
   const { getConnection, getConnections } = useIntegrations()
   const { user } = useInstantAuth()
 
@@ -235,44 +235,73 @@ export function useGmail() {
     const conn = connectionId ? connections.value.find((c) => c.id === connectionId) : connection.value
     const connEntityId = conn ? (conn.id.startsWith('entity:') ? conn.id : toEntityId(conn.id)) : undefined
 
-    const data: Record<string, any> = {
-      type: 'email',
-      title: firstMsg.subject || '(no subject)',
-      subject: firstMsg.subject,
-      snippet: firstMsg.snippet,
-      from: firstMsg.from,
-      to: firstMsg.to,
-      cc: firstMsg.cc,
-      date: firstMsg.date,
-      labelIds: thread.labelIds,
-      threadId: thread.id,
-      messageId: firstMsg.messageId,
-      isRead: !thread.labelIds.includes('UNREAD'),
-      isStarred: thread.labelIds.includes('STARRED'),
-      bodyText: firstMsg.bodyText,
-      bodyHtml: firstMsg.bodyHtml,
-      source: 'gmail',
-      gmailMessageId: firstMsg.id,
-      gmailThreadId: thread.id,
-      pinned: false,
-      ...(connEntityId ? { connectionId: connEntityId } : {}),
+    // Check whether the entity already exists so we can avoid the
+    // destructive `createNode` path — which wipes ALL facts including
+    // any AI enrichment written by the gmail-notifier pipeline. We only
+    // do a full create on the very first persistence of a thread.
+    let existed = false
+    try {
+      const existing = await fetchNode(eid)
+      existed = !!existing?.node
+    } catch {
+      existed = false
     }
 
-    await mutate({
-      action: 'createNode',
-      entityId: eid,
-      type: 'entity',
-      data,
-    })
+    if (!existed) {
+      const data: Record<string, any> = {
+        type: 'email',
+        title: firstMsg.subject || '(no subject)',
+        subject: firstMsg.subject,
+        snippet: firstMsg.snippet,
+        from: firstMsg.from,
+        to: firstMsg.to,
+        cc: firstMsg.cc,
+        date: firstMsg.date,
+        labelIds: thread.labelIds,
+        threadId: thread.id,
+        messageId: firstMsg.messageId,
+        isRead: !thread.labelIds.includes('UNREAD'),
+        isStarred: thread.labelIds.includes('STARRED'),
+        bodyText: firstMsg.bodyText,
+        bodyHtml: firstMsg.bodyHtml,
+        source: 'gmail',
+        gmailMessageId: firstMsg.id,
+        gmailThreadId: thread.id,
+        pinned: false,
+        ...(connEntityId ? { connectionId: connEntityId } : {}),
+      }
 
-    // Provenance edge: persisted email → source integration connection.
-    // Idempotent — kernel dedupes duplicate edges.
-    if (connEntityId) {
       await mutate({
-        action: 'link',
-        e1: eid,
-        relation: 'derivedFrom',
-        e2: connEntityId,
+        action: 'createNode',
+        entityId: eid,
+        type: 'entity',
+        data,
+      })
+
+      // Provenance edge: persisted email → source integration connection.
+      // Idempotent — kernel dedupes duplicate edges.
+      if (connEntityId) {
+        await mutate({
+          action: 'link',
+          e1: eid,
+          relation: 'derivedFrom',
+          e2: connEntityId,
+        })
+      }
+    } else {
+      // Refresh only the volatile Gmail-owned fields on re-open — label
+      // changes (starred, read, folders) should still sync, but AI
+      // enrichment + user-owned fields (tags, references) stay intact.
+      await mutate({
+        action: 'updateNode',
+        entityId: eid,
+        type: 'entity',
+        data: {
+          labelIds: thread.labelIds,
+          isRead: !thread.labelIds.includes('UNREAD'),
+          isStarred: thread.labelIds.includes('STARRED'),
+          snippet: firstMsg.snippet,
+        },
       })
     }
 

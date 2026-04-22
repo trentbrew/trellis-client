@@ -117,6 +117,66 @@ const groupedItems = computed(() => {
     .map((cls) => ({ class: cls, ...CLASS_META[cls], items: groups[cls] ?? [] }))
 })
 
+// ── Lazy load / infinite scroll ───────────────────────────────────────────
+
+const PAGE_SIZE = 48
+const displayLimit = ref(PAGE_SIZE)
+const sentinelRef = ref<HTMLElement | null>(null)
+
+const visibleItems = computed(() => filteredItems.value.slice(0, displayLimit.value))
+
+const visibleGroupedItems = computed(() => {
+  if (!groupedItems.value) return null
+  let remaining = displayLimit.value
+  return groupedItems.value.map((g) => {
+    const take = Math.max(0, remaining)
+    const slice = g.items.slice(0, take)
+    remaining -= slice.length
+    return { ...g, items: slice }
+  })
+})
+
+const hasMore = computed(() => displayLimit.value < filteredItems.value.length)
+
+watch([() => browseState.searchQuery.value, activeTypeParam, viewMode, groupByClass], () => {
+  displayLimit.value = PAGE_SIZE
+})
+
+function findScrollParent(el: HTMLElement | null): HTMLElement | null {
+  let cur = el?.parentElement || null
+  while (cur) {
+    const { overflowY } = getComputedStyle(cur)
+    if (overflowY === 'auto' || overflowY === 'scroll') return cur
+    cur = cur.parentElement
+  }
+  return null
+}
+
+let scrollObserver: IntersectionObserver | null = null
+
+watch(sentinelRef, (el) => {
+  scrollObserver?.disconnect()
+  scrollObserver = null
+  if (!el || typeof IntersectionObserver === 'undefined') return
+  const root = findScrollParent(el)
+  scrollObserver = new IntersectionObserver(
+    (entries) => {
+      for (const entry of entries) {
+        if (entry.isIntersecting && hasMore.value) {
+          displayLimit.value += PAGE_SIZE
+        }
+      }
+    },
+    { root, rootMargin: '400px' },
+  )
+  scrollObserver.observe(el)
+})
+
+onUnmounted(() => {
+  scrollObserver?.disconnect()
+  scrollObserver = null
+})
+
 // ── Adaptive view modes ───────────────────────────────────────────────────
 
 const viewModeOptions = computed(() => {
@@ -260,8 +320,8 @@ onUnmounted(() => {
     </template>
 
     <!-- Grouped by class view -->
-    <template v-else-if="groupByClass && groupedItems">
-      <div v-for="group in groupedItems" :key="group.class" class="mb-8">
+    <template v-else-if="groupByClass && visibleGroupedItems">
+      <div v-for="group in visibleGroupedItems" :key="group.class" class="mb-8">
         <!-- Group header -->
         <div class="flex items-center gap-2 mb-3">
           <Icon :name="group.icon || 'lucide:circle'" :class="`h-4 w-4 shrink-0 ${group.color || ''}`" />
@@ -298,7 +358,7 @@ onUnmounted(() => {
       <!-- Grid -->
       <div v-if="viewMode === 'grid' || !['grid', 'list', 'table', 'moodboard'].includes(viewMode)"
         class="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-        <EntityCard v-for="item in filteredItems" :key="item.id" :item="item" layout="grid" editable
+        <EntityCard v-for="item in visibleItems" :key="item.id" :item="item" layout="grid" editable
           :selected="isSelected(item.id)" @click="openDetail(item)" @select="toggleSelection(item.id, $event)"
           @field-update="(fieldId: PropertyFieldId, value: unknown) => handleFieldUpdate(item, fieldId, value)" />
         <div v-if="!filteredItems.length"
@@ -315,7 +375,7 @@ onUnmounted(() => {
 
       <!-- Moodboard -->
       <div v-else-if="viewMode === 'moodboard'" class="columns-2 sm:columns-3 lg:columns-4 xl:columns-5 gap-4">
-        <EntityCard v-for="item in filteredItems" :key="item.id" :item="item" layout="moodboard" editable
+        <EntityCard v-for="item in visibleItems" :key="item.id" :item="item" layout="moodboard" editable
           :selected="isSelected(item.id)" @click="openDetail(item)" @select="toggleSelection(item.id, $event)"
           @field-update="(fieldId: PropertyFieldId, value: unknown) => handleFieldUpdate(item, fieldId, value)" />
         <div v-if="!filteredItems.length" class="flex items-center justify-center h-40 text-sm text-muted-foreground">
@@ -325,7 +385,7 @@ onUnmounted(() => {
 
       <!-- List -->
       <div v-else-if="viewMode === 'list'" class="flex flex-col gap-2">
-        <EntityCard v-for="item in filteredItems" :key="item.id" :item="item" layout="list" editable
+        <EntityCard v-for="item in visibleItems" :key="item.id" :item="item" layout="list" editable
           :selected="isSelected(item.id)" @click="openDetail(item)" @select="toggleSelection(item.id, $event)"
           @field-update="(fieldId: PropertyFieldId, value: unknown) => handleFieldUpdate(item, fieldId, value)" />
         <div v-if="!filteredItems.length"
@@ -349,7 +409,7 @@ onUnmounted(() => {
             </tr>
           </thead>
           <tbody>
-            <tr v-for="item in filteredItems" :key="item.id"
+            <tr v-for="item in visibleItems" :key="item.id"
               class="border-b border-border/50 hover:bg-muted/30 cursor-pointer transition-colors"
               @click="openDetail(item)">
               <td class="py-2 px-3">
@@ -395,9 +455,19 @@ onUnmounted(() => {
       </div>
     </template>
 
+    <!-- Infinite-scroll sentinel — loads next page when it enters the viewport -->
+    <div
+      v-if="viewMode !== 'graph' && hasMore"
+      ref="sentinelRef"
+      class="flex items-center justify-center py-6 text-xs text-muted-foreground gap-2">
+      <Icon name="lucide:loader-2" class="h-3.5 w-3.5 animate-spin opacity-60" />
+      Loading more…
+    </div>
+
     <!-- Results count (hidden in graph mode since the graph has its own stats badge) -->
     <div v-if="viewMode !== 'graph'" class="text-xs text-muted-foreground mt-4 pt-4 border-t border-border pb-10">
-      Showing {{ filteredItems.length }} {{ filteredItems.length === 1 ? 'item' : 'items' }}
+      Showing {{ Math.min(displayLimit, filteredItems.length) }} of {{ filteredItems.length }}
+      {{ filteredItems.length === 1 ? 'item' : 'items' }}
       <span v-if="browseState.searchQuery.value">for "{{ browseState.searchQuery.value }}"</span>
     </div>
 

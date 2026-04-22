@@ -50,6 +50,7 @@
     'cell-click': [date: Date]
     'create-request': [date: Date, typeLabel: string]
     'event-reschedule': [eventId: string, newDate: Date]
+    'event-resize': [eventId: string, edge: 'start' | 'end', newDate: Date]
   }>()
 
   // Calendar view mode + current date + today ref: shared with CalendarSidebarPanel via composable
@@ -751,6 +752,9 @@
     if (!e.dataTransfer) return
     draggedEvent.value = event
     e.dataTransfer.effectAllowed = 'move'
+    // WebKit requires text/plain or the drag never initializes.
+    // Custom mime marks this as an internal drag so global dropzone ignores it.
+    e.dataTransfer.setData('application/x-trellis-event', event.id)
     e.dataTransfer.setData('text/plain', event.id)
   }
 
@@ -781,6 +785,63 @@
   }
 
   const isDragOver = (date: Date): boolean => !!(dragOverDate.value && isSameDay(dragOverDate.value, date))
+
+  // ── Resize multi-day events ─────────────────────────────────────────
+  const resizingEvent = ref<{ event: CalendarEvent; edge: 'start' | 'end' } | null>(null)
+  const resizeHoverDate = ref<Date | null>(null)
+
+  const dateFromCellEl = (el: Element | null): Date | null => {
+    let cur: Element | null = el
+    while (cur) {
+      const ds = (cur as HTMLElement).dataset?.date
+      if (ds) {
+        const [y, m, d] = ds.split('-').map(Number)
+        if (y && m && d) return new Date(y, m - 1, d)
+      }
+      cur = cur.parentElement
+    }
+    return null
+  }
+
+  const onResizeStart = (e: PointerEvent, event: CalendarEvent, edge: 'start' | 'end') => {
+    e.preventDefault()
+    e.stopPropagation()
+    if (event.typeLabel === 'GoogleCalendar') return
+    resizingEvent.value = { event, edge }
+    resizeHoverDate.value = null
+    const handle = e.currentTarget as HTMLElement
+    try {
+      handle.setPointerCapture(e.pointerId)
+    } catch {}
+    document.body.style.cursor = 'ew-resize'
+    document.body.style.userSelect = 'none'
+
+    const onMove = (ev: PointerEvent) => {
+      const tgt = document.elementFromPoint(ev.clientX, ev.clientY)
+      const d = dateFromCellEl(tgt)
+      if (d) resizeHoverDate.value = d
+    }
+    const onUp = (ev: PointerEvent) => {
+      const tgt = document.elementFromPoint(ev.clientX, ev.clientY)
+      const d = dateFromCellEl(tgt) ?? resizeHoverDate.value
+      if (resizingEvent.value && d) {
+        emit('event-resize', resizingEvent.value.event.id, resizingEvent.value.edge, d)
+      }
+      resizingEvent.value = null
+      resizeHoverDate.value = null
+      document.body.style.cursor = ''
+      document.body.style.userSelect = ''
+      try {
+        handle.releasePointerCapture(ev.pointerId)
+      } catch {}
+      document.removeEventListener('pointermove', onMove)
+      document.removeEventListener('pointerup', onUp)
+      document.removeEventListener('pointercancel', onUp)
+    }
+    document.addEventListener('pointermove', onMove)
+    document.addEventListener('pointerup', onUp)
+    document.addEventListener('pointercancel', onUp)
+  }
 
   const isDayInPast = (date: Date): boolean => {
     const d = new Date(date.getFullYear(), date.getMonth(), date.getDate())
@@ -2131,6 +2192,7 @@
                     <div
                       v-for="(day, dayIdx) in weekViewDays"
                       :key="day.date.toISOString()"
+                      :data-date="`${day.date.getFullYear()}-${String(day.date.getMonth() + 1).padStart(2, '0')}-${String(day.date.getDate()).padStart(2, '0')}`"
                       :class="[
                         'px-2 py-1.5 border-r border-border/30 last:border-r-0 relative group/cell flex flex-col overflow-hidden transition-colors',
                         day.isToday
@@ -2186,7 +2248,7 @@
                         <div
                           v-for="(slot, laneIdx) in getLaneSlotsForDay(weekViewRow, dayIdx)"
                           :key="laneIdx"
-                          class="h-5">
+                          class="h-5 relative group/bar">
                           <template v-if="slot">
                             <UiHoverCard :open-delay="400" :close-delay="100">
                               <UiHoverCardTrigger as-child>
@@ -2247,6 +2309,16 @@
                                 </div>
                               </UiHoverCardContent>
                             </UiHoverCard>
+                            <div
+                              v-if="slot.isStart && slot.event.typeLabel !== 'GoogleCalendar'"
+                              class="absolute left-0 top-0 h-full w-1.5 cursor-ew-resize opacity-0 group-hover/bar:opacity-100 hover:bg-black/20 dark:hover:bg-white/30 rounded-l-md z-10"
+                              @pointerdown="(e: Event) => onResizeStart(e as PointerEvent, slot.event, 'start')"
+                              @click.stop />
+                            <div
+                              v-if="slot.isEnd && slot.event.typeLabel !== 'GoogleCalendar'"
+                              class="absolute right-0 top-0 h-full w-1.5 cursor-ew-resize opacity-0 group-hover/bar:opacity-100 hover:bg-black/20 dark:hover:bg-white/30 rounded-r-md z-10"
+                              @pointerdown="(e: Event) => onResizeStart(e as PointerEvent, slot.event, 'end')"
+                              @click.stop />
                           </template>
                           <div v-else class="h-full" />
                         </div>
@@ -2402,6 +2474,7 @@
                       <div
                         v-for="(day, dayIdx) in row.days"
                         :key="dayIdx"
+                        :data-date="`${day.date.getFullYear()}-${String(day.date.getMonth() + 1).padStart(2, '0')}-${String(day.date.getDate()).padStart(2, '0')}`"
                         :class="[
                           'px-2 py-1.5 border-b border-r border-border/30 relative group/cell flex flex-col overflow-hidden transition-colors',
                           'last:border-r-0 nth-[7n]:border-r-0',
@@ -2475,7 +2548,7 @@
                           <div
                             v-for="(slot, li) in getLaneSlotsForDay(row, dayIdx)"
                             :key="`lane-${li}`"
-                            class="h-5 mt-0.5">
+                            class="h-5 mt-0.5 relative group/bar">
                             <UiHoverCard v-if="slot" :open-delay="400" :close-delay="100">
                               <UiHoverCardTrigger as-child>
                                 <button
@@ -2545,6 +2618,16 @@
                                 </div>
                               </UiHoverCardContent>
                             </UiHoverCard>
+                            <div
+                              v-if="slot && slot.isStart && slot.event.typeLabel !== 'GoogleCalendar'"
+                              class="absolute left-0.5 top-0 h-full w-1.5 cursor-ew-resize opacity-0 group-hover/bar:opacity-100 hover:bg-black/20 dark:hover:bg-white/30 rounded-l-md z-10"
+                              @pointerdown="(e: Event) => onResizeStart(e as PointerEvent, slot.event, 'start')"
+                              @click.stop />
+                            <div
+                              v-if="slot && slot.isEnd && slot.event.typeLabel !== 'GoogleCalendar'"
+                              class="absolute right-0.5 top-0 h-full w-1.5 cursor-ew-resize opacity-0 group-hover/bar:opacity-100 hover:bg-black/20 dark:hover:bg-white/30 rounded-r-md z-10"
+                              @pointerdown="(e: Event) => onResizeStart(e as PointerEvent, slot.event, 'end')"
+                              @click.stop />
                           </div>
                         </div>
                         <!-- Single-day items: individual pills with overflow grouping -->

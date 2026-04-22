@@ -20,6 +20,10 @@
   const otherPrimaryRoutes = computed(() =>
     routes.primaryRailRoutes.value?.filter((r) => r.label?.toLowerCase() !== 'graph'),
   )
+
+  // Reactive badges keyed by route path — SSE-driven via notification graph.
+  // We compute once per icon, not per render, so consumers stay cheap.
+  const graphBadge = useRouteBadge(() => graphRoute.value?.path || '')
 </script>
 
 <template>
@@ -40,7 +44,7 @@
           <UiTooltipTrigger as-child>
             <AppNavLink
               :to="graphRoute.path"
-              class="group flex items-center justify-center rounded-full transition-all duration-200 ease-out overflow-hidden"
+              class="group relative flex items-center justify-center rounded-full transition-all duration-200 ease-out overflow-visible"
               :class="[
                 isBottom && routes.isRouteActive(graphRoute.path) ? 'h-9 px-4 gap-2' : 'h-9 w-9',
                 routes.isRouteActive(graphRoute.path)
@@ -65,6 +69,7 @@
                   {{ graphRoute.label }}
                 </span>
               </Transition>
+              <RailBadge :badge="graphBadge" />
             </AppNavLink>
           </UiTooltipTrigger>
           <UiTooltipContent
@@ -86,34 +91,11 @@
         <template v-for="route in otherPrimaryRoutes" :key="route.path">
           <UiTooltip>
             <UiTooltipTrigger as-child>
-              <AppNavLink
-                :to="route.path"
-                class="group flex items-center justify-center rounded-full transition-all duration-200 ease-out overflow-hidden"
-                :class="[
-                  isBottom && routes.isRouteActive(route.path) ? 'h-9 px-4 gap-2' : 'h-9 w-9',
-                  routes.isRouteActive(route.path)
-                    ? isInEditMode
-                      ? 'bg-accent-foreground/10 text-accent-foreground/80'
-                      : 'bg-rail-foreground/10 text-foreground'
-                    : isInEditMode
-                      ? 'text-accent-foreground/70 hover:bg-accent-foreground/10 hover:text-accent-foreground'
-                      : 'text-rail-foreground/70 hover:bg-rail-foreground/10 hover:text-rail-foreground',
-                ]">
-                <Icon :name="route.icon" class="h-4.5 w-4.5 opacity-60 shrink-0" />
-                <Transition
-                  enter-active-class="transition-all duration-200 ease-out"
-                  enter-from-class="opacity-0 max-w-0"
-                  enter-to-class="opacity-100 max-w-24"
-                  leave-active-class="transition-all duration-150 ease-in"
-                  leave-from-class="opacity-100 max-w-24"
-                  leave-to-class="opacity-0 max-w-0">
-                  <span
-                    v-if="isBottom && routes.isRouteActive(route.path)"
-                    class="text-xs font-bold tracking-tight whitespace-nowrap overflow-hidden">
-                    {{ route.label }}
-                  </span>
-                </Transition>
-              </AppNavLink>
+              <RailNavItem
+                :route="route"
+                :is-active="routes.isRouteActive(route.path)"
+                :is-bottom="isBottom"
+                :is-in-edit-mode="isInEditMode" />
             </UiTooltipTrigger>
             <UiTooltipContent
               :side="tooltipSide"

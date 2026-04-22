@@ -266,6 +266,15 @@
     viewDialogOpen.value = false
   }
 
+  function toIsoDate(d: Date): string {
+    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
+  }
+
+  function parseIsoDate(s: string): Date {
+    const [y, m, d] = s.split('-').map(Number)
+    return new Date(y!, (m ?? 1) - 1, d ?? 1)
+  }
+
   function handleEventReschedule(eventId: string, newDate: Date) {
     // CalendarView formats IDs as "item:{uuid}-{nodeIndex}-{valueIndex}".
     // Repeated instances append "-repeat-{n}".
@@ -275,8 +284,36 @@
       .replace(/-\d+-\d+$/, '')
     const item = items.value.find((i) => i.id === rawId)
     if (!item) return
-    const dateStr = `${newDate.getFullYear()}-${String(newDate.getMonth() + 1).padStart(2, '0')}-${String(newDate.getDate()).padStart(2, '0')}`
-    updateItem({ ...item, startDate: dateStr } as Entity)
+    const newStartStr = toIsoDate(newDate)
+    const patch: Partial<Entity> = { startDate: newStartStr }
+    if (item.startDate && item.endDate) {
+      const oldStart = parseIsoDate(item.startDate)
+      const oldEnd = parseIsoDate(item.endDate)
+      const deltaMs = newDate.getTime() - oldStart.getTime()
+      const newEnd = new Date(oldEnd.getTime() + deltaMs)
+      patch.endDate = toIsoDate(newEnd)
+    }
+    updateItem({ ...item, ...patch } as Entity)
+  }
+
+  function handleEventResize(eventId: string, edge: 'start' | 'end', newDate: Date) {
+    const rawId = eventId
+      .replace(/^item:/, '')
+      .replace(/-repeat-\d+$/, '')
+      .replace(/-\d+-\d+$/, '')
+    const item = items.value.find((i) => i.id === rawId)
+    if (!item) return
+    const newStr = toIsoDate(newDate)
+    if (edge === 'start') {
+      const endStr = item.endDate || item.startDate
+      if (endStr && newStr > endStr) return
+      updateItem({ ...item, startDate: newStr } as Entity)
+    } else {
+      const startStr = item.startDate
+      if (startStr && newStr < startStr) return
+      const patch: Partial<Entity> = startStr && newStr === startStr ? { endDate: undefined } : { endDate: newStr }
+      updateItem({ ...item, ...patch } as Entity)
+    }
   }
 </script>
 
@@ -291,7 +328,8 @@
       @task-click="handleEntityClick"
       @cell-click="handleCellClick"
       @create-request="handleCreateRequest"
-      @event-reschedule="handleEventReschedule">
+      @event-reschedule="handleEventReschedule"
+      @event-resize="handleEventResize">
       <!-- Create button in the calendar header (with type dropdown) -->
       <template #header-actions>
         <UiPopover>

@@ -13,7 +13,24 @@ const RECOVERABLE_PATTERNS = [
   'ERR_MODULE_NOT_FOUND',
   'worker entry not found',
   'worker not found',
+  'Worker terminated due to reaching memory limit',
+  'JS heap out of memory',
 ]
+
+// Give the dev process (and the Nitro dev worker it spawns) a generous
+// old-generation heap. Without this, Vite/Rollup's in-memory module graph
+// can push the worker past Node's default ceiling when the server tree
+// is large, producing an unrecoverable per-request OOM loop.
+// Preserves any NODE_OPTIONS the user already set.
+const HEAP_SIZE_MB = process.env.TRELLIS_DEV_HEAP_MB || '4096'
+function withHeapOptions(env = process.env) {
+  const existing = env.NODE_OPTIONS || ''
+  if (existing.includes('--max-old-space-size')) return env
+  return {
+    ...env,
+    NODE_OPTIONS: `${existing} --max-old-space-size=${HEAP_SIZE_MB}`.trim(),
+  }
+}
 
 let shuttingDown = false
 let activeChild = null
@@ -68,7 +85,7 @@ function runCommand(bin, args, options = {}) {
   return new Promise((resolvePromise) => {
     const child = spawn(bin, args, {
       stdio: ['inherit', 'pipe', 'pipe'],
-      env: { ...process.env, NITRO_WORKERS: 'false' }, // Disable Nitro workers on Node v24
+      env: withHeapOptions({ ...process.env, NITRO_WORKERS: 'false' }), // Disable Nitro workers on Node v24
       ...options,
     })
 
@@ -108,7 +125,7 @@ async function runDevProcess() {
     const args = ['exec', 'nuxi', 'dev', ...process.argv.slice(2)]
     const child = spawn('pnpm', args, {
       stdio: ['inherit', 'pipe', 'pipe'],
-      env: { ...process.env, NITRO_WORKERS: 'false' }, // Disable Nitro workers on Node v24
+      env: withHeapOptions({ ...process.env, NITRO_WORKERS: 'false' }), // Disable Nitro workers on Node v24
     })
 
     activeChild = child
