@@ -5,6 +5,7 @@
   import { stripHtml } from '~/utils/stripHtml'
   import { formatRecurrenceLabel } from '~/utils/recurrence'
   import { getFileCategoryMeta, type FileCategory } from '~/utils/fileClassification'
+  import { buildEmailSrcdoc } from '~/lib/emailRender'
   import * as XLSX from 'xlsx'
 
   const props = withDefaults(
@@ -37,7 +38,49 @@
   const isBookmark = computed(() => i.value.type === 'bookmark')
   const isNote = computed(() => i.value.type === 'note')
   const isFile = computed(() => i.value.type === 'file')
+  // Guard against stale blob: URLs baked into older file entities — those
+  // blob handles are dead after reload and trigger WebKitBlobResource errors.
+  const fileUrl = computed<string | null>(() => {
+    const u = i.value.url
+    if (typeof u !== 'string' || !u) return null
+    if (u.startsWith('blob:')) return null
+    return u
+  })
   const isEmail = computed(() => i.value.type === 'email')
+  const emailSrcdoc = computed(() =>
+    isEmail.value ? buildEmailSrcdoc(i.value, { thumbnail: true }) : '',
+  )
+
+  // ─── Lazy-mount email thumbnail iframe ───
+  // Rendering 50+ iframes at once blocks the main thread and triggers
+  // external font/stylesheet/image loads for every off-screen card. Only
+  // mount the iframe when the card actually enters the viewport.
+  const emailThumbRef = ref<HTMLElement | null>(null)
+  const emailThumbVisible = ref(false)
+
+  onMounted(() => {
+    if (!isEmail.value) return
+    if (typeof IntersectionObserver === 'undefined') {
+      emailThumbVisible.value = true
+      return
+    }
+    const el = emailThumbRef.value
+    if (!el) return
+    const observer = new IntersectionObserver(
+      (entries) => {
+        for (const entry of entries) {
+          if (entry.isIntersecting) {
+            emailThumbVisible.value = true
+            observer.disconnect()
+            break
+          }
+        }
+      },
+      { rootMargin: '200px' },
+    )
+    observer.observe(el)
+    onUnmounted(() => observer.disconnect())
+  })
   const isOrg = computed(() => i.value.type === 'organization')
 
   // ─── Transport icon (trip preview) ───
@@ -371,26 +414,37 @@
       </div>
     </div>
 
-    <!-- ─── Preview: Email ─── -->
+    <!-- ─── Preview: Email (scaled iframe of rendered body) ─── -->
     <div
       v-else-if="isEmail"
-      class="aspect-video relative border-b border-border bg-muted/10 p-4 flex flex-col gap-2 overflow-hidden">
-      <div class="absolute inset-0 bg-linear-to-b from-transparent via-transparent to-background/70 pointer-events-none z-10" />
-      <div class="flex items-center gap-1.5 min-w-0">
+      ref="emailThumbRef"
+      class="aspect-video relative border-b border-border bg-white overflow-hidden">
+      <!-- Scaled-down email render. 400% size + scale(0.25) keeps layout crisp.
+           Iframe is only mounted once the card enters the viewport. -->
+      <iframe
+        v-if="emailThumbVisible && (i.bodyHtml || i.bodyText || i.snippet)"
+        :srcdoc="emailSrcdoc"
+        sandbox="allow-same-origin allow-popups allow-popups-to-escape-sandbox"
+        referrerpolicy="no-referrer"
+        loading="lazy"
+        class="absolute top-0 left-0 border-0 origin-top-left pointer-events-none"
+        style="width: 400%; height: 400%; transform: scale(0.25)" />
+      <div
+        v-else-if="!(i.bodyHtml || i.bodyText || i.snippet)"
+        class="absolute inset-0 flex items-center justify-center text-xs text-muted-foreground/40">
+        No preview
+      </div>
+      <!-- Bottom fade into card background -->
+      <div class="absolute inset-0 bg-linear-to-b from-transparent via-transparent to-background/80 pointer-events-none z-10" />
+      <!-- Header chip overlay: sender + read/starred state -->
+      <div class="absolute top-0 left-0 right-0 z-20 p-2 flex items-center gap-1.5 min-w-0 bg-linear-to-b from-background/90 to-transparent">
         <div v-if="i.isRead === false" class="shrink-0 h-1.5 w-1.5 rounded-full bg-blue-500" />
-        <Icon v-else name="lucide:mail-open" class="h-3 w-3 shrink-0 text-muted-foreground/30" />
+        <Icon v-else name="lucide:mail-open" class="h-3 w-3 shrink-0 text-muted-foreground/50" />
         <span class="text-xs truncate" :class="i.isRead === false ? 'font-semibold' : 'text-muted-foreground'">
           {{ i.from || 'Unknown sender' }}
         </span>
         <Icon v-if="i.isStarred" name="lucide:star" class="ml-auto shrink-0 h-3 w-3 text-amber-400 fill-amber-400" />
       </div>
-      <div v-if="i.to" class="flex items-center gap-1 text-xs text-muted-foreground/50 min-w-0">
-        <Icon name="lucide:corner-down-right" class="h-3 w-3 shrink-0" />
-        <span class="truncate">{{ i.to }}</span>
-      </div>
-      <p class="text-xs text-muted-foreground/60 leading-relaxed line-clamp-3 mt-auto">
-        {{ i.snippet || (i.bodyText ? String(i.bodyText).slice(0, 200) : 'No preview') }}
-      </p>
     </div>
 
     <!-- ─── Preview: Event / Appointment — horizontal date visual ─── -->
@@ -420,18 +474,18 @@
     <!-- ─── Preview: File (actual content for images/video/pdf, table thumbnail, icon otherwise) ─── -->
     <div v-else-if="isFile" class="aspect-video border-b border-border overflow-hidden relative bg-muted/20">
       <img
-        v-if="i.mimeType?.startsWith('image/') && i.url"
-        :src="i.url"
+        v-if="i.mimeType?.startsWith('image/') && fileUrl"
+        :src="fileUrl"
         :alt="item.title"
         class="w-full h-full object-cover pointer-events-none"
         loading="lazy" />
       <iframe
-        v-else-if="i.mimeType === 'application/pdf' && i.url"
-        :src="i.url + '#toolbar=0&navpanes=0&scrollbar=0'"
+        v-else-if="i.mimeType === 'application/pdf' && fileUrl"
+        :src="fileUrl + '#toolbar=0&navpanes=0&scrollbar=0'"
         class="w-full h-full border-0 pointer-events-none" />
       <video
-        v-else-if="i.mimeType?.startsWith('video/') && i.url"
-        :src="i.url"
+        v-else-if="i.mimeType?.startsWith('video/') && fileUrl"
+        :src="fileUrl"
         class="w-full h-full object-cover pointer-events-none"
         preload="metadata"
         muted />

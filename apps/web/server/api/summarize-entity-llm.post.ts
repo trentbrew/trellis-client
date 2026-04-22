@@ -84,6 +84,42 @@ function stripHtml(input: string): string {
     .trim()
 }
 
+/**
+ * Shared core so server-side callers (e.g. gmail-ingest.ts) can invoke
+ * summarization directly without paying for an HTTP round-trip.
+ */
+export async function summarizeText(args: { text: string; type?: string; title?: string }): Promise<string> {
+  const cleaned = stripHtml(args.text).slice(0, 4000)
+  if (cleaned.length < 80) return ''
+
+  const res = await fetch(`${OLLAMA_HOST}/api/generate`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      model: DEFAULT_MODEL,
+      system: SYSTEM_PROMPT,
+      prompt: buildUserPrompt(cleaned, args.type, args.title),
+      stream: false,
+    }),
+  })
+
+  if (!res.ok) {
+    const errText = await res.text().catch(() => '')
+    throw new Error(`Ollama returned ${res.status}: ${errText || res.statusText}`)
+  }
+
+  const data = (await res.json()) as { response?: string; error?: string }
+  if (data.error) throw new Error(`Ollama error: ${data.error}`)
+
+  let summary = (data.response ?? '').trim()
+  // Defensive: strip surrounding quotes or "Summary:" prefix if the model added them.
+  summary = summary
+    .replace(/^Summary:\s*/i, '')
+    .replace(/^["']|["']$/g, '')
+    .trim()
+  return summary
+}
+
 export default defineEventHandler(async (event) => {
   const body = (await readBody(event)) as {
     text?: string
@@ -95,37 +131,8 @@ export default defineEventHandler(async (event) => {
     throw createError({ statusCode: 400, message: '"text" is required' })
   }
 
-  const cleaned = stripHtml(body.text).slice(0, 4000)
-
-  // Too short to bother summarizing — echo the cleaned text.
-  if (cleaned.length < 80) {
-    return { summary: '' }
-  }
-
   try {
-    const res = await fetch(`${OLLAMA_HOST}/api/generate`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        model: DEFAULT_MODEL,
-        system: SYSTEM_PROMPT,
-        prompt: buildUserPrompt(cleaned, body.type, body.title),
-        stream: false,
-      }),
-    })
-
-    if (!res.ok) {
-      const errText = await res.text().catch(() => '')
-      throw new Error(`Ollama returned ${res.status}: ${errText || res.statusText}`)
-    }
-
-    const data = (await res.json()) as { response?: string; error?: string }
-    if (data.error) throw new Error(`Ollama error: ${data.error}`)
-
-    let summary = (data.response ?? '').trim()
-    // Defensive: strip surrounding quotes or "Summary:" prefix if the model added them.
-    summary = summary.replace(/^Summary:\s*/i, '').replace(/^["']|["']$/g, '').trim()
-
+    const summary = await summarizeText({ text: body.text, type: body.type, title: body.title })
     return { summary }
   } catch (err: any) {
     throw createError({

@@ -95,6 +95,8 @@
     error: enrichmentError,
     hasSuggestions,
     extract,
+    hydrateFromPersisted,
+    invalidateCache,
     accept,
     dismiss,
     acceptTag,
@@ -396,11 +398,15 @@
     await accept(s, props.entity, cacheKeyFor(props.entity))
   }
 
-  function runExtraction() {
+  function runExtraction(opts?: { force?: boolean }) {
     if (!enrichmentEnabled.value) return
     const text = buildText(props.entity)
     const key = cacheKeyFor(props.entity)
     if (!text || !key) return
+
+    // Manual "Scan" invalidates the session cache so the LLM re-runs even
+    // if we previously hydrated from the entity's persisted AI fields.
+    if (opts?.force) invalidateCache(key)
 
     // For video bookmarks, pass the raw cue list so the composable can
     // resolve first-mention timestamps for each extracted entity.
@@ -410,6 +416,36 @@
         : undefined
 
     extract(text, key, props.entity?.tags, videoCues)
+  }
+
+  /**
+   * If the entity already carries persisted AI enrichment (set by the
+   * gmail-notifier on ingest or by a prior session's Scan button), seed the
+   * UI from those fields instantly — no LLM round-trip, no scanning spinner.
+   *
+   * Returns true when hydration fired, so callers can skip `runExtraction`.
+   */
+  function tryHydrateFromEntity(): boolean {
+    const entity = props.entity
+    if (!entity) return false
+    const scannedAt = entity.aiScannedAt || entity.summaryGeneratedAt
+    if (!scannedAt) return false
+    const hasAnyAiData =
+      (typeof entity.aiSuggestions === 'string' && entity.aiSuggestions.length > 2) ||
+      (Array.isArray(entity.aiSuggestedTags) && entity.aiSuggestedTags.length > 0) ||
+      (typeof entity.aiTypeProposals === 'string' && entity.aiTypeProposals.length > 2)
+    if (!hasAnyAiData) return false
+
+    hydrateFromPersisted(
+      {
+        suggestions: entity.aiSuggestions,
+        tags: entity.aiSuggestedTags,
+        typeProposals: entity.aiTypeProposals,
+      },
+      cacheKeyFor(entity),
+      entity.tags,
+    )
+    return true
   }
 
   /** Render a timestamp in `m:ss` / `h:mm:ss` form. */
@@ -426,17 +462,32 @@
     seekActivePlayer(seconds)
   }
 
-  // Auto-extract on mount when we have enough content.
+  // Auto-hydrate from persisted AI fields on mount, falling back to a live
+  // extraction call when nothing is persisted yet.
   onMounted(() => {
-    if (enrichmentEnabled.value) runExtraction()
+    if (!enrichmentEnabled.value) return
+    const hydrated = tryHydrateFromEntity()
+    if (!hydrated) runExtraction()
   })
 
   // If the entity swaps (different dialog opens reusing this component),
-  // re-run extraction for the new entity.
+  // re-hydrate + extract for the new entity.
   watch(
     () => props.entity?.id,
     (id, prev) => {
-      if (id && id !== prev && enrichmentEnabled.value) runExtraction()
+      if (!id || id === prev || !enrichmentEnabled.value) return
+      const hydrated = tryHydrateFromEntity()
+      if (!hydrated) runExtraction()
+    },
+  )
+
+  // Also react to AI fields arriving asynchronously — the gmail-notifier
+  // may enrich an email a few seconds after the user opens it. The SSE
+  // mutation stream updates `entity.aiScannedAt`, which triggers this watch.
+  watch(
+    () => props.entity?.aiScannedAt,
+    (scannedAt, prev) => {
+      if (scannedAt && scannedAt !== prev) tryHydrateFromEntity()
     },
   )
 </script>
@@ -454,7 +505,7 @@
           type="button"
           class="shrink-0 flex items-center gap-1 text-[11px] text-muted-foreground hover:text-foreground transition-colors"
           title="Re-scan for entities"
-          @click="runExtraction">
+          @click="runExtraction({ force: true })">
           <Icon name="lucide:sparkles" class="h-3 w-3" />
           Scan
         </button>

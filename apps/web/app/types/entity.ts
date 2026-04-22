@@ -471,22 +471,22 @@ export interface FileItem extends EntityItemBase {
   altText?: string
 
   // Video
-  videoDuration?: number       // seconds
+  videoDuration?: number // seconds
   videoWidth?: number
   videoHeight?: number
   videoCodec?: string
   videoThumbnailUrl?: string
 
   // Audio
-  audioDuration?: number       // seconds
-  audioBitrate?: number        // kbps
+  audioDuration?: number // seconds
+  audioBitrate?: number // kbps
   audioChannels?: number
   artist?: string
   album?: string
   genre?: string
 
   // Code
-  codeLanguage?: string        // e.g. 'typescript', 'python'
+  codeLanguage?: string // e.g. 'typescript', 'python'
   lineCount?: number
 
   // Document (PDF, DOCX, etc.)
@@ -568,6 +568,23 @@ export interface EmailItem extends EntityItemBase {
   gmailMessageId?: string
   gmailThreadId?: string
   pinned: boolean
+
+  // ── AI enrichment (populated by server-side gmail-ingest) ────────────
+  /** One-sentence AI-generated summary of the email body. Rendered read-only
+   *  under the subject in the inline dialog for `email` entities. */
+  summary?: string
+  /** ISO timestamp of the last summary generation. */
+  summaryGeneratedAt?: string
+  /** JSON-encoded `EnrichmentSuggestion[]` — hydrated by EntityAISuggestionsPanel. */
+  aiSuggestions?: string
+  /** Topical tags extracted by the LLM (distinct from user `tags`). */
+  aiSuggestedTags?: string[]
+  /** JSON-encoded `TypeProposal[]` — hydrated by EntityAISuggestionsPanel. */
+  aiTypeProposals?: string
+  /** Short categorical labels assigned by the classifier (finance, travel, …). */
+  aiLabels?: string[]
+  /** ISO timestamp of the last full AI scan (covers summary + extract + classify). */
+  aiScannedAt?: string
 }
 
 export interface DiagramItem extends EntityItemBase {

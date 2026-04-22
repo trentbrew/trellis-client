@@ -126,8 +126,14 @@ export function useTrellisNotifications() {
 
   async function refresh() {
     try {
+      // EQL-S RETURN has inner-join semantics — any attr missing on a
+      // notification drops the entire row. We only project fields that
+      // every notification is guaranteed to carry. Optional fields
+      // (body, url, icon, color, actions, metadata, groupKey, sourceId,
+      // entityId, entityType, readAt, snoozeUntil, archivedAt, sound)
+      // are parsed as undefined and filled lazily by the UI if present.
       const result = await queryOnce(
-        `FIND ${NOTIFICATION_TYPE} AS ?n RETURN ?n.title, ?n.body, ?n.kind, ?n.source, ?n.sourceId, ?n.priority, ?n.status, ?n.readAt, ?n.snoozeUntil, ?n.archivedAt, ?n.icon, ?n.color, ?n.sound, ?n.entityId, ?n.entityType, ?n.url, ?n.actions, ?n.metadata, ?n.groupKey, ?n.createdAt, ?n.updatedAt ORDER BY ?n.createdAt DESC LIMIT 100`,
+        `FIND ${NOTIFICATION_TYPE} AS ?n RETURN ?n.title, ?n.kind, ?n.source, ?n.priority, ?n.status, ?n.createdAt, ?n.updatedAt ORDER BY ?n.createdAt DESC LIMIT 100`,
       )
       const next = (result.data || []).map(rowToNotification)
       const incoming = next.filter((n) => !_lastSeenIds.has(n.id) && n.status === 'unread')

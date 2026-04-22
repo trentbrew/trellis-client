@@ -95,12 +95,11 @@ export default defineEventHandler(async (event) => {
       .map(([type, count]) => ({ type, count }))
 
     // Ontologies split by tier
-    const workspace = await kernel.exportWorkspace()
-    const ontologies = workspace.workspace.ontologies || {}
+    const allOntologies = kernel.listOntologies()
     const systemOntologies: string[] = []
     const userOntologies: string[] = []
-    for (const [id, schema] of Object.entries(ontologies as Record<string, any>)) {
-      const shortId = id.replace(/^(trellis:schema\/|core:)/, '')
+    for (const schema of allOntologies) {
+      const shortId = schema['@id'].replace(/^(trellis:schema\/|core:)/, '')
       if (schema?.tier === 'user') {
         userOntologies.push(shortId)
       } else if (schema?.tier !== 'core') {
@@ -132,7 +131,7 @@ export default defineEventHandler(async (event) => {
       health: { status: 'ok', factCount, linkCount, entityCount: entityIds.size },
       entityTypes,
       ontologies: {
-        total: Object.keys(ontologies).length,
+        total: allOntologies.length,
         system: systemOntologies,
         user: userOntologies,
       },
@@ -144,10 +143,11 @@ export default defineEventHandler(async (event) => {
 
   // ─── GET /api/graph/ontologies (alias: /api/graph/schema) ──────────
   if (method === 'GET' && (route === 'ontologies' || route === 'schema')) {
-    const workspace = await kernel.exportWorkspace()
-    return {
-      ontologies: workspace.workspace.ontologies || {},
+    const ontologies: Record<string, any> = {}
+    for (const schema of kernel.listOntologies()) {
+      ontologies[schema['@id']] = schema
     }
+    return { ontologies }
   }
 
   // ─── GET /api/graph/config ────────────────────────────────────────
@@ -158,12 +158,19 @@ export default defineEventHandler(async (event) => {
   // from the kernel (which may have runtime mutations).
   if (method === 'GET' && route === 'config') {
     const wsConfig = useWorkspaceConfig()
-    const kernelWorkspace = await kernel.exportWorkspace()
+    const ontologies: Record<string, any> = {}
+    for (const schema of kernel.listOntologies()) {
+      ontologies[schema['@id']] = schema
+    }
+    const projections: Record<string, any> = {}
+    for (const proj of kernel.listProjections()) {
+      projections[proj['@id']] = proj
+    }
     return {
       app: wsConfig.workspace.app || null,
       routes: wsConfig.workspace.routes || {},
-      projections: kernelWorkspace.workspace.projections || {},
-      ontologies: kernelWorkspace.workspace.ontologies || {},
+      projections,
+      ontologies,
     }
   }
 

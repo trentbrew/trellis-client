@@ -118,21 +118,32 @@
       const ymd = extractYmd(editableItem.value.startDate)
       if (!ymd) return undefined
       return editableItem.value.allDay
-        ? parseYmdLocal(ymd) ?? undefined
-        : combineDateAndTime(ymd, editableItem.value.startTime) ?? undefined
+        ? (parseYmdLocal(ymd) ?? undefined)
+        : (combineDateAndTime(ymd, editableItem.value.startTime) ?? undefined)
     },
     set: (v: Date | string | undefined) => {
-      if (!v) { editableItem.value.startDate = ''; return }
+      if (!v) {
+        editableItem.value.startDate = ''
+        return
+      }
       const d = v instanceof Date ? v : new Date(v)
       editableItem.value.startDate = formatYmdLocal(d)
       if (!editableItem.value.allDay) {
-        editableItem.value.startTime = d.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: false })
+        editableItem.value.startTime = d.toLocaleTimeString('en-US', {
+          hour: '2-digit',
+          minute: '2-digit',
+          hour12: false,
+        })
       }
       if (!editableItem.value.endDate && props.hasField('endDate')) {
         const end = new Date(d.getTime() + 60 * 60 * 1000)
         editableItem.value.endDate = formatYmdLocal(end)
         if (!editableItem.value.allDay) {
-          editableItem.value.endTime = end.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: false })
+          editableItem.value.endTime = end.toLocaleTimeString('en-US', {
+            hour: '2-digit',
+            minute: '2-digit',
+            hour12: false,
+          })
         }
       }
     },
@@ -143,30 +154,36 @@
       const ymd = extractYmd(editableItem.value.endDate)
       if (!ymd) return undefined
       return editableItem.value.allDay
-        ? parseYmdLocal(ymd) ?? undefined
-        : combineDateAndTime(ymd, editableItem.value.endTime) ?? undefined
+        ? (parseYmdLocal(ymd) ?? undefined)
+        : (combineDateAndTime(ymd, editableItem.value.endTime) ?? undefined)
     },
     set: (v: Date | string | undefined) => {
-      if (!v) { editableItem.value.endDate = undefined; return }
+      if (!v) {
+        editableItem.value.endDate = undefined
+        return
+      }
       const d = v instanceof Date ? v : new Date(v)
       editableItem.value.endDate = formatYmdLocal(d)
       if (!editableItem.value.allDay) {
-        editableItem.value.endTime = d.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: false })
+        editableItem.value.endTime = d.toLocaleTimeString('en-US', {
+          hour: '2-digit',
+          minute: '2-digit',
+          hour12: false,
+        })
       }
     },
   })
 
-  const activeCalendarModel = computed({
-    get: () => (scheduleTab.value === 'start' ? calendarModel.value : endCalendarModel.value),
-    set: (v: any) => {
-      if (scheduleTab.value === 'start') calendarModel.value = v
-      else endCalendarModel.value = v
-    },
-  })
+  // Calendar model accessors kept for parent compatibility
+  const _calendarModel = calendarModel
+  const _endCalendarModel = endCalendarModel
 
   const startSummary = computed(() => {
     if (!editableItem.value.startDate) return 'Not set'
-    const d = combineDateAndTime(extractYmd(editableItem.value.startDate), editableItem.value.allDay ? undefined : editableItem.value.startTime)
+    const d = combineDateAndTime(
+      extractYmd(editableItem.value.startDate),
+      editableItem.value.allDay ? undefined : editableItem.value.startTime,
+    )
     if (!d) return 'Not set'
     return editableItem.value.allDay
       ? d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
@@ -175,85 +192,18 @@
 
   const endSummary = computed(() => {
     if (!editableItem.value.endDate) return 'Not set'
-    const d = combineDateAndTime(extractYmd(editableItem.value.endDate), editableItem.value.allDay ? undefined : editableItem.value.endTime)
+    const d = combineDateAndTime(
+      extractYmd(editableItem.value.endDate),
+      editableItem.value.allDay ? undefined : editableItem.value.endTime,
+    )
     if (!d) return 'Not set'
     return editableItem.value.allDay
       ? d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
       : d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) + ' ' + (editableItem.value.endTime || '')
   })
 
-  const pickerMode = computed(() => (editableItem.value.allDay ? 'date' : 'dateTime'))
-
-  // ── Date picker attributes ──────────────────────────────────────────
-  const datePickerAttributes = computed(() => {
-    const attrs: any[] = []
-    const now = new Date()
-    const todayDate = new Date(now.getFullYear(), now.getMonth(), now.getDate())
-
-    attrs.push({ key: 'today', dates: [todayDate], dot: { color: 'blue' } })
-
-    const yesterday = new Date(todayDate)
-    yesterday.setDate(yesterday.getDate() - 1)
-    attrs.push({ key: 'past-days', dates: { end: yesterday }, content: { style: { opacity: 0.4 } } })
-
-    const start = extractYmd(editableItem.value.startDate) ? parseYmdLocal(extractYmd(editableItem.value.startDate)) : null
-    const end = extractYmd(editableItem.value.endDate) ? parseYmdLocal(extractYmd(editableItem.value.endDate)) : null
-    if (start && end && start.getTime() !== end.getTime()) {
-      attrs.push({
-        key: 'multi-day-range',
-        dates: { start, end },
-        highlight: {
-          start: { fillMode: 'solid', color: 'orange' },
-          base: { fillMode: 'light', color: 'orange' },
-          end: { fillMode: 'solid', color: 'orange' },
-        },
-      })
-    }
-
-    const recurrence = editableItem.value.recurrence
-    if (recurrence && start) {
-      const repeatDates: Date[] = []
-      const startD = new Date(start.getFullYear(), start.getMonth(), start.getDate())
-      const windowEnd = new Date(startD)
-      windowEnd.setDate(windowEnd.getDate() + 90)
-
-      const freq = recurrence.frequency
-      if (freq === 'daily') {
-        const cursor = new Date(startD); const interval = recurrence.interval || 1
-        while (cursor <= windowEnd) { repeatDates.push(new Date(cursor)); cursor.setDate(cursor.getDate() + interval) }
-      } else if (freq === 'weekly') {
-        const interval = recurrence.interval || 1
-        const weekdays = recurrence.weekdays?.length ? recurrence.weekdays : [startD.getDay()]
-        const cursor = new Date(startD); cursor.setDate(cursor.getDate() - cursor.getDay())
-        while (cursor <= windowEnd) {
-          for (const wd of weekdays) { const d = new Date(cursor); d.setDate(d.getDate() + wd); if (d >= startD && d <= windowEnd) repeatDates.push(d) }
-          cursor.setDate(cursor.getDate() + 7 * interval)
-        }
-      } else if (freq === 'weekdays') {
-        const cursor = new Date(startD)
-        while (cursor <= windowEnd) { const dow = cursor.getDay(); if (dow >= 1 && dow <= 5) repeatDates.push(new Date(cursor)); cursor.setDate(cursor.getDate() + 1) }
-      } else if (freq === 'monthly') {
-        const interval = recurrence.interval || 1; const cursor = new Date(startD)
-        while (cursor <= windowEnd) { repeatDates.push(new Date(cursor)); cursor.setMonth(cursor.getMonth() + interval) }
-      } else if (freq === 'quarterly') {
-        const interval = recurrence.interval || 1; const cursor = new Date(startD)
-        while (cursor <= windowEnd) { repeatDates.push(new Date(cursor)); cursor.setMonth(cursor.getMonth() + 3 * interval) }
-      } else if (freq === 'yearly') {
-        const cursor = new Date(startD)
-        while (cursor <= windowEnd) { repeatDates.push(new Date(cursor)); cursor.setFullYear(cursor.getFullYear() + 1) }
-      } else if (freq === 'custom' && recurrence.weekdays?.length) {
-        const interval = recurrence.interval || 1; const cursor = new Date(startD); cursor.setDate(cursor.getDate() - cursor.getDay())
-        while (cursor <= windowEnd) {
-          for (const wd of recurrence.weekdays) { const d = new Date(cursor); d.setDate(d.getDate() + wd); if (d >= startD && d <= windowEnd) repeatDates.push(d) }
-          cursor.setDate(cursor.getDate() + 7 * interval)
-        }
-      }
-
-      if (repeatDates.length > 0) attrs.push({ key: 'recurrence-dots', dates: repeatDates, dot: { color: 'orange' } })
-    }
-
-    return attrs
-  })
+  // Picker mode no longer needed (calendar removed), kept for backwards compatibility
+  const _pickerMode = editableItem.value.allDay ? 'date' : 'dateTime'
 
   // Expose for parent to reset on item change
   defineExpose({ selectedRepeat, selectedReminder, repeatOpen, reminderOpen })
@@ -287,7 +237,11 @@
       <button
         type="button"
         class="flex-1 flex flex-col items-center gap-0.5 px-2 py-2 rounded-md text-[10px] font-medium transition-colors"
-        :class="scheduleTab === 'start' ? 'bg-foreground/5 shadow-sm text-foreground' : 'text-muted-foreground hover:text-foreground'"
+        :class="
+          scheduleTab === 'start'
+            ? 'bg-foreground/5 shadow-sm text-foreground'
+            : 'text-muted-foreground hover:text-foreground'
+        "
         @click="scheduleTab = 'start'">
         <span class="uppercase tracking-wide">Start</span>
         <span class="text-[10px] opacity-70">{{ startSummary }}</span>
@@ -295,27 +249,15 @@
       <button
         type="button"
         class="flex-1 flex flex-col items-center gap-0.5 px-2 py-1.5 rounded-md text-[10px] font-medium transition-colors"
-        :class="scheduleTab === 'end' ? 'bg-foreground/5 shadow-sm text-foreground' : 'text-muted-foreground hover:text-foreground'"
+        :class="
+          scheduleTab === 'end'
+            ? 'bg-foreground/5 shadow-sm text-foreground'
+            : 'text-muted-foreground hover:text-foreground'
+        "
         @click="scheduleTab = 'end'">
         <span class="uppercase tracking-wide">End</span>
         <span class="text-[10px] opacity-70">{{ endSummary }}</span>
       </button>
-    </div>
-
-    <!-- DateTime picker -->
-    <div class="flex items-center justify-center">
-      <ClientOnly>
-        <UiDatepicker
-          v-model="activeCalendarModel"
-          :is-dark="isDark"
-          is-required
-          :mode="pickerMode"
-          :attributes="datePickerAttributes"
-          borderless
-          transparent
-          title-position="left"
-          class="text-xs" />
-      </ClientOnly>
     </div>
 
     <!-- Repeat -->
@@ -325,7 +267,11 @@
         <UiPopoverTrigger as-child>
           <button
             class="w-full flex items-center justify-between px-2.5 py-1.5 rounded-lg text-xs transition-colors"
-            :class="selectedRepeat !== 'none' ? 'bg-primary/10 text-primary' : 'bg-muted/50 hover:bg-muted text-muted-foreground'">
+            :class="
+              selectedRepeat !== 'none'
+                ? 'bg-primary/10 text-primary'
+                : 'bg-muted/50 hover:bg-muted text-muted-foreground'
+            ">
             <div class="flex items-center gap-1.5">
               <Icon name="lucide:repeat" class="h-3.5 w-3.5" />
               <span>{{ repeatPresets.find((p) => p.value === selectedRepeat)?.label || 'None' }}</span>
@@ -340,7 +286,12 @@
             type="button"
             class="w-full flex items-center justify-between px-2 py-1.5 rounded-md text-xs hover:bg-muted/50 transition-colors"
             :class="selectedRepeat === preset.value ? 'bg-muted/50' : ''"
-            @click="() => { selectRepeat(preset.value); repeatOpen = false }">
+            @click="
+              () => {
+                selectRepeat(preset.value)
+                repeatOpen = false
+              }
+            ">
             <div class="flex items-center gap-1.5">
               <span>{{ preset.label }}</span>
               <span v-if="preset.sub" class="text-muted-foreground text-[10px]">{{ preset.sub }}</span>
@@ -350,13 +301,18 @@
         </UiPopoverContent>
       </UiPopover>
       <!-- Custom repeat inline form -->
-      <div
-        v-if="selectedRepeat === 'custom'"
-        class="rounded-lg border border-border/40 bg-muted/20 p-2.5 space-y-2.5">
+      <div v-if="selectedRepeat === 'custom'" class="rounded-lg border border-border/40 bg-muted/20 p-2.5 space-y-2.5">
         <div class="flex items-center gap-1.5">
           <span class="text-[10px] text-muted-foreground shrink-0">Every</span>
-          <UiInput v-model.number="repeatCustom.interval" type="number" min="1" max="99" class="w-11 h-6 text-[10px] text-center" />
-          <select v-model="repeatCustom.frequency" class="h-6 rounded-md border border-border bg-transparent text-[10px] px-1.5 outline-none">
+          <UiInput
+            v-model.number="repeatCustom.interval"
+            type="number"
+            min="1"
+            max="99"
+            class="w-11 h-6 text-[10px] text-center" />
+          <select
+            v-model="repeatCustom.frequency"
+            class="h-6 rounded-md border border-border bg-transparent text-[10px] px-1.5 outline-none">
             <option v-for="opt in FREQUENCY_OPTIONS" :key="opt.value" :value="opt.value">{{ opt.label }}</option>
           </select>
         </div>
@@ -368,7 +324,11 @@
               :key="i"
               type="button"
               class="w-6 h-6 rounded-md text-[10px] font-medium transition-colors"
-              :class="repeatCustom.weekdays.includes(i) ? 'bg-primary text-primary-foreground' : 'bg-muted/50 text-muted-foreground hover:bg-muted'"
+              :class="
+                repeatCustom.weekdays.includes(i)
+                  ? 'bg-primary text-primary-foreground'
+                  : 'bg-muted/50 text-muted-foreground hover:bg-muted'
+              "
               @click="toggleWeekday(i)">
               {{ label }}
             </button>
@@ -384,13 +344,22 @@
             <label class="flex items-center gap-1.5 text-[10px] cursor-pointer">
               <input v-model="repeatCustom.endMode" type="radio" value="after" class="accent-primary w-3 h-3" />
               <span>After</span>
-              <UiInput v-if="repeatCustom.endMode === 'after'" v-model.number="repeatCustom.occurrences" type="number" min="1" class="w-11 h-5 text-[10px] text-center" />
+              <UiInput
+                v-if="repeatCustom.endMode === 'after'"
+                v-model.number="repeatCustom.occurrences"
+                type="number"
+                min="1"
+                class="w-11 h-5 text-[10px] text-center" />
               <span v-if="repeatCustom.endMode === 'after'">times</span>
             </label>
             <label class="flex items-center gap-1.5 text-[10px] cursor-pointer">
               <input v-model="repeatCustom.endMode" type="radio" value="on" class="accent-primary w-3 h-3" />
               <span>On</span>
-              <input v-if="repeatCustom.endMode === 'on'" v-model="repeatCustom.endDate" type="date" class="h-5 rounded-md border border-border bg-transparent text-[10px] px-1.5 outline-none" />
+              <input
+                v-if="repeatCustom.endMode === 'on'"
+                v-model="repeatCustom.endDate"
+                type="date"
+                class="h-5 rounded-md border border-border bg-transparent text-[10px] px-1.5 outline-none" />
             </label>
           </div>
         </div>
@@ -404,7 +373,11 @@
         <UiPopoverTrigger as-child>
           <button
             class="w-full flex items-center justify-between px-2.5 py-1.5 rounded-lg text-xs transition-colors"
-            :class="selectedReminder !== 'none' ? 'bg-primary/10 text-primary' : 'bg-muted/50 hover:bg-muted text-muted-foreground'">
+            :class="
+              selectedReminder !== 'none'
+                ? 'bg-primary/10 text-primary'
+                : 'bg-muted/50 hover:bg-muted text-muted-foreground'
+            ">
             <div class="flex items-center gap-1.5">
               <Icon name="lucide:bell" class="h-3.5 w-3.5" />
               <span>{{ reminderPresets.find((p) => p.value === selectedReminder)?.label || 'None' }}</span>
@@ -419,10 +392,17 @@
             type="button"
             class="w-full flex items-center justify-between px-2 py-1.5 rounded-md text-xs hover:bg-muted/50 transition-colors"
             :class="selectedReminder === preset.value ? 'bg-muted/50' : ''"
-            @click="() => { selectedReminder = preset.value; reminderOpen = false }">
+            @click="
+              () => {
+                selectedReminder = preset.value
+                reminderOpen = false
+              }
+            ">
             <div class="flex items-center gap-1.5">
               <span>{{ preset.label }}</span>
-              <span v-if="preset.time && preset.value !== 'custom'" class="text-muted-foreground text-[10px]">({{ preset.time }})</span>
+              <span v-if="preset.time && preset.value !== 'custom'" class="text-muted-foreground text-[10px]">
+                ({{ preset.time }})
+              </span>
             </div>
             <Icon v-if="selectedReminder === preset.value" name="lucide:check" class="h-3 w-3 text-primary" />
           </button>
@@ -432,12 +412,19 @@
       <div v-if="selectedReminder === 'custom'" class="rounded-lg border border-border/40 bg-muted/20 p-2.5 space-y-2">
         <div class="flex items-center gap-1.5">
           <span class="text-[10px] text-muted-foreground shrink-0">Remind</span>
-          <UiInput v-model.number="reminderCustom.daysInAdvance" type="number" min="0" class="w-11 h-6 text-[10px] text-center" />
+          <UiInput
+            v-model.number="reminderCustom.daysInAdvance"
+            type="number"
+            min="0"
+            class="w-11 h-6 text-[10px] text-center" />
           <span class="text-[10px] text-muted-foreground shrink-0">day(s) before</span>
         </div>
         <div class="flex items-center gap-1.5">
           <span class="text-[10px] text-muted-foreground shrink-0">At</span>
-          <input v-model="reminderCustom.time" type="time" class="h-6 flex-1 rounded-md border border-border bg-transparent text-[10px] px-1.5 outline-none" />
+          <input
+            v-model="reminderCustom.time"
+            type="time"
+            class="h-6 flex-1 rounded-md border border-border bg-transparent text-[10px] px-1.5 outline-none" />
         </div>
       </div>
     </div>
@@ -445,13 +432,5 @@
 </template>
 
 <style scoped>
-  :deep(.vc-container) { font-size: 0.75rem; }
-  :deep(.vc-time-picker) { border-top: none; padding: 0; }
-  :deep(.vc-time-header) { background: transparent; }
-  :deep(.vc-time-select-group) { background: transparent; border-color: var(--color-border); }
-  :deep(.vc-time-picker),
-  :deep(.vc-time-header),
-  :deep(.vc-time-select-group),
-  :deep(.vc-time-content) { width: 100%; }
-  :deep(.vc-date-picker-content) { width: 100%; }
+  /* Calendar styles removed with mini calendar */
 </style>

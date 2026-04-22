@@ -16,6 +16,7 @@
   import EntityDialog from '~/components/dialogs/EntityDialog.vue'
   import type { Entity, EntityType } from '~/types/entity'
   import { createDefaultItem } from '~/types/entity'
+  import { getAllEntityTypes } from '~/config/entityRegistry'
 
   const props = defineProps<{
     variant?: 'ghost' | 'primary'
@@ -36,14 +37,12 @@
     shortcut?: string
   }
 
-  // Default priority order — also used as a tie-breaker.
-  const DEFAULT_TYPES: QuickType[] = [
-    { type: 'note', label: 'Note', icon: 'lucide:sticky-note', colorClass: 'text-yellow-500' },
-    { type: 'page', label: 'Page', icon: 'lucide:book-open', colorClass: 'text-indigo-500' },
-    { type: 'event', label: 'Event', icon: 'lucide:calendar', colorClass: 'text-purple-500' },
-    { type: 'deadline', label: 'Deadline', icon: 'lucide:alarm-clock', colorClass: 'text-red-500' },
-    { type: 'bookmark', label: 'Bookmark', icon: 'lucide:bookmark', colorClass: 'text-sky-500' },
-  ]
+  const ALL_TYPES: QuickType[] = getAllEntityTypes().map((cfg) => ({
+    type: cfg.type,
+    label: cfg.label,
+    icon: cfg.icon,
+    colorClass: `text-${cfg.color}-400`,
+  }))
 
   const STORAGE_KEY = 'trellis:quick-create:usage'
 
@@ -82,8 +81,8 @@
   }
 
   const orderedTypes = computed<QuickType[]>(() => {
-    const indexOf = new Map(DEFAULT_TYPES.map((t, i) => [t.type, i]))
-    return [...DEFAULT_TYPES].sort((a, b) => {
+    const indexOf = new Map(ALL_TYPES.map((t, i) => [t.type, i]))
+    return [...ALL_TYPES].sort((a, b) => {
       const ua = usage.value[a.type]
       const ub = usage.value[b.type]
       const scoreA = (ua?.count ?? 0) + recencyBoost(ua?.lastUsedAt ?? 0)
@@ -140,23 +139,23 @@
 <template>
   <div class="flex items-center">
     <UiDropdownMenu>
-      <UiTooltip>
-        <UiTooltipTrigger as-child>
-          <UiDropdownMenuTrigger as-child>
-            <UiButton
-              :variant="isPrimary ? 'default' : 'ghost'"
-              size="icon-sm"
-              aria-label="Quick create"
-              :class="buttonClass">
-              <Icon name="lucide:plus" class="h-4 w-4" />
-            </UiButton>
-          </UiDropdownMenuTrigger>
-        </UiTooltipTrigger>
-        <UiTooltipContent side="bottom" :side-offset="8">Quick create</UiTooltipContent>
-      </UiTooltip>
+      <UiDropdownMenuTrigger as-child>
+        <UiButton
+          :variant="isPrimary ? 'default' : 'ghost'"
+          size="icon-sm"
+          aria-label="Quick create"
+          title="Quick create"
+          :class="buttonClass">
+          <Icon name="lucide:plus" class="h-4 w-4" />
+        </UiButton>
+      </UiDropdownMenuTrigger>
 
-      <UiDropdownMenuContent align="end" class="w-56 shadow-2xl border-border/50">
-        <div class="px-2 py-1.5 text-[10px] uppercase tracking-wider font-bold text-muted-foreground">Quick create</div>
+      <UiDropdownMenuContent
+        align="end"
+        :side-offset="8"
+        :collision-padding="16"
+        class="w-56 max-h-80 overflow-y-auto shadow-2xl border-border/50">
+        <div class="px-2 py-1.5 text-[10px] uppercase tracking-wider font-bold text-muted-foreground">Create new…</div>
         <UiDropdownMenuItem
           v-for="t in orderedTypes"
           :key="t.type"

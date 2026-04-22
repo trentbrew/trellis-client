@@ -24,7 +24,7 @@
       owners?: { id: string; name: string }[]
       folders?: string[]
       defaultStartDate?: string
-      variant?: 'dialog' | 'inset'
+      variant?: 'dialog' | 'inset' | 'inline'
     }>(),
     {
       mode: 'edit',
@@ -559,6 +559,7 @@
     "
     :summary="entitySummary"
     :is-generating-summary="generatingSummary"
+    :item-type="editableItem.type"
     @update:open="emit('update:open', $event)"
     @update:title="editableItem.title = $event"
     @update:description="editableItem.description = $event"
@@ -823,9 +824,7 @@
         </div>
 
         <!-- Activity -->
-        <div
-          v-else-if="activeInsetTab === 'activity' && !isCreateMode"
-          class="p-3 pb-0 space-y-2 flex flex-col h-full">
+        <div v-else-if="activeInsetTab === 'activity' && !isCreateMode" class="p-3 pb-0 space-y-2 flex flex-col h-full">
           <div class="flex items-center gap-2 border border-border bg-card py-3 px-2 rounded-lg shrink-0">
             <div class="w-5 h-5 rounded-full bg-muted/60 flex items-center justify-center shrink-0">
               <Icon name="lucide:user" class="h-2.5 w-2.5 text-muted-foreground" />
@@ -854,14 +853,8 @@
                 <div
                   class="w-5 h-5 rounded-full flex items-center justify-center shrink-0 mt-0.5 text-white bg-muted-foreground/40">
                   <Icon v-if="activityItem.type === 'created'" name="lucide:plus" class="h-2.5 w-2.5" />
-                  <Icon
-                    v-else-if="activityItem.type === 'comment'"
-                    name="lucide:message-circle"
-                    class="h-2.5 w-2.5" />
-                  <Icon
-                    v-else-if="activityItem.type === 'status_change'"
-                    name="lucide:edit-3"
-                    class="h-2.5 w-2.5" />
+                  <Icon v-else-if="activityItem.type === 'comment'" name="lucide:message-circle" class="h-2.5 w-2.5" />
+                  <Icon v-else-if="activityItem.type === 'status_change'" name="lucide:edit-3" class="h-2.5 w-2.5" />
                   <Icon v-else name="lucide:activity" class="h-2.5 w-2.5" />
                 </div>
                 <div class="flex-1 min-w-0">
@@ -874,9 +867,7 @@
                   <p v-if="activityItem.content" class="text-xs text-foreground/80 mt-0.5">
                     {{ activityItem.content }}
                   </p>
-                  <p
-                    v-else-if="activityItem.type === 'created'"
-                    class="text-[10px] text-muted-foreground mt-0.5">
+                  <p v-else-if="activityItem.type === 'created'" class="text-[10px] text-muted-foreground mt-0.5">
                     created this {{ currentType?.label?.toLowerCase() || 'item' }}
                   </p>
                 </div>

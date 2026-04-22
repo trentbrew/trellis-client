@@ -18,6 +18,11 @@ function detectDropType(dataTransfer: DataTransfer): DropResult | null {
 
   if (items.length === 0) return null
 
+  // Skip internal app drags (e.g. calendar event reschedule).
+  if (items.some((item) => item.type.startsWith('application/x-trellis-'))) {
+    return null
+  }
+
   const hasFiles = items.some((item) => item.kind === 'file')
   if (hasFiles) {
     const files: DroppedFile[] = []
@@ -134,7 +139,13 @@ export function useGlobalDropZone(options: UseGlobalDropZoneOptions = {}) {
 
   const dragCounter = { count: 0 }
 
+  function isInternalDrag(dt: DataTransfer | null): boolean {
+    if (!dt) return false
+    return Array.from(dt.items || []).some((item) => item.type.startsWith('application/x-trellis-'))
+  }
+
   function handleDragEnter(e: DragEvent) {
+    if (isInternalDrag(e.dataTransfer)) return
     e.preventDefault()
     e.stopPropagation()
     dragCounter.count++
@@ -147,6 +158,7 @@ export function useGlobalDropZone(options: UseGlobalDropZoneOptions = {}) {
   }
 
   function handleDragLeave(e: DragEvent) {
+    if (isInternalDrag(e.dataTransfer)) return
     e.preventDefault()
     e.stopPropagation()
     dragCounter.count--
@@ -158,6 +170,7 @@ export function useGlobalDropZone(options: UseGlobalDropZoneOptions = {}) {
   }
 
   function handleDragOver(e: DragEvent) {
+    if (isInternalDrag(e.dataTransfer)) return
     e.preventDefault()
     e.stopPropagation()
     if (e.dataTransfer) {
@@ -166,6 +179,7 @@ export function useGlobalDropZone(options: UseGlobalDropZoneOptions = {}) {
   }
 
   async function handleDrop(e: DragEvent) {
+    if (isInternalDrag(e.dataTransfer)) return
     e.preventDefault()
     e.stopPropagation()
     dragCounter.count = 0
@@ -232,6 +246,7 @@ export interface UseEntityDropZoneOptions {
 
 export function useEntityDropZone(options: UseEntityDropZoneOptions = {}) {
   const { create: createEntity, remove: removeEntity } = useTrellisEntities()
+  const { uploadFile } = useFileUpload()
 
   const dropZone = useGlobalDropZone({
     onDrop: async (result) => {
@@ -246,14 +261,16 @@ export function useEntityDropZone(options: UseEntityDropZoneOptions = {}) {
           case 'file': {
             const file = result.files![0]?.file
             if (file) {
-              const blobUrl = URL.createObjectURL(file)
+              // Upload to persistent storage — blob: URLs die after reload,
+              // which was the source of the WebKitBlobResource errors.
+              const upload = await uploadFile(file)
               entityId = await createEntity({
                 type: 'file',
                 title,
-                mimeType: _getFileMimeType(file),
-                url: blobUrl,
-                fileName: file.name,
-                sizeBytes: file.size,
+                mimeType: upload.contentType || _getFileMimeType(file),
+                url: upload.url,
+                fileName: upload.filename || file.name,
+                sizeBytes: upload.size ?? file.size,
               } as any)
               entityLabel = file.name.slice(0, 30)
               break

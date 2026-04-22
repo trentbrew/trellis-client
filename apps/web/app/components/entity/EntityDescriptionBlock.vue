@@ -23,6 +23,13 @@
       entityId?: string
       editorClass?: string
       placeholder?: string
+      /**
+       * When true, the block renders the AI-summary-only view regardless of
+       * mode (no rich text editor). Used for entities whose description is
+       * owned entirely by the AI pipeline — e.g. emails, where the gmail
+       * notifier generates the summary on ingest and the user never edits it.
+       */
+      aiOnly?: boolean
     }>(),
     {
       summary: '',
@@ -30,6 +37,7 @@
       mode: 'edit',
       editorClass: 'opacity-50',
       placeholder: 'Add a description...',
+      aiOnly: false,
     },
   )
 
@@ -38,7 +46,7 @@
     regenerateSummary: []
   }>()
 
-  const isViewMode = computed(() => props.mode === 'view')
+  const isViewMode = computed(() => props.mode === 'view' || props.aiOnly)
   const hasSummary = computed(() => !!props.summary?.trim())
   const showingOriginal = ref(false)
 
@@ -66,8 +74,7 @@
         <p class="text-sm text-muted-foreground leading-relaxed flex-1 whitespace-pre-line">
           {{ summary }}
         </p>
-        <div
-          class="flex items-center gap-0.5 shrink-0 opacity-0 group-hover/summary:opacity-100 transition-opacity">
+        <div class="flex items-center gap-0.5 shrink-0 opacity-0 group-hover/summary:opacity-100 transition-opacity">
           <button
             v-if="description"
             class="inline-flex items-center justify-center h-5 w-5 rounded hover:bg-muted/50 text-muted-foreground/70 hover:text-foreground transition-colors"
@@ -80,10 +87,7 @@
             class="inline-flex items-center justify-center h-5 w-5 rounded hover:bg-muted/50 text-muted-foreground/70 hover:text-foreground transition-colors disabled:opacity-50"
             title="Regenerate summary"
             @click="emit('regenerateSummary')">
-            <Icon
-              name="lucide:refresh-cw"
-              class="h-3 w-3"
-              :class="isGeneratingSummary ? 'animate-spin' : ''" />
+            <Icon name="lucide:refresh-cw" class="h-3 w-3" :class="isGeneratingSummary ? 'animate-spin' : ''" />
           </button>
         </div>
       </div>

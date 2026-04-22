@@ -11,8 +11,9 @@
    *   │ Label Nav     │ Thread List            │ Message Viewer          │
    *   └───────────────┴────────────────────────┴─────────────────────────┘
    */
-  import { useGmail, type GmailThreadSummary, type GmailThreadFull, type GmailMessage, type GmailLabel } from '~/composables/useGmail'
-  import EmailContent from '~/components/entity/panels/document/EmailContent.vue'
+  import { useGmail, type GmailThreadSummary, type GmailThreadFull, type GmailLabel } from '~/composables/useGmail'
+  import { useTrellisEntities } from '~/composables/useTrellisEntities'
+  import type { Entity } from '~/types/entity'
 
   definePageMeta({
     layout: 'default',
@@ -115,48 +116,94 @@
     }
   }
 
-  function messageAsEntity(msg: GmailMessage) {
+  // ── Derived email entity (for EntityDialog inline) ──────────────────
+  // The thread is already persisted to TQL on open (via persistThreadToTql),
+  // so the entity ID is stable as `entity:gmail-<threadId>`. We construct the
+  // item shape synchronously from the Gmail response and hand it to the
+  // dialog — auto-save then flushes any field changes (star, read, tags,
+  // references) back to the graph under that ID.
+  //
+  // We also merge in any TQL-sourced AI enrichment (summary, aiLabels,
+  // aiScannedAt, priority, aiSuggestions, aiSuggestedTags, aiTypeProposals)
+  // so the email dialog renders the read-only AI summary under the header
+  // and the AI panel hydrates from persisted data instead of re-scanning.
+  const { items: _trellisItems } = useTrellisEntities()
+
+  const selectedEmailItem = computed<Entity | null>(() => {
+    const thread = selectedThread.value
+    if (!thread) return null
+    const msg = thread.messages[0]
+    if (!msg) return null
+
+    const eid = `entity:gmail-${thread.id}`
+    // Pull any AI enrichment + user-owned fields (tags, references) from TQL.
+    // Note: `_trellisItems` stores IDs with the `entity:` prefix stripped
+    // (via `stripNamespace`), so match against the bare thread-based id.
+    const bareId = `gmail-${thread.id}`
+    const tqlEntity = _trellisItems.value.find((e) => e.id === bareId || e.id === eid) as
+      | Record<string, any>
+      | undefined
+
     return {
+      id: eid,
+      type: 'email',
+      title: msg.subject || '(no subject)',
+      subject: msg.subject,
+      snippet: msg.snippet,
       from: msg.from,
       to: msg.to,
-      cc: msg.cc ?? '',
+      cc: msg.cc,
       date: msg.date,
-      bodyHtml: msg.bodyHtml,
+      labelIds: thread.labelIds,
+      threadId: thread.id,
+      messageId: msg.messageId,
+      isRead: !thread.labelIds.includes('UNREAD'),
+      isStarred: thread.labelIds.includes('STARRED'),
       bodyText: msg.bodyText,
-      snippet: msg.snippet,
-    }
+      bodyHtml: msg.bodyHtml,
+      source: 'gmail',
+      gmailMessageId: msg.id,
+      gmailThreadId: thread.id,
+      pinned: tqlEntity?.pinned ?? false,
+      description: tqlEntity?.description || '',
+      tags: Array.isArray(tqlEntity?.tags) ? tqlEntity.tags : [],
+      references: Array.isArray(tqlEntity?.references) ? tqlEntity.references : [],
+      // ── AI enrichment (populated by gmail-notifier on ingest) ────
+      summary: tqlEntity?.summary || '',
+      summaryGeneratedAt: tqlEntity?.summaryGeneratedAt,
+      aiSuggestions: tqlEntity?.aiSuggestions,
+      aiSuggestedTags: tqlEntity?.aiSuggestedTags,
+      aiTypeProposals: tqlEntity?.aiTypeProposals,
+      aiLabels: tqlEntity?.aiLabels,
+      aiScannedAt: tqlEntity?.aiScannedAt,
+      priority: tqlEntity?.priority,
+    } as unknown as Entity
+  })
+
+  // ── Thread navigation (prev/next arrows in the dialog header) ──────
+  const selectedThreadIndex = computed(() => threads.value.findIndex((t) => t.id === selectedThreadId.value))
+  const canNavPrev = computed(() => selectedThreadIndex.value > 0)
+  const canNavNext = computed(
+    () => selectedThreadIndex.value >= 0 && selectedThreadIndex.value < threads.value.length - 1,
+  )
+
+  async function navToPrev() {
+    const idx = selectedThreadIndex.value
+    if (idx <= 0) return
+    const prev = threads.value[idx - 1]
+    if (prev) await openThread(prev.id)
   }
 
-  // ── Reply composer ──────────────────────────────────────────────────
+  async function navToNext() {
+    const idx = selectedThreadIndex.value
+    if (idx < 0 || idx >= threads.value.length - 1) return
+    const next = threads.value[idx + 1]
+    if (next) await openThread(next.id)
+  }
 
-  const replyOpen = ref(false)
-  const replyBody = ref('')
-  const replySending = ref(false)
-
-  async function handleReply() {
-    if (!selectedThread.value || !replyBody.value.trim()) return
-    const lastMsg = selectedThread.value.messages[selectedThread.value.messages.length - 1]
-    if (!lastMsg) return
-
-    replySending.value = true
-    try {
-      await sendMessage({
-        to: lastMsg.from,
-        subject: lastMsg.subject.startsWith('Re: ') ? lastMsg.subject : `Re: ${lastMsg.subject}`,
-        body: replyBody.value,
-        threadId: selectedThread.value.id,
-        inReplyTo: lastMsg.messageId,
-        references: lastMsg.messageId,
-      })
-      replyBody.value = ''
-      replyOpen.value = false
-      // Refresh thread
-      await openThread(selectedThread.value.id)
-    } catch (err: any) {
-      console.error('[mail] Reply failed:', err)
-    } finally {
-      replySending.value = false
-    }
+  function clearSelection() {
+    selectedThreadId.value = null
+    selectedThread.value = null
   }
 
   // ── Compose new message ─────────────────────────────────────────────
@@ -352,8 +399,12 @@
         </div>
       </div>
 
-      <!-- Message viewer -->
-      <div class="flex-1 flex flex-col overflow-hidden bg-background">
+      <!-- Message viewer — renders the email entity using the same UI as
+           EntityDialog, but inline (fullscreen in this pane) rather than as
+           a modal. Thread is already persisted to TQL via persistThreadToTql
+           on open, so auto-save flushes star/read/tag/reference edits back
+           to the graph under `entity:gmail-<threadId>`. -->
+      <div class="flex-1 flex flex-col overflow-hidden bg-background min-w-0">
         <div v-if="!selectedThread && !threadLoading" class="flex-1 flex items-center justify-center">
           <div class="text-center">
             <Icon name="lucide:mail-open" class="w-12 h-12 text-muted-foreground/40 mx-auto mb-3" />
@@ -367,77 +418,18 @@
           <div class="h-32 rounded bg-muted/30 animate-pulse" />
         </div>
 
-        <template v-else-if="selectedThread">
-          <!-- Thread header -->
-          <div class="px-6 py-4 border-b border-border/60 flex items-start justify-between gap-4">
-            <div class="min-w-0">
-              <h2 class="text-lg font-semibold mb-1 truncate">
-                {{ selectedThread.messages[0]?.subject || '(no subject)' }}
-              </h2>
-              <div class="flex items-center gap-2 text-xs text-muted-foreground">
-                <span>{{ selectedThread.messages.length }} message(s)</span>
-                <span>·</span>
-                <span v-for="(lid, i) in selectedThread.labelIds" :key="lid" class="inline-flex items-center">
-                  <span class="px-1.5 py-0.5 rounded bg-muted text-[10px] font-medium">{{ lid }}</span>
-                  <span v-if="i < selectedThread.labelIds.length - 1" class="mx-1">·</span>
-                </span>
-              </div>
-            </div>
-            <div class="flex items-center gap-1 shrink-0">
-              <UiButton size="sm" variant="ghost" title="Link to entity" disabled>
-                <Icon name="lucide:paperclip" class="w-4 h-4 mr-1.5" />
-                Link
-              </UiButton>
-              <UiButton size="sm" variant="ghost" title="Archive" disabled>
-                <Icon name="lucide:archive" class="w-4 h-4" />
-              </UiButton>
-            </div>
-          </div>
-
-          <!-- Message list -->
-          <div class="flex-1 overflow-y-auto">
-            <EmailContent
-              v-for="msg in selectedThread.messages"
-              :key="msg.id"
-              :model-value="messageAsEntity(msg)"
-              mode="view"
-              class="border-b border-border/40 last:border-b-0" />
-          </div>
-
-          <!-- Reply bar -->
-          <div class="border-t border-border/60 bg-card/40">
-            <div v-if="!replyOpen" class="px-6 py-3 flex items-center gap-2">
-              <UiButton size="sm" variant="outline" @click="replyOpen = true">
-                <Icon name="lucide:reply" class="w-4 h-4 mr-1.5" />
-                Reply
-              </UiButton>
-              <UiButton size="sm" variant="outline" disabled>
-                <Icon name="lucide:forward" class="w-4 h-4 mr-1.5" />
-                Forward
-              </UiButton>
-            </div>
-
-            <div v-else class="p-4 space-y-3">
-              <textarea
-                v-model="replyBody"
-                rows="5"
-                placeholder="Write a reply…"
-                class="w-full text-sm bg-muted/40 border border-border/60 rounded-md p-3 focus:outline-none focus:ring-1 focus:ring-ring resize-none" />
-              <div class="flex items-center justify-end gap-2">
-                <UiButton size="sm" variant="ghost" :disabled="replySending" @click="replyOpen = false">
-                  Cancel
-                </UiButton>
-                <UiButton size="sm" :disabled="!replyBody.trim() || replySending" @click="handleReply">
-                  <Icon
-                    :name="replySending ? 'lucide:loader-2' : 'lucide:send'"
-                    class="w-4 h-4 mr-1.5"
-                    :class="{ 'animate-spin': replySending }" />
-                  {{ replySending ? 'Sending…' : 'Send' }}
-                </UiButton>
-              </div>
-            </div>
-          </div>
-        </template>
+        <EntityDialog
+          v-else-if="selectedEmailItem"
+          :open="true"
+          variant="inline"
+          mode="edit"
+          item-type="email"
+          :item="selectedEmailItem"
+          :can-navigate-prev="canNavPrev"
+          :can-navigate-next="canNavNext"
+          @close="clearSelection"
+          @navigate-prev="navToPrev"
+          @navigate-next="navToNext" />
       </div>
     </template>
 
