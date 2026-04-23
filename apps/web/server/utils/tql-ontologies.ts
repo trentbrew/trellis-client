@@ -1137,6 +1137,353 @@ const repositoryOntology: SchemaDefinition = {
 }
 
 // ============================================================================
+// Per-Type Ontologies — Campus Substrate (Phase 0)
+// ----------------------------------------------------------------------------
+// Facility, Zone, Agent, Wallet, Decision, Artifact — the spatial/authority
+// primitives inherited from turtleOS. See PLATFORM.md "The Spatial Substrate"
+// section and the campus-substrate-c4s7b2.md plan (slice 0.1).
+//
+// Zone = capability grant. Every agent action is checked against the grants
+// of the Zone it is acting in. Decisions and Artifacts are tagged with their
+// originating Zone for provenance.
+// ============================================================================
+
+const facilityOntology: SchemaDefinition = {
+  '@id': 'trellis:schema/facility',
+  '@type': 'trellis:Schema',
+  version: '1.0.0',
+  tier: 'system',
+  entityClass: 'container',
+  label: 'Facility',
+  labelPlural: 'Facilities',
+  icon: 'lucide:building-2',
+  color: 'slate',
+  projections: ['list', 'card-grid', 'graph'],
+  defaultProjection: 'card-grid',
+  dialogShell: 'container',
+  panels: { properties: 'FacilityProperties', content: 'FacilityContent', footerActions: ['archive', 'delete'] },
+  propertyFieldIds: ['type', 'status', 'category', 'owner', 'tags'],
+  defaultSortField: 'title',
+  searchFields: ['title', 'description', 'facilityKind'],
+  fields: [
+    ...baseFields(),
+    ...containerFields(),
+    f('ownerAgent', 'rich_text', {
+      icon: 'lucide:user',
+      group: 'people',
+      display: 'inline-input',
+      editable: true,
+    }),
+    f('facilityKind', 'select', {
+      selectOptions: ['root', 'agent', 'team', 'project', 'registry'],
+      icon: 'lucide:building',
+      group: 'classification',
+      display: 'popover',
+      editable: true,
+      defaultValue: 'agent',
+    }),
+  ],
+}
+
+const zoneOntology: SchemaDefinition = {
+  '@id': 'trellis:schema/zone',
+  '@type': 'trellis:Schema',
+  version: '1.0.0',
+  tier: 'system',
+  entityClass: 'container',
+  label: 'Zone',
+  labelPlural: 'Zones',
+  icon: 'lucide:layout-panel-left',
+  color: 'indigo',
+  projections: ['list', 'table', 'graph'],
+  defaultProjection: 'list',
+  dialogShell: 'container',
+  panels: { properties: 'ZoneProperties', content: 'ZoneContent', footerActions: ['archive', 'delete'] },
+  propertyFieldIds: ['type', 'status', 'category', 'owner', 'tags'],
+  defaultSortField: 'title',
+  searchFields: ['title', 'description', 'zoneKind'],
+  fields: [
+    ...baseFields(),
+    ...containerFields(),
+    f('zoneKind', 'select', {
+      required: true,
+      selectOptions: ['lab', 'lobby', 'workshop', 'showroom', 'classroom', 'giftshop', 'vault'],
+      icon: 'lucide:layout-panel-left',
+      group: 'classification',
+      display: 'popover',
+      editable: true,
+    }),
+    f('facilityId', 'rich_text', {
+      icon: 'lucide:building-2',
+      group: 'classification',
+      display: 'inline-input',
+      editable: true,
+    }),
+    // JSON-encoded CapabilityGrant[] — actions + target filters
+    f('grants', 'rich_text'),
+    f('memberAgents', 'multi_select', {
+      icon: 'lucide:users',
+      group: 'people',
+      display: 'popover',
+      editable: true,
+    }),
+    f('publicRead', 'checkbox', {
+      icon: 'lucide:eye',
+      group: 'classification',
+      display: 'toggle',
+      editable: true,
+      defaultValue: false,
+    }),
+  ],
+}
+
+const agentOntology: SchemaDefinition = {
+  '@id': 'trellis:schema/agent',
+  '@type': 'trellis:Schema',
+  version: '1.0.0',
+  tier: 'system',
+  entityClass: 'actor',
+  label: 'Agent',
+  labelPlural: 'Agents',
+  icon: 'lucide:bot',
+  color: 'purple',
+  projections: ['card-grid', 'list', 'table', 'graph'],
+  defaultProjection: 'card-grid',
+  dialogShell: 'actor',
+  panels: { properties: 'AgentProperties', content: 'AgentContent', footerActions: ['archive', 'delete'] },
+  propertyFieldIds: ['type', 'category', 'owner', 'tags'],
+  defaultSortField: 'title',
+  searchFields: ['title', 'description', 'role', 'model'],
+  fields: [
+    ...baseFields(),
+    ...actorFields(),
+    f('agentStatus', 'select', {
+      selectOptions: ['active', 'inactive', 'deprecated'],
+      icon: 'lucide:circle-dot',
+      group: 'triage',
+      display: 'popover',
+      editable: true,
+      defaultValue: 'active',
+    }),
+    f('model', 'rich_text', {
+      icon: 'lucide:cpu',
+      group: 'classification',
+      display: 'inline-input',
+      editable: true,
+    }),
+    f('provider', 'select', {
+      selectOptions: ['anthropic', 'openai', 'google', 'ollama', 'local', 'human'],
+      icon: 'lucide:plug',
+      group: 'classification',
+      display: 'popover',
+      editable: true,
+    }),
+    f('systemPrompt', 'rich_text'),
+    // JSON-encoded graph scope — entity types and filters this agent reads/writes
+    f('memoryScope', 'rich_text'),
+    // JSON-encoded list of MCP tools available to this agent
+    f('toolManifest', 'rich_text'),
+    f('homeFacility', 'rich_text', {
+      icon: 'lucide:building-2',
+      group: 'classification',
+      display: 'inline-input',
+      editable: true,
+    }),
+    f('walletId', 'rich_text', {
+      icon: 'lucide:wallet',
+      group: 'identifiers',
+      display: 'inline-input',
+      editable: true,
+    }),
+    f('invitedToZones', 'multi_select', {
+      icon: 'lucide:door-open',
+      group: 'classification',
+      display: 'popover',
+      editable: true,
+    }),
+  ],
+}
+
+const walletOntology: SchemaDefinition = {
+  '@id': 'trellis:schema/wallet',
+  '@type': 'trellis:Schema',
+  version: '1.0.0',
+  tier: 'system',
+  entityClass: 'actor',
+  label: 'Wallet',
+  labelPlural: 'Wallets',
+  icon: 'lucide:wallet',
+  color: 'amber',
+  projections: ['list', 'table', 'card-grid'],
+  defaultProjection: 'card-grid',
+  dialogShell: 'actor',
+  panels: { properties: 'WalletProperties', content: 'WalletContent', footerActions: ['archive', 'delete'] },
+  propertyFieldIds: ['type', 'category', 'owner', 'tags'],
+  defaultSortField: 'title',
+  searchFields: ['title', 'description', 'identity'],
+  fields: [
+    ...baseFields(),
+    ...actorFields(),
+    // Ed25519 public key (base58 or hex). Placeholder string in Phase 0.
+    f('identity', 'rich_text', {
+      icon: 'lucide:key',
+      group: 'identifiers',
+      display: 'inline-input',
+      editable: true,
+    }),
+    // JSON-encoded reputation projection — derived from op-log retention scores
+    f('reputation', 'rich_text'),
+    f('holdsAgent', 'rich_text', {
+      icon: 'lucide:bot',
+      group: 'people',
+      display: 'inline-input',
+      editable: true,
+    }),
+    f('grantedZones', 'multi_select', {
+      icon: 'lucide:door-open',
+      group: 'classification',
+      display: 'popover',
+      editable: true,
+    }),
+  ],
+}
+
+const decisionOntology: SchemaDefinition = {
+  '@id': 'trellis:schema/decision',
+  '@type': 'trellis:Schema',
+  version: '1.0.0',
+  tier: 'system',
+  entityClass: 'document',
+  label: 'Decision',
+  labelPlural: 'Decisions',
+  icon: 'lucide:git-branch',
+  color: 'cyan',
+  projections: ['list', 'table', 'timeline'],
+  defaultProjection: 'list',
+  dialogShell: 'document',
+  panels: { properties: 'DecisionProperties', content: 'DecisionContent', footerActions: ['archive', 'delete'] },
+  propertyFieldIds: ['type', 'category', 'owner', 'tags'],
+  defaultSortField: 'createdAt',
+  searchFields: ['title', 'rationale', 'outcome', 'toolName'],
+  fields: [
+    ...baseFields(),
+    ...documentFields(),
+    f('rationale', 'rich_text'),
+    // JSON-encoded snapshot of the graph state the agent considered
+    f('contextSnapshot', 'rich_text'),
+    f('outcome', 'select', {
+      selectOptions: ['proposed', 'executed', 'rejected', 'superseded', 'pending'],
+      icon: 'lucide:circle-dot',
+      group: 'triage',
+      display: 'popover',
+      editable: true,
+      defaultValue: 'executed',
+    }),
+    f('toolName', 'rich_text', {
+      icon: 'lucide:wrench',
+      group: 'identifiers',
+      display: 'inline-input',
+      editable: true,
+    }),
+    // JSON-encoded tool call input
+    f('toolInput', 'rich_text'),
+    // JSON-encoded list of options the agent considered but did not choose
+    f('alternatives', 'rich_text'),
+    f('byAgent', 'rich_text', {
+      icon: 'lucide:bot',
+      group: 'people',
+      display: 'inline-input',
+      editable: true,
+    }),
+    f('inZone', 'rich_text', {
+      icon: 'lucide:layout-panel-left',
+      group: 'classification',
+      display: 'inline-input',
+      editable: true,
+    }),
+    f('informedBy', 'multi_select', {
+      icon: 'lucide:link',
+      group: 'classification',
+      display: 'popover',
+      editable: true,
+    }),
+    f('supersedes', 'rich_text', {
+      icon: 'lucide:corner-down-right',
+      group: 'classification',
+      display: 'inline-input',
+      editable: true,
+    }),
+    f('producesArtifact', 'rich_text', {
+      icon: 'lucide:package',
+      group: 'classification',
+      display: 'inline-input',
+      editable: true,
+    }),
+  ],
+}
+
+const artifactOntology: SchemaDefinition = {
+  '@id': 'trellis:schema/artifact',
+  '@type': 'trellis:Schema',
+  version: '1.0.0',
+  tier: 'system',
+  entityClass: 'document',
+  label: 'Artifact',
+  labelPlural: 'Artifacts',
+  icon: 'lucide:package',
+  color: 'teal',
+  projections: ['card-grid', 'list', 'table'],
+  defaultProjection: 'card-grid',
+  dialogShell: 'document',
+  panels: { properties: 'ArtifactProperties', content: 'ArtifactContent', footerActions: ['archive', 'delete'] },
+  propertyFieldIds: ['type', 'category', 'owner', 'tags'],
+  defaultSortField: 'updatedAt',
+  searchFields: ['title', 'description', 'contentRef'],
+  fields: [
+    ...baseFields(),
+    ...documentFields(),
+    f('artifactType', 'select', {
+      selectOptions: ['code', 'design', 'document', 'data', 'diagram', 'deliverable', 'other'],
+      icon: 'lucide:layers',
+      group: 'classification',
+      display: 'popover',
+      editable: true,
+      defaultValue: 'document',
+    }),
+    f('contentRef', 'rich_text', {
+      icon: 'lucide:link',
+      group: 'identifiers',
+      display: 'inline-input',
+      editable: true,
+    }),
+    f('artifactVersion', 'rich_text', {
+      icon: 'lucide:tag',
+      group: 'identifiers',
+      display: 'inline-input',
+      editable: true,
+    }),
+    f('createdByAgent', 'rich_text', {
+      icon: 'lucide:bot',
+      group: 'people',
+      display: 'inline-input',
+      editable: true,
+    }),
+    f('publishedInZone', 'rich_text', {
+      icon: 'lucide:layout-panel-left',
+      group: 'classification',
+      display: 'inline-input',
+      editable: true,
+    }),
+    f('usedIn', 'multi_select', {
+      icon: 'lucide:folder',
+      group: 'classification',
+      display: 'popover',
+      editable: true,
+    }),
+  ],
+}
+
+// ============================================================================
 // SidebarNode — navigation tree nodes (core, own TQL namespace)
 // ============================================================================
 
@@ -1493,6 +1840,13 @@ const entityTypeOntologies: Record<string, SchemaDefinition> = {
   'trellis:schema/collection': collectionOntology,
   'trellis:schema/goal': goalOntology,
   'trellis:schema/repository': repositoryOntology,
+  // ── Campus Substrate (Phase 0) ─────────────────────────────────────
+  'trellis:schema/facility': facilityOntology,
+  'trellis:schema/zone': zoneOntology,
+  'trellis:schema/agent': agentOntology,
+  'trellis:schema/wallet': walletOntology,
+  'trellis:schema/decision': decisionOntology,
+  'trellis:schema/artifact': artifactOntology,
 }
 
 // ============================================================================
@@ -1761,4 +2115,11 @@ export {
   pullRequestOntology,
   integrationDefinitionOntology,
   integrationConnectionOntology,
+  // Campus Substrate (Phase 0)
+  facilityOntology,
+  zoneOntology,
+  agentOntology,
+  walletOntology,
+  decisionOntology,
+  artifactOntology,
 }
