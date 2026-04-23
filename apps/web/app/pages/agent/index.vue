@@ -167,6 +167,13 @@
             <Icon name="lucide:layout-panel-left" class="h-3.5 w-3.5" />
             <span>5 zones</span>
           </div>
+          <NuxtLink
+            to="/agent/studio"
+            class="ml-2 flex items-center gap-1.5 rounded border border-border bg-background/60 px-2.5 py-1 text-xs hover:bg-background transition-colors"
+            title="Workshop → Showroom artifact publish demo">
+            <Icon name="lucide:hammer" class="h-3.5 w-3.5 text-emerald-500" />
+            <span>Studio</span>
+          </NuxtLink>
         </UiCardContent>
       </UiCard>
 
