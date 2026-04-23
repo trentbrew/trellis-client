@@ -15,6 +15,14 @@ import { mkdirSync, existsSync } from 'node:fs'
 import { TrellisKernel } from '@turtle.tech/tql'
 import { BetterSqliteBackend } from '@turtle.tech/tql/persist/better-sqlite'
 import { createWorkspaceConfig } from '../utils/tql-ontologies'
+import {
+  FOUNDER_FACILITY_ID,
+  FOUNDER_LAB_ZONE_ID,
+  FOUNDER_LOBBY_ZONE_ID,
+  FOUNDER_WORKSHOP_ZONE_ID,
+  FOUNDER_SHOWROOM_ZONE_ID,
+  FOUNDER_VAULT_ZONE_ID,
+} from '../utils/tql-events'
 
 import type { WorkspaceConfig } from '@turtle.tech/tql'
 
@@ -205,13 +213,12 @@ export default defineNitroPlugin(async (nitro) => {
   // actions are allowed in which zone. Phase 0 stores these grants but does
   // not yet enforce them — the advisory middleware lands in slice 0.4.
   const FOUNDER_AGENT_ID = 'entity:founder'
-  const FOUNDER_FACILITY_ID = 'entity:founder-facility'
   const ZONE_IDS = {
-    lab: 'entity:founder-facility-lab',
-    lobby: 'entity:founder-facility-lobby',
-    workshop: 'entity:founder-facility-workshop',
-    showroom: 'entity:founder-facility-showroom',
-    vault: 'entity:founder-facility-vault',
+    lab: FOUNDER_LAB_ZONE_ID,
+    lobby: FOUNDER_LOBBY_ZONE_ID,
+    workshop: FOUNDER_WORKSHOP_ZONE_ID,
+    showroom: FOUNDER_SHOWROOM_ZONE_ID,
+    vault: FOUNDER_VAULT_ZONE_ID,
   }
   const ZONE_GRANTS: Record<string, Array<Record<string, any>>> = {
     lab: [{ action: 'ALL', scope: { ownerOnly: true } }],
