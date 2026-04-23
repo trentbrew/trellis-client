@@ -13,6 +13,8 @@ import type { UserRole } from '~/config/routes'
 // Routes with permission requirements (mirrors tql-routes.ts)
 // These are checked at navigation time as a runtime guard.
 const ROUTE_PERMISSIONS: Record<string, { minRole: UserRole; permission: 'read' | 'write' | 'admin' }> = {
+  '/ontologies': { minRole: 'admin', permission: 'read' },
+  '/query': { minRole: 'admin', permission: 'read' },
   '/database': { minRole: 'admin', permission: 'read' },
   '/graph': { minRole: 'admin', permission: 'read' },
   '/members': { minRole: 'admin', permission: 'admin' },

@@ -353,13 +353,22 @@ export const ROUTE_PATHS = {
       selfAssessments: '/app/reports/self-assessments',
     },
   },
-  database: {
-    root: '/database',
-    explorer: '/database/explorer',
-    query: '/database/query',
-    ontology: '/database/ontology',
-    activity: '/database/activity',
+  ontologies: {
+    root: '/ontologies',
+    graph: '/ontologies/graph',
+    explorer: '/ontologies/explorer',
+    activity: '/ontologies/activity',
+    type: (slug: string) => `/ontologies/${slug}`,
   },
+  /** @deprecated Use ROUTE_PATHS.ontologies instead. The /database routes are now redirect shims. */
+  database: {
+    root: '/ontologies',
+    explorer: '/ontologies/explorer',
+    query: '/query',
+    ontology: '/ontologies/graph',
+    activity: '/ontologies/activity',
+  },
+  query: '/query',
   contacts: {
     root: '/contacts',
     person: (id: string) => `/contacts/${id}`,

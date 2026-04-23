@@ -131,11 +131,22 @@
   // Invite dialog
   const inviteDialogOpen = ref(false)
 
-  // Reactive collection based on current route
+  // Reactive collection based on current route — accept both the canonical
+  // /collections/:slug and the legacy /database/collections/:slug shim so the
+  // header stays in sync during the brief redirect window.
+  const collectionSlugFromPath = (path: string) => {
+    const cleanPath = getCleanPath(path)
+    if (cleanPath.startsWith('/collections/')) {
+      return cleanPath.split('/collections/')[1]?.split('/')[0] || ''
+    }
+    if (cleanPath.startsWith('/database/collections/')) {
+      return cleanPath.split('/database/collections/')[1]?.split('/')[0] || ''
+    }
+    return ''
+  }
+
   const currentCollection = computed(() => {
-    const cleanPath = getCleanPath(route.path)
-    if (!cleanPath.startsWith('/database/collections/')) return null
-    const slug = cleanPath.split('/database/collections/')[1]
+    const slug = collectionSlugFromPath(route.path)
     if (!slug || !currentApp.value) return null
     return getCollectionBySlug(currentApp.value.id, slug)
   })
@@ -159,7 +170,8 @@
   watch(
     () => route.path,
     (path) => {
-      if (path.startsWith('/database/collections/')) return
+      const clean = getCleanPath(path)
+      if (clean.startsWith('/collections/') || clean.startsWith('/database/collections/')) return
       collectionSchemaSheetOpen.value = false
     },
     { immediate: true },

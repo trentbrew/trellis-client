@@ -236,7 +236,7 @@
       if (collection) {
         emit('created', collection)
         // Navigate to the new collection
-        await navigateTo(`/database/collections/${collection.slug}`)
+        await navigateTo(`/collections/${collection.slug}`)
       }
 
       form.value = {

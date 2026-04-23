@@ -129,7 +129,7 @@
         const collection = collections.value.find((c) => c.id === id)
         if (collection) {
           emit('imported', collection)
-          await navigateTo(`/database/collections/${collection.slug}`)
+          await navigateTo(`/collections/${collection.slug}`)
         }
         ;(nuxtApp as any).$toast?.success('Imported Trellis document')
       } else if (format === 'jsonld-array') {
@@ -154,7 +154,7 @@
         const collection = collections.value.find((c) => c.id === collectionId)
         if (collection) {
           emit('imported', collection)
-          await navigateTo(`/database/collections/${collection.slug}`)
+          await navigateTo(`/collections/${collection.slug}`)
         }
         ;(nuxtApp as any).$toast?.success('Imported JSON-LD')
       } else {

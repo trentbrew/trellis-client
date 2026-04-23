@@ -264,7 +264,7 @@ export function useInstantData() {
       )
 
       // If the user switches apps while on a collection detail route, ensure the slug exists
-      // in the newly-selected app. Otherwise, route back to /database.
+      // in the newly-selected app. Otherwise, route back to /ontologies.
       watch(
         [currentApp, collections, collectionsLoading],
         () => {
@@ -273,8 +273,12 @@ export function useInstantData() {
           if (!app) return
 
           const path = route.path
-          if (!path.startsWith('/database/collections/')) return
-          const slug = path.split('/database/collections/')[1]?.split('/')[0] || ''
+          let slug = ''
+          if (path.includes('/collections/')) {
+            // Match both /collections/:slug and the legacy /database/collections/:slug shim.
+            const marker = path.includes('/database/collections/') ? '/database/collections/' : '/collections/'
+            slug = path.split(marker)[1]?.split('/')[0] || ''
+          }
           if (!slug) return
 
           if (collectionsLoading.value) return
@@ -282,7 +286,7 @@ export function useInstantData() {
           const exists = (collections.value || []).some((c) => c.appId === app.id && c.slug === slug)
           if (exists) return
 
-          void router.replace('/database')
+          void router.replace('/ontologies')
         },
         { immediate: true },
       )

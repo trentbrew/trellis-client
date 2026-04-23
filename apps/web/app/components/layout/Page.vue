@@ -166,7 +166,7 @@
     tertiaryAction?: PageAction
     /** Custom view mode options for browse view switcher */
     viewModeOptions?: ViewModeOption[]
-    /** Entity type slug(s) powering this page's data. Renders a clickable link to /database/<type>. */
+    /** Entity type slug(s) powering this page's data. Renders a clickable link to /ontologies/<type>. */
     dataSource?: string | string[]
     /** Folder tree items for folders variant */
     folderItems?: FolderTreeItem[]
@@ -472,8 +472,8 @@
 
   const dataSourceLink = computed(() => {
     const types = dataSourceTypes.value
-    if (types.length === 1 && types[0]) return `/database/${types[0]}`
-    return '/database'
+    if (types.length === 1 && types[0]) return `/ontologies/${types[0]}`
+    return '/ontologies'
   })
 
   const dataSourceLabel = computed(() => {

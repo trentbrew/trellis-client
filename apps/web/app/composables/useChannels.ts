@@ -22,17 +22,11 @@ export function useChannels() {
   const loading = useState<boolean>('chat:channels:loading', () => true)
 
   // ── Derived lists ────────────────────────────────────────────────
-  const publicChannels = computed(() =>
-    channels.value.filter((c) => c.type === 'public' || c.type === 'private'),
-  )
+  const publicChannels = computed(() => channels.value.filter((c) => c.type === 'public' || c.type === 'private'))
 
-  const dms = computed(() =>
-    channels.value.filter((c) => c.type === 'dm'),
-  )
+  const dms = computed(() => channels.value.filter((c) => c.type === 'dm'))
 
-  const threads = computed(() =>
-    channels.value.filter((c) => c.type === 'thread'),
-  )
+  const threads = computed(() => channels.value.filter((c) => c.type === 'thread'))
 
   // ── Folder grouping ───────────────────────────────────────────────
   const channelFolders = computed(() => {
@@ -43,9 +37,7 @@ export function useChannels() {
     return [...folders].sort()
   })
 
-  const ungroupedPublicChannels = computed(() =>
-    publicChannels.value.filter((c) => !c.folder),
-  )
+  const ungroupedPublicChannels = computed(() => publicChannels.value.filter((c) => !c.folder))
 
   const channelsByFolder = computed(() => {
     const map = new Map<string, Channel[]>()
@@ -70,9 +62,7 @@ export function useChannels() {
     return counts
   })
 
-  const totalUnread = computed(() =>
-    Object.values(unreadCounts.value).reduce((sum, n) => sum + n, 0),
-  )
+  const totalUnread = computed(() => Object.values(unreadCounts.value).reduce((sum, n) => sum + n, 0))
 
   function markRead(channelId: string) {
     lastReadMap.value[channelId] = Date.now()
@@ -145,7 +135,9 @@ export function useChannels() {
       { immediate: true },
     )
 
-    watch(queryLoading, (v) => { if (v) loading.value = true })
+    watch(queryLoading, (v) => {
+      if (v) loading.value = true
+    })
   }
 
   // ── CRUD ─────────────────────────────────────────────────────────
@@ -162,9 +154,18 @@ export function useChannels() {
     const userId = user.value?.id
     if (!userId) throw new Error('Not authenticated')
 
+    const slug =
+      opts.slug ??
+      opts.title
+        .toLowerCase()
+        .replace(/[^a-z0-9]+/g, '-')
+        .replace(/^-|-$/g, '')
+
+    const existing = channels.value.find((c) => c.slug === slug && c.type === (opts.type ?? 'public'))
+    if (existing) throw new Error(`Channel #${slug} already exists`)
+
     const id = crypto.randomUUID()
     const now = Date.now()
-    const slug = opts.slug ?? opts.title.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '')
 
     if (isCloudMode) {
       if (!orgId) throw new Error('No org')
@@ -180,10 +181,7 @@ export function useChannels() {
         createdBy: userId,
         createdAt: now,
       }
-      await db.transact([
-        db.tx.channels[id].update(cloudData),
-        db.tx.organizations[orgId].link({ channels: id }),
-      ])
+      await db.transact([db.tx.channels[id].update(cloudData), db.tx.organizations[orgId].link({ channels: id })])
     } else {
       const { mutate } = useTrellisGraph()
       await mutate({
@@ -209,7 +207,10 @@ export function useChannels() {
     return id
   }
 
-  async function updateChannel(channelId: string, data: Partial<Omit<Channel, 'id' | 'orgId' | 'createdBy' | 'createdAt'>>) {
+  async function updateChannel(
+    channelId: string,
+    data: Partial<Omit<Channel, 'id' | 'orgId' | 'createdBy' | 'createdAt'>>,
+  ) {
     if (isCloudMode) {
       await db.transact(db.tx.channels[channelId].update(data as any))
     } else {
@@ -231,9 +232,7 @@ export function useChannels() {
     const userId = user.value?.id
     if (!userId) throw new Error('Not authenticated')
 
-    const existing = dms.value.find(
-      (c) => c.memberIds?.includes(targetUserId) && c.memberIds?.includes(userId),
-    )
+    const existing = dms.value.find((c) => c.memberIds?.includes(targetUserId) && c.memberIds?.includes(userId))
     if (existing) return existing.id
 
     return createChannel({
@@ -244,20 +243,28 @@ export function useChannels() {
   }
 
   // ── Ensure #general channel exists ──────────────────────────────
+  const isCreatingGeneral = useState<boolean>('chat:creating-general', () => false)
+
   async function ensureGeneralChannel() {
     if (loading.value) return
+    if (isCreatingGeneral.value) return
 
     const hasGeneral = channels.value.some(
       (c) => c.type === 'public' && (c.slug === 'general' || c.title.toLowerCase() === 'general'),
     )
     if (hasGeneral) return
 
-    await createChannel({
-      title: 'general',
-      slug: 'general',
-      type: 'public',
-      description: 'Company-wide announcements and work-based matters',
-    })
+    isCreatingGeneral.value = true
+    try {
+      await createChannel({
+        title: 'general',
+        slug: 'general',
+        type: 'public',
+        description: 'Company-wide announcements and work-based matters',
+      })
+    } finally {
+      isCreatingGeneral.value = false
+    }
   }
 
   // ── Lifecycle ────────────────────────────────────────────────────
