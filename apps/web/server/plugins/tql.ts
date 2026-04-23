@@ -196,6 +196,130 @@ export default defineNitroPlugin(async (nitro) => {
   }
   console.log(`[tql] Seeded ${INTEGRATION_DEFS.length} integration definitions`)
 
+  // ── Seed Campus substrate: founder Agent + Facility + zones (Phase 0) ──
+  // Slice 0.2 of campus-substrate-c4s7b2.md. Idempotent — kernel.createNode
+  // replaces existing entities, so re-running on HMR is safe. All entities
+  // live in the shared `entity` namespace per the app's polymorphic model.
+  //
+  // Zone = capability grant. The JSON-encoded `grants` field declares which
+  // actions are allowed in which zone. Phase 0 stores these grants but does
+  // not yet enforce them — the advisory middleware lands in slice 0.4.
+  const FOUNDER_AGENT_ID = 'entity:founder'
+  const FOUNDER_FACILITY_ID = 'entity:founder-facility'
+  const ZONE_IDS = {
+    lab: 'entity:founder-facility-lab',
+    lobby: 'entity:founder-facility-lobby',
+    workshop: 'entity:founder-facility-workshop',
+    showroom: 'entity:founder-facility-showroom',
+    vault: 'entity:founder-facility-vault',
+  }
+  const ZONE_GRANTS: Record<string, Array<Record<string, any>>> = {
+    lab: [{ action: 'ALL', scope: { ownerOnly: true } }],
+    lobby: [
+      { action: 'READ', scope: { public: true } },
+      { action: 'REQUEST_ACCESS', scope: {} },
+    ],
+    workshop: [{ action: 'ALL', scope: { membersOnly: true } }],
+    showroom: [
+      { action: 'READ', scope: { public: true } },
+      { action: 'WRITE', scope: { membersOnly: true, requiresPublication: true } },
+    ],
+    vault: [{ action: 'ALL', scope: { ownerOnly: true, requiresSecondFactor: true } }],
+  }
+
+  // 1. Founder Agent (the solo dev)
+  await kernel.createNode(
+    FOUNDER_AGENT_ID,
+    {
+      type: 'agent',
+      title: 'Founder',
+      description: 'The solo dev — the human operator of this Trellis instance.',
+      role: 'founder',
+      agentStatus: 'active',
+      provider: 'human',
+      homeFacility: FOUNDER_FACILITY_ID,
+      invitedToZones: Object.values(ZONE_IDS),
+    },
+    'entity',
+  )
+
+  // 2. Founder Facility (root of the Campus)
+  await kernel.createNode(
+    FOUNDER_FACILITY_ID,
+    {
+      type: 'facility',
+      title: 'Founder',
+      description: 'Root Facility for the solo dev. Houses all of their zones.',
+      facilityKind: 'root',
+      ownerAgent: FOUNDER_AGENT_ID,
+    },
+    'entity',
+  )
+
+  // 3. Default zones — Lab, Lobby, Workshop, Showroom, Vault
+  const ZONE_DEFS: Array<{
+    id: string
+    kind: keyof typeof ZONE_GRANTS
+    title: string
+    description: string
+    publicRead: boolean
+  }> = [
+    {
+      id: ZONE_IDS.lab,
+      kind: 'lab',
+      title: 'Lab',
+      description: "The founder's private workspace. Owner-only access.",
+      publicRead: false,
+    },
+    {
+      id: ZONE_IDS.lobby,
+      kind: 'lobby',
+      title: 'Lobby',
+      description: 'Public front door. Notifications and access requests route here.',
+      publicRead: true,
+    },
+    {
+      id: ZONE_IDS.workshop,
+      kind: 'workshop',
+      title: 'Workshop',
+      description: 'Shared workspace for collaborating with invited agents.',
+      publicRead: false,
+    },
+    {
+      id: ZONE_IDS.showroom,
+      kind: 'showroom',
+      title: 'Showroom',
+      description: 'Public portfolio of shipped artifacts and pages.',
+      publicRead: true,
+    },
+    {
+      id: ZONE_IDS.vault,
+      kind: 'vault',
+      title: 'Vault',
+      description: 'Irreversible-op zone. Holds credentials and requires second-factor attestation.',
+      publicRead: false,
+    },
+  ]
+
+  for (const zone of ZONE_DEFS) {
+    await kernel.createNode(
+      zone.id,
+      {
+        type: 'zone',
+        title: zone.title,
+        description: zone.description,
+        zoneKind: zone.kind,
+        facilityId: FOUNDER_FACILITY_ID,
+        grants: JSON.stringify(ZONE_GRANTS[zone.kind]),
+        memberAgents: [FOUNDER_AGENT_ID],
+        publicRead: zone.publicRead,
+      },
+      'entity',
+    )
+  }
+
+  console.log(`[tql] Seeded Campus substrate: ${FOUNDER_AGENT_ID} + ${FOUNDER_FACILITY_ID} + ${ZONE_DEFS.length} zones`)
+
   // Store in module singleton
   _kernel = kernel
 

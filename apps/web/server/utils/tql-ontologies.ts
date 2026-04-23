@@ -1556,6 +1556,13 @@ const entityOntology: SchemaDefinition = {
         'pull_request',
         'integration_definition',
         'integration_connection',
+        // Campus Substrate (Phase 0)
+        'facility',
+        'zone',
+        'agent',
+        'wallet',
+        'decision',
+        'artifact',
       ],
     }),
     f('title', 'title', { required: true }),
