@@ -21,18 +21,18 @@ appear instantly in the browser UI.
 You have 48 MCP tools available — use them directly. They handle authentication,
 error formatting, and JSON serialization automatically.
 
-| Instead of... | Use this MCP tool |
-|---------------|-------------------|
-| `curl /api/graph/health` | `graph_health` |
-| `curl /api/graph/query` | `query_graph` |
-| `curl /api/graph/ontologies` | `get_schema` |
-| `curl /api/graph/catalog` | `get_catalog` |
-| `curl /api/graph/node/:id` | `get_node` |
-| `curl /api/graph/mutate` (create) | `create_node` |
-| `curl /api/graph/mutate` (update) | `update_node` |
-| `curl /api/graph/mutate` (delete) | `delete_node` |
-| `curl /api/graph/mutate` (link) | `link_nodes` |
-| `curl /api/platform/*` | Use the corresponding platform tool (e.g. `list_orgs`, `create_tag`) |
+| Instead of...                     | Use this MCP tool                                                    |
+| --------------------------------- | -------------------------------------------------------------------- |
+| `curl /api/graph/health`          | `graph_health`                                                       |
+| `curl /api/graph/query`           | `query_graph`                                                        |
+| `curl /api/graph/ontologies`      | `get_schema`                                                         |
+| `curl /api/graph/catalog`         | `get_catalog`                                                        |
+| `curl /api/graph/node/:id`        | `get_node`                                                           |
+| `curl /api/graph/mutate` (create) | `create_node`                                                        |
+| `curl /api/graph/mutate` (update) | `update_node`                                                        |
+| `curl /api/graph/mutate` (delete) | `delete_node`                                                        |
+| `curl /api/graph/mutate` (link)   | `link_nodes`                                                         |
+| `curl /api/platform/*`            | Use the corresponding platform tool (e.g. `list_orgs`, `create_tag`) |
 
 The MCP tools are the **only** supported interface for AI agents. Raw HTTP calls
 may break, miss error handling, or hit undocumented routes.
@@ -43,12 +43,12 @@ may break, miss error handling, or hit undocumented routes.
 
 Every entity has an **entity class** (structural shape) and an **entity type** (specific kind):
 
-| Class | Description | Types |
-|-------|-------------|-------|
-| **temporal** | Has date/time span, lives on a calendar | task, event, trip, payment, appointment, reminder, deadline, milestone |
-| **document** | Has rich content body | note, file, page, template, slide_deck, bookmark |
-| **actor** | Represents a person/entity with identity | person, contact, organization, vendor |
-| **container** | Groups/organizes other entities | project, folder, collection, goal |
+| Class         | Description                              | Types                                                                  |
+| ------------- | ---------------------------------------- | ---------------------------------------------------------------------- |
+| **temporal**  | Has date/time span, lives on a calendar  | task, event, trip, payment, appointment, reminder, deadline, milestone |
+| **document**  | Has rich content body                    | note, file, page, template, slide_deck, bookmark                       |
+| **actor**     | Represents a person/entity with identity | person, contact, organization, vendor                                  |
+| **container** | Groups/organizes other entities          | project, folder, collection, goal                                      |
 
 ### Common Fields (all entities)
 
@@ -62,6 +62,8 @@ Every entity has an **entity class** (structural shape) and an **entity type** (
 - `category` — Optional classification string
 - `references` — Array of `FileReference | EntityReference` objects
 - `createdAt` / `updatedAt` — ISO 8601 timestamps
+- `zoneId` — Campus Zone this entity lives in (e.g. `"entity:founder-facility-lab"`) — see below
+- `facilityId` — Campus Facility containing the zone (Phase 0: always `"entity:founder-facility"`)
 
 ### Temporal Fields (temporal class only)
 
@@ -95,9 +97,93 @@ Every entity has an **entity class** (structural shape) and an **entity type** (
 - `status` — `active | archived | completed | on-hold`
 - `parentId` — Optional parent container ID
 
+## Campus Substrate (Phase 0)
+
+The graph is organized by a spatial ontology: every entity lives in a **Zone** inside a **Facility**. Six substrate types define the authority model:
+
+| Type       | Class     | Role                                                                                                    |
+| ---------- | --------- | ------------------------------------------------------------------------------------------------------- |
+| `facility` | container | Holds zones (e.g. `entity:founder-facility`)                                                            |
+| `zone`     | container | Capability-granting location (`lab`, `lobby`, `workshop`, `showroom`, `vault`, `classroom`, `giftshop`) |
+| `agent`    | actor     | Autonomous actor bound to a facility                                                                    |
+| `wallet`   | actor     | Identity + reputation projection for an agent                                                           |
+| `decision` | document  | Rationale + context + outcome for each mutation                                                         |
+| `artifact` | document  | Shipped work; published in a zone                                                                       |
+
+**Default zones** in the founder Facility:
+
+- `entity:founder-facility-lab` — private workspace (owner-only)
+- `entity:founder-facility-lobby` — public READ + access requests
+- `entity:founder-facility-workshop` — members-only collaboration
+- `entity:founder-facility-showroom` — publish artifacts + pages (public READ)
+- `entity:founder-facility-vault` — credentials + irreversible ops (owner + 2FA)
+
+### Tagging mutations with a zone
+
+Include `data.zoneId` and `data.facilityId` in `create_node` (or `update_node`) to publish into a specific zone. If you omit them, the server stamps the founder's Lab by default.
+
+**Publish an artifact to the Showroom:**
+
+```json
+{
+  "entityId": "entity:artifact-demo-v1",
+  "type": "entity",
+  "data": {
+    "type": "artifact",
+    "title": "Public demo build",
+    "artifactType": "deliverable",
+    "contentRef": "https://demo.example.com/v1",
+    "zoneId": "entity:founder-facility-showroom",
+    "facilityId": "entity:founder-facility",
+    "publishedInZone": "entity:founder-facility-showroom",
+    "createdByAgent": "entity:founder"
+  }
+}
+```
+
+**Record a decision you made in the Workshop:**
+
+```json
+{
+  "entityId": "entity:decision-migrate-to-postgres",
+  "type": "entity",
+  "data": {
+    "type": "decision",
+    "title": "Migrate user store to Postgres",
+    "rationale": "<p>Scale limits on SQLite…</p>",
+    "outcome": "executed",
+    "byAgent": "entity:founder",
+    "inZone": "entity:founder-facility-workshop",
+    "zoneId": "entity:founder-facility-workshop",
+    "facilityId": "entity:founder-facility"
+  }
+}
+```
+
+### Zone guard (advisory)
+
+Every mutation is evaluated against the target zone's grants and logged:
+
+```
+[zone-guard] ALLOW agent=entity:founder action=createNode zone=showroom event=#42
+[zone-guard] DENY (advisory) agent=my-agent action=createNode zone=vault reason="…"
+```
+
+Both outcomes let the mutation commit in Phase 0. If you see `DENY`, audit the intent before Phase 1 flips on strict enforcement.
+
+### Querying by zone
+
+```
+FIND entity AS ?e WHERE ?e.zoneId = "entity:founder-facility-lab"
+FIND entity AS ?a WHERE ?a.type = "artifact" AND ?a.publishedInZone = "entity:founder-facility-showroom"
+```
+
+See `/agent` in the web app for a live op-log projection filtered by zone.
+
 ## Creating Entities
 
 Always use `create_node` with:
+
 1. A descriptive, unique `entityId` (e.g. `"task-weekly-review"`, `"note-meeting-notes-feb10"`)
 2. The correct `type` from the list above
 3. A `data` object with at minimum `{ title: "..." }`
@@ -105,6 +191,7 @@ Always use `create_node` with:
 ### Examples
 
 **Create a task:**
+
 ```json
 {
   "entityId": "task-review-pr-42",
@@ -120,6 +207,7 @@ Always use `create_node` with:
 ```
 
 **Create a note:**
+
 ```json
 {
   "entityId": "note-standup-feb10",
@@ -134,6 +222,7 @@ Always use `create_node` with:
 ```
 
 **Create a person:**
+
 ```json
 {
   "entityId": "person-jane-doe",
@@ -147,6 +236,7 @@ Always use `create_node` with:
 ```
 
 **Create a project:**
+
 ```json
 {
   "entityId": "project-mcp-integration",
@@ -164,14 +254,14 @@ Always use `create_node` with:
 
 Use `link_nodes` with semantic relation names:
 
-| Relation | Meaning | Example |
-|----------|---------|---------|
-| `assignedTo` | Task/item → Person | task-1 → person-jane |
-| `belongsTo` | Entity → Project/Folder | task-1 → project-mcp |
-| `references` | Bidirectional reference | note-1 → task-2 |
-| `dependsOn` | Task dependency chain | task-2 → task-1 |
-| `parentOf` | Container hierarchy | project-1 → folder-1 |
-| `childOf` | Inverse of parentOf | folder-1 → project-1 |
+| Relation     | Meaning                 | Example              |
+| ------------ | ----------------------- | -------------------- |
+| `assignedTo` | Task/item → Person      | task-1 → person-jane |
+| `belongsTo`  | Entity → Project/Folder | task-1 → project-mcp |
+| `references` | Bidirectional reference | note-1 → task-2      |
+| `dependsOn`  | Task dependency chain   | task-2 → task-1      |
+| `parentOf`   | Container hierarchy     | project-1 → folder-1 |
+| `childOf`    | Inverse of parentOf     | folder-1 → project-1 |
 
 ## Querying
 
@@ -193,24 +283,44 @@ FIND projects AS p WHERE p.status = "active" RETURN p.title, p.progress
 
 **Start here:** Call `get_graph_summary` first. It replaces `graph_health` + `get_schema` + `get_catalog` in a single round trip and gives you everything needed to orient yourself in the graph.
 
-| Tool | When to use |
-|------|-------------|
+| Tool                | When to use                                                                                                       |
+| ------------------- | ----------------------------------------------------------------------------------------------------------------- |
 | `get_graph_summary` | **Always call first** — compact overview of health, entity types, ontologies, attributes, links, recent mutations |
-| `graph_health` | Quick liveness check only (fact/link counts) |
-| `get_schema` | Full ontology field definitions (when you need field-level detail) |
-| `get_catalog` | Full attribute distribution (77 attrs, verbose — prefer `get_graph_summary`) |
-| `get_mutation_log` | Full recent mutation history |
+| `graph_health`      | Quick liveness check only (fact/link counts)                                                                      |
+| `get_schema`        | Full ontology field definitions (when you need field-level detail)                                                |
+| `get_catalog`       | Full attribute distribution (77 attrs, verbose — prefer `get_graph_summary`)                                      |
+| `get_mutation_log`  | Full recent mutation history                                                                                      |
 
 ### `get_graph_summary` response shape
 
 ```json
 {
-  "health": { "status": "ok", "factCount": 8306, "linkCount": 39, "entityCount": 456 },
-  "entityTypes": [{ "type": "event", "count": 450 }, { "type": "task", "count": 6 }],
-  "ontologies": { "total": 46, "system": ["task", "note", "event", "..."], "user": [] },
-  "topAttributes": [{ "attribute": "title", "distinctCount": 43, "cardinality": "one" }],
+  "health": {
+    "status": "ok",
+    "factCount": 8306,
+    "linkCount": 39,
+    "entityCount": 456
+  },
+  "entityTypes": [
+    { "type": "event", "count": 450 },
+    { "type": "task", "count": 6 }
+  ],
+  "ontologies": {
+    "total": 46,
+    "system": ["task", "note", "event", "..."],
+    "user": []
+  },
+  "topAttributes": [
+    { "attribute": "title", "distinctCount": 43, "cardinality": "one" }
+  ],
   "links": { "total": 39, "relations": ["assignedTo", "belongsTo"] },
-  "recentMutations": [{ "action": "createNode", "entityId": "entity:gcal-...", "timestamp": "..." }]
+  "recentMutations": [
+    {
+      "action": "createNode",
+      "entityId": "entity:gcal-...",
+      "timestamp": "..."
+    }
+  ]
 }
 ```
 
@@ -238,7 +348,11 @@ pages, and dialogs — zero code changes needed.
     { "name": "amount", "valueType": "number" },
     { "name": "vendor", "valueType": "rich_text" },
     { "name": "dueDate", "valueType": "date" },
-    { "name": "status", "valueType": "select", "selectOptions": ["pending", "paid", "overdue"] }
+    {
+      "name": "status",
+      "valueType": "select",
+      "selectOptions": ["pending", "paid", "overdue"]
+    }
   ]
 }
 ```
@@ -246,6 +360,7 @@ pages, and dialogs — zero code changes needed.
 ### Entity Class Inference
 
 The system infers entity class from fields:
+
 - **temporal** — Has `startDate`, `endDate`, `dueDate`, `allDay`, etc.
 - **document** — Has `content`, `pinned`, `body`, etc.
 - **actor** — Has `email`, `phone`, `avatar`, `firstName`, etc.
@@ -302,16 +417,16 @@ persists across restarts.
 
 ### Platform ID Conventions
 
-| Resource | ID Format | Example |
-|----------|-----------|---------|
-| Organization | `platform:org/<slug>` | `platform:org/media-cms` |
-| App/World | `platform:app/<slug>` | `platform:app/production` |
-| Collection | `platform:collection/<slug>` | `platform:collection/episodes` |
-| Page | `platform:page/<slug>-<ts>` | `platform:page/dashboard-mlx6yjnj` |
-| Tag | `platform:tag/<slug>` | `platform:tag/priority` |
-| Workflow | `platform:workflow/<slug>-<ts>` | `platform:workflow/auto-triage-mlx6yv0g` |
-| Comment | `comment:<uuid>` | `comment:1890044d-67a1-...` |
-| Setting | `platform:setting/<scope>/<key>` | `platform:setting/app/theme` |
+| Resource     | ID Format                        | Example                                  |
+| ------------ | -------------------------------- | ---------------------------------------- |
+| Organization | `platform:org/<slug>`            | `platform:org/media-cms`                 |
+| App/World    | `platform:app/<slug>`            | `platform:app/production`                |
+| Collection   | `platform:collection/<slug>`     | `platform:collection/episodes`           |
+| Page         | `platform:page/<slug>-<ts>`      | `platform:page/dashboard-mlx6yjnj`       |
+| Tag          | `platform:tag/<slug>`            | `platform:tag/priority`                  |
+| Workflow     | `platform:workflow/<slug>-<ts>`  | `platform:workflow/auto-triage-mlx6yv0g` |
+| Comment      | `comment:<uuid>`                 | `comment:1890044d-67a1-...`              |
+| Setting      | `platform:setting/<scope>/<key>` | `platform:setting/app/theme`             |
 
 ## Best Practices
 

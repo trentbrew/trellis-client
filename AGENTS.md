@@ -38,6 +38,79 @@ Entity IDs use the format `entity:<slug>`, e.g. `entity:task-1`, `entity:note-me
 
 > **Namespace note:** All entities share the `entity` TQL storage namespace for historical reasons. In application code, use the `entityId()` / `entityQuery()` helpers from `app/lib/tql-namespace.ts` instead of hardcoding the prefix.
 
+## Campus Substrate (Phase 0)
+
+Every entity now lives in a **Zone** inside a **Facility** — the spatial ontology inherited from turtleOS. The substrate is **advisory** in Phase 0: the zone guard logs allow/deny decisions but does **not** reject mutations.
+
+### Primitive types
+
+| Type       | Class     | Purpose                                                                                                 |
+| ---------- | --------- | ------------------------------------------------------------------------------------------------------- |
+| `facility` | container | Unit of scope; contains zones (e.g. `entity:founder-facility`)                                          |
+| `zone`     | container | Capability-granting location (`lab`, `lobby`, `workshop`, `showroom`, `vault`, `classroom`, `giftshop`) |
+| `agent`    | actor     | Autonomous actor bound to a home facility                                                               |
+| `wallet`   | actor     | Identity + reputation projection for an agent                                                           |
+| `decision` | document  | Rationale + context + outcome for every agent act                                                       |
+| `artifact` | document  | Produced work, published in a zone                                                                      |
+
+### Default zones (founder Facility)
+
+| Zone                               | Grants                                  | Typical use                                      |
+| ---------------------------------- | --------------------------------------- | ------------------------------------------------ |
+| `entity:founder-facility-lab`      | `ALL, ownerOnly`                        | Private workspace — tasks, notes, personal graph |
+| `entity:founder-facility-lobby`    | `READ public` + `REQUEST_ACCESS`        | Notifications, access requests, front door       |
+| `entity:founder-facility-workshop` | `ALL, membersOnly`                      | Multi-agent collaboration                        |
+| `entity:founder-facility-showroom` | `READ public` + `WRITE membersOnly`     | Published artifacts, public pages                |
+| `entity:founder-facility-vault`    | `ALL, ownerOnly + requiresSecondFactor` | Credentials, integrations, irreversible ops      |
+
+### Tagging mutations with a zone
+
+Every SSE mutation event carries `zoneId` and `facilityId`. The server derives them from (in priority order):
+
+1. `X-Trellis-Zone` + `X-Trellis-Facility` headers (explicit override)
+2. The `Referer` path (mapped via `zone-router.ts`)
+3. Fallback: the founder's Lab
+
+New entities are also auto-stamped with `data.zoneId` + `data.facilityId` at creation so zone-aware queries work without op-log replay.
+
+```bash
+# Header-based override (CLI / external agents)
+curl -X POST http://localhost:$TRELLIS_PORT/api/graph/mutate \
+  -H 'Content-Type: application/json' \
+  -H 'X-Trellis-Zone: entity:founder-facility-showroom' \
+  -H 'X-Trellis-Facility: entity:founder-facility' \
+  -d '{"action":"createNode","entityId":"entity:artifact-roadmap-v1","type":"entity","data":{"type":"artifact","title":"Roadmap v1","artifactType":"document"},"agentId":"cli"}'
+
+# Or set zoneId inline (preferred for MCP)
+{ "entityId": "entity:artifact-roadmap-v1", "type": "entity",
+  "data": { "type": "artifact", "title": "Roadmap v1",
+            "zoneId": "entity:founder-facility-showroom",
+            "facilityId": "entity:founder-facility" },
+  "agentId": "claude" }
+```
+
+### Zone guard logs
+
+On every mutation you'll see one of:
+
+```
+[zone-guard] ALLOW agent=entity:founder action=createNode zone=lab event=#42
+[zone-guard] DENY (advisory) agent=my-agent action=createNode zone=vault reason="..."
+```
+
+Both are advisory — the mutation still commits. Treat `DENY` lines as warnings to audit before Phase 1 flips strict enforcement on.
+
+### Querying by zone
+
+```
+FIND entity AS ?e WHERE ?e.zoneId = "entity:founder-facility-lab"
+FIND entity AS ?a WHERE ?a.type = "artifact" AND ?a.publishedInZone = "entity:founder-facility-showroom"
+```
+
+### Lab projection UI
+
+Navigate to `/agent` in the web app to see a live op-log filtered by zone with tabs for all five zones.
+
 ## TQL Graph API
 
 Base URL: `http://localhost:$TRELLIS_PORT/api/graph`
