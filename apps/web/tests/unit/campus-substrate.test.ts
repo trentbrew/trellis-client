@@ -32,6 +32,7 @@ import {
   FOUNDER_VAULT_ZONE_ID,
 } from '../../server/utils/tql-events'
 import { shouldCaptureDecision, buildDecisionData, type CaptureInput } from '../../server/utils/campus-decisions'
+import { zoneIdFromPath, CAMPUS_ZONES, CAMPUS_FACILITY_ID } from '../../app/composables/useZoneContext'
 
 // ── zone-guard: getZoneGuardMode (slice 1.3) ──────────────────────────────
 
@@ -256,6 +257,62 @@ describe('zoneForPath', () => {
 
     const fallback = zoneForPath('/workspace/x')
     expect(fallback.source).toBe('default')
+  })
+})
+
+// ── useZoneContext: zoneIdFromPath client/server parity (slice 1.4) ────────
+
+describe('useZoneContext.zoneIdFromPath (client mirror)', () => {
+  it('uses the same zone IDs as the server constants', () => {
+    expect(CAMPUS_FACILITY_ID).toBe(FOUNDER_FACILITY_ID)
+    expect(CAMPUS_ZONES.lab).toBe(FOUNDER_LAB_ZONE_ID)
+    expect(CAMPUS_ZONES.lobby).toBe(FOUNDER_LOBBY_ZONE_ID)
+    expect(CAMPUS_ZONES.workshop).toBe(FOUNDER_WORKSHOP_ZONE_ID)
+    expect(CAMPUS_ZONES.showroom).toBe(FOUNDER_SHOWROOM_ZONE_ID)
+    expect(CAMPUS_ZONES.vault).toBe(FOUNDER_VAULT_ZONE_ID)
+  })
+
+  it('produces the same zone as server.zoneForPath for every rule prefix', () => {
+    const probes = [
+      '/settings/integrations',
+      '/settings/integrations/new',
+      '/admin',
+      '/permits/42',
+      '/pages',
+      '/pages/about',
+      '/collections/demos',
+      '/agent',
+      '/agent/',
+      '/messages/room-1',
+      '/members',
+      '/workflows',
+      '/notifications',
+      '/invite/xyz',
+      '/help',
+      '/learn',
+      '/docs/intro',
+      '/welcome',
+      '/onboarding',
+      '/workspace/tasks',
+      '/home',
+      '/ontologies',
+      '/',
+      '/nonexistent/path',
+    ]
+    for (const path of probes) {
+      expect(zoneIdFromPath(path), `mismatch for ${path}`).toBe(zoneForPath(path).zoneId)
+    }
+  })
+
+  it('handles null / undefined / empty paths as Lab', () => {
+    expect(zoneIdFromPath(null)).toBe(CAMPUS_ZONES.lab)
+    expect(zoneIdFromPath(undefined)).toBe(CAMPUS_ZONES.lab)
+    expect(zoneIdFromPath('')).toBe(CAMPUS_ZONES.lab)
+  })
+
+  it('tolerates trailing slashes', () => {
+    expect(zoneIdFromPath('/pages/')).toBe(CAMPUS_ZONES.showroom)
+    expect(zoneIdFromPath('/agent///')).toBe(CAMPUS_ZONES.workshop)
   })
 })
 
