@@ -24,6 +24,7 @@ import {
   FOUNDER_VAULT_ZONE_ID,
 } from '../utils/tql-events'
 import { initZoneGuard } from '../utils/zone-guard'
+import { backfillEntityZones } from '../utils/campus-migration'
 
 import type { WorkspaceConfig } from '@turtle.tech/tql'
 
@@ -339,6 +340,15 @@ export default defineNitroPlugin(async (nitro) => {
   // would be allowed under strict zone grant enforcement. Does NOT reject
   // mutations in Phase 0 — pure telemetry to validate the grant model.
   initZoneGuard(kernel)
+
+  // ── Campus entity-zone backfill (slice 0.7) ─────────────────────────
+  // One-shot per-boot sweep that adds zoneId/facilityId facts to any
+  // pre-Campus entities so zone-aware queries work without op-log replay.
+  // Idempotent: entities that already carry zoneId are skipped.
+  // Fire-and-forget; a slow DB shouldn't block the plugin from finishing.
+  backfillEntityZones(kernel).catch((err) => {
+    console.warn('[campus-migration] unexpected error:', err)
+  })
 
   // Store in module singleton
   _kernel = kernel

@@ -336,6 +336,16 @@ export default defineEventHandler(async (event) => {
           if (!nodeData.owner) {
             nodeData.owner = agent
           }
+          // Slice 0.7: stamp new entities with their creation zone so
+          // zone-aware queries work without replaying the op log.
+          // Explicit data.zoneId (e.g. seeding) wins; otherwise derive
+          // from the request context.
+          if (!nodeData.zoneId) {
+            nodeData.zoneId = zoneId
+          }
+          if (!nodeData.facilityId) {
+            nodeData.facilityId = facilityId
+          }
           await kernel.createNode(entityId, nodeData, type, { agentId: agent })
           pushMutationLog({ action: 'createNode', entityId, type, agentId: agent, zoneId, facilityId, data: nodeData })
           emitMutation({ action: 'createNode', entityId, type, agentId: agent, zoneId, facilityId, data: nodeData })
