@@ -23,6 +23,7 @@ import {
   FOUNDER_SHOWROOM_ZONE_ID,
   FOUNDER_VAULT_ZONE_ID,
 } from '../utils/tql-events'
+import { initZoneGuard } from '../utils/zone-guard'
 
 import type { WorkspaceConfig } from '@turtle.tech/tql'
 
@@ -326,6 +327,12 @@ export default defineNitroPlugin(async (nitro) => {
   }
 
   console.log(`[tql] Seeded Campus substrate: ${FOUNDER_AGENT_ID} + ${FOUNDER_FACILITY_ID} + ${ZONE_DEFS.length} zones`)
+
+  // ── Advisory zone guard (slice 0.4) ─────────────────────────────────
+  // Subscribes to the mutation event bus and logs whether each mutation
+  // would be allowed under strict zone grant enforcement. Does NOT reject
+  // mutations in Phase 0 — pure telemetry to validate the grant model.
+  initZoneGuard(kernel)
 
   // Store in module singleton
   _kernel = kernel

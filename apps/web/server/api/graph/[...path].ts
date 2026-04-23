@@ -13,6 +13,7 @@
  */
 
 import { useTqlKernel, useWorkspaceConfig, getMutationLog, pushMutationLog } from '../../plugins/tql'
+import { getZoneGuardStats } from '../../utils/zone-guard'
 import { emitMutation } from '../../utils/tql-events'
 
 /** Reconstruct a node object from EAV facts, properly handling multi-value attributes */
@@ -62,6 +63,7 @@ export default defineEventHandler(async (event) => {
       status: 'ok',
       factCount,
       linkCount,
+      zoneGuard: getZoneGuardStats(),
     }
   }
 
