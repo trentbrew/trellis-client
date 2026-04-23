@@ -11,6 +11,7 @@
  */
 
 import { useSSESubscribe } from './useTrellisSSE'
+import { useZoneContext } from './useZoneContext'
 
 type GraphQueryResult = {
   data: Record<string, unknown>[]
@@ -44,10 +45,14 @@ type MutatePayload =
 
 const API_BASE = '/api/graph'
 
-async function graphFetch<T>(path: string, opts?: { method?: string; body?: Record<string, any> }): Promise<T> {
+async function graphFetch<T>(
+  path: string,
+  opts?: { method?: string; body?: Record<string, any>; headers?: Record<string, string> },
+): Promise<T> {
   const res = await $fetch<T>(`${API_BASE}/${path}`, {
     method: (opts?.method as any) || 'GET',
     body: opts?.body,
+    headers: opts?.headers,
   })
   return res as T
 }
@@ -81,6 +86,11 @@ function initSSE() {
 export function useTrellisGraph() {
   // Start SSE listener on first use (client-only)
   initSSE()
+
+  // Slice 1.4: resolve the current Campus zone so every mutation carries
+  // an explicit X-Trellis-Zone header. Falls back gracefully when called
+  // outside a route context.
+  const { zoneHeaders } = useZoneContext()
 
   /**
    * Execute an EQL-S query with automatic reactivity.
@@ -187,11 +197,19 @@ export function useTrellisGraph() {
   /**
    * Execute a mutation (create/update/delete/link).
    * Reactivity is handled by the SSE event listener bumping _graphVersion.
+   *
+   * Slice 1.4: each call carries X-Trellis-Zone + X-Trellis-Facility
+   * derived from the current route (or a provideZoneOverride() if any
+   * ancestor component set one). Pass `zoneId` to override per-call.
    */
-  async function mutate(payload: MutatePayload): Promise<{ ok: boolean }> {
+  async function mutate(
+    payload: MutatePayload,
+    opts?: { zoneId?: string; captureDecision?: boolean },
+  ): Promise<{ ok: boolean }> {
     const result = await graphFetch<{ ok: boolean }>('mutate', {
       method: 'POST',
       body: payload as Record<string, any>,
+      headers: zoneHeaders(opts),
     })
     // NOTE: Don't bump _graphVersion here — the SSE 'mutation' event from the
     // server will bump it once, which is the authoritative notification.
