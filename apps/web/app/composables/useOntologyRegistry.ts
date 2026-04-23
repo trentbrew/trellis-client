@@ -618,6 +618,114 @@ export function useOntologyRegistry() {
     })
   }
 
+  /** Guard that mutation of a given schema is allowed (user-tier only). */
+  function assertMutable(schemaId: string): void {
+    const config = Array.from(_serverTypes.value.values()).find((t) => t.schemaId === schemaId)
+    if (config && config.tier && config.tier !== 'user') {
+      throw new Error(`Cannot modify ${config.tier}-tier ontology "${schemaId}"`)
+    }
+  }
+
+  /** Fetch the current raw SchemaDefinition from the server. */
+  async function _fetchSchema(schemaId: string): Promise<SchemaDefinition> {
+    const { ontology } = await $fetch<{ ontology: SchemaDefinition }>(
+      `/api/graph/ontology/${encodeURIComponent(schemaId)}`,
+    )
+    return ontology
+  }
+
+  /** PUT the updated schema back to the server. */
+  async function _putSchema(schemaId: string, schema: SchemaDefinition): Promise<void> {
+    await $fetch(`/api/graph/ontology/${encodeURIComponent(schemaId)}`, {
+      method: 'PUT',
+      body: { schema, agentId: 'browser' },
+    })
+  }
+
+  /**
+   * Update a single field's properties in an existing ontology schema.
+   * The field to update is identified by its original name (`originalName`);
+   * the patch may include a new `name` (rename), `valueType`, `required`,
+   * `description`, or `selectOptions`.
+   */
+  async function updateFieldOnType(
+    schemaId: string,
+    originalName: string,
+    patch: Partial<
+      Pick<
+        SchemaField,
+        'name' | 'valueType' | 'required' | 'description' | 'selectOptions' | 'relation' | 'defaultValue' | 'icon'
+      >
+    >,
+  ): Promise<void> {
+    assertMutable(schemaId)
+    const currentSchema = await _fetchSchema(schemaId)
+
+    const index = currentSchema.fields.findIndex((f) => f.name === originalName)
+    if (index === -1) throw new Error(`Field "${originalName}" not found on "${schemaId}"`)
+
+    // Prevent rename collisions with another existing field.
+    if (patch.name && patch.name !== originalName) {
+      if (currentSchema.fields.some((f, i) => i !== index && f.name === patch.name)) {
+        throw new Error(`Field "${patch.name}" already exists on "${schemaId}"`)
+      }
+    }
+
+    const updatedFields = [...currentSchema.fields]
+    updatedFields[index] = { ...updatedFields[index]!, ...patch } as SchemaField
+
+    await _putSchema(schemaId, { ...currentSchema, fields: updatedFields })
+  }
+
+  /**
+   * Replace the entire ordered field list for a schema. Used when the editor
+   * has reordered or bulk-edited fields client-side and needs to flush the
+   * final state in one request.
+   */
+  async function replaceFieldsOnType(schemaId: string, fields: SchemaField[]): Promise<void> {
+    assertMutable(schemaId)
+    const currentSchema = await _fetchSchema(schemaId)
+    await _putSchema(schemaId, { ...currentSchema, fields })
+  }
+
+  /**
+   * Update top-level schema metadata (label, icon, description, color,
+   * entityClass, projections, searchFields, etc.). Does not touch fields.
+   */
+  async function updateTypeMeta(
+    schemaId: string,
+    patch: Partial<
+      Pick<
+        SchemaDefinition,
+        | 'label'
+        | 'labelPlural'
+        | 'icon'
+        | 'color'
+        | 'entityClass'
+        | 'projections'
+        | 'defaultProjection'
+        | 'searchFields'
+        | 'defaultSortField'
+      >
+    > & { description?: string },
+  ): Promise<void> {
+    assertMutable(schemaId)
+    const currentSchema = await _fetchSchema(schemaId)
+    await _putSchema(schemaId, { ...currentSchema, ...patch })
+  }
+
+  /**
+   * Delete an ontology schema entirely (user-tier only).
+   * Records of this type are NOT deleted — callers are responsible for
+   * surfacing that consequence in the UI.
+   */
+  async function deleteType(schemaId: string): Promise<void> {
+    assertMutable(schemaId)
+    await $fetch(`/api/graph/ontology/${encodeURIComponent(schemaId)}`, {
+      method: 'DELETE',
+    })
+  }
+
   return {
     serverTypes,
     dynamicTypes,
@@ -636,6 +744,10 @@ export function useOntologyRegistry() {
     isDynamicType,
     addFieldToType,
     removeFieldFromType,
+    updateFieldOnType,
+    replaceFieldsOnType,
+    updateTypeMeta,
+    deleteType,
     refresh: fetchOntologies,
   }
 }

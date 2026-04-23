@@ -146,7 +146,7 @@
       type="button"
       aria-label="Search or ask the agent"
       :aria-expanded="commandDialog.isOpen.value"
-      class="relative w-full max-w-[640px] min-w-0 h-8 pl-9 pr-14 rounded-full bg-muted/40 hover:bg-muted/60 border border-transparent hover:border-border/40 text-xs text-left text-muted-foreground/70 outline-none transition-colors flex items-center"
+      class="relative w-full max-w-[500px] min-w-0 h-8 pl-9 pr-14 rounded-full bg-muted/30 hover:bg-muted/60 hover:border-border/40 text-xs text-left text-muted-foreground/70 outline-none transition-colors flex items-center border border-border"
       @click="openTrigger">
       <Icon
         name="lucide:search"

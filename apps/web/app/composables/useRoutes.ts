@@ -87,7 +87,7 @@ export const useRoutes = () => {
     return instantCollections.value
       .filter((c) => !c.parentId)
       .map((col) => ({
-        path: `/database/collections/${col.slug}`,
+        path: `/collections/${col.slug}`,
         label: col.title,
         icon: col.icon || 'lucide:database',
         tint: 'text-blue-300',

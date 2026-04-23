@@ -19,16 +19,17 @@ const homeRoute: RouteDefinition = {
   '@type': 'trellis:Route',
   routePath: '/home',
   label: 'Home',
-  icon: 'lucide:house',
+  icon: 'lucide:home',
   order: 0,
-  inRail: false,
+  inRail: true,
   railPosition: 'primary',
   inCommandPalette: true,
   requiresAuth: true,
   collapseSidebar: true,
+  searchKeywords: ['home', 'chat', 'ask', 'assistant', 'agent'],
   meta: {
     title: 'Home',
-    description: 'Your personal home dashboard',
+    description: 'Chat with your Trellis assistant',
     hideSidebar: true,
   },
 }
@@ -275,15 +276,19 @@ const workspaceRoute: RouteDefinition = {
 }
 
 // ============================================================================
-// Database Route — /database
+// Ontologies Route — /ontologies
 // ============================================================================
+//
+// Previously /database. Renamed to match the TQL/MCP/CLI domain vocabulary.
+// The /database/* paths remain as redirect shims in app/pages/database/ to
+// preserve any outstanding links.
 
-const databaseRoute: RouteDefinition = {
-  '@id': 'route:database',
+const ontologiesRoute: RouteDefinition = {
+  '@id': 'route:ontologies',
   '@type': 'trellis:Route',
-  routePath: '/database',
-  label: 'Database',
-  icon: 'lucide:database',
+  routePath: '/ontologies',
+  label: 'Ontologies',
+  icon: 'lucide:shapes',
   order: 2,
   inRail: true,
   railPosition: 'primary',
@@ -293,86 +298,90 @@ const databaseRoute: RouteDefinition = {
   pageVariant: 'database',
   projectionTypes: ['table', 'kanban', 'card-grid', 'calendar', 'timeline', 'gallery', 'list', 'moodboard'],
   meta: {
-    title: 'Database',
-    description: 'Browse and query all entities as a database',
+    title: 'Ontologies',
+    description: 'Define the shape of your data — types, fields, and relationships',
     fullWidth: true,
   },
   sidebarSections: [
     {
-      label: 'OVERVIEW',
-      key: 'database-tools',
+      label: 'TOOLS',
+      key: 'ontologies-tools',
       icon: 'lucide:wrench',
       collapsible: true,
       order: 0,
       items: [
-        { routePath: '/database/explorer', label: 'Explorer', icon: 'lucide:search' },
-        { routePath: '/database/query', label: 'Query', icon: 'lucide:terminal' },
-        { routePath: '/database/ontology', label: 'Ontology', icon: 'lucide:shapes' },
-        { routePath: '/database/activity', label: 'Activity', icon: 'lucide:scroll-text' },
+        { routePath: '/ontologies/graph', label: 'Graph view', icon: 'lucide:git-branch' },
+        { routePath: '/ontologies/explorer', label: 'Explorer', icon: 'lucide:search' },
+        { routePath: '/query', label: 'Query console', icon: 'lucide:terminal' },
+        { routePath: '/ontologies/activity', label: 'Activity log', icon: 'lucide:scroll-text' },
       ],
     },
     {
       label: 'CUSTOM',
-      key: 'database-custom',
-      icon: 'lucide:layers',
+      key: 'ontologies-custom',
+      icon: 'lucide:blocks',
       items: 'unpinned',
       collapsible: true,
       editable: true,
       order: 1,
     },
     {
-      label: 'PLATFORM',
-      key: 'database-system',
-      icon: 'lucide:blocks',
+      label: 'SYSTEM',
+      key: 'ontologies-system',
+      icon: 'lucide:lock',
       collapsible: true,
       order: 2,
     },
     {
-      label: 'SYSTEM',
-      key: 'database-entities',
-      icon: 'lucide:box',
+      label: 'CORE',
+      key: 'ontologies-core',
+      icon: 'lucide:shield',
       collapsible: true,
+      defaultCollapsed: true,
       order: 3,
     },
   ],
   children: [
     {
-      '@id': 'route:database/explorer',
+      '@id': 'route:ontologies/graph',
       '@type': 'trellis:Route',
-      routePath: '/database/explorer',
+      routePath: '/ontologies/graph',
+      label: 'Graph',
+      icon: 'lucide:git-branch',
+      meta: { title: 'Ontology Graph', description: 'Visualize schema relationships', fullWidth: true },
+    },
+    {
+      '@id': 'route:ontologies/explorer',
+      '@type': 'trellis:Route',
+      routePath: '/ontologies/explorer',
       label: 'Explorer',
       icon: 'lucide:search',
       meta: { title: 'Entity Explorer', description: 'Browse, search, and inspect graph entities' },
     },
     {
-      '@id': 'route:database/query',
+      '@id': 'route:ontologies/activity',
       '@type': 'trellis:Route',
-      routePath: '/database/query',
-      label: 'Query',
-      icon: 'lucide:terminal',
-      meta: { title: 'Query Console', description: 'Run EQL-S queries', fullWidth: true },
-    },
-    {
-      '@id': 'route:database/ontology',
-      '@type': 'trellis:Route',
-      routePath: '/database/ontology',
-      label: 'Ontology',
-      icon: 'lucide:shapes',
-      tabs: [
-        { label: 'Core Ontology', to: '/database/ontology?tab=core', icon: 'lucide:lock' },
-        { label: 'Entity Registry', to: '/database/ontology?tab=registry', icon: 'lucide:layers' },
-      ],
-      meta: { title: 'Ontology Visualizer', description: 'Schema visualization', fullWidth: true },
-    },
-    {
-      '@id': 'route:database/activity',
-      '@type': 'trellis:Route',
-      routePath: '/database/activity',
+      routePath: '/ontologies/activity',
       label: 'Activity',
       icon: 'lucide:scroll-text',
-      meta: { title: 'Activity Log', description: 'Mutation log and event stream' },
+      meta: { title: 'Activity Log', description: 'Graph mutation log and event stream' },
     },
   ],
+}
+
+// Top-level Query Console — promoted from /database/query.
+const queryRoute: RouteDefinition = {
+  '@id': 'route:query',
+  '@type': 'trellis:Route',
+  routePath: '/query',
+  label: 'Query',
+  icon: 'lucide:terminal',
+  order: 2.5,
+  inRail: false,
+  inCommandPalette: true,
+  requiresAuth: true,
+  permissions: { minRole: 'admin', permission: 'read' },
+  meta: { title: 'Query Console', description: 'Run EQL-S queries', fullWidth: true },
 }
 
 // ============================================================================
@@ -889,7 +898,8 @@ export function getRouteDefinitions(): Record<string, RouteDefinition> {
     'route:mail': mailRoute,
     'route:messages': messagesRoute,
     'route:pages': pagesRoute,
-    'route:database': databaseRoute,
+    'route:ontologies': ontologiesRoute,
+    'route:query': queryRoute,
     'route:graph': graphRoute,
     'route:workflows': workflowsRoute,
     'route:members': membersRoute,
@@ -906,7 +916,8 @@ export {
   mailRoute,
   messagesRoute,
   pagesRoute,
-  databaseRoute,
+  ontologiesRoute,
+  queryRoute,
   graphRoute,
   workflowsRoute,
   membersRoute,

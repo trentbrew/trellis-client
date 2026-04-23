@@ -121,13 +121,13 @@
         return
       }
 
-      // Don't redirect if on a static child route (e.g., /database/collections/templates)
+      // Don't redirect if on a static child route (e.g., /ontologies/graph)
       const staticChildPaths = (section.children || []).map((c: any) => c.path)
       const isOnStaticChild = staticChildPaths.includes(cleanNewPath)
       if (isOnStaticChild) return
 
-      // Database has its own landing page — no auto-redirect needed
-      if (section.path === '/database' && isOnSectionRoot) return
+      // Ontologies has its own landing page — no auto-redirect needed
+      if (section.path === '/ontologies' && isOnSectionRoot) return
 
       if (firstPinnedPath && (isOnSectionRoot || isOnSectionDefault)) {
         if (getCleanPath(router.currentRoute.value.path) !== firstPinnedPath) {

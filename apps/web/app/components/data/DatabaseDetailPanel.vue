@@ -39,14 +39,23 @@
 
   // Reverse mapping: entity type → workspace routes that reference it
   const ENTITY_TYPE_ROUTES: Record<string, Array<{ path: string; label: string; icon: string }>> = {
-    task: [{ path: '/workspace/tasks', label: 'Tasks', icon: 'lucide:check-square' }, { path: '/workspace/calendar', label: 'Calendar', icon: 'lucide:calendar' }],
+    task: [
+      { path: '/workspace/tasks', label: 'Tasks', icon: 'lucide:check-square' },
+      { path: '/workspace/calendar', label: 'Calendar', icon: 'lucide:calendar' },
+    ],
     event: [{ path: '/workspace/calendar', label: 'Calendar', icon: 'lucide:calendar' }],
     trip: [{ path: '/workspace/calendar', label: 'Calendar', icon: 'lucide:calendar' }],
     payment: [{ path: '/workspace/calendar', label: 'Calendar', icon: 'lucide:calendar' }],
     appointment: [{ path: '/workspace/calendar', label: 'Calendar', icon: 'lucide:calendar' }],
-    reminder: [{ path: '/workspace/reminders', label: 'Reminders', icon: 'lucide:bell' }, { path: '/workspace/calendar', label: 'Calendar', icon: 'lucide:calendar' }],
+    reminder: [
+      { path: '/workspace/reminders', label: 'Reminders', icon: 'lucide:bell' },
+      { path: '/workspace/calendar', label: 'Calendar', icon: 'lucide:calendar' },
+    ],
     deadline: [{ path: '/workspace/calendar', label: 'Calendar', icon: 'lucide:calendar' }],
-    milestone: [{ path: '/workspace/milestones', label: 'Milestones', icon: 'lucide:flag' }, { path: '/workspace/calendar', label: 'Calendar', icon: 'lucide:calendar' }],
+    milestone: [
+      { path: '/workspace/milestones', label: 'Milestones', icon: 'lucide:flag' },
+      { path: '/workspace/calendar', label: 'Calendar', icon: 'lucide:calendar' },
+    ],
     sprint: [{ path: '/workspace/sprints', label: 'Sprints', icon: 'lucide:zap' }],
     budget: [{ path: '/workspace/budgets', label: 'Budgets', icon: 'lucide:wallet' }],
     note: [{ path: '/workspace/notes', label: 'Notes', icon: 'lucide:sticky-note' }],
@@ -63,7 +72,7 @@
   const typeReferences = computed(() => {
     const slug = props.typeConfig.type
     const workspaceRoutes = ENTITY_TYPE_ROUTES[slug] || []
-    const dbRoute = { path: `/database/${slug}`, label: `Database: ${props.typeConfig.label}`, icon: 'lucide:database' }
+    const dbRoute = { path: `/ontologies/${slug}`, label: `Schema: ${props.typeConfig.label}`, icon: 'lucide:shapes' }
     return { workspaceRoutes, dbRoute }
   })
 
@@ -103,7 +112,8 @@
       </div>
       <!-- Type info row -->
       <div class="flex items-center gap-1.5 flex-wrap">
-        <span class="inline-flex items-center gap-1 text-[10px] text-muted-foreground bg-muted/40 px-1.5 py-0.5 rounded">
+        <span
+          class="inline-flex items-center gap-1 text-[10px] text-muted-foreground bg-muted/40 px-1.5 py-0.5 rounded">
           <Icon :name="typeKindIcon" class="h-3 w-3" />
           {{ typeKindLabel }}
         </span>
@@ -126,10 +136,14 @@
     <div class="shrink-0 px-3 py-2 border-b border-border">
       <div class="flex items-center gap-1 rounded-lg bg-muted/30 p-0.5">
         <button
-          v-for="tab in (['schema', 'refs', 'config'] as const)"
+          v-for="tab in ['schema', 'refs', 'config'] as const"
           :key="tab"
           class="flex-1 px-2 py-1 text-[11px] rounded-md transition-colors capitalize"
-          :class="activeTab === tab ? 'bg-background text-foreground shadow-sm' : 'text-muted-foreground hover:text-foreground'"
+          :class="
+            activeTab === tab
+              ? 'bg-background text-foreground shadow-sm'
+              : 'text-muted-foreground hover:text-foreground'
+          "
           @click="activeTab = tab">
           {{ tab }}
         </button>
@@ -156,12 +170,7 @@
           <code class="text-[9px] bg-muted/40 px-1 py-0.5 rounded text-muted-foreground shrink-0">
             {{ field.valueType }}
           </code>
-          <span
-            v-if="field.required"
-            class="text-[8px] text-amber-500 shrink-0"
-            title="Required">
-            *
-          </span>
+          <span v-if="field.required" class="text-[8px] text-amber-500 shrink-0" title="Required">*</span>
         </div>
 
         <div v-if="!props.typeConfig.fields?.length" class="text-xs text-muted-foreground text-center py-4">
@@ -185,18 +194,18 @@
               <Icon name="lucide:arrow-up-right" class="h-3 w-3 text-muted-foreground/50 ml-auto" />
             </NuxtLink>
           </div>
-          <div v-else class="text-[11px] text-muted-foreground/50 px-2 py-2">
-            No workspace pages use this type
-          </div>
+          <div v-else class="text-[11px] text-muted-foreground/50 px-2 py-2">No workspace pages use this type</div>
         </div>
 
-        <!-- Database route -->
+        <!-- Schema editor -->
         <div>
-          <div class="text-[10px] font-medium text-muted-foreground uppercase tracking-wide mb-2">Database Route</div>
+          <div class="text-[10px] font-medium text-muted-foreground uppercase tracking-wide mb-2">Schema</div>
           <NuxtLink
             :to="typeReferences.dbRoute.path"
             class="flex items-center gap-2 px-2 py-1.5 rounded-md hover:bg-muted/30 transition-colors group">
-            <Icon name="lucide:database" class="h-3.5 w-3.5 text-muted-foreground group-hover:text-foreground" />
+            <Icon
+              :name="typeReferences.dbRoute.icon"
+              class="h-3.5 w-3.5 text-muted-foreground group-hover:text-foreground" />
             <span class="text-xs group-hover:text-foreground">{{ typeReferences.dbRoute.label }}</span>
             <Icon name="lucide:arrow-up-right" class="h-3 w-3 text-muted-foreground/50 ml-auto" />
           </NuxtLink>
@@ -208,7 +217,9 @@
         <div class="space-y-2">
           <div class="flex items-center justify-between">
             <span class="text-[10px] font-medium text-muted-foreground uppercase tracking-wide">Type</span>
-            <code class="text-[10px] bg-muted/40 px-1.5 py-0.5 rounded text-muted-foreground">{{ props.typeConfig.type }}</code>
+            <code class="text-[10px] bg-muted/40 px-1.5 py-0.5 rounded text-muted-foreground">
+              {{ props.typeConfig.type }}
+            </code>
           </div>
           <div class="flex items-center justify-between">
             <span class="text-[10px] font-medium text-muted-foreground uppercase tracking-wide">Class</span>
@@ -237,7 +248,9 @@
           </div>
           <div class="flex items-center justify-between">
             <span class="text-[10px] font-medium text-muted-foreground uppercase tracking-wide">Required</span>
-            <span class="text-xs font-medium">{{ (props.typeConfig.fields || []).filter(f => f.required).length }}</span>
+            <span class="text-xs font-medium">
+              {{ (props.typeConfig.fields || []).filter((f) => f.required).length }}
+            </span>
           </div>
           <div class="flex items-center justify-between">
             <span class="text-[10px] font-medium text-muted-foreground uppercase tracking-wide">Dialog</span>

@@ -16,6 +16,8 @@ export default <RouterConfig>{
   routes: (_routes) => {
     // Top-level path segments that should be workspace-scoped
     const WORKSPACE_SCOPED = new Set([
+      'agent',
+      'home',
       'workspace',
       'calendar',
       'collections',
@@ -26,7 +28,9 @@ export default <RouterConfig>{
       'members',
       'messages',
       'notifications',
+      'ontologies',
       'pages',
+      'query',
       'settings',
       'types',
       'workflows',

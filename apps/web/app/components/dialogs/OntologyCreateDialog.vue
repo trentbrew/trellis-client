@@ -253,13 +253,12 @@
         method: 'POST',
         body: { schema, agentId: 'browser' },
       })
-
       ;(nuxtApp as any).$toast?.success(`"${title.value}" type created`)
       emit('created', schemaId.value)
       emit('update:open', false)
 
-      // Navigate to the new type's browse page
-      await navigateTo(`/database/${slug.value}`)
+      // Navigate to the new type's schema editor
+      await navigateTo(`/ontologies/${slug.value}`)
 
       // Reset form
       resetForm()
@@ -313,7 +312,11 @@
         <div class="flex items-center gap-2">
           <button
             class="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-colors"
-            :class="step === 'info' ? 'bg-primary text-primary-foreground' : 'bg-muted/50 text-muted-foreground hover:text-foreground'"
+            :class="
+              step === 'info'
+                ? 'bg-primary text-primary-foreground'
+                : 'bg-muted/50 text-muted-foreground hover:text-foreground'
+            "
             @click="step = 'info'">
             <Icon name="lucide:info" class="h-3.5 w-3.5" />
             Details
@@ -321,7 +324,11 @@
           <Icon name="lucide:chevron-right" class="h-3.5 w-3.5 text-muted-foreground/50" />
           <button
             class="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-colors"
-            :class="step === 'fields' ? 'bg-primary text-primary-foreground' : 'bg-muted/50 text-muted-foreground hover:text-foreground'"
+            :class="
+              step === 'fields'
+                ? 'bg-primary text-primary-foreground'
+                : 'bg-muted/50 text-muted-foreground hover:text-foreground'
+            "
             @click="step = 'fields'">
             <Icon name="lucide:list" class="h-3.5 w-3.5" />
             Fields
@@ -360,7 +367,8 @@
           <label class="text-sm font-medium">Name</label>
           <UiInput v-model="title" placeholder="e.g. Invoice, Recipe, Habit..." />
           <p v-if="slug" class="text-xs text-muted-foreground">
-            ID: <code class="bg-muted/50 px-1 py-0.5 rounded text-[11px]">{{ schemaId }}</code>
+            ID:
+            <code class="bg-muted/50 px-1 py-0.5 rounded text-[11px]">{{ schemaId }}</code>
           </p>
         </div>
 
@@ -404,7 +412,9 @@
           </div>
           <div>
             <div class="text-sm font-medium">{{ title || 'Untitled' }}</div>
-            <div class="text-[11px] text-muted-foreground">{{ fields.length }} field{{ fields.length === 1 ? '' : 's' }}</div>
+            <div class="text-[11px] text-muted-foreground">
+              {{ fields.length }} field{{ fields.length === 1 ? '' : 's' }}
+            </div>
           </div>
         </div>
 
@@ -419,10 +429,7 @@
           </div>
 
           <div class="rounded-lg border border-border divide-y divide-border">
-            <div
-              v-for="(field, index) in fields"
-              :key="field.id"
-              class="flex items-center gap-2 px-3 py-2 group">
+            <div v-for="(field, index) in fields" :key="field.id" class="flex items-center gap-2 px-3 py-2 group">
               <!-- Reorder -->
               <div class="flex flex-col gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity">
                 <button
@@ -470,7 +477,11 @@
               <!-- Required toggle -->
               <button
                 class="shrink-0 text-xs px-1.5 py-0.5 rounded transition-colors"
-                :class="field.required ? 'bg-amber-500/10 text-amber-500' : 'text-muted-foreground/40 hover:text-muted-foreground'"
+                :class="
+                  field.required
+                    ? 'bg-amber-500/10 text-amber-500'
+                    : 'text-muted-foreground/40 hover:text-muted-foreground'
+                "
                 :title="field.required ? 'Required' : 'Optional'"
                 @click="field.required = !field.required">
                 <Icon name="lucide:asterisk" class="h-3 w-3" />
@@ -504,10 +515,7 @@
 
         <div class="flex items-center gap-2">
           <UiButton variant="outline" @click="emit('update:open', false)">Cancel</UiButton>
-          <UiButton
-            v-if="step === 'fields'"
-            :disabled="!canCreate || isCreating"
-            @click="createOntology">
+          <UiButton v-if="step === 'fields'" :disabled="!canCreate || isCreating" @click="createOntology">
             <Icon v-if="isCreating" name="lucide:loader-2" class="mr-2 h-4 w-4 animate-spin" />
             <Icon v-else name="lucide:plus" class="mr-2 h-4 w-4" />
             Create Type

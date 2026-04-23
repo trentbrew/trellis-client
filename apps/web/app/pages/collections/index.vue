@@ -1,20 +1,15 @@
 <script setup lang="ts">
-  // Legacy redirect: /collections → /database
+  // Bare /collections root has no landing page — bounce users to the Ontologies
+  // dashboard which now hosts schema management, and let typed record browsing
+  // happen via /collections/[slug].
   definePageMeta({
     middleware: ['auth'],
   })
 
-  const route = useRoute()
   const { wp } = useWorkspacePath()
 
   onMounted(() => {
-    // Redirect /collections to /database, preserving any sub-path
-    const subPath = route.path.replace(/^\/collections/, '')
-    if (subPath && subPath !== '/') {
-      navigateTo(wp(`/database/collections${subPath}`), { replace: true })
-    } else {
-      navigateTo(wp('/database'), { replace: true })
-    }
+    navigateTo(wp('/ontologies'), { replace: true })
   })
 </script>
 

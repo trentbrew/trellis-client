@@ -365,7 +365,7 @@
   const dontAskAgain = ref(false)
 
   const handleRename = (collectionSlug: string) => {
-    const collection = collections.value.find((c) => `/database/collections/${c.slug}` === collectionSlug)
+    const collection = collections.value.find((c) => `/collections/${c.slug}` === collectionSlug)
     if (!collection) return
 
     const newTitle = prompt('Rename collection:', collection.title)
@@ -375,7 +375,7 @@
   }
 
   const handleChangeIcon = async (collectionSlug: string) => {
-    const collection = collections.value.find((c) => `/database/collections/${c.slug}` === collectionSlug)
+    const collection = collections.value.find((c) => `/collections/${c.slug}` === collectionSlug)
     if (!collection) return
 
     // Navigate to collection page where icon picker is available
@@ -383,7 +383,7 @@
   }
 
   const handleDelete = async (collectionSlug: string) => {
-    const collection = collections.value.find((c) => `/database/collections/${c.slug}` === collectionSlug)
+    const collection = collections.value.find((c) => `/collections/${c.slug}` === collectionSlug)
     if (!collection) return
 
     pendingDeleteCollectionId.value = collection.id
@@ -398,7 +398,7 @@
   }
 
   const handleExportTrellis = async (collectionSlug: string) => {
-    const collection = collections.value.find((c) => `/database/collections/${c.slug}` === collectionSlug)
+    const collection = collections.value.find((c) => `/collections/${c.slug}` === collectionSlug)
     if (!collection) return
 
     try {
@@ -416,7 +416,7 @@
 
     await deleteCollection(id)
     deleteDialogOpen.value = false
-    navigateTo(wp('/database'))
+    navigateTo(wp('/ontologies'))
   }
 
   watch(deleteDialogOpen, (open) => {
@@ -431,7 +431,7 @@
   })
 
   const isCollectionItem = (path: string) => {
-    return path.startsWith('/database/collections/') && path !== '/database'
+    return path.startsWith('/collections/') && path !== '/collections'
   }
 
   const goTo = async (path: string) => {
@@ -451,7 +451,7 @@
     }
 
     const section = routes.currentSidebarSection.value
-    if (section?.path === '/database') {
+    if (section?.path === '/ontologies' || section?.path === '/database') {
       ontologyCreateOpen.value = true
     }
   }
@@ -565,7 +565,7 @@
     }
     return sidebarSectionMenu({
       isCollapsed: collapsed.isCollapsed(section.key),
-      canResetOrder: isWorkspaceRoute.value || (isDatabaseRoute.value && section.key === 'database-custom'),
+      canResetOrder: isWorkspaceRoute.value || (isOntologiesRoute.value && section.key === 'ontologies-custom'),
       canCreate: canEditContent.value && (isWorkspaceRoute.value || !!section.editable),
     })
   }
@@ -675,7 +675,7 @@
   // ── Drag-and-drop reordering ─────────────────────────────────
 
   const isWorkspaceRoute = computed(() => routes.currentSidebarSection.value?.path === '/workspace')
-  const isDatabaseRoute = computed(() => routes.currentSidebarSection.value?.path === '/database')
+  const isOntologiesRoute = computed(() => routes.currentSidebarSection.value?.path === '/ontologies')
   const isChatRoute = computed(
     () => route.path.startsWith('/messages') || routes.currentSidebarSection.value?.path === '/messages',
   )
@@ -737,8 +737,8 @@
         const sectionKey = list.dataset.sortableSection
         if (!sectionKey) return
 
-        // Only enable for workspace sections + database-custom
-        const canReorder = isWorkspaceRoute.value || (isDatabaseRoute.value && sectionKey === 'database-custom')
+        // Only enable for workspace sections + ontologies-custom
+        const canReorder = isWorkspaceRoute.value || (isOntologiesRoute.value && sectionKey === 'ontologies-custom')
         if (!canReorder) return
 
         // In tree-driven mode, allow cross-section dragging for reparenting
@@ -1061,7 +1061,7 @@
                       class="w-full bg-card/50 border border-border backdrop-blur-md text-sidebar-foreground text-xs rounded-md pl-8 pr-10 py-2 outline-none placeholder:text-sidebar-foreground/30 focus:ring-1 focus:ring-ring/50 transition-colors"
                       @keydown.escape="sidebarFilter = ''" />
                     <UiTooltipProvider
-                      v-if="isWorkspaceRoute || routes.currentSidebarSection.value?.path === '/database'">
+                      v-if="isWorkspaceRoute || routes.currentSidebarSection.value?.path === '/ontologies'">
                       <UiTooltip>
                         <UiTooltipTrigger as-child>
                           <button
@@ -1635,9 +1635,7 @@
                     </div>
                   </template>
 
-                  <AppSidebarGraphTypes
-                    v-else-if="graphTypesState.active && !isTypesSection"
-                    class="h-full" />
+                  <AppSidebarGraphTypes v-else-if="graphTypesState.active && !isTypesSection" class="h-full" />
 
                   <div
                     v-else-if="!filteredDynamicSidebarSections && filteredPinnedItems.length === 0 && !isTypesSection"

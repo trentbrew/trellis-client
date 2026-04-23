@@ -48,8 +48,8 @@ export function parseTurtleIri(value: unknown): TurtleEntityRef | null {
 }
 
 export function routeForTurtleRef(ref: TurtleEntityRef): string {
-  if (ref.kind === 'collection') return `/database/collections/${ref.collectionSlug}`
-  if (ref.kind === 'record') return `/database/collections/${ref.collectionSlug}?focusRecord=${encodeURIComponent(ref.recordId)}`
+  if (ref.kind === 'collection') return `/collections/${ref.collectionSlug}`
+  if (ref.kind === 'record') return `/collections/${ref.collectionSlug}?focusRecord=${encodeURIComponent(ref.recordId)}`
 
   if (ref.kind === 'org') return '/types'
   if (ref.kind === 'app') return '/types'
