@@ -337,7 +337,7 @@ export default defineEventHandler(async (event) => {
             nodeData.owner = agent
           }
           await kernel.createNode(entityId, nodeData, type, { agentId: agent })
-          pushMutationLog({ action: 'createNode', entityId, type, data: nodeData })
+          pushMutationLog({ action: 'createNode', entityId, type, agentId: agent, zoneId, facilityId, data: nodeData })
           emitMutation({ action: 'createNode', entityId, type, agentId: agent, zoneId, facilityId, data: nodeData })
           return { ok: true, entityId }
         }
@@ -354,7 +354,15 @@ export default defineEventHandler(async (event) => {
             updateData.owner = agent
           }
           await kernel.updateNode(entityId, updateData, type, { agentId: agent })
-          pushMutationLog({ action: 'updateNode', entityId, type, data: updateData })
+          pushMutationLog({
+            action: 'updateNode',
+            entityId,
+            type,
+            agentId: agent,
+            zoneId,
+            facilityId,
+            data: updateData,
+          })
           emitMutation({ action: 'updateNode', entityId, type, agentId: agent, zoneId, facilityId, data: updateData })
           return { ok: true, entityId }
         }
@@ -364,7 +372,7 @@ export default defineEventHandler(async (event) => {
             throw createError({ statusCode: 400, message: 'deleteNode requires "entityId"' })
           }
           await kernel.deleteNode(entityId, { agentId: agent })
-          pushMutationLog({ action: 'deleteNode', entityId })
+          pushMutationLog({ action: 'deleteNode', entityId, agentId: agent, zoneId, facilityId })
           emitMutation({ action: 'deleteNode', entityId, agentId: agent, zoneId, facilityId })
           return { ok: true, entityId }
         }
@@ -374,7 +382,14 @@ export default defineEventHandler(async (event) => {
             throw createError({ statusCode: 400, message: 'link requires "e1", "relation", and "e2"' })
           }
           await kernel.link(e1, relation, e2, { agentId: agent })
-          pushMutationLog({ action: 'link', entityId: `${e1} -> ${e2}`, data: { relation } })
+          pushMutationLog({
+            action: 'link',
+            entityId: `${e1} -> ${e2}`,
+            agentId: agent,
+            zoneId,
+            facilityId,
+            data: { relation },
+          })
           emitMutation({
             action: 'link',
             entityId: `${e1} -> ${e2}`,
@@ -391,7 +406,14 @@ export default defineEventHandler(async (event) => {
             throw createError({ statusCode: 400, message: 'unlink requires "e1", "relation", and "e2"' })
           }
           await kernel.unlink(e1, relation, e2, { agentId: agent })
-          pushMutationLog({ action: 'unlink', entityId: `${e1} -> ${e2}`, data: { relation } })
+          pushMutationLog({
+            action: 'unlink',
+            entityId: `${e1} -> ${e2}`,
+            agentId: agent,
+            zoneId,
+            facilityId,
+            data: { relation },
+          })
           emitMutation({
             action: 'unlink',
             entityId: `${e1} -> ${e2}`,

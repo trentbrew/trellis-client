@@ -51,6 +51,12 @@ export interface MutationLogEntry {
   action: string
   entityId?: string
   type?: string
+  /** Who performed the mutation (matches MutationEvent.agentId) */
+  agentId?: string
+  /** Campus zone where the mutation originated (slice 0.5) */
+  zoneId?: string
+  /** Campus facility containing the zone (slice 0.5) */
+  facilityId?: string
   data?: Record<string, any>
 }
 
