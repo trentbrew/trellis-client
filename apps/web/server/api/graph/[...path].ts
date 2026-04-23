@@ -12,10 +12,12 @@
  *   GET  /api/graph/health      — Health check
  */
 
+import { getHeader } from 'h3'
 import { useTqlKernel, useWorkspaceConfig, getMutationLog, pushMutationLog } from '../../plugins/tql'
 import { getZoneGuardStats } from '../../utils/zone-guard'
 import { emitMutation } from '../../utils/tql-events'
 import { zoneFromRequest } from '../../utils/zone-router'
+import { captureDecision, shouldCaptureDecision } from '../../utils/campus-decisions'
 
 /** Reconstruct a node object from EAV facts, properly handling multi-value attributes */
 function factsToNode(entityId: string, facts: Array<{ e: string; a: string; v: unknown }>): Record<string, any> {
@@ -319,6 +321,28 @@ export default defineEventHandler(async (event) => {
     // or the Referer pathname (falls back to the founder's Lab).
     const { zoneId, facilityId } = zoneFromRequest(event)
 
+    // Slice 1.1: opt-in Decision auto-capture. Agents and CLI tools that
+    // want provenance set the X-Trellis-Capture-Decision: 1 header (or
+    // body.captureDecision = true). Browsers leave it off.
+    const captureHeader = getHeader(event, 'x-trellis-capture-decision')
+    const captureRequested = captureHeader === '1' || captureHeader === 'true' || body?.captureDecision === true
+
+    /** Fire a decision-capture after a successful mutation. No-ops when
+     *  captureRequested is false or the mutation targets a decision entity. */
+    const maybeCapture = async (targetEntityId: string | undefined, targetType: string | undefined) => {
+      const input = {
+        action,
+        agentId: agent,
+        zoneId,
+        facilityId,
+        entityId: targetEntityId,
+        entityType: targetType,
+        toolInput: { action, entityId: targetEntityId, type: targetType, e1, relation, e2 },
+      }
+      if (!shouldCaptureDecision(input, captureRequested)) return
+      await captureDecision(kernel, input)
+    }
+
     if (!action) {
       throw createError({ statusCode: 400, message: 'Missing "action" in request body' })
     }
@@ -349,6 +373,7 @@ export default defineEventHandler(async (event) => {
           await kernel.createNode(entityId, nodeData, type, { agentId: agent })
           pushMutationLog({ action: 'createNode', entityId, type, agentId: agent, zoneId, facilityId, data: nodeData })
           emitMutation({ action: 'createNode', entityId, type, agentId: agent, zoneId, facilityId, data: nodeData })
+          await maybeCapture(entityId, nodeData?.type)
           return { ok: true, entityId }
         }
 
@@ -384,6 +409,7 @@ export default defineEventHandler(async (event) => {
           await kernel.deleteNode(entityId, { agentId: agent })
           pushMutationLog({ action: 'deleteNode', entityId, agentId: agent, zoneId, facilityId })
           emitMutation({ action: 'deleteNode', entityId, agentId: agent, zoneId, facilityId })
+          await maybeCapture(entityId, undefined)
           return { ok: true, entityId }
         }
 
@@ -408,6 +434,7 @@ export default defineEventHandler(async (event) => {
             facilityId,
             data: { relation, e1, e2 },
           })
+          await maybeCapture(`${e1} -> ${e2}`, undefined)
           return { ok: true, e1, relation, e2 }
         }
 
@@ -432,6 +459,7 @@ export default defineEventHandler(async (event) => {
             facilityId,
             data: { relation, e1, e2 },
           })
+          await maybeCapture(`${e1} -> ${e2}`, undefined)
           return { ok: true, e1, relation, e2 }
         }
 
