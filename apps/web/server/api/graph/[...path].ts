@@ -15,6 +15,7 @@
 import { useTqlKernel, useWorkspaceConfig, getMutationLog, pushMutationLog } from '../../plugins/tql'
 import { getZoneGuardStats } from '../../utils/zone-guard'
 import { emitMutation } from '../../utils/tql-events'
+import { zoneFromRequest } from '../../utils/zone-router'
 
 /** Reconstruct a node object from EAV facts, properly handling multi-value attributes */
 function factsToNode(entityId: string, facts: Array<{ e: string; a: string; v: unknown }>): Record<string, any> {
@@ -314,6 +315,10 @@ export default defineEventHandler(async (event) => {
     const { action, entityId, data, type, e1, relation, e2, agentId } = body || {}
     const agent: string = agentId || 'browser'
 
+    // Slice 0.5: resolve the originating zone from X-Trellis-Zone header
+    // or the Referer pathname (falls back to the founder's Lab).
+    const { zoneId, facilityId } = zoneFromRequest(event)
+
     if (!action) {
       throw createError({ statusCode: 400, message: 'Missing "action" in request body' })
     }
@@ -333,7 +338,7 @@ export default defineEventHandler(async (event) => {
           }
           await kernel.createNode(entityId, nodeData, type, { agentId: agent })
           pushMutationLog({ action: 'createNode', entityId, type, data: nodeData })
-          emitMutation({ action: 'createNode', entityId, type, agentId: agent, data: nodeData })
+          emitMutation({ action: 'createNode', entityId, type, agentId: agent, zoneId, facilityId, data: nodeData })
           return { ok: true, entityId }
         }
 
@@ -350,7 +355,7 @@ export default defineEventHandler(async (event) => {
           }
           await kernel.updateNode(entityId, updateData, type, { agentId: agent })
           pushMutationLog({ action: 'updateNode', entityId, type, data: updateData })
-          emitMutation({ action: 'updateNode', entityId, type, agentId: agent, data: updateData })
+          emitMutation({ action: 'updateNode', entityId, type, agentId: agent, zoneId, facilityId, data: updateData })
           return { ok: true, entityId }
         }
 
@@ -360,7 +365,7 @@ export default defineEventHandler(async (event) => {
           }
           await kernel.deleteNode(entityId, { agentId: agent })
           pushMutationLog({ action: 'deleteNode', entityId })
-          emitMutation({ action: 'deleteNode', entityId, agentId: agent })
+          emitMutation({ action: 'deleteNode', entityId, agentId: agent, zoneId, facilityId })
           return { ok: true, entityId }
         }
 
@@ -370,7 +375,14 @@ export default defineEventHandler(async (event) => {
           }
           await kernel.link(e1, relation, e2, { agentId: agent })
           pushMutationLog({ action: 'link', entityId: `${e1} -> ${e2}`, data: { relation } })
-          emitMutation({ action: 'link', entityId: `${e1} -> ${e2}`, agentId: agent, data: { relation, e1, e2 } })
+          emitMutation({
+            action: 'link',
+            entityId: `${e1} -> ${e2}`,
+            agentId: agent,
+            zoneId,
+            facilityId,
+            data: { relation, e1, e2 },
+          })
           return { ok: true, e1, relation, e2 }
         }
 
@@ -380,7 +392,14 @@ export default defineEventHandler(async (event) => {
           }
           await kernel.unlink(e1, relation, e2, { agentId: agent })
           pushMutationLog({ action: 'unlink', entityId: `${e1} -> ${e2}`, data: { relation } })
-          emitMutation({ action: 'unlink', entityId: `${e1} -> ${e2}`, agentId: agent, data: { relation, e1, e2 } })
+          emitMutation({
+            action: 'unlink',
+            entityId: `${e1} -> ${e2}`,
+            agentId: agent,
+            zoneId,
+            facilityId,
+            data: { relation, e1, e2 },
+          })
           return { ok: true, e1, relation, e2 }
         }
 
