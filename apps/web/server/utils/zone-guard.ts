@@ -195,10 +195,62 @@ export function invalidateZoneCache(zoneId: string): void {
   _zoneCache.delete(zoneId)
 }
 
+// ── Mode + pre-check (slice 1.3) ───────────────────────────────────────────
+
+export type ZoneGuardMode = 'off' | 'advisory' | 'strict'
+
+/**
+ * Resolve the guard mode from `TRELLIS_ZONE_GUARD_MODE`. Defaults to
+ * `advisory` — pure telemetry, no rejection. Set to `strict` to have
+ * `/mutate` reject denied mutations with 403.
+ */
+export function getZoneGuardMode(): ZoneGuardMode {
+  const raw = (process.env.TRELLIS_ZONE_GUARD_MODE || '').trim().toLowerCase()
+  if (raw === 'strict' || raw === 'off') return raw
+  return 'advisory'
+}
+
+/**
+ * Synchronous pre-check used by the `/mutate` handler. Returns the
+ * decision alongside the loaded zone context so callers can cheaply log
+ * or attach it to responses.
+ *
+ * In strict mode, the handler should reject with 403 when `allowed` is
+ * false. In advisory mode, the post-hoc onMutation listener handles
+ * logging; callers can ignore the decision.
+ */
+export function checkMutation(
+  kernel: TrellisKernel,
+  event: Pick<MutationEvent, 'action' | 'agentId' | 'zoneId'>,
+): { decision: ZoneGuardDecision; ctx: ZoneGrantContext | null } {
+  if (!event.zoneId) {
+    return {
+      decision: { allowed: false, reason: 'event missing zoneId' },
+      ctx: null,
+    }
+  }
+  const ctx = loadZoneContext(kernel, event.zoneId)
+  if (!ctx) {
+    return {
+      decision: { allowed: false, reason: `unknown zone ${event.zoneId}` },
+      ctx: null,
+    }
+  }
+  return { decision: evaluateGrant(event, ctx), ctx }
+}
+
 // ── Wire-up ────────────────────────────────────────────────────────────────
 
 let _initialized = false
-const _stats = { total: 0, allow: 0, deny: 0, unknownZone: 0 }
+const _stats = { total: 0, allow: 0, deny: 0, unknownZone: 0, rejected: 0 }
+
+/**
+ * Increment the strict-mode rejection counter. Called by the /mutate
+ * handler when it returns 403 based on checkMutation's decision.
+ */
+export function recordStrictRejection(): void {
+  _stats.rejected++
+}
 
 /**
  * Subscribe the advisory guard to the mutation event bus. Safe to call
@@ -208,13 +260,19 @@ export function initZoneGuard(kernel: TrellisKernel): void {
   if (_initialized) return
   _initialized = true
 
-  console.log('[zone-guard] Advisory mode active — logging grant decisions, not rejecting')
+  const mode = getZoneGuardMode()
+  const modeLabel =
+    mode === 'strict' ? 'STRICT (rejects on DENY)' : mode === 'off' ? 'OFF (no logging)' : 'advisory (logs only)'
+  console.log(`[zone-guard] Mode: ${modeLabel} — set TRELLIS_ZONE_GUARD_MODE=off|advisory|strict to change`)
 
   onMutation((event) => {
     try {
       // Invalidate cache when zone/facility metadata changes
       if (event.type === 'zone' && event.entityId) invalidateZoneCache(event.entityId)
       if (event.type === 'facility') _zoneCache.clear()
+
+      // Off mode: no telemetry, no logging.
+      if (getZoneGuardMode() === 'off') return
 
       const zoneId = event.zoneId
       if (!zoneId) return

@@ -14,7 +14,7 @@
 
 import { getHeader } from 'h3'
 import { useTqlKernel, useWorkspaceConfig, getMutationLog, pushMutationLog } from '../../plugins/tql'
-import { getZoneGuardStats } from '../../utils/zone-guard'
+import { getZoneGuardStats, getZoneGuardMode, checkMutation, recordStrictRejection } from '../../utils/zone-guard'
 import { emitMutation } from '../../utils/tql-events'
 import { zoneFromRequest } from '../../utils/zone-router'
 import { captureDecision, shouldCaptureDecision } from '../../utils/campus-decisions'
@@ -66,7 +66,7 @@ export default defineEventHandler(async (event) => {
       status: 'ok',
       factCount,
       linkCount,
-      zoneGuard: getZoneGuardStats(),
+      zoneGuard: { mode: getZoneGuardMode(), ...getZoneGuardStats() },
     }
   }
 
@@ -326,6 +326,26 @@ export default defineEventHandler(async (event) => {
     // body.captureDecision = true). Browsers leave it off.
     const captureHeader = getHeader(event, 'x-trellis-capture-decision')
     const captureRequested = captureHeader === '1' || captureHeader === 'true' || body?.captureDecision === true
+
+    // Slice 1.3: strict zone-guard pre-check. When TRELLIS_ZONE_GUARD_MODE
+    // is "strict", reject denied mutations with 403 before they commit.
+    // In "advisory" (default) and "off" modes, this is a pure no-op and
+    // the post-hoc onMutation subscriber handles logging/stats.
+    if (getZoneGuardMode() === 'strict' && action) {
+      const { decision } = checkMutation(kernel, { action, agentId: agent, zoneId })
+      if (!decision.allowed) {
+        recordStrictRejection()
+        console.warn(
+          `[zone-guard] REJECT (strict) agent=${agent} action=${action} zone=${zoneId} reason="${decision.reason}"`,
+        )
+        throw createError({
+          statusCode: 403,
+          statusMessage: 'Forbidden',
+          message: `Zone guard denied ${action} in ${zoneId}: ${decision.reason}`,
+          data: { zoneId, facilityId, reason: decision.reason, mode: 'strict' },
+        })
+      }
+    }
 
     /** Fire a decision-capture after a successful mutation. No-ops when
      *  captureRequested is false or the mutation targets a decision entity. */

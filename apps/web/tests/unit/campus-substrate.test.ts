@@ -15,8 +15,13 @@
  * an unrelated color-mode plugin error in the shared test config).
  */
 
-import { describe, it, expect } from 'vitest'
-import { evaluateGrant, mutationActionToGrantAction, type ZoneGrantContext } from '../../server/utils/zone-guard'
+import { describe, it, expect, afterEach } from 'vitest'
+import {
+  evaluateGrant,
+  mutationActionToGrantAction,
+  getZoneGuardMode,
+  type ZoneGrantContext,
+} from '../../server/utils/zone-guard'
 import { zoneForPath } from '../../server/utils/zone-router'
 import {
   FOUNDER_FACILITY_ID,
@@ -27,6 +32,41 @@ import {
   FOUNDER_VAULT_ZONE_ID,
 } from '../../server/utils/tql-events'
 import { shouldCaptureDecision, buildDecisionData, type CaptureInput } from '../../server/utils/campus-decisions'
+
+// ── zone-guard: getZoneGuardMode (slice 1.3) ──────────────────────────────
+
+describe('getZoneGuardMode', () => {
+  const originalEnv = process.env.TRELLIS_ZONE_GUARD_MODE
+
+  afterEach(() => {
+    if (originalEnv === undefined) delete process.env.TRELLIS_ZONE_GUARD_MODE
+    else process.env.TRELLIS_ZONE_GUARD_MODE = originalEnv
+  })
+
+  it('defaults to advisory when env var is unset', () => {
+    delete process.env.TRELLIS_ZONE_GUARD_MODE
+    expect(getZoneGuardMode()).toBe('advisory')
+  })
+
+  it('recognises "strict" (case-insensitive, trimmed)', () => {
+    process.env.TRELLIS_ZONE_GUARD_MODE = 'strict'
+    expect(getZoneGuardMode()).toBe('strict')
+    process.env.TRELLIS_ZONE_GUARD_MODE = '  STRICT  '
+    expect(getZoneGuardMode()).toBe('strict')
+  })
+
+  it('recognises "off" for complete bypass', () => {
+    process.env.TRELLIS_ZONE_GUARD_MODE = 'off'
+    expect(getZoneGuardMode()).toBe('off')
+  })
+
+  it('falls back to advisory for unknown values (fail-safe)', () => {
+    process.env.TRELLIS_ZONE_GUARD_MODE = 'enabled'
+    expect(getZoneGuardMode()).toBe('advisory')
+    process.env.TRELLIS_ZONE_GUARD_MODE = ''
+    expect(getZoneGuardMode()).toBe('advisory')
+  })
+})
 
 // ── zone-guard: mutationActionToGrantAction ────────────────────────────────
 
