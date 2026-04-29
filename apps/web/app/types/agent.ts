@@ -1,11 +1,32 @@
 export type AgentMessageRole = 'user' | 'assistant' | 'function'
 
+/**
+ * Routing metadata surfaced by the TokenRouter-backed agent endpoint.
+ * Populated from `{ type: 'meta' }` SSE events so the UI can show
+ * which model handled the turn and why it was selected.
+ */
+export interface AgentRoutingInfo {
+  /** Model identifier passed to TokenRouter (e.g. `anthropic:claude-3-5-sonnet-20241022`, `auto:quality`). */
+  model?: string
+  /** Routing provider name (e.g. `tokenrouter`). */
+  router?: string
+  /** Resolved upstream provider if reported by the router (e.g. `anthropic`, `openai`). */
+  provider?: string
+  /** Short classification label for the request (e.g. `lookup`, `synthesis`, `creative`). */
+  taskClass?: string
+  /** Human-readable rationale for the routing decision. */
+  rationale?: string
+  /** Sanitized base URL (host only) — useful for a subtle subtext display. */
+  baseURL?: string
+}
+
 export interface AgentMessage {
   id: string
   conversationId: string
   role: AgentMessageRole
   content: string
   toolCalls?: readonly ToolCall[]
+  routing?: AgentRoutingInfo
   timestamp: number
 }
 

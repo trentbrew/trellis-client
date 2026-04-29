@@ -162,37 +162,62 @@ export function useAgent() {
 
       const reader = response.body.getReader()
       const decoder = new TextDecoder()
+      let buffer = ''
+      let streamDone = false
 
-      while (true) {
+      while (!streamDone) {
         const { done, value } = await reader.read()
         if (done) break
 
-        const chunk = decoder.decode(value)
-        const lines = chunk.split('\n')
+        buffer += decoder.decode(value, { stream: true })
+        const lines = buffer.split('\n')
+        // Keep trailing partial line (boundary may bisect JSON payload).
+        buffer = lines.pop() ?? ''
 
         for (const line of lines) {
-          if (line.startsWith('data: ')) {
-            const data = JSON.parse(line.slice(6))
+          if (!line.startsWith('data: ')) continue
+          const payload = line.slice(6).trim()
+          if (!payload) continue
 
-            if (data.type === 'text') {
-              const msg = messages.value[assistantMessageIndex]
-              if (msg) msg.content += data.content
-            } else if (data.type === 'tool') {
-              const msg = messages.value[assistantMessageIndex]
-              if (msg) {
-                const newToolCall = {
-                  id: `call_${Date.now()}_${Math.random().toString(36).substring(7)}`,
-                  name: data.tool,
-                  args: {},
-                  result: data.result,
-                }
-                msg.toolCalls = [...(msg.toolCalls || []), newToolCall]
+          let data: any
+          try {
+            data = JSON.parse(payload)
+          } catch {
+            console.warn('[useAgent] malformed SSE payload, skipping:', payload.slice(0, 120))
+            continue
+          }
+
+          if (data.type === 'text') {
+            const msg = messages.value[assistantMessageIndex]
+            if (msg) msg.content += data.content
+          } else if (data.type === 'tool') {
+            const msg = messages.value[assistantMessageIndex]
+            if (msg) {
+              const newToolCall = {
+                id: `call_${Date.now()}_${Math.random().toString(36).substring(7)}`,
+                name: data.tool,
+                args: data.args || {},
+                result: data.result,
               }
-            } else if (data.type === 'error') {
-              error.value = data.message
-            } else if (data.type === 'done') {
-              break
+              msg.toolCalls = [...(msg.toolCalls || []), newToolCall]
             }
+          } else if (data.type === 'meta') {
+            const msg = messages.value[assistantMessageIndex]
+            if (msg) {
+              const next = { ...(msg.routing || {}) }
+              if (data.model) next.model = data.model
+              if (data.router) next.router = data.router
+              if (data.provider) next.provider = data.provider
+              if (data.taskClass) next.taskClass = data.taskClass
+              if (data.rationale) next.rationale = data.rationale
+              if (data.baseURL) next.baseURL = data.baseURL
+              msg.routing = next
+            }
+          } else if (data.type === 'error') {
+            error.value = data.message
+          } else if (data.type === 'done') {
+            streamDone = true
+            break
           }
         }
       }
