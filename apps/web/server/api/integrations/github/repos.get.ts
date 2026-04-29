@@ -17,6 +17,7 @@
 
 import { getValidAccessToken } from './_credentials'
 import { normalizeRepo, type GithubRepoRaw, type NormalizedRepository } from './_shared'
+import { requireConnectionOwner } from '../../../utils/connection-auth'
 
 export default defineEventHandler(async (event) => {
   const query = getQuery(event)
@@ -24,6 +25,9 @@ export default defineEventHandler(async (event) => {
   if (!connectionId) {
     throw createError({ statusCode: 400, statusMessage: 'Missing connectionId query parameter.' })
   }
+
+  // Multi-tenant guard: deny repo enumeration across users.
+  await requireConnectionOwner(event, connectionId)
 
   const accessToken = await getValidAccessToken(connectionId)
   const headers = {

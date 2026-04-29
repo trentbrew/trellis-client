@@ -6,7 +6,13 @@
  * Snapshots are stored as a sibling `.snapshot.json` file.
  */
 
-import { existsSync, mkdirSync, appendFileSync, readFileSync, writeFileSync } from 'fs';
+import {
+  existsSync,
+  mkdirSync,
+  appendFileSync,
+  readFileSync,
+  writeFileSync,
+} from 'fs';
 import { dirname, resolve } from 'path';
 import type { KernelBackend, KernelOp } from './backend.js';
 
@@ -41,7 +47,10 @@ export class JsonlKernelBackend implements KernelBackend {
     if (!existsSync(this.filename)) return [];
     const content = readFileSync(this.filename, 'utf-8').trim();
     if (!content) return [];
-    return content.split('\n').filter(Boolean).map((line) => JSON.parse(line) as KernelOp);
+    return content
+      .split('\n')
+      .filter(Boolean)
+      .map((line) => JSON.parse(line) as KernelOp);
   }
 
   readUntil(hash: string): KernelOp[] {
@@ -69,9 +78,27 @@ export class JsonlKernelBackend implements KernelBackend {
     return ops.length > 0 ? ops[ops.length - 1] : undefined;
   }
 
+  countOpsAfter(hash?: string): number {
+    // JSONL has no index, so we scan. Still O(n) without parsing payloads
+    // fully — we just need line counts. Cheap enough for the dev workflow
+    // this backend targets (small workspaces / test fixtures).
+    if (!existsSync(this.filename)) return 0;
+    const content = readFileSync(this.filename, 'utf-8').trim();
+    if (!content) return 0;
+    const lines = content.split('\n').filter(Boolean);
+    if (!hash) return lines.length;
+    const idx = lines.findIndex((line) => line.includes(`"hash":"${hash}"`));
+    if (idx === -1) return 0;
+    return lines.length - (idx + 1);
+  }
+
   saveSnapshot(lastOpHash: string, data: any): void {
     const snapshot = { lastOpHash, data, timestamp: new Date().toISOString() };
-    writeFileSync(this.snapshotPath, JSON.stringify(snapshot, null, 2), 'utf-8');
+    writeFileSync(
+      this.snapshotPath,
+      JSON.stringify(snapshot, null, 2),
+      'utf-8',
+    );
   }
 
   loadLatestSnapshot(): { lastOpHash: string; data: any } | undefined {

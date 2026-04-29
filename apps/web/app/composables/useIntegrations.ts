@@ -98,29 +98,68 @@ export function useIntegrations() {
   // ── Hydrated state ──────────────────────────────────────────────────
 
   const definitions = ref<IntegrationDefinition[]>([])
-  const connections = ref<IntegrationConnection[]>([])
+  // `rawConnections` holds EVERY integration_connection in the graph —
+  // including those belonging to other users. The exported `connections`
+  // computed below strips out any connection not owned by the current
+  // user. Without this filter, one user's UI would trigger syncs against
+  // another user's Google Calendar / Gmail (observed 2026-04-24).
+  const rawConnections = ref<IntegrationConnection[]>([])
 
-  watch(defIds, async (ids) => {
-    if (!ids || ids.length === 0) { definitions.value = []; return }
-    try {
-      const idList = ids.map((row) => (row as any)['?i'] as string)
-      const nodes = await fetchNodes(idList)
-      definitions.value = nodes.map(hydrateDefinition)
-    } catch (err) {
-      console.error('[useIntegrations] Failed to hydrate definitions:', err)
-    }
-  }, { immediate: true })
+  watch(
+    defIds,
+    async (ids) => {
+      if (!ids || ids.length === 0) {
+        definitions.value = []
+        return
+      }
+      try {
+        const idList = ids.map((row) => (row as any)['?i'] as string)
+        const nodes = await fetchNodes(idList)
+        definitions.value = nodes.map(hydrateDefinition)
+      } catch (err) {
+        console.error('[useIntegrations] Failed to hydrate definitions:', err)
+      }
+    },
+    { immediate: true },
+  )
 
-  watch(connIds, async (ids) => {
-    if (!ids || ids.length === 0) { connections.value = []; return }
-    try {
-      const idList = ids.map((row) => (row as any)['?c'] as string)
-      const nodes = await fetchNodes(idList)
-      connections.value = nodes.map(hydrateConnection)
-    } catch (err) {
-      console.error('[useIntegrations] Failed to hydrate connections:', err)
-    }
-  }, { immediate: true })
+  watch(
+    connIds,
+    async (ids) => {
+      if (!ids || ids.length === 0) {
+        rawConnections.value = []
+        return
+      }
+      try {
+        const idList = ids.map((row) => (row as any)['?c'] as string)
+        const nodes = await fetchNodes(idList)
+        rawConnections.value = nodes.map(hydrateConnection)
+      } catch (err) {
+        console.error('[useIntegrations] Failed to hydrate connections:', err)
+      }
+    },
+    { immediate: true },
+  )
+
+  // ── User-scoped connection view ─────────────────────────────────────
+  //
+  // Filter rules (mirror the server-side `shouldAllowConnectionAccess`
+  // policy so the two layers stay consistent):
+  //   - Authenticated caller → only connections whose userId matches.
+  //     Connections with no userId fact (legacy rows) are still shown
+  //     to the first authenticated user so they aren't orphaned in the
+  //     UI; the server will log a warning on use.
+  //   - Unauthenticated caller (self-hosted single-user mode) → show
+  //     every connection, since there's no user to scope to.
+  //
+  // Using a `computed` keeps this reactive to both the raw connection
+  // list and the auth state — so logging in as a different account
+  // re-filters on the fly without needing to reload the page.
+  const connections = computed<IntegrationConnection[]>(() => {
+    const uid = user.value?.id
+    if (!uid) return rawConnections.value
+    return rawConnections.value.filter((c) => !c.userId || c.userId === uid)
+  })
 
   // ── Computed views ──────────────────────────────────────────────────
 
@@ -150,9 +189,7 @@ export function useIntegrations() {
     return getConnections(integrationId).some((c) => c.connectionStatus === 'connected')
   }
 
-  const connectedCount = computed(() =>
-    connections.value.filter((c) => c.connectionStatus === 'connected').length,
-  )
+  const connectedCount = computed(() => connections.value.filter((c) => c.connectionStatus === 'connected').length)
 
   // ── CRUD ────────────────────────────────────────────────────────────
 

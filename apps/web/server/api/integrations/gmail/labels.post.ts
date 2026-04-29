@@ -14,6 +14,7 @@
  */
 
 import { getValidAccessToken } from './_credentials'
+import { requireConnectionOwner } from '../../../utils/connection-auth'
 
 interface LabelsBody {
   connectionId: string
@@ -33,6 +34,9 @@ export default defineEventHandler(async (event) => {
   if (!body?.connectionId || !body.action) {
     throw createError({ statusCode: 400, statusMessage: 'Missing connectionId or action.' })
   }
+
+  // Prevent creating labels in or modifying another user's Gmail account.
+  await requireConnectionOwner(event, body.connectionId)
 
   const accessToken = await getValidAccessToken(body.connectionId)
   const authHeaders = { Authorization: `Bearer ${accessToken}`, 'Content-Type': 'application/json' }

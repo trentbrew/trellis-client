@@ -17,6 +17,7 @@
 
 import { getValidAccessToken } from './_credentials'
 import { normalizePr, type GithubPrRaw, type NormalizedPullRequest } from './_shared'
+import { requireConnectionOwner } from '../../../utils/connection-auth'
 
 export default defineEventHandler(async (event) => {
   const query = getQuery(event)
@@ -32,6 +33,9 @@ export default defineEventHandler(async (event) => {
       statusMessage: 'Missing repo query parameter (expected "owner/name").',
     })
   }
+
+  // Multi-tenant guard: deny reads of another user's GitHub PRs.
+  await requireConnectionOwner(event, connectionId)
 
   const accessToken = await getValidAccessToken(connectionId)
   const headers = {

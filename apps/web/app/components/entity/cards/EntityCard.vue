@@ -37,6 +37,7 @@
   // ─── Entity type booleans ───
   const isBookmark = computed(() => i.value.type === 'bookmark')
   const isNote = computed(() => i.value.type === 'note')
+  const isProject = computed(() => i.value.type === 'project')
   const isFile = computed(() => i.value.type === 'file')
   // Guard against stale blob: URLs baked into older file entities — those
   // blob handles are dead after reload and trigger WebKitBlobResource errors.
@@ -47,9 +48,7 @@
     return u
   })
   const isEmail = computed(() => i.value.type === 'email')
-  const emailSrcdoc = computed(() =>
-    isEmail.value ? buildEmailSrcdoc(i.value, { thumbnail: true }) : '',
-  )
+  const emailSrcdoc = computed(() => (isEmail.value ? buildEmailSrcdoc(i.value, { thumbnail: true }) : ''))
 
   // ─── Lazy-mount email thumbnail iframe ───
   // Rendering 50+ iframes at once blocks the main thread and triggers
@@ -113,10 +112,8 @@
   })
 
   // ─── Spreadsheet / CSV thumbnail data ───
-  const isTableFile = computed(() =>
-    i.value.fileCategory === 'spreadsheet' || i.value.fileExtension === 'csv'
-  )
-  const cardTableData = ref<{ headers: string[], rows: any[][] } | null>(null)
+  const isTableFile = computed(() => i.value.fileCategory === 'spreadsheet' || i.value.fileExtension === 'csv')
+  const cardTableData = ref<{ headers: string[]; rows: any[][] } | null>(null)
 
   watchEffect(async () => {
     if (!isTableFile.value || !i.value.url) {
@@ -363,9 +360,7 @@
     class="group relative flex flex-col rounded-xl border bg-card shadow-sm overflow-hidden cursor-pointer transition-all"
     :class="[
       layout === 'moodboard' ? 'mb-3 break-inside-avoid' : '',
-      selected
-        ? 'border-primary ring-2 ring-primary/30'
-        : 'border-border hover:ring-1 hover:ring-primary/30',
+      selected ? 'border-primary ring-2 ring-primary/30' : 'border-border hover:ring-1 hover:ring-primary/30',
     ]"
     @click="$emit('click')">
     <!-- Select checkbox (absolute, top-left) -->
@@ -404,7 +399,8 @@
     <div
       v-else-if="isNote || ['page', 'template', 'diagram'].includes(i.type)"
       class="aspect-video relative border-b bg-background/50 border-border overflow-hidden">
-      <div class="absolute inset-0 bg-linear-to-b from-transparent via-transparent to-background/50 pointer-events-none z-10" />
+      <div
+        class="absolute inset-0 bg-linear-to-b from-transparent via-transparent to-background/50 pointer-events-none z-10" />
       <div
         v-if="i.content"
         class="prose prose-sm dark:prose-invert max-w-none text-[8px] leading-relaxed p-3 overflow-hidden opacity-50 h-full"
@@ -435,9 +431,11 @@
         No preview
       </div>
       <!-- Bottom fade into card background -->
-      <div class="absolute inset-0 bg-linear-to-b from-transparent via-transparent to-background/80 pointer-events-none z-10" />
+      <div
+        class="absolute inset-0 bg-linear-to-b from-transparent via-transparent to-background/80 pointer-events-none z-10" />
       <!-- Header chip overlay: sender + read/starred state -->
-      <div class="absolute top-0 left-0 right-0 z-20 p-2 flex items-center gap-1.5 min-w-0 bg-linear-to-b from-background/90 to-transparent">
+      <div
+        class="absolute top-0 left-0 right-0 z-20 p-2 flex items-center gap-1.5 min-w-0 bg-linear-to-b from-background/90 to-transparent">
         <div v-if="i.isRead === false" class="shrink-0 h-1.5 w-1.5 rounded-full bg-blue-500" />
         <Icon v-else name="lucide:mail-open" class="h-3 w-3 shrink-0 text-muted-foreground/50" />
         <span class="text-xs truncate" :class="i.isRead === false ? 'font-semibold' : 'text-muted-foreground'">
@@ -490,20 +488,25 @@
         preload="metadata"
         muted />
       <!-- Spreadsheet / CSV table thumbnail -->
-      <div v-else-if="isTableFile && cardTableData" class="absolute inset-0 overflow-hidden bg-card pointer-events-none">
+      <div
+        v-else-if="isTableFile && cardTableData"
+        class="absolute inset-0 overflow-hidden bg-card pointer-events-none">
         <table class="w-full text-[8px] border-collapse">
           <thead class="bg-muted sticky top-0">
             <tr>
-              <th v-for="(col, c) in cardTableData.headers.slice(0, 8)" :key="c"
+              <th
+                v-for="(col, c) in cardTableData.headers.slice(0, 8)"
+                :key="c"
                 class="px-1.5 py-0.5 text-left font-semibold text-muted-foreground border-b border-border truncate max-w-[60px]">
                 {{ col }}
               </th>
             </tr>
           </thead>
           <tbody>
-            <tr v-for="(row, r) in cardTableData.rows" :key="r"
-              :class="r % 2 === 0 ? 'bg-card' : 'bg-muted/30'">
-              <td v-for="(_, c) in cardTableData.headers.slice(0, 8)" :key="c"
+            <tr v-for="(row, r) in cardTableData.rows" :key="r" :class="r % 2 === 0 ? 'bg-card' : 'bg-muted/30'">
+              <td
+                v-for="(_, c) in cardTableData.headers.slice(0, 8)"
+                :key="c"
                 class="px-1.5 py-0.5 truncate max-w-[60px] text-muted-foreground border-b border-border/30">
                 {{ row[c] ?? '' }}
               </td>
@@ -525,7 +528,9 @@
     <div
       v-else-if="entityClass === 'document'"
       class="aspect-video bg-muted/20 flex items-center justify-center border-b border-border">
-      <Icon :name="config?.icon || 'lucide:file-text'" :class="['h-10 w-10', `text-${config?.color || 'gray'}-500/50`]" />
+      <Icon
+        :name="config?.icon || 'lucide:file-text'"
+        :class="['h-10 w-10', `text-${config?.color || 'gray'}-500/50`]" />
     </div>
 
     <!-- ─── Preview: Actor avatar ─── -->
@@ -564,9 +569,7 @@
       <!-- Payment / Budget: amount -->
       <template v-else-if="(i.type === 'payment' || i.type === 'budget') && i.amount != null">
         <div class="text-center px-3">
-          <p class="text-2xl font-bold tabular-nums">
-            {{ i.currency || '$' }}{{ Number(i.amount).toLocaleString() }}
-          </p>
+          <p class="text-2xl font-bold tabular-nums">{{ i.currency || '$' }}{{ Number(i.amount).toLocaleString() }}</p>
           <p v-if="i.payee || i.budgetStatus" class="text-xs text-muted-foreground mt-0.5 truncate">
             {{ i.payee || i.budgetStatus }}
           </p>
@@ -582,7 +585,9 @@
       <!-- Milestone: achieved indicator -->
       <template v-else-if="i.type === 'milestone'">
         <div class="flex flex-col items-center gap-2">
-          <Icon name="lucide:flag" :class="['h-10 w-10', i.achieved ? 'text-emerald-500' : 'text-muted-foreground/15']" />
+          <Icon
+            name="lucide:flag"
+            :class="['h-10 w-10', i.achieved ? 'text-emerald-500' : 'text-muted-foreground/15']" />
           <span v-if="i.achieved" class="text-xs font-medium text-emerald-500">Achieved</span>
         </div>
       </template>
@@ -593,7 +598,7 @@
     </div>
 
     <!-- ─── Preview: Container progress ─── -->
-    <div v-else-if="isContainer" class="aspect-video border-b border-border bg-muted/20 overflow-hidden">
+    <div v-else-if="isContainer && !isProject" class="aspect-video border-b border-border bg-muted/20 overflow-hidden">
       <div v-if="progressPercent != null" class="h-full flex flex-col justify-center px-5 gap-2">
         <div class="flex items-center justify-between text-xs text-muted-foreground">
           <span>{{ i.metric || 'Progress' }}</span>
@@ -608,11 +613,17 @@
       </div>
     </div>
 
+    <!-- ─── Preview: Project icon ─── -->
+    <div v-else-if="isProject" class="aspect-video border-b border-border bg-muted/20 flex items-center justify-center">
+      <Icon :name="config?.icon || 'lucide:folder'" class="h-10 w-10 text-muted-foreground/15" />
+    </div>
+
     <!-- ─── Preview: Custom fields (dynamic entity types) ─── -->
     <div v-else-if="fields?.length" class="aspect-video border-b border-border bg-muted/20 p-4 overflow-hidden">
       <div class="grid grid-cols-2 gap-x-4 gap-y-3 content-start">
         <div v-for="field in fields.slice(0, 4)" :key="field.key" class="min-w-0">
-          <p class="text-[9px] font-medium text-muted-foreground/50 uppercase tracking-wide truncate leading-none mb-0.5">
+          <p
+            class="text-[9px] font-medium text-muted-foreground/50 uppercase tracking-wide truncate leading-none mb-0.5">
             {{ field.label }}
           </p>
           <p class="text-xs font-medium truncate">{{ field.value ?? '—' }}</p>
@@ -649,8 +660,8 @@
           </span>
         </template>
 
-        <!-- Status: inline editor or static badge (temporal + container only) -->
-        <template v-if="(isTemporal || isContainer) && itemStatus">
+        <!-- Status: inline editor or static badge (temporal + container only, not projects) -->
+        <template v-if="(isTemporal || (isContainer && !isProject)) && itemStatus">
           <div v-if="editable" @click.stop>
             <EntityFieldEditor
               :field-id="'status'"
@@ -726,10 +737,8 @@
         </span>
       </div>
 
-
       <!-- File size -->
       <p v-if="isFile && i.sizeBytes" class="text-xs text-muted-foreground">{{ formatBytes(i.sizeBytes) }}</p>
     </div>
-
   </div>
 </template>

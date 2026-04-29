@@ -20,6 +20,7 @@
  */
 
 import { getValidAccessToken } from './_credentials'
+import { requireConnectionOwner } from '../../../utils/connection-auth'
 
 interface SendBody {
   connectionId: string
@@ -35,11 +36,7 @@ interface SendBody {
 }
 
 function base64UrlEncode(input: string): string {
-  return Buffer.from(input, 'utf-8')
-    .toString('base64')
-    .replace(/\+/g, '-')
-    .replace(/\//g, '_')
-    .replace(/=+$/, '')
+  return Buffer.from(input, 'utf-8').toString('base64').replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '')
 }
 
 function buildMimeMessage(opts: SendBody): string {
@@ -67,6 +64,9 @@ export default defineEventHandler(async (event) => {
       statusMessage: 'Missing required fields: connectionId, to, subject.',
     })
   }
+
+  // Critical: prevent users from sending email from another user's account.
+  await requireConnectionOwner(event, body.connectionId)
 
   const accessToken = await getValidAccessToken(body.connectionId)
 

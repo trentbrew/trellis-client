@@ -25,6 +25,7 @@ import {
 } from '../utils/tql-events'
 import { initZoneGuard } from '../utils/zone-guard'
 import { backfillEntityZones } from '../utils/campus-migration'
+import { shouldAutoCheckpoint } from '../utils/kernel-checkpoint'
 
 import type { WorkspaceConfig } from '@turtle.tech/tql'
 
@@ -90,6 +91,31 @@ export default defineNitroPlugin(async (nitro) => {
     backend,
     autoReplay: true,
   })
+
+  // ── Auto-checkpoint on boot ──────────────────────────────────────
+  // The kernel just replayed every op newer than the last snapshot. If
+  // that gap is large, persist a fresh snapshot now so the NEXT boot
+  // restores directly from it and replays near-zero ops. Without this,
+  // a long-running dev database grows its op log faster than snapshots
+  // refresh, driving up memory pressure on startup and eventually
+  // producing silent SIGKILL from the OS (macOS jetsam).
+  if (typeof backend.countOpsAfter === 'function') {
+    try {
+      const latestSnap = backend.loadLatestSnapshot()
+      const opsSinceSnapshot = backend.countOpsAfter(latestSnap?.lastOpHash)
+      const decision = shouldAutoCheckpoint({
+        opsSinceSnapshot,
+        hasSnapshot: Boolean(latestSnap),
+      })
+      if (decision.shouldCheckpoint) {
+        console.log(`[tql] auto-checkpoint triggered: ${decision.reason}`)
+        await kernel.checkpoint()
+        console.log('[tql] auto-checkpoint saved')
+      }
+    } catch (err: any) {
+      console.warn('[tql] auto-checkpoint failed (non-fatal):', err?.message || err)
+    }
+  }
 
   // Boot with workspace config (ontologies + projections + routes + app)
   const workspaceConfig = createWorkspaceConfig()

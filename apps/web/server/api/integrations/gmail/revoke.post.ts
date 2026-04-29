@@ -8,6 +8,7 @@
  */
 
 import { useTqlKernel } from '../../../plugins/tql'
+import { requireConnectionOwner } from '../../../utils/connection-auth'
 
 export default defineEventHandler(async (event) => {
   const body = await readBody<{ connectionId: string }>(event)
@@ -15,6 +16,9 @@ export default defineEventHandler(async (event) => {
   if (!body?.connectionId) {
     throw createError({ statusCode: 400, statusMessage: 'Missing connectionId in request body.' })
   }
+
+  // Prevent one user from revoking another user's Gmail token.
+  await requireConnectionOwner(event, body.connectionId)
 
   const kernel = useTqlKernel()
 

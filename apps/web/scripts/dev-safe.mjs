@@ -19,10 +19,14 @@ const RECOVERABLE_PATTERNS = [
 
 // Give the dev process (and the Nitro dev worker it spawns) a generous
 // old-generation heap. Without this, Vite/Rollup's in-memory module graph
-// can push the worker past Node's default ceiling when the server tree
-// is large, producing an unrecoverable per-request OOM loop.
+// — combined with the TrellisKernel's in-memory EAV store (which grows
+// with the op log) — can push the worker past Node's default ceiling on
+// large workspaces. That produces either an unrecoverable per-request
+// OOM loop (Node's own heap limit) or, worse, a silent SIGKILL from
+// macOS jetsam with no error in the logs. 8 GB matches the working-set
+// observed on ~600k-op dev databases; set TRELLIS_DEV_HEAP_MB to override.
 // Preserves any NODE_OPTIONS the user already set.
-const HEAP_SIZE_MB = process.env.TRELLIS_DEV_HEAP_MB || '4096'
+const HEAP_SIZE_MB = process.env.TRELLIS_DEV_HEAP_MB || '8192'
 function withHeapOptions(env = process.env) {
   const existing = env.NODE_OPTIONS || ''
   if (existing.includes('--max-old-space-size')) return env

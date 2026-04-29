@@ -316,23 +316,26 @@
     <!-- Content: Center + Right Sidebar -->
     <div class="flex flex-1 min-h-0 overflow-hidden">
       <!-- Center Content -->
-      <div class="flex-1 overflow-y-auto min-w-0">
-        <div class="p-4 space-y-3">
-          <!-- Description / Notes -->
-          <div class="min-h-[120px]">
-            <textarea
-              v-if="!isViewMode"
-              v-model="editableItem.description"
-              placeholder="Add notes about this project..."
-              class="w-full h-full min-h-[120px] text-sm bg-transparent outline-none resize-none placeholder:text-muted-foreground/40 leading-relaxed" />
-            <p
-              v-else-if="editableItem.description"
-              class="text-sm text-foreground/80 leading-relaxed whitespace-pre-wrap">
-              {{ editableItem.description }}
-            </p>
-            <p v-else class="text-sm text-muted-foreground/40 italic">No notes</p>
-          </div>
-        </div>
+      <div class="flex-1 flex flex-col min-w-0 overflow-hidden">
+        <UiRichTextEditor
+          v-if="!isViewMode"
+          v-model="editableItem.description"
+          placeholder="Project overview..."
+          class="flex-1 min-h-0 border-none! rounded-none!"
+          fill-height
+          mentions
+          tasklist
+          images
+          embeds
+          tables
+          mathematics
+          collaborative
+          :entity-id="editableItem.id" />
+        <div
+          v-else-if="editableItem.description"
+          class="prose prose-sm max-w-none text-sm text-foreground flex-1 p-4 overflow-y-auto"
+          v-html="editableItem.description" />
+        <p v-else class="text-sm text-muted-foreground/50 italic flex-1 p-4">No overview</p>
       </div>
 
       <!-- Right Sidebar -->

@@ -10,10 +10,14 @@
  */
 
 import { getValidAccessToken } from './_credentials'
+import { requireConnectionOwner } from '../../../utils/connection-auth'
 
 // ── Types ─────────────────────────────────────────────────────────────
 
-interface GmailHeader { name: string; value: string }
+interface GmailHeader {
+  name: string
+  value: string
+}
 
 interface GmailMessagePart {
   partId?: string
@@ -143,6 +147,9 @@ export default defineEventHandler(async (event) => {
     throw createError({ statusCode: 400, statusMessage: 'Missing connectionId query parameter.' })
   }
 
+  // Multi-tenant guard: deny reads of another user's Gmail connection.
+  await requireConnectionOwner(event, connectionId)
+
   const accessToken = await getValidAccessToken(connectionId)
   const authHeaders = { Authorization: `Bearer ${accessToken}` }
 
@@ -182,10 +189,9 @@ export default defineEventHandler(async (event) => {
 
   let listResponse: { threads?: GmailThreadListItem[]; nextPageToken?: string; resultSizeEstimate?: number }
   try {
-    listResponse = await $fetch(
-      `https://gmail.googleapis.com/gmail/v1/users/me/threads?${listParams.toString()}`,
-      { headers: authHeaders },
-    )
+    listResponse = await $fetch(`https://gmail.googleapis.com/gmail/v1/users/me/threads?${listParams.toString()}`, {
+      headers: authHeaders,
+    })
   } catch (err: any) {
     console.error('[gmail/messages] Failed to list threads:', err?.data || err)
     throw createError({ statusCode: 502, statusMessage: 'Failed to list threads from Gmail.' })

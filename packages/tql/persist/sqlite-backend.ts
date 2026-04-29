@@ -165,6 +165,25 @@ export class SqliteKernelBackend implements KernelBackend {
     return decodeOp(JSON.parse(row.payload));
   }
 
+  countOpsAfter(hash?: string): number {
+    if (!hash) {
+      const row = this.db.prepare('SELECT COUNT(*) AS c FROM ops').get() as
+        | { c: number }
+        | undefined;
+      return row?.c ?? 0;
+    }
+    const target = this.db
+      .prepare('SELECT id FROM ops WHERE hash = ?')
+      .get(hash) as { id: number } | undefined;
+    // If the referenced op is gone (e.g. after log compaction), treat it
+    // as "snapshot is ahead of ops" → zero gap, not a throw.
+    if (!target) return 0;
+    const row = this.db
+      .prepare('SELECT COUNT(*) AS c FROM ops WHERE id > ?')
+      .get(target.id) as { c: number } | undefined;
+    return row?.c ?? 0;
+  }
+
   saveSnapshot(lastOpHash: string, data: any): void {
     const stmt = this.db.prepare(
       'INSERT INTO snapshots (last_op_hash, ts, data) VALUES (?, ?, ?)',

@@ -624,7 +624,7 @@
 
     <!-- Schedule Sidebar (left, collapsible via date badge) — hidden in inset -->
     <aside
-      v-if="hasField('startDate') && !isInset"
+      v-if="hasField('startDate') && !isInset && editableItem.type !== 'project'"
       class="shrink-0 border-r border-border overflow-y-auto hidden md:block transition-all duration-200 relative"
       :class="[schedulePanelOpen ? '' : 'w-0 border-r-0! overflow-hidden', isResizingSidebar ? 'select-none' : '']"
       :style="schedulePanelOpen ? { width: leftSidebarW + 'px' } : {}">

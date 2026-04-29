@@ -105,6 +105,20 @@ export function useGoogleCalendar() {
   const { getConnection, getConnections, updateConnection } = useIntegrations()
   const { user } = useInstantAuth()
 
+  // ── Auth headers for server-side ownership checks ───────────────────
+  //
+  // Every /api/integrations/google-calendar/* request carries the caller's
+  // user id so the server can verify it matches the connection's stored
+  // userId fact (see `server/utils/connection-auth.ts`). Without this
+  // header, the server treats the request as anonymous and denies access
+  // to any owned connection.
+  const authHeaders = computed<Record<string, string>>(() => {
+    const uid = user.value?.id
+    const headers: Record<string, string> = {}
+    if (uid) headers['X-User-Id'] = uid
+    return headers
+  })
+
   // ── Reactive state ──────────────────────────────────────────────────
 
   const syncStatus = ref<GCalSyncStatus>('idle')
@@ -184,7 +198,10 @@ export function useGoogleCalendar() {
       if (opts?.timeMax) params.set('timeMax', opts.timeMax)
       if (opts?.calendarId) params.set('calendarId', opts.calendarId)
 
-      const response = await $fetch<GCalEventsResponse>(`/api/integrations/google-calendar/events?${params.toString()}`)
+      const response = await $fetch<GCalEventsResponse>(
+        `/api/integrations/google-calendar/events?${params.toString()}`,
+        { headers: authHeaders.value },
+      )
 
       const events = response.items || []
       const calendarId = opts?.calendarId || 'primary'
@@ -246,6 +263,7 @@ export function useGoogleCalendar() {
     try {
       const response = await $fetch<{ items?: any[] }>(
         `/api/integrations/google-calendar/events?connectionId=${encodeURIComponent(conn.id)}&listCalendars=true`,
+        { headers: authHeaders.value },
       )
       return response.items || []
     } catch (err) {
@@ -302,6 +320,7 @@ export function useGoogleCalendar() {
     try {
       await $fetch('/api/integrations/google-calendar/revoke', {
         method: 'POST',
+        headers: authHeaders.value,
         body: { connectionId: conn.id.startsWith('entity:') ? conn.id : `entity:${conn.id}` },
       })
     } catch (err) {

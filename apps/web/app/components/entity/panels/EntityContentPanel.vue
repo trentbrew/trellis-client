@@ -32,6 +32,7 @@
     diagram: defineAsyncComponent(() => import('~/components/editor/DiagramContent.vue')),
     email: defineAsyncComponent(() => import('./document/EmailContent.vue')),
     goal: defineAsyncComponent(() => import('./container/GoalContent.vue')),
+    project: defineAsyncComponent(() => import('./container/ProjectContent.vue')),
   }
 
   // Class-level fallbacks for types without a specific panel
@@ -44,11 +45,7 @@
 
   const currentPanel = computed(() => {
     if (!entityType.value) return SummaryPanel
-    return (
-      panelComponents[entityType.value]
-      ?? classFallbacks[getEntityClass(entityType.value)]
-      ?? SummaryPanel
-    )
+    return panelComponents[entityType.value] ?? classFallbacks[getEntityClass(entityType.value)] ?? SummaryPanel
   })
 </script>
 
