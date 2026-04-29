@@ -20,6 +20,7 @@
   import { drag as d3Drag } from 'd3-drag'
   import { zoom as d3Zoom, zoomIdentity, type ZoomTransform } from 'd3-zoom'
   import { loadIcon } from '@iconify/vue'
+  import { mountGraphWebGL, type WebGLNode, type WebGLLink } from './graph-webgl'
 
   import '@vue-flow/core/dist/style.css'
 
@@ -106,8 +107,10 @@
 
   // ── View mode toggle ─────────────────────────────────────────────────
 
-  type GraphMode = 'flow' | 'force'
+  type GraphMode = 'flow' | 'force' | 'webgl'
   const graphMode = ref<GraphMode>('force')
+  const webglContainer = ref<HTMLElement | null>(null)
+  let webglHandle: { stop: () => void; focus: (id: string | null) => void; setHoveredId: (id: string | null) => void } | null = null
 
   // ── Semantic clustering (uses per-entity embeddings) ─────────────────
   // When enabled, a custom d3 force pulls each node toward the centroid
@@ -1018,18 +1021,120 @@
       })
   }
 
-  // Init / destroy d3 on mode switch + data + type filter + clustering changes
+  // ── WebGL (3D) renderer ──────────────────────────────────────────────
+  // Rasterize an Iconify glyph to a canvas so it can ride on a THREE.Sprite.
+  // Cached per (name|color|size) so re-renders don't redo the SVG decode.
+  const iconCanvasCache = new Map<string, HTMLCanvasElement | null>()
+  async function getIconCanvas(name: string, color: string, sizePx: number): Promise<HTMLCanvasElement | null> {
+    const key = `${name}|${color}|${sizePx}`
+    if (iconCanvasCache.has(key)) return iconCanvasCache.get(key)!
+    const data = await getIconData(name)
+    if (!data) {
+      iconCanvasCache.set(key, null)
+      return null
+    }
+    const w = data.width || 24
+    const h = data.height || 24
+    const body = data.body.replace(/currentColor/g, color)
+    const svgStr = `<svg xmlns="http://www.w3.org/2000/svg" width="${sizePx}" height="${sizePx}" viewBox="0 0 ${w} ${h}" fill="none" stroke="${color}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">${body}</svg>`
+    try {
+      const blob = new Blob([svgStr], { type: 'image/svg+xml' })
+      const url = URL.createObjectURL(blob)
+      const img = new Image()
+      await new Promise<void>((res, rej) => {
+        img.onload = () => res()
+        img.onerror = () => rej(new Error('icon load failed'))
+        img.src = url
+      })
+      const canvas = document.createElement('canvas')
+      canvas.width = sizePx
+      canvas.height = sizePx
+      const ctx = canvas.getContext('2d')
+      ctx?.drawImage(img, 0, 0, sizePx, sizePx)
+      URL.revokeObjectURL(url)
+      iconCanvasCache.set(key, canvas)
+      return canvas
+    } catch {
+      iconCanvasCache.set(key, null)
+      return null
+    }
+  }
+
+  function resolveBgColor(): string {
+    if (!import.meta.client) return '#0a0a0c'
+    const root = getComputedStyle(document.documentElement)
+    const v = root.getPropertyValue('--background').trim() || root.getPropertyValue('--card').trim()
+    if (v) return v
+    return '#0a0a0c'
+  }
+
+  function teardownWebGL() {
+    if (webglHandle) {
+      webglHandle.stop()
+      webglHandle = null
+    }
+  }
+
+  function initWebGL() {
+    if (!webglContainer.value || visibleNodes.value.length === 0) return
+    teardownWebGL()
+
+    const nodes: WebGLNode[] = visibleNodes.value.map((node, index) => {
+      const nodeType = getNodeType(node)
+      const cfg = getEntityConfig(nodeType) as any
+      return {
+        id: getNodeId(node) || `node-${index}`,
+        title: getNodeTitle(node),
+        nodeType,
+        color: resolveColor(cfg?.color),
+        icon: cfg?.icon || 'lucide:circle',
+        raw: node,
+      }
+    })
+
+    const nodeIdSet = new Set(nodes.map((n) => n.id))
+    const links: WebGLLink[] = computedEdges.value
+      .filter((e) => nodeIdSet.has(e.source) && nodeIdSet.has(e.target))
+      .map((e) => ({ id: e.id, source: e.source, target: e.target, label: e.label, dashed: e.dashed }))
+
+    webglHandle = mountGraphWebGL(webglContainer.value, nodes, links, {
+      onSelect: (n) => {
+        if (isBrowseMode.value) emit('open-entity', n.raw)
+      },
+      onHover: (n) => {
+        hoveredNodeId.value = n?.id ?? null
+      },
+      onDeselect: () => {
+        hoveredNodeId.value = null
+      },
+      getIconCanvas,
+      bgColor: resolveBgColor(),
+    })
+  }
+
+  // Init / destroy renderers on mode switch + data + type filter + clustering changes
   watch(
     [graphMode, visibleNodes, computedEdges, typeVisibility, clusterBySimilarity, embeddingsCache],
     () => {
       if (graphMode.value === 'force') {
+        teardownWebGL()
         nextTick(() => initD3())
-      } else {
+        return
+      }
+      if (graphMode.value === 'webgl') {
         if (simulation) {
           simulation.stop()
           simulation = null
         }
+        nextTick(() => initWebGL())
+        return
       }
+      // flow mode
+      if (simulation) {
+        simulation.stop()
+        simulation = null
+      }
+      teardownWebGL()
     },
     { immediate: true, deep: true },
   )
@@ -1039,6 +1144,7 @@
       simulation.stop()
       simulation = null
     }
+    teardownWebGL()
   })
 
   // ── Stats ────────────────────────────────────────────────────────────
@@ -1126,6 +1232,13 @@
           <Icon name="lucide:workflow" class="h-3.5 w-3.5" />
           Flow
         </button>
+        <button
+          class="flex items-center gap-1.5 px-2.5 py-1.5 rounded-md text-xs font-medium transition-colors"
+          :class="graphMode === 'webgl' ? 'bg-accent text-foreground' : 'text-muted-foreground hover:text-foreground'"
+          @click="graphMode = 'webgl'">
+          <Icon name="lucide:box" class="h-3.5 w-3.5" />
+          3D
+        </button>
         <!-- Semantic clustering toggle (force mode only) -->
         <div v-if="graphMode === 'force'" class="mx-0.5 h-5 w-px bg-border/60" />
         <button
@@ -1182,6 +1295,8 @@
 
       <!-- D3 Force-directed view -->
       <div v-show="graphMode === 'force'" ref="d3Container" class="h-full w-full" />
+
+      <div v-show="graphMode === 'webgl'" ref="webglContainer" class="h-full w-full relative" />
 
       <!-- Vue Flow structured view -->
       <ClientOnly>

@@ -32,6 +32,7 @@
     "generate:icons": "node scripts/generate-lucide-icons.mjs"
   },
   "dependencies": {
+    "3d-force-graph": "1.80.0",
     "@alcyone-labs/zod-to-json-schema": "4.0.10",
     "@floating-ui/react": "0.27.19",
     "@google/generative-ai": "^0.21.0",
@@ -139,6 +140,7 @@
     "tailwind-merge": "^3.3.1",
     "tailwind-variants": "^2.1.0",
     "tailwindcss": "^4.1.12",
+    "three": "0.184.0",
     "tippy.js": "6.3.7",
     "vaul-vue": "0.4.1",
     "vue": "^3.5.19",
@@ -167,6 +169,7 @@
     "@types/is-hotkey": "0.1.10",
     "@types/lodash.throttle": "4.1.9",
     "@types/sortablejs": "1.15.9",
+    "@types/three": "0.184.0",
     "@vue/test-utils": "^2.4.6",
     "class-variance-authority": "0.7.1",
     "happy-dom": "^18.0.1",

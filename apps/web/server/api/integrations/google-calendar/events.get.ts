@@ -13,6 +13,7 @@
  */
 
 import { useTqlKernel } from '../../../plugins/tql'
+import { requireConnectionOwner } from '../../../utils/connection-auth'
 
 interface GoogleTokenResponse {
   access_token: string
@@ -74,6 +75,12 @@ export default defineEventHandler(async (event) => {
     throw createError({ statusCode: 400, statusMessage: 'Missing connectionId query parameter.' })
   }
 
+  // ── Ownership check (multi-tenant isolation) ────────────────────────
+  // Throws 403 if the caller (X-User-Id header) is not the stored owner
+  // of this integration_connection entity. See `connection-auth.ts` for
+  // the full policy and the 2026-04-24 incident this guards against.
+  await requireConnectionOwner(event, connectionId)
+
   const kernel = useTqlKernel()
   let creds = await getCredentials(kernel, connectionId)
 
@@ -85,7 +92,10 @@ export default defineEventHandler(async (event) => {
   const REFRESH_BUFFER_MS = 5 * 60 * 1000
   if (creds.expiresAt < Date.now() + REFRESH_BUFFER_MS) {
     if (!creds.refreshToken) {
-      throw createError({ statusCode: 401, statusMessage: 'Token expired and no refresh token available. Please reconnect.' })
+      throw createError({
+        statusCode: 401,
+        statusMessage: 'Token expired and no refresh token available. Please reconnect.',
+      })
     }
 
     try {
@@ -102,9 +112,13 @@ export default defineEventHandler(async (event) => {
         accessToken: refreshed.accessToken,
         expiresAt: refreshed.expiresAt,
       }
-      await kernel.updateNode(entityId, {
-        credentialsRef: JSON.stringify(updatedCreds),
-      }, 'entity')
+      await kernel.updateNode(
+        entityId,
+        {
+          credentialsRef: JSON.stringify(updatedCreds),
+        },
+        'entity',
+      )
 
       creds = updatedCreds
     } catch (err: any) {

@@ -2,8 +2,11 @@
  * Composable for managing user roles in Trellis
  * Hierarchy: guest < member < admin < owner
  *
- * The role is resolved from the member record in the current org.
- * Falls back to org.ownerId for pre-migration orgs without an owner member record.
+ * Resolution order:
+ *   1. Local-first mode → any authenticated user is 'owner' (single-user substrate).
+ *   2. Org ownerId matches user.id → 'owner' (fast path for cloud, no query needed).
+ *   3. Member record lookup in current org → 'owner' | 'admin' | 'member' | 'guest'.
+ *   4. Default → 'guest'.
  */
 
 import type { UserRole } from '~/config/routes'
@@ -17,16 +20,22 @@ export function useUserRole() {
   const { user } = useInstantAuth()
   const currentOrg = useState<any>('currentOrg')
   const db = useInstantDb()
+  const { isLocal } = useAdapterStatus()
 
   // Map member DB role string → UserRole
   const mapMemberRole = (dbRole: string | undefined, isOwner: boolean): UserRole => {
     if (isOwner) return 'owner'
     switch (dbRole) {
-      case 'owner': return 'owner'
-      case 'admin': return 'admin'
-      case 'member': return 'member'
-      case 'guest': return 'guest'
-      default: return 'guest'
+      case 'owner':
+        return 'owner'
+      case 'admin':
+        return 'admin'
+      case 'member':
+        return 'member'
+      case 'guest':
+        return 'guest'
+      default:
+        return 'guest'
     }
   }
 
@@ -39,51 +48,64 @@ export function useUserRole() {
   // Look up the member record when user or org changes
   const lookupKey = computed(() => `${user.value?.id || ''}:${currentOrg.value?.id || ''}`)
 
-  watch(lookupKey, async (key) => {
-    if (!key || key === ':') {
-      _memberRole.value = null
-      return
-    }
-    if (_lastLookupKey.value === key) return
-    _lastLookupKey.value = key
+  watch(
+    lookupKey,
+    async (key) => {
+      if (!key || key === ':') {
+        _memberRole.value = null
+        return
+      }
+      if (_lastLookupKey.value === key) return
+      _lastLookupKey.value = key
 
-    const userId = user.value?.id
-    const orgId = currentOrg.value?.id
-    if (!userId || !orgId) {
-      _memberRole.value = null
-      return
-    }
+      const userId = user.value?.id
+      const orgId = currentOrg.value?.id
+      if (!userId || !orgId) {
+        _memberRole.value = null
+        return
+      }
 
-    // Org owners fallback — no need to query if ownerId matches
-    if (isOrgOwner.value) {
-      _memberRole.value = 'owner'
-      return
-    }
+      // Local-first mode: the authenticated user is always the owner of the substrate.
+      // Skip the member-record query entirely — there's no remote to talk to.
+      if (isLocal.value) {
+        _memberRole.value = 'owner'
+        return
+      }
 
-    _memberRoleLoading.value = true
-    try {
-      const resp = await db.queryOnce({
-        members: {
-          $: {
-            where: {
-              userId,
-              orgId,
+      // Org owners fallback — no need to query if ownerId matches
+      if (isOrgOwner.value) {
+        _memberRole.value = 'owner'
+        return
+      }
+
+      _memberRoleLoading.value = true
+      try {
+        const resp = await db.queryOnce({
+          members: {
+            $: {
+              where: {
+                userId,
+                orgId,
+              },
             },
           },
-        },
-      })
-      const members = (resp.data as any)?.members || []
-      _memberRole.value = members[0]?.role || null
-    } catch (err) {
-      console.warn('[useUserRole] member lookup failed:', (err as any)?.message)
-      _memberRole.value = null
-    } finally {
-      _memberRoleLoading.value = false
-    }
-  }, { immediate: true })
+        })
+        const members = (resp.data as any)?.members || []
+        _memberRole.value = members[0]?.role || null
+      } catch (err) {
+        console.warn('[useUserRole] member lookup failed:', (err as any)?.message)
+        _memberRole.value = null
+      } finally {
+        _memberRoleLoading.value = false
+      }
+    },
+    { immediate: true },
+  )
 
   const userRole = computed<UserRole>(() => {
     if (!user.value) return 'guest'
+    // Local-first: authenticated ⇒ owner. Treat the single user as the substrate owner.
+    if (isLocal.value) return 'owner'
     return mapMemberRole(_memberRole.value || undefined, isOrgOwner.value)
   })
 

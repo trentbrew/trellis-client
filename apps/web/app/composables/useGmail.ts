@@ -80,6 +80,20 @@ export function useGmail() {
   const { getConnection, getConnections } = useIntegrations()
   const { user } = useInstantAuth()
 
+  // ── Auth headers for server-side ownership checks ───────────────────
+  //
+  // Every /api/integrations/gmail/* request carries the caller's user id
+  // so the server can verify it matches the connection's stored userId
+  // fact (see `server/utils/connection-auth.ts`). Without this header,
+  // the server treats the request as anonymous and denies access to any
+  // owned connection.
+  const authHeaders = computed<Record<string, string>>(() => {
+    const uid = user.value?.id
+    const headers: Record<string, string> = {}
+    if (uid) headers['X-User-Id'] = uid
+    return headers
+  })
+
   // ── Reactive state ────────────────────────────────────────────────
 
   const syncStatus = ref<GmailSyncStatus>('idle')
@@ -124,6 +138,7 @@ export function useGmail() {
 
     const response = await $fetch<{ threads: GmailThreadSummary[]; nextPageToken?: string }>(
       `/api/integrations/gmail/messages?${params.toString()}`,
+      { headers: authHeaders.value },
     )
     return { threads: response.threads || [], nextPageToken: response.nextPageToken }
   }
@@ -135,7 +150,9 @@ export function useGmail() {
     if (!connId) throw new Error('Not connected to Gmail')
 
     const params = new URLSearchParams({ connectionId: connId, threadId })
-    return await $fetch<GmailThreadFull>(`/api/integrations/gmail/messages?${params.toString()}`)
+    return await $fetch<GmailThreadFull>(`/api/integrations/gmail/messages?${params.toString()}`, {
+      headers: authHeaders.value,
+    })
   }
 
   // ── Send / reply ─────────────────────────────────────────────────
@@ -151,6 +168,7 @@ export function useGmail() {
       '/api/integrations/gmail/send',
       {
         method: 'POST',
+        headers: authHeaders.value,
         body: { connectionId: connId, ...opts },
       },
     )
@@ -167,6 +185,7 @@ export function useGmail() {
     try {
       const response = await $fetch<{ labels: GmailLabel[] }>(
         `/api/integrations/gmail/labels?connectionId=${encodeURIComponent(connId)}`,
+        { headers: authHeaders.value },
       )
       return response.labels || []
     } catch (err) {
@@ -182,6 +201,7 @@ export function useGmail() {
     try {
       const response = await $fetch<{ ok: boolean; label: GmailLabel }>('/api/integrations/gmail/labels', {
         method: 'POST',
+        headers: authHeaders.value,
         body: { connectionId: connId, action: 'create', name },
       })
       return response.label
@@ -203,6 +223,7 @@ export function useGmail() {
 
     await $fetch('/api/integrations/gmail/labels', {
       method: 'POST',
+      headers: authHeaders.value,
       body: {
         connectionId: connId,
         action: 'modify',
@@ -348,6 +369,7 @@ export function useGmail() {
     try {
       await $fetch('/api/integrations/gmail/revoke', {
         method: 'POST',
+        headers: authHeaders.value,
         body: { connectionId: conn.id.startsWith('entity:') ? conn.id : `entity:${conn.id}` },
       })
     } catch (err) {

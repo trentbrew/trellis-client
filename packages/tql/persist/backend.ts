@@ -49,6 +49,15 @@ export interface KernelBackend {
   readUntilTimestamp(isoTimestamp: string): KernelOp[];
   getLastOp(): KernelOp | undefined;
 
+  /**
+   * Cheap count of ops after `hash` (or all ops if `hash` is undefined).
+   * Must NOT parse op payloads — used to decide whether to auto-checkpoint
+   * on boot without paying the full replay cost twice.
+   * Optional so older/in-memory backends remain compatible; callers must
+   * feature-detect.
+   */
+  countOpsAfter?(hash?: string): number;
+
   // Snapshot support
   saveSnapshot(lastOpHash: string, data: any): void;
   loadLatestSnapshot(): { lastOpHash: string; data: any } | undefined;

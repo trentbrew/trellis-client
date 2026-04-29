@@ -8,6 +8,7 @@
  */
 
 import { getValidAccessToken } from './_credentials'
+import { requireConnectionOwner } from '../../../utils/connection-auth'
 
 export default defineEventHandler(async (event) => {
   const query = getQuery(event)
@@ -17,13 +18,21 @@ export default defineEventHandler(async (event) => {
     throw createError({ statusCode: 400, statusMessage: 'Missing connectionId query parameter.' })
   }
 
+  // Multi-tenant guard: deny label enumeration across users.
+  await requireConnectionOwner(event, connectionId)
+
   const accessToken = await getValidAccessToken(connectionId)
 
   try {
-    const response = await $fetch<{ labels?: Array<{ id: string; name: string; type: 'system' | 'user'; messagesTotal?: number; messagesUnread?: number }> }>(
-      'https://gmail.googleapis.com/gmail/v1/users/me/labels',
-      { headers: { Authorization: `Bearer ${accessToken}` } },
-    )
+    const response = await $fetch<{
+      labels?: Array<{
+        id: string
+        name: string
+        type: 'system' | 'user'
+        messagesTotal?: number
+        messagesUnread?: number
+      }>
+    }>('https://gmail.googleapis.com/gmail/v1/users/me/labels', { headers: { Authorization: `Bearer ${accessToken}` } })
 
     return { labels: response.labels || [] }
   } catch (err: any) {

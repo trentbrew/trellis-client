@@ -27,6 +27,7 @@
 
 import { getValidAccessToken } from './_credentials'
 import { normalizeIssue, type GithubIssueRaw, type NormalizedIssue } from './_shared'
+import { requireConnectionOwner } from '../../../utils/connection-auth'
 
 export default defineEventHandler(async (event) => {
   const query = getQuery(event)
@@ -34,6 +35,9 @@ export default defineEventHandler(async (event) => {
   if (!connectionId) {
     throw createError({ statusCode: 400, statusMessage: 'Missing connectionId query parameter.' })
   }
+
+  // Multi-tenant guard: deny reads of another user's GitHub issues.
+  await requireConnectionOwner(event, connectionId)
 
   const accessToken = await getValidAccessToken(connectionId)
   const headers = {

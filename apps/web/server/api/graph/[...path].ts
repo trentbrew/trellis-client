@@ -235,6 +235,21 @@ export default defineEventHandler(async (event) => {
     return { entries: getMutationLog().slice().reverse() }
   }
 
+  // ─── POST /api/graph/checkpoint ─────────────────────────────────
+  // Persist a snapshot of the current kernel state so that subsequent
+  // boots don't have to replay the full op gap. Without this, a dev
+  // database with hundreds of thousands of ops will blow past Node's
+  // heap and be killed by the OS (SIGKILL via macOS jetsam) during
+  // replay.
+  if (method === 'POST' && route === 'checkpoint') {
+    try {
+      await kernel.checkpoint()
+      return { ok: true, timestamp: new Date().toISOString() }
+    } catch (err: any) {
+      throw createError({ statusCode: 500, message: err?.message || 'checkpoint failed' })
+    }
+  }
+
   // ─── POST /api/graph/nodes (batch) ──────────────────────────────────
   if (method === 'POST' && route === 'nodes') {
     const body = await readBody(event)
