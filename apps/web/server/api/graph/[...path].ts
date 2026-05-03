@@ -18,6 +18,13 @@ import { getZoneGuardStats, getZoneGuardMode, checkMutation, recordStrictRejecti
 import { emitMutation } from '../../utils/tql-events'
 import { zoneFromRequest } from '../../utils/zone-router'
 import { captureDecision, shouldCaptureDecision } from '../../utils/campus-decisions'
+import { parseApiBody, parseApiQuery, validateApiInput } from '../../utils/api-validation'
+import {
+  GraphNodeParamsSchema,
+  GraphNodesBodySchema,
+  GraphQueryBodySchema,
+  GraphSummaryQuerySchema,
+} from '../../utils/graph-api-schemas'
 
 /** Reconstruct a node object from EAV facts, properly handling multi-value attributes */
 function factsToNode(entityId: string, facts: Array<{ e: string; a: string; v: unknown }>): Record<string, any> {
@@ -75,8 +82,7 @@ export default defineEventHandler(async (event) => {
   // Replaces health + schema + catalog for orientation in a single call.
   if (method === 'GET' && route === 'summary') {
     const store = kernel.getStore()
-    const limitParam = parseInt(event.node.req.url?.match(/[?&]limit=(\d+)/)?.[1] || '10')
-    const limit = isNaN(limitParam) ? 10 : limitParam
+    const { limit } = parseApiQuery(event, GraphSummaryQuerySchema)
 
     // Count facts and links
     let factCount = 0
@@ -196,10 +202,7 @@ export default defineEventHandler(async (event) => {
 
   // ─── GET /api/graph/node/:id ────────────────────────────────────────
   if (method === 'GET' && route === 'node') {
-    const entityId = segments.slice(1).join('/')
-    if (!entityId) {
-      throw createError({ statusCode: 400, message: 'Missing entity ID' })
-    }
+    const { entityId } = validateApiInput(GraphNodeParamsSchema, { entityId: segments.slice(1).join('/') }, 'params')
 
     const store = kernel.getStore()
     const facts = store.getFactsByEntity(entityId)
@@ -252,12 +255,7 @@ export default defineEventHandler(async (event) => {
 
   // ─── POST /api/graph/nodes (batch) ──────────────────────────────────
   if (method === 'POST' && route === 'nodes') {
-    const body = await readBody(event)
-    const { ids } = body || {}
-
-    if (!Array.isArray(ids) || ids.length === 0) {
-      throw createError({ statusCode: 400, message: 'Request body must include "ids" (string[])' })
-    }
+    const { ids } = await parseApiBody(event, GraphNodesBodySchema)
 
     const store = kernel.getStore()
     const nodes: Record<string, any>[] = []
@@ -290,8 +288,7 @@ export default defineEventHandler(async (event) => {
 
   // ─── POST /api/graph/query ──────────────────────────────────────────
   if (method === 'POST' && route === 'query') {
-    const body = await readBody(event)
-    const { query, projection } = body || {}
+    const { query, projection } = await parseApiBody(event, GraphQueryBodySchema)
 
     // Execute a named projection
     if (projection) {
@@ -303,15 +300,13 @@ export default defineEventHandler(async (event) => {
       }
     }
 
-    // Execute an EQL-S query string
-    if (!query || typeof query !== 'string') {
-      throw createError({
-        statusCode: 400,
-        message: 'Request body must include "query" (EQL-S string) or "projection" (projection ID)',
-      })
-    }
-
     try {
+      if (!query) {
+        throw createError({
+          statusCode: 400,
+          message: 'Request body must include "query" (EQL-S string) or "projection" (projection ID)',
+        })
+      }
       const result = await kernel.query(query)
       return {
         data: result.rows,
