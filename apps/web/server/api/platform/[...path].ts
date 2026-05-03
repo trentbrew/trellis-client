@@ -63,6 +63,29 @@
 
 import { useTqlKernel, pushMutationLog } from '../../plugins/tql'
 import { emitMutation } from '../../utils/tql-events'
+import { parseApiBody, parseApiQuery } from '../../utils/api-validation'
+import {
+  PlatformAppCreateBodySchema,
+  PlatformAppListQuerySchema,
+  PlatformBulkDeleteBodySchema,
+  PlatformBulkUpdateBodySchema,
+  PlatformCollectionCreateBodySchema,
+  PlatformCommentAddBodySchema,
+  PlatformContextQuerySchema,
+  PlatformDeleteBodySchema,
+  PlatformFileUploadBodySchema,
+  PlatformInviteSendBodySchema,
+  PlatformOptionalAppQuerySchema,
+  PlatformOrgCreateBodySchema,
+  PlatformPageCreateBodySchema,
+  PlatformSettingGetQuerySchema,
+  PlatformSettingListQuerySchema,
+  PlatformSettingSetBodySchema,
+  PlatformTagAssignBodySchema,
+  PlatformTagCreateBodySchema,
+  PlatformUpdateBodySchema,
+  PlatformWorkflowCreateBodySchema,
+} from '../../utils/platform-api-schemas'
 
 // ── Helpers ─────────────────────────────────────────────────────────────
 
@@ -120,7 +143,11 @@ function getNode(kernel: ReturnType<typeof useTqlKernel>, entityId: string): Rec
   return factsToNode(entityId, facts)
 }
 
-const slugify = (s: string) => s.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '')
+const slugify = (s: string) =>
+  s
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-|-$/g, '')
 
 export default defineEventHandler(async (event) => {
   let kernel: ReturnType<typeof useTqlKernel>
@@ -149,13 +176,8 @@ export default defineEventHandler(async (event) => {
 
   // ─── POST /api/platform/org/create ───────────────────────────────────
   if (method === 'POST' && domain === 'org' && action === 'create') {
-    const body = await readBody(event)
-    const { name, slug, description, agentId } = body || {}
+    const { name, slug, description, agentId } = await parseApiBody(event, PlatformOrgCreateBodySchema)
     const agent: string = agentId || 'cli'
-
-    if (!name) {
-      throw createError({ statusCode: 400, message: '"name" is required' })
-    }
 
     const orgSlug = slug || slugify(name)
     const entityId = `platform:org/${orgSlug}`
@@ -196,8 +218,7 @@ export default defineEventHandler(async (event) => {
 
   // ─── GET /api/platform/app/list ──────────────────────────────────────
   if (method === 'GET' && domain === 'app' && action === 'list') {
-    const query = getQuery(event)
-    const orgId = query.orgId as string | undefined
+    const { orgId } = parseApiQuery(event, PlatformAppListQuerySchema)
     const nodes = queryPlatformNodes(kernel, 'platform:app/', (node) => {
       if (orgId && node.orgId !== orgId) return false
       return true
@@ -207,13 +228,11 @@ export default defineEventHandler(async (event) => {
 
   // ─── POST /api/platform/app/create ───────────────────────────────────
   if (method === 'POST' && domain === 'app' && action === 'create') {
-    const body = await readBody(event)
-    const { name, slug, orgId, icon, color, description, ontologies, agentId } = body || {}
+    const { name, slug, orgId, icon, color, description, ontologies, agentId } = await parseApiBody(
+      event,
+      PlatformAppCreateBodySchema,
+    )
     const agent: string = agentId || 'cli'
-
-    if (!name) {
-      throw createError({ statusCode: 400, message: '"name" is required' })
-    }
 
     const appSlug = slug || slugify(name)
     const entityId = `platform:app/${appSlug}`
@@ -246,7 +265,9 @@ export default defineEventHandler(async (event) => {
     if (orgId) {
       try {
         await kernel.link(orgId, 'hasApp', entityId, { agentId: agent })
-      } catch { /* non-fatal */ }
+      } catch {
+        /* non-fatal */
+      }
     }
 
     return { ok: true, id: entityId, app: { '@id': entityId, ...data }, created: true }
@@ -265,8 +286,7 @@ export default defineEventHandler(async (event) => {
   // ─── PUT /api/platform/app/:id ───────────────────────────────────────
   if (method === 'PUT' && domain === 'app' && action) {
     const entityId = `platform:app/${action}${restId ? '/' + restId : ''}`
-    const body = await readBody(event)
-    const { data, agentId } = body || {}
+    const { data, agentId } = await parseApiBody(event, PlatformUpdateBodySchema)
     const agent: string = agentId || 'cli'
 
     const existing = getNode(kernel, entityId)
@@ -285,8 +305,8 @@ export default defineEventHandler(async (event) => {
   // ─── DELETE /api/platform/app/:id ────────────────────────────────────
   if (method === 'DELETE' && domain === 'app' && action) {
     const entityId = `platform:app/${action}${restId ? '/' + restId : ''}`
-    const body = await readBody(event).catch(() => ({}))
-    const agent: string = body?.agentId || 'cli'
+    const { agentId } = await parseApiBody(event, PlatformDeleteBodySchema)
+    const agent: string = agentId || 'cli'
 
     const existing = getNode(kernel, entityId)
     if (!existing) {
@@ -302,9 +322,7 @@ export default defineEventHandler(async (event) => {
 
   // ─── GET /api/platform/context ───────────────────────────────────────
   if (method === 'GET' && domain === 'context') {
-    const query = getQuery(event)
-    const orgId = query.orgId as string | undefined
-    const appId = query.appId as string | undefined
+    const { orgId, appId } = parseApiQuery(event, PlatformContextQuerySchema)
 
     let org: Record<string, any> | null = null
     let app: Record<string, any> | null = null
@@ -336,8 +354,7 @@ export default defineEventHandler(async (event) => {
 
   // ─── GET /api/platform/collection/list ───────────────────────────────
   if (method === 'GET' && domain === 'collection' && action === 'list') {
-    const query = getQuery(event)
-    const appId = query.appId as string | undefined
+    const { appId } = parseApiQuery(event, PlatformOptionalAppQuerySchema)
     const nodes = queryPlatformNodes(kernel, 'platform:collection/', (node) => {
       if (appId && node.appId !== appId) return false
       return true
@@ -347,13 +364,16 @@ export default defineEventHandler(async (event) => {
 
   // ─── POST /api/platform/collection/create ────────────────────────────
   if (method === 'POST' && domain === 'collection' && action === 'create') {
-    const body = await readBody(event)
-    const { name, slug, appId, type: collType, description, schema, agentId } = body || {}
+    const {
+      name,
+      slug,
+      appId,
+      type: collType,
+      description,
+      schema,
+      agentId,
+    } = await parseApiBody(event, PlatformCollectionCreateBodySchema)
     const agent: string = agentId || 'cli'
-
-    if (!name) {
-      throw createError({ statusCode: 400, message: '"name" is required' })
-    }
 
     const collSlug = slug || slugify(name)
     const entityId = `platform:collection/${collSlug}`
@@ -386,8 +406,7 @@ export default defineEventHandler(async (event) => {
   // ─── PUT /api/platform/collection/:id ────────────────────────────────
   if (method === 'PUT' && domain === 'collection' && action) {
     const entityId = `platform:collection/${action}${restId ? '/' + restId : ''}`
-    const body = await readBody(event)
-    const { data, agentId } = body || {}
+    const { data, agentId } = await parseApiBody(event, PlatformUpdateBodySchema)
     const agent: string = agentId || 'cli'
 
     const existing = getNode(kernel, entityId)
@@ -406,8 +425,8 @@ export default defineEventHandler(async (event) => {
   // ─── DELETE /api/platform/collection/:id ─────────────────────────────
   if (method === 'DELETE' && domain === 'collection' && action) {
     const entityId = `platform:collection/${action}${restId ? '/' + restId : ''}`
-    const body = await readBody(event).catch(() => ({}))
-    const agent: string = body?.agentId || 'cli'
+    const { agentId } = await parseApiBody(event, PlatformDeleteBodySchema)
+    const agent: string = agentId || 'cli'
 
     const existing = getNode(kernel, entityId)
     if (!existing) {
@@ -423,8 +442,7 @@ export default defineEventHandler(async (event) => {
 
   // ─── GET /api/platform/page/list ─────────────────────────────────────
   if (method === 'GET' && domain === 'page' && action === 'list') {
-    const query = getQuery(event)
-    const appId = query.appId as string | undefined
+    const { appId } = parseApiQuery(event, PlatformOptionalAppQuerySchema)
     const nodes = queryPlatformNodes(kernel, 'platform:page/', (node) => {
       if (appId && node.appId !== appId) return false
       return true
@@ -434,13 +452,11 @@ export default defineEventHandler(async (event) => {
 
   // ─── POST /api/platform/page/create ──────────────────────────────────
   if (method === 'POST' && domain === 'page' && action === 'create') {
-    const body = await readBody(event)
-    const { title, appId, dataSource, layout, defaultProjection, description, icon, agentId } = body || {}
+    const { title, appId, dataSource, layout, defaultProjection, description, icon, agentId } = await parseApiBody(
+      event,
+      PlatformPageCreateBodySchema,
+    )
     const agent: string = agentId || 'cli'
-
-    if (!title) {
-      throw createError({ statusCode: 400, message: '"title" is required' })
-    }
 
     const pageId = `platform:page/${slugify(title)}-${Date.now().toString(36)}`
 
@@ -468,8 +484,7 @@ export default defineEventHandler(async (event) => {
   // ─── PUT /api/platform/page/:id ──────────────────────────────────────
   if (method === 'PUT' && domain === 'page' && action) {
     const entityId = `platform:page/${action}${restId ? '/' + restId : ''}`
-    const body = await readBody(event)
-    const { data, agentId } = body || {}
+    const { data, agentId } = await parseApiBody(event, PlatformUpdateBodySchema)
     const agent: string = agentId || 'cli'
 
     const existing = getNode(kernel, entityId)
@@ -488,8 +503,8 @@ export default defineEventHandler(async (event) => {
   // ─── DELETE /api/platform/page/:id ───────────────────────────────────
   if (method === 'DELETE' && domain === 'page' && action) {
     const entityId = `platform:page/${action}${restId ? '/' + restId : ''}`
-    const body = await readBody(event).catch(() => ({}))
-    const agent: string = body?.agentId || 'cli'
+    const { agentId } = await parseApiBody(event, PlatformDeleteBodySchema)
+    const agent: string = agentId || 'cli'
 
     const existing = getNode(kernel, entityId)
     if (!existing) {
@@ -524,13 +539,16 @@ export default defineEventHandler(async (event) => {
 
   // ─── POST /api/platform/comment/add ──────────────────────────────────
   if (method === 'POST' && domain === 'comment' && action === 'add') {
-    const body = await readBody(event)
-    const { entityId: targetEntityId, content, commentType, authorId, authorName, metadata, agentId } = body || {}
+    const {
+      entityId: targetEntityId,
+      content,
+      commentType,
+      authorId,
+      authorName,
+      metadata,
+      agentId,
+    } = await parseApiBody(event, PlatformCommentAddBodySchema)
     const agent: string = agentId || 'cli'
-
-    if (!targetEntityId || !content) {
-      throw createError({ statusCode: 400, message: '"entityId" and "content" are required' })
-    }
 
     const commentId = `comment:${crypto.randomUUID()}`
     const now = new Date().toISOString()
@@ -552,7 +570,9 @@ export default defineEventHandler(async (event) => {
     try {
       const fullEntityId = targetEntityId.includes(':') ? targetEntityId : `entity:${targetEntityId}`
       await kernel.link(fullEntityId, 'hasComment', commentId, { agentId: agent })
-    } catch { /* non-fatal — parent may not exist in TQL */ }
+    } catch {
+      /* non-fatal — parent may not exist in TQL */
+    }
 
     pushMutationLog({ action: 'addComment', entityId: commentId, data })
     emitMutation({ action: 'addComment', entityId: commentId, type: 'comment', agentId: agent, data })
@@ -568,13 +588,8 @@ export default defineEventHandler(async (event) => {
 
   // ─── POST /api/platform/tag/create ───────────────────────────────────
   if (method === 'POST' && domain === 'tag' && action === 'create') {
-    const body = await readBody(event)
-    const { name, color, description, agentId } = body || {}
+    const { name, color, description, agentId } = await parseApiBody(event, PlatformTagCreateBodySchema)
     const agent: string = agentId || 'cli'
-
-    if (!name) {
-      throw createError({ statusCode: 400, message: '"name" is required' })
-    }
 
     const tagSlug = slugify(name)
     const entityId = `platform:tag/${tagSlug}`
@@ -604,13 +619,8 @@ export default defineEventHandler(async (event) => {
 
   // ─── POST /api/platform/tag/assign ───────────────────────────────────
   if (method === 'POST' && domain === 'tag' && action === 'assign') {
-    const body = await readBody(event)
-    const { entityId: targetEntityId, tags, agentId } = body || {}
+    const { entityId: targetEntityId, tags, agentId } = await parseApiBody(event, PlatformTagAssignBodySchema)
     const agent: string = agentId || 'cli'
-
-    if (!targetEntityId || !Array.isArray(tags)) {
-      throw createError({ statusCode: 400, message: '"entityId" and "tags" (string[]) are required' })
-    }
 
     const linked: string[] = []
     for (const tagName of tags) {
@@ -621,9 +631,18 @@ export default defineEventHandler(async (event) => {
       const existing = getNode(kernel, tagEntityId)
       if (!existing) {
         const now = new Date().toISOString()
-        await kernel.createNode(tagEntityId, {
-          type: 'tag', title: tagName, slug: tagSlug, color: '', createdAt: now,
-        }, 'platform', { agentId: agent })
+        await kernel.createNode(
+          tagEntityId,
+          {
+            type: 'tag',
+            title: tagName,
+            slug: tagSlug,
+            color: '',
+            createdAt: now,
+          },
+          'platform',
+          { agentId: agent },
+        )
       }
 
       // Link entity to tag
@@ -631,7 +650,9 @@ export default defineEventHandler(async (event) => {
       try {
         await kernel.link(fullEntityId, 'taggedWith', tagEntityId, { agentId: agent })
         linked.push(tagSlug)
-      } catch { /* non-fatal */ }
+      } catch {
+        /* non-fatal */
+      }
     }
 
     return { ok: true, entityId: targetEntityId, tagsLinked: linked }
@@ -643,13 +664,8 @@ export default defineEventHandler(async (event) => {
 
   // ─── POST /api/platform/bulk/update ──────────────────────────────────
   if (method === 'POST' && domain === 'bulk' && action === 'update') {
-    const body = await readBody(event)
-    const { query: eqls, data, agentId } = body || {}
+    const { query: eqls, data, agentId } = await parseApiBody(event, PlatformBulkUpdateBodySchema)
     const agent: string = agentId || 'cli'
-
-    if (!eqls || !data) {
-      throw createError({ statusCode: 400, message: '"query" (EQL-S string) and "data" (object) are required' })
-    }
 
     // Execute query to find matching entity IDs
     const result = await kernel.query(eqls)
@@ -672,7 +688,9 @@ export default defineEventHandler(async (event) => {
       try {
         await kernel.updateNode(entityId, data, 'entity', { agentId: agent })
         updated++
-      } catch { /* skip failures */ }
+      } catch {
+        /* skip failures */
+      }
     }
 
     pushMutationLog({ action: 'bulkUpdate', data: { query: eqls, updated } })
@@ -683,13 +701,8 @@ export default defineEventHandler(async (event) => {
 
   // ─── POST /api/platform/bulk/delete ──────────────────────────────────
   if (method === 'POST' && domain === 'bulk' && action === 'delete') {
-    const body = await readBody(event)
-    const { query: eqls, agentId } = body || {}
+    const { query: eqls, agentId } = await parseApiBody(event, PlatformBulkDeleteBodySchema)
     const agent: string = agentId || 'cli'
-
-    if (!eqls) {
-      throw createError({ statusCode: 400, message: '"query" (EQL-S string) is required' })
-    }
 
     const result = await kernel.query(eqls)
     const rows = result.rows || []
@@ -710,7 +723,9 @@ export default defineEventHandler(async (event) => {
       try {
         await kernel.deleteNode(entityId, { agentId: agent })
         deleted++
-      } catch { /* skip failures */ }
+      } catch {
+        /* skip failures */
+      }
     }
 
     pushMutationLog({ action: 'bulkDelete', data: { query: eqls, deleted } })
@@ -721,8 +736,7 @@ export default defineEventHandler(async (event) => {
 
   // ─── GET /api/platform/workflow/list ─────────────────────────────────
   if (method === 'GET' && domain === 'workflow' && action === 'list') {
-    const query = getQuery(event)
-    const appId = query.appId as string | undefined
+    const { appId } = parseApiQuery(event, PlatformOptionalAppQuerySchema)
     const nodes = queryPlatformNodes(kernel, 'platform:workflow/', (node) => {
       if (appId && node.appId !== appId) return false
       return true
@@ -732,13 +746,11 @@ export default defineEventHandler(async (event) => {
 
   // ─── POST /api/platform/workflow/create ──────────────────────────────
   if (method === 'POST' && domain === 'workflow' && action === 'create') {
-    const body = await readBody(event)
-    const { name, appId, trigger, graph, description, agentId } = body || {}
+    const { name, appId, trigger, graph, description, agentId } = await parseApiBody(
+      event,
+      PlatformWorkflowCreateBodySchema,
+    )
     const agent: string = agentId || 'cli'
-
-    if (!name) {
-      throw createError({ statusCode: 400, message: '"name" is required' })
-    }
 
     const wfId = `platform:workflow/${slugify(name)}-${Date.now().toString(36)}`
     const now = new Date().toISOString()
@@ -764,8 +776,7 @@ export default defineEventHandler(async (event) => {
   // ─── PUT /api/platform/workflow/:id ──────────────────────────────────
   if (method === 'PUT' && domain === 'workflow' && action) {
     const entityId = `platform:workflow/${action}${restId ? '/' + restId : ''}`
-    const body = await readBody(event)
-    const { data, agentId } = body || {}
+    const { data, agentId } = await parseApiBody(event, PlatformUpdateBodySchema)
     const agent: string = agentId || 'cli'
 
     const existing = getNode(kernel, entityId)
@@ -784,8 +795,8 @@ export default defineEventHandler(async (event) => {
   // ─── DELETE /api/platform/workflow/:id ────────────────────────────────
   if (method === 'DELETE' && domain === 'workflow' && action) {
     const entityId = `platform:workflow/${action}${restId ? '/' + restId : ''}`
-    const body = await readBody(event).catch(() => ({}))
-    const agent: string = body?.agentId || 'cli'
+    const { agentId } = await parseApiBody(event, PlatformDeleteBodySchema)
+    const agent: string = agentId || 'cli'
 
     const existing = getNode(kernel, entityId)
     if (!existing) {
@@ -805,13 +816,7 @@ export default defineEventHandler(async (event) => {
 
   // ─── GET /api/platform/setting/get ───────────────────────────────────
   if (method === 'GET' && domain === 'setting' && action === 'get') {
-    const query = getQuery(event)
-    const key = query.key as string | undefined
-    const scope = (query.scope as string) || 'app'
-
-    if (!key) {
-      throw createError({ statusCode: 400, message: '"key" query param is required' })
-    }
+    const { key, scope } = parseApiQuery(event, PlatformSettingGetQuerySchema)
 
     const entityId = `platform:setting/${scope}/${key}`
     const node = getNode(kernel, entityId)
@@ -824,14 +829,9 @@ export default defineEventHandler(async (event) => {
 
   // ─── POST /api/platform/setting/set ──────────────────────────────────
   if (method === 'POST' && domain === 'setting' && action === 'set') {
-    const body = await readBody(event)
-    const { key, value, scope: bodyScope, agentId } = body || {}
+    const { key, value, scope: bodyScope, agentId } = await parseApiBody(event, PlatformSettingSetBodySchema)
     const agent: string = agentId || 'cli'
     const scope = bodyScope || 'app'
-
-    if (!key) {
-      throw createError({ statusCode: 400, message: '"key" is required' })
-    }
 
     const entityId = `platform:setting/${scope}/${key}`
     const now = new Date().toISOString()
@@ -859,8 +859,7 @@ export default defineEventHandler(async (event) => {
 
   // ─── GET /api/platform/setting/list ──────────────────────────────────
   if (method === 'GET' && domain === 'setting' && action === 'list') {
-    const query = getQuery(event)
-    const scope = (query.scope as string) || 'app'
+    const { scope } = parseApiQuery(event, PlatformSettingListQuerySchema)
     const prefix = `platform:setting/${scope}/`
     const nodes = queryPlatformNodes(kernel, prefix)
     return { ok: true, settings: nodes, scope }
@@ -869,17 +868,13 @@ export default defineEventHandler(async (event) => {
   // ─── POST /api/platform/file/upload ──────────────────────────────────
   // Proxy to existing /api/storage/upload
   if (method === 'POST' && domain === 'file' && action === 'upload') {
-    const body = await readBody(event)
-    const { entityId: targetEntityId, field, agentId } = body || {}
+    const body = await parseApiBody(event, PlatformFileUploadBodySchema)
+    const { entityId: targetEntityId, field, agentId } = body
 
     // For CLI file uploads, the CLI sends the file as base64 in the body
     // since multipart from CLI is complex. The server decodes and re-uploads.
-    const { fileBase64, filename, contentType: ct } = body || {}
+    const { filename, contentType: ct } = body
     const agent: string = agentId || 'cli'
-
-    if (!fileBase64 || !filename) {
-      throw createError({ statusCode: 400, message: '"fileBase64" and "filename" are required' })
-    }
 
     const storagePath = targetEntityId
       ? `entities/${targetEntityId.replace(/:/g, '/')}/${filename}`
@@ -901,7 +896,9 @@ export default defineEventHandler(async (event) => {
       const fullId = targetEntityId.includes(':') ? targetEntityId : `entity:${targetEntityId}`
       try {
         await kernel.updateNode(fullId, { [field]: storagePath }, 'entity', { agentId: agent })
-      } catch { /* non-fatal */ }
+      } catch {
+        /* non-fatal */
+      }
     }
 
     pushMutationLog({ action: 'fileUpload', entityId: storagePath, data: fileRef })
@@ -912,14 +909,10 @@ export default defineEventHandler(async (event) => {
   // ─── POST /api/platform/invite/send ──────────────────────────────────
   // Proxy to existing /api/invite
   if (method === 'POST' && domain === 'invite' && action === 'send') {
-    const body = await readBody(event)
-    const { email, emails, role, orgId, orgName, agentId } = body || {}
+    const { email, emails, role, orgId, orgName, agentId } = await parseApiBody(event, PlatformInviteSendBodySchema)
     const agent: string = agentId || 'cli'
 
     const emailList = emails || (email ? [email] : [])
-    if (emailList.length === 0) {
-      throw createError({ statusCode: 400, message: '"email" or "emails" is required' })
-    }
 
     // Proxy to existing invite endpoint
     try {

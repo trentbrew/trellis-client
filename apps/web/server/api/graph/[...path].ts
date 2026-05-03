@@ -13,6 +13,7 @@
  */
 
 import { getHeader } from 'h3'
+import type { SchemaDefinition } from '@turtle.tech/tql'
 import { useTqlKernel, useWorkspaceConfig, getMutationLog, pushMutationLog } from '../../plugins/tql'
 import { getZoneGuardStats, getZoneGuardMode, checkMutation, recordStrictRejection } from '../../utils/zone-guard'
 import { emitMutation } from '../../utils/tql-events'
@@ -20,8 +21,13 @@ import { zoneFromRequest } from '../../utils/zone-router'
 import { captureDecision, shouldCaptureDecision } from '../../utils/campus-decisions'
 import { parseApiBody, parseApiQuery, validateApiInput } from '../../utils/api-validation'
 import {
+  GraphMutateBodySchema,
   GraphNodeParamsSchema,
   GraphNodesBodySchema,
+  GraphOntologyCreateBodySchema,
+  GraphOntologyDeleteBodySchema,
+  GraphOntologyParamsSchema,
+  GraphOntologyUpdateBodySchema,
   GraphQueryBodySchema,
   GraphSummaryQuerySchema,
 } from '../../utils/graph-api-schemas'
@@ -323,8 +329,8 @@ export default defineEventHandler(async (event) => {
 
   // ─── POST /api/graph/mutate ─────────────────────────────────────────
   if (method === 'POST' && route === 'mutate') {
-    const body = await readBody(event)
-    const { action, entityId, data, type, e1, relation, e2, agentId } = body || {}
+    const body = await parseApiBody(event, GraphMutateBodySchema)
+    const { action, entityId, data, type, e1, relation, e2, agentId } = body
     const agent: string = agentId || 'browser'
 
     // Slice 0.5: resolve the originating zone from X-Trellis-Zone header
@@ -373,16 +379,9 @@ export default defineEventHandler(async (event) => {
       await captureDecision(kernel, input)
     }
 
-    if (!action) {
-      throw createError({ statusCode: 400, message: 'Missing "action" in request body' })
-    }
-
     try {
       switch (action) {
         case 'createNode': {
-          if (!entityId || !type) {
-            throw createError({ statusCode: 400, message: 'createNode requires "entityId" and "type"' })
-          }
           const nodeData = data || {}
           if (!nodeData.ownerId) {
             nodeData.ownerId = agent
@@ -403,14 +402,11 @@ export default defineEventHandler(async (event) => {
           await kernel.createNode(entityId, nodeData, type, { agentId: agent })
           pushMutationLog({ action: 'createNode', entityId, type, agentId: agent, zoneId, facilityId, data: nodeData })
           emitMutation({ action: 'createNode', entityId, type, agentId: agent, zoneId, facilityId, data: nodeData })
-          await maybeCapture(entityId, nodeData?.type)
+          await maybeCapture(entityId, typeof nodeData.type === 'string' ? nodeData.type : undefined)
           return { ok: true, entityId }
         }
 
         case 'updateNode': {
-          if (!entityId || !type) {
-            throw createError({ statusCode: 400, message: 'updateNode requires "entityId" and "type"' })
-          }
           const updateData = data || {}
           if (!updateData.ownerId) {
             updateData.ownerId = agent
@@ -433,9 +429,6 @@ export default defineEventHandler(async (event) => {
         }
 
         case 'deleteNode': {
-          if (!entityId) {
-            throw createError({ statusCode: 400, message: 'deleteNode requires "entityId"' })
-          }
           await kernel.deleteNode(entityId, { agentId: agent })
           pushMutationLog({ action: 'deleteNode', entityId, agentId: agent, zoneId, facilityId })
           emitMutation({ action: 'deleteNode', entityId, agentId: agent, zoneId, facilityId })
@@ -444,9 +437,6 @@ export default defineEventHandler(async (event) => {
         }
 
         case 'link': {
-          if (!e1 || !relation || !e2) {
-            throw createError({ statusCode: 400, message: 'link requires "e1", "relation", and "e2"' })
-          }
           await kernel.link(e1, relation, e2, { agentId: agent })
           pushMutationLog({
             action: 'link',
@@ -469,9 +459,6 @@ export default defineEventHandler(async (event) => {
         }
 
         case 'unlink': {
-          if (!e1 || !relation || !e2) {
-            throw createError({ statusCode: 400, message: 'unlink requires "e1", "relation", and "e2"' })
-          }
           await kernel.unlink(e1, relation, e2, { agentId: agent })
           pushMutationLog({
             action: 'unlink',
@@ -504,10 +491,11 @@ export default defineEventHandler(async (event) => {
 
   // ─── GET /api/graph/ontology/:id ─────────────────────────────────────
   if (method === 'GET' && route === 'ontology') {
-    const ontologyId = decodeURIComponent(segments.slice(1).join('/'))
-    if (!ontologyId) {
-      throw createError({ statusCode: 400, message: 'Missing ontology ID' })
-    }
+    const { ontologyId } = validateApiInput(
+      GraphOntologyParamsSchema,
+      { ontologyId: decodeURIComponent(segments.slice(1).join('/')) },
+      'params',
+    )
 
     const schema = kernel.getOntology(ontologyId)
     if (!schema) {
@@ -519,31 +507,27 @@ export default defineEventHandler(async (event) => {
 
   // ─── POST /api/graph/ontology ──────────────────────────────────────
   if (method === 'POST' && route === 'ontology') {
-    const body = await readBody(event)
-    const { schema, agentId } = body || {}
+    const { schema, agentId } = await parseApiBody(event, GraphOntologyCreateBodySchema)
     const agent: string = agentId || 'browser'
 
-    if (!schema || !schema['@id'] || !schema.version || !Array.isArray(schema.fields)) {
-      throw createError({
-        statusCode: 400,
-        message: 'Request body must include "schema" with @id, version, and fields[]',
-      })
-    }
-
     // Ensure @type is set
-    schema['@type'] = 'trellis:Schema'
+    const normalizedSchema = { ...schema, '@type': 'trellis:Schema' as const } as SchemaDefinition
 
     try {
-      await kernel.createOntology(schema, { agentId: agent })
-      pushMutationLog({ action: 'createOntology', entityId: schema['@id'], data: { version: schema.version } })
+      await kernel.createOntology(normalizedSchema, { agentId: agent })
+      pushMutationLog({
+        action: 'createOntology',
+        entityId: normalizedSchema['@id'],
+        data: { version: normalizedSchema.version },
+      })
       emitMutation({
         action: 'createOntology',
-        entityId: schema['@id'],
+        entityId: normalizedSchema['@id'],
         type: 'ontology',
         agentId: agent,
-        data: schema,
+        data: normalizedSchema,
       })
-      return { ok: true, id: schema['@id'] }
+      return { ok: true, id: normalizedSchema['@id'] }
     } catch (err: any) {
       throw createError({ statusCode: 409, message: err.message })
     }
@@ -551,34 +535,34 @@ export default defineEventHandler(async (event) => {
 
   // ─── PUT /api/graph/ontology/:id ───────────────────────────────────
   if (method === 'PUT' && route === 'ontology') {
-    const ontologyId = decodeURIComponent(segments.slice(1).join('/'))
-    if (!ontologyId) {
-      throw createError({ statusCode: 400, message: 'Missing ontology ID' })
-    }
-
-    const body = await readBody(event)
-    const { schema, agentId } = body || {}
+    const { ontologyId } = validateApiInput(
+      GraphOntologyParamsSchema,
+      { ontologyId: decodeURIComponent(segments.slice(1).join('/')) },
+      'params',
+    )
+    const { schema, agentId } = await parseApiBody(event, GraphOntologyUpdateBodySchema)
     const agent: string = agentId || 'browser'
 
-    if (!schema || !schema.version || !Array.isArray(schema.fields)) {
-      throw createError({ statusCode: 400, message: 'Request body must include "schema" with version and fields[]' })
-    }
-
     // Ensure IDs match
-    schema['@id'] = ontologyId
-    schema['@type'] = 'trellis:Schema'
+    const normalizedSchema = { ...schema, '@id': ontologyId, '@type': 'trellis:Schema' as const } as SchemaDefinition
 
     // Guard: reject duplicate field names
-    const fieldNames = schema.fields.map((f: any) => f.name)
+    const fieldNames = normalizedSchema.fields.map((f: any) => f.name)
     const dupes = fieldNames.filter((n: string, i: number) => fieldNames.indexOf(n) !== i)
     if (dupes.length > 0) {
       throw createError({ statusCode: 409, message: `Duplicate field name(s): ${dupes.join(', ')}` })
     }
 
     try {
-      await kernel.updateOntology(schema, { agentId: agent })
-      pushMutationLog({ action: 'updateOntology', entityId: ontologyId, data: { version: schema.version } })
-      emitMutation({ action: 'updateOntology', entityId: ontologyId, type: 'ontology', agentId: agent, data: schema })
+      await kernel.updateOntology(normalizedSchema, { agentId: agent })
+      pushMutationLog({ action: 'updateOntology', entityId: ontologyId, data: { version: normalizedSchema.version } })
+      emitMutation({
+        action: 'updateOntology',
+        entityId: ontologyId,
+        type: 'ontology',
+        agentId: agent,
+        data: normalizedSchema,
+      })
       return { ok: true, id: ontologyId }
     } catch (err: any) {
       if (err.message.includes('not found')) {
@@ -590,13 +574,13 @@ export default defineEventHandler(async (event) => {
 
   // ─── DELETE /api/graph/ontology/:id ────────────────────────────────
   if (method === 'DELETE' && route === 'ontology') {
-    const ontologyId = decodeURIComponent(segments.slice(1).join('/'))
-    if (!ontologyId) {
-      throw createError({ statusCode: 400, message: 'Missing ontology ID' })
-    }
-
-    const body = await readBody(event).catch(() => ({}))
-    const agent: string = body?.agentId || 'browser'
+    const { ontologyId } = validateApiInput(
+      GraphOntologyParamsSchema,
+      { ontologyId: decodeURIComponent(segments.slice(1).join('/')) },
+      'params',
+    )
+    const { agentId } = await parseApiBody(event, GraphOntologyDeleteBodySchema)
+    const agent: string = agentId || 'browser'
 
     try {
       await kernel.deleteOntology(ontologyId, { agentId: agent })
