@@ -42,6 +42,12 @@ playwright-report/
 
 # Generated
 **/src/generated/
+
+# Agentize quarantine area (see .archive/2026-05-02-agentize/README.md)
+.archive/
+
+# Resumable progress log for multi-session work
+progress.txt
 # HQ (TQL)
 .tql/store.db
 .tql/store.db-shm
