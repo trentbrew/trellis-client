@@ -6,13 +6,15 @@
  * to an existing workspace (member flow) vs needs to create one (owner flow).
  */
 
-export default defineEventHandler(async (event) => {
-  const query = getQuery(event)
-  const email = (query.email as string)?.trim().toLowerCase()
+import { z } from 'zod'
+import { parseApiQuery } from '../utils/api-validation'
 
-  if (!email) {
-    throw createError({ statusCode: 400, message: 'email query param is required' })
-  }
+export const MembershipsQuerySchema = z.object({
+  email: z.string().trim().toLowerCase().email('email query param must be a valid email'),
+})
+
+export default defineEventHandler(async (event) => {
+  const { email } = parseApiQuery(event, MembershipsQuerySchema)
 
   const db = useInstantAdmin()
 
