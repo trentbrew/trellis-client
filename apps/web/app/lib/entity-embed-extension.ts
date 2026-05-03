@@ -1,6 +1,6 @@
 import { Node, mergeAttributes } from '@tiptap/core'
 import { VueNodeViewRenderer } from '@tiptap/vue-3'
-import EntityEmbedView from '~/components/editor/EntityEmbedView.vue'
+import EntityEmbedView from '~/components/editor-blocks/EntityEmbedView.vue'
 
 declare module '@tiptap/core' {
   interface Commands<ReturnType> {

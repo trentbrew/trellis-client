@@ -1,6 +1,6 @@
 import Image from '@tiptap/extension-image'
 import { VueNodeViewRenderer } from '@tiptap/vue-3'
-import ResizableImage from '~/components/editor/ResizableImage.vue'
+import ResizableImage from '~/components/editor-blocks/ResizableImage.vue'
 
 export const ResizableImageExtension = Image.extend({
   addAttributes() {

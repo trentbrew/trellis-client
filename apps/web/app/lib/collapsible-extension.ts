@@ -1,6 +1,6 @@
 import { Node, mergeAttributes } from '@tiptap/core'
 import { VueNodeViewRenderer } from '@tiptap/vue-3'
-import CollapsibleBlock from '~/components/editor/CollapsibleBlock.vue'
+import CollapsibleBlock from '~/components/editor-blocks/CollapsibleBlock.vue'
 
 declare module '@tiptap/core' {
   interface Commands<ReturnType> {
