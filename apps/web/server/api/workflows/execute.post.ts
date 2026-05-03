@@ -23,31 +23,11 @@
  */
 
 import { executeWorkflow } from '../../utils/workflow-executor'
-import type { WorkflowGraph } from '../../utils/workflow-executor'
+import { parseApiBody } from '../../utils/api-validation'
+import { WorkflowExecuteBodySchema } from '../../utils/workflow-api-schemas'
 
 export default defineEventHandler(async (event) => {
-  const body = (await readBody(event).catch(() => ({}))) as {
-    workflowId?: string
-    workflowName?: string
-    graph?: WorkflowGraph
-    input?: unknown
-    agentId?: string
-    skipPersist?: boolean
-    defaultModel?: string
-    ownerId?: string
-    orgId?: string
-    notifyOnSuccess?: boolean
-  }
-
-  if (!body?.workflowId || typeof body.workflowId !== 'string') {
-    throw createError({ statusCode: 400, message: '"workflowId" is required' })
-  }
-  if (!body?.graph || !Array.isArray(body.graph.nodes) || !Array.isArray(body.graph.edges)) {
-    throw createError({
-      statusCode: 400,
-      message: '"graph" with { nodes, edges } is required',
-    })
-  }
+  const body = await parseApiBody(event, WorkflowExecuteBodySchema)
 
   try {
     const run = await executeWorkflow({

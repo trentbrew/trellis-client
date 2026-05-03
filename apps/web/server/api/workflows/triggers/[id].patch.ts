@@ -1,15 +1,12 @@
 /** PATCH /api/workflows/triggers/:id — partial update. */
 
 import { updateTrigger } from '../../../utils/workflow-triggers'
-import type { TriggerUpdateInput } from '../../../utils/workflow-triggers'
+import { parseApiBody, parseApiRouterParams } from '../../../utils/api-validation'
+import { WorkflowTriggerIdParamsSchema, WorkflowTriggerUpdateBodySchema } from '../../../utils/workflow-api-schemas'
 
 export default defineEventHandler(async (event) => {
-  const id = getRouterParam(event, 'id')
-  if (!id) throw createError({ statusCode: 400, message: '"id" required' })
-
-  const body = (await readBody(event).catch(() => ({}))) as TriggerUpdateInput & {
-    agentId?: string
-  }
+  const { id } = parseApiRouterParams(event, WorkflowTriggerIdParamsSchema)
+  const body = await parseApiBody(event, WorkflowTriggerUpdateBodySchema)
 
   try {
     const trigger = await updateTrigger(id, body, { agentId: body.agentId })
