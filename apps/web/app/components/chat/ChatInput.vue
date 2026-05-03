@@ -22,6 +22,7 @@
   const content = ref('')
   const isSending = ref(false)
   const editorRef = ref<EditorRef | null>(null)
+  const { enterKeyBehavior } = useLayoutPreferences()
 
   function hasContent(html: string): boolean {
     if (!html) return false
@@ -54,11 +55,21 @@
     const e = editorRef.value?.getEditor()
     if (!e) return
     switch (cmd) {
-      case 'bold': e.chain().focus().toggleBold().run(); break
-      case 'italic': e.chain().focus().toggleItalic().run(); break
-      case 'strike': e.chain().focus().toggleStrike().run(); break
-      case 'code': e.chain().focus().toggleCode().run(); break
-      case 'blockquote': e.chain().focus().toggleBlockquote().run(); break
+      case 'bold':
+        e.chain().focus().toggleBold().run()
+        break
+      case 'italic':
+        e.chain().focus().toggleItalic().run()
+        break
+      case 'strike':
+        e.chain().focus().toggleStrike().run()
+        break
+      case 'code':
+        e.chain().focus().toggleCode().run()
+        break
+      case 'blockquote':
+        e.chain().focus().toggleBlockquote().run()
+        break
     }
   }
 </script>
@@ -66,24 +77,23 @@
 <template>
   <div class="shrink-0 border-t-none border-border bg-card/50" @keydown="handleWrapperKeydown">
     <!-- Reply preview -->
-    <div
-      v-if="replyTo"
-      class="flex items-center gap-2 px-4 py-8 bg-muted/30 border-b border-border text-xs"
-    >
+    <div v-if="replyTo" class="flex items-center gap-2 px-4 py-8 bg-muted/30 border-b border-border text-xs">
       <Icon name="lucide:reply" class="h-3.5 w-3.5 text-muted-foreground shrink-0" />
       <span class="text-muted-foreground">Replying to</span>
       <span class="font-medium">{{ replyTo.authorName }}</span>
-      <span class="text-muted-foreground truncate flex-1">— {{ replyTo.content.replace(/<[^>]+>/g, '').slice(0, 60) }}</span>
+      <span class="text-muted-foreground truncate flex-1">
+        — {{ replyTo.content.replace(/<[^>]+>/g, '').slice(0, 60) }}
+      </span>
       <button
         class="ml-auto text-muted-foreground hover:text-foreground transition-colors"
-        @click="emit('cancelReply')"
-      >
+        @click="emit('cancelReply')">
         <Icon name="lucide:x" class="h-3.5 w-3.5" />
       </button>
     </div>
 
     <!-- Input container -->
-    <div class="mx-3 mb-2 rounded-xl border border-border bg-foreground/5 focus-within:ring-1 focus-within:ring-ring transition-shadow">
+    <div
+      class="mx-3 mb-2 rounded-xl border border-border bg-foreground/5 focus-within:ring-1 focus-within:ring-ring transition-shadow">
       <!-- Rich text editor -->
       <div class="px-3 pt-0 pb-1 max-h-96 overflow-y-auto text-xs">
         <UiRichTextEditor
@@ -97,8 +107,8 @@
           templates
           chat-mode
           submit-on-enter
-          @submit="handleSend"
-        />
+          :enter-key-behavior="enterKeyBehavior"
+          @submit="handleSend" />
       </div>
 
       <!-- Bottom bar: formatting + actions -->
@@ -108,8 +118,7 @@
           <UiTooltipTrigger as-child>
             <button
               class="h-6 w-6 flex items-center justify-center rounded text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
-              @click="fmt('bold')"
-            >
+              @click="fmt('bold')">
               <Icon name="lucide:bold" class="h-3.5 w-3.5" />
             </button>
           </UiTooltipTrigger>
@@ -120,8 +129,7 @@
           <UiTooltipTrigger as-child>
             <button
               class="h-6 w-6 flex items-center justify-center rounded text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
-              @click="fmt('italic')"
-            >
+              @click="fmt('italic')">
               <Icon name="lucide:italic" class="h-3.5 w-3.5" />
             </button>
           </UiTooltipTrigger>
@@ -132,8 +140,7 @@
           <UiTooltipTrigger as-child>
             <button
               class="h-6 w-6 flex items-center justify-center rounded text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
-              @click="fmt('strike')"
-            >
+              @click="fmt('strike')">
               <Icon name="lucide:strikethrough" class="h-3.5 w-3.5" />
             </button>
           </UiTooltipTrigger>
@@ -144,8 +151,7 @@
           <UiTooltipTrigger as-child>
             <button
               class="h-6 w-6 flex items-center justify-center rounded text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
-              @click="fmt('code')"
-            >
+              @click="fmt('code')">
               <Icon name="lucide:code" class="h-3.5 w-3.5" />
             </button>
           </UiTooltipTrigger>
@@ -156,8 +162,7 @@
           <UiTooltipTrigger as-child>
             <button
               class="h-6 w-6 flex items-center justify-center rounded text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
-              @click="fmt('blockquote')"
-            >
+              @click="fmt('blockquote')">
               <Icon name="lucide:quote" class="h-3.5 w-3.5" />
             </button>
           </UiTooltipTrigger>
@@ -171,8 +176,7 @@
           <UiTooltipTrigger as-child>
             <button
               class="h-6 w-6 flex items-center justify-center rounded text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
-              @click="editorRef?.triggerImageUpload()"
-            >
+              @click="editorRef?.triggerImageUpload()">
               <Icon name="lucide:image-plus" class="h-3.5 w-3.5" />
             </button>
           </UiTooltipTrigger>
@@ -186,12 +190,13 @@
         <button
           :disabled="!canSend"
           class="h-7 w-7 flex items-center justify-center rounded-lg transition-all"
-          :class="canSend
-            ? 'bg-primary text-primary-foreground hover:bg-primary/90 cursor-pointer'
-            : 'bg-primary/25 text-muted-foreground/40 cursor-not-allowed'"
+          :class="
+            canSend
+              ? 'bg-primary text-primary-foreground hover:bg-primary/90 cursor-pointer'
+              : 'bg-primary/25 text-muted-foreground/40 cursor-not-allowed'
+          "
           title="Send (Enter)"
-          @click="handleSend"
-        >
+          @click="handleSend">
           <Icon name="lucide:send-horizontal" class="h-3.5 w-3.5" />
         </button>
       </div>
@@ -199,7 +204,24 @@
 
     <!-- Hint -->
     <div class="px-4 pb-2 text-[10px] text-muted-foreground/40">
-      <kbd class="font-mono">@</kbd> mention · <kbd class="font-mono">/</kbd> commands · <kbd class="font-mono">⌘Enter</kbd> to send · <kbd class="font-mono">Enter</kbd> for new line
+      <kbd class="font-mono">@</kbd>
+      mention ·
+      <kbd class="font-mono">/</kbd>
+      commands
+      <template v-if="enterKeyBehavior === 'send'">
+        ·
+        <kbd class="font-mono">Enter</kbd>
+        to send ·
+        <kbd class="font-mono">Shift+Enter</kbd>
+        for new line
+      </template>
+      <template v-else>
+        ·
+        <kbd class="font-mono">⌘Enter</kbd>
+        to send ·
+        <kbd class="font-mono">Enter</kbd>
+        for new line
+      </template>
     </div>
   </div>
 </template>

@@ -1,0 +1,1 @@
+import{d as a,at as t,S as o,o as s,a0 as n}from"#entry";const _=a({__name:"milestones",setup(r){const{wp:e}=t();return o(e("/workspace/browse?type=milestone"),{replace:!0}),(c,p)=>(s(),n("div"))}});export{_ as default};

@@ -1,0 +1,1 @@
+import{d as a,at as t,S as o,o as s,a0 as r}from"#entry";const i=a({__name:"files",setup(c){const{wp:e}=t();return o(e("/workspace/browse?type=file"),{replace:!0}),(n,p)=>(s(),r("div"))}});export{i as default};

@@ -1,0 +1,1 @@
+import{d as s,at as n,aj as o,o as r,a0 as c,S as p}from"#entry";const u=s({__name:"index",async setup(_){let e,a;const{wp:t}=n();return[e,a]=o(()=>p(t("/graph/visualization"),{replace:!0})),await e,a(),(i,l)=>(r(),c("div"))}});export{u as default};

@@ -33,11 +33,11 @@ function generateId(): string {
 
 export function useAgent() {
   const { user } = useInstantAuth()
-  const messages = ref<AgentMessage[]>([])
-  const isStreaming = ref(false)
-  const error = ref<string | null>(null)
-  const activeThreadId = ref<string | null>(null)
-  const threads = ref<AgentConversation[]>([])
+  const messages = useState<AgentMessage[]>('agent:messages', () => [])
+  const isStreaming = useState<boolean>('agent:isStreaming', () => false)
+  const error = useState<string | null>('agent:error', () => null)
+  const activeThreadId = useState<string | null>('agent:activeThreadId', () => null)
+  const threads = useState<AgentConversation[]>('agent:threads', () => [])
 
   function syncFromStore() {
     const store = loadStore()
@@ -230,8 +230,10 @@ export function useAgent() {
     }
   }
 
-  // Load on mount
-  if (typeof window !== 'undefined') {
+  // Load on mount — only once per session (state is shared via useState)
+  const hydrated = useState<boolean>('agent:hydrated', () => false)
+  if (typeof window !== 'undefined' && !hydrated.value) {
+    hydrated.value = true
     syncFromStore()
     // Auto-create an initial thread if none exist
     if (Object.keys(loadStore().threads).length === 0) {

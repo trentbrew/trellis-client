@@ -12,6 +12,9 @@
 
   // Share dialog
   const showShareDialog = ref(false)
+  // Schema editor (entity-type schema). Inline editing in Properties tab is
+  // a follow-up; for now this opens a placeholder.
+  const showSchemaEditor = ref(false)
 
   const props = withDefaults(
     defineProps<{
@@ -544,6 +547,7 @@
     :title="editableItem.title"
     :description="editableItem.description"
     :mode="mode"
+    :header-in-body="true"
     :entity-id="editableItem.id || undefined"
     :type-badge="currentType ? { icon: currentType.icon, label: currentType.label } : undefined"
     :title-placeholder="`${currentType?.label || 'Item'} name...`"
@@ -622,95 +626,76 @@
       </template>
     </template>
 
-    <!-- Schedule Sidebar (left, collapsible via date badge) — hidden in inset -->
-    <aside
-      v-if="hasField('startDate') && !isInset && editableItem.type !== 'project'"
-      class="shrink-0 border-r border-border overflow-y-auto hidden md:block transition-all duration-200 relative"
-      :class="[schedulePanelOpen ? '' : 'w-0 border-r-0! overflow-hidden', isResizingSidebar ? 'select-none' : '']"
-      :style="schedulePanelOpen ? { width: leftSidebarW + 'px' } : {}">
-      <!-- Resize handle -->
-      <div
-        v-if="schedulePanelOpen"
-        class="absolute inset-y-0 right-0 w-1 cursor-ew-resize z-10 hover:bg-primary/20 transition-colors"
-        @pointerdown="startSidebarResize('left', $event)" />
-      <EntityScheduleSidebar
-        ref="scheduleSidebarRef"
-        v-model:editable-item="editableItem"
-        v-model:selected-repeat="selectedRepeat"
-        :has-field="hasField"
-        :is-view-mode="isViewMode"
-        :is-dark="isDark" />
-    </aside>
-
-    <!-- Properties Row (full-width, above sidebars) — hidden in inset (tabs carry props) -->
-    <template v-if="hasVisibleProperties && !isInset" #properties>
-      <!-- Email-specific pills (read-only metadata from Gmail) -->
-      <template v-if="editableItem.type === 'email'">
-        <span
-          v-if="emailFromName"
-          class="inline-flex items-center gap-1.5 px-2 py-1 rounded-lg bg-muted/50 text-xs max-w-[220px]"
-          :title="emailFromAddress">
-          <Icon name="lucide:user" class="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
-          <span class="truncate">{{ emailFromName }}</span>
-        </span>
-        <span
-          v-if="editableItem.to"
-          class="inline-flex items-center gap-1.5 px-2 py-1 rounded-lg bg-muted/50 text-xs max-w-[260px]"
-          :title="editableItem.to">
-          <Icon name="lucide:send" class="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
-          <span class="truncate">to {{ editableItem.to }}</span>
-        </span>
-        <span
-          v-if="editableItem.cc"
-          class="inline-flex items-center gap-1.5 px-2 py-1 rounded-lg bg-muted/50 text-xs max-w-[220px]"
-          :title="editableItem.cc">
-          <Icon name="lucide:users" class="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
-          <span class="truncate">cc {{ editableItem.cc }}</span>
-        </span>
-        <span v-if="emailDate" class="inline-flex items-center gap-1.5 px-2 py-1 rounded-lg bg-muted/50 text-xs">
-          <Icon name="lucide:calendar" class="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
-          <span class="whitespace-nowrap">{{ emailDate }}</span>
-        </span>
-        <button
-          class="inline-flex items-center gap-1.5 px-2 py-1 rounded-lg transition-colors text-xs"
-          :class="
-            editableItem.isStarred
-              ? 'bg-amber-500/10 text-amber-600'
-              : 'bg-muted/50 hover:bg-muted text-muted-foreground'
-          "
-          :disabled="isViewMode"
-          :title="editableItem.isStarred ? 'Starred' : 'Star email'"
-          @click="!isViewMode && (editableItem.isStarred = !editableItem.isStarred)">
-          <Icon :name="editableItem.isStarred ? 'lucide:star' : 'lucide:star-off'" class="h-3.5 w-3.5 shrink-0" />
-          {{ editableItem.isStarred ? 'Starred' : 'Star' }}
-        </button>
-        <button
-          class="inline-flex items-center gap-1.5 px-2 py-1 rounded-lg transition-colors text-xs"
-          :class="
-            editableItem.isRead ? 'bg-muted/50 text-muted-foreground hover:bg-muted' : 'bg-primary/10 text-primary'
-          "
-          :disabled="isViewMode"
-          :title="editableItem.isRead ? 'Mark as unread' : 'Mark as read'"
-          @click="!isViewMode && (editableItem.isRead = !editableItem.isRead)">
-          <Icon :name="editableItem.isRead ? 'lucide:mail-open' : 'lucide:mail'" class="h-3.5 w-3.5 shrink-0" />
-          {{ editableItem.isRead ? 'Read' : 'Unread' }}
-        </button>
-      </template>
-
-      <EntityPropertyPills
-        v-else
-        v-model:editable-item="editableItem"
-        :has-field="hasField"
-        :is-view-mode="isViewMode"
-        :owners="owners"
-        :folders="folders"
-        :schedule-panel-open="schedulePanelOpen"
-        :schedule-description="scheduleDescription"
-        @toggle-schedule="schedulePanelOpen = !schedulePanelOpen" />
-    </template>
-
-    <!-- Center: type-specific content panel (non-inset) -->
+    <!-- Center: scrollable body header + type-specific content panel (non-inset) -->
     <div v-if="!isInset" class="flex-1 flex flex-col min-w-0 overflow-y-auto">
+      <EntityBodyHeader
+        :title="editableItem.title"
+        :description="editableItem.description"
+        :mode="mode"
+        :title-placeholder="`${currentType?.label || 'Item'} name...`"
+        :summary="entitySummary"
+        :is-generating-summary="generatingSummary"
+        :entity-id="editableItem.id || undefined"
+        :ai-only="editableItem.type === 'email'"
+        @update:title="editableItem.title = $event"
+        @update:description="editableItem.description = $event"
+        @regenerate-summary="handleRegenerateSummary">
+        <template v-if="editableItem.type === 'email'" #below>
+          <div class="flex flex-wrap items-center gap-1.5 mt-3 text-xs">
+            <span
+              v-if="emailFromName"
+              class="inline-flex items-center gap-1.5 px-2 py-1 rounded-lg bg-muted/50 max-w-[220px]"
+              :title="emailFromAddress">
+              <Icon name="lucide:user" class="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
+              <span class="truncate">{{ emailFromName }}</span>
+            </span>
+            <span
+              v-if="editableItem.to"
+              class="inline-flex items-center gap-1.5 px-2 py-1 rounded-lg bg-muted/50 max-w-[260px]"
+              :title="editableItem.to">
+              <Icon name="lucide:send" class="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
+              <span class="truncate">to {{ editableItem.to }}</span>
+            </span>
+            <span
+              v-if="editableItem.cc"
+              class="inline-flex items-center gap-1.5 px-2 py-1 rounded-lg bg-muted/50 max-w-[220px]"
+              :title="editableItem.cc">
+              <Icon name="lucide:users" class="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
+              <span class="truncate">cc {{ editableItem.cc }}</span>
+            </span>
+            <span v-if="emailDate" class="inline-flex items-center gap-1.5 px-2 py-1 rounded-lg bg-muted/50">
+              <Icon name="lucide:calendar" class="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
+              <span class="whitespace-nowrap">{{ emailDate }}</span>
+            </span>
+            <button
+              class="inline-flex items-center gap-1.5 px-2 py-1 rounded-lg transition-colors"
+              :class="
+                editableItem.isStarred
+                  ? 'bg-amber-500/10 text-amber-600'
+                  : 'bg-muted/50 hover:bg-muted text-muted-foreground'
+              "
+              :disabled="isViewMode"
+              :title="editableItem.isStarred ? 'Starred' : 'Star email'"
+              @click="!isViewMode && (editableItem.isStarred = !editableItem.isStarred)">
+              <Icon :name="editableItem.isStarred ? 'lucide:star' : 'lucide:star-off'" class="h-3.5 w-3.5 shrink-0" />
+              {{ editableItem.isStarred ? 'Starred' : 'Star' }}
+            </button>
+            <button
+              class="inline-flex items-center gap-1.5 px-2 py-1 rounded-lg transition-colors"
+              :class="
+                editableItem.isRead
+                  ? 'bg-muted/50 text-muted-foreground hover:bg-muted'
+                  : 'bg-primary/10 text-primary'
+              "
+              :disabled="isViewMode"
+              :title="editableItem.isRead ? 'Mark as unread' : 'Mark as read'"
+              @click="!isViewMode && (editableItem.isRead = !editableItem.isRead)">
+              <Icon :name="editableItem.isRead ? 'lucide:mail-open' : 'lucide:mail'" class="h-3.5 w-3.5 shrink-0" />
+              {{ editableItem.isRead ? 'Read' : 'Unread' }}
+            </button>
+          </div>
+        </template>
+      </EntityBodyHeader>
       <EntityContentPanel v-model="editableItem" :mode="mode" />
     </div>
 
@@ -737,8 +722,10 @@
         :updated-at="editableItem.updatedAt"
         :created-at="editableItem.createdAt"
         :item="editableItem"
+        :show-properties="hasVisibleProperties"
         @update:references="editableItem.references = $event"
         @update:new-comment="newComment = $event"
+        @edit-schema="showSchemaEditor = true"
         @open-entity="handleOpenEntityRef"
         @remove-ref="handleRemoveRef"
         @add-entity="
@@ -754,7 +741,19 @@
           }
         "
         @create-entity="handleCreateEntityOfType"
-        @add-comment="handleAddComment" />
+        @add-comment="handleAddComment">
+        <template #properties>
+          <EntityPropertiesTab
+            v-model:editable-item="editableItem"
+            v-model:selected-repeat="selectedRepeat"
+            :has-field="hasField"
+            :is-view-mode="isViewMode"
+            :is-dark="isDark"
+            :owners="owners"
+            :folders="folders"
+            :schedule-description="scheduleDescription" />
+        </template>
+      </EntityRightSidebar>
     </aside>
 
     <!-- ═══ Inset tabbed layout (narrow sidebar mode) ═══ -->
@@ -948,4 +947,18 @@
     :entity-id="editableItem.id"
     entity-type="entity"
     :entity-title="editableItem.title" />
+
+  <!-- Schema editor (placeholder — inline schema editing in Properties tab is TODO) -->
+  <UiDialog v-if="showSchemaEditor" :open="showSchemaEditor" @update:open="showSchemaEditor = $event">
+    <UiDialogContent class="max-w-md">
+      <UiDialogTitle>Edit {{ currentType?.label || 'Entity' }} schema</UiDialogTitle>
+      <UiDialogDescription>
+        Schema editing for entity types is coming soon. Changes here will affect every
+        {{ currentType?.label?.toLowerCase() || 'entity' }} in your workspace.
+      </UiDialogDescription>
+      <div class="flex justify-end mt-4">
+        <UiButton variant="outline" size="sm" @click="showSchemaEditor = false">Close</UiButton>
+      </div>
+    </UiDialogContent>
+  </UiDialog>
 </template>

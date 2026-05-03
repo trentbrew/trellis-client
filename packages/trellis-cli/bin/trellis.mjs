@@ -110,6 +110,12 @@ const client = new TrellisClient({ baseUrl, agentId })
 
 async function run() {
   switch (command) {
+    case 'web': {
+      const { launch } = await import('../src/web.mjs')
+      await launch(args.slice(1))
+      break
+    }
+
     // ── query ─────────────────────────────────────────────────────────
     case 'query':
     case 'q': {
@@ -924,6 +930,9 @@ async function run() {
       console.log(`
 trellis — CLI for the Trellis graph + platform API
 
+Launch:
+  web [--port <number>] [--no-open]          Launch Trellis in your browser
+
 Graph Commands:
   query <eqls>                              Execute an EQL-S query
   get <entityId>                            Fetch a single node by ID
@@ -991,6 +1000,8 @@ Platform Commands:
   invite send --email "..." [--role member] Send an invitation
 
 Flags:
+  --port, -p <port>   Port for trellis web (default: 1414)
+  --no-open           Do not open a browser for trellis web
   --pretty            Pretty-print JSON output
   --agent-id <name>   Set agent ID for mutations (default: cli)
   --url <url>         Override API base URL

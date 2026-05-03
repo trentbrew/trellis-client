@@ -1,0 +1,1 @@
+import{u as a,G as i,n as l}from"#entry";function c(s,r){const t=a("dialog:restoreEntityId",()=>null),o=()=>{const e=t.value;if(!e)return;const n=s.value.find(u=>u.id===e);n&&(t.value=null,r(e,n))};i(()=>{o()}),l(t,()=>{o()})}export{c as u};

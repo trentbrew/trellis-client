@@ -1,0 +1,1 @@
+import{d as o,at as a,G as n,S as s,o as c,a0 as r,a5 as _,a7 as i}from"#entry";const l={class:"flex h-full items-center justify-center"},f=o({__name:"index",setup(p){const{wp:e}=a();return n(()=>{s(e("/ontologies"),{replace:!0})}),(u,d)=>{const t=i;return c(),r("div",l,[_(t,{name:"lucide:loader-2",class:"h-8 w-8 animate-spin text-muted-foreground"})])}}});export{f as default};

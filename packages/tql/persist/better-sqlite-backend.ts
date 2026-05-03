@@ -5,7 +5,7 @@
  * Drop-in replacement for the Bun-only SqliteKernelBackend.
  */
 
-import { createRequire } from 'node:module';
+import Database from 'better-sqlite3';
 import type { KernelBackend, KernelOp } from './backend.js';
 
 type EncodedAtom =
@@ -65,9 +65,6 @@ export class BetterSqliteBackend implements KernelBackend {
   private db: any;
 
   constructor(private opts: BetterSqliteBackendOptions) {
-    // Use createRequire for ESM compatibility — better-sqlite3 is a native CJS module
-    const _require = createRequire(import.meta.url);
-    const Database = _require('better-sqlite3');
     this.db = new Database(opts.filename);
   }
 

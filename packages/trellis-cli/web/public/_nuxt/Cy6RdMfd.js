@@ -1,0 +1,1 @@
+function n(a){try{const o=a.split(".");if(o.length!==3)return null;const e=JSON.parse(atob(o[1].replace(/-/g,"+").replace(/_/g,"/")));return{email:e.email??void 0,name:e.name??void 0,given_name:e.given_name??void 0,family_name:e.family_name??void 0,picture:e.picture??void 0}}catch(o){return console.warn("[decodeGoogleJwt] Failed to decode ID token:",o),null}}export{n as d};

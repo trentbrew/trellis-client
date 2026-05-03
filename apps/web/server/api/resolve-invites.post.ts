@@ -42,22 +42,39 @@ export default defineEventHandler(async (event) => {
 
     for (const member of pendingMembers) {
       try {
-        // Update the member record: set userId, mark as active
-        await db.transact(
+        const joinedAt = Date.now()
+        const sharesResult = await db.query({
+          shares: {
+            $: {
+              where: {
+                userId: member.id,
+              },
+            },
+          },
+        })
+        const placeholderShares = (sharesResult as any)?.shares || []
+
+        const txOps = [
           db.tx.members[member.id].update({
             userId: body.userId,
             status: 'active',
+            joinedAt,
           }),
-        )
+          ...placeholderShares.map((share: any) =>
+            db.tx.shares[share.id].update({
+              userId: body.userId,
+            }),
+          ),
+        ]
+
+        await db.transact(txOps)
 
         // Ensure the org→member link exists (may have been created during invite,
         // but we retry here in case it failed the first time). This link is required
         // for the CEL permission rule `data.ref('members.userId')` to work.
         if (member.orgId) {
           try {
-            await db.transact(
-              db.tx.organizations[member.orgId].link({ members: member.id }),
-            )
+            await db.transact(db.tx.organizations[member.orgId].link({ members: member.id }))
           } catch (linkErr: any) {
             console.warn(`[resolve-invites] Org→member link failed for ${member.id} (non-fatal):`, linkErr?.message)
           }
@@ -104,7 +121,9 @@ export default defineEventHandler(async (event) => {
           // Link notification to org (non-fatal)
           try {
             await db.transact(db.tx.organizations[member.orgId].link({ notifications: notifId }))
-          } catch { /* non-fatal */ }
+          } catch {
+            /* non-fatal */
+          }
         }
 
         // Notify ALL other active members (member_joined)
@@ -118,8 +137,9 @@ export default defineEventHandler(async (event) => {
             },
           },
         })
-        const peers = ((allMembersResult as any)?.members || [])
-          .filter((a: any) => a.userId && a.userId !== body.userId && a.userId !== member.ownerId)
+        const peers = ((allMembersResult as any)?.members || []).filter(
+          (a: any) => a.userId && a.userId !== body.userId && a.userId !== member.ownerId,
+        )
 
         for (const peer of peers) {
           const peerNotifId = crypto.randomUUID()
@@ -143,7 +163,9 @@ export default defineEventHandler(async (event) => {
           )
           try {
             await db.transact(db.tx.organizations[member.orgId].link({ notifications: peerNotifId }))
-          } catch { /* non-fatal */ }
+          } catch {
+            /* non-fatal */
+          }
         }
       } catch (notifErr: any) {
         console.warn('[resolve-invites] Notification creation failed (non-fatal):', notifErr?.message)
@@ -167,9 +189,7 @@ export default defineEventHandler(async (event) => {
         const found = ((existing as any)?.settings || [])[0]
 
         if (found?.id) {
-          await db.transact(
-            db.tx.settings[found.id].update({ value, updatedAt: now }),
-          )
+          await db.transact(db.tx.settings[found.id].update({ value, updatedAt: now }))
         } else {
           const id = crypto.randomUUID()
           await db.transact(

@@ -24,6 +24,7 @@
 
   const selectedIndex = ref(0)
   const hoveredPickerType = ref<string | null>(null)
+  const listRef = ref<HTMLElement | null>(null)
 
   // Whether we show the type picker (no type prefix in query)
   const showTypePicker = computed(() => !!props.createContext && !props.createContext.type)
@@ -90,6 +91,7 @@
 <template>
   <div
     v-if="items.length || createContext"
+    ref="listRef"
     class="z-50 w-72 max-h-64 overflow-y-auto rounded-lg border border-border bg-popover shadow-lg">
     <button
       v-for="(item, index) in items"
@@ -114,12 +116,8 @@
     <!-- Create new entity row — with type picker when no prefix typed -->
     <div
       v-if="createContext"
-      :class="[
-        'border-t border-border/50 transition-colors',
-        isCreateRowSelected ? 'bg-accent/50' : '',
-      ]"
+      :class="['border-t border-border/50 transition-colors', isCreateRowSelected ? 'bg-accent/50' : '']"
       @mouseenter="selectedIndex = createRowIndex">
-
       <!-- Type prefix provided: single-action create row -->
       <button
         v-if="!showTypePicker"
@@ -130,7 +128,8 @@
         </div>
         <div class="flex-1 min-w-0">
           <p class="text-xs font-medium truncate text-muted-foreground">
-            <span class="text-foreground">Create</span> {{ createLabel }}
+            <span class="text-foreground">Create</span>
+            {{ createLabel }}
           </p>
         </div>
         <Icon name="lucide:corner-down-left" class="h-3 w-3 shrink-0 text-muted-foreground/50" />

@@ -2,8 +2,8 @@
   /**
    * EntityRightSidebar — Reusable tabbed right sidebar for entity dialogs.
    *
-   * Renders two tabs: References and Activity/Comments.
-   * Used by EntityDialog, PersonDialog, OrganizationDialog, ProjectDialog.
+   * Tabs: Properties, References, Activity. Properties content is provided
+   * by callers via the `#properties` slot.
    */
   import type { Reference, EntityReference } from '~/types/entity'
   import { getPresenceBg } from '~/utils/presenceColor'
@@ -22,6 +22,10 @@
     item?: any
     /** Whether the sidebar is collapsed into a narrow strip. */
     collapsed?: boolean
+    /** Whether to show the Properties tab. Defaults to true. */
+    showProperties?: boolean
+    /** Initial active tab. Defaults to 'properties' when shown, else 'references'. */
+    defaultTab?: 'properties' | 'references' | 'activity'
   }>()
 
   const emit = defineEmits<{
@@ -34,9 +38,17 @@
     'add-entity-of-type': [type: string]
     'create-entity': [type: string, title: string]
     'add-comment': []
+    'edit-schema': []
   }>()
 
-  const activeTab = ref<'references' | 'activity'>('references')
+  const slots = useSlots()
+  const showProperties = computed(() => {
+    if (props.showProperties === false) return false
+    return !!slots.properties
+  })
+  const activeTab = ref<'properties' | 'references' | 'activity'>(
+    props.defaultTab ?? (showProperties.value ? 'properties' : 'references'),
+  )
 
   function toggleCollapsed() {
     emit('update:collapsed', !props.collapsed)
@@ -74,6 +86,17 @@
     <!-- Tab bar -->
     <div class="flex border-b border-border shrink-0">
       <button
+        v-if="showProperties"
+        class="flex-1 px-3 py-2 text-[10px] font-medium uppercase tracking-wide transition-colors"
+        :class="
+          activeTab === 'properties'
+            ? 'text-foreground border-b-2 border-primary'
+            : 'text-muted-foreground hover:text-foreground'
+        "
+        @click="activeTab = 'properties'">
+        Properties
+      </button>
+      <button
         class="flex-1 px-3 py-2 text-[10px] font-medium uppercase tracking-wide transition-colors"
         :class="
           activeTab === 'references'
@@ -107,6 +130,26 @@
 
     <!-- Tab content -->
     <div class="flex-1 overflow-y-auto">
+      <!-- Properties tab -->
+      <template v-if="activeTab === 'properties' && showProperties">
+        <div class="flex flex-col h-full">
+          <div class="flex-1 overflow-y-auto">
+            <slot name="properties">
+              <div class="p-4 text-xs text-muted-foreground italic">No properties.</div>
+            </slot>
+          </div>
+          <div class="px-3 py-2 border-t border-border shrink-0 flex items-center justify-between">
+            <span class="text-[10px] text-muted-foreground/60 uppercase tracking-wide">Schema</span>
+            <button
+              class="text-[10px] text-muted-foreground hover:text-foreground transition-colors inline-flex items-center gap-1"
+              @click="emit('edit-schema')">
+              <Icon name="lucide:settings-2" class="h-3 w-3" />
+              Edit schema
+            </button>
+          </div>
+        </div>
+      </template>
+
       <!-- References tab -->
       <template v-if="activeTab === 'references'">
         <ReferencesSection

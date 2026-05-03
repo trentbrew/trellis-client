@@ -284,6 +284,8 @@ async function tick(now: number = Date.now()): Promise<void> {
 // ─── Plugin ────────────────────────────────────────────────────────────────
 
 export default defineNitroPlugin((nitroApp) => {
+  if (process.env.TRELLIS_DISABLE_BACKGROUND_JOBS === '1') return
+
   const now = Date.now()
   const msUntilNextMinute = 60_000 - (now % 60_000)
 

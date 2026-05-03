@@ -1,0 +1,1 @@
+import{d as a,at as t,S as s,o,a0 as r}from"#entry";const i=a({__name:"sprints",setup(n){const{wp:e}=t();return s(e("/workspace/browse?type=sprint"),{replace:!0}),(p,c)=>(o(),r("div"))}});export{i as default};
