@@ -1,6 +1,6 @@
 import { Node, mergeAttributes } from '@tiptap/core'
 import { VueNodeViewRenderer } from '@tiptap/vue-3'
-import QueryViewBlock from '~/components/editor/QueryViewBlock.vue'
+import QueryViewBlock from '~/components/editor-blocks/QueryViewBlock.vue'
 
 declare module '@tiptap/core' {
   interface Commands<ReturnType> {

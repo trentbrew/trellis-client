@@ -3,7 +3,7 @@
   import { isEntityReference, isFileReference } from '~/types/entity'
   import { getEntityTypeConfig } from '~/config/entityRegistry'
   import { stripHtml } from '~/utils/stripHtml'
-  import DiagramEmbedPreview from '~/components/editor/DiagramEmbedPreview.vue'
+  import DiagramEmbedPreview from '~/components/editor-blocks/DiagramEmbedPreview.vue'
 
   const props = defineProps<{
     modelValue: Reference[]

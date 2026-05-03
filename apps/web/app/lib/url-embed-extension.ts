@@ -1,7 +1,7 @@
 import { Node, mergeAttributes, InputRule, Extension } from '@tiptap/core'
 import { Plugin, PluginKey } from 'prosemirror-state'
 import { VueNodeViewRenderer } from '@tiptap/vue-3'
-import UrlEmbedView from '~/components/editor/UrlEmbedView.vue'
+import UrlEmbedView from '~/components/editor-blocks/UrlEmbedView.vue'
 
 declare module '@tiptap/core' {
   interface Commands<ReturnType> {

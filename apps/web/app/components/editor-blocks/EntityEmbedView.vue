@@ -3,7 +3,7 @@
   import { getEntityTypeConfig } from '~/config/entityRegistry'
   import type { EntityType, Entity } from '~/types/entity'
   import { DIALOG_ENTITY_CONTEXT_KEY, type DialogEntityContext } from '~/composables/useDialogStack'
-  import DiagramEmbedPreview from '~/components/editor/DiagramEmbedPreview.vue'
+  import DiagramEmbedPreview from '~/components/editor-blocks/DiagramEmbedPreview.vue'
 
   const props = defineProps(nodeViewProps)
 

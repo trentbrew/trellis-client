@@ -1,6 +1,6 @@
 import { Node, mergeAttributes } from '@tiptap/core'
 import { VueNodeViewRenderer } from '@tiptap/vue-3'
-import CardBlock from '~/components/editor/CardBlock.vue'
+import CardBlock from '~/components/editor-blocks/CardBlock.vue'
 
 export const Card = Node.create({
   name: 'card',

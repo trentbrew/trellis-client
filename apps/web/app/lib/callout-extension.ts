@@ -1,6 +1,6 @@
 import { Node, mergeAttributes } from '@tiptap/core'
 import { VueNodeViewRenderer } from '@tiptap/vue-3'
-import CalloutBlock from '~/components/editor/CalloutBlock.vue'
+import CalloutBlock from '~/components/editor-blocks/CalloutBlock.vue'
 
 export type CalloutVariant = 'info' | 'warning' | 'success' | 'danger' | 'tip' | 'note'
 

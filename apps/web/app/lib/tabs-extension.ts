@@ -1,7 +1,7 @@
 import { Node, mergeAttributes } from '@tiptap/core'
 import { VueNodeViewRenderer } from '@tiptap/vue-3'
-import TabsContainerBlock from '~/components/editor/TabsContainerBlock.vue'
-import TabItemBlock from '~/components/editor/TabItemBlock.vue'
+import TabsContainerBlock from '~/components/editor-blocks/TabsContainerBlock.vue'
+import TabItemBlock from '~/components/editor-blocks/TabItemBlock.vue'
 
 declare module '@tiptap/core' {
   interface Commands<ReturnType> {
