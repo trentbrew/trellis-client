@@ -21,6 +21,8 @@ const instantMock = vi.hoisted(() => {
     auth: {
       signOut: vi.fn(),
       signInWithIdToken: vi.fn(),
+      signInWithToken: vi.fn(),
+      signInWithCustomToken: vi.fn(),
       sendMagicCode: vi.fn(),
       signInWithMagicCode: vi.fn(),
     },
@@ -175,6 +177,8 @@ describe('DataAdapter interface', () => {
       instantMock.rawDb.subscribeAuth.mockReturnValue(() => {})
       instantMock.rawDb.auth.signOut.mockResolvedValue(undefined)
       instantMock.rawDb.auth.signInWithIdToken.mockResolvedValue(undefined)
+      instantMock.rawDb.auth.signInWithToken.mockResolvedValue(undefined)
+      instantMock.rawDb.auth.signInWithCustomToken.mockResolvedValue(undefined)
       instantMock.rawDb.auth.sendMagicCode.mockResolvedValue(undefined)
       instantMock.rawDb.auth.signInWithMagicCode.mockResolvedValue(undefined)
       instantMock.rawDb.getAuth.mockResolvedValue(null)
@@ -269,6 +273,7 @@ describe('DataAdapter interface', () => {
       await adapter.transact(chunk)
       await adapter.auth.signOut()
       await adapter.auth.signInWithIdToken({ idToken: 'token' })
+      await adapter.auth.signInWithCustomToken?.('custom-token')
       await adapter.auth.sendMagicCode({ email: 'test@example.com' })
       await adapter.auth.verifyMagicCode({ email: 'test@example.com', code: '123456' })
 
@@ -276,6 +281,7 @@ describe('DataAdapter interface', () => {
       expect(adapter.tx).toBe(instantMock.rawDb.tx)
       expect(instantMock.rawDb.auth.signOut).toHaveBeenCalled()
       expect(instantMock.rawDb.auth.signInWithIdToken).toHaveBeenCalledWith({ idToken: 'token' })
+      expect(instantMock.rawDb.auth.signInWithToken).toHaveBeenCalledWith('custom-token')
       expect(instantMock.rawDb.auth.sendMagicCode).toHaveBeenCalledWith({ email: 'test@example.com' })
       expect(instantMock.rawDb.auth.signInWithMagicCode).toHaveBeenCalledWith({
         email: 'test@example.com',

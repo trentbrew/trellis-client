@@ -107,6 +107,14 @@ export function createCloudAdapter(options: CloudAdapterOptions): DataAdapter {
         async signInWithIdToken(args: any) {
           await (db.auth as any).signInWithIdToken(args)
         },
+        async signInWithCustomToken(token: string) {
+          const auth = db.auth as any
+          if (typeof auth.signInWithToken === 'function') {
+            await auth.signInWithToken(token)
+            return
+          }
+          await auth.signInWithCustomToken(token)
+        },
         async sendMagicCode(args: any) {
           await (db.auth as any).sendMagicCode(args)
         },

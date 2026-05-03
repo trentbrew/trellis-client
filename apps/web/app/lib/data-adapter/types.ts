@@ -88,6 +88,7 @@ export interface DataAdapter {
   readonly auth: {
     signOut(): Promise<void>
     signInWithIdToken(_args: any): Promise<void>
+    signInWithCustomToken?(_token: string): Promise<void>
     sendMagicCode(_args: any): Promise<void>
     verifyMagicCode(_args: any): Promise<void>
   }

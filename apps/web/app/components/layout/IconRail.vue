@@ -10,13 +10,18 @@
 
   // Navigation routes
   const routes = useRoutes()
+  const { isCloud } = useAdapterStatus()
 
   const tooltipSide = computed(() => (isBottom.value ? 'top' : 'right'))
 
   const { isRightSidebarOpen: _isRightSidebarOpen, toggleRightSidebar: _toggleRightSidebar } = useRightSidebarWidth()
 
   // Split routes: Graph at left, everything else centered
-  const graphRoute = computed(() => routes.primaryRailRoutes.value?.find((r) => r.label?.toLowerCase() === 'graph'))
+  const cloudGraphRoute = { path: '/graph', label: 'Graph', icon: 'lucide:brain' }
+  const graphRoute = computed(() => {
+    const route = routes.primaryRailRoutes.value?.find((r) => r.label?.toLowerCase() === 'graph')
+    return route || (isCloud.value ? cloudGraphRoute : undefined)
+  })
   const otherPrimaryRoutes = computed(() =>
     routes.primaryRailRoutes.value?.filter((r) => r.label?.toLowerCase() !== 'graph'),
   )

@@ -9,7 +9,7 @@
     }>(),
     {
       aboveSidebar: false,
-      hidePresenceControls: true,
+      hidePresenceControls: false,
     },
   )
 
@@ -131,6 +131,7 @@
 
   // Invite dialog
   const inviteDialogOpen = ref(false)
+  const showCloudCollaborationControls = computed(() => isCloud.value && !props.hidePresenceControls)
 
   // Reactive collection based on current route — accept both the canonical
   // /collections/:slug and the legacy /database/collections/:slug shim so the
@@ -357,7 +358,7 @@
       <NotificationBell />
 
       <!-- Workspace Members & Presence -->
-      <div v-if="!props.hidePresenceControls && workspaceUsers.length > 0" class="flex items-center ml-2 mr-1">
+      <div v-if="showCloudCollaborationControls && workspaceUsers.length > 0" class="flex items-center ml-2 mr-1">
         <UiTooltip>
           <UiTooltipTrigger as-child>
             <AppNavLink
@@ -394,6 +395,16 @@
           <UiTooltipContent side="bottom" :side-offset="8">Manage members</UiTooltipContent>
         </UiTooltip>
       </div>
+
+      <UiButton
+        v-if="showCloudCollaborationControls && canManageMembers"
+        size="sm"
+        variant="outline"
+        class="h-8 gap-1.5 rounded-full border-border/50 px-3 text-xs font-medium"
+        @click="inviteDialogOpen = true">
+        <Icon name="lucide:user-plus" class="h-3.5 w-3.5" />
+        Invite
+      </UiButton>
 
       <!-- User Avatar -->
       <ClientOnly>
