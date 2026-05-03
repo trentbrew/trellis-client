@@ -37,14 +37,15 @@ app/
 
 Two-axis: **class** (structural shape) × **type** (specific kind).
 
-| Class | Types | Dialog Shell |
-|---|---|---|
-| **temporal** | task, event, trip, payment, appointment, reminder, deadline, milestone, sprint, budget | `EntityDialogShell` |
-| **document** | note, file, page, template, slide_deck, bookmark, diagram | `EntityDialogShell` or full-page editor |
-| **actor** | person, contact, organization, vendor | `ActorDialogShell` |
-| **container** | project, folder, collection, goal | `EntityDialogShell` |
+| Class         | Types                                                                                  | Dialog Shell                            |
+| ------------- | -------------------------------------------------------------------------------------- | --------------------------------------- |
+| **temporal**  | task, event, trip, payment, appointment, reminder, deadline, milestone, sprint, budget | `EntityDialogShell`                     |
+| **document**  | note, file, page, template, slide_deck, bookmark, diagram                              | `EntityDialogShell` or full-page editor |
+| **actor**     | person, contact, organization, vendor                                                  | `ActorDialogShell`                      |
+| **container** | project, folder, collection, goal                                                      | `EntityDialogShell`                     |
 
 **Key files:**
+
 - `types/entity.ts` — All interfaces, unions, type guards, factory functions
 - `config/entityRegistry.ts` — Per-type UI metadata (icon, color, projections, property fields)
 - `lib/dialogResolver.ts` — Maps entity type → dialog component
@@ -76,10 +77,10 @@ InstantDB (platform) → useInstantData (orgs, apps, members, settings)
 
 ### Data Modes
 
-| Mode | Entity Storage | Platform Data |
-|---|---|---|
+| Mode              | Entity Storage      | Platform Data                |
+| ----------------- | ------------------- | ---------------------------- |
 | `local` (default) | TQL kernel (SQLite) | instant-local (localStorage) |
-| `cloud` | InstantDB cloud | InstantDB cloud |
+| `cloud`           | InstantDB cloud     | InstantDB cloud              |
 
 Toggled via `TRELLIS_DATA_MODE` env var.
 
@@ -104,15 +105,12 @@ export function useMyComposable() {
 Use `useBrowsePage()` for any entity list/browse page:
 
 ```ts
-const {
-  filteredItems, viewMode, browseState,
-  handleNewItem, viewOpen, viewingItem,
-  handleUpdate, handleDelete,
-} = useBrowsePage({
-  entityType: 'task',
-  defaultViewMode: 'kanban',
-  searchFields: ['title', 'description'],
-})
+const { filteredItems, viewMode, browseState, handleNewItem, viewOpen, viewingItem, handleUpdate, handleDelete } =
+  useBrowsePage({
+    entityType: 'task',
+    defaultViewMode: 'kanban',
+    searchFields: ['title', 'description'],
+  })
 ```
 
 **Do not** hand-roll search/filter/sort/dialog state — `useBrowsePage` handles all of it.
@@ -149,6 +147,7 @@ Base classes on `UiDialogContent`: `p-0 overflow-hidden rounded-xl border border
 ### Dialog resolution
 
 `lib/dialogResolver.ts` maps type → component:
+
 - System types with custom UX → explicit overrides (`EntityDialog`, `PersonDialog`, etc.)
 - Everything else → `DynamicEntityDialog` (schema-driven)
 
@@ -173,6 +172,7 @@ If you need a new layout pattern, add it as a new variant to `Page.vue`.
 ## Component Naming
 
 Nuxt auto-imports components by directory path. With `pathPrefix: false` in config:
+
 - `components/entity/cards/EntityCard.vue` → `<EntityCard>`
 - `components/Ui/RichTextEditor.vue` → `<UiRichTextEditor>`
 - `components/dialogs/EntityDialog.vue` → `<EntityDialog>` (but often imported explicitly)
@@ -187,28 +187,41 @@ Nuxt auto-imports components by directory path. With `pathPrefix: false` in conf
 
 ## File Placement Rules
 
-| What | Where | Why |
-|---|---|---|
-| Reactive state + effects | `composables/useXxx.ts` | Auto-imported, reactive |
-| Pure functions | `utils/xxx.ts` | Auto-imported, no side effects |
-| TipTap extensions | `lib/xxx-extension.ts` | Not auto-imported, explicit import |
-| Type definitions | `types/xxx.ts` | Explicit import with `type` keyword |
-| Static config objects | `config/xxx.ts` | Explicit import |
-| Data adapter internals | `lib/data-adapter/` | Isolated module |
+| What                     | Where                   | Why                                 |
+| ------------------------ | ----------------------- | ----------------------------------- |
+| Reactive state + effects | `composables/useXxx.ts` | Auto-imported, reactive             |
+| Pure functions           | `utils/xxx.ts`          | Auto-imported, no side effects      |
+| TipTap extensions        | `lib/xxx-extension.ts`  | Not auto-imported, explicit import  |
+| Type definitions         | `types/xxx.ts`          | Explicit import with `type` keyword |
+| Static config objects    | `config/xxx.ts`         | Explicit import                     |
+| Data adapter internals   | `lib/data-adapter/`     | Isolated module                     |
 
 ## Testing
 
-Tests live in `tests/` at the web app root (not colocated — historical).
+**Tests are colocated next to the source they verify.** This is the canonical pattern as of 2026-05-02.
 
 ```
-apps/web/tests/
-├── components/       Component tests
-├── composables/      Composable tests
-├── notifications/    Notification system tests
-└── unit/             Unit tests
+apps/web/
+├── app/
+│   ├── components/Counter.vue + Counter.test.ts
+│   ├── composables/useAutoSave.ts + useAutoSave.test.ts
+│   ├── lib/normalizeDatabaseSchema.ts + normalizeDatabaseSchema.test.ts
+│   └── utils/fileClassification.ts + fileClassification.test.ts
+├── server/
+│   └── utils/agent-routing.ts + agent-routing.test.ts
+└── tests/
+    └── e2e/          Playwright integration specs (run via `pnpm test:e2e`)
 ```
 
-Run with: `pnpm test` or `vitest run`
+Vitest config (`vitest.config.ts`) scans `app/**/*.test.*` and `server/**/*.test.*`. Playwright specs in `tests/e2e/` are excluded from Vitest and run via `playwright test`.
+
+Run with:
+
+- `pnpm test` — Vitest (unit + integration, colocated)
+- `pnpm test:watch` — Vitest watch mode
+- `pnpm test:e2e` — Playwright (browser-driven)
+
+**Why colocated:** test files next to source files mean an agent finds the test the moment it opens the source. Tests double as executable documentation.
 
 ## Known Aliases & Shims
 

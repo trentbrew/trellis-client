@@ -29,13 +29,8 @@ vi.stubGlobal('$fetch', mockFetch)
 
 // ── Import after stubs ────────────────────────────────────────────────────────
 
-import { sendEmail } from '../../server/utils/email'
-import {
-  inviteEmailHtml,
-  mentionEmailHtml,
-  commentEmailHtml,
-  assignedEmailHtml,
-} from '../../server/utils/email-templates'
+import { sendEmail } from './email'
+import { inviteEmailHtml, mentionEmailHtml, commentEmailHtml, assignedEmailHtml } from './email-templates'
 
 // ── sendEmail tests ───────────────────────────────────────────────────────────
 

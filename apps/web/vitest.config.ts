@@ -7,8 +7,9 @@ export default defineVitestConfig({
   test: {
     globals: true,
     environment: 'nuxt',
-    // Playwright specs live alongside unit tests but must be run via Playwright, not Vitest.
-    include: ['app/**/*.test.*', 'tests/**/*.test.*', 'tests/**/*.spec.*'],
+    // Tests are colocated next to source (see app/CONVENTIONS.md "Testing").
+    // Playwright e2e specs live in tests/e2e/ and are run via Playwright, not Vitest.
+    include: ['app/**/*.test.*', 'server/**/*.test.*'],
     exclude: ['tests/e2e/**', '**/playwright-report/**', '**/test-results/**', '**/node_modules/**'],
   },
 })

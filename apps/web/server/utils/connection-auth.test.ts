@@ -11,7 +11,7 @@
  */
 
 import { describe, it, expect } from 'vitest'
-import { shouldAllowConnectionAccess } from '../../server/utils/connection-auth'
+import { shouldAllowConnectionAccess } from './connection-auth'
 
 describe('shouldAllowConnectionAccess', () => {
   it('allows when caller matches owner', () => {

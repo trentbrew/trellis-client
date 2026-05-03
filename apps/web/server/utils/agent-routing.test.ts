@@ -17,7 +17,7 @@ import {
   MODEL_BALANCED,
   MODEL_DEEP,
   type RoutingDecision,
-} from '../../server/utils/agent-routing'
+} from './agent-routing'
 
 describe('classifyRequest', () => {
   describe('lookup queries (short, factual) → MODEL_FAST', () => {
