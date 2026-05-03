@@ -8,13 +8,11 @@
  */
 
 import { listTriggers } from '../../../utils/workflow-triggers'
-import type { TriggerKind } from '../../../utils/workflow-triggers'
+import { parseApiQuery } from '../../../utils/api-validation'
+import { WorkflowTriggerListQuerySchema } from '../../../utils/workflow-api-schemas'
 
 export default defineEventHandler(async (event) => {
-  const q = getQuery(event)
-  const kind = typeof q.kind === 'string' ? (q.kind as TriggerKind) : undefined
-  const workflowId = typeof q.workflowId === 'string' ? q.workflowId : undefined
-  const activeOnly = String(q.activeOnly || '').toLowerCase() === 'true'
+  const { kind, workflowId, activeOnly } = parseApiQuery(event, WorkflowTriggerListQuerySchema)
 
   const triggers = await listTriggers({ kind, workflowId, activeOnly })
   return { ok: true, triggers }

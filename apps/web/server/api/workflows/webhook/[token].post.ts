@@ -10,17 +10,18 @@
 
 import { findWebhookTrigger, recordTriggerFire } from '../../../utils/workflow-triggers'
 import { executeWorkflow } from '../../../utils/workflow-executor'
+import { parseApiBody, parseApiRouterParams } from '../../../utils/api-validation'
+import { WorkflowWebhookPayloadSchema, WorkflowWebhookTokenParamsSchema } from '../../../utils/workflow-api-schemas'
 
 export default defineEventHandler(async (event) => {
-  const token = getRouterParam(event, 'token')
-  if (!token) throw createError({ statusCode: 400, message: '"token" required' })
+  const { token } = parseApiRouterParams(event, WorkflowWebhookTokenParamsSchema)
 
   const trigger = await findWebhookTrigger(token)
   if (!trigger) {
     throw createError({ statusCode: 404, message: 'Webhook trigger not found or disabled' })
   }
 
-  const payload = await readBody(event).catch(() => null)
+  const payload = (await parseApiBody(event, WorkflowWebhookPayloadSchema)) ?? null
   const headers = getRequestHeaders(event)
   const method = event.method
 

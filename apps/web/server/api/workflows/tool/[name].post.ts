@@ -12,12 +12,11 @@
  */
 
 import { invokeWorkflowTool, listWorkflowTools } from '../../../utils/workflow-tools'
+import { parseApiBody, parseApiRouterParams } from '../../../utils/api-validation'
+import { WorkflowToolInvokeBodySchema, WorkflowToolNameParamsSchema } from '../../../utils/workflow-api-schemas'
 
 export default defineEventHandler(async (event) => {
-  const name = getRouterParam(event, 'name') || ''
-  if (!name) {
-    throw createError({ statusCode: 400, message: 'tool name is required' })
-  }
+  const { name } = parseApiRouterParams(event, WorkflowToolNameParamsSchema)
 
   const available = listWorkflowTools()
   if (!available.includes(name)) {
@@ -27,16 +26,12 @@ export default defineEventHandler(async (event) => {
     })
   }
 
-  const body = (await readBody(event).catch(() => ({}))) as {
-    args?: Record<string, unknown>
-    agentId?: string
-    workflowId?: string
-  }
+  const body = await parseApiBody(event, WorkflowToolInvokeBodySchema)
 
   try {
-    const result = await invokeWorkflowTool(name, body?.args ?? {}, {
-      agentId: body?.agentId,
-      workflowId: body?.workflowId,
+    const result = await invokeWorkflowTool(name, body.args ?? {}, {
+      agentId: body.agentId,
+      workflowId: body.workflowId,
     })
     return { ok: true, name, result }
   } catch (err: any) {

@@ -8,21 +8,11 @@
 
 import { createTrigger } from '../../../utils/workflow-triggers'
 import type { TriggerCreateInput } from '../../../utils/workflow-triggers'
+import { parseApiBody } from '../../../utils/api-validation'
+import { WorkflowTriggerCreateBodySchema } from '../../../utils/workflow-api-schemas'
 
 export default defineEventHandler(async (event) => {
-  const body = (await readBody(event).catch(() => ({}))) as Partial<TriggerCreateInput> & {
-    agentId?: string
-  }
-
-  if (!body.workflowId) {
-    throw createError({ statusCode: 400, message: '"workflowId" is required' })
-  }
-  if (!body.graph) {
-    throw createError({ statusCode: 400, message: '"graph" snapshot is required' })
-  }
-  if (!body.kind) {
-    throw createError({ statusCode: 400, message: '"kind" is required' })
-  }
+  const body = await parseApiBody(event, WorkflowTriggerCreateBodySchema)
 
   try {
     const trigger = await createTrigger(body as TriggerCreateInput, { agentId: body.agentId })

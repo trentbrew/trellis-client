@@ -7,18 +7,16 @@
 
 import { getTrigger, recordTriggerFire } from '../../../../utils/workflow-triggers'
 import { executeWorkflow } from '../../../../utils/workflow-executor'
+import { parseApiBody, parseApiRouterParams } from '../../../../utils/api-validation'
+import { WorkflowTriggerFireBodySchema, WorkflowTriggerIdParamsSchema } from '../../../../utils/workflow-api-schemas'
 
 export default defineEventHandler(async (event) => {
-  const id = getRouterParam(event, 'id')
-  if (!id) throw createError({ statusCode: 400, message: '"id" required' })
+  const { id } = parseApiRouterParams(event, WorkflowTriggerIdParamsSchema)
 
   const trigger = await getTrigger(id)
   if (!trigger) throw createError({ statusCode: 404, message: `Trigger ${id} not found` })
 
-  const body = (await readBody(event).catch(() => ({}))) as {
-    input?: unknown
-    agentId?: string
-  }
+  const body = await parseApiBody(event, WorkflowTriggerFireBodySchema)
 
   const agentId = body.agentId || trigger.agentId || `trigger:${trigger.kind}:manual`
   const input = body.input ?? {
