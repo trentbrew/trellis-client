@@ -16,13 +16,8 @@
  */
 
 import { describe, it, expect, afterEach } from 'vitest'
-import {
-  evaluateGrant,
-  mutationActionToGrantAction,
-  getZoneGuardMode,
-  type ZoneGrantContext,
-} from '../../server/utils/zone-guard'
-import { zoneForPath } from '../../server/utils/zone-router'
+import { evaluateGrant, mutationActionToGrantAction, getZoneGuardMode, type ZoneGrantContext } from './zone-guard'
+import { zoneForPath } from './zone-router'
 import {
   FOUNDER_FACILITY_ID,
   FOUNDER_LAB_ZONE_ID,
@@ -30,8 +25,8 @@ import {
   FOUNDER_WORKSHOP_ZONE_ID,
   FOUNDER_SHOWROOM_ZONE_ID,
   FOUNDER_VAULT_ZONE_ID,
-} from '../../server/utils/tql-events'
-import { shouldCaptureDecision, buildDecisionData, type CaptureInput } from '../../server/utils/campus-decisions'
+} from './tql-events'
+import { shouldCaptureDecision, buildDecisionData, type CaptureInput } from './campus-decisions'
 import { zoneIdFromPath, CAMPUS_ZONES, CAMPUS_FACILITY_ID } from '../../app/composables/useZoneContext'
 
 // ── zone-guard: getZoneGuardMode (slice 1.3) ──────────────────────────────

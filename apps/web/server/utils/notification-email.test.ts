@@ -12,21 +12,14 @@
  */
 
 import { describe, it, expect } from 'vitest'
-import { __testables } from '../../server/utils/notification-email'
+import { __testables } from './notification-email'
 
 const { DEFAULT_EMAIL_TYPES, shouldDispatchEmail, pickSubject, pickHtml } = __testables
 
 describe('DEFAULT_EMAIL_TYPES', () => {
   it('includes the conservative set only', () => {
     expect([...DEFAULT_EMAIL_TYPES].sort()).toEqual(
-      [
-        'invite_accepted',
-        'member_joined',
-        'mention',
-        'comment',
-        'entity_updated',
-        'workflow_failed',
-      ].sort(),
+      ['invite_accepted', 'member_joined', 'mention', 'comment', 'entity_updated', 'workflow_failed'].sort(),
     )
   })
 
@@ -53,9 +46,7 @@ describe('shouldDispatchEmail', () => {
   })
 
   it('blocks when type is in emailMutedTypes', () => {
-    expect(
-      shouldDispatchEmail('mention', { emailEnabled: true, emailMutedTypes: ['mention'] }),
-    ).toBe(false)
+    expect(shouldDispatchEmail('mention', { emailEnabled: true, emailMutedTypes: ['mention'] })).toBe(false)
   })
 
   it('blocks for types not in DEFAULT_EMAIL_TYPES (opt-in required)', () => {

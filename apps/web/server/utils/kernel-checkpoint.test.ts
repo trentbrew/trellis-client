@@ -11,10 +11,7 @@
  */
 
 import { describe, it, expect } from 'vitest'
-import {
-  shouldAutoCheckpoint,
-  DEFAULT_CHECKPOINT_THRESHOLD,
-} from '../../server/utils/kernel-checkpoint'
+import { shouldAutoCheckpoint, DEFAULT_CHECKPOINT_THRESHOLD } from './kernel-checkpoint'
 
 describe('shouldAutoCheckpoint', () => {
   it('skips when no ops are pending (snapshot already current)', () => {
