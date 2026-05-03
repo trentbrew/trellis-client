@@ -60,3 +60,4 @@ progress.txt
 logs/cascade-responses.log
 logs/hook-activity.log
 # cascade-archive moved into .tql/cascade-archive/
+.trellis

@@ -13,6 +13,10 @@
   const { $toast } = useNuxtApp()
 
   const isLoading = ref(false)
+  const devLoginEmail = ref('dev@trellis.local')
+  const isDevLoginEnabled = computed(
+    () => config.public.dataMode === 'cloud' && config.public.enableCloudDevLogin === true,
+  )
 
   const GOOGLE_CLIENT_ID = config.public.googleClientId || ''
   const GOOGLE_CLIENT_NAME = 'google-web'
@@ -121,6 +125,38 @@
     }
   }
 
+  async function handleDevCloudLogin() {
+    if (!isDevLoginEnabled.value || !db.auth.signInWithCustomToken) return
+    isLoading.value = true
+
+    try {
+      const result = await $fetch<{ token: string }>('/api/dev/cloud-login-token', {
+        method: 'POST',
+        body: { email: devLoginEmail.value },
+      })
+
+      await db.auth.signInWithCustomToken(result.token)
+      const confirmedUser = await waitForAuth()
+
+      if (!confirmedUser) {
+        $toast?.error('Dev sign-in succeeded but session failed to initialize. Please try again.')
+        return
+      }
+
+      const authInitialized = useState<boolean>('auth:initialized')
+      authInitialized.value = false
+      const cachedUser = useState<any>('auth:user')
+      cachedUser.value = confirmedUser
+
+      await navigateTo('/welcome')
+    } catch (err: any) {
+      console.error('Dev cloud auth error:', err)
+      showFriendlyAuthError(err)
+    } finally {
+      isLoading.value = false
+    }
+  }
+
   onMounted(() => {
     if (!import.meta.client) return
 
@@ -182,6 +218,32 @@
         <button class="text-primary hover:underline">Privacy Policy</button>
       </p>
       <div v-if="isLoading" class="text-muted-foreground text-center text-xs">Starting sign-in…</div>
+      <template v-if="isDevLoginEnabled">
+        <div class="relative py-2">
+          <div class="absolute inset-0 flex items-center">
+            <span class="w-full border-t border-border" />
+          </div>
+          <div class="relative flex justify-center text-xs uppercase">
+            <span class="bg-card px-2 text-muted-foreground">Dev only</span>
+          </div>
+        </div>
+        <form class="space-y-2" @submit.prevent="handleDevCloudLogin">
+          <label class="text-muted-foreground text-xs font-medium" for="cloud-dev-email">Cloud test email</label>
+          <input
+            id="cloud-dev-email"
+            v-model="devLoginEmail"
+            type="email"
+            autocomplete="email"
+            class="border-input bg-background ring-offset-background placeholder:text-muted-foreground focus-visible:ring-ring flex h-9 w-full rounded-md border px-3 py-1 text-sm shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2"
+            placeholder="dev@trellis.local" />
+          <button
+            type="submit"
+            class="bg-primary text-primary-foreground hover:bg-primary/90 flex h-9 w-full items-center justify-center rounded-md px-3 text-sm font-medium transition-colors disabled:opacity-50"
+            :disabled="isLoading || !devLoginEmail">
+            Sign in with cloud dev token
+          </button>
+        </form>
+      </template>
     </div>
   </div>
 </template>

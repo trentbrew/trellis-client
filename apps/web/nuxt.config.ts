@@ -55,7 +55,7 @@ export default defineNuxtConfig({
   runtimeConfig: {
     // Server-only (not exposed to client)
     instantAppId: process.env.INSTANTDB_APP_ID || process.env.INSTANT_APP_ID || '',
-    instantAppSecret: process.env.INSTANTDB_APP_SECRET || '',
+    instantAppSecret: process.env.INSTANTDB_APP_SECRET || process.env.INSTANT_SECRET || '',
     googleClientSecret: process.env.GOOGLE_CLIENT_SECRET || '',
     googleCalendarRedirectUri:
       process.env.GOOGLE_CALENDAR_REDIRECT_URI ||
@@ -74,6 +74,7 @@ export default defineNuxtConfig({
       googleClientId: process.env.GOOGLE_CLIENT_ID,
       githubClientId: process.env.GITHUB_CLIENT_ID || '',
       dataMode: process.env.TRELLIS_DATA_MODE || 'local',
+      enableCloudDevLogin: process.env.ENABLE_CLOUD_DEV_LOGIN === 'true',
       instantAppId: process.env.INSTANTDB_APP_ID || process.env.INSTANT_APP_ID || '',
       trellisPort: DEV_PORT,
     },

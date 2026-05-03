@@ -26,7 +26,7 @@ export default defineNuxtPlugin(async () => {
     db = createCloudAdapter({
       appId: instantAppId,
       schema,
-      verbose: import.meta.dev,
+      verbose: false,
       devtool: false,
     })
   } else {
@@ -44,7 +44,9 @@ export default defineNuxtPlugin(async () => {
   // handles the case where an authenticated user has no org/app yet.
 
   if (import.meta.dev) {
-    console.info(`✓ DataAdapter active (mode: ${db.mode}, entities: ${db.entityBackend}, ontologies: ${db.ontologyBackend})`)
+    console.info(
+      `✓ DataAdapter active (mode: ${db.mode}, entities: ${db.entityBackend}, ontologies: ${db.ontologyBackend})`,
+    )
   }
 
   // ── Initialize local file storage directory ────────────────────────

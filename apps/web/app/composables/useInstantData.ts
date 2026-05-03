@@ -675,17 +675,42 @@ export function useInstantData() {
         }
 
         const id = crypto.randomUUID()
-        await db.transact([
-          tx.settings[id].create({
-            ownerId: authUser.id,
-            settingKey,
-            entityType: 'user',
-            entityId: authUser.id,
-            key,
-            value,
-            updatedAt: now,
-          }),
-        ])
+        try {
+          await db.transact([
+            tx.settings[id].create({
+              ownerId: authUser.id,
+              settingKey,
+              entityType: 'user',
+              entityId: authUser.id,
+              key,
+              value,
+              updatedAt: now,
+            }),
+          ])
+        } catch (err) {
+          const retryResp = await db.queryOnce({
+            settings: {
+              $: {
+                where: {
+                  settingKey,
+                },
+              },
+            },
+          })
+          const retryExisting = (retryResp.data as Record<string, any>)?.settings?.[0]
+          if (!retryExisting?.id) throw err
+          await db.transact([
+            tx.settings[retryExisting.id].update({
+              ownerId: authUser.id,
+              settingKey,
+              entityType: 'user',
+              entityId: authUser.id,
+              key,
+              value,
+              updatedAt: now,
+            }),
+          ])
+        }
       }
 
       let persistTimer: ReturnType<typeof setTimeout> | null = null
