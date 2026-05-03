@@ -308,6 +308,8 @@ async function tick(): Promise<void> {
 // ─── Plugin ────────────────────────────────────────────────────────────────
 
 export default defineNitroPlugin((nitroApp) => {
+  if (process.env.TRELLIS_DISABLE_BACKGROUND_JOBS === '1') return
+
   setTimeout(() => {
     tick().catch((err) => console.error('[gmail-notifier] initial tick error:', err))
     _handle = setInterval(() => {

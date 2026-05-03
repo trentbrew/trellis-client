@@ -1,6 +1,6 @@
 # Trellis — Vision
 
-> *"The semantic web was right. Just at the wrong scale."*
+> _"The semantic web was right. Just at the wrong scale."_
 
 ---
 
@@ -16,43 +16,49 @@ This is the unfinished business of the semantic web, made practical at the only 
 
 The fragmentation of personal computing — tasks in one app, notes in another, people in a third — is not a workflow problem. It is a data model problem. Trellis solves it by treating everything as a unified graph: **files as persistence, graph as index, views as queries rendered**.
 
-When the data model *is* the product, the frontend and backend become indistinguishable. There is no translation layer. There is no impedance mismatch. There is only the graph, and views over it.
+When the data model _is_ the product, the frontend and backend become indistinguishable. There is no translation layer. There is no impedance mismatch. There is only the graph, and views over it.
 
 ---
 
 ## First Principles
 
 ### 1. Everything is a node
+
 Files, blocks, entities, projections, agent actions, relationships — all nodes. There is no "files vs. database" distinction. The uniform model is not a constraint; it is the source of simplicity.
 
-> *Test: Can this be represented as a TQL entity with typed properties and edges? If yes, it belongs in the graph.*
+> _Test: Can this be represented as a TQL entity with typed properties and edges? If yes, it belongs in the graph._
 
 ### 2. The editor is the substrate
+
 The rich text editor is not a feature of notes. It is the universal body for **all** entity types. Every entity — task, project, person, budget — has the same structure: properties + editor canvas. The canvas hosts blocks. Blocks are nodes. Tables are layout primitives. Table cells contain blocks. Projection blocks are live graph queries rendered inline.
 
 A dashboard is a document. A slide deck is a document. A template is a document. The editor is the app.
 
-> *Test: Does this require a bespoke UI surface, or can it be expressed as an editor block?*
+> _Test: Does this require a bespoke UI surface, or can it be expressed as an editor block?_
 
 ### 3. Views are queries
+
 Every visual representation — list, table, calendar, kanban, gantt, graph — is a query over the same underlying data. Switching views does not move data; it re-renders the same graph through a different lens. Infinite nesting is possible because every projection block is itself a query, composable with any other.
 
-> *Test: Is this a new data structure, or a new rendering of existing structure?*
+> _Test: Is this a new data structure, or a new rendering of existing structure?_
 
 ### 4. Emergent schema
+
 Structure is discovered through use, not imposed upfront. Ontologies grow from what is actually in the graph. The system must accommodate free-form entry that progressively formalizes — not rigid schema that must be satisfied before data can exist.
 
-> *Test: Can a user start with no schema and arrive at useful structure through natural use?*
+> _Test: Can a user start with no schema and arrive at useful structure through natural use?_
 
 ### 5. Inspectable reasoning
+
 When the AI acts, its actions are graph facts — not black-box outputs. "Why did it do that?" is answered by traversing the graph, not by reading a narrative. Agent mutations appear in the same SSE stream as human mutations. The audit trail is the data layer.
 
-> *Test: Can a user contest, correct, or extend any AI-produced output by editing data?*
+> _Test: Can a user contest, correct, or extend any AI-produced output by editing data?_
 
 ### 6. Ownership by construction
+
 Backup is copying a folder. Migration is exporting files. Interoperability is possible because the data is in open formats (JSON-LD, JSONL). Local-first is not a feature toggle — it is the architectural default. Cloud sync is additive, not foundational.
 
-> *Test: If the cloud disappeared, would the user still own and control their data?*
+> _Test: If the cloud disappeared, would the user still own and control their data?_
 
 ---
 
@@ -60,11 +66,11 @@ Backup is copying a folder. Migration is exporting files. Interoperability is po
 
 Turtlestack — the platform layer beneath Trellis — describes three modes of interaction with the graph:
 
-| Mode | What it is | Trellis expression |
-|------|-----------|-------------------|
-| **World** | End-user interaction: browse, ask, compose | Entity dialogs, projections, editor, feed |
-| **Forge** | Structure-making: define ontologies, build templates, publish schemas | Database route, ontology CRUD, template blocks |
-| **Observatory** | Provenance inspection: audit trail, graph health, agent reasoning | Graph explorer, mutation log, activity sidebar |
+| Mode            | What it is                                                            | Trellis expression                             |
+| --------------- | --------------------------------------------------------------------- | ---------------------------------------------- |
+| **World**       | End-user interaction: browse, ask, compose                            | Entity dialogs, projections, editor, feed      |
+| **Forge**       | Structure-making: define ontologies, build templates, publish schemas | Database route, ontology CRUD, template blocks |
+| **Observatory** | Provenance inspection: audit trail, graph health, agent reasoning     | Graph explorer, mutation log, activity sidebar |
 
 Every feature belongs to one of these modes. Features that blur all three simultaneously are a design smell.
 
@@ -88,7 +94,7 @@ Before any major implementation decision, ask:
 ## What Trellis Is Not
 
 - **Not a productivity app** that happens to have a graph underneath. The graph is the point.
-- **Not a Notion clone**. Notion's blocks are content. Trellis's blocks are *queries*. The difference is everything.
+- **Not a Notion clone**. Notion's blocks are content. Trellis's blocks are _queries_. The difference is everything.
 - **Not an AI assistant** that answers questions. An AI system that makes its reasoning auditable.
 - **Not schema-first**. Ontologies emerge from data, not the reverse.
 - **Not cloud-dependent**. Local runs fully. Cloud is optional federation.
@@ -107,4 +113,4 @@ That is the vision. Every implementation decision should serve it.
 
 ---
 
-*Source: `docs/research/` — the Filegraph paper this system was built from.*
+_Source: `docs/research/` — the Filegraph paper this system was built from._

@@ -2,7 +2,19 @@
   const { $colorMode: colorMode } = useNuxtApp()
   const { $toast } = useNuxtApp()
   const { animationsEnabled, setAnimationsEnabled, resetAnimationSettings } = useAnimationSettings()
-  const { headerAboveSidebar, setHeaderAboveSidebar, iconRailPosition, setIconRailPosition, toolbarMode, setToolbarMode, showRecentPages, setShowRecentPages, resetLayoutPreferences } = useLayoutPreferences()
+  const {
+    headerAboveSidebar,
+    setHeaderAboveSidebar,
+    iconRailPosition,
+    setIconRailPosition,
+    toolbarMode,
+    setToolbarMode,
+    showRecentPages,
+    setShowRecentPages,
+    enterKeyBehavior,
+    setEnterKeyBehavior,
+    resetLayoutPreferences,
+  } = useLayoutPreferences()
   const go = (to: string) => navigateTo(to)
   const showResetConfirm = ref(false)
 
@@ -40,6 +52,11 @@
   const recentPagesOn = computed({
     get: () => showRecentPages.value,
     set: (checked) => setShowRecentPages(checked),
+  })
+
+  const enterKeySend = computed({
+    get: () => enterKeyBehavior.value === 'send',
+    set: (checked) => setEnterKeyBehavior(checked ? 'send' : 'newline'),
   })
 </script>
 
@@ -153,7 +170,9 @@
         <UiCard>
           <UiCardHeader>
             <UiCardTitle>Recent Pages Strip</UiCardTitle>
-            <UiCardDescription>Show a horizontal strip of recently visited pages for quick switching.</UiCardDescription>
+            <UiCardDescription>
+              Show a horizontal strip of recently visited pages for quick switching.
+            </UiCardDescription>
           </UiCardHeader>
           <UiCardContent>
             <div class="border-border bg-card flex items-center justify-between rounded-xl border px-4 py-3 shadow-sm">
@@ -176,7 +195,9 @@
           <UiCard>
             <UiCardHeader>
               <UiCardTitle>Recent Pages Strip</UiCardTitle>
-              <UiCardDescription>Show a horizontal strip of recently visited pages for quick switching.</UiCardDescription>
+              <UiCardDescription>
+                Show a horizontal strip of recently visited pages for quick switching.
+              </UiCardDescription>
             </UiCardHeader>
             <UiCardContent>
               <div
@@ -197,32 +218,108 @@
         </template>
       </ClientOnly>
 
+      <!-- Enter Key Behavior -->
+      <ClientOnly>
+        <UiCard>
+          <UiCardHeader>
+            <UiCardTitle>Enter Key Behavior</UiCardTitle>
+            <UiCardDescription>Choose how the Enter key behaves in chat input.</UiCardDescription>
+          </UiCardHeader>
+          <UiCardContent>
+            <div class="border-border bg-card flex items-center justify-between rounded-xl border px-4 py-3 shadow-sm">
+              <div class="flex items-center gap-3">
+                <div class="bg-primary/10 flex size-9 items-center justify-center rounded-lg">
+                  <Icon name="lucide:keyboard" class="text-primary size-4" />
+                </div>
+                <div>
+                  <p class="text-foreground text-sm font-semibold">Enter to send</p>
+                  <p class="text-muted-foreground text-xs">
+                    {{
+                      enterKeySend
+                        ? 'Enter sends message, Shift+Enter for new line'
+                        : 'Cmd+Enter sends message, Enter for new line'
+                    }}
+                  </p>
+                </div>
+              </div>
+              <UiSwitch v-model="enterKeySend" />
+            </div>
+          </UiCardContent>
+        </UiCard>
+        <template #fallback>
+          <UiCard>
+            <UiCardHeader>
+              <UiCardTitle>Enter Key Behavior</UiCardTitle>
+              <UiCardDescription>Choose how the Enter key behaves in chat input.</UiCardDescription>
+            </UiCardHeader>
+            <UiCardContent>
+              <div
+                class="border-border bg-card flex items-center justify-between rounded-xl border px-4 py-3 shadow-sm">
+                <div class="flex items-center gap-3">
+                  <div class="bg-primary/10 flex size-9 items-center justify-center rounded-lg">
+                    <Icon name="lucide:keyboard" class="text-primary size-4" />
+                  </div>
+                  <div>
+                    <p class="text-foreground text-sm font-semibold">Enter to send</p>
+                    <p class="text-muted-foreground text-xs">Loading...</p>
+                  </div>
+                </div>
+                <UiSwitch :model-value="false" disabled />
+              </div>
+            </UiCardContent>
+          </UiCard>
+        </template>
+      </ClientOnly>
+
       <!-- Editor Toolbar Mode -->
       <ClientOnly>
         <UiCard>
           <UiCardHeader>
             <UiCardTitle>Editor Toolbar</UiCardTitle>
-            <UiCardDescription>Choose between a floating toolbar that appears on text selection or a fixed toolbar at the top of the editor.</UiCardDescription>
+            <UiCardDescription>
+              Choose between a floating toolbar that appears on text selection or a fixed toolbar at the top of the
+              editor.
+            </UiCardDescription>
           </UiCardHeader>
           <UiCardContent>
             <div class="flex gap-3">
               <button
                 class="flex flex-1 flex-col items-center gap-2 rounded-xl border px-4 py-3 transition-colors"
-                :class="toolbarMode === 'floating' ? 'border-primary bg-primary/10' : 'border-border bg-card hover:bg-muted/50'"
+                :class="
+                  toolbarMode === 'floating'
+                    ? 'border-primary bg-primary/10'
+                    : 'border-border bg-card hover:bg-muted/50'
+                "
                 @click="setToolbarMode('floating')">
                 <div class="flex items-center gap-1.5">
-                  <Icon name="lucide:sparkles" class="size-4" :class="toolbarMode === 'floating' ? 'text-primary' : 'text-muted-foreground'" />
-                  <span class="text-sm font-medium" :class="toolbarMode === 'floating' ? 'text-primary' : 'text-foreground'">Floating</span>
+                  <Icon
+                    name="lucide:sparkles"
+                    class="size-4"
+                    :class="toolbarMode === 'floating' ? 'text-primary' : 'text-muted-foreground'" />
+                  <span
+                    class="text-sm font-medium"
+                    :class="toolbarMode === 'floating' ? 'text-primary' : 'text-foreground'">
+                    Floating
+                  </span>
                 </div>
                 <p class="text-xs text-muted-foreground text-center">Appears above selected text</p>
               </button>
               <button
                 class="flex flex-1 flex-col items-center gap-2 rounded-xl border px-4 py-3 transition-colors"
-                :class="toolbarMode === 'static' ? 'border-primary bg-primary/10' : 'border-border bg-card hover:bg-muted/50'"
+                :class="
+                  toolbarMode === 'static' ? 'border-primary bg-primary/10' : 'border-border bg-card hover:bg-muted/50'
+                "
                 @click="setToolbarMode('static')">
                 <div class="flex items-center gap-1.5">
-                  <Icon name="lucide:panel-top" class="size-4" :class="toolbarMode === 'static' ? 'text-primary' : 'text-muted-foreground'" />
-                  <span class="text-sm font-medium" :class="toolbarMode === 'static' ? 'text-primary' : 'text-foreground'">Static</span>
+                  <Icon
+                    name="lucide:panel-top"
+                    class="size-4"
+                    :class="toolbarMode === 'static' ? 'text-primary' : 'text-muted-foreground'" />
+                  <span
+                    class="text-sm font-medium"
+                    :class="toolbarMode === 'static' ? 'text-primary' : 'text-foreground'">
+                    Static
+                  </span>
                 </div>
                 <p class="text-xs text-muted-foreground text-center">Fixed bar at the top</p>
               </button>
@@ -233,7 +330,10 @@
           <UiCard>
             <UiCardHeader>
               <UiCardTitle>Editor Toolbar</UiCardTitle>
-              <UiCardDescription>Choose between a floating toolbar that appears on text selection or a fixed toolbar at the top of the editor.</UiCardDescription>
+              <UiCardDescription>
+                Choose between a floating toolbar that appears on text selection or a fixed toolbar at the top of the
+                editor.
+              </UiCardDescription>
             </UiCardHeader>
             <UiCardContent>
               <div class="flex gap-3 opacity-50 pointer-events-none">
@@ -273,7 +373,11 @@
                 <div>
                   <p class="text-foreground text-sm font-semibold">Header above sidebar</p>
                   <p class="text-muted-foreground text-xs">
-                    {{ headerAbove ? 'Header spans across the top of sidebar and content' : 'Header is inside the content area only' }}
+                    {{
+                      headerAbove
+                        ? 'Header spans across the top of sidebar and content'
+                        : 'Header is inside the content area only'
+                    }}
                   </p>
                 </div>
               </div>
@@ -317,21 +421,43 @@
             <div class="flex gap-3">
               <button
                 class="flex flex-1 flex-col items-center gap-2 rounded-xl border px-4 py-3 transition-colors"
-                :class="iconRailPosition === 'left' ? 'border-primary bg-primary/10' : 'border-border bg-card hover:bg-muted/50'"
+                :class="
+                  iconRailPosition === 'left'
+                    ? 'border-primary bg-primary/10'
+                    : 'border-border bg-card hover:bg-muted/50'
+                "
                 @click="setIconRailPosition('left')">
                 <div class="flex items-center gap-1.5">
-                  <Icon name="lucide:panel-left" class="size-4" :class="iconRailPosition === 'left' ? 'text-primary' : 'text-muted-foreground'" />
-                  <span class="text-sm font-medium" :class="iconRailPosition === 'left' ? 'text-primary' : 'text-foreground'">Left</span>
+                  <Icon
+                    name="lucide:panel-left"
+                    class="size-4"
+                    :class="iconRailPosition === 'left' ? 'text-primary' : 'text-muted-foreground'" />
+                  <span
+                    class="text-sm font-medium"
+                    :class="iconRailPosition === 'left' ? 'text-primary' : 'text-foreground'">
+                    Left
+                  </span>
                 </div>
                 <p class="text-xs text-muted-foreground text-center">Rail on the left side</p>
               </button>
               <button
                 class="flex flex-1 flex-col items-center gap-2 rounded-xl border px-4 py-3 transition-colors"
-                :class="iconRailPosition === 'bottom' ? 'border-primary bg-primary/10' : 'border-border bg-card hover:bg-muted/50'"
+                :class="
+                  iconRailPosition === 'bottom'
+                    ? 'border-primary bg-primary/10'
+                    : 'border-border bg-card hover:bg-muted/50'
+                "
                 @click="setIconRailPosition('bottom')">
                 <div class="flex items-center gap-1.5">
-                  <Icon name="lucide:panel-bottom" class="size-4" :class="iconRailPosition === 'bottom' ? 'text-primary' : 'text-muted-foreground'" />
-                  <span class="text-sm font-medium" :class="iconRailPosition === 'bottom' ? 'text-primary' : 'text-foreground'">Bottom</span>
+                  <Icon
+                    name="lucide:panel-bottom"
+                    class="size-4"
+                    :class="iconRailPosition === 'bottom' ? 'text-primary' : 'text-muted-foreground'" />
+                  <span
+                    class="text-sm font-medium"
+                    :class="iconRailPosition === 'bottom' ? 'text-primary' : 'text-foreground'">
+                    Bottom
+                  </span>
                 </div>
                 <p class="text-xs text-muted-foreground text-center">Rail along the bottom</p>
               </button>

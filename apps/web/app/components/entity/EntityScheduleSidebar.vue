@@ -232,6 +232,22 @@
       </button>
     </div>
 
+    <!-- Mini calendar — drives whichever tab is active -->
+    <div v-if="!isViewMode" class="rounded-lg border border-border overflow-hidden">
+      <UiDatepicker
+        v-if="scheduleTab === 'start' || !hasField('endDate')"
+        v-model="calendarModel"
+        :mode="editableItem.allDay ? 'date' : 'dateTime'"
+        is-required
+        color="primary" />
+      <UiDatepicker
+        v-else
+        v-model="endCalendarModel"
+        :mode="editableItem.allDay ? 'date' : 'dateTime'"
+        :min-date="calendarModel"
+        color="primary" />
+    </div>
+
     <!-- Start/End segmented toggle -->
     <div v-if="hasField('endDate')" class="flex rounded-lg border border-border bg-muted/0 p-1">
       <button

@@ -17,16 +17,14 @@
 </script>
 
 <template>
-  <div class="flex-1 flex flex-col min-h-0 divide-y divide-border">
-
+  <div class="divide-y divide-border">
     <!-- Notes / content rich text editor -->
-    <div class="flex-1 flex flex-col min-h-0">
+    <div class="min-h-[400px]">
       <UiRichTextEditor
         v-if="!isViewMode"
         v-model="item.content"
         placeholder="Add notes, context, or details..."
-        class="flex-1 min-h-0 border-none! rounded-none!"
-        fill-height
+        class="border-none! rounded-none!"
         mentions
         tasklist
         images
@@ -36,10 +34,9 @@
         :entity-id="item.id" />
       <div
         v-else-if="item.content"
-        class="prose prose-sm max-w-none text-sm text-foreground flex-1 p-4"
+        class="prose prose-sm max-w-none text-sm text-foreground p-4"
         v-html="item.content" />
     </div>
-
   </div>
 </template>
 

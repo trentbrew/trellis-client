@@ -1,0 +1,1 @@
+import{d as a,at as n,G as o,S as s,o as c,a0 as r,a5 as _,a7 as u}from"#entry";const p={class:"flex h-full items-center justify-center"},f=a({__name:"query",setup(l){const{wp:e}=n();return o(()=>s(e("/query"),{replace:!0})),(m,d)=>{const t=u;return c(),r("div",p,[_(t,{name:"lucide:loader-2",class:"h-8 w-8 animate-spin text-muted-foreground"})])}}});export{f as default};

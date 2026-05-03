@@ -1,23 +1,34 @@
 {
-  "name": "@turtle.tech/trellis-cli",
+  "name": "trellis",
   "version": "0.1.0",
-  "private": true,
   "type": "module",
-  "description": "CLI for agents and humans to CRUD the Trellis graph with realtime sync",
+  "description": "Launch and manage a local Trellis knowledge graph workspace",
+  "main": "./src/client.mjs",
   "bin": {
     "trellis": "./bin/trellis.mjs"
   },
   "exports": {
     ".": {
       "types": "./src/client.ts",
-      "import": "./src/client.ts"
-    }
+      "import": "./src/client.mjs"
+    },
+    "./package.json": "./package.json"
   },
   "files": [
     "bin/",
-    "src/"
+    "src/",
+    "web/"
   ],
+  "engines": {
+    "node": ">=20"
+  },
   "scripts": {
-    "build": "echo 'no build step — runs via tsx or direct node'"
+    "build": "pnpm run build:web",
+    "build:web": "node scripts/build-web.mjs",
+    "prepack": "pnpm run build:web",
+    "prepublishOnly": "pnpm run build:web"
+  },
+  "dependencies": {
+    "better-sqlite3": "12.6.2"
   }
 }

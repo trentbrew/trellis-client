@@ -80,6 +80,7 @@
     chatMode?: boolean
     entityId?: string
     submitOnEnter?: boolean
+    enterKeyBehavior?: 'send' | 'newline'
     inlineComments?: boolean
   }>()
 
@@ -837,14 +838,21 @@
             }
           }
         }
-        // Submit on Cmd+Enter (or Ctrl+Enter)
-        if (event.key === 'Enter' && (event.metaKey || event.ctrlKey) && props.submitOnEnter) {
-          // Don't fire if a suggestion dropdown (mention/slash) is open
-          const hasSuggestion = document.querySelector('.tippy-box, [data-tippy-root]')
-          if (!hasSuggestion) {
-            event.preventDefault()
-            emit('submit')
-            return true
+        // Submit on Enter key
+        if (props.submitOnEnter) {
+          const shouldSubmit =
+            props.enterKeyBehavior === 'send'
+              ? event.key === 'Enter' && !event.shiftKey
+              : event.key === 'Enter' && (event.metaKey || event.ctrlKey)
+
+          if (shouldSubmit) {
+            // Don't fire if a suggestion dropdown (mention/slash) is open
+            const hasSuggestion = document.querySelector('.tippy-box, [data-tippy-root]')
+            if (!hasSuggestion) {
+              event.preventDefault()
+              emit('submit')
+              return true
+            }
           }
         }
         return false

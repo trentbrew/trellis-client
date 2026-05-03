@@ -1,0 +1,1 @@
+import{$ as o,o as r,a0 as t,r as s}from"#entry";const n={},c={class:"min-h-dvh bg-background text-foreground"};function a(e,d){return r(),t("div",c,[s(e.$slots,"default")])}const f=o(n,[["render",a]]);export{f as default};

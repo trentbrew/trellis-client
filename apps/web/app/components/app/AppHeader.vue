@@ -54,6 +54,7 @@
   const { userRole: _userRole, roleConfig } = useUserRole()
   const { isInEditMode, toggleEditMode, canToggleEditMode, canManageMembers, isAdmin: _isAdmin } = useAdminUI()
   const { totalMembers: _totalMembers, members: workspaceMembers, isUserOnline } = usePresence()
+  const { mode: adapterMode, entityBackend, ontologyBackend, isCloud } = useAdapterStatus()
   const _isResizing = useState<boolean>('isSidebarResizing', () => false)
 
   // User avatar and auth
@@ -205,6 +206,14 @@
   const isSaving = saveState.isSaving
   const lastSaved = saveState.lastSaved
 
+  const adapterModeLabel = computed(() => (isCloud.value ? 'InstantDB' : 'Local'))
+  const adapterModeIcon = computed(() => (isCloud.value ? 'lucide:cloud' : 'lucide:hard-drive'))
+  const adapterModeClass = computed(() =>
+    isCloud.value
+      ? 'border-sky-500/30 bg-sky-500/10 text-sky-700 dark:text-sky-300'
+      : 'border-emerald-500/30 bg-emerald-500/10 text-emerald-700 dark:text-emerald-300',
+  )
+
   const _isCurrentPagePinned = computed(() => {
     return pinnedItems.isPinned(getCleanPath(route.path))
   })
@@ -323,6 +332,26 @@
       </UiSheet>
 
       <!-- Global Search lives in center AppOmnibox now (⌘K still works globally). -->
+
+      <UiTooltip>
+        <UiTooltipTrigger as-child>
+          <div
+            class="inline-flex h-7 shrink-0 items-center gap-1.5 rounded-full border px-2 text-[11px] font-medium tracking-wide"
+            :class="adapterModeClass"
+            :aria-label="`Data mode: ${adapterModeLabel}`">
+            <Icon :name="adapterModeIcon" class="h-3.5 w-3.5" />
+            <span>{{ adapterModeLabel }}</span>
+          </div>
+        </UiTooltipTrigger>
+        <UiTooltipContent side="bottom" :side-offset="8" class="max-w-xs">
+          <div class="space-y-1 text-xs">
+            <div class="font-medium">Data mode: {{ adapterModeLabel }}</div>
+            <div class="text-muted-foreground">Adapter: {{ adapterMode }}</div>
+            <div class="text-muted-foreground">Entities: {{ entityBackend }}</div>
+            <div class="text-muted-foreground">Ontologies: {{ ontologyBackend }}</div>
+          </div>
+        </UiTooltipContent>
+      </UiTooltip>
 
       <!-- Trellis (local) notifications — TQL graph-backed -->
       <NotificationBell />

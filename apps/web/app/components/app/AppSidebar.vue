@@ -1639,10 +1639,8 @@
 
                   <div
                     v-else-if="!filteredDynamicSidebarSections && filteredPinnedItems.length === 0 && !isTypesSection"
-                    class="flex flex-col items-center justify-center py-8 text-center">
-                    <Icon name="lucide:inbox" class="w-8 h-8 text-sidebar-foreground/50 mb-3" />
-                    <p class="text-sm text-sidebar-foreground/70">No available sections</p>
-                    <p class="text-xs text-sidebar-foreground/50 mt-1">Contact your administrator for access</p>
+                    class="py-2">
+                    <AgentConversationList />
                   </div>
 
                   <!-- Fallback: Legacy Pinned Section (if no dynamic sections configured) -->

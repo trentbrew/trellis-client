@@ -1,5 +1,6 @@
 export type IconRailPosition = 'left' | 'bottom'
 export type ToolbarMode = 'floating' | 'static'
+export type EnterKeyBehavior = 'send' | 'newline'
 
 /**
  * Composable for managing layout preferences
@@ -13,6 +14,7 @@ export const useLayoutPreferences = () => {
   const iconRailPosition = useState<IconRailPosition>('layout:iconRailPosition', () => 'bottom')
   const toolbarMode = useState<ToolbarMode>('layout:toolbarMode', () => 'floating')
   const showRecentPages = useState<boolean>('layout:showRecentPages', () => false)
+  const enterKeyBehavior = useState<EnterKeyBehavior>('layout:enterKeyBehavior', () => 'send')
 
   // Load from localStorage on client
   if (import.meta.client) {
@@ -24,6 +26,7 @@ export const useLayoutPreferences = () => {
         iconRailPosition.value = parsed.iconRailPosition ?? 'bottom'
         toolbarMode.value = parsed.toolbarMode ?? 'floating'
         showRecentPages.value = parsed.showRecentPages ?? false
+        enterKeyBehavior.value = parsed.enterKeyBehavior ?? 'send'
       } catch {
         // Invalid JSON, use default
       }
@@ -39,6 +42,7 @@ export const useLayoutPreferences = () => {
           iconRailPosition: iconRailPosition.value,
           toolbarMode: toolbarMode.value,
           showRecentPages: showRecentPages.value,
+          enterKeyBehavior: enterKeyBehavior.value,
         }),
       )
     }
@@ -68,11 +72,17 @@ export const useLayoutPreferences = () => {
     _persist()
   }
 
+  const setEnterKeyBehavior = (behavior: EnterKeyBehavior) => {
+    enterKeyBehavior.value = behavior
+    _persist()
+  }
+
   const resetLayoutPreferences = () => {
     setHeaderAboveSidebar(true)
     setIconRailPosition('bottom')
     setToolbarMode('floating')
     setShowRecentPages(false)
+    setEnterKeyBehavior('send')
   }
 
   return {
@@ -85,6 +95,8 @@ export const useLayoutPreferences = () => {
     setToolbarMode,
     showRecentPages: readonly(showRecentPages),
     setShowRecentPages,
+    enterKeyBehavior: readonly(enterKeyBehavior),
+    setEnterKeyBehavior,
     resetLayoutPreferences,
   }
 }

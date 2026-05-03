@@ -1,7 +1,6 @@
 import { resolve } from 'node:path'
 import { readFileSync, existsSync } from 'node:fs'
 import tailwindcss from '@tailwindcss/vite'
-import { ensurePortAvailable } from './utils/find-port'
 
 // Load .env from monorepo root (two levels up from apps/web/)
 // Nuxt only auto-loads .env from the project root (apps/web/), so we
@@ -23,9 +22,7 @@ if (existsSync(monoEnvPath)) {
 const DEFAULT_DEV_PORT = 1414
 const parsedDevPort = Number.parseInt(process.env.TRELLIS_PORT || '', 10)
 const PREFERRED_PORT = Number.isFinite(parsedDevPort) ? parsedDevPort : DEFAULT_DEV_PORT
-
-// Ensure the preferred port is available (kill any process using it)
-const DEV_PORT = await ensurePortAvailable(PREFERRED_PORT)
+const DEV_PORT = PREFERRED_PORT
 
 // https://nuxt.com/docs/api/configuration/nuxt-config
 export default defineNuxtConfig({
@@ -133,7 +130,11 @@ export default defineNuxtConfig({
   },
 
   nitro: {
+    ignore: ['**/*.test.*', '**/*.spec.*'],
     preset: 'node-server',
+    externals: {
+      inline: [/^@turtle\.tech\//],
+    },
   },
 
   css: [

@@ -134,6 +134,8 @@ async function handleMutation(ev: MutationEvent): Promise<void> {
 // ─── Plugin ──────────────────────────────────────────────────────────────────
 
 export default defineNitroPlugin((nitroApp) => {
+  if (process.env.TRELLIS_DISABLE_BACKGROUND_JOBS === '1') return
+
   // Align first tick to the start of the next minute so we fire near :00 seconds
   const now = Date.now()
   const msUntilNextMinute = 60_000 - (now % 60_000)

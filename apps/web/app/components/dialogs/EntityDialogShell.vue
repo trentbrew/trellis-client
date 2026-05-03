@@ -47,6 +47,13 @@
        *   page (e.g. the mail viewer).
        */
       variant?: 'dialog' | 'inset' | 'inline'
+      /**
+       * When true, the shell strips title/description/properties from the
+       * fixed header chrome — the caller renders them inside its scrollable
+       * body (e.g. via `EntityBodyHeader`). The `#properties` slot is
+       * ignored in this mode; properties live in the right sidebar tab.
+       */
+      headerInBody?: boolean
     }>(),
     {
       mode: 'edit',
@@ -56,6 +63,7 @@
       isGeneratingSummary: false,
       itemType: undefined,
       variant: 'dialog',
+      headerInBody: false,
     },
   )
 
@@ -228,8 +236,8 @@
 
     <!-- Header -->
     <div class="shrink-0 border-b border-border">
-      <div class="px-4 pt-4 pb-3">
-        <div class="flex items-center justify-between gap-3 mb-3">
+      <div class="px-3 pt-1.5 pb-1.5">
+        <div class="flex items-center justify-between gap-3" :class="headerInBody ? '' : 'mb-3'">
           <div class="flex items-center gap-2 min-w-0">
             <span
               v-if="typeBadge"
@@ -265,34 +273,36 @@
             </UiButton>
           </div>
         </div>
-        <input
-          v-if="!isViewMode"
-          :value="title"
-          type="text"
-          :placeholder="titlePlaceholder || 'Item name...'"
-          spellcheck="false"
-          class="w-full text-xl font-semibold bg-transparent border border-transparent outline-none placeholder:text-muted-foreground/50 focus:ring-0 hover:border-border hover:bg-muted/20 focus:border-border focus:bg-muted/20 rounded-md px-2 py-0 -mx-1 transition-all"
-          @input="emit('update:title', ($event.target as HTMLInputElement).value)" />
-        <h2 v-else class="text-xl font-semibold px-1">{{ title }}</h2>
-        <div class="mt-1 px-1">
-          <EntityDescriptionBlock
-            :description="description"
-            :summary="summary"
-            :is-generating-summary="isGeneratingSummary"
-            :mode="mode"
-            :entity-id="entityId"
-            :ai-only="isAiOnlyDescription"
-            @update:description="emit('update:description', $event)"
-            @regenerate-summary="emit('regenerateSummary')" />
-        </div>
-        <div v-if="$slots['header-tags']" class="mt-2 px-1">
-          <slot name="header-tags" />
-        </div>
+        <template v-if="!headerInBody">
+          <input
+            v-if="!isViewMode"
+            :value="title"
+            type="text"
+            :placeholder="titlePlaceholder || 'Item name...'"
+            spellcheck="false"
+            class="w-full text-xl font-semibold bg-transparent border border-transparent outline-none placeholder:text-muted-foreground/50 focus:ring-0 hover:border-border hover:bg-muted/20 focus:border-border focus:bg-muted/20 rounded-md px-2 py-0 -mx-1 transition-all"
+            @input="emit('update:title', ($event.target as HTMLInputElement).value)" />
+          <h2 v-else class="text-xl font-semibold px-1">{{ title }}</h2>
+          <div class="mt-1 px-1">
+            <EntityDescriptionBlock
+              :description="description"
+              :summary="summary"
+              :is-generating-summary="isGeneratingSummary"
+              :mode="mode"
+              :entity-id="entityId"
+              :ai-only="isAiOnlyDescription"
+              @update:description="emit('update:description', $event)"
+              @regenerate-summary="emit('regenerateSummary')" />
+          </div>
+          <div v-if="$slots['header-tags']" class="mt-2 px-1">
+            <slot name="header-tags" />
+          </div>
+        </template>
       </div>
     </div>
 
-    <!-- Properties Row -->
-    <div v-if="$slots.properties" class="bg-card px-4 py-2.5 border-b border-border shrink-0">
+    <!-- Properties Row (hidden when headerInBody — properties live in right sidebar tab) -->
+    <div v-if="!headerInBody && $slots.properties" class="bg-card px-4 py-2.5 border-b border-border shrink-0">
       <div class="flex items-center gap-1.5 text-xs overflow-x-auto scrollbar-none whitespace-nowrap">
         <slot name="properties" />
         <slot name="properties-tags" />
@@ -332,7 +342,7 @@
     <!-- Header -->
     <div class="shrink-0 border-b border-border">
       <div class="px-4 pt-4 pb-3">
-        <div class="flex items-center justify-between gap-3 mb-3">
+        <div class="flex items-center justify-between gap-3" :class="headerInBody ? '' : 'mb-3'">
           <div class="flex items-center gap-2 min-w-0">
             <span
               v-if="typeBadge"
@@ -348,34 +358,36 @@
             </UiButton>
           </div>
         </div>
-        <input
-          v-if="!isViewMode"
-          :value="title"
-          type="text"
-          :placeholder="titlePlaceholder || 'Item name...'"
-          spellcheck="false"
-          class="w-full text-xl font-semibold bg-transparent border border-transparent outline-none placeholder:text-muted-foreground/50 focus:ring-0 hover:border-border hover:bg-muted/20 focus:border-border focus:bg-muted/20 rounded-md px-2 py-0 -mx-1 transition-all"
-          @input="emit('update:title', ($event.target as HTMLInputElement).value)" />
-        <h2 v-else class="text-xl font-semibold px-1">{{ title }}</h2>
-        <div class="mt-1 px-1">
-          <EntityDescriptionBlock
-            :description="description"
-            :summary="summary"
-            :is-generating-summary="isGeneratingSummary"
-            :mode="mode"
-            :entity-id="entityId"
-            :ai-only="isAiOnlyDescription"
-            @update:description="emit('update:description', $event)"
-            @regenerate-summary="emit('regenerateSummary')" />
-        </div>
-        <div v-if="$slots['header-tags']" class="mt-2 px-1">
-          <slot name="header-tags" />
-        </div>
+        <template v-if="!headerInBody">
+          <input
+            v-if="!isViewMode"
+            :value="title"
+            type="text"
+            :placeholder="titlePlaceholder || 'Item name...'"
+            spellcheck="false"
+            class="w-full text-xl font-semibold bg-transparent border border-transparent outline-none placeholder:text-muted-foreground/50 focus:ring-0 hover:border-border hover:bg-muted/20 focus:border-border focus:bg-muted/20 rounded-md px-2 py-0 -mx-1 transition-all"
+            @input="emit('update:title', ($event.target as HTMLInputElement).value)" />
+          <h2 v-else class="text-xl font-semibold px-1">{{ title }}</h2>
+          <div class="mt-1 px-1">
+            <EntityDescriptionBlock
+              :description="description"
+              :summary="summary"
+              :is-generating-summary="isGeneratingSummary"
+              :mode="mode"
+              :entity-id="entityId"
+              :ai-only="isAiOnlyDescription"
+              @update:description="emit('update:description', $event)"
+              @regenerate-summary="emit('regenerateSummary')" />
+          </div>
+          <div v-if="$slots['header-tags']" class="mt-2 px-1">
+            <slot name="header-tags" />
+          </div>
+        </template>
       </div>
     </div>
 
-    <!-- Properties Row -->
-    <div v-if="$slots.properties" class="sticky top-0 z-10 bg-card px-4 py-2.5 border-b border-border">
+    <!-- Properties Row (hidden when headerInBody — properties live in right sidebar tab) -->
+    <div v-if="!headerInBody && $slots.properties" class="sticky top-0 z-10 bg-card px-4 py-2.5 border-b border-border">
       <div class="flex items-center gap-1.5 text-xs overflow-x-auto scrollbar-none whitespace-nowrap">
         <slot name="properties" />
         <slot name="properties-tags" />
@@ -441,7 +453,7 @@
           </button>
         </div>
         <div :class="isStacked && parentTitle ? 'px-4 pt-2 pb-3' : 'px-4 pt-4 pb-3'">
-          <div class="flex items-center justify-between gap-3 mb-3">
+          <div class="flex items-center justify-between gap-3 mb-0">
             <div class="flex items-center gap-2 min-w-0">
               <span
                 v-if="typeBadge"
@@ -475,34 +487,38 @@
               </UiButton>
             </div>
           </div>
-          <input
-            v-if="!isViewMode"
-            :value="title"
-            type="text"
-            :placeholder="titlePlaceholder || 'Item name...'"
-            spellcheck="false"
-            class="w-full text-xl font-semibold bg-transparent border border-transparent outline-none placeholder:text-muted-foreground/50 focus:ring-0 hover:border-border hover:bg-muted/20 focus:border-border focus:bg-muted/20 rounded-md px-2 py-0 -mx-1 transition-all"
-            @input="emit('update:title', ($event.target as HTMLInputElement).value)" />
-          <h2 v-else class="text-xl font-semibold px-1">{{ title }}</h2>
-          <div class="mt-1 px-1">
-            <EntityDescriptionBlock
-              :description="description"
-              :summary="summary"
-              :is-generating-summary="isGeneratingSummary"
-              :mode="mode"
-              :entity-id="entityId"
-              :ai-only="isAiOnlyDescription"
-              @update:description="emit('update:description', $event)"
-              @regenerate-summary="emit('regenerateSummary')" />
-          </div>
-          <div v-if="$slots['header-tags']" class="mt-2 px-1">
-            <slot name="header-tags" />
-          </div>
+          <template v-if="!headerInBody">
+            <input
+              v-if="!isViewMode"
+              :value="title"
+              type="text"
+              :placeholder="titlePlaceholder || 'Item name...'"
+              spellcheck="false"
+              class="w-full text-xl font-semibold bg-transparent border border-transparent outline-none placeholder:text-muted-foreground/50 focus:ring-0 hover:border-border hover:bg-muted/20 focus:border-border focus:bg-muted/20 rounded-md px-2 py-0 -mx-1 transition-all"
+              @input="emit('update:title', ($event.target as HTMLInputElement).value)" />
+            <h2 v-else class="text-xl font-semibold px-1">{{ title }}</h2>
+            <div class="mt-1 px-1">
+              <EntityDescriptionBlock
+                :description="description"
+                :summary="summary"
+                :is-generating-summary="isGeneratingSummary"
+                :mode="mode"
+                :entity-id="entityId"
+                :ai-only="isAiOnlyDescription"
+                @update:description="emit('update:description', $event)"
+                @regenerate-summary="emit('regenerateSummary')" />
+            </div>
+            <div v-if="$slots['header-tags']" class="mt-2 px-1">
+              <slot name="header-tags" />
+            </div>
+          </template>
         </div>
       </div>
 
-      <!-- Properties Row -->
-      <div v-if="$slots.properties" class="sticky top-0 z-10 bg-card px-4 py-2.5 border-b border-border">
+      <!-- Properties Row (hidden when headerInBody — properties live in right sidebar tab) -->
+      <div
+        v-if="!headerInBody && $slots.properties"
+        class="sticky top-0 z-10 bg-card px-4 py-2.5 border-b border-border">
         <div class="flex items-center gap-1.5 text-xs overflow-x-auto scrollbar-none whitespace-nowrap">
           <slot name="properties" />
           <slot name="properties-tags" />

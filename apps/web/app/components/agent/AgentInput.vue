@@ -41,9 +41,10 @@
 </script>
 
 <template>
-  <div class="shrink-0  bg-card/50">
+  <div class="shrink-0 bg-card/50">
     <!-- Input container -->
-    <div class="mx-3 mb-2 mt-0 rounded-xl border border-border bg-foreground/5 focus-within:ring-1 focus-within:ring-ring transition-shadow">
+    <div
+      class="mx-3 mb-2 mt-0 rounded-xl border border-border bg-foreground/5 focus-within:ring-1 focus-within:ring-ring transition-shadow">
       <!-- Rich text editor -->
       <div class="px-3 pt-2 pb-1 max-h-48 overflow-y-auto text-xs">
         <UiRichTextEditor
@@ -55,8 +56,8 @@
           images
           chat-mode
           submit-on-enter
-          @submit="handleSend"
-        />
+          :enter-key-behavior="enterKeyBehavior"
+          @submit="handleSend" />
       </div>
 
       <!-- Bottom bar: attach + send -->
@@ -68,8 +69,7 @@
               type="button"
               class="h-6 w-6 flex items-center justify-center rounded text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
               :disabled="disabled"
-              @click="editorRef?.triggerImageUpload()"
-            >
+              @click="editorRef?.triggerImageUpload()">
               <Icon name="lucide:paperclip" class="h-3.5 w-3.5" />
             </button>
           </UiTooltipTrigger>
@@ -84,12 +84,13 @@
           type="button"
           :disabled="!canSend"
           class="h-7 w-7 flex items-center justify-center rounded-lg transition-all"
-          :class="canSend
-            ? 'bg-primary text-primary-foreground hover:bg-primary/90 cursor-pointer'
-            : 'bg-primary/25 text-muted-foreground/40 cursor-not-allowed'"
+          :class="
+            canSend
+              ? 'bg-primary text-primary-foreground hover:bg-primary/90 cursor-pointer'
+              : 'bg-primary/25 text-muted-foreground/40 cursor-not-allowed'
+          "
           title="Send (⌘Enter)"
-          @click="handleSend"
-        >
+          @click="handleSend">
           <Icon name="lucide:send-horizontal" class="h-3.5 w-3.5" />
         </button>
       </div>
@@ -97,7 +98,22 @@
 
     <!-- Hint -->
     <div class="px-4 pb-2 text-[10px] text-muted-foreground/40">
-      <kbd class="font-mono">@</kbd> mention · <kbd class="font-mono">⌘Enter</kbd> to send · <kbd class="font-mono">Enter</kbd> for new line
+      <kbd class="font-mono">@</kbd>
+      mention
+      <template v-if="enterKeyBehavior === 'send'">
+        ·
+        <kbd class="font-mono">Enter</kbd>
+        to send ·
+        <kbd class="font-mono">Shift+Enter</kbd>
+        for new line
+      </template>
+      <template v-else>
+        ·
+        <kbd class="font-mono">⌘Enter</kbd>
+        to send ·
+        <kbd class="font-mono">Enter</kbd>
+        for new line
+      </template>
     </div>
   </div>
 </template>

@@ -1,0 +1,1 @@
+import{u as o}from"./BbWG2GFn.js";import{d as s,G as n,o as r,a0 as a,r as c}from"#entry";const m={class:"bg-background text-foreground flex min-h-dvh items-center justify-center"},l=s({__name:"auth",setup(u){const{resetTheme:e}=o();return n(()=>{e()}),(t,d)=>(r(),a("div",m,[c(t.$slots,"default")]))}});export{l as default};

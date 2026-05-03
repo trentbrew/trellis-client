@@ -1,0 +1,60 @@
+import { d as defineEventHandler, c as createError, K as setCookie, h as getQuery, L as sendRedirect, M as useRuntimeConfig } from '../../../../nitro/nitro.mjs';
+import 'zod';
+import 'node:http';
+import 'node:https';
+import 'node:events';
+import 'node:buffer';
+import 'node:fs';
+import 'node:path';
+import 'node:crypto';
+import 'better-sqlite3';
+import 'crypto';
+import '@google/generative-ai';
+import 'node:vm';
+import '@instantdb/admin';
+import 'node:url';
+import '@iconify/utils';
+import 'consola';
+
+const auth_get = defineEventHandler(async (event) => {
+  const config = useRuntimeConfig();
+  const clientId = config.public.githubClientId;
+  const redirectUri = config.githubRedirectUri;
+  if (!clientId || !redirectUri) {
+    throw createError({
+      statusCode: 500,
+      statusMessage: "GitHub integration is not configured. Set GITHUB_CLIENT_ID and GITHUB_REDIRECT_URI."
+    });
+  }
+  const state = crypto.randomUUID();
+  const cookieOpts = {
+    httpOnly: true,
+    secure: true,
+    maxAge: 300,
+    path: "/",
+    sameSite: "lax"
+  };
+  setCookie(event, "github_oauth_state", state, cookieOpts);
+  const query = getQuery(event);
+  const userId = typeof query.userId === "string" ? query.userId : "";
+  if (userId) setCookie(event, "github_oauth_user", userId, cookieOpts);
+  const returnTo = typeof query.returnTo === "string" ? query.returnTo : "";
+  if (returnTo) setCookie(event, "github_oauth_return", returnTo, cookieOpts);
+  const scopesParam = typeof query.scopes === "string" ? query.scopes : "repo,read:user,read:org";
+  const scope = scopesParam.split(",").map((s) => s.trim()).filter(Boolean).join(" ");
+  const params = new URLSearchParams({
+    client_id: clientId,
+    redirect_uri: redirectUri,
+    scope,
+    state,
+    // `allow_signup=true` keeps the sign-up option visible, matching default.
+    allow_signup: "true"
+  });
+  const loginHint = typeof query.login === "string" ? query.login : "";
+  if (loginHint) params.set("login", loginHint);
+  const authUrl = `https://github.com/login/oauth/authorize?${params.toString()}`;
+  return sendRedirect(event, authUrl);
+});
+
+export { auth_get as default };
+//# sourceMappingURL=auth.get.mjs.map
