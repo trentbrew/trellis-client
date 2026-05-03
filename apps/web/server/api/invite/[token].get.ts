@@ -5,12 +5,15 @@
  * (inviter name, org name, email, role) for the acceptance page.
  */
 
-export default defineEventHandler(async (event) => {
-  const token = getRouterParam(event, 'token')
+import { z } from 'zod'
+import { parseApiRouterParams } from '../../utils/api-validation'
 
-  if (!token) {
-    throw createError({ statusCode: 400, message: 'Invite token is required' })
-  }
+export const InviteTokenParamsSchema = z.object({
+  token: z.string().trim().min(1, 'Invite token is required'),
+})
+
+export default defineEventHandler(async (event) => {
+  const { token } = parseApiRouterParams(event, InviteTokenParamsSchema)
 
   const db = useInstantAdmin()
 
