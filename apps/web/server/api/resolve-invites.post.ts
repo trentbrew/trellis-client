@@ -37,7 +37,7 @@ export default defineEventHandler(async (event) => {
     if (pendingMembers.length === 0) {
       return { resolved: 0, memberships: [] }
     }
-
+ 
     const memberships: { orgId: string; worldId?: string; role: string }[] = []
 
     for (const member of pendingMembers) {
