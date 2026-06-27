@@ -2,10 +2,17 @@
   import type { Entity, EntityReference, Reference, PageItem, PageStatus } from '~/types/entity'
   import { getPresenceBg, getPresenceRing } from '~/utils/presenceColor'
 
-  definePageMeta({ layout: 'default' })
+  definePageMeta({
+    layout: 'default',
+    key: (route) => route.params.id as string,
+  })
 
   const route = useRoute()
   const pageId = computed(() => route.params.id as string)
+
+  const trellisSidecar = useTrellisSidecar()
+  const sidecarEditor = trellisSidecar.enabled ? useSidecarPageEditor(pageId) : null
+  const nuxtApp = useNuxtApp()
 
   const { getPage, updatePage: _updatePage, deletePage, pages, folders, moveToFolder, livePageTitle } = usePageNotes()
   const { addPage: addRecentPage } = useRecentPages()
@@ -29,11 +36,18 @@
   const descPeers = computed(() => pageViewers.value.filter((v) => v.editingField === 'description'))
   const { displayActivity, addComment, addInlineComment, logActivity, loading: commentsLoading } = useComments(pageId)
 
-  // Resolve current page from store
+  // Resolve current page from store or sidecar truth path
   const currentPage = computed<PageItem | undefined>(() => {
+    if (trellisSidecar.enabled && sidecarEditor) {
+      return sidecarEditor.page.value
+    }
     const found = getPage(pageId.value) ?? allItems.value?.find((i: Entity) => i.id === pageId.value)
     return found as PageItem | undefined
   })
+
+  const pageLoading = computed(
+    () => trellisSidecar.enabled && sidecarEditor ? sidecarEditor.loading.value : false,
+  )
 
   useHead({ title: computed(() => currentPage.value?.title || 'Untitled') })
 
@@ -42,11 +56,12 @@
   // We declare the editable reactive object later (after local refs), then
   // wire useAutoSave to it. The `triggerSave` function pokes the reactive
   // to trigger the debounced watcher without manual setTimeout management.
-  const _autoSaveEnabled = ref(true)
+  const _autoSaveEnabled = computed(() => !trellisSidecar.enabled)
 
   onMounted(() => {
     if (pageId.value) {
-      registerPresence(pageId.value)
+      if (sidecarEditor) sidecarEditor.presence.register(pageId.value)
+      else registerPresence(pageId.value)
       addRecentPage(pageId.value)
     }
   })
@@ -56,14 +71,21 @@
     if (_descLogTimer) clearTimeout(_descLogTimer)
     if (_contentLogTimer) clearTimeout(_contentLogTimer)
     livePageTitle.value = null
-    if (pageId.value) deregisterPresence(pageId.value)
+    if (pageId.value) {
+      if (sidecarEditor) sidecarEditor.presence.deregister(pageId.value)
+      else deregisterPresence(pageId.value)
+    }
   })
 
   // Re-register when navigating between pages
   watch(pageId, (newId, oldId) => {
-    if (oldId) deregisterPresence(oldId)
+    if (oldId) {
+      if (sidecarEditor) sidecarEditor.presence.deregister(oldId)
+      else deregisterPresence(oldId)
+    }
     if (newId) {
-      registerPresence(newId)
+      if (sidecarEditor) sidecarEditor.presence.register(newId)
+      else registerPresence(newId)
       addRecentPage(newId)
     }
   })
@@ -76,6 +98,11 @@
   // Local refs are seeded via _seedFromPage defined below, after all refs are declared.
 
   function onTitleInput(e: Event) {
+    if (sidecarEditor) {
+      sidecarEditor.onTitleInput(e)
+      livePageTitle.value = { id: pageId.value, title: (e.target as HTMLInputElement).value }
+      return
+    }
     const val = (e.target as HTMLInputElement).value
     localTitle.value = val
     livePageTitle.value = { id: pageId.value, title: val }
@@ -86,9 +113,17 @@
   }
 
   function onTitleFocus() {
+    if (sidecarEditor) {
+      sidecarEditor.onTitleFocus()
+      return
+    }
     publishField(pageId.value, 'title')
   }
   function onTitleBlur() {
+    if (sidecarEditor) {
+      sidecarEditor.onTitleBlur()
+      return
+    }
     publishField(pageId.value, undefined)
   }
   function onDescFocus() {
@@ -107,6 +142,10 @@
   }
 
   function onContentUpdate(val: string) {
+    if (sidecarEditor) {
+      sidecarEditor.onContentUpdate(val)
+      return
+    }
     localContent.value = val
     if (_contentLogTimer) clearTimeout(_contentLogTimer)
     _contentLogTimer = setTimeout(() => {
@@ -114,7 +153,21 @@
     }, 5000)
   }
 
-  // ── Navigation ────────────────────────────────────────────────────
+  function onContentFocus() {
+    sidecarEditor?.onContentFocus()
+  }
+
+  function onContentBlur() {
+    sidecarEditor?.onContentBlur()
+  }
+
+  const displayTitle = computed(() =>
+    trellisSidecar.enabled && sidecarEditor ? sidecarEditor.localTitle.value : localTitle.value,
+  )
+
+  const displayContent = computed(() =>
+    trellisSidecar.enabled && sidecarEditor ? sidecarEditor.localContent.value : localContent.value,
+  )
   const { wp } = useWorkspacePath()
   const currentIndex = computed(() => pages.value.findIndex((p) => p.id === pageId.value))
   const canPrev = computed(() => currentIndex.value > 0)
@@ -136,6 +189,13 @@
 
   async function handleMoveToFolder(folder: string | null) {
     if (!pageId.value) return
+    if (trellisSidecar.enabled) {
+      folderPickerOpen.value = false
+      ;(nuxtApp as { $toast?: { info: (m: string) => void } }).$toast?.info(
+        'Folders are kernel-only in sidecar mode until browse cutover (Phase 2).',
+      )
+      return
+    }
     await moveToFolder(pageId.value, folder)
     folderPickerOpen.value = false
     if (folder) {
@@ -148,6 +208,13 @@
   async function handleCreateFolder() {
     const name = newFolderName.value.trim()
     if (!name || creatingFolder.value) return
+    if (trellisSidecar.enabled) {
+      folderPickerOpen.value = false
+      ;(nuxtApp as { $toast?: { info: (m: string) => void } }).$toast?.info(
+        'Folders are kernel-only in sidecar mode until browse cutover (Phase 2).',
+      )
+      return
+    }
     creatingFolder.value = true
     try {
       await moveToFolder(pageId.value, name)
@@ -162,6 +229,15 @@
   const deleteConfirm = ref(false)
   async function handleDelete() {
     if (!pageId.value) return
+    if (trellisSidecar.enabled && sidecarEditor) {
+      try {
+        await sidecarEditor.removePage()
+        navigateTo('/pages')
+      } catch {
+        ;(nuxtApp as { $toast?: { error: (m: string) => void } }).$toast?.error('Failed to delete page')
+      }
+      return
+    }
     await deletePage(pageId.value)
     navigateTo('/pages')
   }
@@ -285,10 +361,11 @@
     _seededPageId.value = page.id
   }
 
-  // Seed when currentPage first becomes available for this pageId
+  // Seed when currentPage first becomes available for this pageId (kernel path only)
   watch(
     currentPage,
     (page) => {
+      if (trellisSidecar.enabled) return
       if (!page || page.id !== pageId.value) return
       if (_seededPageId.value === page.id) return // already seeded — skip post-save store updates
       _seedFromPage(page)
@@ -296,8 +373,9 @@
     { immediate: true },
   )
 
-  // Re-seed when navigating to a different page
+  // Re-seed when navigating to a different page (kernel path only)
   watch(pageId, () => {
+    if (trellisSidecar.enabled) return
     _seededPageId.value = null
     const page = currentPage.value
     if (page && page.id === pageId.value) _seedFromPage(page)
@@ -360,10 +438,14 @@
   )
 
   // ── Auto-save ─────────────────────────────────────────────────────
-  const { status: saveStatus } = useAutoSave(editableItem, {
+  const { status: kernelSaveStatus } = useAutoSave(editableItem, {
     enabled: _autoSaveEnabled,
     ignoreKeys: ['references', 'updatedAt', 'createdAt'],
   })
+
+  const saveStatus = computed(() =>
+    trellisSidecar.enabled && sidecarEditor ? sidecarEditor.saveStatus.value : kernelSaveStatus.value,
+  )
 
   const {
     addEntityRef,
@@ -403,7 +485,7 @@
 </script>
 
 <template>
-  <div>
+  <div :key="pageId">
     <UiAlertDialog :open="deleteConfirm" @update:open="(v) => (deleteConfirm = v)">
       <UiAlertDialogContent>
         <UiAlertDialogHeader>
@@ -423,8 +505,13 @@
       </UiAlertDialogContent>
     </UiAlertDialog>
 
-    <div v-if="!currentPage" class="flex flex-col items-center justify-center h-full gap-4 text-muted-foreground">
+    <div v-if="!currentPage && pageLoading" class="flex flex-col items-center justify-center h-full gap-4 text-muted-foreground">
       <Icon name="lucide:loader-2" class="h-8 w-8 animate-spin opacity-30" />
+    </div>
+
+    <div v-else-if="!currentPage" class="flex flex-col items-center justify-center h-full gap-4 text-muted-foreground">
+      <Icon name="lucide:file-x" class="h-8 w-8 opacity-30" />
+      <p class="text-sm">Page not found</p>
     </div>
 
     <div v-else class="absolute inset-0 flex flex-col overflow-hidden">
@@ -521,7 +608,8 @@
             <!-- Title input -->
             <div class="relative flex-1 min-w-0">
               <input
-                :value="localTitle"
+                data-testid="page-title"
+                :value="displayTitle"
                 type="text"
                 placeholder="New page"
                 class="w-full text-2xl font-semibold bg-transparent border border-transparent outline-none placeholder:text-muted-foreground/50 focus:ring-0 hover:border-border hover:bg-muted/20 focus:border-border focus:bg-muted/20 rounded-md px-2 py-0 transition-all"
@@ -623,8 +711,8 @@
               </span>
             </div>
 
-            <!-- Folder pill -->
-            <UiDropdownMenu v-model:open="folderPickerOpen">
+            <!-- Folder pill (kernel metadata — hidden in sidecar mode) -->
+            <UiDropdownMenu v-if="!trellisSidecar.enabled" v-model:open="folderPickerOpen">
               <UiDropdownMenuTrigger as-child>
                 <button
                   type="button"
@@ -729,24 +817,27 @@
           </div>
 
           <!-- Main editor -->
-          <UiRichTextEditor
-            ref="editorRef"
-            :model-value="localContent"
-            placeholder="Write your note..."
-            class="flex-1 min-h-0 border-none! rounded-none!"
-            fill-height
-            draghandle
-            mentions
-            tasklist
-            images
-            embeds
-            tables
-            mathematics
-            templates
-            inline-comments
-            :entity-id="currentPage.id"
-            @update:model-value="onContentUpdate"
-            @add-inline-comment="handleAddInlineComment" />
+          <div class="flex-1 min-h-0 flex flex-col" @focusin="onContentFocus" @focusout="onContentBlur">
+            <UiRichTextEditor
+              ref="editorRef"
+              data-testid="page-content-editor"
+              :model-value="displayContent"
+              placeholder="Write your note..."
+              class="flex-1 min-h-0 border-none! rounded-none!"
+              fill-height
+              draghandle
+              mentions
+              tasklist
+              images
+              embeds
+              tables
+              mathematics
+              templates
+              inline-comments
+              :entity-id="currentPage.id"
+              @update:model-value="onContentUpdate"
+              @add-inline-comment="handleAddInlineComment" />
+          </div>
         </div>
 
         <!-- Right sidebar: collapsed strip -->

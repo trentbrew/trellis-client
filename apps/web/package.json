@@ -26,6 +26,8 @@
     "test:e2e": "playwright test",
     "test:smoke:agent": "tsx scripts/smoke-test-agent.ts",
     "test:smoke:agent:pure": "tsx scripts/smoke-test-agent.ts --skip-network",
+    "smoke:ws": "node scripts/smoke-ws.mjs",
+    "smoke:sidecar": "node scripts/smoke-sidecar.mjs",
     "check": "pnpm lint && vitest run && tsx scripts/validate-routes.ts",
     "check:full": "pnpm lint && vitest run && tsx scripts/validate-routes.ts && nuxt build",
     "ui:add": "npx -y ui-thing@latest add",
@@ -184,6 +186,7 @@
     "tsx": "^4.19.2",
     "tw-animate-css": "^1.3.7",
     "typescript": "^5.9.2",
+    "trellis": "^3.2.0",
     "vitest": "^3.2.4"
   },
   "engines": {

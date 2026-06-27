@@ -1,0 +1,5 @@
+{
+  "mode": "local",
+  "dbPath": ".trellis-db",
+  "port": 8230
+}

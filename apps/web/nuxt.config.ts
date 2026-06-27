@@ -53,9 +53,17 @@ export default defineNuxtConfig({
   ssr: false,
 
   runtimeConfig: {
+    trellisSidecar: process.env.TRELLIS_SIDECAR === '1',
+    trellisUrl: process.env.TRELLIS_URL ?? 'http://localhost:8230',
+    trellisApiKey: process.env.TRELLIS_API_KEY ?? '',
+    mapboxAccessToken: process.env.MAPBOX_ACCESS_TOKEN ?? '',
     public: {
       dataMode: 'local' as const,
       trellisPort: DEV_PORT,
+      trellisSidecar: process.env.TRELLIS_SIDECAR === '1',
+      trellisWsUrl: process.env.TRELLIS_URL ?? 'http://localhost:8230',
+      trellisApiKey: process.env.TRELLIS_API_KEY ?? '',
+      mapboxToken: process.env.NUXT_PUBLIC_MAPBOX_TOKEN ?? '',
     },
   },
 

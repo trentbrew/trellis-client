@@ -51,6 +51,10 @@ cablecast-proxy/
 .windsurf/
 
 
+# Sidecar local state (Option B)
+.trellis-db.json
+.trellis-db/
+
 # Authentication tokens
 .npmrc
 .vercel
