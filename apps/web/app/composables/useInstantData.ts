@@ -8,6 +8,7 @@ import type {
   DatabaseSchema,
 } from '~/types/database'
 import { pickOrgAndApp } from '~/lib/pickOrgAndApp'
+import { SKIP_ONBOARDING } from '~/lib/onboarding'
 import { createCollectionGraph, serializeTrellisDocument } from '~/lib/trellis'
 import { createDefaultProjections } from '~/lib/projections'
 
@@ -491,7 +492,7 @@ export function useInstantData() {
                   settings: { $: { where: { settingKey: `user:${authUser.id}:onboardingComplete` } } },
                 })
                 const onboardingDone = (settingResp.data as Record<string, any>)?.settings?.[0]?.value
-                if (!onboardingDone) {
+                if (!onboardingDone && !SKIP_ONBOARDING) {
                   console.info('[useInstantData] Skipping auto-create org: onboarding not complete')
                   return
                 }

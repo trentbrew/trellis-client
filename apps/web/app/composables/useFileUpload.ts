@@ -1,11 +1,5 @@
 /**
- * useFileUpload — generic file upload composable.
- *
- * - **Local mode**: POSTs to `/api/storage/local-upload` → writes to ~/.nodebook/files/
- *   Returns a stable `/api/storage/local-file?path=...` URL that survives page refreshes.
- *
- * - **Cloud mode**: POSTs to `/api/storage/upload` → InstantDB Storage.
- *   Returns the InstantDB CDN URL.
+ * useFileUpload — generic file upload composable (local filesystem).
  */
 
 export interface UploadResult {
@@ -17,7 +11,6 @@ export interface UploadResult {
 }
 
 export function useFileUpload(entityId?: string) {
-  const adapter = useDataAdapter()
   const isUploading = ref(false)
   const uploadError = ref<string | null>(null)
 
@@ -38,17 +31,7 @@ export function useFileUpload(entityId?: string) {
       formData.append('file', file, file.name)
       formData.append('path', storagePath)
 
-      if (adapter.mode === 'local') {
-        // Store on local filesystem — returns a /api/storage/local-file URL
-        const result = await $fetch<UploadResult>('/api/storage/local-upload', {
-          method: 'POST',
-          body: formData,
-        })
-        return result
-      }
-
-      // Cloud mode → InstantDB Storage
-      const result = await $fetch<UploadResult>('/api/storage/upload', {
+      const result = await $fetch<UploadResult>('/api/storage/local-upload', {
         method: 'POST',
         body: formData,
       })

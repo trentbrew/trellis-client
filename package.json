@@ -58,7 +58,6 @@
     "better-sqlite3": "12.6.2",
     "eslint": "^9.33.0",
     "husky": "^9.1.7",
-    "instant-cli": "^0.22.138",
     "lint-staged": "^16.2.7",
     "prettier": "^3.6.2",
     "turbo": "^2.8.1",

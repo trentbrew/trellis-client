@@ -53,3 +53,4 @@ cablecast-proxy/
 
 # Authentication tokens
 .npmrc
+.vercel

@@ -1,5 +1,4 @@
-<script setup lang="ts">
-</script>
+<script setup lang="ts"></script>
 
 <template>
   <div class="bg-background text-foreground min-h-dvh flex flex-col">
@@ -11,14 +10,12 @@
         </NuxtLink>
 
         <nav class="flex items-center gap-1">
-          <UiButton variant="ghost" size="sm" as-child>
-            <a href="https://github.com/trentbrew" target="_blank" rel="noopener">
-              <Icon name="lucide:github" class="h-4 w-4 sm:mr-2" />
-              <span class="hidden sm:inline">GitHub</span>
-            </a>
+          <UiButton variant="ghost" size="sm" href="https://github.com/trentbrew" target="_blank" rel="noopener">
+            <Icon name="lucide:github" class="h-4 w-4" />
+            <span class="hidden sm:inline">GitHub</span>
           </UiButton>
           <UiButton variant="ghost" size="sm" to="/welcome">
-            <Icon name="lucide:rocket" class="h-4 w-4 sm:mr-2" />
+            <Icon name="lucide:rocket" class="h-4 w-4" />
             <span class="hidden sm:inline">Try it</span>
           </UiButton>
         </nav>
@@ -46,36 +43,31 @@
                 href="https://github.com/trentbrew"
                 target="_blank"
                 rel="noopener"
-                class="text-muted-foreground hover:text-foreground transition-colors"
-              >
+                class="text-muted-foreground hover:text-foreground transition-colors">
                 GitHub
               </a>
-              <NuxtLink
-                to="/welcome"
-                class="text-muted-foreground hover:text-foreground transition-colors"
-              >
+              <NuxtLink to="/welcome" class="text-muted-foreground hover:text-foreground transition-colors">
                 Documentation
               </NuxtLink>
               <a
                 href="https://github.com/trentbrew"
                 target="_blank"
                 rel="noopener"
-                class="text-muted-foreground hover:text-foreground transition-colors"
-              >
+                class="text-muted-foreground hover:text-foreground transition-colors">
                 Community
               </a>
             </div>
           </div>
 
-          <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 pt-6 border-t border-border/60">
+          <div
+            class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 pt-6 border-t border-border/60">
             <div class="text-xs text-muted-foreground">
               © {{ new Date().getFullYear() }} Trellis. Built with ❤️ by
               <a
                 href="https://github.com/trentbrew"
                 target="_blank"
                 rel="noopener"
-                class="text-primary hover:underline"
-              >
+                class="text-primary hover:underline">
                 @trentbrew
               </a>
             </div>

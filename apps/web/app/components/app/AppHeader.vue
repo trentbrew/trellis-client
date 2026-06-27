@@ -126,7 +126,6 @@
 
   const handleLogout = async () => {
     await signOut()
-    await navigateTo('/auth/login')
   }
 
   // Invite dialog

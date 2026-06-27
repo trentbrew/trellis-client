@@ -1,7 +1,7 @@
 import { describe, it, expect, beforeEach } from 'vitest'
 import { mount } from '@vue/test-utils'
-import SchemaEditor from '../../app/components/data/DataTable/SchemaEditor.vue'
-import type { DatabaseSchema } from '../../app/types/database'
+import SchemaEditor from '~/components/data/DataTable/SchemaEditor.vue'
+import type { DatabaseSchema } from '~/types/database'
 
 describe('SchemaEditor', () => {
   let wrapper: any

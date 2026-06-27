@@ -9,15 +9,9 @@ export interface UploadResult {
 }
 
 /**
- * Composable for uploading images to storage.
- *
- * - **Cloud mode**: Uploads via `/api/storage/upload` server proxy → InstantDB Storage
- * - **Local mode**: Converts to base64 data URL (no remote storage)
- *
- * Images are automatically compressed before upload using browser-image-compression.
+ * Composable for uploading images to storage (local filesystem or base64 fallback).
  */
 export function useImageUpload(entityId?: string) {
-  const adapter = useDataAdapter()
   const isUploading = ref(false)
   const uploadError = ref<string | null>(null)
 
@@ -63,25 +57,7 @@ export function useImageUpload(entityId?: string) {
 
     try {
       const compressed = await compressImage(file)
-
-      if (adapter.mode === 'local') {
-        // Local mode: convert to base64 data URL
-        return await toBase64(compressed)
-      }
-
-      // Cloud mode: upload via server proxy
-      const storagePath = buildStoragePath(compressed.name || file.name)
-
-      const formData = new FormData()
-      formData.append('file', compressed, compressed.name || file.name)
-      formData.append('path', storagePath)
-
-      const result = await $fetch<UploadResult>('/api/storage/upload', {
-        method: 'POST',
-        body: formData,
-      })
-
-      return result
+      return await toBase64(compressed)
     } catch (err: any) {
       const message = err?.message || err?.data?.message || 'Upload failed'
       uploadError.value = message

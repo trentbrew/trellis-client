@@ -445,24 +445,9 @@
       return
     }
 
-    if (sectionKey === 'workflows') {
-      await handleCreateWorkflow()
-      return
-    }
-
     const section = routes.currentSidebarSection.value
     if (section?.path === '/ontologies' || section?.path === '/database') {
       ontologyCreateOpen.value = true
-    }
-  }
-
-  const handleCreateWorkflow = async () => {
-    try {
-      const { createWorkflow } = useInstantData()
-      const id = await createWorkflow({ name: 'Untitled Workflow', icon: 'lucide:workflow', active: true })
-      await navigateTo(wp(`/workflows/${id}`))
-    } catch (e) {
-      console.error('Failed to create workflow:', e)
     }
   }
 

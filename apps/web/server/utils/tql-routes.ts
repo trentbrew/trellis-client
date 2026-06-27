@@ -653,60 +653,6 @@ const pagesRoute: RouteDefinition = {
 }
 
 // ============================================================================
-// Workflows Route — /workflows
-// ============================================================================
-
-const workflowsRoute: RouteDefinition = {
-  '@id': 'route:workflows',
-  '@type': 'trellis:Route',
-  routePath: '/workflows',
-  label: 'Workflows',
-  icon: 'lucide:git-branch',
-  order: 40,
-  inRail: true,
-  railPosition: 'primary',
-  inCommandPalette: true,
-  requiresAuth: true,
-  meta: {
-    title: 'Workflows',
-    description: 'Build and manage agentic automation workflows',
-  },
-  sidebarSections: [
-    {
-      label: 'WORKFLOWS',
-      key: 'workflows',
-      icon: 'lucide:git-branch',
-      collapsible: true,
-      editable: true,
-      order: 10,
-    },
-  ],
-}
-
-// ============================================================================
-// Members Route — /settings/members (child of settings, not a standalone rail item)
-// ============================================================================
-
-const membersRoute: RouteDefinition = {
-  '@id': 'route:members',
-  '@type': 'trellis:Route',
-  routePath: '/settings/members',
-  label: 'Members',
-  icon: 'lucide:users-round',
-  order: 80,
-  inRail: false,
-  railPosition: 'secondary',
-  inCommandPalette: true,
-  requiresAuth: true,
-  permissions: { minRole: 'admin', permission: 'admin' },
-  meta: {
-    title: 'Members',
-    description: 'Manage team members, invites, and permissions',
-    sidebarSectionPath: '/settings',
-  },
-}
-
-// ============================================================================
 // Settings Route — /settings
 // ============================================================================
 
@@ -740,18 +686,6 @@ const settingsRoute: RouteDefinition = {
           permissions: { minRole: 'admin', permission: 'admin' },
         },
         {
-          routePath: '/settings/members',
-          label: 'Members',
-          icon: 'lucide:users-round',
-          permissions: { minRole: 'admin', permission: 'admin' },
-        },
-        {
-          routePath: '/settings/roles',
-          label: 'Roles',
-          icon: 'lucide:shield',
-          permissions: { minRole: 'admin', permission: 'admin' },
-        },
-        {
           routePath: '/settings/branding',
           label: 'Branding',
           icon: 'lucide:sparkles',
@@ -768,29 +702,7 @@ const settingsRoute: RouteDefinition = {
       items: [
         { routePath: '/settings/appearance', label: 'Appearance', icon: 'lucide:paintbrush' },
         { routePath: '/settings/theme', label: 'Theme', icon: 'lucide:palette' },
-        { routePath: '/settings/notifications', label: 'Notifications', icon: 'lucide:bell' },
         { routePath: '/settings/shortcuts', label: 'Keyboard Shortcuts', icon: 'lucide:keyboard' },
-      ],
-    },
-    {
-      label: 'EXTENSIONS',
-      key: 'settings-extensions',
-      icon: 'lucide:plug',
-      collapsible: true,
-      order: 30,
-      items: [
-        {
-          routePath: '/settings/marketplace',
-          label: 'Marketplace',
-          icon: 'lucide:store',
-          permissions: { minRole: 'admin', permission: 'admin' },
-        },
-        {
-          routePath: '/settings/integrations',
-          label: 'Integrations',
-          icon: 'lucide:plug',
-          permissions: { minRole: 'admin', permission: 'admin' },
-        },
       ],
     },
   ],
@@ -803,24 +715,6 @@ const settingsRoute: RouteDefinition = {
       icon: 'lucide:folder',
       permissions: { minRole: 'admin', permission: 'admin' },
       meta: { title: 'Project Settings' },
-    },
-    {
-      '@id': 'route:settings/members',
-      '@type': 'trellis:Route',
-      routePath: '/settings/members',
-      label: 'Members',
-      icon: 'lucide:users-round',
-      permissions: { minRole: 'admin', permission: 'admin' },
-      meta: { title: 'Members', sidebarSectionPath: '/settings' },
-    },
-    {
-      '@id': 'route:settings/roles',
-      '@type': 'trellis:Route',
-      routePath: '/settings/roles',
-      label: 'Roles',
-      icon: 'lucide:shield',
-      permissions: { minRole: 'admin', permission: 'admin' },
-      meta: { title: 'Roles' },
     },
     {
       '@id': 'route:settings/branding',
@@ -848,38 +742,12 @@ const settingsRoute: RouteDefinition = {
       meta: { title: 'Theme' },
     },
     {
-      '@id': 'route:settings/notifications',
-      '@type': 'trellis:Route',
-      routePath: '/settings/notifications',
-      label: 'Notifications',
-      icon: 'lucide:bell',
-      meta: { title: 'Notifications' },
-    },
-    {
       '@id': 'route:settings/shortcuts',
       '@type': 'trellis:Route',
       routePath: '/settings/shortcuts',
       label: 'Keyboard Shortcuts',
       icon: 'lucide:keyboard',
       meta: { title: 'Keyboard Shortcuts' },
-    },
-    {
-      '@id': 'route:settings/marketplace',
-      '@type': 'trellis:Route',
-      routePath: '/settings/marketplace',
-      label: 'Marketplace',
-      icon: 'lucide:store',
-      permissions: { minRole: 'admin', permission: 'admin' },
-      meta: { title: 'Marketplace' },
-    },
-    {
-      '@id': 'route:settings/integrations',
-      '@type': 'trellis:Route',
-      routePath: '/settings/integrations',
-      label: 'Integrations',
-      icon: 'lucide:plug',
-      permissions: { minRole: 'admin', permission: 'admin' },
-      meta: { title: 'Integrations' },
     },
   ],
 }
@@ -901,8 +769,6 @@ export function getRouteDefinitions(): Record<string, RouteDefinition> {
     'route:ontologies': ontologiesRoute,
     'route:query': queryRoute,
     'route:graph': graphRoute,
-    'route:workflows': workflowsRoute,
-    'route:members': membersRoute,
     'route:settings': settingsRoute,
   }
 }
@@ -919,7 +785,5 @@ export {
   ontologiesRoute,
   queryRoute,
   graphRoute,
-  workflowsRoute,
-  membersRoute,
   settingsRoute,
 }

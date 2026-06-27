@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 
-import { pickOrgAndApp } from '../app/lib/pickOrgAndApp'
+import { pickOrgAndApp } from '~/lib/pickOrgAndApp'
 
 describe('pickOrgAndApp', () => {
   it('returns null org/app when orgs is empty', () => {
