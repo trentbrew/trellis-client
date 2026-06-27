@@ -1,8 +1,8 @@
 /**
- * TQL entity namespace constants.
+ * Entity namespace constants (legacy module path).
  *
- * All entities in the TQL graph share the `entity` storage namespace.
- * This module centralizes that string so it only exists in one place.
+ * @deprecated Import from `~/lib/entity-namespace` instead. Kept for backward
+ * compatibility during the TQL→Trellis rename (ADR-001, TRL-2).
  */
 
 export const ENTITY_NAMESPACE = 'entity'

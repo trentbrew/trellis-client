@@ -132,8 +132,8 @@ export function getCallerUserId(event: H3Event): string | null {
  */
 export async function getConnectionUserId(connectionId: string): Promise<string | null> {
   // Lazy import avoids loading `defineNitroPlugin` in pure-policy tests.
-  const { useTqlKernel } = await import('../plugins/tql')
-  const kernel = useTqlKernel()
+  const { useTrellisKernel } = await import('../plugins/trellis-kernel')
+  const kernel = useTrellisKernel()
   const entityId = connectionId.startsWith('entity:') ? connectionId : `entity:${connectionId}`
   const facts = kernel.getStore().getFactsByEntity(entityId) as Array<{
     a: string

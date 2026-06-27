@@ -4,8 +4,8 @@ import type {
   ChatCompletionMessageParam,
   ChatCompletionTool,
 } from 'openai/resources/chat/completions'
-import { useTqlKernel, pushMutationLog } from '../../plugins/tql'
-import { emitMutation } from '../../utils/tql-events'
+import { useTrellisKernel, pushMutationLog } from '../../plugins/trellis-kernel'
+import { emitMutation } from '../../utils/trellis-events'
 import { resolveRoutingDecision, type RoutingDecision } from '../../utils/agent-routing'
 
 const GRAPH_SYSTEM_PROMPT_TEMPLATE = `You are a graph-aware AI agent embedded in the Trellis personal knowledge graph.
@@ -159,7 +159,7 @@ const tools: ChatCompletionTool[] = [
 ]
 
 async function executeToolCall(toolName: string, args: any): Promise<any> {
-  const kernel = useTqlKernel()
+  const kernel = useTrellisKernel()
 
   switch (toolName) {
     case 'queryGraph': {

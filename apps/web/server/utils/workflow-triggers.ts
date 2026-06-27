@@ -18,8 +18,8 @@
  */
 
 import { randomUUID } from 'node:crypto'
-import { useTqlKernel, pushMutationLog } from '../plugins/tql'
-import { emitMutation } from './tql-events'
+import { useTrellisKernel, pushMutationLog } from '../plugins/trellis-kernel'
+import { emitMutation } from './trellis-events'
 import type { WorkflowGraph } from './workflow-executor'
 
 // ─── Types ───────────────────────────────────────────────────────────────────
@@ -191,7 +191,7 @@ function notifyListeners(kind: TriggerEventKind, id: string, trigger: TriggerEnt
 // ─── Kernel helpers ──────────────────────────────────────────────────────────
 
 function loadEntityFacts(entityId: string): Record<string, unknown> | null {
-  const kernel = useTqlKernel()
+  const kernel = useTrellisKernel()
   const store = kernel.getStore()
   const data: Record<string, unknown> = {}
   for (const fact of store.getAllFacts()) {
@@ -215,7 +215,7 @@ export async function listTriggers(filter?: {
   kind?: TriggerKind
   activeOnly?: boolean
 }): Promise<TriggerEntity[]> {
-  const kernel = useTqlKernel()
+  const kernel = useTrellisKernel()
   const store = kernel.getStore()
 
   const triggersById = new Map<string, Record<string, unknown>>()
@@ -293,7 +293,7 @@ export async function createTrigger(
     fireCount: 0,
   }
 
-  const kernel = useTqlKernel()
+  const kernel = useTrellisKernel()
   const stored = serializeTrigger(trigger)
   const agentId = opts.agentId || 'workflow-trigger'
   await kernel.createNode(id, stored, 'entity', { agentId })
@@ -320,7 +320,7 @@ export async function updateTrigger(
     updatedAt: Date.now(),
   }
 
-  const kernel = useTqlKernel()
+  const kernel = useTrellisKernel()
   const stored = serializeTrigger(next)
   const agentId = opts.agentId || 'workflow-trigger'
   await kernel.updateNode(id, stored, 'entity', { agentId })
@@ -335,7 +335,7 @@ export async function deleteTrigger(id: string, opts: { agentId?: string } = {})
   const existing = await getTrigger(id)
   if (!existing) return
 
-  const kernel = useTqlKernel()
+  const kernel = useTrellisKernel()
   const agentId = opts.agentId || 'workflow-trigger'
   await kernel.deleteNode(id, { agentId })
   pushMutationLog({ action: 'deleteNode', entityId: id })

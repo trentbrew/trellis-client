@@ -1,10 +1,10 @@
 /**
- * Entity Registry — Synchronous Fallback
+ * Entity Registry — deprecated synchronous fallback
  *
- * Static baseline mapping every EntityType → its full UI config:
- * class, label, icon, projections, dialog shell, panel components, actions.
+ * @deprecated Prefer `useOntologyRegistry()` + `~/lib/trellis-projection-registry`
+ * for runtime config. Retained for SSR and synchronous module imports (TRL-7).
  *
- * PRIMARY SOURCE: Server ontologies in `tql-ontologies.ts` served via
+ * PRIMARY SOURCE: Server ontologies in `trellis-ontologies.ts` served via
  * `GET /api/graph/config`. Use `useOntologyRegistry().getEntityConfig()`
  * for reactive, server-sourced lookups in Vue components.
  *
@@ -482,6 +482,26 @@ const F: Record<PropertyFieldId, PropertyFieldConfig> = {
     required: false,
     computed: false,
   },
+  latitude: {
+    id: 'latitude',
+    group: 'type-specific' as any,
+    label: 'Latitude',
+    icon: 'lucide:compass',
+    display: 'inline-input',
+    editable: true,
+    required: false,
+    computed: false,
+  },
+  longitude: {
+    id: 'longitude',
+    group: 'type-specific' as any,
+    label: 'Longitude',
+    icon: 'lucide:compass',
+    display: 'inline-input',
+    editable: true,
+    required: false,
+    computed: false,
+  },
   eventSubtype: {
     id: 'eventSubtype',
     group: 'type-specific' as any,
@@ -558,7 +578,7 @@ const ENTITY_TYPES: Record<EntityType, EntityTypeConfig> = {
       content: 'EventContent',
       footerActions: ['duplicate', 'delete'],
     },
-    propertyFields: fields('type', 'eventSubtype', 'location', 'startDate', 'endDate', 'allDay', 'timeRange', 'category', 'owner', 'involved', 'tags'),
+    propertyFields: fields('type', 'eventSubtype', 'location', 'latitude', 'longitude', 'startDate', 'endDate', 'allDay', 'timeRange', 'category', 'owner', 'involved', 'tags'),
     defaultSortField: 'startDate',
     searchFields: ['title', 'description', 'location'],
   },
@@ -579,7 +599,7 @@ const ENTITY_TYPES: Record<EntityType, EntityTypeConfig> = {
       content: 'TripContent',
       footerActions: ['duplicate', 'archive', 'delete'],
     },
-    propertyFields: fields('type', 'tripStatus', 'origin', 'destination', 'transportation', 'tripBudget', 'confirmationNumber', 'startDate', 'endDate', 'allDay', 'category', 'owner', 'involved', 'tags'),
+    propertyFields: fields('type', 'tripStatus', 'origin', 'destination', 'latitude', 'longitude', 'transportation', 'tripBudget', 'confirmationNumber', 'startDate', 'endDate', 'allDay', 'category', 'owner', 'involved', 'tags'),
     defaultSortField: 'startDate',
     searchFields: ['title', 'destination', 'origin'],
   },
@@ -621,7 +641,7 @@ const ENTITY_TYPES: Record<EntityType, EntityTypeConfig> = {
       content: 'AppointmentContent',
       footerActions: ['confirm', 'reschedule', 'cancel', 'delete'],
     },
-    propertyFields: fields('type', 'startDate', 'endDate', 'timeRange', 'category', 'owner', 'tags'),
+    propertyFields: fields('type', 'location', 'latitude', 'longitude', 'startDate', 'endDate', 'timeRange', 'category', 'owner', 'tags'),
     defaultSortField: 'startDate',
     searchFields: ['title', 'provider', 'location', 'specialty'],
   },

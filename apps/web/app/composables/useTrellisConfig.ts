@@ -13,14 +13,15 @@
  *
  * Also provides helper functions equivalent to what appConfig.ts exported:
  * - buildPageConfigFromRoute()
-
-import { useSSESubscribe } from './useTrellisSSE'
  * - buildRouteConfigTree()
  * - etc.
  */
 
+import { useSSESubscribe } from './useTrellisSSE'
+
 import type { RouteConfig } from '~/config/routes'
 import type { DatabaseField, DatabaseSchema } from '~/types/database'
+import { suggestCollectionViews } from '~/lib/trellis-projection-registry'
 
 // ── Types ──────────────────────────────────────────────────────────────
 
@@ -349,10 +350,15 @@ export function useTrellisConfig() {
     const ontology = entityType ? getOntologyByType(entityType) : null
     const schema = ontology ? ontologyToSchema(ontology) : null
 
-    // Get projection types: prefer route-level, fall back to ontology-level
+    // Projection types: route metadata → ontology → projection registry field signals
     let projectionTypes = route.projectionTypes ?? []
     if (!projectionTypes.length && ontology?.projections) {
       projectionTypes = ontology.projections
+    }
+    if (!projectionTypes.length && schema) {
+      projectionTypes = suggestCollectionViews(schema)
+        .filter((v) => v.supported)
+        .map((v) => v.mode)
     }
 
     return {
@@ -382,7 +388,11 @@ export function useTrellisConfig() {
     if (!ontology) return null
 
     const schema = ontologyToSchema(ontology)
-    const projectionTypes = ontology.projections ?? ['table', 'list', 'grid', 'kanban', 'calendar']
+    const projectionTypes =
+      ontology.projections ??
+      suggestCollectionViews(schema)
+        .filter((v) => v.supported)
+        .map((v) => v.mode)
 
     return {
       routeId: `route:${slug}`,
