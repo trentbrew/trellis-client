@@ -47,6 +47,8 @@ export function usePagePresence() {
   const { user } = useInstantAuth()
   const currentOrg = useState<any>('currentOrg')
   const isCloudMode = adapter.mode === 'cloud'
+  const { enabled: sidecarEnabled } = useTrellisSidecar()
+  const trellisViewers = useState<Record<string, PageViewer[]>>('trellis:pageViewers', () => ({}))
 
   // Cloud mode: flat map of peerId → PageViewer (includes 'self' key)
   const cloudPeers = useState<Record<string, PageViewer>>('pagePresence:cloudPeers', () => ({}))
@@ -180,6 +182,9 @@ export function usePagePresence() {
   // ── Public API ────────────────────────────────────────────────────────────
 
   function getViewers(pageId: string): PageViewer[] {
+    if (sidecarEnabled) {
+      return trellisViewers.value[pageId] ?? []
+    }
     if (isCloudMode) {
       return Object.values(cloudPeers.value).filter((v) => v.pageId === pageId)
     }
@@ -188,6 +193,7 @@ export function usePagePresence() {
 
   function register(pageId: string) {
     if (!import.meta.client || !pageId) return
+    if (sidecarEnabled) return
     if (isCloudMode) {
       _publishCloud(pageId)
     } else {
@@ -212,6 +218,7 @@ export function usePagePresence() {
 
   function deregister(pageId: string) {
     if (!import.meta.client || !pageId) return
+    if (sidecarEnabled) return
     if (isCloudMode) {
       _publishCloud('')
     } else {
@@ -225,6 +232,7 @@ export function usePagePresence() {
 
   function publishField(pageId: string, field?: string) {
     if (!import.meta.client || !pageId) return
+    if (sidecarEnabled) return
     if (isCloudMode) {
       _publishCloud(pageId, field)
     }

@@ -45,3 +45,23 @@ targets:
 clear:
     -lsof -ti:{{port}} | xargs kill -9 2>/dev/null || true
     rm -rf .nuxt
+
+# ── Option B: published trellis sidecar (:8230) ───────────────────────
+
+sidecar-port := "8230"
+
+# One-time: writes .trellis-db.json + .trellis-db/ (requires Bun)
+sidecar-init:
+    TRELLIS_BACKEND=sqljs bun ./node_modules/trellis/bin/trellis.mjs db init --port {{sidecar-port}}
+
+# Foreground sidecar (sql.js backend — Bun required)
+sidecar-serve:
+    TRELLIS_BACKEND=sqljs bun ./node_modules/trellis/bin/trellis.mjs db serve -p {{sidecar-port}}
+
+# WS smoke (sidecar must be running)
+smoke-ws:
+    pnpm smoke:ws
+
+# HTTP proxy smoke (sidecar + TRELLIS_SIDECAR=1 Nuxt dev)
+smoke-sidecar:
+    pnpm smoke:sidecar
