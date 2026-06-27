@@ -59,24 +59,13 @@
 
   const handleLogout = async () => {
     await signOut()
-    await navigateTo('/auth/login')
   }
 </script>
 
 <template>
   <ClientOnly>
-    <!-- Sign in button for unauthenticated users -->
-    <UiButton
-      v-if="!isAuthenticated"
-      variant="ghost"
-      size="icon-sm"
-      class="text-muted-foreground hover:text-foreground"
-      @click="$router.push('/auth/login')">
-      <Icon name="lucide:log-in" class="h-5 w-5" />
-    </UiButton>
-
-    <!-- User avatar for authenticated users -->
-    <UiDropdownMenu v-else>
+    <!-- User avatar -->
+    <UiDropdownMenu>
       <UiDropdownMenuTrigger as-child>
         <button
           type="button"
@@ -131,25 +120,27 @@
           </UiDropdownMenuItem>
         </template>
 
-        <UiDropdownMenuSeparator />
-        <UiDropdownMenuLabel class="text-muted-foreground/75 text-xs flex items-center gap-1.5">
-          <Icon name="lucide:users" class="h-3 w-3" />
-          Switch Demo User
-        </UiDropdownMenuLabel>
-        <UiDropdownMenuItem
-          v-for="(demoUser, key) in demoUsers"
-          :key="key"
-          :disabled="currentUserRole === demoUser.role"
-          class="flex items-center gap-2"
-          @click="switchUser(key as string)">
-          <Icon :name="roleIcons[demoUser.role] || 'lucide:user'" class="h-4 w-4 shrink-0" />
-          <div class="flex-1 min-w-0">
-            <div class="text-sm truncate">{{ demoUser.name }}</div>
-            <div class="text-xs text-muted-foreground truncate">{{ demoUser.email }}</div>
-          </div>
-          <Icon v-if="currentUserRole === demoUser.role" name="lucide:check" class="h-4 w-4 text-primary shrink-0" />
-        </UiDropdownMenuItem>
-        <UiDropdownMenuSeparator />
+        <UiDropdownMenuSeparator v-if="import.meta.dev" />
+        <template v-if="import.meta.dev">
+          <UiDropdownMenuLabel class="text-muted-foreground/75 text-xs flex items-center gap-1.5">
+            <Icon name="lucide:users" class="h-3 w-3" />
+            Switch Demo User
+          </UiDropdownMenuLabel>
+          <UiDropdownMenuItem
+            v-for="(demoUser, key) in demoUsers"
+            :key="key"
+            :disabled="currentUserRole === demoUser.role"
+            class="flex items-center gap-2"
+            @click="switchUser(key as string)">
+            <Icon :name="roleIcons[demoUser.role] || 'lucide:user'" class="h-4 w-4 shrink-0" />
+            <div class="flex-1 min-w-0">
+              <div class="text-sm truncate">{{ demoUser.name }}</div>
+              <div class="text-xs text-muted-foreground truncate">{{ demoUser.email }}</div>
+            </div>
+            <Icon v-if="currentUserRole === demoUser.role" name="lucide:check" class="h-4 w-4 text-primary shrink-0" />
+          </UiDropdownMenuItem>
+        </template>
+        <UiDropdownMenuSeparator v-if="import.meta.dev" />
         <UiDropdownMenuItem @click="handleLogout">
           <Icon name="lucide:log-out" class="h-4 w-4" />
           Logout

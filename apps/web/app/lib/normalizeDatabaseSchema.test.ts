@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 
-import { createDefaultDatabaseSchema, normalizeDatabaseSchema } from '../app/lib/normalizeDatabaseSchema'
-import type { DatabaseView } from '../app/types/database'
+import { createDefaultDatabaseSchema, normalizeDatabaseSchema } from '~/lib/normalizeDatabaseSchema'
+import type { DatabaseView } from '~/types/database'
 
 describe('normalizeDatabaseSchema', () => {
   it('returns a valid default-like schema when given null', () => {

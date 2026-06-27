@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 
-import { migrateUserToV1 } from '../app/lib/instantDataMigrations'
+import { migrateUserToV1 } from '~/lib/instantDataMigrations'
 
 const createTxProxy = () => {
   return {

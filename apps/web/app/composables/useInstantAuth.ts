@@ -31,7 +31,8 @@ export function useInstantAuth() {
   }
 
   const signOut = async () => {
-    await db.auth.signOut()
+    // Local-only: no remote session to clear
+    await db.auth.signOut().catch(() => {})
   }
 
   return {

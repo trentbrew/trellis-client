@@ -42,7 +42,7 @@ export default defineNuxtConfig({
       path: '~/components',
       pathPrefix: false,
       extensions: ['vue'],
-      ignore: ['Ui/**'],
+      ignore: ['Ui/**', '**/*.test.vue', '**/*.spec.vue'],
     },
   ],
 
@@ -53,29 +53,8 @@ export default defineNuxtConfig({
   ssr: false,
 
   runtimeConfig: {
-    // Server-only (not exposed to client)
-    instantAppId: process.env.INSTANTDB_APP_ID || process.env.INSTANT_APP_ID || '',
-    instantAppSecret: process.env.INSTANTDB_APP_SECRET || process.env.INSTANT_SECRET || '',
-    googleClientSecret: process.env.GOOGLE_CLIENT_SECRET || '',
-    googleCalendarRedirectUri:
-      process.env.GOOGLE_CALENDAR_REDIRECT_URI ||
-      `http://localhost:${PREFERRED_PORT}/api/integrations/google-calendar/callback`,
-    googleCalendarWebhookSecret: process.env.GOOGLE_CALENDAR_WEBHOOK_SECRET || '',
-    gmailRedirectUri:
-      process.env.GMAIL_REDIRECT_URI || `http://localhost:${PREFERRED_PORT}/api/integrations/gmail/callback`,
-    gmailWebhookSecret: process.env.GMAIL_WEBHOOK_SECRET || '',
-    githubClientSecret: process.env.GITHUB_CLIENT_SECRET || '',
-    githubRedirectUri:
-      process.env.GITHUB_REDIRECT_URI || `http://localhost:${PREFERRED_PORT}/api/integrations/github/callback`,
-    githubWebhookSecret: process.env.GITHUB_WEBHOOK_SECRET || '',
-    resendApiKey: process.env.RESEND_API_KEY || '',
-    resendFrom: process.env.RESEND_FROM || 'Trellis <noreply@trellis.app>',
     public: {
-      googleClientId: process.env.GOOGLE_CLIENT_ID,
-      githubClientId: process.env.GITHUB_CLIENT_ID || '',
-      dataMode: process.env.TRELLIS_DATA_MODE || 'local',
-      enableCloudDevLogin: process.env.ENABLE_CLOUD_DEV_LOGIN === 'true',
-      instantAppId: process.env.INSTANTDB_APP_ID || process.env.INSTANT_APP_ID || '',
+      dataMode: 'local' as const,
       trellisPort: DEV_PORT,
     },
   },
@@ -162,13 +141,16 @@ export default defineNuxtConfig({
       },
     ] as any,
     optimizeDeps: {
-      include: ['mermaid', 'vue-sonner'],
+      include: ['mermaid', 'vue-sonner', 'lucide-vue-next', 'dayjs', '@tiptap/vue-3', '@tiptap/core', '@vueuse/core'],
     },
     resolve: {
       dedupe: ['vue-sonner'],
     },
     server: {
-      hmr: { overlay: false },
+      hmr: { overlay: false, port: 24678 },
+      watch: {
+        ignored: ['**/node_modules/**', '**/.git/**', '**/dist/**'],
+      },
     },
   },
 

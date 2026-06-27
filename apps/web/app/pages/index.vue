@@ -113,164 +113,35 @@
         </h1>
 
         <p class="text-muted-foreground text-lg sm:text-xl max-w-2xl mx-auto leading-relaxed">
-          A personal knowledge graph that lives on your machine. No cloud required. No vendor lock-in. Just your thoughts, connected.
+          A personal knowledge graph that lives on your machine. No cloud required. No vendor lock-in. Just your
+          thoughts, connected.
         </p>
 
         <div class="flex flex-col sm:flex-row gap-4 justify-center items-center pt-4">
-          <UiButton size="lg" as-child>
-            <NuxtLink to="/welcome">
-              <Icon name="lucide:rocket" class="mr-2 h-4 w-4" />
-              Try in Browser
-            </NuxtLink>
+          <UiButton size="lg" to="/welcome">
+            <Icon name="lucide:rocket" class="h-4 w-4" />
+            Try in Browser
           </UiButton>
-          <UiButton size="lg" variant="outline" as-child>
-            <a href="https://github.com/trentbrew" target="_blank" rel="noopener">
-              <Icon name="lucide:github" class="mr-2 h-4 w-4" />
-              View on GitHub
-            </a>
+          <UiButton size="lg" variant="outline" href="https://github.com/trentbrew" target="_blank" rel="noopener">
+            <Icon name="lucide:github" class="h-4 w-4" />
+            View on GitHub
           </UiButton>
         </div>
       </div>
 
-      <!-- Hero Visual -->
+      <!-- Hero Video -->
       <div class="mx-auto mt-16 max-w-5xl">
-        <div class="space-y-3 md:hidden">
-          <UiCard
-            v-for="demo in heroDemos"
-            :key="`${demo.id}-mobile`"
-            class="overflow-hidden border-border/70 bg-card/80 shadow-xl backdrop-blur-sm"
-          >
-            <UiCardContent class="relative space-y-4 p-5">
-              <div :class="['pointer-events-none absolute inset-0 bg-linear-to-br', demo.gradientClass]" />
-              <div class="relative space-y-2">
-                <p class="text-[11px] font-semibold uppercase tracking-[0.22em] text-muted-foreground/80">
-                  {{ demo.eyebrow }}
-                </p>
-                <h3 class="text-lg font-semibold tracking-tight">{{ demo.title }}</h3>
-                <p class="text-sm leading-relaxed text-muted-foreground">
-                  {{ demo.description }}
-                </p>
-              </div>
-            </UiCardContent>
-          </UiCard>
-        </div>
-
-        <div class="relative hidden md:block">
-          <div class="relative overflow-hidden rounded-[28px] border border-border/70 bg-card/65 p-4 shadow-2xl backdrop-blur-sm">
-            <div class="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_top,hsl(var(--primary)/0.12),transparent_50%)]" />
-            <div class="relative grid grid-cols-12 auto-rows-[72px] gap-4 lg:auto-rows-[76px]">
-              <div
-                v-for="cell in heroGridCells"
-                :key="cell.id"
-                class="rounded-[18px] border border-border/45 bg-background/[0.035]"
-                :style="{
-                  gridColumn: `${cell.col} / span 1`,
-                  gridRow: `${cell.row} / span 1`,
-                }"
-              />
-
-              <section
-                v-for="demo in heroDemos"
-                :key="demo.id"
-                class="group relative z-10 overflow-hidden rounded-[24px] border border-border/80 bg-background/92 p-5 shadow-[0_20px_60px_-36px_rgba(15,23,42,0.55)] backdrop-blur"
-                :style="{
-                  gridColumn: demo.column,
-                  gridRow: demo.row,
-                }"
-              >
-                <div :class="['pointer-events-none absolute inset-0 bg-linear-to-br', demo.gradientClass]" />
-                <div class="pointer-events-none absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-foreground/12 to-transparent" />
-
-                <div class="relative flex h-full flex-col">
-                  <div class="space-y-1.5">
-                    <p class="text-[11px] font-semibold uppercase tracking-[0.22em] text-muted-foreground/80">
-                      {{ demo.eyebrow }}
-                    </p>
-                    <h3 class="text-xl font-semibold tracking-tight">{{ demo.title }}</h3>
-                    <p class="max-w-sm text-sm leading-relaxed text-muted-foreground">
-                      {{ demo.description }}
-                    </p>
-                  </div>
-
-                  <template v-if="demo.id === 'tasks'">
-                    <div class="mt-5 flex items-end gap-3">
-                      <div
-                        v-for="metric in demo.metrics"
-                        :key="metric.label"
-                        class="min-w-0 flex-1 rounded-2xl border border-border/60 bg-background/60 px-3 py-2.5"
-                      >
-                        <div class="text-xl font-semibold tracking-tight">{{ metric.value }}</div>
-                        <div class="text-[11px] uppercase tracking-[0.16em] text-muted-foreground/70">{{ metric.label }}</div>
-                      </div>
-                    </div>
-                    <div class="mt-4 space-y-2">
-                      <div
-                        v-for="item in demo.list"
-                        :key="item"
-                        class="flex items-center gap-2 rounded-xl border border-border/55 bg-background/50 px-3 py-2 text-sm"
-                      >
-                        <span class="h-2 w-2 rounded-full bg-sky-500/80" />
-                        <span>{{ item }}</span>
-                      </div>
-                    </div>
-                  </template>
-
-                  <template v-else-if="demo.id === 'graph'">
-                    <div class="mt-5 flex flex-wrap gap-2">
-                      <span
-                        v-for="chip in demo.chips"
-                        :key="chip"
-                        class="rounded-full border border-border/60 bg-background/65 px-2.5 py-1 text-[11px] text-muted-foreground"
-                      >
-                        {{ chip }}
-                      </span>
-                    </div>
-                    <div class="mt-4 space-y-2.5">
-                      <div
-                        v-for="relation in demo.relations"
-                        :key="`${relation.from}-${relation.to}`"
-                        class="flex items-center gap-2 text-sm"
-                      >
-                        <span class="rounded-lg border border-border/60 bg-background/65 px-2.5 py-1">{{ relation.from }}</span>
-                        <span class="h-px flex-1 bg-border/70" />
-                        <span class="rounded-lg border border-border/60 bg-background/65 px-2.5 py-1">{{ relation.to }}</span>
-                      </div>
-                    </div>
-                  </template>
-
-                  <template v-else-if="demo.id === 'calendar'">
-                    <div class="mt-5 space-y-2.5">
-                      <div
-                        v-for="slot in demo.schedule"
-                        :key="slot.day"
-                        class="rounded-2xl border border-border/60 bg-background/60 px-3 py-2.5"
-                      >
-                        <div class="flex items-center justify-between text-[11px] uppercase tracking-[0.16em] text-muted-foreground/75">
-                          <span>{{ slot.day }}</span>
-                          <span>{{ slot.label }}</span>
-                        </div>
-                        <div class="mt-2 h-2 rounded-full bg-muted/70">
-                          <div :class="['h-2 rounded-full', slot.tone]" />
-                        </div>
-                      </div>
-                    </div>
-                  </template>
-
-                  <template v-else>
-                    <div class="mt-5 grid flex-1 gap-2 sm:grid-cols-3">
-                      <div
-                        v-for="bullet in demo.bullets"
-                        :key="bullet"
-                        class="flex items-start gap-2 rounded-2xl border border-border/60 bg-background/60 px-3 py-3 text-sm leading-relaxed"
-                      >
-                        <span class="mt-1 h-2 w-2 shrink-0 rounded-full bg-emerald-500/80" />
-                        <span>{{ bullet }}</span>
-                      </div>
-                    </div>
-                  </template>
-                </div>
-              </section>
-            </div>
+        <div
+          class="relative overflow-hidden rounded-[28px] border border-border/70 bg-card/65 shadow-2xl backdrop-blur-sm">
+          <div
+            class="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_top,hsl(var(--primary)/0.12),transparent_50%)]" />
+          <div class="relative p-4">
+            <iframe
+              src="https://player.mux.com/EYU9Zwb82F2Jp3AnP00LvOrt3a8vv8RQaJnVBiWOw7cA?metadata-video-title=CleanShot+2026-04-18+at+05&video-title=CleanShot+2026-04-18+at+05"
+              style="width: 100%; border: none; aspect-ratio: 167/108"
+              class="rounded-[20px]"
+              allow="accelerometer; gyroscope; autoplay; encrypted-media; picture-in-picture"
+              allowfullscreen />
           </div>
         </div>
       </div>
@@ -282,7 +153,8 @@
         <div class="text-center space-y-4 mb-12">
           <h2 class="text-3xl sm:text-4xl font-bold tracking-tight">Built for Builders</h2>
           <p class="text-muted-foreground text-lg">
-            Knowledge tools force you to choose: powerful & complex or simple & limited. Privacy means self-hosting complexity. Extensibility means APIs that break.
+            Knowledge tools force you to choose: powerful & complex or simple & limited. Privacy means self-hosting
+            complexity. Extensibility means APIs that break.
           </p>
         </div>
 
@@ -341,10 +213,12 @@
           </UiCardHeader>
           <UiCardContent class="space-y-3">
             <p class="text-muted-foreground text-sm leading-relaxed">
-              Everything is an entity with typed properties and semantic links. Tasks, notes, events, people, projects—all connected in a queryable graph.
+              Everything is an entity with typed properties and semantic links. Tasks, notes, events, people,
+              projects—all connected in a queryable graph.
             </p>
             <div class="font-mono text-xs bg-muted/50 p-3 rounded-lg">
-              FIND task WHERE priority = "high"<br />
+              FIND task WHERE priority = "high"
+              <br />
               AND assignedTo = "me"
             </div>
           </UiCardContent>
@@ -362,11 +236,10 @@
           </UiCardHeader>
           <UiCardContent class="space-y-3">
             <p class="text-muted-foreground text-sm leading-relaxed">
-              Your data lives in SQLite on your machine. Works offline, syncs when connected (optional). Export/import between local and cloud modes.
+              Your data lives in SQLite on your machine. Works offline, syncs when connected (optional). Export/import
+              between local and cloud modes.
             </p>
-            <div class="text-xs text-muted-foreground">
-              No vendor lock-in • Privacy by default • Full control
-            </div>
+            <div class="text-xs text-muted-foreground">No vendor lock-in • Privacy by default • Full control</div>
           </UiCardContent>
         </UiCard>
 
@@ -382,7 +255,8 @@
           </UiCardHeader>
           <UiCardContent class="space-y-3">
             <p class="text-muted-foreground text-sm leading-relaxed">
-              Define entity types via CLI or UI. The interface auto-scaffolds—sidebar items, browse pages, dialogs—with zero code changes.
+              Define entity types via CLI or UI. The interface auto-scaffolds—sidebar items, browse pages, dialogs—with
+              zero code changes.
             </p>
             <div class="text-xs text-muted-foreground">
               Notion-compatible fields • Extend with custom types • Schema-driven
@@ -402,7 +276,8 @@
           </UiCardHeader>
           <UiCardContent class="space-y-3">
             <p class="text-muted-foreground text-sm leading-relaxed">
-              MCP server with 15 tools for AI agents. TypeScript SDK for scripting. CLI for automation. Realtime SSE for instant updates.
+              MCP server with 15 tools for AI agents. TypeScript SDK for scripting. CLI for automation. Realtime SSE for
+              instant updates.
             </p>
             <div class="text-xs text-muted-foreground">
               Claude • Windsurf • Custom agents • Full programmatic access
@@ -421,7 +296,8 @@
 
       <div class="grid gap-8 md:grid-cols-3 max-w-5xl mx-auto">
         <div class="text-center space-y-4">
-          <div class="mx-auto flex h-16 w-16 items-center justify-center rounded-2xl bg-primary/10 text-primary font-bold text-2xl">
+          <div
+            class="mx-auto flex h-16 w-16 items-center justify-center rounded-2xl bg-primary/10 text-primary font-bold text-2xl">
             1
           </div>
           <h3 class="text-xl font-semibold">Install & Run</h3>
@@ -431,7 +307,8 @@
         </div>
 
         <div class="text-center space-y-4">
-          <div class="mx-auto flex h-16 w-16 items-center justify-center rounded-2xl bg-primary/10 text-primary font-bold text-2xl">
+          <div
+            class="mx-auto flex h-16 w-16 items-center justify-center rounded-2xl bg-primary/10 text-primary font-bold text-2xl">
             2
           </div>
           <h3 class="text-xl font-semibold">Create Entities</h3>
@@ -441,7 +318,8 @@
         </div>
 
         <div class="text-center space-y-4">
-          <div class="mx-auto flex h-16 w-16 items-center justify-center rounded-2xl bg-primary/10 text-primary font-bold text-2xl">
+          <div
+            class="mx-auto flex h-16 w-16 items-center justify-center rounded-2xl bg-primary/10 text-primary font-bold text-2xl">
             3
           </div>
           <h3 class="text-xl font-semibold">Query & Automate</h3>
@@ -457,9 +335,7 @@
       <div class="max-w-4xl mx-auto">
         <div class="text-center space-y-4 mb-12">
           <h2 class="text-3xl sm:text-4xl font-bold tracking-tight">Built with Modern Tech</h2>
-          <p class="text-muted-foreground text-lg">
-            Solid foundations for extensibility and performance
-          </p>
+          <p class="text-muted-foreground text-lg">Solid foundations for extensibility and performance</p>
         </div>
 
         <div class="grid gap-4 sm:grid-cols-2 md:grid-cols-4 text-center">
@@ -482,8 +358,10 @@
         </div>
 
         <div class="mt-8 text-center text-sm text-muted-foreground">
-          Frontend: Nuxt 4, Vue 3, Tailwind CSS, Reka UI<br />
-          Backend: TQL (EAV store + Datalog engine), SQLite<br />
+          Frontend: Nuxt 4, Vue 3, Tailwind CSS, Reka UI
+          <br />
+          Backend: TQL (EAV store + Datalog engine), SQLite
+          <br />
           Desktop: Tauri v2 (Rust + WebView)
         </div>
       </div>
@@ -493,32 +371,28 @@
     <UiContainer constrained class="py-20 sm:py-24">
       <div class="mx-auto max-w-3xl text-center space-y-8 rounded-2xl border-2 border-border bg-card p-10 sm:p-12">
         <div class="space-y-4">
-          <h2 class="text-3xl sm:text-4xl font-bold tracking-tight">
-            Start Building Your Knowledge Graph
-          </h2>
+          <h2 class="text-3xl sm:text-4xl font-bold tracking-tight">Start Building Your Knowledge Graph</h2>
           <p class="text-muted-foreground text-lg">
-            Built by <a href="https://github.com/trentbrew" target="_blank" rel="noopener" class="text-primary hover:underline">@trentbrew</a> as a tool for personal knowledge management.
+            Built by
+            <a href="https://github.com/trentbrew" target="_blank" rel="noopener" class="text-primary hover:underline">
+              @trentbrew
+            </a>
+            as a tool for personal knowledge management.
           </p>
         </div>
 
         <div class="flex flex-col sm:flex-row gap-4 justify-center">
-          <UiButton size="lg" as-child>
-            <NuxtLink to="/welcome">
-              <Icon name="lucide:rocket" class="mr-2 h-4 w-4" />
-              Try in Browser
-            </NuxtLink>
+          <UiButton size="lg" to="/welcome">
+            <Icon name="lucide:rocket" class="h-4 w-4" />
+            Try in Browser
           </UiButton>
-          <UiButton size="lg" variant="outline" as-child>
-            <a href="https://github.com/trentbrew" target="_blank" rel="noopener">
-              <Icon name="lucide:github" class="mr-2 h-4 w-4" />
-              View Source Code
-            </a>
+          <UiButton size="lg" variant="outline" href="https://github.com/trentbrew" target="_blank" rel="noopener">
+            <Icon name="lucide:github" class="h-4 w-4" />
+            View Source Code
           </UiButton>
         </div>
 
-        <div class="text-sm text-muted-foreground pt-4">
-          Open development • Watch progress on GitHub
-        </div>
+        <div class="text-sm text-muted-foreground pt-4">Open development • Watch progress on GitHub</div>
       </div>
     </UiContainer>
   </div>

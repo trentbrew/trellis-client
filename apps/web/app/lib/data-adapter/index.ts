@@ -21,8 +21,5 @@ export type {
 export { createLocalAdapter } from './local-adapter'
 export type { LocalAdapterOptions } from './local-adapter'
 
-export { createCloudAdapter } from './cloud-adapter'
-export type { CloudAdapterOptions } from './cloud-adapter'
-
 export { exportAdapterData, importToAdapter, exportOntology, importOntology } from './migrate'
 export type { DataExport } from './migrate'

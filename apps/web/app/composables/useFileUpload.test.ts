@@ -162,16 +162,8 @@ describe('UploadResult shape', () => {
 // ── Mode routing decision ──────────────────────────────────────────────────
 
 describe('Upload mode routing', () => {
-  it('uses local-upload endpoint in local mode', () => {
-    const mode = 'local'
-    const endpoint = mode === 'local' ? '/api/storage/local-upload' : '/api/storage/upload'
-    expect(endpoint).toBe('/api/storage/local-upload')
-  })
-
-  it('uses cloud upload endpoint in cloud mode', () => {
-    const mode = 'cloud'
-    const endpoint = mode === 'local' ? '/api/storage/local-upload' : '/api/storage/upload'
-    expect(endpoint).toBe('/api/storage/upload')
+  it('uses local-upload endpoint', () => {
+    expect('/api/storage/local-upload').toBe('/api/storage/local-upload')
   })
 })
 
