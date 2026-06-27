@@ -61,8 +61,8 @@
  *   POST   /api/platform/invite/send              Send an invite (proxy)
  */
 
-import { useTqlKernel, pushMutationLog } from '../../plugins/tql'
-import { emitMutation } from '../../utils/tql-events'
+import { useTrellisKernel, pushMutationLog } from '../../plugins/trellis-kernel'
+import { emitMutation } from '../../utils/trellis-events'
 import { parseApiBody, parseApiQuery } from '../../utils/api-validation'
 import {
   PlatformAppCreateBodySchema,
@@ -112,7 +112,7 @@ function factsToNode(entityId: string, facts: Array<{ e: string; a: string; v: u
 
 /** Query all nodes of a given platform type by scanning facts. */
 function queryPlatformNodes(
-  kernel: ReturnType<typeof useTqlKernel>,
+  kernel: ReturnType<typeof useTrellisKernel>,
   prefix: string,
   filterFn?: (_node: Record<string, any>) => boolean,
 ): Record<string, any>[] {
@@ -136,7 +136,7 @@ function queryPlatformNodes(
   return results
 }
 
-function getNode(kernel: ReturnType<typeof useTqlKernel>, entityId: string): Record<string, any> | null {
+function getNode(kernel: ReturnType<typeof useTrellisKernel>, entityId: string): Record<string, any> | null {
   const store = kernel.getStore()
   const facts = store.getFactsByEntity(entityId)
   if (facts.length === 0) return null
@@ -150,9 +150,9 @@ const slugify = (s: string) =>
     .replace(/^-|-$/g, '')
 
 export default defineEventHandler(async (event) => {
-  let kernel: ReturnType<typeof useTqlKernel>
+  let kernel: ReturnType<typeof useTrellisKernel>
   try {
-    kernel = useTqlKernel()
+    kernel = useTrellisKernel()
   } catch {
     throw createError({ statusCode: 503, message: 'TQL kernel not initialized' })
   }

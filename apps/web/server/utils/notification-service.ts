@@ -6,10 +6,10 @@
  * broadcasts an SSE event so connected clients render the toast/bell badge.
  */
 
-import { useTqlKernel, pushMutationLog } from '../plugins/tql'
-import { emitMutation } from './tql-events'
+import { useTrellisKernel, pushMutationLog } from '../plugins/trellis-kernel'
+import { emitMutation } from './trellis-events'
 import type { CreateNotificationInput, NotificationAction, TrellisNotification } from '../../app/types/notification'
-import { NOTIFICATION_NAMESPACE } from './tql-ontologies'
+import { NOTIFICATION_NAMESPACE } from './trellis-ontologies'
 
 const NOTIFICATION_PREFIX = `${NOTIFICATION_NAMESPACE}:`
 
@@ -46,7 +46,7 @@ export async function createNotification(
   input: CreateNotificationInput,
   opts: { agentId?: string } = {},
 ): Promise<TrellisNotification> {
-  const kernel = useTqlKernel()
+  const kernel = useTrellisKernel()
   const id = newId()
   const now = new Date().toISOString()
   const agent = opts.agentId || 'system'
@@ -117,7 +117,7 @@ export async function updateNotificationStatus(
   patch: Partial<Pick<TrellisNotification, 'status' | 'readAt' | 'snoozeUntil' | 'archivedAt'>>,
   opts: { agentId?: string } = {},
 ): Promise<void> {
-  const kernel = useTqlKernel()
+  const kernel = useTrellisKernel()
   const agent = opts.agentId || 'system'
   const data: Record<string, any> = { updatedAt: new Date().toISOString() }
   for (const [k, v] of Object.entries(patch)) if (v !== undefined) data[k] = v
@@ -127,7 +127,7 @@ export async function updateNotificationStatus(
 }
 
 export async function deleteNotification(id: string, opts: { agentId?: string } = {}): Promise<void> {
-  const kernel = useTqlKernel()
+  const kernel = useTrellisKernel()
   const agent = opts.agentId || 'system'
   await kernel.deleteNode(id, { agentId: agent })
   pushMutationLog({ action: 'deleteNode', entityId: id, type: NOTIFICATION_NAMESPACE })
@@ -142,7 +142,7 @@ export async function deleteNotification(id: string, opts: { agentId?: string } 
  */
 function hasUnreadWithSourceId(sourceId: string): boolean {
   try {
-    const kernel = useTqlKernel()
+    const kernel = useTrellisKernel()
     const result = kernel.query(
       `FIND ${NOTIFICATION_NAMESPACE} AS ?n WHERE ?n.sourceId = "${sourceId}" AND ?n.status = "unread" RETURN ?n.sourceId LIMIT 1`,
     ) as any

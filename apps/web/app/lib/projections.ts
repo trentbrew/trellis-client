@@ -1,5 +1,6 @@
 import type { Projection, ProjectionType, Collection, DatabaseSchema, DatabaseField } from '~/types/database'
 import type { BrowseViewMode } from '~/composables/useBrowse'
+import { PROJECTION_REGISTRY_NODES } from '~/lib/trellis-projection-registry'
 
 /**
  * Projection node shape (replaces AppConfigProjectionNode from appConfig.ts).
@@ -22,21 +23,13 @@ export interface ProjectionNodeConfig {
  * Static projection node definitions with schema requirements.
  * These were previously read from app-config.jsonld via getProjectionNodes().
  */
-const PROJECTION_NODES: ProjectionNodeConfig[] = [
-  { projectionType: 'table', label: 'Data Table', icon: 'lucide:table', order: 1 },
-  { projectionType: 'kanban', label: 'Kanban', icon: 'lucide:square-kanban', order: 2, requirements: { schema: { fieldTypes: ['select'] } } },
-  { projectionType: 'calendar', label: 'Calendar', icon: 'lucide:calendar', order: 3, requirements: { schema: { fieldTypes: ['date'] } } },
-  { projectionType: 'list', label: 'List', icon: 'lucide:list', order: 4 },
-  { projectionType: 'card-grid', label: 'Card Grid', icon: 'lucide:layout-grid', order: 5 },
-  { projectionType: 'timeline', label: 'Timeline', icon: 'lucide:calendar', order: 6, requirements: { schema: { fieldTypes: ['date'] } } },
-  { projectionType: 'graph', label: 'Graph', icon: 'lucide:network', order: 7 },
-  { projectionType: 'chart', label: 'Chart', icon: 'lucide:bar-chart-3', order: 8, requirements: { schema: { fieldTypes: ['number'] } } },
-  { projectionType: 'moodboard', label: 'Moodboard', icon: 'lucide:layout-dashboard', order: 9 },
-  { projectionType: 'slide-deck', label: 'Slide Deck', icon: 'lucide:presentation', order: 10 },
-  { projectionType: 'trellis-blocks', label: 'Trellis', icon: 'lucide:layout-list', order: 100 },
-  { projectionType: 'blocks', label: 'Blocks', icon: 'lucide:blocks', order: 101 },
-  { projectionType: 'code', label: 'JSON-LD', icon: 'lucide:code-2', order: 102 },
-]
+const PROJECTION_NODES: ProjectionNodeConfig[] = PROJECTION_REGISTRY_NODES.map((node) => ({
+  projectionType: node.projectionType,
+  label: node.label,
+  icon: node.icon,
+  order: node.order,
+  requirements: node.requirements,
+}))
 
 const getProjectionNodes = (): ProjectionNodeConfig[] => PROJECTION_NODES
 

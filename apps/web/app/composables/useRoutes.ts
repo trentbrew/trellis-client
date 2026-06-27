@@ -122,7 +122,7 @@ export const useRoutes = () => {
       .filter((t) => t.tier === 'system' && !isDynamicType(t.type) && !platformTypeIds.has(t.type.toLowerCase()))
       .sort((a, b) => a.label.localeCompare(b.label))
       .map((t) => ({
-        path: `/database/${t.type}`,
+        path: `/workspace/browse?type=${t.type}`,
         label: t.label,
         icon: t.icon || 'lucide:box',
         tint: `text-${t.color}-300`,
@@ -198,7 +198,7 @@ export const useRoutes = () => {
 
   const ontologyTypeChildren = computed<RouteConfig[]>(() => {
     return (ontologyTypes.value || []).map((t) => ({
-      path: `/database/${t.type}`,
+      path: `/workspace/browse?type=${t.type}`,
       label: t.label,
       icon: t.icon || 'lucide:database',
       tint: `text-${t.color}-300`,

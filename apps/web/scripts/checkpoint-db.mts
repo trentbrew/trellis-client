@@ -7,7 +7,7 @@
 import { resolve } from 'node:path'
 import { TrellisKernel } from '@turtle.tech/tql'
 import { BetterSqliteBackend } from '@turtle.tech/tql/persist/better-sqlite'
-import { createWorkspaceConfig } from '../server/utils/tql-ontologies.js'
+import { createWorkspaceConfig } from '../server/utils/trellis-ontologies.js'
 
 const dbPath = process.env.TRELLIS_DB_PATH || resolve(process.cwd(), '.data/trellis.db')
 

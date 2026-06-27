@@ -1,0 +1,46 @@
+{
+  "name": "@turtle.tech/trellis-kernel",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Alias for @turtle.tech/tql during rename (ADR-001). Becomes canonical in Phase 3.",
+  "main": "./index.ts",
+  "types": "./index.ts",
+  "exports": {
+    ".": {
+      "types": "./index.ts",
+      "import": "./index.ts"
+    },
+    "./store": {
+      "types": "./store.ts",
+      "import": "./store.ts"
+    },
+    "./kernel": {
+      "types": "./kernel.ts",
+      "import": "./kernel.ts"
+    },
+    "./persist": {
+      "types": "./persist.ts",
+      "import": "./persist.ts"
+    },
+    "./persist/jsonl": {
+      "types": "./persist/jsonl.ts",
+      "import": "./persist/jsonl.ts"
+    },
+    "./persist/better-sqlite": {
+      "types": "./persist/better-sqlite.ts",
+      "import": "./persist/better-sqlite.ts"
+    },
+    "./query": {
+      "types": "./query.ts",
+      "import": "./query.ts"
+    },
+    "./graph": {
+      "types": "./graph.ts",
+      "import": "./graph.ts"
+    }
+  },
+  "dependencies": {
+    "@turtle.tech/tql": "workspace:*"
+  }
+}

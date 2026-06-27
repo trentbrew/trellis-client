@@ -14,9 +14,9 @@
 
 import { getHeader } from 'h3'
 import type { SchemaDefinition } from '@turtle.tech/tql'
-import { useTqlKernel, useWorkspaceConfig, getMutationLog, pushMutationLog } from '../../plugins/tql'
+import { useTrellisKernel, useWorkspaceConfig, getMutationLog, pushMutationLog } from '../../plugins/trellis-kernel'
 import { getZoneGuardStats, getZoneGuardMode, checkMutation, recordStrictRejection } from '../../utils/zone-guard'
-import { emitMutation } from '../../utils/tql-events'
+import { emitMutation } from '../../utils/trellis-events'
 import { zoneFromRequest } from '../../utils/zone-router'
 import { captureDecision, shouldCaptureDecision } from '../../utils/campus-decisions'
 import { parseApiBody, parseApiQuery, validateApiInput } from '../../utils/api-validation'
@@ -57,7 +57,7 @@ function factsToNode(entityId: string, facts: Array<{ e: string; a: string; v: u
 export default defineEventHandler(async (event) => {
   let kernel
   try {
-    kernel = useTqlKernel()
+    kernel = useTrellisKernel()
   } catch {
     throw createError({ statusCode: 503, message: 'TQL kernel not initialized' })
   }

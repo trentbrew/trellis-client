@@ -12,7 +12,7 @@
  *   data: { id, timestamp, action, entityId, type, agentId }
  */
 
-import { onMutation } from '../../utils/tql-events'
+import { onMutation } from '../../utils/trellis-events'
 
 export default defineEventHandler(async (event) => {
   const res = event.node.res

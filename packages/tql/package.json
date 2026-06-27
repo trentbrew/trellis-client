@@ -2,6 +2,7 @@
   "name": "@turtle.tech/tql",
   "version": "0.1.0",
   "private": true,
+  "description": "Trellis kernel (EAV + EQL-S). Prefer @turtle.tech/trellis-kernel — see ADR-001.",
   "type": "module",
   "main": "./index.ts",
   "types": "./index.ts",

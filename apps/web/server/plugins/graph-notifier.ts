@@ -15,10 +15,10 @@
  *     entities in a burst emits one grouped notification instead of 20.
  */
 
-import { onMutation, type MutationEvent } from '../utils/tql-events'
+import { onMutation, type MutationEvent } from '../utils/trellis-events'
 import { createNotification } from '../utils/notification-service'
-import { NOTIFICATION_NAMESPACE } from '../utils/tql-ontologies'
-import { useTqlKernel } from './tql'
+import { NOTIFICATION_NAMESPACE } from '../utils/trellis-ontologies'
+import { useTrellisKernel } from './trellis-kernel'
 import { ENTITY_NAMESPACE } from '../../app/lib/tql-namespace'
 
 const COMPLETED_STATUSES = new Set(['done', 'completed', 'complete', 'closed'])
@@ -45,7 +45,7 @@ function isEntityType(type: string | undefined): boolean {
 
 function getEntityTitle(entityId: string): string | null {
   try {
-    const kernel = useTqlKernel()
+    const kernel = useTrellisKernel()
     const facts = kernel.getStore().getFactsByEntity(entityId)
     const title = facts.find((f: any) => f.a === 'title')?.v as string | undefined
     return title && typeof title === 'string' ? title : null
@@ -56,7 +56,7 @@ function getEntityTitle(entityId: string): string | null {
 
 function getEntityField(entityId: string, attr: string): any {
   try {
-    const kernel = useTqlKernel()
+    const kernel = useTrellisKernel()
     const facts = kernel.getStore().getFactsByEntity(entityId)
     return facts.find((f: any) => f.a === attr)?.v
   } catch {
