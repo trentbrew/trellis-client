@@ -9,6 +9,8 @@
  */
 
 import { existsSync, mkdirSync, writeFileSync } from 'fs';
+import { resolve } from 'path';
+import { TRELLIS_HQ_DIR, HQ_REL_PATH } from './_kernel.js';
 
 interface ResponseToolInfo {
   response: string;
@@ -22,7 +24,8 @@ interface HookInput {
   timestamp: string;
 }
 
-const ARCHIVE_DIR = `${import.meta.dirname}/../.tql/cascade-archive`;
+
+const ARCHIVE_DIR = resolve(TRELLIS_HQ_DIR, 'cascade-archive');
 
 // ── Parsing helpers ────────────────────────────────────────────────────
 
@@ -233,7 +236,7 @@ async function main() {
 
   writeFileSync(filePath, JSON.stringify(jsonld, null, 2), 'utf-8');
 
-  console.log(`[ARCHIVER] Decision trace saved: .tql/cascade-archive/${fileName}`);
+  console.log(`[ARCHIVER] Decision trace saved: ${HQ_REL_PATH}/cascade-archive/${fileName}`);
   console.log(`  → Trajectory: ${data.trajectory_id}`);
   console.log(`  → Words: ${wordCount} | Sections: ${jsonld['tql:content']['tql:sections'].length} | Artifacts: ${jsonld['tql:artifacts'].length}`);
   process.exit(0);

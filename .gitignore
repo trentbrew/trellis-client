@@ -48,7 +48,32 @@ playwright-report/
 
 # Resumable progress log for multi-session work
 progress.txt
-# HQ (TQL)
+# HQ (Trellis) — canonical under .trellis/hq
+.trellis/*
+!.trellis/hq/
+.trellis/hq/ops.jsonl
+.trellis/hq/snapshot.json
+.trellis/hq/inbox.json
+.trellis/hq/client/dist/
+.trellis/hq/client-vue/node_modules/
+.trellis/hq/client-vue/dist/
+.trellis/hq/cascade-archive/
+.trellis/hq/devlog/
+.trellis/hq/generated/
+.trellis/hq/snapshots/
+.trellis/hq/workflows/
+.trellis/hq/client/
+.trellis/hq/client-vue/
+# TrellisVCS runtime (sibling to hq/)
+.trellis/kernel.db
+.trellis/kernel.db-shm
+.trellis/kernel.db-wal
+.trellis/ops.json
+.trellis/issue-counter.json
+.trellis/lanes/
+.trellis/blobs/
+.trellis/config.json
+# Legacy HQ (fallback cycle)
 .tql/store.db
 .tql/store.db-shm
 .tql/store.db-wal
@@ -59,8 +84,6 @@ progress.txt
 .tql/client-vue/dist/
 logs/cascade-responses.log
 logs/hook-activity.log
-# cascade-archive moved into .tql/cascade-archive/
-.trellis
- 
+
 # Desktop build artifacts
 apps/desktop/src-tauri/target/

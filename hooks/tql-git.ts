@@ -1,14 +1,14 @@
 #!/usr/bin/env bun
 
 /**
- * HQ Git Integration — auto-commits .tql/ state and tracks git operations.
+ * HQ Git Integration — auto-commits .trellis/hq/ state and tracks git operations.
  *
  * Usage:
- *   bun run hooks/tql-git.ts              # Auto-commit .tql/ if dirty
+ *   bun run hooks/tql-git.ts              # Auto-commit .trellis/hq/ if dirty
  *   bun run hooks/tql-git.ts --sync       # Sync recent git commits into kernel
  */
 
-import { createKernel, requireInit, PROJECT_ROOT } from './_kernel.js';
+import { createKernel, requireInit, PROJECT_ROOT, HQ_REL_PATH } from './_kernel.js';
 
 async function run(cmd: string[], cwd: string): Promise<{ stdout: string; exitCode: number }> {
   const proc = Bun.spawn(cmd, { cwd, stdout: 'pipe', stderr: 'pipe' });
@@ -17,17 +17,16 @@ async function run(cmd: string[], cwd: string): Promise<{ stdout: string; exitCo
   return { stdout: stdout.trim(), exitCode };
 }
 
-async function autoCommitTql(): Promise<void> {
-  // Check if .tql/ has changes
-  const { stdout: status } = await run(['git', 'status', '--porcelain', '.tql/'], PROJECT_ROOT);
+async function autoCommitHq(): Promise<void> {
+  const { stdout: status } = await run(['git', 'status', '--porcelain', HQ_REL_PATH], PROJECT_ROOT);
 
   if (!status) {
-    console.log('[HQ Git] .tql/ is clean — nothing to commit.');
+    console.log(`[HQ Git] ${HQ_REL_PATH}/ is clean — nothing to commit.`);
     return;
   }
 
   const changedFiles = status.split('\n').filter(Boolean);
-  console.log(`[HQ Git] ${changedFiles.length} changed file(s) in .tql/`);
+  console.log(`[HQ Git] ${changedFiles.length} changed file(s) in ${HQ_REL_PATH}/`);
 
   // Stage .tql/ files (exclude store.db, ops.jsonl snapshots, and state.json)
   const filesToStage = changedFiles
@@ -134,7 +133,7 @@ async function main() {
   if (flag === '--sync') {
     await syncCommits();
   } else {
-    await autoCommitTql();
+    await autoCommitHq();
   }
 }
 

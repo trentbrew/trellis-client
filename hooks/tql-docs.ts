@@ -10,7 +10,7 @@
  */
 
 import { TrellisKernel } from '../packages/trellis-kernel/kernel/trellis-kernel.js';
-import { createKernel, requireInit, TQL_DIR } from './_kernel.js';
+import { createKernel, requireInit, TQL_DIR, HQ_REL_PATH } from './_kernel.js';
 import { resolve } from 'path';
 import { existsSync } from 'fs';
 import { mkdir } from 'fs/promises';
@@ -238,7 +238,7 @@ async function main() {
       const content = await gen.fn(kernel);
       const filePath = resolve(GENERATED_DIR, gen.file);
       await Bun.write(filePath, content);
-      console.log(`[HQ Docs] Generated: .tql/generated/${gen.file}`);
+      console.log(`[HQ Docs] Generated: ${HQ_REL_PATH}/generated/${gen.file}`);
     }
   } finally {
     kernel.close();

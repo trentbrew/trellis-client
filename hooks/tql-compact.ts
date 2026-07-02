@@ -9,8 +9,7 @@
  * Usage: bun run hooks/tql-compact.ts
  */
 
-import { createKernel, requireInit, OPS_PATH, TQL_DIR } from './_kernel.js';
-import { resolve } from 'path';
+import { createKernel, requireInit, OPS_PATH, HQ_REL_PATH } from './_kernel.js';
 import { readFileSync, writeFileSync, statSync } from 'fs';
 
 async function main() {
@@ -30,14 +29,14 @@ async function main() {
 
   // 2. Write snapshot
   await kernel.checkpoint();
-  console.log(`[HQ Compact] Snapshot written to .tql/snapshot.json`);
+  console.log(`[HQ Compact] Snapshot written to ${HQ_REL_PATH}/snapshot.json`);
 
   // 3. Truncate ops.jsonl (snapshot is the new baseline)
   writeFileSync(OPS_PATH, '', 'utf-8');
   console.log(`[HQ Compact] Op log truncated (0 ops)`);
 
   console.log(`\n[HQ Compact] Done. Next boot will load from snapshot.`);
-  console.log(`  Commit both .tql/snapshot.json and .tql/ops.jsonl to git.`);
+  console.log(`  Commit both ${HQ_REL_PATH}/snapshot.json and ${HQ_REL_PATH}/ops.jsonl to git.`);
 
   kernel.close();
 }

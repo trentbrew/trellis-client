@@ -9,7 +9,7 @@
  */
 
 import { TrellisKernel } from '../packages/trellis-kernel/kernel/trellis-kernel.js';
-import { createKernel, requireInit, TQL_DIR } from './_kernel.js';
+import { createKernel, requireInit, TQL_DIR, HQ_REL_PATH } from './_kernel.js';
 import { resolve } from 'path';
 import { existsSync } from 'fs';
 import { mkdir } from 'fs/promises';
@@ -137,7 +137,7 @@ async function main() {
     const filePath = resolve(DEVLOG_DIR, `${targetDate}.md`);
     await Bun.write(filePath, md);
 
-    console.log(`[HQ Devlog] Generated: .tql/devlog/${targetDate}.md`);
+    console.log(`[HQ Devlog] Generated: ${HQ_REL_PATH}/devlog/${targetDate}.md`);
     console.log(`  Sessions: ${sessions.length}`);
     console.log(`  Changes: ${changes.length}`);
     console.log(`  Actions: ${actions.length}`);

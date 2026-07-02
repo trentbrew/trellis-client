@@ -18,7 +18,7 @@
  *   Registered on post_cascade_response     # Periodic auto-check
  */
 
-import { createKernel, PROJECT_ROOT, TQL_DIR, OPS_PATH, WORKSPACE_PATH } from './_kernel.js';
+import { createKernel, PROJECT_ROOT, TRELLIS_HQ_DIR, OPS_PATH, WORKSPACE_PATH, HQ_REL_PATH } from './_kernel.js';
 import { existsSync, readFileSync, writeFileSync, mkdirSync, copyFileSync } from 'fs';
 import { resolve } from 'path';
 
@@ -41,19 +41,19 @@ export interface HealResult {
 
 // ── Health Checks ──────────────────────────────────────────────────────
 
-export function checkDirectoryExists(tqlDir: string = TQL_DIR): HealResult | null {
-  if (!existsSync(tqlDir)) {
+export function checkDirectoryExists(hqDir: string = TRELLIS_HQ_DIR): HealResult | null {
+  if (!existsSync(hqDir)) {
     try {
-      mkdirSync(tqlDir, { recursive: true });
+      mkdirSync(hqDir, { recursive: true });
       return {
-        issue: '.tql/ directory missing',
-        action: 'Created .tql/ directory',
+        issue: `${HQ_REL_PATH}/ directory missing`,
+        action: `Created ${HQ_REL_PATH}/ directory`,
         success: true,
       };
     } catch (err) {
       return {
-        issue: '.tql/ directory missing',
-        action: 'Failed to create .tql/ directory',
+        issue: `${HQ_REL_PATH}/ directory missing`,
+        action: `Failed to create ${HQ_REL_PATH}/ directory`,
         success: false,
         detail: String(err),
       };
