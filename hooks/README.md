@@ -103,5 +103,5 @@ The existing tests focus on diff-detection logic, glob matching, and template me
 
 - [`AGENTS.md`](../AGENTS.md) — Trellis agent instructions and the kernel API
 - [`living-docs/README.md`](../living-docs/README.md) — what `tql-docs-sync.ts` produces
-- [`packages/tql/`](../packages/tql) — the kernel hooks open via `_kernel.ts`
+- [`packages/trellis-kernel/`](../packages/trellis-kernel) — the kernel hooks open via `_kernel.ts`
 - [`.windsurf/workflows/`](../.windsurf/workflows) — slash-command workflows (a different surface than these hooks)

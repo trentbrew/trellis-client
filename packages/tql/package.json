@@ -2,7 +2,7 @@
   "name": "@turtle.tech/tql",
   "version": "0.1.0",
   "private": true,
-  "description": "Trellis kernel (EAV + EQL-S). Prefer @turtle.tech/trellis-kernel — see ADR-001.",
+  "description": "@deprecated Use @turtle.tech/trellis-kernel — removed after ADR-001 Phase 6.",
   "type": "module",
   "main": "./index.ts",
   "types": "./index.ts",
@@ -12,50 +12,35 @@
       "import": "./index.ts"
     },
     "./store": {
-      "types": "./store/eav-store.ts",
-      "import": "./store/eav-store.ts"
+      "types": "./store.ts",
+      "import": "./store.ts"
     },
     "./kernel": {
-      "types": "./kernel/trellis-kernel.ts",
-      "import": "./kernel/trellis-kernel.ts"
+      "types": "./kernel.ts",
+      "import": "./kernel.ts"
     },
     "./persist": {
-      "types": "./persist/backend.ts",
-      "import": "./persist/backend.ts"
+      "types": "./persist.ts",
+      "import": "./persist.ts"
     },
     "./persist/jsonl": {
-      "types": "./persist/jsonl-backend.ts",
-      "import": "./persist/jsonl-backend.ts"
+      "types": "./persist/jsonl.ts",
+      "import": "./persist/jsonl.ts"
     },
     "./persist/better-sqlite": {
-      "types": "./persist/better-sqlite-backend.ts",
-      "import": "./persist/better-sqlite-backend.ts"
+      "types": "./persist/better-sqlite.ts",
+      "import": "./persist/better-sqlite.ts"
     },
     "./query": {
-      "types": "./query/index.ts",
-      "import": "./query/index.ts"
+      "types": "./query.ts",
+      "import": "./query.ts"
     },
     "./graph": {
-      "types": "./graph/index.ts",
-      "import": "./graph/index.ts"
+      "types": "./graph.ts",
+      "import": "./graph.ts"
     }
   },
-  "files": [
-    "**/*.ts"
-  ],
   "dependencies": {
-    "zod": "^4.2.1"
-  },
-  "peerDependencies": {
-    "better-sqlite3": ">=11.0.0"
-  },
-  "peerDependenciesMeta": {
-    "better-sqlite3": {
-      "optional": true
-    }
-  },
-  "devDependencies": {
-    "@types/better-sqlite3": "^7.6.13",
-    "typescript": "^5.9.2"
+    "@turtle.tech/trellis-kernel": "workspace:*"
   }
 }

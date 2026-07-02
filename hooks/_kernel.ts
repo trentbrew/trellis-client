@@ -5,8 +5,8 @@
  * happens in one place instead of across 15 hook files.
  */
 
-import { TrellisKernel } from '../packages/tql/kernel/trellis-kernel.js';
-import { JsonlKernelBackend } from '../packages/tql/persist/jsonl-backend.js';
+import { TrellisKernel } from '../packages/trellis-kernel/kernel/trellis-kernel.js';
+import { JsonlKernelBackend } from '../packages/trellis-kernel/persist/jsonl-backend.js';
 import { resolve } from 'path';
 import { existsSync } from 'fs';
 

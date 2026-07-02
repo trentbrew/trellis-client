@@ -2,8 +2,8 @@ import { describe, it, expect, beforeEach, afterEach } from 'bun:test';
 import { mkdtempSync, rmSync, readFileSync, writeFileSync, existsSync } from 'fs';
 import { join } from 'path';
 import { tmpdir } from 'os';
-import { JsonlKernelBackend } from '../../packages/tql/persist/jsonl-backend.js';
-import type { KernelOp } from '../../packages/tql/persist/backend.js';
+import { JsonlKernelBackend } from '../../packages/trellis-kernel/persist/jsonl-backend.js';
+import type { KernelOp } from '../../packages/trellis-kernel/persist/backend.js';
 
 function makeOp(overrides: Partial<KernelOp> = {}): KernelOp {
   return {

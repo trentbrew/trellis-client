@@ -6,7 +6,7 @@
  * Usage: bun run hooks/tql-status.ts
  */
 
-import { TrellisKernel } from '../packages/tql/kernel/trellis-kernel.js';
+import { TrellisKernel } from '../packages/trellis-kernel/kernel/trellis-kernel.js';
 import { createKernel, requireInit, PROJECT_ROOT } from './_kernel.js';
 import { resolve } from 'path';
 import { existsSync } from 'fs';
