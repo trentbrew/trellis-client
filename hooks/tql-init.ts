@@ -1,14 +1,14 @@
 #!/usr/bin/env bun
 
 /**
- * HQ Init — bootstraps the .tql/ directory for any project.
+ * HQ Init — bootstraps the .trellis/hq/ directory for any project.
  *
  * Scans the existing project structure and seeds the TQL knowledge graph
  * with File entities, Dependency entities, and initial metadata.
  */
 
 import { TrellisKernel } from '../packages/trellis-kernel/kernel/trellis-kernel.js';
-import { createKernel, PROJECT_ROOT, TQL_DIR, WORKSPACE_PATH } from './_kernel.js';
+import { createKernel, PROJECT_ROOT, TRELLIS_HQ_DIR, WORKSPACE_PATH } from './_kernel.js';
 import { resolve, extname, relative } from 'path';
 import { readdir, stat, readFile, mkdir } from 'fs/promises';
 import { existsSync } from 'fs';
@@ -31,7 +31,7 @@ function detectLanguage(filePath: string): string {
 }
 
 const IGNORE_DIRS = new Set([
-  'node_modules', '.git', '.tql', '.windsurf', 'dist', 'build',
+  'node_modules', '.git', '.tql', '.trellis', '.windsurf', 'dist', 'build',
   '.next', '.nuxt', '.svelte-kit', 'coverage', '__pycache__',
   'logs', '.cache', '.turbo',
 ]);
@@ -189,16 +189,16 @@ async function seedFromGitLog(kernel: TrellisKernel): Promise<number> {
 // ── Main ───────────────────────────────────────────────────────────────
 
 async function main() {
-  console.log('[HQ] Initializing .tql/ project brain...\n');
+  console.log('[HQ] Initializing .trellis/hq/ project brain...\n');
 
   // 1. Create directory structure
   const dirs = [
-    TQL_DIR,
-    resolve(TQL_DIR, 'workflows'),
-    resolve(TQL_DIR, 'devlog'),
-    resolve(TQL_DIR, 'generated'),
-    resolve(TQL_DIR, 'snapshots'),
-    resolve(TQL_DIR, 'client'),
+    TRELLIS_HQ_DIR,
+    resolve(TRELLIS_HQ_DIR, 'workflows'),
+    resolve(TRELLIS_HQ_DIR, 'devlog'),
+    resolve(TRELLIS_HQ_DIR, 'generated'),
+    resolve(TRELLIS_HQ_DIR, 'snapshots'),
+    resolve(TRELLIS_HQ_DIR, 'client'),
   ];
 
   for (const dir of dirs) {
@@ -210,7 +210,7 @@ async function main() {
 
   // 2. Check for workspace.json
   if (!existsSync(WORKSPACE_PATH)) {
-    console.error('[HQ] Error: .tql/workspace.json not found. Please create it first.');
+    console.error('[HQ] Error: .trellis/hq/workspace.json not found. Please create it first.');
     process.exit(1);
   }
 
@@ -248,8 +248,8 @@ async function main() {
   console.log(`  Total links: ${stats.totalLinks}`);
   console.log(`  Unique entities: ${stats.uniqueEntities}`);
   console.log(`  Unique attributes: ${stats.uniqueAttributes}`);
-  console.log(`\n  Op log: .tql/ops.jsonl`);
-  console.log(`  Schema: .tql/workspace.json`);
+  console.log(`\n  Op log: .trellis/hq/ops.jsonl`);
+  console.log(`  Schema: .trellis/hq/workspace.json`);
 
   kernel.close();
 }

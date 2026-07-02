@@ -7,7 +7,7 @@
  */
 
 import { TrellisKernel } from '../packages/trellis-kernel/kernel/trellis-kernel.js';
-import { createKernel, requireInit, PROJECT_ROOT } from './_kernel.js';
+import { createKernel, requireInit, WORKSPACE_PATH, TRELLIS_HQ_DIR, HQ_REL_PATH } from './_kernel.js';
 import { resolve } from 'path';
 import { existsSync } from 'fs';
 
@@ -92,13 +92,13 @@ async function main() {
     // Get project name from workspace.json
     let projectName = 'unknown';
     try {
-      const ws = JSON.parse(await Bun.file(resolve(PROJECT_ROOT, '.tql', 'workspace.json')).text());
+      const ws = JSON.parse(await Bun.file(WORKSPACE_PATH).text());
       projectName = ws.workspace?.name || 'unknown';
     } catch {}
 
     // Devlog check
     const today = new Date().toISOString().split('T')[0];
-    const devlogExists = existsSync(resolve(PROJECT_ROOT, '.tql', 'devlog', `${today}.md`));
+    const devlogExists = existsSync(resolve(TRELLIS_HQ_DIR, 'devlog', `${today}.md`));
 
     // ── Render ────────────────────────────────────────────────────────
 
@@ -150,7 +150,7 @@ async function main() {
 
     // Devlog
     if (devlogExists) {
-      console.log(`Devlog:     .tql/devlog/${today}.md`);
+      console.log(`Devlog:     ${HQ_REL_PATH}/devlog/${today}.md`);
     }
 
     // Graph stats

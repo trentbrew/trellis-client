@@ -8,7 +8,7 @@
  */
 
 import { TrellisKernel } from '../packages/trellis-kernel/kernel/trellis-kernel.js';
-import { createKernel, PROJECT_ROOT, TQL_DIR } from './_kernel.js';
+import { createKernel, PROJECT_ROOT, TRELLIS_HQ_DIR, TQL_DIR } from './_kernel.js';
 import { resolve, dirname, extname } from 'path';
 
 // ── Types ──────────────────────────────────────────────────────────────
@@ -252,8 +252,8 @@ async function main() {
 
   // Ensure .tql directory exists
   const { mkdirSync, existsSync } = await import('fs');
-  if (!existsSync(TQL_DIR)) {
-    console.error('[HQ] .tql directory not found. Run `bun run hooks/tql-init.ts` first.');
+  if (!existsSync(TRELLIS_HQ_DIR)) {
+    console.error('[HQ] .trellis/hq directory not found. Run `bun run hooks/tql-init.ts` first.');
     process.exit(0); // Don't block — just skip
   }
 
