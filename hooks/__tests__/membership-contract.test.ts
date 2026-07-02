@@ -7,14 +7,14 @@
  */
 
 import { describe, it, expect } from 'bun:test';
-import { CORE_ONTOLOGY } from '../../packages/tql/kernel/core-ontology.js';
+import { CORE_ONTOLOGY } from '../../packages/trellis-kernel/kernel/core-ontology.js';
 import {
   validateAgainstSchema,
   getSelectOptions,
   getFieldDefault,
   getRequiredFields,
   hasField,
-} from '../../packages/tql/kernel/schema-validator.js';
+} from '../../packages/trellis-kernel/kernel/schema-validator.js';
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
 

@@ -2,8 +2,8 @@
   "name": "@turtle.tech/trellis-kernel",
   "version": "0.1.0",
   "private": true,
+  "description": "Trellis kernel — EAV store, EQL-S query engine, graph mutations",
   "type": "module",
-  "description": "Alias for @turtle.tech/tql during rename (ADR-001). Becomes canonical in Phase 3.",
   "main": "./index.ts",
   "types": "./index.ts",
   "exports": {
@@ -12,35 +12,50 @@
       "import": "./index.ts"
     },
     "./store": {
-      "types": "./store.ts",
-      "import": "./store.ts"
+      "types": "./store/eav-store.ts",
+      "import": "./store/eav-store.ts"
     },
     "./kernel": {
-      "types": "./kernel.ts",
-      "import": "./kernel.ts"
+      "types": "./kernel/trellis-kernel.ts",
+      "import": "./kernel/trellis-kernel.ts"
     },
     "./persist": {
-      "types": "./persist.ts",
-      "import": "./persist.ts"
+      "types": "./persist/backend.ts",
+      "import": "./persist/backend.ts"
     },
     "./persist/jsonl": {
-      "types": "./persist/jsonl.ts",
-      "import": "./persist/jsonl.ts"
+      "types": "./persist/jsonl-backend.ts",
+      "import": "./persist/jsonl-backend.ts"
     },
     "./persist/better-sqlite": {
-      "types": "./persist/better-sqlite.ts",
-      "import": "./persist/better-sqlite.ts"
+      "types": "./persist/better-sqlite-backend.ts",
+      "import": "./persist/better-sqlite-backend.ts"
     },
     "./query": {
-      "types": "./query.ts",
-      "import": "./query.ts"
+      "types": "./query/index.ts",
+      "import": "./query/index.ts"
     },
     "./graph": {
-      "types": "./graph.ts",
-      "import": "./graph.ts"
+      "types": "./graph/index.ts",
+      "import": "./graph/index.ts"
     }
   },
+  "files": [
+    "**/*.ts"
+  ],
   "dependencies": {
-    "@turtle.tech/tql": "workspace:*"
+    "zod": "^4.2.1"
+  },
+  "peerDependencies": {
+    "better-sqlite3": ">=11.0.0"
+  },
+  "peerDependenciesMeta": {
+    "better-sqlite3": {
+      "optional": true
+    }
+  },
+  "devDependencies": {
+    "@types/better-sqlite3": "^7.6.13",
+    "typescript": "^5.9.2"
   }
 }

@@ -7,7 +7,7 @@
  * with File entities, Dependency entities, and initial metadata.
  */
 
-import { TrellisKernel } from '../packages/tql/kernel/trellis-kernel.js';
+import { TrellisKernel } from '../packages/trellis-kernel/kernel/trellis-kernel.js';
 import { createKernel, PROJECT_ROOT, TQL_DIR, WORKSPACE_PATH } from './_kernel.js';
 import { resolve, extname, relative } from 'path';
 import { readdir, stat, readFile, mkdir } from 'fs/promises';

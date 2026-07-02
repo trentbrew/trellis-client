@@ -14,7 +14,7 @@
  *   --no-amend   Skip the git amend step (useful for manual runs)
  */
 
-import { TrellisKernel } from '../packages/tql/kernel/trellis-kernel.js';
+import { TrellisKernel } from '../packages/trellis-kernel/kernel/trellis-kernel.js';
 import { createKernel, TQL_DIR, PROJECT_ROOT } from './_kernel.js';
 import { resolve, relative } from 'path';
 import { existsSync, readFileSync, mkdirSync, writeFileSync, readdirSync, statSync } from 'fs';
@@ -526,7 +526,7 @@ async function main() {
 
   // If no kernel, create a minimal stub
   if (!kernel) {
-    const { TrellisKernel: TK } = await import('../packages/tql/kernel/trellis-kernel.js');
+    const { TrellisKernel: TK } = await import('../packages/trellis-kernel/kernel/trellis-kernel.js');
     kernel = new TK();
   }
 

@@ -5,7 +5,7 @@ import {
   loadTrellis,
   buildDocument,
 } from '../tql-docs-sync.js';
-import { TrellisKernel } from '../../packages/tql/kernel/trellis-kernel.js';
+import { TrellisKernel } from '../../packages/trellis-kernel/kernel/trellis-kernel.js';
 
 // ── matchesGlobs ────────────────────────────────────────────────────────
 

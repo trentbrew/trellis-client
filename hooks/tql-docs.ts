@@ -9,7 +9,7 @@
  * Usage: bun run hooks/tql-docs.ts [--all | --changelog | --decisions | --roadmap | --spec | --conventions]
  */
 
-import { TrellisKernel } from '../packages/tql/kernel/trellis-kernel.js';
+import { TrellisKernel } from '../packages/trellis-kernel/kernel/trellis-kernel.js';
 import { createKernel, requireInit, TQL_DIR } from './_kernel.js';
 import { resolve } from 'path';
 import { existsSync } from 'fs';

@@ -7,7 +7,7 @@
  * Usage: bun run hooks/tql-insights.ts
  */
 
-import { TrellisKernel } from '../packages/tql/kernel/trellis-kernel.js';
+import { TrellisKernel } from '../packages/trellis-kernel/kernel/trellis-kernel.js';
 import { createKernel, requireInit } from './_kernel.js';
 
 async function safeQuery(kernel: TrellisKernel, q: string): Promise<Record<string, unknown>[]> {

@@ -13,7 +13,7 @@
  * Usage: bun run hooks/tql-server.ts [--port 3456]
  */
 
-import { TrellisKernel } from '../packages/tql/kernel/trellis-kernel.js';
+import { TrellisKernel } from '../packages/trellis-kernel/kernel/trellis-kernel.js';
 import { createKernel, TQL_DIR, WORKSPACE_PATH } from './_kernel.js';
 import { resolve } from 'path';
 import { existsSync } from 'fs';

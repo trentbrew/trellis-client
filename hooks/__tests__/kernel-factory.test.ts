@@ -2,8 +2,8 @@ import { describe, it, expect, beforeEach, afterEach } from 'bun:test';
 import { mkdtempSync, rmSync, writeFileSync, mkdirSync } from 'fs';
 import { join } from 'path';
 import { tmpdir } from 'os';
-import { JsonlKernelBackend } from '../../packages/tql/persist/jsonl-backend.js';
-import { TrellisKernel } from '../../packages/tql/kernel/trellis-kernel.js';
+import { JsonlKernelBackend } from '../../packages/trellis-kernel/persist/jsonl-backend.js';
+import { TrellisKernel } from '../../packages/trellis-kernel/kernel/trellis-kernel.js';
 
 describe('Kernel Factory', () => {
   let tmpDir: string;

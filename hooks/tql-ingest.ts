@@ -7,7 +7,7 @@
  * in the TrellisKernel backed by SQLite.
  */
 
-import { TrellisKernel } from '../packages/tql/kernel/trellis-kernel.js';
+import { TrellisKernel } from '../packages/trellis-kernel/kernel/trellis-kernel.js';
 import { createKernel, PROJECT_ROOT, TQL_DIR } from './_kernel.js';
 import { resolve, dirname, extname } from 'path';
 
