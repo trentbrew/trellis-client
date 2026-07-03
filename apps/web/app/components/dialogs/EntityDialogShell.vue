@@ -321,11 +321,11 @@
     </div>
 
     <!-- Footer -->
-    <div class="border-t border-border px-4 py-3 shrink-0 bg-muted/10 flex items-center justify-between">
-      <div class="flex items-center gap-3 text-xs text-muted-foreground">
+    <div class="border-t border-border px-4 py-3 shrink-0 bg-muted/10 flex items-center justify-between gap-3">
+      <div class="flex items-center gap-3 text-xs text-muted-foreground min-w-0 flex-1 overflow-hidden">
         <slot name="footer-left" />
       </div>
-      <div class="flex items-center gap-2">
+      <div class="flex items-center gap-2 shrink-0">
         <slot name="footer-right" />
       </div>
     </div>
@@ -406,11 +406,11 @@
     </div>
 
     <!-- Footer -->
-    <div class="border-t border-border px-4 py-3 shrink-0 bg-muted/10 flex items-center justify-between">
-      <div class="flex items-center gap-3 text-xs text-muted-foreground">
+    <div class="border-t border-border px-4 py-3 shrink-0 bg-muted/10 flex items-center justify-between gap-3">
+      <div class="flex items-center gap-3 text-xs text-muted-foreground min-w-0 flex-1 overflow-hidden">
         <slot name="footer-left" />
       </div>
-      <div class="flex items-center gap-2">
+      <div class="flex items-center gap-2 shrink-0">
         <slot name="footer-right" />
       </div>
     </div>
@@ -537,11 +537,11 @@
       </div>
 
       <!-- Footer -->
-      <div class="border-t border-border px-4 py-3 shrink-0 bg-muted/10 flex items-center justify-between">
-        <div class="flex items-center gap-3 text-xs text-muted-foreground">
+      <div class="border-t border-border px-4 py-3 shrink-0 bg-muted/10 flex items-center justify-between gap-3">
+        <div class="flex items-center gap-3 text-xs text-muted-foreground min-w-0 flex-1 overflow-hidden">
           <slot name="footer-left" />
         </div>
-        <div class="flex items-center gap-2">
+        <div class="flex items-center gap-2 shrink-0">
           <slot name="footer-right" />
         </div>
       </div>

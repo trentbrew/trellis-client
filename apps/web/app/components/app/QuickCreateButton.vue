@@ -25,8 +25,8 @@
   const isPrimary = computed(() => props.variant === 'primary')
   const buttonClass = computed(() =>
     isPrimary.value
-      ? 'h-8 w-8 rounded-full bg-primary hover:bg-primary/90 text-primary-foreground shadow-lg transition-all active:scale-95'
-      : 'h-8 w-8 text-muted-foreground hover:text-foreground bg-transparent hover:bg-muted/50 transition-all active:scale-95',
+      ? '!rounded-full h-8 w-8 bg-primary hover:bg-primary/90 text-primary-foreground shadow-lg transition-all active:scale-95'
+      : '!rounded-full h-8 w-8 text-muted-foreground hover:text-foreground bg-transparent hover:bg-muted/50 transition-all active:scale-95',
   )
 
   interface QuickType {

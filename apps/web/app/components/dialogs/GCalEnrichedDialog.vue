@@ -678,9 +678,9 @@
 
     <!-- Footer left: save status indicator -->
     <template #footer-left>
-      <div class="flex items-center gap-2">
-        <Icon name="lucide:info" class="h-3.5 w-3.5" />
-        <span v-if="enrichment" class="font-mono">{{ enrichmentId }}</span>
+      <div class="flex items-center gap-2 min-w-0 overflow-hidden">
+        <Icon name="lucide:info" class="h-3.5 w-3.5 shrink-0" />
+        <EntityFooterId v-if="enrichment" :id="enrichmentId" :show-prefix="false" />
         <span v-else class="text-muted-foreground/60">No enrichment yet · edit to create</span>
       </div>
     </template>
