@@ -67,7 +67,7 @@ export function checkWorkspaceJson(wsPath: string = WORKSPACE_PATH): HealResult 
     try {
       const defaultWorkspace = {
         workspace: {
-          name: 'trellis-app-builder',
+          name: 'trellis-client',
           description: 'Auto-regenerated workspace config',
         },
       };
@@ -94,7 +94,7 @@ export function checkWorkspaceJson(wsPath: string = WORKSPACE_PATH): HealResult 
     try {
       const defaultWorkspace = {
         workspace: {
-          name: 'trellis-app-builder',
+          name: 'trellis-client',
           description: 'Auto-regenerated workspace config (previous was corrupted)',
         },
       };

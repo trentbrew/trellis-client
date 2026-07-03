@@ -1,7 +1,7 @@
 {
   "workspace": {
-    "name": "trellis-app-builder",
-    "description": "Project brain for the Trellis app builder monorepo. Tracks sessions, actions, files, dependencies, tasks, and decision traces.",
+    "name": "trellis-client",
+    "description": "Project brain for the Trellis local-first client monorepo. Tracks sessions, actions, files, dependencies, tasks, and decision traces.",
     "ontologies": {
       "hq": {
         "@id": "hq",
