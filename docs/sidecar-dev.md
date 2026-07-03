@@ -13,6 +13,10 @@ The embedded kernel (`just run-kernel`, `TRELLIS_SIDECAR=0`) persists to `.data/
 
 The server plugin imports `trellis/core` types for the npm `KernelBackend` contract. Legacy DBs keep the embedded backend until a migration wedge lands.
 
+## Ontology registry (TRL-20)
+
+`GET /api/graph/ontologies` reads **graph-resident `trellis_schema` entities** (seeded on boot via `seedAppConfigFromModules`), not `kernel.listOntologies()`. Ontology CRUD dual-writes kernel registry + `ontology:*` document rows. Module `trellis-ontologies.ts` remains boot seed + empty-graph fallback only.
+
 ## Two CLIs
 
 | Tool | Purpose |
