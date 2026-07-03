@@ -159,20 +159,16 @@
       saveViewport({ lng: center.lng, lat: center.lat, zoom: map.getZoom() })
     })
 
-    // Figma-style gestures: wheel pans; ctrl/meta wheel (incl. trackpad pinch) zooms.
-    map.scrollZoom.disable()
+    // Figma-style gestures: wheel pans; ctrl+wheel (trackpad pinch) uses MapLibre scrollZoom.
+    map.scrollZoom.enable()
     onWheelPan = (event: WheelEvent) => {
       if (!map) return
-      if (event.ctrlKey || event.metaKey) {
-        event.preventDefault()
-        const zoomDelta = -event.deltaY * 0.003
-        map.zoomTo(map.getZoom() + zoomDelta, { around: [event.offsetX, event.offsetY] })
-        return
-      }
+      if (event.ctrlKey) return
       event.preventDefault()
+      event.stopImmediatePropagation()
       map.panBy([event.deltaX, event.deltaY], { animate: false })
     }
-    map.getCanvas().addEventListener('wheel', onWheelPan, { passive: false })
+    map.getCanvas().addEventListener('wheel', onWheelPan, { passive: false, capture: true })
   }
 
   function flyTo(lng: number, lat: number, zoom?: number) {
@@ -242,7 +238,7 @@
 
   onBeforeUnmount(() => {
     if (hidePreviewTimer) clearTimeout(hidePreviewTimer)
-    if (map && onWheelPan) map.getCanvas().removeEventListener('wheel', onWheelPan)
+    if (map && onWheelPan) map.getCanvas().removeEventListener('wheel', onWheelPan, { capture: true })
     onWheelPan = null
     for (const { marker } of markers.values()) marker.remove()
     markers.clear()
