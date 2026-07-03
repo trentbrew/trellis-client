@@ -248,7 +248,7 @@
 </script>
 
 <template>
-  <div class="relative h-full w-full overflow-hidden" aria-label="Locations map">
+  <div class="relative h-full w-full overflow-hidden" data-pinch-zoom aria-label="Locations map">
     <div v-if="!mapReady || isResolving" class="absolute inset-0 z-[5] flex items-center justify-center bg-background/40">
       <Icon name="lucide:loader-circle" class="h-8 w-8 animate-spin text-muted-foreground" />
     </div>
