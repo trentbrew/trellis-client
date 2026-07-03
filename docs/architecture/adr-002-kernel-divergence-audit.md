@@ -30,7 +30,7 @@ This audit informs post-P3 convergence. Verdicts: **port** | **keep embedded** |
 | InstantDB / platform adapter | `DataAdapter` cloud/local | Not applicable | **keep embedded** — platform layer |
 | MCP / CLI graph tools | `packages/trellis-cli` → embedded API | Could target sidecar URL | **keep embedded** short-term |
 | Formula / analytics modules | In embedded fork | Not in npm 3.2 | **upstream** or **keep embedded** per file audit |
-| Workflow engine | Embedded util | Not in npm 3.2 | **keep embedded** |
+| Workflow engine | Embedded util (`graph/` + `workflows/`) | Not in npm 3.2 | **keep embedded** — TRL-21 audit: `adr-002-agent-graph-engine-audit.md` |
 | Gmail / integrations seed | Nuxt server plugin | N/A | **keep embedded** |
 | AGPL engine packaging | Private `@turtle.tech/*` | Published `trellis` AGPL | **accepted** per ADR D1 |
 
@@ -42,6 +42,7 @@ This audit informs post-P3 convergence. Verdicts: **port** | **keep embedded** |
 2. ~~**Browse / `useTrellisEntities`** — Option B Phase 2; replace kernel SSE version bump pattern.~~ **Shipped TRL-17** (kernel-bridge `KernelBrowse` aggregate).
 3. **Zone-gated relay join** — P2; move advisory guard to `trellis/realtime` middleware.
 4. ~~**File-by-file fork audit** — `packages/trellis-kernel` diff vs `trellis@3.2` for query optimizer, workflows.~~ **Shipped TRL-18** (see `adr-002-kernel-fork-file-audit.md`).
+5. ~~**Agent graph engine decision** — `useWorkflowExecution` + `graph/engine.ts` vs `trellis/ai` / `AgentHarness`.~~ **Shipped TRL-21** (see `adr-002-agent-graph-engine-audit.md`).
 
 ---
 
