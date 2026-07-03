@@ -17,7 +17,7 @@ Vue components, Nuxt-auto-imported by name (`~/components` is registered with `p
 | `dashboard-builder/`    | Builder UI for assembling dashboards (design-time).                                           |
 | `page-builder/`         | Builder UI for graph-driven pages.                                                            |
 | `route-builder/`        | Builder UI for route configuration.                                                           |
-| `data/`                 | Data projection components (DataTable, CollectionSpreadsheetProjection, TrellisBlocksProjection). |
+| `data/`                 | Data projection components (DataTable, CollectionDataGridProjection, TrellisBlocksProjection). |
 | `views/`                | View renderers per layout (Board, Calendar, Graph, List, Table).                              |
 | `entity/`               | Entity-specific components (panels, dialogs, sections per entity type).                       |
 | `agent/`                | Agent UI (chat panels, tool result renderers, routing display).                               |

@@ -187,18 +187,23 @@
   .tabs-container {
     border: 1px solid var(--border);
     border-radius: 0.5rem;
-    margin: 0.75rem 0;
-    overflow: hidden;
+    margin: 0 0 0.75rem;
   }
 
   .tabs-header {
     align-items: center;
-    background: hsl(var(--muted) / 0.4);
+    -webkit-backdrop-filter: blur(20px) saturate(1.4);
+    backdrop-filter: blur(20px) saturate(1.4);
+    background: var(--card);
     border-bottom: 1px solid var(--border);
+    border-radius: 0.5rem 0.5rem 0 0;
     display: flex;
     gap: 0;
     overflow-x: auto;
+    position: sticky;
     scrollbar-width: none;
+    top: 0;
+    z-index: 20;
   }
 
   .tabs-header::-webkit-scrollbar {
@@ -320,6 +325,7 @@
   }
 
   .tabs-body {
+    border-radius: 0 0 0.5rem 0.5rem;
     padding: 1rem;
   }
 </style>

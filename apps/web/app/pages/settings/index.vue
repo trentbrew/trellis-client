@@ -1,3 +1,3 @@
 <script setup lang="ts">
-  await navigateTo('/settings/notifications', { replace: true })
+  await navigateTo('/settings/profile', { replace: true })
 </script>

@@ -265,7 +265,7 @@
       showHeader: true,
       showTabs: true,
       contentPadding: 'px-8 pb-12 pt-6',
-      maxWidth: 'max-w-full',
+      maxWidth: 'mx-auto w-full lg:max-w-5xl',
       showToolbar: false,
     },
     sidebar: { showHeader: false, showTabs: false, contentPadding: 'p-0', maxWidth: '', showToolbar: false },
@@ -302,6 +302,8 @@
   const effectiveFillHeight = computed(
     () => props.fillHeight || isFilesystem.value || isFolders.value || isCalendar.value,
   )
+
+  const isSpreadsheetBrowseView = computed(() => props.browse?.viewMode.value === 'table')
 
   // Resolved display states (props override variant defaults)
   const effectiveSearchPlaceholder = computed(() => {
@@ -402,16 +404,19 @@
   // Content wrapper class
   const contentWrapperClass = computed(() => {
     if (!effectiveFillHeight.value) return 'w-full'
-    return clsx('w-full flex h-full flex-col', isFilesystem.value ? 'overflow-hidden' : 'overflow-y-auto')
+    const overflow =
+      isFilesystem.value || isSpreadsheetBrowseView.value ? 'overflow-hidden' : 'overflow-y-auto'
+    return clsx('w-full flex h-full flex-col', overflow)
   })
 
   // Main content area class
   const mainContentClass = computed(() =>
     clsx(
       props.contentClass,
-      variantConfig.value.contentPadding,
+      isSpreadsheetBrowseView.value ? 'p-0' : variantConfig.value.contentPadding,
       variantConfig.value.maxWidth,
       effectiveFillHeight.value && ['min-h-0', 'flex-1'],
+      isSpreadsheetBrowseView.value && ['flex', 'flex-col', 'overflow-hidden'],
     ),
   )
 
@@ -819,8 +824,9 @@
         <div
           v-if="variantConfig.showToolbar"
           ref="stickyRef"
-          class="sticky -top-px z-40 transition-all duration-50 rounded-t-lg"
+          class="sticky -top-px z-40 transition-all duration-50"
           :class="[
+            !isSpreadsheetBrowseView && 'rounded-t-lg',
             isStuck
               ? 'border-b! border-border bg-background/25 backdrop-blur-3xl'
               : 'bg-transparent border-b-transparent',
@@ -1228,7 +1234,13 @@
             <div v-else-if="browse?.viewMode.value === 'timeline' && $slots.timeline" class="h-full w-full">
               <slot name="timeline" :items="browse.filteredItems.value" />
             </div>
-            <div v-show="browse?.viewMode.value !== 'table' || !$slots.table" class="h-full w-full">
+            <div
+              v-show="browse?.viewMode.value !== 'table' || !$slots.table"
+              :class="
+                isSpreadsheetBrowseView
+                  ? 'flex h-full min-h-0 w-full flex-1 flex-col overflow-hidden border-t'
+                  : 'h-full w-full'
+              ">
               <slot
                 :is-full-width="isFullWidth"
                 :is-section-highlighted="isSectionHighlighted"

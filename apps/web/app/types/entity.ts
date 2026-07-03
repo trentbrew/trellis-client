@@ -1402,6 +1402,8 @@ export type PropertyFieldId =
   // Event
   | 'location'
   | 'eventSubtype'
+  | 'latitude'
+  | 'longitude'
 
 /** Layout groups for the properties row */
 export type PropertyFieldGroup =

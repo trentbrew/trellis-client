@@ -114,6 +114,54 @@
 
 <template>
   <div class="flex flex-col pt-3 divide-y divide-border/50">
+    <!-- ── System / read-only fields ───────────────────────────────── -->
+    <div
+      class="grid grid-cols-[20px_1fr_auto] items-center gap-2 px-3 py-2"
+      :title="'Read-only'">
+      <Icon name="lucide:calendar-plus" class="h-3.5 w-3.5 text-muted-foreground/70" />
+      <span class="text-[10px] uppercase tracking-wide text-muted-foreground/60 flex items-center gap-1">
+        Created at
+        <Icon name="lucide:lock" class="h-2.5 w-2.5 opacity-50" />
+      </span>
+      <span
+        class="max-w-fit inline-flex items-center gap-1.5 px-2 py-1 rounded-md text-xs text-muted-foreground cursor-default truncate">
+        {{ createdAtFormatted || '—' }}
+      </span>
+    </div>
+
+    <div class="grid grid-cols-[20px_1fr_auto] items-center gap-2 px-3 py-2" :title="'Read-only'">
+      <Icon name="lucide:user-check" class="h-3.5 w-3.5 text-muted-foreground/70" />
+      <span class="text-[10px] uppercase tracking-wide text-muted-foreground/60 flex items-center gap-1">
+        Created by
+        <Icon name="lucide:lock" class="h-2.5 w-2.5 opacity-50" />
+      </span>
+      <span
+        class="max-w-fit inline-flex items-center gap-1.5 px-2 py-1 rounded-md text-xs text-muted-foreground cursor-default">
+        <template v-if="createdByName">
+          <div
+            class="w-4 h-4 rounded-full bg-muted-foreground/15 flex items-center justify-center text-[8px] font-medium shrink-0">
+            {{ createdByName.slice(0, 2).toUpperCase() }}
+          </div>
+          <span class="truncate">{{ createdByName }}</span>
+        </template>
+        <span v-else>—</span>
+      </span>
+    </div>
+
+    <div
+      class="grid grid-cols-[20px_1fr_auto] items-center gap-2 px-3 py-2 border-b border-border/50"
+      :title="'Read-only'">
+      <Icon name="lucide:history" class="h-3.5 w-3.5 text-muted-foreground/70" />
+      <span class="text-[10px] uppercase tracking-wide text-muted-foreground/60 flex items-center gap-1">
+        Last edited
+        <Icon name="lucide:lock" class="h-2.5 w-2.5 opacity-50" />
+      </span>
+      <span
+        class="max-w-fit inline-flex items-center gap-1.5 px-2 py-1 rounded-md text-xs text-muted-foreground cursor-default truncate">
+        {{ updatedAtFormatted || '—' }}
+      </span>
+    </div>
+
     <!-- Date / schedule row — popover holds the full schedule UI -->
     <div v-if="props.hasField('startDate')" class="grid grid-cols-[20px_1fr_auto] items-center gap-2 px-3 py-2">
       <Icon name="lucide:calendar" class="h-3.5 w-3.5 text-muted-foreground" />
@@ -460,49 +508,6 @@
           </div>
         </UiPopoverContent>
       </UiPopover>
-    </div>
-
-    <!-- ── System / read-only fields ───────────────────────────────── -->
-    <div
-      class="grid grid-cols-[20px_1fr_auto] items-center gap-2 px-3 py-2"
-      :title="'Read-only'">
-      <Icon name="lucide:calendar-plus" class="h-3.5 w-3.5 text-muted-foreground/70" />
-      <span class="text-[10px] uppercase tracking-wide text-muted-foreground/60 flex items-center gap-1">
-        Created at
-        <Icon name="lucide:lock" class="h-2.5 w-2.5 opacity-50" />
-      </span>
-      <span class="max-w-fit text-xs text-muted-foreground truncate">
-        {{ createdAtFormatted || '—' }}
-      </span>
-    </div>
-
-    <div class="grid grid-cols-[20px_1fr_auto] items-center gap-2 px-3 py-2" :title="'Read-only'">
-      <Icon name="lucide:user-check" class="h-3.5 w-3.5 text-muted-foreground/70" />
-      <span class="text-[10px] uppercase tracking-wide text-muted-foreground/60 flex items-center gap-1">
-        Created by
-        <Icon name="lucide:lock" class="h-2.5 w-2.5 opacity-50" />
-      </span>
-      <span class="max-w-fit inline-flex items-center gap-1.5 text-xs text-muted-foreground">
-        <template v-if="createdByName">
-          <div
-            class="w-4 h-4 rounded-full bg-muted-foreground/15 flex items-center justify-center text-[8px] font-medium shrink-0">
-            {{ createdByName.slice(0, 2).toUpperCase() }}
-          </div>
-          <span class="truncate">{{ createdByName }}</span>
-        </template>
-        <span v-else>—</span>
-      </span>
-    </div>
-
-    <div class="grid grid-cols-[20px_1fr_auto] items-center gap-2 px-3 py-2" :title="'Read-only'">
-      <Icon name="lucide:history" class="h-3.5 w-3.5 text-muted-foreground/70" />
-      <span class="text-[10px] uppercase tracking-wide text-muted-foreground/60 flex items-center gap-1">
-        Last edited
-        <Icon name="lucide:lock" class="h-2.5 w-2.5 opacity-50" />
-      </span>
-      <span class="max-w-fit text-xs text-muted-foreground truncate">
-        {{ updatedAtFormatted || '—' }}
-      </span>
     </div>
   </div>
 </template>

@@ -11,7 +11,7 @@
  * them into RouteConfig objects for navigation, sidebar, and breadcrumbs.
  */
 
-import type { RouteDefinition } from '@turtle.tech/tql'
+import type { RouteDefinition } from '@turtle.tech/trellis-kernel'
 
 // ============================================================================
 // Home Route — /home
@@ -303,13 +303,13 @@ const locationsRoute: RouteDefinition = {
   railPosition: 'primary',
   inCommandPalette: true,
   requiresAuth: true,
-  collapseSidebar: true,
+  collapseSidebar: false,
   searchKeywords: ['locations', 'map', 'places', 'geo', 'travel'],
   meta: {
     title: 'Locations',
     description: 'Map view of places in your graph',
     fullWidth: true,
-    hideSidebar: true,
+    hideSidebar: false,
   },
 }
 

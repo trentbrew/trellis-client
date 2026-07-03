@@ -108,4 +108,5 @@ export interface DataAdapter {
   /** Demo user helpers — only available on LocalAdapter in dev mode. */
   readonly demoUsers?: Record<string, AuthUser>
   switchUser?(_userKey: string): void
+  updateCurrentUser?(_patch: Partial<AuthUser> & Record<string, unknown>): void
 }

@@ -1,17 +1,18 @@
 <script setup lang="ts">
-  const user = useUser()
-  const { $toast } = useNuxtApp()
+  const {
+    displayName,
+    bio,
+    avatarUrl,
+    locale,
+    timezone,
+    emailNotifications,
+    desktopNotifications,
+    weeklyDigest,
+    isSaving,
+    saveProfile,
+  } = useUserProfile()
 
-  const displayName = ref(user.value?.displayName || '')
-  const bio = ref('')
-  const avatarUrl = ref('')
-  const locale = ref('en')
-  const timezone = ref(Intl.DateTimeFormat().resolvedOptions().timeZone)
-  const emailNotifications = ref(true)
-  const desktopNotifications = ref(false)
-  const weeklyDigest = ref(true)
-
-  const isSaving = ref(false)
+  const { user } = useInstantAuth()
 
   const localeOptions = [
     { value: 'en', label: 'English' },
@@ -32,7 +33,7 @@
   ]
 
   const initials = computed(() => {
-    const name = displayName.value || user.value?.displayName || 'User'
+    const name = displayName.value || user.value?.name || 'User'
     return name
       .split(' ')
       .map((n) => n[0])
@@ -42,10 +43,7 @@
   })
 
   async function handleSaveProfile() {
-    isSaving.value = true
-    await new Promise((r) => setTimeout(r, 800))
-    isSaving.value = false
-    $toast?.success('Profile saved')
+    await saveProfile()
   }
 
   function handleAvatarDrop(event: DragEvent) {
@@ -84,7 +82,7 @@
     subtitle="Settings"
     title="Profile"
     description="Manage your personal information and preferences.">
-    <div class="space-y-4 max-w-2xl">
+    <div class="space-y-4">
       <!-- Avatar & Basic Info -->
       <UiCard>
         <UiCardHeader>

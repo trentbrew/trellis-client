@@ -13,13 +13,14 @@
  */
 
 import { getHeader } from 'h3'
-import type { SchemaDefinition } from '@turtle.tech/tql'
-import { useTrellisKernel, useWorkspaceConfig, getMutationLog, pushMutationLog } from '../../plugins/trellis-kernel'
+import type { SchemaDefinition } from '@turtle.tech/trellis-kernel'
+import { useTrellisKernel, getMutationLog, pushMutationLog } from '../../plugins/trellis-kernel'
 import { getZoneGuardStats, getZoneGuardMode, checkMutation, recordStrictRejection } from '../../utils/zone-guard'
 import { emitMutation } from '../../utils/trellis-events'
 import { zoneFromRequest } from '../../utils/zone-router'
 import { captureDecision, shouldCaptureDecision } from '../../utils/campus-decisions'
 import { parseApiBody, parseApiQuery, validateApiInput } from '../../utils/api-validation'
+import { buildAppConfigSnapshot } from '../../lib/app-config-snapshot'
 import {
   GraphMutateBodySchema,
   GraphNodeParamsSchema,
@@ -174,20 +175,13 @@ export default defineEventHandler(async (event) => {
   // Routes/app come from the stored workspace config; ontologies come
   // from the kernel (which may have runtime mutations).
   if (method === 'GET' && route === 'config') {
-    const wsConfig = useWorkspaceConfig()
-    const ontologies: Record<string, any> = {}
-    for (const schema of kernel.listOntologies()) {
-      ontologies[schema['@id']] = schema
-    }
-    const projections: Record<string, any> = {}
-    for (const proj of kernel.listProjections()) {
-      projections[proj['@id']] = proj
-    }
+    const snapshot = buildAppConfigSnapshot(kernel)
     return {
-      app: wsConfig.workspace.app || null,
-      routes: wsConfig.workspace.routes || {},
-      projections,
-      ontologies,
+      app: snapshot.app,
+      routes: snapshot.routes,
+      projections: snapshot.projections,
+      projectionViews: snapshot.projectionViews,
+      ontologies: snapshot.ontologies,
     }
   }
 

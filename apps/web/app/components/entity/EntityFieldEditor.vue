@@ -168,6 +168,20 @@
     return map[color] || map.gray
   }
 
+  const hasBadgeColor = (color?: string) => !!color?.includes(' ')
+
+  const optionBadgeClass = (opt: SelectOption) =>
+    hasBadgeColor(opt.color)
+      ? ['inline-flex max-w-full items-center gap-1.5 rounded-full px-2 py-0.5 text-[11px] font-medium leading-none', opt.color]
+      : ['inline-flex max-w-full items-center gap-1.5 rounded-full bg-muted px-2 py-0.5 text-[11px] font-medium leading-none text-muted-foreground']
+
+  const showSelectAsBadge = computed(
+    () =>
+      props.display === 'badge' ||
+      props.display === 'pill' ||
+      (props.display === 'cell' && !!currentOption.value && hasBadgeColor(currentOption.value.color)),
+  )
+
   // ── Pill trigger classes ───────────────────────────────────────────────────
 
   const hasValue = computed(() => {
@@ -178,8 +192,11 @@
   })
 
   const triggerClasses = computed(() => {
-    if (props.display === 'cell') {
-      return 'flex items-center min-h-8 px-1 w-full'
+    if (props.display === 'cell' && !showSelectAsBadge.value) {
+      return 'flex min-h-8 w-full items-center gap-1.5 px-1 text-left'
+    }
+    if (props.display === 'cell' && showSelectAsBadge.value) {
+      return 'flex min-h-8 w-full items-center px-1 text-left'
     }
     // pill / badge
     const base = 'inline-flex items-center gap-1.5 px-2 py-1 rounded-lg transition-colors text-xs'
@@ -247,10 +264,16 @@
     <UiPopover v-else-if="editorConfig.editorType === 'select'" v-model:open="popoverOpen">
       <UiPopoverTrigger as-child>
         <button type="button" :class="triggerClasses" :disabled="readonly">
-          <template v-if="currentOption">
+          <template v-if="currentOption && showSelectAsBadge">
+            <span :class="optionBadgeClass(currentOption)">
+              <Icon v-if="currentOption.icon" :name="currentOption.icon" class="h-3 w-3 shrink-0" />
+              <span class="truncate">{{ currentOption.label }}</span>
+            </span>
+          </template>
+          <template v-else-if="currentOption">
             <span
-              v-if="currentOption.color && !currentOption.color.includes(' ')"
-              class="h-2 w-2 rounded-full shrink-0"
+              v-if="currentOption.color && !hasBadgeColor(currentOption.color)"
+              class="h-2 w-2 shrink-0 rounded-full"
               :class="dotColor(currentOption.color)" />
             <Icon v-else-if="currentOption.icon" :name="currentOption.icon" class="h-3.5 w-3.5 shrink-0" />
             <span class="truncate max-w-[120px]">{{ currentOption.label }}</span>
@@ -259,23 +282,32 @@
             <Icon :name="fieldIcon" class="h-3.5 w-3.5" />
             <span v-if="!compact">{{ editorConfig.placeholder || fieldLabel }}</span>
           </template>
-          <Icon v-if="display === 'cell'" name="lucide:chevron-down" class="h-3 w-3 shrink-0 opacity-50 ml-auto" />
+          <Icon
+            v-if="display === 'cell' && !showSelectAsBadge"
+            name="lucide:chevron-down"
+            class="ml-auto h-3 w-3 shrink-0 opacity-50" />
         </button>
       </UiPopoverTrigger>
-      <UiPopoverContent align="start" :side-offset="4" class="w-44 p-1">
+      <UiPopoverContent align="start" :side-offset="4" class="w-52 p-1">
         <button
           v-for="opt in editorConfig.options"
           :key="opt.value"
           type="button"
           class="flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-xs hover:bg-accent transition-colors text-left"
           @click="selectOption(opt.value)">
-          <span
-            v-if="opt.color && !opt.color.includes(' ')"
-            class="h-2.5 w-2.5 rounded-full shrink-0"
-            :class="dotColor(opt.color)" />
-          <Icon v-else-if="opt.icon" :name="opt.icon" class="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
-          <span class="flex-1">{{ opt.label }}</span>
-          <Icon v-if="modelValue === opt.value" name="lucide:check" class="h-3.5 w-3.5 text-primary" />
+          <span v-if="hasBadgeColor(opt.color)" :class="optionBadgeClass(opt)">
+            <Icon v-if="opt.icon" :name="opt.icon" class="h-3 w-3 shrink-0" />
+            <span class="truncate">{{ opt.label }}</span>
+          </span>
+          <template v-else>
+            <span
+              v-if="opt.color"
+              class="h-2.5 w-2.5 shrink-0 rounded-full"
+              :class="dotColor(opt.color)" />
+            <Icon v-else-if="opt.icon" :name="opt.icon" class="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
+            <span class="flex-1">{{ opt.label }}</span>
+          </template>
+          <Icon v-if="modelValue === opt.value" name="lucide:check" class="ml-auto h-3.5 w-3.5 shrink-0 text-primary" />
         </button>
         <button
           v-if="hasValue"

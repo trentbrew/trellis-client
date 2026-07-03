@@ -991,6 +991,7 @@
     :class="[
       seamless ? 'overflow-hidden' : 'rounded-none border-none bg-card/0 overflow-hidden',
       fillHeight ? 'flex flex-col min-h-0' : '',
+      fillHeight && !seamless ? 'rte-scroll-pad-content' : '',
     ]">
     <!-- Drag Handle (conditional) — class applied directly to avoid duplicate icon from nested div -->
     <DragHandle
@@ -1871,7 +1872,7 @@
       :editor="editor"
       class="prose prose-sm dark:prose-invert max-w-none text-sm text-foreground"
       :class="[
-        seamless ? 'px-0 py-0' : 'px-8 py-8',
+        seamless ? 'px-0 py-0' : fillHeight ? 'px-8 py-0' : 'px-8 py-8',
         seamless ? 'min-h-[24px]' : compact ? 'min-h-[60px]' : 'min-h-[100px]',
         fillHeight ? 'flex-1 min-h-0 overflow-y-auto' : '',
       ]" />
@@ -1956,6 +1957,11 @@
 </template>
 
 <style scoped>
+  .rte-scroll-pad-content :deep(.ProseMirror) {
+    padding-bottom: 2rem;
+    padding-top: 2rem;
+  }
+
   :deep(.ProseMirror) {
     outline: none;
     color: var(--foreground) !important;

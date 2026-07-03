@@ -11,7 +11,7 @@
     extends /* @vue-ignore */ Partial<InstanceType<typeof Calendar>['$props']>,
       /* @vue-ignore */ Omit<Partial<InstanceType<typeof DatePicker>['$props']>, 'attributes'> {}
 
-  const props = defineProps<Props & { trimWeeks?: boolean; attributes?: AttributeConfig[] }>()
+  const props = defineProps<Props & { trimWeeks?: boolean; attributes?: AttributeConfig[]; embedded?: boolean }>()
   defineExpose({ datepickerRef })
 </script>
 
@@ -19,6 +19,7 @@
   <ClientOnly>
     <VDatePicker
       ref="datepickerRef"
+      :class="{ 'vc-embedded': props.embedded }"
       :trim-weeks="props.trimWeeks || true"
       :is-dark="$colorMode.value == 'dark'"
       :attributes="props.attributes"
@@ -157,6 +158,22 @@
       .vc-highlights {
         @apply size-full;
       }
+    }
+  }
+
+  .vc-embedded.vc-light,
+  .vc-embedded.vc-dark {
+    --vc-bg: var(--color-popover);
+    --vc-time-select-group-bg: var(--color-popover);
+  }
+
+  .vc-embedded {
+    width: 100%;
+
+    .vc-pane-layout,
+    .vc-pane,
+    .vc-weeks {
+      width: 100%;
     }
   }
 </style>

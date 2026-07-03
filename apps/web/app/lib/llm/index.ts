@@ -1,9 +1,9 @@
-import type { LLMClient } from '@turtle.tech/tql/graph'
+import type { LLMClient } from '@turtle.tech/trellis-kernel/graph'
 
 /**
  * LLM client factory.
  *
- * Returns an LLMClient that conforms to the @turtle.tech/tql/graph interface.
+ * Returns an LLMClient that conforms to the @turtle.tech/trellis-kernel/graph interface.
  * All calls are proxied through /api/llm/generate (the Nuxt server) so that:
  *   - Ollama (localhost:11434) is not called directly from the browser (CORS)
  *   - Gemini API keys remain server-side

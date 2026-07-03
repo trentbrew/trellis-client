@@ -1,4 +1,4 @@
-import type { ToolFn } from '@turtle.tech/tql/graph'
+import type { ToolFn } from '@turtle.tech/trellis-kernel/graph'
 
 /**
  * Workflow tool registry (client-side factory).

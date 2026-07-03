@@ -5,11 +5,61 @@ default:
 # Get port from environment (fallback: 1414)
 port := `printf "%s" "${TRELLIS_PORT:-1414}"`
 
-# Run the dev server on canonical port (kills any existing process on that port first)
-run:
-    @just clear
+# Option B sidecar port
+sidecar-port := "8230"
+
+# Clear Nuxt cache and stale dev/sidecar ports
+clear:
     -lsof -ti:{{port}} | xargs kill -9 2>/dev/null || true
-    @echo "🚀 Starting Trellis dev server on port {{port}}..."
+    -lsof -ti:{{sidecar-port}} | xargs kill -9 2>/dev/null || true
+    rm -rf .nuxt
+
+# ── Option B: published trellis sidecar (:8230) ───────────────────────
+
+# One-time: writes .trellis-db.json + .trellis-db/ (requires Bun)
+sidecar-init:
+    TRELLIS_BACKEND=sqljs bun ./node_modules/trellis/bin/trellis.mjs db init --port {{sidecar-port}}
+
+# Foreground sidecar only (sql.js backend — Bun required)
+sidecar-serve:
+    TRELLIS_BACKEND=sqljs bun ./node_modules/trellis/bin/trellis.mjs db serve -p {{sidecar-port}}
+
+# Run Nuxt dev only (Option A — embedded kernel, no sidecar)
+run-kernel:
+    @just clear
+    @echo "🚀 Starting Trellis dev server on port {{port}} (kernel only)..."
+    TRELLIS_SIDECAR=0 pnpm dev
+
+# Run sidecar + Nuxt concurrently (Option B — default for `just run`)
+run:
+    #!/usr/bin/env bash
+    set -euo pipefail
+    sidecar="${TRELLIS_SIDECAR:-1}"
+    just clear
+    if [[ "$sidecar" == "1" ]]; then
+      if [[ ! -f .trellis-db.json ]]; then
+        echo "📦 No .trellis-db.json — running sidecar-init..."
+        just sidecar-init
+      fi
+      echo "🌿 Starting sidecar on :{{sidecar-port}}..."
+      TRELLIS_BACKEND=sqljs bun ./node_modules/trellis/bin/trellis.mjs db serve -p {{sidecar-port}} &
+      sidecar_pid=$!
+      cleanup() { kill "$sidecar_pid" 2>/dev/null || true; }
+      trap cleanup EXIT INT TERM
+      echo "⏳ Waiting for sidecar..."
+      for _ in $(seq 1 60); do
+        if curl -sf "http://127.0.0.1:{{sidecar-port}}/health" >/dev/null 2>&1 \
+          || curl -sf "http://127.0.0.1:{{sidecar-port}}/entities?limit=1" >/dev/null 2>&1; then
+          break
+        fi
+        sleep 0.5
+      done
+      export TRELLIS_SIDECAR=1
+      echo "✅ Sidecar ready — Nuxt proxy enabled (TRELLIS_SIDECAR=1)"
+    else
+      echo "ℹ️  TRELLIS_SIDECAR=0 — kernel only (use \`just run-kernel\` explicitly)"
+    fi
+    echo "🚀 Starting Trellis dev server on port {{port}}..."
     pnpm dev
 
 # Validate deployment (lint, tests, route validation, build)
@@ -41,23 +91,6 @@ preview: build
 targets:
     firebase target:apply hosting v2 trellis-web
 
-# Clear Nuxt cache
-clear:
-    -lsof -ti:{{port}} | xargs kill -9 2>/dev/null || true
-    rm -rf .nuxt
-
-# ── Option B: published trellis sidecar (:8230) ───────────────────────
-
-sidecar-port := "8230"
-
-# One-time: writes .trellis-db.json + .trellis-db/ (requires Bun)
-sidecar-init:
-    TRELLIS_BACKEND=sqljs bun ./node_modules/trellis/bin/trellis.mjs db init --port {{sidecar-port}}
-
-# Foreground sidecar (sql.js backend — Bun required)
-sidecar-serve:
-    TRELLIS_BACKEND=sqljs bun ./node_modules/trellis/bin/trellis.mjs db serve -p {{sidecar-port}}
-
 # WS smoke (sidecar must be running)
 smoke-ws:
     pnpm smoke:ws
@@ -65,3 +98,11 @@ smoke-ws:
 # HTTP proxy smoke (sidecar + TRELLIS_SIDECAR=1 Nuxt dev)
 smoke-sidecar:
     pnpm smoke:sidecar
+
+# Import kernel pages into sidecar DB
+import-pages-sidecar:
+    node scripts/import-pages-to-sidecar.mjs
+
+# Import kernel app config into sidecar DB (ADR-002 P3)
+import-app-config-sidecar:
+    node scripts/import-app-config-to-sidecar.mjs
