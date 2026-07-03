@@ -105,7 +105,18 @@ node scripts/import-app-config-to-sidecar.mjs
 TRELLIS_SIDECAR=1 node scripts/import-app-config-to-sidecar.mjs
 ```
 
-When `TRELLIS_SIDECAR=1` and imported rows exist, `useTrellisConfig` uses `trellis/vue` `useEntities` (no SSE refetch). Otherwise it falls back to `GET /api/graph/config` + SSE (P1).
+When `TRELLIS_SIDECAR=1` and imported rows exist, `useTrellisConfig` uses `trellis/vue` `useEntities` (no SSE refetch). With `TRELLIS_SIDECAR=0`, the **kernel-bridge** client (`/api/graph/kernel-bridge` + kernel SSE) provides the same live path without sidecar or import. Otherwise it falls back to `GET /api/graph/config` + SSE (P1).
+
+### Kernel-bridge (embedded live query, no import)
+
+Default dev (`just run-kernel`, `TRELLIS_SIDECAR=0`) registers a `TrellisDb` shim that:
+
+| Layer | Transport |
+|-------|-----------|
+| Entity list | `GET /api/graph/kernel-bridge/entities?type=AppRoute` (etc.) |
+| Live updates | Kernel SSE `/api/graph/events` → refetch on app-config mutations |
+
+No import script required — reads P1-seeded kernel facts directly. Sidecar path takes priority when `TRELLIS_SIDECAR=1`.
 
 ### Presence relay (optional)
 
