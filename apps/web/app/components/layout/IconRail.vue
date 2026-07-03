@@ -55,52 +55,8 @@
         : 'flex-col w-16 px-2 py-2 border-r-none items-stretch',
     ]"
     aria-label="Navigation rail">
-    <!-- Left: Graph + Chat -->
+    <!-- Left: Chat -->
     <div :class="['flex shrink-0 gap-1.5', isBottom ? 'items-center' : 'flex-col pt-2']">
-      <template v-if="graphRoute">
-        <UiTooltip>
-          <UiTooltipTrigger as-child>
-            <AppNavLink
-              :to="graphRoute.path"
-              class="group relative flex items-center justify-center rounded-full transition-all duration-200 ease-out overflow-visible"
-              :class="[
-                isBottom && routes.isRouteActive(graphRoute.path) ? 'h-9 px-4 gap-2' : 'h-9 w-9',
-                routes.isRouteActive(graphRoute.path)
-                  ? isInEditMode
-                    ? 'bg-accent-foreground/10 text-accent-foreground/80'
-                    : 'bg-rail-foreground/10 text-foreground'
-                  : isInEditMode
-                    ? 'text-accent-foreground/70 hover:bg-accent-foreground/10 hover:text-accent-foreground'
-                    : 'text-rail-foreground/70 hover:bg-rail-foreground/10 hover:text-rail-foreground',
-              ]">
-              <Icon :name="graphRoute.icon" class="h-4.5 w-4.5 opacity-60 shrink-0" />
-              <Transition
-                enter-active-class="transition-all duration-200 ease-out"
-                enter-from-class="opacity-0 max-w-0"
-                enter-to-class="opacity-100 max-w-24"
-                leave-active-class="transition-all duration-150 ease-in"
-                leave-from-class="opacity-100 max-w-24"
-                leave-to-class="opacity-0 max-w-0">
-                <span
-                  v-if="isBottom && routes.isRouteActive(graphRoute.path)"
-                  class="text-xs font-bold tracking-tight whitespace-nowrap overflow-hidden">
-                  {{ graphRoute.label }}
-                </span>
-              </Transition>
-              <RailBadge :badge="graphBadge" />
-            </AppNavLink>
-          </UiTooltipTrigger>
-          <UiTooltipContent
-            :side="tooltipSide"
-            :side-offset="8"
-            align="center"
-            :align-offset="0"
-            :avoid-collisions="false">
-            {{ graphRoute.label }}
-          </UiTooltipContent>
-        </UiTooltip>
-      </template>
-
       <template v-if="chatRoute">
         <UiTooltip>
           <UiTooltipTrigger as-child>
@@ -146,8 +102,53 @@
       </template>
     </div>
 
-    <!-- Center: All other icons (centered) -->
+    <!-- Center: Graph + other primary icons (Collections, etc.) -->
     <div :class="['flex flex-1 items-center', isBottom ? 'gap-1 justify-center' : 'flex-col gap-1.5 justify-center']">
+      <!-- Graph — first in center group, left of Collections -->
+      <div v-if="graphRoute" :class="['flex gap-1.5', isBottom ? 'flex-row items-center' : 'flex-col']">
+        <UiTooltip>
+          <UiTooltipTrigger as-child>
+            <AppNavLink
+              :to="graphRoute.path"
+              class="group relative flex items-center justify-center rounded-full transition-all duration-200 ease-out overflow-visible"
+              :class="[
+                isBottom && routes.isRouteActive(graphRoute.path) ? 'h-9 px-4 gap-2' : 'h-9 w-9',
+                routes.isRouteActive(graphRoute.path)
+                  ? isInEditMode
+                    ? 'bg-accent-foreground/10 text-accent-foreground/80'
+                    : 'bg-rail-foreground/10 text-foreground'
+                  : isInEditMode
+                    ? 'text-accent-foreground/70 hover:bg-accent-foreground/10 hover:text-accent-foreground'
+                    : 'text-rail-foreground/70 hover:bg-rail-foreground/10 hover:text-rail-foreground',
+              ]">
+              <Icon :name="graphRoute.icon" class="h-4.5 w-4.5 opacity-60 shrink-0" />
+              <Transition
+                enter-active-class="transition-all duration-200 ease-out"
+                enter-from-class="opacity-0 max-w-0"
+                enter-to-class="opacity-100 max-w-24"
+                leave-active-class="transition-all duration-150 ease-in"
+                leave-from-class="opacity-100 max-w-24"
+                leave-to-class="opacity-0 max-w-0">
+                <span
+                  v-if="isBottom && routes.isRouteActive(graphRoute.path)"
+                  class="text-xs font-bold tracking-tight whitespace-nowrap overflow-hidden">
+                  {{ graphRoute.label }}
+                </span>
+              </Transition>
+              <RailBadge :badge="graphBadge" />
+            </AppNavLink>
+          </UiTooltipTrigger>
+          <UiTooltipContent
+            :side="tooltipSide"
+            :side-offset="8"
+            align="center"
+            :align-offset="0"
+            :avoid-collisions="false">
+            {{ graphRoute.label }}
+          </UiTooltipContent>
+        </UiTooltip>
+      </div>
+
       <!-- Primary Navigation Routes (excluding Graph) -->
       <div :class="['flex gap-1.5', isBottom ? 'flex-row items-center' : 'flex-col']">
         <template v-for="route in otherPrimaryRoutes" :key="route.path">

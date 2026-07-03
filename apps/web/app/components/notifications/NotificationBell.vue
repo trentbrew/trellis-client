@@ -8,9 +8,8 @@
         <Icon name="lucide:bell" class="h-4 w-4" />
         <span
           v-if="unreadCount > 0"
-          class="absolute -top-1 -right-1 flex h-4.5 w-4.5 items-center justify-center rounded-full bg-primary text-primary-foreground text-[10px] font-bold ring-2 ring-card">
-          {{ unreadCount > 99 ? '99+' : unreadCount }}
-        </span>
+          class="absolute top-0.5 right-0.5 h-2 w-2 rounded-full bg-destructive ring-2 ring-card"
+          aria-hidden="true" />
       </UiButton>
     </UiDropdownMenuTrigger>
     <UiDropdownMenuContent align="end" class="w-[420px] p-0 overflow-hidden shadow-2xl border-border/50">

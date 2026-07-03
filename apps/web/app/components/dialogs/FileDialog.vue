@@ -457,9 +457,9 @@
 
     <!-- Footer -->
     <template #footer-left>
-      <div class="flex items-center gap-1.5 text-muted-foreground">
-        <Icon name="lucide:info" class="h-3.5 w-3.5" />
-        <span v-if="editableItem.id && !isCreateMode">ID: {{ editableItem.id }}</span>
+      <div class="flex items-center gap-1.5 text-muted-foreground min-w-0 overflow-hidden">
+        <Icon name="lucide:info" class="h-3.5 w-3.5 shrink-0" />
+        <EntityFooterId v-if="editableItem.id && !isCreateMode" :id="editableItem.id" />
         <span v-else>New file</span>
       </div>
     </template>
