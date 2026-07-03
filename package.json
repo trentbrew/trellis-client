@@ -20,6 +20,7 @@
     "typecheck": "pnpm -r --if-present typecheck",
     "prepare": "husky",
     "setup:mcp": "node scripts/setup-mcp.mjs",
+    "check:kernel-imports": "node scripts/check-kernel-imports.mjs",
     "hq:migrate": "node scripts/migrate-tql-dir.mjs",
     "hq:init": "bun run hooks/tql-init.ts",
     "hq:status": "bun run hooks/tql-status.ts",

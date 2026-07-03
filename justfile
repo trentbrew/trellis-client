@@ -14,7 +14,7 @@ default:
 install:
     pnpm install
 
-# Start Trellis web app dev server (kills stale port, auto-recovers missing .nuxt/dev artifacts)
+# Start Trellis web app dev server (sidecar + Nuxt concurrently; see apps/web/justfile)
 dev:
     @just -f apps/web/justfile -d apps/web run
 
@@ -61,6 +61,10 @@ test:
 # Run typechecking
 typecheck:
     pnpm -r typecheck
+
+# Fail on disallowed @turtle.tech/tql imports (ADR-001 Phase 6)
+check-kernel-imports:
+    node scripts/check-kernel-imports.mjs
 
 # Clean all node_modules and build artifacts
 clean:
