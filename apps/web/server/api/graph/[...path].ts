@@ -22,6 +22,15 @@ import { captureDecision, shouldCaptureDecision } from '../../utils/campus-decis
 import { parseApiBody, parseApiQuery, validateApiInput } from '../../utils/api-validation'
 import { buildAppConfigSnapshot } from '../../lib/app-config-snapshot'
 import {
+  listSchemasFromGraph,
+  getSchemaFromGraph,
+  schemasToRecord,
+} from '../../lib/ontology-registry/graph-schema-registry'
+import {
+  upsertTrellisSchemaEntity,
+  deleteTrellisSchemaBySchemaId,
+} from '../../lib/seed-app-config'
+import {
   GraphMutateBodySchema,
   GraphNodeParamsSchema,
   GraphNodesBodySchema,
@@ -112,8 +121,8 @@ export default defineEventHandler(async (event) => {
       .slice(0, limit)
       .map(([type, count]) => ({ type, count }))
 
-    // Ontologies split by tier
-    const allOntologies = kernel.listOntologies()
+    // Ontologies split by tier (graph trellis_schema registry)
+    const allOntologies = listSchemasFromGraph(kernel)
     const systemOntologies: string[] = []
     const userOntologies: string[] = []
     for (const schema of allOntologies) {
@@ -161,11 +170,7 @@ export default defineEventHandler(async (event) => {
 
   // ─── GET /api/graph/ontologies (alias: /api/graph/schema) ──────────
   if (method === 'GET' && (route === 'ontologies' || route === 'schema')) {
-    const ontologies: Record<string, any> = {}
-    for (const schema of kernel.listOntologies()) {
-      ontologies[schema['@id']] = schema
-    }
-    return { ontologies }
+    return { ontologies: schemasToRecord(listSchemasFromGraph(kernel)) }
   }
 
   // ─── GET /api/graph/config ────────────────────────────────────────
@@ -491,7 +496,7 @@ export default defineEventHandler(async (event) => {
       'params',
     )
 
-    const schema = kernel.getOntology(ontologyId)
+    const schema = getSchemaFromGraph(kernel, ontologyId)
     if (!schema) {
       throw createError({ statusCode: 404, message: `Ontology not found: ${ontologyId}` })
     }
@@ -509,6 +514,7 @@ export default defineEventHandler(async (event) => {
 
     try {
       await kernel.createOntology(normalizedSchema, { agentId: agent })
+      await upsertTrellisSchemaEntity(kernel, normalizedSchema, { agentId: agent })
       pushMutationLog({
         action: 'createOntology',
         entityId: normalizedSchema['@id'],
@@ -549,6 +555,7 @@ export default defineEventHandler(async (event) => {
 
     try {
       await kernel.updateOntology(normalizedSchema, { agentId: agent })
+      await upsertTrellisSchemaEntity(kernel, normalizedSchema, { agentId: agent })
       pushMutationLog({ action: 'updateOntology', entityId: ontologyId, data: { version: normalizedSchema.version } })
       emitMutation({
         action: 'updateOntology',
@@ -578,6 +585,7 @@ export default defineEventHandler(async (event) => {
 
     try {
       await kernel.deleteOntology(ontologyId, { agentId: agent })
+      await deleteTrellisSchemaBySchemaId(kernel, ontologyId, { agentId: agent })
       pushMutationLog({ action: 'deleteOntology', entityId: ontologyId })
       emitMutation({ action: 'deleteOntology', entityId: ontologyId, type: 'ontology', agentId: agent })
       return { ok: true, id: ontologyId }

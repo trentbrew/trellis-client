@@ -1,4 +1,4 @@
-import type { TrellisKernel, RouteDefinition } from '@turtle.tech/trellis-kernel'
+import type { TrellisKernel, RouteDefinition, SchemaDefinition } from '@turtle.tech/trellis-kernel'
 import { getRouteDefinitions } from '../utils/trellis-shell-routes'
 import { createWorkspaceConfig } from '../utils/trellis-ontologies'
 import { PROJECTION_REGISTRY_NODES } from '../../app/lib/trellis-projection-registry/nodes'
@@ -6,6 +6,10 @@ import {
   FOUNDER_FACILITY_ID,
   FOUNDER_LAB_ZONE_ID,
 } from '../utils/trellis-events'
+import {
+  findTrellisSchemaEntityIdBySchemaId,
+  schemaEntityIdFromSchemaId,
+} from './ontology-registry/graph-schema-registry'
 
 export const APP_CONFIG_ZONE_ID = FOUNDER_LAB_ZONE_ID
 export const APP_CONFIG_FACILITY_ID = FOUNDER_FACILITY_ID
@@ -54,20 +58,8 @@ export async function seedAppConfigFromModules(kernel: TrellisKernel): Promise<A
   }
 
   const workspace = createWorkspaceConfig().workspace
-  for (const [schemaId, schema] of Object.entries(workspace.ontologies ?? {})) {
-    const slug = schemaId.replace(/^trellis:schema\//, '').replace(/[:/]/g, '-')
-    const entityId = `ontology:${slug}`
-    await kernel.createNode(
-      entityId,
-      {
-        type: 'trellis_schema',
-        title: (schema as { label?: string }).label ?? schemaId,
-        schemaId,
-        ...stamp,
-        configJson: JSON.stringify(schema),
-      },
-      'entity',
-    )
+  for (const [, schema] of Object.entries(workspace.ontologies ?? {})) {
+    await upsertTrellisSchemaEntity(kernel, schema as SchemaDefinition)
     stats.ontologies++
   }
 
@@ -113,5 +105,43 @@ export function parseRouteDefinitionFromNode(node: Record<string, unknown>): Rou
     return JSON.parse(raw) as RouteDefinition
   } catch {
     return null
+  }
+}
+
+type OntologyWriteCtx = { agentId?: string }
+
+export async function upsertTrellisSchemaEntity(
+  kernel: TrellisKernel,
+  schema: SchemaDefinition,
+  ctx: OntologyWriteCtx = {},
+): Promise<string> {
+  const schemaId = schema['@id']
+  const entityId = schemaEntityIdFromSchemaId(schemaId)
+  await kernel.createNode(
+    entityId,
+    {
+      type: 'trellis_schema',
+      title: schema.label ?? schemaId,
+      schemaId,
+      zoneId: APP_CONFIG_ZONE_ID,
+      facilityId: APP_CONFIG_FACILITY_ID,
+      configJson: JSON.stringify(schema),
+    },
+    'entity',
+    ctx,
+  )
+  return entityId
+}
+
+export async function deleteTrellisSchemaBySchemaId(
+  kernel: TrellisKernel,
+  schemaId: string,
+  ctx: OntologyWriteCtx = {},
+): Promise<void> {
+  const entityId = findTrellisSchemaEntityIdBySchemaId(kernel, schemaId)
+    ?? schemaEntityIdFromSchemaId(schemaId)
+  const facts = kernel.getStore().getFactsByEntity(entityId)
+  if (facts.length > 0) {
+    await kernel.deleteNode(entityId, ctx)
   }
 }

@@ -3,6 +3,7 @@ import { createWorkspaceConfig } from '../utils/trellis-ontologies'
 import { factsToNode, isAppConfigEntityType } from './app-config-facts'
 import { parseRouteDefinitionFromNode } from './seed-app-config'
 import type { ProjectionRegistryNode } from '../../app/lib/trellis-projection-registry/types'
+import { listSchemasFromGraph, schemasToRecord } from './ontology-registry/graph-schema-registry'
 
 export type AppConfigSnapshot = {
   app: Record<string, unknown> | null
@@ -47,14 +48,6 @@ export function buildAppConfigSnapshot(kernel: TrellisKernel): AppConfigSnapshot
     if (route) routes[entityId] = route
   }
 
-  const ontologies: Record<string, SchemaDefinition> = {}
-  for (const entityId of collectEntitiesByDomainType(store, 'trellis_schema')) {
-    const node = factsToNode(entityId, store.getFactsByEntity(entityId))
-    const schema = parseJsonField<SchemaDefinition>(node)
-    const schemaId = typeof node.schemaId === 'string' ? node.schemaId : schema?.['@id']
-    if (schema && schemaId) ontologies[schemaId] = schema
-  }
-
   const projections: Record<string, ProjectionDefinition> = {}
   for (const entityId of collectEntitiesByDomainType(store, 'app_projection')) {
     const node = factsToNode(entityId, store.getFactsByEntity(entityId))
@@ -71,13 +64,13 @@ export function buildAppConfigSnapshot(kernel: TrellisKernel): AppConfigSnapshot
   }
 
   const routeCount = Object.keys(routes).length
-  const ontologyCount = Object.keys(ontologies).length
   const projectionCount = Object.keys(projections).length
+  const ontologies = schemasToRecord(listSchemasFromGraph(kernel))
 
   return {
     app: (fallback.app as Record<string, unknown>) ?? null,
     routes: routeCount > 0 ? routes : (fallback.routes as Record<string, RouteDefinition>),
-    ontologies: ontologyCount > 0 ? ontologies : (fallback.ontologies as Record<string, SchemaDefinition>),
+    ontologies,
     projections: projectionCount > 0 ? projections : (fallback.projections as Record<string, ProjectionDefinition>),
     projectionViews,
   }
