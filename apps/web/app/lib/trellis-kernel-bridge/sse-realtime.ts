@@ -1,5 +1,6 @@
 import type { SubscriptionCallback, SubscribeOptions, TrellisDb } from 'trellis/browser'
 import { shouldRefetchAppConfigFromSSE } from '~/lib/app-config-sse'
+import { shouldRefetchBrowseEntitiesFromSSE } from '~/lib/entity-mutation-sse'
 import { useSSESubscribe } from '~/composables/useTrellisSSE'
 
 type SubRecord = {
@@ -16,6 +17,15 @@ export type KernelBridgePatchedDb = TrellisDb & {
 }
 
 const EMPTY_DIFF = { added: [] as unknown[], updated: [] as unknown[], removed: [] as unknown[] }
+
+function shouldRefetchForSubscription(
+  payload: Record<string, unknown>,
+  entityType?: string,
+): boolean {
+  if (!entityType) return false
+  if (entityType === 'KernelBrowse') return shouldRefetchBrowseEntitiesFromSSE(payload)
+  return shouldRefetchAppConfigFromSSE(payload)
+}
 
 async function fetchEntityList(
   db: KernelBridgePatchedDb,
@@ -43,11 +53,12 @@ function ensureSseListener(db: KernelBridgePatchedDb): void {
     } catch {
       return
     }
-    if (!shouldRefetchAppConfigFromSSE(payload)) return
 
     for (const [subId, callback] of db._subCallbacks) {
       const record = db._subQueries.get(subId)
       const entityType = record?.opts?.entityType
+      if (!shouldRefetchForSubscription(payload, entityType)) continue
+
       void fetchEntityList(db, entityType).then((rows) => {
         if (db._subCallbacks.has(subId)) {
           deliverRows(callback, rows)

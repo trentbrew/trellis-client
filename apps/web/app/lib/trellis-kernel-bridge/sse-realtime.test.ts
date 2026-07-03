@@ -91,4 +91,69 @@ describe('kernel-bridge SSE realtime', () => {
       { resolved: true },
     )
   })
+
+  it('refetches KernelBrowse subscriber on entity: task mutation', async () => {
+    const initial = [
+      {
+        id: 'entity:task-1',
+        type: 'KernelBrowse',
+        entityType: 'task',
+        title: 'Task',
+        payloadJson: '{"id":"task-1","type":"task","title":"Task","references":[]}',
+      },
+    ]
+    const updated = [
+      {
+        id: 'entity:task-1',
+        type: 'KernelBrowse',
+        entityType: 'task',
+        title: 'Updated task',
+        payloadJson: '{"id":"task-1","type":"task","title":"Updated task","references":[]}',
+      },
+    ]
+    const db = mockDb(initial)
+    const subscribe = createKernelBridgeSubscribe(db)
+    const callback = vi.fn()
+
+    subscribe('FIND KernelBrowse AS ?e', callback, { entityType: 'KernelBrowse' })
+    await vi.waitFor(() => expect(callback).toHaveBeenCalledTimes(1))
+
+    vi.mocked(db.list).mockResolvedValueOnce({
+      data: updated,
+      total: updated.length,
+      limit: 500,
+      offset: 0,
+    })
+
+    emitMutation({
+      action: 'updateNode',
+      entityId: 'entity:task-1',
+      data: { type: 'task', title: 'Updated task' },
+    })
+
+    await vi.waitFor(() => {
+      expect(callback).toHaveBeenCalledTimes(2)
+    })
+
+    expect(db.list).toHaveBeenLastCalledWith('KernelBrowse')
+  })
+
+  it('does not refetch AppRoute subscriber on browse entity mutation', async () => {
+    const routeRows = [{ id: 'route:home', type: 'AppRoute', title: 'Home', configJson: '{}' }]
+    const db = mockDb(routeRows)
+    const subscribe = createKernelBridgeSubscribe(db)
+    const callback = vi.fn()
+
+    subscribe('FIND AppRoute AS ?r', callback, { entityType: 'AppRoute' })
+    await vi.waitFor(() => expect(callback).toHaveBeenCalledTimes(1))
+
+    emitMutation({
+      action: 'updateNode',
+      entityId: 'entity:task-1',
+      data: { type: 'task', title: 'Updated' },
+    })
+
+    await new Promise((resolve) => setTimeout(resolve, 50))
+    expect(callback).toHaveBeenCalledTimes(1)
+  })
 })

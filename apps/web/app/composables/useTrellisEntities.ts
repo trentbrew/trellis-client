@@ -2,11 +2,15 @@ import type { Entity, EntityType, EntityReference } from '~/types/entity'
 import { extractYmd, todayYmdLocal } from '~/utils/date'
 import { ENTITY_NAMESPACE, entityId as toEntityId, stripNamespace, entityQuery } from '~/lib/tql-namespace'
 import type { DataAdapter } from '~/lib/data-adapter'
+import type { TrellisDb } from 'trellis/browser'
+import { useTrellisEntitiesLive } from './useTrellisEntitiesLive'
+import { useTrellisDb } from './useTrellisSidecar'
 
 // ── Singleton state (shared across all consumers) ──────────────────────
 const _items = ref<Entity[]>([])
 const _loading = ref(true)
 let _initialized = false
+let _tqlFallbackStarted = false
 
 /**
  * Initialize entity store from TQL kernel (local mode).
@@ -198,6 +202,44 @@ function _initStoreFromAdapter(adapter: DataAdapter) {
   )
 }
 
+/**
+ * Live browse path via kernel-bridge KernelBrowse rows (ADR-002 TRL-17).
+ */
+function _initStoreFromLive(client: TrellisDb) {
+  const scope = effectScope(true)
+  scope.run(() => {
+    const live = useTrellisEntitiesLive(client)
+
+    watch(
+      () => live.items.value,
+      (rows) => {
+        _items.value = rows
+      },
+      { immediate: true },
+    )
+
+    watch(
+      () => live.loading.value,
+      (v) => {
+        _loading.value = v
+      },
+      { immediate: true },
+    )
+
+    watch(
+      () => ({ mode: live.transportMode.value, loading: live.loading.value }),
+      ({ mode, loading }) => {
+        if (loading) return
+        if (mode === 'fallback' && !_tqlFallbackStarted) {
+          _tqlFallbackStarted = true
+          _initStoreFromTql()
+        }
+      },
+      { immediate: true },
+    )
+  })
+}
+
 function _initStore() {
   if (_initialized) return
   _initialized = true
@@ -206,9 +248,20 @@ function _initStore() {
 
   if (adapter.entityBackend === 'adapter') {
     _initStoreFromAdapter(adapter)
-  } else {
-    _initStoreFromTql()
+    return
   }
+
+  if (import.meta.client) {
+    const config = useRuntimeConfig()
+    const sidecarEnabled = Boolean(config.public.trellisSidecar)
+    const client = useTrellisDb()
+    if (client && !sidecarEnabled) {
+      _initStoreFromLive(client)
+      return
+    }
+  }
+
+  _initStoreFromTql()
 }
 
 /**
