@@ -234,8 +234,7 @@ Embedded `expr-evaluator.ts` + `formula-evaluator.ts` integrate with `TrellisKer
 2. **TRL-20 — Ontology listing via schema registry**  
    Retire direct `kernel.listOntologies()` / `trellis-ontologies.ts` TS util for runtime listing; serve from P1 `trellis_schema` entity rows + `trellis/schema`. **Blocked-by:** TRL-19 (kernel import path stable).
 
-3. **TRL-21 — Agent graph engine decision**  
-   Audit `useWorkflowExecution` + `graph/engine.ts` against `trellis/ai` + plugin orchestration; decide keep embedded vs upstream agent harness. **Blocked-by:** none (parallelizable), but ship after TRL-19 to avoid dual engine drift.
+3. ~~**TRL-21 — Agent graph engine decision**~~ **Shipped TRL-21** — see `adr-002-agent-graph-engine-audit.md`. Verdict: **keep embedded** `graph/`; `trellis/ai` is embeddings only; `AgentHarness` is complementary, not a DAG replacement.
 
 ### Blocked (not in queue)
 
