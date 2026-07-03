@@ -144,6 +144,10 @@ Entity browse (`useTrellisEntities`) uses the same kernel-bridge client when `TR
 
 `KernelBrowse` rows carry `payloadJson` (scalar entity fields; `references: []` in v1). Sidecar mode keeps the legacy TQL `FIND entity` path until entity import lands.
 
+### Ontology registry live (kernel-bridge / sidecar, TRL-20b)
+
+`useOntologyRegistry()` piggybacks **`useTrellisConfig` live ontologies** when `transportMode === 'live'` — same `AppSchema` kernel-bridge subscribe as the config rail (no duplicate `useEntities` subscription, no `/api/graph/ontologies` boot fetch). Fallback path: HTTP ontologies list + SSE refetch (P1).
+
 ### Presence relay (optional)
 
 Cross-browser / cross-machine presence requires a relay. Same-browser multi-tab works without it.
