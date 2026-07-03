@@ -28,6 +28,7 @@
     "test:smoke:agent:pure": "tsx scripts/smoke-test-agent.ts --skip-network",
     "smoke:ws": "node scripts/smoke-ws.mjs",
     "smoke:sidecar": "node scripts/smoke-sidecar.mjs",
+    "smoke:app-config": "node scripts/smoke-app-config-import.mjs",
     "check": "pnpm lint && vitest run && tsx scripts/validate-routes.ts",
     "check:full": "pnpm lint && vitest run && tsx scripts/validate-routes.ts && nuxt build",
     "ui:add": "npx -y ui-thing@latest add",

@@ -106,3 +106,11 @@ import-pages-sidecar:
 # Import kernel app config into sidecar DB (ADR-002 P3)
 import-app-config-sidecar:
     node scripts/import-app-config-to-sidecar.mjs
+
+# Verify kernel ↔ sidecar AppSchema ontology parity (TRL-20c)
+verify-app-config-sidecar:
+    node scripts/import-app-config-to-sidecar.mjs --verify-only
+
+# Smoke ontology import parity (requires prior import)
+smoke-app-config:
+    pnpm smoke:app-config
