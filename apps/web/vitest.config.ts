@@ -11,5 +11,11 @@ export default defineVitestConfig({
     // Playwright e2e specs live in tests/e2e/ and are run via Playwright, not Vitest.
     include: ['app/**/*.test.*', 'server/**/*.test.*'],
     exclude: ['tests/e2e/**', '**/playwright-report/**', '**/test-results/**', '**/node_modules/**'],
+    server: {
+      deps: {
+        // npm trellis/core uses createRequire for better-sqlite3 — must not be Vite-bundled.
+        external: ['trellis', 'trellis/core', 'better-sqlite3'],
+      },
+    },
   },
 })

@@ -2,6 +2,17 @@
 
 The Nuxt app (`:1414` by default) can proxy to a published **trellis** sidecar on `:8230` when `TRELLIS_SIDECAR=1`. Option A (embedded TQL kernel) remains the default when the flag is off.
 
+## Kernel persistence (TRL-19a)
+
+The embedded kernel (`just run-kernel`, `TRELLIS_SIDECAR=0`) persists to `.data/trellis.db`:
+
+| Schema | Backend | When |
+|--------|---------|------|
+| Legacy (`ops.id` + `ops.ts`) | Embedded `BetterSqliteBackend` | Existing dev databases |
+| npm layout (`ops.timestamp` + `agent_id`) | `NpmBetterSqliteKernelBackend` (trellis@3.2.3 schema) | Fresh databases |
+
+The server plugin imports `trellis/core` types for the npm `KernelBackend` contract. Legacy DBs keep the embedded backend until a migration wedge lands.
+
 ## Two CLIs
 
 | Tool | Purpose |

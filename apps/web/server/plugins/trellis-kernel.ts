@@ -13,7 +13,7 @@
 import { resolve } from 'node:path'
 import { mkdirSync, existsSync } from 'node:fs'
 import { TrellisKernel } from '@turtle.tech/trellis-kernel'
-import { BetterSqliteBackend } from '@turtle.tech/trellis-kernel/persist/better-sqlite'
+import { createNpmSqliteKernelBackend } from '../lib/trellis-kernel-adapter/npm-sqlite-backend'
 import { createWorkspaceConfig } from '../utils/trellis-ontologies'
 import {
   FOUNDER_FACILITY_ID,
@@ -29,6 +29,9 @@ import { shouldAutoCheckpoint } from '../utils/kernel-checkpoint'
 import { seedAppConfigFromModules } from '../lib/seed-app-config'
 
 import type { WorkspaceConfig } from '@turtle.tech/trellis-kernel'
+
+/** npm persistence contract (TRL-19a) — adapter targets trellis/core KernelBackend. */
+export type { KernelBackend as NpmKernelBackend } from 'trellis/core'
 
 // Module-level singleton — accessible from API routes via useTrellisKernel()
 let _kernel: TrellisKernel | null = null
@@ -92,7 +95,7 @@ export default defineNitroPlugin(async (nitro) => {
   }
 
   const dbPath = process.env.TRELLIS_DB_PATH || resolve(dataDir, 'trellis.db')
-  const backend = new BetterSqliteBackend({ filename: dbPath })
+  const backend = await createNpmSqliteKernelBackend(dbPath)
 
   const kernel = new TrellisKernel({
     backend,
