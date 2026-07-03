@@ -28,6 +28,7 @@
   let map: maplibregl.Map | null = null
   const markers = new Map<string, { marker: maplibregl.Marker; el: HTMLElement }>()
   let hidePreviewTimer: ReturnType<typeof setTimeout> | null = null
+  let onWheelPan: ((_event: WheelEvent) => void) | null = null
 
   const previewPin = ref<MapPin | null>(null)
   const previewVisible = ref(false)
@@ -157,6 +158,21 @@
       const center = map.getCenter()
       saveViewport({ lng: center.lng, lat: center.lat, zoom: map.getZoom() })
     })
+
+    // Figma-style gestures: wheel pans; ctrl/meta wheel (incl. trackpad pinch) zooms.
+    map.scrollZoom.disable()
+    onWheelPan = (event: WheelEvent) => {
+      if (!map) return
+      if (event.ctrlKey || event.metaKey) {
+        event.preventDefault()
+        const zoomDelta = -event.deltaY * 0.003
+        map.zoomTo(map.getZoom() + zoomDelta, { around: [event.offsetX, event.offsetY] })
+        return
+      }
+      event.preventDefault()
+      map.panBy([event.deltaX, event.deltaY], { animate: false })
+    }
+    map.getCanvas().addEventListener('wheel', onWheelPan, { passive: false })
   }
 
   function flyTo(lng: number, lat: number, zoom?: number) {
@@ -226,6 +242,8 @@
 
   onBeforeUnmount(() => {
     if (hidePreviewTimer) clearTimeout(hidePreviewTimer)
+    if (map && onWheelPan) map.getCanvas().removeEventListener('wheel', onWheelPan)
+    onWheelPan = null
     for (const { marker } of markers.values()) marker.remove()
     markers.clear()
     map?.remove()
