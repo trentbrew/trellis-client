@@ -17,6 +17,7 @@
   const content = ref('')
   const isSending = ref(false)
   const editorRef = ref<EditorRef | null>(null)
+  const { enterKeyBehavior } = useLayoutPreferences()
 
   function hasContent(html: string): boolean {
     if (!html) return false

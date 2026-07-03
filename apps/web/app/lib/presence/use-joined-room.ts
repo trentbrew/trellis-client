@@ -4,6 +4,7 @@ import { resolvePresenceRelayUrl } from './config'
 export type PagePresenceState = {
   name: string
   color: string
+  zoneId: string
   pageId: string
   editingField?: string
   caret?: number | null
@@ -12,9 +13,15 @@ export type PagePresenceState = {
 
 const EMPTY_PRESENCE: PresencePeer<PagePresenceState>[] = []
 
+function resolveRef<T>(value: Ref<T> | T): T {
+  return typeof value === 'object' && value !== null && 'value' in value ? value.value : value
+}
+
 export function useJoinedPresenceRoom(opts: {
   peerId: string
   roomName: Ref<string> | string
+  pageId: Ref<string> | string
+  zoneId: Ref<string> | string
   relayUrl?: string
   initial: Pick<PagePresenceState, 'name' | 'color'>
   enabled?: Ref<boolean> | boolean
@@ -23,7 +30,9 @@ export function useJoinedPresenceRoom(opts: {
   const presence = ref<PresencePeer<PagePresenceState>[]>(EMPTY_PRESENCE)
   const editingFieldRef = ref<string | undefined>(undefined)
 
-  const roomName = computed(() => (typeof opts.roomName === 'string' ? opts.roomName : opts.roomName.value))
+  const roomName = computed(() => resolveRef(opts.roomName))
+  const pageId = computed(() => resolveRef(opts.pageId))
+  const zoneId = computed(() => resolveRef(opts.zoneId))
   const isEnabled = computed(() => {
     const e = opts.enabled
     return e === undefined ? true : typeof e === 'boolean' ? e : e.value
@@ -32,7 +41,8 @@ export function useJoinedPresenceRoom(opts: {
   const snapshot = (): PagePresenceState => ({
     name: opts.initial.name,
     color: opts.initial.color,
-    pageId: roomName.value.replace(/^page:/, ''),
+    zoneId: zoneId.value,
+    pageId: pageId.value,
     editingField: editingFieldRef.value,
   })
 
@@ -46,7 +56,7 @@ export function useJoinedPresenceRoom(opts: {
     presence.value = EMPTY_PRESENCE
 
     const name = roomName.value
-    if (!isEnabled.value || !name) return
+    if (!isEnabled.value || !name || !zoneId.value) return
 
     const relayUrl = opts.relayUrl ?? resolvePresenceRelayUrl()
     const joined = joinPresence<PagePresenceState>({
@@ -73,6 +83,10 @@ export function useJoinedPresenceRoom(opts: {
   watch([isEnabled, roomName], () => {
     void connect()
   }, { immediate: true })
+
+  watch([pageId, zoneId], () => {
+    if (roomRef.value) roomRef.value.setPresence(snapshot())
+  })
 
   onScopeDispose(() => {
     cleanup?.()

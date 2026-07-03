@@ -618,15 +618,12 @@
           </button>
         </UiPopoverContent>
       </UiPopover>
-
-      <!-- Tags (inline in header badges) -->
-      <template v-if="hasField('tags')">
-        <span class="w-px h-4 bg-border/60 mx-0.5 shrink-0" />
-        <TagsSection v-model="editableItem.tags" :readonly="isViewMode" inline />
-      </template>
     </template>
 
-    <!-- Center: scrollable body header + type-specific content panel (non-inset) -->
+    <template v-if="hasField('tags')" #header-tags>
+      <TagsSection v-model="editableItem.tags" :readonly="isViewMode" inline />
+    </template>
+
     <div v-if="!isInset" class="flex-1 flex flex-col min-w-0 overflow-y-auto">
       <EntityBodyHeader
         :title="editableItem.title"

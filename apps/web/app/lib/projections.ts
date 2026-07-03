@@ -270,6 +270,7 @@ export interface ProjectionRequirementResult {
  */
 const _projectionTypeToBrowseMode: Partial<Record<ProjectionType, BrowseViewMode>> = {
   table: 'table',
+  spreadsheet: 'spreadsheet',
   kanban: 'kanban',
   calendar: 'calendar',
   list: 'list',
@@ -282,6 +283,7 @@ const _projectionTypeToBrowseMode: Partial<Record<ProjectionType, BrowseViewMode
  */
 const browseModeToProjectionType: Partial<Record<BrowseViewMode, ProjectionType>> = {
   table: 'table',
+  spreadsheet: 'spreadsheet',
   kanban: 'kanban',
   calendar: 'calendar',
   list: 'list',
@@ -296,6 +298,7 @@ const defaultBrowseModeLabels: Record<BrowseViewMode, string> = {
   grid: 'Grid',
   list: 'List',
   table: 'Table',
+  spreadsheet: 'Spreadsheet',
   calendar: 'Calendar',
   kanban: 'Kanban',
   timeline: 'Timeline',
@@ -313,6 +316,7 @@ const defaultBrowseModeIcons: Record<BrowseViewMode, string> = {
   grid: 'lucide:grid-3x3',
   list: 'lucide:list',
   table: 'lucide:table',
+  spreadsheet: 'lucide:file-spreadsheet',
   calendar: 'lucide:calendar',
   kanban: 'lucide:square-kanban',
   timeline: 'lucide:calendar',

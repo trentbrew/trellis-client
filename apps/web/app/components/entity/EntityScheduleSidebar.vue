@@ -233,16 +233,18 @@
     </div>
 
     <!-- Mini calendar — drives whichever tab is active -->
-    <div v-if="!isViewMode" class="rounded-lg border border-border overflow-hidden">
+    <div v-if="!isViewMode" class="w-full">
       <UiDatepicker
         v-if="scheduleTab === 'start' || !hasField('endDate')"
         v-model="calendarModel"
+        embedded
         :mode="editableItem.allDay ? 'date' : 'dateTime'"
         is-required
         color="primary" />
       <UiDatepicker
         v-else
         v-model="endCalendarModel"
+        embedded
         :mode="editableItem.allDay ? 'date' : 'dateTime'"
         :min-date="calendarModel"
         color="primary" />

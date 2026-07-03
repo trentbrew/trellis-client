@@ -7,14 +7,9 @@ export interface TrellisSidecarContext {
   available: Ref<boolean>
 }
 
-const TRELLIS_DB_KEY = Symbol('trellisDb')
-
-export function provideTrellisDb(client: TrellisDb | null) {
-  provide(TRELLIS_DB_KEY, client)
-}
-
 export function useTrellisDb(): TrellisDb | null {
-  return inject(TRELLIS_DB_KEY, null)
+  const { $trellisSidecar } = useNuxtApp()
+  return $trellisSidecar?.client ?? null
 }
 
 export function useTrellisSidecar(): TrellisSidecarContext {

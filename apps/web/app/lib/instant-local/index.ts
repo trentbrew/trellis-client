@@ -228,6 +228,13 @@ export function createLocalInstantDB(options: LocalInstantDBOptions = {}) {
     }
   }
 
+  const updateCurrentUser = (patch: Record<string, unknown>) => {
+    if (!currentUser) return
+    currentUser = { ...currentUser, ...patch }
+    persistAuth()
+    emitAuth()
+  }
+
   const getAuth = async () => currentUser
 
   // ── Return db instance ──────────────────────────────────────────────
@@ -254,6 +261,7 @@ export function createLocalInstantDB(options: LocalInstantDBOptions = {}) {
     // Dev-only helpers (not in real InstantDB SDK — remove on migration)
     demoUsers,
     switchUser,
+    updateCurrentUser,
 
     // Internal store access for seeding and debugging
     _store: store,

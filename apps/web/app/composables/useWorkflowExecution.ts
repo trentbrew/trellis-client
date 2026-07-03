@@ -9,12 +9,12 @@ import type {
   Executor,
   ExecutorTable,
   ExecResult,
-} from '@turtle.tech/tql/graph'
-import { Graph, Engine } from '@turtle.tech/tql/graph'
+} from '@turtle.tech/trellis-kernel/graph'
+import { Graph, Engine } from '@turtle.tech/trellis-kernel/graph'
 import { createDefaultLLMClient } from '~/lib/llm'
 import { createDefaultWorkflowTools } from '~/lib/workflow-tools'
 
-export type { Trace } from '@turtle.tech/tql/graph'
+export type { Trace } from '@turtle.tech/trellis-kernel/graph'
 
 // ─── Condition compiler ────────────────────────────────────────────────────────
 

@@ -1,7 +1,7 @@
 <script setup lang="ts">
   import { computed } from 'vue'
   import type { Collection, DatabaseSchema, Projection } from '~/types/database'
-  import CollectionSpreadsheetProjection from '~/components/data/CollectionSpreadsheetProjection.vue'
+  import CollectionDataGridProjection from '~/components/data/CollectionDataGridProjection.vue'
   import { CodeEditor } from '~/components/editors/CodeEditor'
   import { JsonLdBlocksEditor } from '~/components/JsonLdBlocks'
   import TrellisBlocksProjection from '~/components/data/TrellisBlocksProjection.vue'
@@ -69,7 +69,7 @@
   const projectionsIsSaving = ref(false)
 
   // All view types available in the picker
-  const ALL_VIEW_TYPES: Array<Projection['type']> = ['table', 'kanban', 'calendar', 'list', 'graph', 'slide-deck']
+  const ALL_VIEW_TYPES: Array<Projection['type']> = ['table', 'spreadsheet', 'kanban', 'calendar', 'list', 'graph', 'slide-deck']
 
   interface ViewPickerItem {
     type: Projection['type']
@@ -1394,7 +1394,7 @@
       <div
         ref="contentContainer"
         class="min-h-0 flex-1 pb-0"
-        :class="activeProjectionType === 'table' ? 'overflow-hidden' : 'overflow-auto'">
+        :class="activeProjectionType === 'table' || activeProjectionType === 'spreadsheet' ? 'overflow-hidden' : 'overflow-auto'">
         <!-- Intro page for new collections that need setup -->
         <div v-if="false" class="flex h-full items-center justify-center p-8">
           <div class="max-w-3xl w-full space-y-8">
@@ -1500,11 +1500,13 @@
           </UiTabsContent>
 
           <UiTabsContent v-else-if="proj.type === 'spreadsheet'" :value="proj.id" class="h-full mt-0">
-            <CollectionSpreadsheetProjection
+            <CollectionDataGridProjection
               v-if="activeProjection === proj.id"
               ref="spreadsheetProjectionRef"
               v-model="content"
-              :collection-id="collection!.id" />
+              :collection-id="collection!.id"
+              :schema="schema"
+              @update:schema="(s) => { schema = s; saveSchema() }" />
           </UiTabsContent>
 
           <UiTabsContent v-else-if="proj.type === 'blocks'" :value="proj.id" class="h-full mt-0">

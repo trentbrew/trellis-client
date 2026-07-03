@@ -131,16 +131,16 @@
     const vpW = window.innerWidth
     const vpH = window.innerHeight
     const aspect = vpW / vpH
-    const scale = 0.92
+    const scale = 0.86
     let w = Math.round(vpW * scale)
     let h = Math.round(vpH * scale)
     // Apply max caps while preserving viewport aspect ratio
-    if (w > 1680) {
-      w = 1680
+    if (w > 1560) {
+      w = 1560
       h = Math.round(w / aspect)
     }
-    if (h > 1200) {
-      h = 1200
+    if (h > 1080) {
+      h = 1080
       w = Math.round(h * aspect)
     }
     return { w, h }
@@ -237,8 +237,8 @@
     <!-- Header -->
     <div class="shrink-0 border-b border-border">
       <div class="px-3 pt-1.5 pb-1.5">
-        <div class="flex items-center justify-between gap-3" :class="headerInBody ? '' : 'mb-3'">
-          <div class="flex items-center gap-2 min-w-0">
+        <div class="flex items-center justify-between gap-3">
+          <div class="flex items-center gap-2 min-w-0 flex-wrap">
             <span
               v-if="typeBadge"
               class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-medium bg-primary/10 text-primary">
@@ -273,6 +273,9 @@
             </UiButton>
           </div>
         </div>
+        <div v-if="$slots['header-tags']" class="mt-2">
+          <slot name="header-tags" />
+        </div>
         <template v-if="!headerInBody">
           <input
             v-if="!isViewMode"
@@ -280,9 +283,9 @@
             type="text"
             :placeholder="titlePlaceholder || 'Item name...'"
             spellcheck="false"
-            class="w-full text-xl font-semibold bg-transparent border border-transparent outline-none placeholder:text-muted-foreground/50 focus:ring-0 hover:border-border hover:bg-muted/20 focus:border-border focus:bg-muted/20 rounded-md px-2 py-0 -mx-1 transition-all"
+            class="w-full text-xl font-semibold bg-transparent border border-transparent outline-none placeholder:text-muted-foreground/50 focus:ring-0 hover:border-border hover:bg-muted/20 focus:border-border focus:bg-muted/20 rounded-md px-2 py-0 -mx-1 transition-all mt-3"
             @input="emit('update:title', ($event.target as HTMLInputElement).value)" />
-          <h2 v-else class="text-xl font-semibold px-1">{{ title }}</h2>
+          <h2 v-else class="text-xl font-semibold px-1 mt-3">{{ title }}</h2>
           <div class="mt-1 px-1">
             <EntityDescriptionBlock
               :description="description"
@@ -293,9 +296,6 @@
               :ai-only="isAiOnlyDescription"
               @update:description="emit('update:description', $event)"
               @regenerate-summary="emit('regenerateSummary')" />
-          </div>
-          <div v-if="$slots['header-tags']" class="mt-2 px-1">
-            <slot name="header-tags" />
           </div>
         </template>
       </div>
@@ -335,15 +335,15 @@
   <div
     v-else-if="isInset"
     v-show="open"
-    class="absolute inset-y-0 right-0 w-[420px] z-20 flex flex-col bg-card/80 backdrop-blur-xl border-l border-border shadow-xl overflow-hidden">
+    class="absolute top-3 bottom-3 right-3 w-[420px] z-20 flex flex-col rounded-xl border border-border bg-card/95 backdrop-blur-xl shadow-2xl overflow-hidden">
     <h2 class="sr-only">{{ dialogTitle || title || 'Item' }}</h2>
     <p class="sr-only">{{ dialogDescription || 'Item details.' }}</p>
 
     <!-- Header -->
     <div class="shrink-0 border-b border-border">
-      <div class="px-4 pt-4 pb-3">
-        <div class="flex items-center justify-between gap-3" :class="headerInBody ? '' : 'mb-3'">
-          <div class="flex items-center gap-2 min-w-0">
+      <div class="px-4 pt-3 pb-3">
+        <div class="flex items-center justify-between gap-3">
+          <div class="flex items-center gap-2 min-w-0 flex-wrap">
             <span
               v-if="typeBadge"
               class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-medium bg-primary/10 text-primary">
@@ -358,6 +358,9 @@
             </UiButton>
           </div>
         </div>
+        <div v-if="$slots['header-tags']" class="mt-2">
+          <slot name="header-tags" />
+        </div>
         <template v-if="!headerInBody">
           <input
             v-if="!isViewMode"
@@ -365,9 +368,9 @@
             type="text"
             :placeholder="titlePlaceholder || 'Item name...'"
             spellcheck="false"
-            class="w-full text-xl font-semibold bg-transparent border border-transparent outline-none placeholder:text-muted-foreground/50 focus:ring-0 hover:border-border hover:bg-muted/20 focus:border-border focus:bg-muted/20 rounded-md px-2 py-0 -mx-1 transition-all"
+            class="w-full text-xl font-semibold bg-transparent border border-transparent outline-none placeholder:text-muted-foreground/50 focus:ring-0 hover:border-border hover:bg-muted/20 focus:border-border focus:bg-muted/20 rounded-md px-2 py-0 -mx-1 transition-all mt-3"
             @input="emit('update:title', ($event.target as HTMLInputElement).value)" />
-          <h2 v-else class="text-xl font-semibold px-1">{{ title }}</h2>
+          <h2 v-else class="text-xl font-semibold px-1 mt-3">{{ title }}</h2>
           <div class="mt-1 px-1">
             <EntityDescriptionBlock
               :description="description"
@@ -378,9 +381,6 @@
               :ai-only="isAiOnlyDescription"
               @update:description="emit('update:description', $event)"
               @regenerate-summary="emit('regenerateSummary')" />
-          </div>
-          <div v-if="$slots['header-tags']" class="mt-2 px-1">
-            <slot name="header-tags" />
           </div>
         </template>
       </div>
@@ -454,7 +454,7 @@
         </div>
         <div :class="isStacked && parentTitle ? 'px-4 pt-2 pb-3' : 'px-4 pt-4 pb-3'">
           <div class="flex items-center justify-between gap-3 mb-0">
-            <div class="flex items-center gap-2 min-w-0">
+            <div class="flex items-center gap-2 min-w-0 flex-wrap">
               <span
                 v-if="typeBadge"
                 class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-medium bg-primary/10 text-primary">
@@ -487,6 +487,9 @@
               </UiButton>
             </div>
           </div>
+          <div v-if="$slots['header-tags']" class="mt-2">
+            <slot name="header-tags" />
+          </div>
           <template v-if="!headerInBody">
             <input
               v-if="!isViewMode"
@@ -494,9 +497,9 @@
               type="text"
               :placeholder="titlePlaceholder || 'Item name...'"
               spellcheck="false"
-              class="w-full text-xl font-semibold bg-transparent border border-transparent outline-none placeholder:text-muted-foreground/50 focus:ring-0 hover:border-border hover:bg-muted/20 focus:border-border focus:bg-muted/20 rounded-md px-2 py-0 -mx-1 transition-all"
+              class="w-full text-xl font-semibold bg-transparent border border-transparent outline-none placeholder:text-muted-foreground/50 focus:ring-0 hover:border-border hover:bg-muted/20 focus:border-border focus:bg-muted/20 rounded-md px-2 py-0 -mx-1 transition-all mt-3"
               @input="emit('update:title', ($event.target as HTMLInputElement).value)" />
-            <h2 v-else class="text-xl font-semibold px-1">{{ title }}</h2>
+            <h2 v-else class="text-xl font-semibold px-1 mt-3">{{ title }}</h2>
             <div class="mt-1 px-1">
               <EntityDescriptionBlock
                 :description="description"
@@ -507,9 +510,6 @@
                 :ai-only="isAiOnlyDescription"
                 @update:description="emit('update:description', $event)"
                 @regenerate-summary="emit('regenerateSummary')" />
-            </div>
-            <div v-if="$slots['header-tags']" class="mt-2 px-1">
-              <slot name="header-tags" />
             </div>
           </template>
         </div>

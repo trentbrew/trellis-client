@@ -20,6 +20,28 @@
   const { register: registerPresence, deregister: deregisterPresence, publishField, getViewers } = usePagePresence()
   const { user: currentUser } = useInstantAuth()
 
+  const kernelPage = computed<PageItem | undefined>(() => {
+    const found = getPage(pageId.value) ?? allItems.value?.find((i: Entity) => i.id === pageId.value)
+    return found as PageItem | undefined
+  })
+
+  /** Sidecar truth only when the page exists in the sidecar store (not kernel-only pages). */
+  const usingSidecarEditor = computed(() => {
+    if (!trellisSidecar.enabled || !sidecarEditor) return false
+    if (sidecarEditor.loading.value) return false
+    return !!sidecarEditor.page.value
+  })
+
+  function registerPagePresence(id: string) {
+    if (usingSidecarEditor.value && sidecarEditor) sidecarEditor.presence.register(id)
+    else registerPresence(id)
+  }
+
+  function deregisterPagePresence(id: string) {
+    if (usingSidecarEditor.value && sidecarEditor) sidecarEditor.presence.deregister(id)
+    else deregisterPresence(id)
+  }
+
   const currentUserAvatar = computed(() => {
     const u = currentUser.value as any
     const candidate = u?.avatar || u?.imageURL || u?.picture
@@ -36,18 +58,19 @@
   const descPeers = computed(() => pageViewers.value.filter((v) => v.editingField === 'description'))
   const { displayActivity, addComment, addInlineComment, logActivity, loading: commentsLoading } = useComments(pageId)
 
-  // Resolve current page from store or sidecar truth path
+  // Resolve current page — sidecar when imported, otherwise TQL kernel
   const currentPage = computed<PageItem | undefined>(() => {
-    if (trellisSidecar.enabled && sidecarEditor) {
+    if (usingSidecarEditor.value && sidecarEditor) {
       return sidecarEditor.page.value
     }
-    const found = getPage(pageId.value) ?? allItems.value?.find((i: Entity) => i.id === pageId.value)
-    return found as PageItem | undefined
+    return kernelPage.value
   })
 
-  const pageLoading = computed(
-    () => trellisSidecar.enabled && sidecarEditor ? sidecarEditor.loading.value : false,
-  )
+  const pageLoading = computed(() => {
+    if (!trellisSidecar.enabled || !sidecarEditor) return false
+    if (kernelPage.value) return false
+    return sidecarEditor.loading.value
+  })
 
   useHead({ title: computed(() => currentPage.value?.title || 'Untitled') })
 
@@ -56,12 +79,11 @@
   // We declare the editable reactive object later (after local refs), then
   // wire useAutoSave to it. The `triggerSave` function pokes the reactive
   // to trigger the debounced watcher without manual setTimeout management.
-  const _autoSaveEnabled = computed(() => !trellisSidecar.enabled)
+  const _autoSaveEnabled = computed(() => !usingSidecarEditor.value)
 
   onMounted(() => {
     if (pageId.value) {
-      if (sidecarEditor) sidecarEditor.presence.register(pageId.value)
-      else registerPresence(pageId.value)
+      registerPagePresence(pageId.value)
       addRecentPage(pageId.value)
     }
   })
@@ -72,20 +94,15 @@
     if (_contentLogTimer) clearTimeout(_contentLogTimer)
     livePageTitle.value = null
     if (pageId.value) {
-      if (sidecarEditor) sidecarEditor.presence.deregister(pageId.value)
-      else deregisterPresence(pageId.value)
+      deregisterPagePresence(pageId.value)
     }
   })
 
   // Re-register when navigating between pages
   watch(pageId, (newId, oldId) => {
-    if (oldId) {
-      if (sidecarEditor) sidecarEditor.presence.deregister(oldId)
-      else deregisterPresence(oldId)
-    }
+    if (oldId) deregisterPagePresence(oldId)
     if (newId) {
-      if (sidecarEditor) sidecarEditor.presence.register(newId)
-      else registerPresence(newId)
+      registerPagePresence(newId)
       addRecentPage(newId)
     }
   })
@@ -98,7 +115,7 @@
   // Local refs are seeded via _seedFromPage defined below, after all refs are declared.
 
   function onTitleInput(e: Event) {
-    if (sidecarEditor) {
+    if (usingSidecarEditor.value && sidecarEditor) {
       sidecarEditor.onTitleInput(e)
       livePageTitle.value = { id: pageId.value, title: (e.target as HTMLInputElement).value }
       return
@@ -113,14 +130,14 @@
   }
 
   function onTitleFocus() {
-    if (sidecarEditor) {
+    if (usingSidecarEditor.value && sidecarEditor) {
       sidecarEditor.onTitleFocus()
       return
     }
     publishField(pageId.value, 'title')
   }
   function onTitleBlur() {
-    if (sidecarEditor) {
+    if (usingSidecarEditor.value && sidecarEditor) {
       sidecarEditor.onTitleBlur()
       return
     }
@@ -142,7 +159,7 @@
   }
 
   function onContentUpdate(val: string) {
-    if (sidecarEditor) {
+    if (usingSidecarEditor.value && sidecarEditor) {
       sidecarEditor.onContentUpdate(val)
       return
     }
@@ -154,19 +171,21 @@
   }
 
   function onContentFocus() {
-    sidecarEditor?.onContentFocus()
+    if (usingSidecarEditor.value) sidecarEditor?.onContentFocus()
+    else publishField(pageId.value, 'content')
   }
 
   function onContentBlur() {
-    sidecarEditor?.onContentBlur()
+    if (usingSidecarEditor.value) sidecarEditor?.onContentBlur()
+    else publishField(pageId.value, undefined)
   }
 
   const displayTitle = computed(() =>
-    trellisSidecar.enabled && sidecarEditor ? sidecarEditor.localTitle.value : localTitle.value,
+    usingSidecarEditor.value && sidecarEditor ? sidecarEditor.localTitle.value : localTitle.value,
   )
 
   const displayContent = computed(() =>
-    trellisSidecar.enabled && sidecarEditor ? sidecarEditor.localContent.value : localContent.value,
+    usingSidecarEditor.value && sidecarEditor ? sidecarEditor.localContent.value : localContent.value,
   )
   const { wp } = useWorkspacePath()
   const currentIndex = computed(() => pages.value.findIndex((p) => p.id === pageId.value))
@@ -189,7 +208,7 @@
 
   async function handleMoveToFolder(folder: string | null) {
     if (!pageId.value) return
-    if (trellisSidecar.enabled) {
+    if (usingSidecarEditor.value) {
       folderPickerOpen.value = false
       ;(nuxtApp as { $toast?: { info: (m: string) => void } }).$toast?.info(
         'Folders are kernel-only in sidecar mode until browse cutover (Phase 2).',
@@ -208,7 +227,7 @@
   async function handleCreateFolder() {
     const name = newFolderName.value.trim()
     if (!name || creatingFolder.value) return
-    if (trellisSidecar.enabled) {
+    if (usingSidecarEditor.value) {
       folderPickerOpen.value = false
       ;(nuxtApp as { $toast?: { info: (m: string) => void } }).$toast?.info(
         'Folders are kernel-only in sidecar mode until browse cutover (Phase 2).',
@@ -229,7 +248,7 @@
   const deleteConfirm = ref(false)
   async function handleDelete() {
     if (!pageId.value) return
-    if (trellisSidecar.enabled && sidecarEditor) {
+    if (usingSidecarEditor.value && sidecarEditor) {
       try {
         await sidecarEditor.removePage()
         navigateTo('/pages')
@@ -365,7 +384,7 @@
   watch(
     currentPage,
     (page) => {
-      if (trellisSidecar.enabled) return
+      if (usingSidecarEditor.value) return
       if (!page || page.id !== pageId.value) return
       if (_seededPageId.value === page.id) return // already seeded — skip post-save store updates
       _seedFromPage(page)
@@ -375,7 +394,7 @@
 
   // Re-seed when navigating to a different page (kernel path only)
   watch(pageId, () => {
-    if (trellisSidecar.enabled) return
+    if (usingSidecarEditor.value) return
     _seededPageId.value = null
     const page = currentPage.value
     if (page && page.id === pageId.value) _seedFromPage(page)
@@ -444,7 +463,7 @@
   })
 
   const saveStatus = computed(() =>
-    trellisSidecar.enabled && sidecarEditor ? sidecarEditor.saveStatus.value : kernelSaveStatus.value,
+    usingSidecarEditor.value && sidecarEditor ? sidecarEditor.saveStatus.value : kernelSaveStatus.value,
   )
 
   const {
@@ -687,6 +706,7 @@
                 <div
                   v-for="viewer in pageViewers.slice(0, 4)"
                   :key="viewer.peerId"
+                  data-testid="page-viewer-avatar"
                   class="relative rounded-full ring-1 ring-offset-1 ring-offset-background"
                   :class="getPresenceRing(viewer.userId)"
                   :title="
@@ -712,7 +732,7 @@
             </div>
 
             <!-- Folder pill (kernel metadata — hidden in sidecar mode) -->
-            <UiDropdownMenu v-if="!trellisSidecar.enabled" v-model:open="folderPickerOpen">
+            <UiDropdownMenu v-if="!usingSidecarEditor" v-model:open="folderPickerOpen">
               <UiDropdownMenuTrigger as-child>
                 <button
                   type="button"

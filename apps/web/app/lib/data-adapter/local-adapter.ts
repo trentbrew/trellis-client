@@ -67,6 +67,10 @@ export function createLocalAdapter(options: LocalAdapterOptions = {}): DataAdapt
     switchUser(userKey: string) {
       db.switchUser(userKey as any)
     },
+
+    updateCurrentUser(patch: Partial<AuthUser> & Record<string, unknown>) {
+      db.updateCurrentUser(patch)
+    },
   }
 
   return adapter

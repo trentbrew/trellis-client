@@ -11,21 +11,25 @@ The Nuxt app (`:1414` by default) can proxy to a published **trellis** sidecar o
 
 ## Quick start
 
+From repo root (`just run` / `just dev`) or `apps/web`:
+
 ```bash
 cd apps/web
 
-# Once — writes .trellis-db.json (Bun + trellis db init)
-just sidecar-init
+# One command — sidecar (:8230) + Nuxt (:1414) with TRELLIS_SIDECAR=1
+just run
 
-# Terminal 1 — sidecar (TRELLIS_BACKEND=sqljs bun … db serve)
-just sidecar-serve
+# Option A only (embedded kernel, no sidecar)
+just run-kernel
+# or: TRELLIS_SIDECAR=0 just run
 
-# Terminal 2 — Nuxt with proxy enabled
-TRELLIS_SIDECAR=1 pnpm dev
+# Manual split (same as `just run` internals)
+just sidecar-serve          # terminal 1
+TRELLIS_SIDECAR=1 pnpm dev  # terminal 2
 
-# Smoke (sidecar + Nuxt both running)
-pnpm smoke:ws          # WS directly to sidecar
-TRELLIS_SIDECAR=1 pnpm smoke:sidecar   # HTTP via Nuxt proxy
+# Smoke (both running via `just run`)
+pnpm smoke:ws
+TRELLIS_SIDECAR=1 pnpm smoke:sidecar
 ```
 
 ## Env
@@ -36,8 +40,8 @@ TRELLIS_SIDECAR=1 pnpm smoke:sidecar   # HTTP via Nuxt proxy
 | `TRELLIS_URL` | `http://localhost:8230` | Sidecar origin |
 | `TRELLIS_API_KEY` | optional | Bearer token if sidecar requires auth |
 | `TRELLIS_PORT` | `1414` | Nuxt dev port |
-| `NUXT_PUBLIC_MAPBOX_TOKEN` | unset | Client Mapbox GL token for `/locations` map tiles |
-| `MAPBOX_ACCESS_TOKEN` | unset | Server token for `GET /api/geocode` (can match public token in dev) |
+
+`/locations` uses **MapLibre + CARTO/OSM** tiles and **Photon** geocoding — no API keys required.
 
 Copy `.trellis-db.json.example` → `.trellis-db.json` or run `just sidecar-init`.
 
@@ -52,7 +56,25 @@ When `TRELLIS_SIDECAR=1`, the page editor uses the **sidecar truth path** (`useE
 | Layer | Transport |
 |-------|-----------|
 | Graph truth | HTTP `/api/trellis/*` → sidecar `:8230`, WS `ws://localhost:8230/realtime` |
-| Presence gossip | `trellis/realtime` — same-browser `BroadcastChannel`; optional relay below |
+| Presence gossip | `trellis/realtime` — **zone-scoped** rooms (`zone:<zoneId>` per ADR-002 D3) |
+
+### Presence rooms (ADR-002 P0)
+
+Ephemeral presence uses **Campus zone** as the room key — not per-page rooms:
+
+| Key | Example | Scope |
+|-----|---------|-------|
+| Zone room | `zone:entity:founder-facility-showroom` | All peers in the same zone (Showroom, Lab, …) |
+| Page filter | `pageId` in presence state | UI filters avatars to the current page |
+
+Transport ladder (no server required for rung 1):
+
+| Rung | Mechanism | When |
+|------|-----------|------|
+| **1** | `BroadcastChannel` (`joinPresence` with no `relayUrl`) | Same browser, multiple tabs — **default** |
+| **2** | WS relay (`VITE_PRESENCE_RELAY_URL`) | Cross-browser / cross-machine |
+
+`joinPresence` picks BC automatically when `VITE_PRESENCE_RELAY_URL` is unset. Presence never writes to the op-log.
 
 ### Import kernel pages
 
@@ -71,6 +93,20 @@ LIMIT=20 node scripts/import-pages-to-sidecar.mjs
 
 Maps `PageItem.content` → sidecar `body`, preserves entity `id`.
 
+### Import app config (P3 live query)
+
+App config (routes, ontologies, projections, collection views) is seeded in the **embedded kernel** on boot. For sidecar live queries (`useTrellisConfig` path A), mirror config into the sidecar DB:
+
+```bash
+# Kernel on :1414, sidecar on :8230
+node scripts/import-app-config-to-sidecar.mjs
+
+# Or via Nuxt proxy
+TRELLIS_SIDECAR=1 node scripts/import-app-config-to-sidecar.mjs
+```
+
+When `TRELLIS_SIDECAR=1` and imported rows exist, `useTrellisConfig` uses `trellis/vue` `useEntities` (no SSE refetch). Otherwise it falls back to `GET /api/graph/config` + SSE (P1).
+
 ### Presence relay (optional)
 
 Cross-browser / cross-machine presence requires a relay. Same-browser multi-tab works without it.
@@ -79,10 +115,14 @@ Cross-browser / cross-machine presence requires a relay. Same-browser multi-tab 
 |----------|---------|-------|
 | `VITE_PRESENCE_RELAY_URL` | unset | e.g. `ws://localhost:8231/rt` when running a trellis realtime relay |
 
-Set in `.env` or Vite env for the Nuxt app. AC-3–5 pass with BroadcastChannel only (two tabs, same origin).
+Set in `.env` or Vite env for the Nuxt app. P0 zone presence AC pass with BroadcastChannel only (two tabs, same browser context).
 
 ### E2E
 
 ```bash
+# Durable page sync (sidecar WS)
 TRELLIS_SIDECAR=1 SIDECAR_TEST_PAGE_ID=<imported-page-id> pnpm test:e2e tests/e2e/sidecar-page-sync.spec.ts
+
+# Zone BroadcastChannel presence (two tabs, no relay)
+TRELLIS_SIDECAR=1 SIDECAR_TEST_PAGE_ID=<imported-page-id> PW_REUSE=1 pnpm test:e2e tests/e2e/zone-presence-bc.spec.ts
 ```

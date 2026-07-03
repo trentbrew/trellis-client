@@ -13,10 +13,17 @@
     const clean = getCleanPath(route.path)
     return clean === '/calendar' || clean.startsWith('/calendar/')
   })
+  const isLocationsRoute = computed(() => {
+    const clean = getCleanPath(route.path)
+    return clean === '/locations' || clean.startsWith('/locations/')
+  })
+  const isRouteSidebarPanel = computed(() => isCalendarRoute.value || isLocationsRoute.value)
   // Sidebar is hidden when the page explicitly disables it OR the route forces it closed
-  // Exception: calendar route always shows sidebar
+  // Exception: calendar + locations routes host dedicated sidebar panels
   const showSidebar = computed(() =>
-    isCalendarRoute.value ? !sidebarDisabled.value : !sidebarDisabled.value && !sidebarCollapse.isForcedCollapsed.value,
+    isRouteSidebarPanel.value
+      ? !sidebarDisabled.value
+      : !sidebarDisabled.value && !sidebarCollapse.isForcedCollapsed.value,
   )
 
   // Layout preference toggle

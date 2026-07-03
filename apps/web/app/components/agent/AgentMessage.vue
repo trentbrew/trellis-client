@@ -49,11 +49,12 @@
 
   const mentionPreviewStyle = computed(() => {
     if (!mentionPreview.value) return {}
-    const { bottom, left } = mentionPreview.value.rect
+    const { top, left } = mentionPreview.value.rect
     return {
       position: 'fixed' as const,
-      top: `${bottom + 8}px`,
+      top: `${top - 8}px`,
       left: `${Math.max(8, Math.min(left, (typeof window !== 'undefined' ? window.innerWidth : 800) - 288))}px`,
+      transform: 'translateY(-100%)',
       zIndex: 9998,
     }
   })
@@ -358,7 +359,7 @@
   .mention-pop-enter-from,
   .mention-pop-leave-to {
     opacity: 0;
-    transform: translateY(-4px);
+    transform: translateY(-100%) translateY(4px);
   }
 
   /* Accordion overrides */

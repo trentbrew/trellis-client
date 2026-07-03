@@ -2,6 +2,10 @@
   import { getSidebarSection } from '~/config/routes'
   import type { RouteConfig } from '~/config/routes'
 
+  defineOptions({
+    inheritAttrs: false,
+  })
+
   const commandDialog = useCommandDialog()
   const routes = useRoutes()
   const appNavigate = useAppNavigate()
@@ -141,7 +145,7 @@
 
 <template>
   <!-- Compact header trigger -->
-  <div class="flex flex-1 justify-center min-w-0 app-region-no-drag">
+  <div v-bind="$attrs" class="flex flex-1 justify-center min-w-0 app-region-no-drag">
     <button
       type="button"
       aria-label="Search or ask the agent"

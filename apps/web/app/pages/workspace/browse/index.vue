@@ -7,6 +7,7 @@ import { useBrowsePage } from '~/composables/useBrowsePage'
 import { useBrowseSelection } from '~/composables/useBrowseSelection'
 import EntityDialog from '~/components/dialogs/EntityDialog.vue'
 import GraphView from '~/components/views/GraphView.vue'
+import BrowseSpreadsheetView from '~/components/views/BrowseSpreadsheetView.vue'
 import { deduplicateRecurringEntities } from '~/utils/recurrence'
 
 definePageMeta({ layout: 'default' })
@@ -67,6 +68,7 @@ const {
 const {
   isSelected,
   toggle: toggleSelection,
+  selectAll,
   clearSelection,
   selectedItems,
   selectionCount,
@@ -74,6 +76,36 @@ const {
   handleBatchDelete,
   handleBatchDuplicate,
 } = useBrowseSelection(filteredItems)
+
+const { update: updateEntity } = useEntities()
+
+type SpreadsheetColumn = 'title' | 'type' | 'status' | 'date'
+
+const handleSpreadsheetCellUpdate = async (item: Entity, column: SpreadsheetColumn, value: unknown) => {
+  if (column === 'title') {
+    await updateEntity({ ...item, title: String(value ?? '').trim() || 'Untitled' })
+    return
+  }
+  if (column === 'status') {
+    await handleFieldUpdate(item, 'status', value)
+    return
+  }
+  if (column === 'date') {
+    const patch = value as { startDate: string; startTime?: string; allDay?: boolean }
+    await updateEntity({
+      ...item,
+      startDate: patch.startDate || null,
+      ...(patch.allDay !== undefined ? { allDay: patch.allDay } : {}),
+      ...(patch.startTime !== undefined ? { startTime: patch.startTime } : {}),
+    })
+  }
+}
+
+const toggleSelectAll = () => {
+  const all = filteredItems.value.length > 0 && filteredItems.value.every((item) => isSelected(item.id))
+  if (all) clearSelection()
+  else selectAll()
+}
 
 // ── Type filter pills ─────────────────────────────────────────────────────
 
@@ -190,14 +222,16 @@ const viewModeOptions = computed(() => {
   const cfg = getEntityTypeConfig(activeTypeParam.value as EntityType)
   if (!cfg) return base
   const extra: { mode: BrowseViewMode; label: string; icon: string }[] = []
-  if (cfg.projections.includes('kanban'))
-    extra.push({ mode: 'kanban', label: 'Kanban', icon: 'lucide:layout-dashboard' })
+  // Kanban / timeline are wired on collections; browse slots not implemented yet — omit to avoid grid fallback.
   if (cfg.projections.includes('moodboard'))
     extra.push({ mode: 'moodboard', label: 'Moodboard', icon: 'lucide:layout-masonry' })
-  if (cfg.projections.includes('timeline'))
-    extra.push({ mode: 'timeline', label: 'Timeline', icon: 'lucide:gantt-chart' })
   return [...base, ...extra]
 })
+
+// Legacy: spreadsheet mode merged into table
+watch(viewMode, (mode) => {
+  if (mode === 'spreadsheet') browseState.setViewMode('table')
+}, { immediate: true })
 
 // ── Stats ─────────────────────────────────────────────────────────────────
 
@@ -354,7 +388,7 @@ onUnmounted(() => {
     </template>
 
     <!-- Flat views (no grouping, or single type selected) -->
-    <template v-else>
+    <template v-else :class="viewMode === 'table' ? 'flex min-h-0 flex-1 flex-col' : ''">
       <!-- Grid -->
       <div v-if="viewMode === 'grid' || !['grid', 'list', 'table', 'moodboard'].includes(viewMode)"
         class="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
@@ -395,69 +429,23 @@ onUnmounted(() => {
         </div>
       </div>
 
-      <!-- Table -->
-      <div v-else-if="viewMode === 'table'" class="overflow-x-auto">
-        <table class="w-full text-sm">
-          <thead>
-            <tr class="border-b border-border">
-              <th class="w-8 py-2 px-3"></th>
-              <th class="text-left py-2 px-3 text-xs font-medium text-muted-foreground">Title</th>
-              <th class="text-left py-2 px-3 text-xs font-medium text-muted-foreground">Type</th>
-              <th class="text-left py-2 px-3 text-xs font-medium text-muted-foreground">Status</th>
-              <th class="text-left py-2 px-3 text-xs font-medium text-muted-foreground">Date</th>
-              <th class="text-left py-2 px-3 text-xs font-medium text-muted-foreground w-8"></th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr v-for="item in visibleItems" :key="item.id"
-              class="border-b border-border/50 hover:bg-muted/30 cursor-pointer transition-colors"
-              @click="openDetail(item)">
-              <td class="py-2 px-3">
-                <input type="checkbox" class="h-4 w-4 rounded border-border" :checked="isSelected(item.id)"
-                  @click.stop="toggleSelection(item.id)" />
-              </td>
-              <td class="py-2 px-3">
-                <div class="flex items-center gap-2">
-                  <Icon :name="getEntityTypeConfig(item.type as EntityType)?.icon ?? 'lucide:file'"
-                    class="h-4 w-4 shrink-0 text-muted-foreground" />
-                  <span class="font-medium truncate max-w-xs">{{ item.title || 'Untitled' }}</span>
-                </div>
-              </td>
-              <td class="py-2 px-3">
-                <span class="inline-flex items-center gap-1 text-xs text-muted-foreground">
-                  {{ getEntityTypeConfig(item.type as EntityType)?.label ?? item.type }}
-                </span>
-              </td>
-              <td class="py-2 px-3 text-muted-foreground text-xs">
-                {{ (item as any).taskStatus || (item as any).status || '—' }}
-              </td>
-              <td class="py-2 px-3 text-muted-foreground text-xs whitespace-nowrap">
-                {{
-                  (item as any).startDate
-                    ? new Date((item as any).startDate + 'T00:00:00').toLocaleDateString('en-US', {
-                      month: 'short',
-                      day: 'numeric',
-                    })
-                    : '—'
-                }}
-              </td>
-              <td class="py-2 px-3">
-                <Icon v-if="(item as any).pinned" name="lucide:pin" class="h-3 w-3 text-amber-500" />
-              </td>
-            </tr>
-          </tbody>
-        </table>
-        <div v-if="!filteredItems.length"
-          class="flex flex-col items-center justify-center h-48 text-muted-foreground gap-3">
-          <Icon name="lucide:search-x" class="h-6 w-6 text-muted-foreground/30" />
-          <p class="text-sm">{{ browseState.searchQuery.value ? 'No results for your search' : 'Nothing here yet' }}</p>
-        </div>
+      <!-- Table (virtualized grid) -->
+      <div v-else-if="viewMode === 'table'" class="flex min-h-0 flex-1 flex-col">
+        <BrowseSpreadsheetView
+          class="min-h-0 flex-1"
+          :items="filteredItems"
+          :is-selected="isSelected"
+          :storage-key="`browse:table:${activeTypeParam}`"
+          @toggle-select="toggleSelection"
+          @toggle-select-all="toggleSelectAll"
+          @open-detail="openDetail"
+          @cell-update="handleSpreadsheetCellUpdate" />
       </div>
     </template>
 
     <!-- Infinite-scroll sentinel — loads next page when it enters the viewport -->
     <div
-      v-if="viewMode !== 'graph' && hasMore"
+      v-if="viewMode !== 'graph' && viewMode !== 'table' && hasMore"
       ref="sentinelRef"
       class="flex items-center justify-center py-6 text-xs text-muted-foreground gap-2">
       <Icon name="lucide:loader-2" class="h-3.5 w-3.5 animate-spin opacity-60" />
@@ -465,9 +453,17 @@ onUnmounted(() => {
     </div>
 
     <!-- Results count (hidden in graph mode since the graph has its own stats badge) -->
-    <div v-if="viewMode !== 'graph'" class="text-xs text-muted-foreground mt-4 pt-4 border-t border-border pb-10">
-      Showing {{ Math.min(displayLimit, filteredItems.length) }} of {{ filteredItems.length }}
-      {{ filteredItems.length === 1 ? 'item' : 'items' }}
+    <div
+      v-if="viewMode !== 'graph'"
+      class="text-xs text-muted-foreground shrink-0 border-t border-border"
+      :class="viewMode === 'table' ? 'px-4 py-2' : 'mt-4 pt-4 pb-10'">
+      <template v-if="viewMode === 'table'">
+        {{ filteredItems.length }} {{ filteredItems.length === 1 ? 'item' : 'items' }}
+      </template>
+      <template v-else>
+        Showing {{ Math.min(displayLimit, filteredItems.length) }} of {{ filteredItems.length }}
+        {{ filteredItems.length === 1 ? 'item' : 'items' }}
+      </template>
       <span v-if="browseState.searchQuery.value">for "{{ browseState.searchQuery.value }}"</span>
     </div>
 

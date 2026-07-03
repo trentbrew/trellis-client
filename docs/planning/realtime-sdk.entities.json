@@ -1,0 +1,368 @@
+{
+  "version": 1,
+  "agentId": "agent:founder",
+  "facilityId": "entity:founder-facility",
+  "zoneId": "entity:founder-facility-lab",
+  "notes": [
+    "Dogfood seed for the Realtime Client SDK roadmap.",
+    "Imported via packages/trellis-cli/scripts/import-entities.mjs.",
+    "Each node is created with kernel type 'entity'; the ontology type lives in data.type.",
+    "All IDs use the 'entity:' prefix to match the active TQL namespace."
+  ],
+  "nodes": [
+    {
+      "id": "entity:project-realtime-sdk",
+      "data": {
+        "type": "project",
+        "title": "Realtime Client SDK",
+        "description": "SSE-first self-hosted realtime client. Replaces the InstantDB cloud path with a Trellis-native transport that serves three consumers: external apps, internal apps/web, and cross-agent federation.",
+        "status": "on-hold",
+        "category": "work",
+        "priority": "high",
+        "urgency": "not-urgent",
+        "owner": "agent:founder",
+        "involved": ["agent:founder"],
+        "startDate": "2026-05-12",
+        "endDate": "2026-09-30",
+        "allDay": true,
+        "tags": ["sdk", "realtime", "federation", "dogfood", "planning"],
+        "progress": 0,
+        "zoneId": "entity:founder-facility-lab",
+        "facilityId": "entity:founder-facility"
+      }
+    },
+    {
+      "id": "entity:goal-rt-unified",
+      "data": {
+        "type": "goal",
+        "title": "One transport, three lenses",
+        "description": "apps/web cloud mode runs on Trellis without InstantDB; external apps and federation use the same wire protocol. SSE+HTTP is the only realtime path.",
+        "category": "work",
+        "priority": "high",
+        "owner": "agent:founder",
+        "tags": ["sdk", "realtime", "north-star"]
+      }
+    },
+
+    {
+      "id": "entity:milestone-rt-decisions",
+      "data": {
+        "type": "milestone",
+        "title": "M0 — Decisions Locked",
+        "description": "Six open questions resolved, schema spec drafted, wire protocol envelope sketched. Gate: no code lands until this closes.",
+        "startDate": "2026-05-26",
+        "allDay": true,
+        "category": "work",
+        "owner": "agent:founder",
+        "tags": ["milestone", "rt-sdk", "m0"],
+        "projectId": "entity:project-realtime-sdk",
+        "achieved": false
+      }
+    },
+    {
+      "id": "entity:milestone-rt-core",
+      "data": {
+        "type": "milestone",
+        "title": "M1 — Realtime Core (transport)",
+        "description": "@trellis/realtime-core ships. SSE client with resume + reconnect, mutation pipe with idempotency, session-token auth. Wire-only, no cache.",
+        "startDate": "2026-06-16",
+        "allDay": true,
+        "category": "work",
+        "owner": "agent:founder",
+        "tags": ["milestone", "rt-sdk", "m1"],
+        "projectId": "entity:project-realtime-sdk",
+        "achieved": false
+      }
+    },
+    {
+      "id": "entity:milestone-rt-client",
+      "data": {
+        "type": "milestone",
+        "title": "M2 — Reactive Client",
+        "description": "@trellis/client + @trellis/client-vue ship. Cache, op-application, optimistic mutations, outbox. apps/web local mode flips to new adapter.",
+        "startDate": "2026-07-07",
+        "allDay": true,
+        "category": "work",
+        "owner": "agent:founder",
+        "tags": ["milestone", "rt-sdk", "m2"],
+        "projectId": "entity:project-realtime-sdk",
+        "achieved": false
+      }
+    },
+    {
+      "id": "entity:milestone-rt-auth",
+      "data": {
+        "type": "milestone",
+        "title": "M3 — Auth Migration",
+        "description": "Magic-code auth, JWT + refresh tokens, session revocation. apps/web flips off InstantDB auth. Unlocks platform data migration.",
+        "startDate": "2026-07-28",
+        "allDay": true,
+        "category": "work",
+        "owner": "agent:founder",
+        "tags": ["milestone", "rt-sdk", "m3"],
+        "projectId": "entity:project-realtime-sdk",
+        "achieved": false
+      }
+    },
+    {
+      "id": "entity:milestone-rt-platform-data",
+      "data": {
+        "type": "milestone",
+        "title": "M4 — Platform Data Migration",
+        "description": "Orgs, members, settings, notifications port from InstantDB to TQL ontologies. cloud-adapter rewritten on realtime-core. @instantdb/* removed.",
+        "startDate": "2026-08-18",
+        "allDay": true,
+        "category": "work",
+        "owner": "agent:founder",
+        "tags": ["milestone", "rt-sdk", "m4"],
+        "projectId": "entity:project-realtime-sdk",
+        "achieved": false
+      }
+    },
+    {
+      "id": "entity:milestone-rt-federation",
+      "data": {
+        "type": "milestone",
+        "title": "M5 — Federation Overlay",
+        "description": "@trellis/federation ships. Per-agent op streams, subscription filters, decision-trace hydration. Unblocks PLATFORM.md Phase 1 (Dev Agent home Facility).",
+        "startDate": "2026-09-08",
+        "allDay": true,
+        "category": "work",
+        "owner": "agent:founder",
+        "tags": ["milestone", "rt-sdk", "m5"],
+        "projectId": "entity:project-realtime-sdk",
+        "achieved": false
+      }
+    },
+    {
+      "id": "entity:milestone-rt-dogfood",
+      "data": {
+        "type": "milestone",
+        "title": "M6 — Dogfood Cutover",
+        "description": "apps/web cloud mode runs on Trellis-native realtime end-to-end. Magic-code login, multi-tab sync, perf parity, federation Phase 1 demo green.",
+        "startDate": "2026-09-22",
+        "allDay": true,
+        "category": "work",
+        "owner": "agent:founder",
+        "tags": ["milestone", "rt-sdk", "m6"],
+        "projectId": "entity:project-realtime-sdk",
+        "achieved": false
+      }
+    },
+
+    {
+      "id": "entity:decision-rt-query-shape",
+      "data": {
+        "type": "decision",
+        "title": "Query shape — InstantDB proxy syntax vs EQL-S",
+        "description": "Should the reactive client expose `db.query({ ns: { $: { where } } })` for zero-friction migration, or unify on EQL-S to stay consistent with TQL elsewhere?",
+        "rationale": "Proxy syntax: trivial migration for apps/web, familiar to current contributors, but two query languages in the codebase. EQL-S: one language end to end, but every existing call site rewrites.",
+        "outcome": "proposed",
+        "byAgent": "agent:founder",
+        "inZone": "entity:founder-facility-lab",
+        "category": "work",
+        "tags": ["decision", "rt-sdk", "blocks-m0", "blocks-m2"]
+      }
+    },
+    {
+      "id": "entity:decision-rt-cache-strategy",
+      "data": {
+        "type": "decision",
+        "title": "Cache strategy — handroll vs TanStack Query",
+        "description": "Build a query-keyed cache that natively applies ops (like InstantDB), or adopt TanStack Query and bolt op-application on top?",
+        "rationale": "Handroll: full control over op-application, op log is the source of truth for cache invalidation, but more code to own. TanStack: huge ecosystem, but doesn't natively understand op streams; we'd be fighting its invalidation model.",
+        "outcome": "proposed",
+        "byAgent": "agent:founder",
+        "inZone": "entity:founder-facility-lab",
+        "category": "work",
+        "tags": ["decision", "rt-sdk", "blocks-m2"]
+      }
+    },
+    {
+      "id": "entity:decision-rt-schema-language",
+      "data": {
+        "type": "decision",
+        "title": "Schema language — port instant.schema.ts to trellis.schema.ts",
+        "description": "Port the existing InstantDB schema spec into a Trellis-native `trellis.schema.ts` that drives server validation, client cache shape, and TS types from one source?",
+        "rationale": "Single schema avoids drift between server ontologies and client types. Lean: yes, port it. Open question is whether it codegens TQL ontology entries or stays a parallel surface.",
+        "outcome": "proposed",
+        "byAgent": "agent:founder",
+        "inZone": "entity:founder-facility-lab",
+        "category": "work",
+        "tags": ["decision", "rt-sdk", "blocks-m0", "blocks-m4"]
+      }
+    },
+    {
+      "id": "entity:decision-rt-presence-timing",
+      "data": {
+        "type": "decision",
+        "title": "Presence/awareness — Phase 0 or deferred",
+        "description": "Ship presence (cursors, typing, focus) in M1, or defer? SSE is one-way, so presence forces either a WS sidecar or HTTP heartbeats with a presence sub-channel.",
+        "rationale": "Phase 0: forces dual-transport from day one but unblocks collab features. Deferred: SSE-only stays clean for v1, presence joins as a transport overlay later. Lean: deferred unless a concrete collab feature needs it pre-M6.",
+        "outcome": "proposed",
+        "byAgent": "agent:founder",
+        "inZone": "entity:founder-facility-lab",
+        "category": "work",
+        "tags": ["decision", "rt-sdk", "blocks-m1"]
+      }
+    },
+    {
+      "id": "entity:decision-rt-federation-auth",
+      "data": {
+        "type": "decision",
+        "title": "Federation auth — Wallet/Ed25519 v1 vs session-only v1",
+        "description": "Sign cross-agent ops with a Wallet (Ed25519 pubkey) from day one (matches PLATFORM.md), or use session tokens for M5 and add Wallet later?",
+        "rationale": "Wallet from day one: federation provenance is structural, no migration. Session-only: ships M5 faster but accumulates technical debt that touches every cross-agent surface.",
+        "outcome": "proposed",
+        "byAgent": "agent:founder",
+        "inZone": "entity:founder-facility-lab",
+        "category": "work",
+        "tags": ["decision", "rt-sdk", "blocks-m5"]
+      }
+    },
+    {
+      "id": "entity:decision-rt-multi-tab",
+      "data": {
+        "type": "decision",
+        "title": "Multi-tab — SharedWorker vs per-tab connections",
+        "description": "Single SSE per origin via a SharedWorker, or per-tab connections with server-side fan-out?",
+        "rationale": "SharedWorker: one connection per user, clean. Per-tab: simpler to ship, but N connections per user and bigger fan-out cost on the server. Lean: per-tab for v1, SharedWorker as an opt-in optimization.",
+        "outcome": "proposed",
+        "byAgent": "agent:founder",
+        "inZone": "entity:founder-facility-lab",
+        "category": "work",
+        "tags": ["decision", "rt-sdk", "blocks-m1"]
+      }
+    },
+
+    { "id": "entity:task-rt-decide-query-shape", "data": { "type": "task", "title": "Resolve decision: query shape", "description": "Drive entity:decision-rt-query-shape to outcome=executed.", "taskStatus": "pending", "priority": "high", "urgency": "urgent", "category": "work", "owner": "agent:founder", "tags": ["m0", "decision-driver"] } },
+    { "id": "entity:task-rt-decide-cache-strategy", "data": { "type": "task", "title": "Resolve decision: cache strategy", "description": "Drive entity:decision-rt-cache-strategy to outcome=executed.", "taskStatus": "pending", "priority": "high", "urgency": "urgent", "category": "work", "owner": "agent:founder", "tags": ["m0", "decision-driver"] } },
+    { "id": "entity:task-rt-decide-schema-language", "data": { "type": "task", "title": "Resolve decision: schema language", "description": "Drive entity:decision-rt-schema-language to outcome=executed.", "taskStatus": "pending", "priority": "high", "urgency": "urgent", "category": "work", "owner": "agent:founder", "tags": ["m0", "decision-driver"] } },
+    { "id": "entity:task-rt-decide-presence-timing", "data": { "type": "task", "title": "Resolve decision: presence timing", "description": "Drive entity:decision-rt-presence-timing to outcome=executed.", "taskStatus": "pending", "priority": "medium", "urgency": "not-urgent", "category": "work", "owner": "agent:founder", "tags": ["m0", "decision-driver"] } },
+    { "id": "entity:task-rt-decide-federation-auth", "data": { "type": "task", "title": "Resolve decision: federation auth", "description": "Drive entity:decision-rt-federation-auth to outcome=executed.", "taskStatus": "pending", "priority": "medium", "urgency": "not-urgent", "category": "work", "owner": "agent:founder", "tags": ["m0", "decision-driver"] } },
+    { "id": "entity:task-rt-decide-multi-tab", "data": { "type": "task", "title": "Resolve decision: multi-tab strategy", "description": "Drive entity:decision-rt-multi-tab to outcome=executed.", "taskStatus": "pending", "priority": "low", "urgency": "not-urgent", "category": "work", "owner": "agent:founder", "tags": ["m0", "decision-driver"] } },
+    { "id": "entity:task-rt-draft-wire-protocol", "data": { "type": "task", "title": "Draft wire protocol spec", "description": "Define the SSE event envelope, mutation envelope, error shapes, and idempotency-key semantics. Output: doc + JSON schemas.", "taskStatus": "pending", "priority": "high", "urgency": "urgent", "category": "work", "owner": "agent:founder", "tags": ["m0", "spec"] } },
+    { "id": "entity:task-rt-draft-schema-spec", "data": { "type": "task", "title": "Draft trellis.schema.ts spec", "description": "Output of decision-schema-language: spec for the unified schema language driving server validation + client cache + TS types.", "taskStatus": "pending", "priority": "high", "urgency": "not-urgent", "category": "work", "owner": "agent:founder", "tags": ["m0", "spec"] } },
+
+    { "id": "entity:task-rt-extract-sse-client", "data": { "type": "task", "title": "Extract TrellisClient.watch() into realtime-core SSE client", "description": "New package @trellis/realtime-core. Pull the SSE parsing loop out of trellis-cli/src/client.ts and own it as the canonical browser+Node client.", "taskStatus": "pending", "priority": "high", "urgency": "urgent", "category": "work", "owner": "agent:founder", "tags": ["m1", "transport"] } },
+    { "id": "entity:task-rt-resume-reconnect", "data": { "type": "task", "title": "Last-Event-ID resume + reconnect-with-backoff", "description": "Client resumes the op stream from the last delivered op id. Exponential backoff on disconnect, jitter, max-retry policy.", "taskStatus": "pending", "priority": "high", "urgency": "urgent", "category": "work", "owner": "agent:founder", "tags": ["m1", "transport"] } },
+    { "id": "entity:task-rt-events-filters", "data": { "type": "task", "title": "/api/graph/events accepts filter params", "description": "Server-side: events.get.ts honors ?since=&zone=&type= and Last-Event-ID header. Replay the op log delta on resume.", "taskStatus": "pending", "priority": "high", "urgency": "urgent", "category": "work", "owner": "agent:founder", "tags": ["m1", "transport", "server"] } },
+    { "id": "entity:task-rt-session-auth", "data": { "type": "task", "title": "Session-token auth on SSE handshake + mutations", "description": "Auth header on SSE connect; rejected handshakes return a typed reason. Session-token refresh resumes the stream cleanly.", "taskStatus": "pending", "priority": "high", "urgency": "urgent", "category": "work", "owner": "agent:founder", "tags": ["m1", "transport", "auth"] } },
+    { "id": "entity:task-rt-mutation-pipe", "data": { "type": "task", "title": "Mutation pipe with idempotency-key", "description": "POST /api/graph/mutate accepts an idempotency-key header; server dedups within a sliding window. Client retries safely.", "taskStatus": "pending", "priority": "high", "urgency": "urgent", "category": "work", "owner": "agent:founder", "tags": ["m1", "transport", "server"] } },
+    { "id": "entity:task-rt-migrate-cli-hooks", "data": { "type": "task", "title": "Migrate trellis-cli + hooks to realtime-core", "description": "trellis-cli/src/client.ts + hooks/* delegate to @trellis/realtime-core. Existing TrellisClient API stays intact.", "taskStatus": "pending", "priority": "medium", "urgency": "not-urgent", "category": "work", "owner": "agent:founder", "tags": ["m1", "transport"] } },
+    { "id": "entity:task-rt-transport-tests", "data": { "type": "task", "title": "Transport integration tests", "description": "Test matrix: dropped connection mid-stream, late-arriving ops, filter correctness, idempotency dedup, token refresh during stream.", "taskStatus": "pending", "priority": "high", "urgency": "urgent", "category": "work", "owner": "agent:founder", "tags": ["m1", "transport", "test"] } },
+
+    { "id": "entity:task-rt-cache-keyed", "data": { "type": "task", "title": "Query-keyed cache with op-application", "description": "Cache holds materialized query results. Inbound ops are applied to cached entries (no refetch). Cache invalidation == op-log replay.", "taskStatus": "pending", "priority": "high", "urgency": "urgent", "category": "work", "owner": "agent:founder", "tags": ["m2", "client"] } },
+    { "id": "entity:task-rt-tx-proxy", "data": { "type": "task", "title": "db.tx proxy compatible with current adapter shape", "description": "Match the existing DataAdapter tx proxy API (db.tx.ns[id].action(data)). Migration to apps/web should be import-swap, not rewrite.", "taskStatus": "pending", "priority": "high", "urgency": "urgent", "category": "work", "owner": "agent:founder", "tags": ["m2", "client", "api-compat"] } },
+    { "id": "entity:task-rt-optimistic", "data": { "type": "task", "title": "Optimistic mutations + server-rollback", "description": "Mutations apply locally before server confirm; on reject, rollback ops are emitted to revert the cache. Decision traces preserve attempted+rejected.", "taskStatus": "pending", "priority": "high", "urgency": "urgent", "category": "work", "owner": "agent:founder", "tags": ["m2", "client"] } },
+    { "id": "entity:task-rt-outbox", "data": { "type": "task", "title": "Mutation outbox for offline periods", "description": "Persist queued mutations across disconnects/page-reloads; flush on reconnect with idempotency-key replay.", "taskStatus": "pending", "priority": "high", "urgency": "not-urgent", "category": "work", "owner": "agent:founder", "tags": ["m2", "client"] } },
+    { "id": "entity:task-rt-subscribe-query", "data": { "type": "task", "title": "subscribeQuery matching DataAdapter interface", "description": "Same callback shape and unsubscribe semantics as the current data-adapter. Drop-in replacement.", "taskStatus": "pending", "priority": "high", "urgency": "urgent", "category": "work", "owner": "agent:founder", "tags": ["m2", "client", "api-compat"] } },
+    { "id": "entity:task-rt-vue-composables", "data": { "type": "task", "title": "@trellis/client-vue composables", "description": "useQuery, useTx, useAgentStream. Reactive Vue 3 wrappers over the client core. React adapter deferred.", "taskStatus": "pending", "priority": "medium", "urgency": "not-urgent", "category": "work", "owner": "agent:founder", "tags": ["m2", "client", "vue"] } },
+    { "id": "entity:task-rt-new-local-adapter", "data": { "type": "task", "title": "New local-adapter built on realtime-core", "description": "Replaces the ad-hoc fetch+EventSource path in apps/web/app/lib/data-adapter/local-adapter.ts. Same interface, new transport.", "taskStatus": "pending", "priority": "high", "urgency": "urgent", "category": "work", "owner": "agent:founder", "tags": ["m2", "client"] } },
+    { "id": "entity:task-rt-local-mode-regression", "data": { "type": "task", "title": "apps/web local mode regression test pass", "description": "Full e2e + vitest run against local mode using the new adapter. Zero-regression bar before merging.", "taskStatus": "pending", "priority": "high", "urgency": "urgent", "category": "work", "owner": "agent:founder", "tags": ["m2", "test"] } },
+
+    { "id": "entity:task-rt-magic-code-endpoint", "data": { "type": "task", "title": "POST /api/auth/magic-code", "description": "Email magic-code generation + send. Rate-limited. Replaces InstantDB sendMagicCode.", "taskStatus": "pending", "priority": "high", "urgency": "urgent", "category": "work", "owner": "agent:founder", "tags": ["m3", "auth", "server"] } },
+    { "id": "entity:task-rt-verify-endpoint", "data": { "type": "task", "title": "POST /api/auth/verify → JWT + refresh token", "description": "Verify code, issue access JWT (short TTL) + refresh token (long TTL, rotating).", "taskStatus": "pending", "priority": "high", "urgency": "urgent", "category": "work", "owner": "agent:founder", "tags": ["m3", "auth", "server"] } },
+    { "id": "entity:task-rt-session-entity", "data": { "type": "task", "title": "Session entity + revocation API", "description": "TQL ontology for session. Revocation flips the entity's status; SSE handshakes consult it. Logout = revoke.", "taskStatus": "pending", "priority": "high", "urgency": "not-urgent", "category": "work", "owner": "agent:founder", "tags": ["m3", "auth", "server"] } },
+    { "id": "entity:task-rt-token-rotation", "data": { "type": "task", "title": "Refresh-token rotation + cookie strategy", "description": "Refresh tokens rotate on use; HttpOnly + SameSite=Lax cookies; cross-origin SDK uses Authorization header.", "taskStatus": "pending", "priority": "high", "urgency": "not-urgent", "category": "work", "owner": "agent:founder", "tags": ["m3", "auth"] } },
+    { "id": "entity:task-rt-apps-web-auth-switch", "data": { "type": "task", "title": "apps/web auth plugin switches to /api/auth/*", "description": "Replace InstantDB auth calls in plugins/instant.client.ts. subscribeAuth wires to the new session feed.", "taskStatus": "pending", "priority": "high", "urgency": "urgent", "category": "work", "owner": "agent:founder", "tags": ["m3", "auth", "apps-web"] } },
+    { "id": "entity:task-rt-rewrite-resolve-invites", "data": { "type": "task", "title": "Rewrite resolve-invites.post.ts against TQL", "description": "Port apps/web/server/api/resolve-invites.post.ts off InstantDB to use TQL members/notifications ontologies.", "taskStatus": "pending", "priority": "medium", "urgency": "not-urgent", "category": "work", "owner": "agent:founder", "tags": ["m3", "auth", "server"] } },
+
+    { "id": "entity:task-rt-platform-ontologies", "data": { "type": "task", "title": "TQL ontologies: org, member, setting, notification", "description": "Mirror apps/web/instant.schema.ts as TQL ontologies. Field-level parity verified by a snapshot test.", "taskStatus": "pending", "priority": "high", "urgency": "urgent", "category": "work", "owner": "agent:founder", "tags": ["m4", "platform-data"] } },
+    { "id": "entity:task-rt-migration-script", "data": { "type": "task", "title": "Migration script: instantdb → tql", "description": "One-shot script that reads from InstantDB and writes TQL entities + links. Idempotent. Used per-tenant during cutover.", "taskStatus": "pending", "priority": "high", "urgency": "urgent", "category": "work", "owner": "agent:founder", "tags": ["m4", "platform-data", "migration"] } },
+    { "id": "entity:task-rt-cloud-adapter-rewrite", "data": { "type": "task", "title": "cloud-adapter rewritten on realtime-core", "description": "apps/web/app/lib/data-adapter/cloud-adapter.ts is reimplemented against @trellis/realtime-core. No InstantDB calls remain.", "taskStatus": "pending", "priority": "high", "urgency": "urgent", "category": "work", "owner": "agent:founder", "tags": ["m4", "platform-data"] } },
+    { "id": "entity:task-rt-feature-parity-matrix", "data": { "type": "task", "title": "Feature-parity test matrix", "description": "Every DataAdapter method (subscribeQuery, queryOnce, transact, tx proxy, auth) verified in cloud mode against the TQL backend.", "taskStatus": "pending", "priority": "high", "urgency": "urgent", "category": "work", "owner": "agent:founder", "tags": ["m4", "test"] } },
+    { "id": "entity:task-rt-remove-instantdb-deps", "data": { "type": "task", "title": "Remove @instantdb/* from package.json", "description": "Drop @instantdb/admin, @instantdb/core, @instantdb/vue. Verify no runtime imports remain.", "taskStatus": "pending", "priority": "high", "urgency": "not-urgent", "category": "work", "owner": "agent:founder", "tags": ["m4", "cleanup"] } },
+    { "id": "entity:task-rt-decommission-instant-plugin", "data": { "type": "task", "title": "Decommission plugins/instant.client.ts", "description": "Delete the Instant client plugin and any composables that referenced it directly. Adapter pattern stays intact.", "taskStatus": "pending", "priority": "medium", "urgency": "not-urgent", "category": "work", "owner": "agent:founder", "tags": ["m4", "cleanup"] } },
+
+    { "id": "entity:task-rt-agent-stream-endpoint", "data": { "type": "task", "title": "/api/agents/{id}/ops stream endpoint", "description": "Per-agent SSE stream + history-since variant. Filtered by zone visibility of the requesting agent.", "taskStatus": "pending", "priority": "high", "urgency": "urgent", "category": "work", "owner": "agent:founder", "tags": ["m5", "federation", "server"] } },
+    { "id": "entity:task-rt-subscription-filter-spec", "data": { "type": "task", "title": "Subscription filter spec", "description": "Formalize zone, nodeType, since filters. Filter is part of the subscription contract; server enforces zone authority.", "taskStatus": "pending", "priority": "high", "urgency": "urgent", "category": "work", "owner": "agent:founder", "tags": ["m5", "federation", "spec"] } },
+    { "id": "entity:task-rt-federation-client", "data": { "type": "task", "title": "@trellis/federation client", "description": "createFederation API: subscribe(agentId, filter, cb), publish(agentId, op). Layered on realtime-core; no special transport.", "taskStatus": "pending", "priority": "high", "urgency": "urgent", "category": "work", "owner": "agent:founder", "tags": ["m5", "federation"] } },
+    { "id": "entity:task-rt-decision-trace-hydration", "data": { "type": "task", "title": "Decision-trace hydration on op arrival", "description": "When a Decision op arrives via federation, hydrate the Decision → Artifact → Agent → Zone path into the local cache.", "taskStatus": "pending", "priority": "high", "urgency": "not-urgent", "category": "work", "owner": "agent:founder", "tags": ["m5", "federation"] } },
+    { "id": "entity:task-rt-federation-e2e-demo", "data": { "type": "task", "title": "End-to-end demo: founder Lab ⇔ Dev Workshop", "description": "Founder assigns a task to agent:dev; decision trace from the dev agent appears in founder Lab via op stream. Phase 1 of PLATFORM.md.", "taskStatus": "pending", "priority": "high", "urgency": "urgent", "category": "work", "owner": "agent:founder", "tags": ["m5", "federation", "demo"] } },
+
+    { "id": "entity:task-rt-cutover-magic-code", "data": { "type": "task", "title": "Acceptance: magic-code login end-to-end", "description": "Full login flow against Trellis-native auth on staging.", "taskStatus": "pending", "priority": "high", "urgency": "urgent", "category": "work", "owner": "agent:founder", "tags": ["m6", "acceptance"] } },
+    { "id": "entity:task-rt-cutover-multitab-sync", "data": { "type": "task", "title": "Acceptance: multi-tab realtime sync", "description": "Two tabs open against staging stay in sync via SSE; matches current InstantDB UX.", "taskStatus": "pending", "priority": "high", "urgency": "urgent", "category": "work", "owner": "agent:founder", "tags": ["m6", "acceptance"] } },
+    { "id": "entity:task-rt-cutover-perf-parity", "data": { "type": "task", "title": "Acceptance: Lighthouse + perf parity", "description": "Cloud mode on Trellis-native realtime hits the same perf bar as the InstantDB baseline.", "taskStatus": "pending", "priority": "high", "urgency": "urgent", "category": "work", "owner": "agent:founder", "tags": ["m6", "acceptance"] } },
+    { "id": "entity:task-rt-cutover-federation-demo", "data": { "type": "task", "title": "Acceptance: federation Phase 1 demo green", "description": "PLATFORM.md Phase 1 demo runs end-to-end against the new SDK; decision traces appear in founder Lab.", "taskStatus": "pending", "priority": "high", "urgency": "urgent", "category": "work", "owner": "agent:founder", "tags": ["m6", "acceptance"] } }
+  ],
+
+  "links": [
+    { "e1": "entity:project-realtime-sdk", "relation": "contains", "e2": "entity:goal-rt-unified" },
+
+    { "e1": "entity:project-realtime-sdk", "relation": "contains", "e2": "entity:milestone-rt-decisions" },
+    { "e1": "entity:project-realtime-sdk", "relation": "contains", "e2": "entity:milestone-rt-core" },
+    { "e1": "entity:project-realtime-sdk", "relation": "contains", "e2": "entity:milestone-rt-client" },
+    { "e1": "entity:project-realtime-sdk", "relation": "contains", "e2": "entity:milestone-rt-auth" },
+    { "e1": "entity:project-realtime-sdk", "relation": "contains", "e2": "entity:milestone-rt-platform-data" },
+    { "e1": "entity:project-realtime-sdk", "relation": "contains", "e2": "entity:milestone-rt-federation" },
+    { "e1": "entity:project-realtime-sdk", "relation": "contains", "e2": "entity:milestone-rt-dogfood" },
+
+    { "e1": "entity:milestone-rt-core",          "relation": "dependsOn", "e2": "entity:milestone-rt-decisions" },
+    { "e1": "entity:milestone-rt-client",        "relation": "dependsOn", "e2": "entity:milestone-rt-core" },
+    { "e1": "entity:milestone-rt-auth",          "relation": "dependsOn", "e2": "entity:milestone-rt-client" },
+    { "e1": "entity:milestone-rt-platform-data", "relation": "dependsOn", "e2": "entity:milestone-rt-auth" },
+    { "e1": "entity:milestone-rt-federation",    "relation": "dependsOn", "e2": "entity:milestone-rt-platform-data" },
+    { "e1": "entity:milestone-rt-dogfood",       "relation": "dependsOn", "e2": "entity:milestone-rt-federation" },
+
+    { "e1": "entity:decision-rt-query-shape",      "relation": "informs", "e2": "entity:milestone-rt-decisions" },
+    { "e1": "entity:decision-rt-query-shape",      "relation": "informs", "e2": "entity:milestone-rt-client" },
+    { "e1": "entity:decision-rt-cache-strategy",   "relation": "informs", "e2": "entity:milestone-rt-client" },
+    { "e1": "entity:decision-rt-schema-language",  "relation": "informs", "e2": "entity:milestone-rt-decisions" },
+    { "e1": "entity:decision-rt-schema-language",  "relation": "informs", "e2": "entity:milestone-rt-platform-data" },
+    { "e1": "entity:decision-rt-presence-timing",  "relation": "informs", "e2": "entity:milestone-rt-core" },
+    { "e1": "entity:decision-rt-federation-auth",  "relation": "informs", "e2": "entity:milestone-rt-federation" },
+    { "e1": "entity:decision-rt-multi-tab",        "relation": "informs", "e2": "entity:milestone-rt-core" },
+
+    { "e1": "entity:milestone-rt-decisions", "relation": "contains", "e2": "entity:task-rt-decide-query-shape" },
+    { "e1": "entity:milestone-rt-decisions", "relation": "contains", "e2": "entity:task-rt-decide-cache-strategy" },
+    { "e1": "entity:milestone-rt-decisions", "relation": "contains", "e2": "entity:task-rt-decide-schema-language" },
+    { "e1": "entity:milestone-rt-decisions", "relation": "contains", "e2": "entity:task-rt-decide-presence-timing" },
+    { "e1": "entity:milestone-rt-decisions", "relation": "contains", "e2": "entity:task-rt-decide-federation-auth" },
+    { "e1": "entity:milestone-rt-decisions", "relation": "contains", "e2": "entity:task-rt-decide-multi-tab" },
+    { "e1": "entity:milestone-rt-decisions", "relation": "contains", "e2": "entity:task-rt-draft-wire-protocol" },
+    { "e1": "entity:milestone-rt-decisions", "relation": "contains", "e2": "entity:task-rt-draft-schema-spec" },
+
+    { "e1": "entity:milestone-rt-core", "relation": "contains", "e2": "entity:task-rt-extract-sse-client" },
+    { "e1": "entity:milestone-rt-core", "relation": "contains", "e2": "entity:task-rt-resume-reconnect" },
+    { "e1": "entity:milestone-rt-core", "relation": "contains", "e2": "entity:task-rt-events-filters" },
+    { "e1": "entity:milestone-rt-core", "relation": "contains", "e2": "entity:task-rt-session-auth" },
+    { "e1": "entity:milestone-rt-core", "relation": "contains", "e2": "entity:task-rt-mutation-pipe" },
+    { "e1": "entity:milestone-rt-core", "relation": "contains", "e2": "entity:task-rt-migrate-cli-hooks" },
+    { "e1": "entity:milestone-rt-core", "relation": "contains", "e2": "entity:task-rt-transport-tests" },
+
+    { "e1": "entity:milestone-rt-client", "relation": "contains", "e2": "entity:task-rt-cache-keyed" },
+    { "e1": "entity:milestone-rt-client", "relation": "contains", "e2": "entity:task-rt-tx-proxy" },
+    { "e1": "entity:milestone-rt-client", "relation": "contains", "e2": "entity:task-rt-optimistic" },
+    { "e1": "entity:milestone-rt-client", "relation": "contains", "e2": "entity:task-rt-outbox" },
+    { "e1": "entity:milestone-rt-client", "relation": "contains", "e2": "entity:task-rt-subscribe-query" },
+    { "e1": "entity:milestone-rt-client", "relation": "contains", "e2": "entity:task-rt-vue-composables" },
+    { "e1": "entity:milestone-rt-client", "relation": "contains", "e2": "entity:task-rt-new-local-adapter" },
+    { "e1": "entity:milestone-rt-client", "relation": "contains", "e2": "entity:task-rt-local-mode-regression" },
+
+    { "e1": "entity:milestone-rt-auth", "relation": "contains", "e2": "entity:task-rt-magic-code-endpoint" },
+    { "e1": "entity:milestone-rt-auth", "relation": "contains", "e2": "entity:task-rt-verify-endpoint" },
+    { "e1": "entity:milestone-rt-auth", "relation": "contains", "e2": "entity:task-rt-session-entity" },
+    { "e1": "entity:milestone-rt-auth", "relation": "contains", "e2": "entity:task-rt-token-rotation" },
+    { "e1": "entity:milestone-rt-auth", "relation": "contains", "e2": "entity:task-rt-apps-web-auth-switch" },
+    { "e1": "entity:milestone-rt-auth", "relation": "contains", "e2": "entity:task-rt-rewrite-resolve-invites" },
+
+    { "e1": "entity:milestone-rt-platform-data", "relation": "contains", "e2": "entity:task-rt-platform-ontologies" },
+    { "e1": "entity:milestone-rt-platform-data", "relation": "contains", "e2": "entity:task-rt-migration-script" },
+    { "e1": "entity:milestone-rt-platform-data", "relation": "contains", "e2": "entity:task-rt-cloud-adapter-rewrite" },
+    { "e1": "entity:milestone-rt-platform-data", "relation": "contains", "e2": "entity:task-rt-feature-parity-matrix" },
+    { "e1": "entity:milestone-rt-platform-data", "relation": "contains", "e2": "entity:task-rt-remove-instantdb-deps" },
+    { "e1": "entity:milestone-rt-platform-data", "relation": "contains", "e2": "entity:task-rt-decommission-instant-plugin" },
+
+    { "e1": "entity:milestone-rt-federation", "relation": "contains", "e2": "entity:task-rt-agent-stream-endpoint" },
+    { "e1": "entity:milestone-rt-federation", "relation": "contains", "e2": "entity:task-rt-subscription-filter-spec" },
+    { "e1": "entity:milestone-rt-federation", "relation": "contains", "e2": "entity:task-rt-federation-client" },
+    { "e1": "entity:milestone-rt-federation", "relation": "contains", "e2": "entity:task-rt-decision-trace-hydration" },
+    { "e1": "entity:milestone-rt-federation", "relation": "contains", "e2": "entity:task-rt-federation-e2e-demo" },
+
+    { "e1": "entity:milestone-rt-dogfood", "relation": "contains", "e2": "entity:task-rt-cutover-magic-code" },
+    { "e1": "entity:milestone-rt-dogfood", "relation": "contains", "e2": "entity:task-rt-cutover-multitab-sync" },
+    { "e1": "entity:milestone-rt-dogfood", "relation": "contains", "e2": "entity:task-rt-cutover-perf-parity" },
+    { "e1": "entity:milestone-rt-dogfood", "relation": "contains", "e2": "entity:task-rt-cutover-federation-demo" }
+  ]
+}

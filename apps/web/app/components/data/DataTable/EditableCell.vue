@@ -420,8 +420,8 @@
             {{ dateDisplay || 'Pick date...' }}
           </button>
         </UiPopoverTrigger>
-        <UiPopoverContent align="start" :side-offset="4" class="w-auto p-0">
-          <UiDatepicker v-model="dateModelValue" />
+        <UiPopoverContent align="start" :side-offset="4" class="w-auto border-border bg-popover p-0">
+          <UiDatepicker v-model="dateModelValue" embedded color="primary" class="p-2" />
         </UiPopoverContent>
       </UiPopover>
     </div>

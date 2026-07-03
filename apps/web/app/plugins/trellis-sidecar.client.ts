@@ -1,13 +1,11 @@
 import { createTrellisSidecarClient } from '~/lib/trellis-sidecar/create-client'
 import { probeSidecarAvailable } from '~/lib/trellis-sidecar/sidecar-probe'
-import { provideTrellisDb } from '~/composables/useTrellisSidecar'
 
 export default defineNuxtPlugin(async () => {
   const config = useRuntimeConfig()
   const enabled = Boolean(config.public.trellisSidecar)
 
   if (!enabled) {
-    provideTrellisDb(null)
     return {
       provide: {
         trellisSidecar: { enabled: false as const, client: null },
@@ -22,7 +20,6 @@ export default defineNuxtPlugin(async () => {
   const apiKey = config.public.trellisApiKey || undefined
 
   const client = createTrellisSidecarClient({ url: wsUrl, apiKey })
-  provideTrellisDb(client)
 
   const available = await probeSidecarAvailable()
   if (import.meta.dev) {

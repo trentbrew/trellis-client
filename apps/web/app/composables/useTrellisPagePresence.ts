@@ -1,19 +1,22 @@
 import { getPresenceBg } from '~/utils/presenceColor'
 import { getOrCreatePresenceIdentity, initialsForName } from '~/lib/presence/identity'
-import { pagePresenceRoom } from '~/lib/presence/config'
+import { zonePresenceRoom } from '~/lib/presence/config'
 import { useJoinedPresenceRoom } from '~/lib/presence/use-joined-room'
 import type { PageViewer } from '~/composables/usePagePresence'
 
 /** Trellis-native page presence (joinPresence) for sidecar mode. */
 export function useTrellisPagePresence(pageId: Ref<string>) {
   const { enabled } = useTrellisSidecar()
+  const { zoneId } = useZoneContext()
   const identity = import.meta.client ? getOrCreatePresenceIdentity() : { peerId: 'ssr', name: 'You', color: '#888' }
 
-  const roomName = computed(() => (pageId.value ? pagePresenceRoom(pageId.value) : ''))
+  const roomName = computed(() => (zoneId.value ? zonePresenceRoom(zoneId.value) : ''))
 
   const joined = useJoinedPresenceRoom({
     peerId: identity.peerId,
     roomName,
+    pageId,
+    zoneId,
     initial: { name: identity.name, color: identity.color },
     enabled: computed(() => Boolean(enabled && import.meta.client)),
   })
@@ -22,7 +25,7 @@ export function useTrellisPagePresence(pageId: Ref<string>) {
 
   function toViewer(peer: {
     id: string
-    state: { name: string; pageId?: string; editingField?: string }
+    state: { name: string; pageId?: string; zoneId?: string; editingField?: string }
     self?: boolean
   }): PageViewer {
     return {
@@ -47,18 +50,18 @@ export function useTrellisPagePresence(pageId: Ref<string>) {
   function register(id: string) {
     if (!enabled || !id) return
     activePageId.value = id
-    joined.setPresence({ pageId: id, editingField: undefined })
+    joined.setPresence({ pageId: id, zoneId: zoneId.value, editingField: undefined })
   }
 
   function deregister(id: string) {
     if (!enabled || !id) return
     if (activePageId.value === id) activePageId.value = ''
-    joined.setPresence({ pageId: '', editingField: undefined })
+    joined.setPresence({ pageId: '', zoneId: zoneId.value, editingField: undefined })
   }
 
   function publishField(id: string, field?: string) {
     if (!enabled || !id) return
-    joined.setPresence({ pageId: id, editingField: field })
+    joined.setPresence({ pageId: id, zoneId: zoneId.value, editingField: field })
   }
 
   const trellisViewers = useState<Record<string, PageViewer[]>>('trellis:pageViewers', () => ({}))

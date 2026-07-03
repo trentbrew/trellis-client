@@ -4,6 +4,7 @@ export type BrowseViewMode =
   | 'grid'
   | 'list'
   | 'table'
+  | 'spreadsheet'
   | 'calendar'
   | 'kanban'
   | 'timeline'

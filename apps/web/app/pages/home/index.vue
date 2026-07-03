@@ -1,7 +1,7 @@
 <script setup lang="ts">
   definePageMeta({
-    title: 'Home',
-    icon: 'lucide:home',
+    title: 'Chat',
+    icon: 'lucide:bot',
   })
 
   const { messages, isStreaming, error, sendMessage, createThread, clearConversation } = useAgent()
@@ -46,7 +46,14 @@
     })
   }
 
-  watch(() => messages.value.length, scrollToBottom)
+  const scrollFingerprint = computed(() => {
+    const msgs = messages.value
+    const last = msgs[msgs.length - 1]
+    if (!last) return String(msgs.length)
+    return `${msgs.length}:${last.content.length}:${last.toolCalls?.length ?? 0}:${isStreaming.value ? 1 : 0}`
+  })
+
+  watch(scrollFingerprint, scrollToBottom)
 
   onMounted(() => {
     if (hasMessages.value) scrollToBottom()
@@ -77,8 +84,8 @@
       <header
         class="shrink-0 flex items-center justify-between gap-2 px-6 h-12 border-b border-border/40 bg-background/60 backdrop-blur-sm">
         <div class="flex items-center gap-2 min-w-0">
-          <Icon name="lucide:home" class="h-4 w-4 text-muted-foreground/80 shrink-0" />
-          <span class="text-sm font-medium text-foreground/90 truncate">Home</span>
+          <Icon name="lucide:bot" class="h-4 w-4 text-muted-foreground/80 shrink-0" />
+          <span class="text-sm font-medium text-foreground/90 truncate">Chat</span>
           <span v-if="hasMessages" class="text-xs text-muted-foreground/70 truncate">· Conversation</span>
         </div>
         <div class="flex items-center gap-1">

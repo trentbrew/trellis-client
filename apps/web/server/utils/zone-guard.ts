@@ -15,7 +15,7 @@
  *               requiresPublication? } }]
  */
 
-import type { TrellisKernel } from '@turtle.tech/tql'
+import type { TrellisKernel } from '@turtle.tech/trellis-kernel'
 import { onMutation, type MutationEvent } from './tql-events'
 
 // ── Types ───────────────────────────────────────────────────────────────────

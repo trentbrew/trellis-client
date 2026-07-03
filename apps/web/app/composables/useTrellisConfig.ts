@@ -1,146 +1,34 @@
 /**
  * useAppConfig — Server-Sourced Application Configuration
  *
- * Replaces the static `app-config.jsonld` + `appConfig.ts` with a composable
- * that fetches configuration from `GET /api/graph/config` at boot and stays
- * in sync via SSE.
- *
- * Provides reactive access to:
- * - routes: Server-defined route tree
- * - ontologies: Schema definitions with UI metadata
- * - projections: Named projection definitions
- * - app: Application-level metadata (title, version, devPort)
- *
- * Also provides helper functions equivalent to what appConfig.ts exported:
- * - buildPageConfigFromRoute()
- * - buildRouteConfigTree()
- * - etc.
+ * Dual transport (ADR-002 P3):
+ * - **Live** (sidecar + imported config): trellis/vue `useEntities` subscriptions
+ * - **Fallback** (embedded kernel): GET /api/graph/config + SSE refetch (P1)
  */
 
 import { useSSESubscribe } from './useTrellisSSE'
+import { shouldRefetchAppConfigFromSSE } from '~/lib/app-config-sse'
+import { useTrellisConfigLive } from './useTrellisConfigLive'
+import { useTrellisDb } from './useTrellisSidecar'
 
 import type { RouteConfig } from '~/config/routes'
 import type { DatabaseField, DatabaseSchema } from '~/types/database'
 import { suggestCollectionViews } from '~/lib/trellis-projection-registry'
+import type {
+  DerivedPageConfig,
+  ServerConfig,
+  ServerRouteDefinition,
+  ServerSchemaDefinition,
+} from '~/lib/app-config/types'
 
-// ── Types ──────────────────────────────────────────────────────────────
+export type { DerivedPageConfig, ServerConfig, ServerRouteDefinition, ServerSchemaDefinition }
 
-interface ServerSchemaField {
-  name: string
-  valueType: string
-  required?: boolean
-  description?: string
-  selectOptions?: any[]
-  icon?: string
-  group?: string
-  display?: string
-  editable?: boolean
-  computed?: boolean
-  modes?: string[]
-  defaultValue?: any
-}
-
-interface ServerSchemaDefinition {
-  '@id': string
-  '@type': string
-  version: string
-  fields: ServerSchemaField[]
-  entityClass?: string
-  label?: string
-  labelPlural?: string
-  icon?: string
-  color?: string
-  projections?: string[]
-  defaultProjection?: string
-  dialogShell?: string
-  panels?: { properties: string; content: string; footerActions: string[] }
-  propertyFieldIds?: string[]
-  defaultSortField?: string
-  searchFields?: string[]
-}
-
-interface ServerRouteDefinition {
-  '@id': string
-  '@type': string
-  routePath: string
-  label: string
-  icon?: string
-  tint?: string
-  order?: number
-  inRail?: boolean
-  railPosition?: 'primary' | 'secondary'
-  collapseSidebar?: boolean
-  requiresAuth?: boolean
-  inCommandPalette?: boolean
-  searchKeywords?: string[]
-  permissions?: Record<string, any>
-  meta?: {
-    title?: string
-    description?: string
-    subtitle?: string
-    showBackButton?: boolean
-    fullWidth?: boolean
-  }
-  sidebarSections?: any[]
-  children?: any[]
-  editable?: boolean
-  tabs?: any[]
-  entityType?: string
-  pageVariant?: string
-  projectionTypes?: string[]
-}
-
-interface ServerProjectionDefinition {
-  '@id': string
-  '@type': string
-  name: string
-  type: string
-  query?: string
-  icon?: string
-  component?: string
-  order?: number
-  status?: string
-  requirements?: { schema?: { fieldTypes?: string[] } }
-  config?: Record<string, any>
-}
-
-interface ServerAppDefinition {
-  '@id': string
-  '@type': string
-  title?: string
-  description?: string
-  version?: string
-  devPort?: number
-}
-
-interface ServerConfig {
-  app: ServerAppDefinition | null
-  routes: Record<string, ServerRouteDefinition>
-  projections: Record<string, ServerProjectionDefinition>
-  ontologies: Record<string, ServerSchemaDefinition>
-}
-
-export interface DerivedPageConfig {
-  routeId: string
-  title: string
-  subtitle?: string
-  description?: string
-  icon?: string
-  iconClass?: string
-  entityTypeId?: string
-  projectionTypes: string[]
-  pageVariant: 'browse' | 'detail' | 'form' | 'dashboard' | 'custom'
-  schema: DatabaseSchema | null
-}
-
-// ── Module-level state ─────────────────────────────────────────────────
+// ── Module-level fallback state (P1 path) ─────────────────────────────
 
 const _config = ref<ServerConfig | null>(null)
 const _loading = ref(false)
 const _error = ref<string | null>(null)
 const _initialized = ref(false)
-
-// ── Fetcher ────────────────────────────────────────────────────────────
 
 async function fetchConfig(): Promise<void> {
   _loading.value = true
@@ -149,16 +37,15 @@ async function fetchConfig(): Promise<void> {
   try {
     const data = await $fetch<ServerConfig>('/api/graph/config')
     _config.value = data
-  } catch (err: any) {
-    _error.value = err.message || 'Failed to fetch app config'
+  } catch (err: unknown) {
+    const message = err instanceof Error ? err.message : 'Failed to fetch app config'
+    _error.value = message
     console.error('[useAppConfig] Failed to fetch:', err)
   } finally {
     _loading.value = false
     _initialized.value = true
   }
 }
-
-// ── SSE subscription ───────────────────────────────────────────────────
 
 let _sseCleanup: (() => void) | null = null
 
@@ -169,13 +56,7 @@ function subscribeToSSE(): void {
   _sseCleanup = useSSESubscribe('mutation', (event) => {
     try {
       const data = JSON.parse(event.data)
-      // Re-fetch config on ontology or route mutations
-      if (
-        data.action?.includes('Ontology') ||
-        data.type === 'ontology' ||
-        data.action?.includes('Route') ||
-        data.type === 'route'
-      ) {
+      if (shouldRefetchAppConfigFromSSE(data)) {
         fetchConfig()
       }
     } catch {
@@ -184,17 +65,19 @@ function subscribeToSSE(): void {
   })
 }
 
-// ── Conversion helpers ─────────────────────────────────────────────────
+/** Tear down kernel SSE refetch when trellis/vue live path takes over (TRL-15 harden). */
+function unsubscribeFromSSE(): void {
+  if (_sseCleanup) {
+    _sseCleanup()
+    _sseCleanup = null
+  }
+}
 
-/**
- * Convert a server RouteDefinition into a client RouteConfig.
- */
 function serverRouteToRouteConfig(route: ServerRouteDefinition): RouteConfig {
   const children = Array.isArray(route.children)
     ? route.children.map((child: any) => serverRouteToRouteConfig(child))
     : undefined
 
-  // Convert sidebar section items from server shape (routePath) to client shape (path)
   const sidebarSections = Array.isArray(route.sidebarSections)
     ? route.sidebarSections.map((section: any) => ({
         ...section,
@@ -226,17 +109,14 @@ function serverRouteToRouteConfig(route: ServerRouteDefinition): RouteConfig {
     searchKeywords: route.searchKeywords,
     children,
     requiresAuth: route.requiresAuth,
-    permissions: route.permissions as any,
+    permissions: route.permissions as RouteConfig['permissions'],
     order: route.order,
     editable: route.editable,
-    tabs: route.tabs,
+    tabs: route.tabs as RouteConfig['tabs'],
     sidebarSections,
   }
 }
 
-/**
- * Build a DatabaseSchema from a server ontology definition.
- */
 function ontologyToSchema(ontology: ServerSchemaDefinition): DatabaseSchema {
   const now = Date.now()
   const fields: DatabaseField[] = ontology.fields.map((field, index) => ({
@@ -260,26 +140,45 @@ function ontologyToSchema(ontology: ServerSchemaDefinition): DatabaseSchema {
   }
 }
 
-// ── Composable ─────────────────────────────────────────────────────────
-
 export function useTrellisConfig() {
-  // Initialize on first use (client-side only)
-  if (import.meta.client && !_initialized.value && !_loading.value) {
-    fetchConfig()
-    subscribeToSSE()
+  const client = useTrellisDb()
+  const live = client ? useTrellisConfigLive(client) : null
+  const liveActive = computed(() => live?.active.value ?? false)
+
+  if (import.meta.client) {
+    watchEffect(() => {
+      if (liveActive.value) {
+        _initialized.value = true
+        unsubscribeFromSSE()
+        return
+      }
+      if (!_initialized.value && !_loading.value) {
+        void fetchConfig()
+      }
+      if (!_sseCleanup) {
+        subscribeToSSE()
+      }
+    })
   }
 
-  // ── Computed views ──────────────────────────────────────────────────
+  const app = computed(() =>
+    liveActive.value ? live!.app.value : (_config.value?.app ?? null))
+  const routes = computed(() =>
+    liveActive.value ? live!.routes.value : (_config.value?.routes ?? {}))
+  const projections = computed(() =>
+    liveActive.value ? live!.projections.value : (_config.value?.projections ?? {}))
+  const projectionViews = computed(() =>
+    liveActive.value ? live!.projectionViews.value : (_config.value?.projectionViews ?? {}))
+  const ontologies = computed(() =>
+    liveActive.value ? live!.ontologies.value : (_config.value?.ontologies ?? {}))
 
-  const app = computed(() => _config.value?.app ?? null)
-  const routes = computed(() => _config.value?.routes ?? {})
-  const projections = computed(() => _config.value?.projections ?? {})
-  const ontologies = computed(() => _config.value?.ontologies ?? {})
+  const loading = computed(() =>
+    liveActive.value ? live!.loading.value : _loading.value)
+  const error = computed(() =>
+    liveActive.value ? live!.error.value?.message ?? null : _error.value)
+  const initialized = computed(() =>
+    liveActive.value ? !live!.loading.value : _initialized.value)
 
-  /**
-   * Build RouteConfig[] tree from server route definitions.
-   * This replaces buildRouteConfigTree() from appConfig.ts.
-   */
   const routeConfigTree = computed<RouteConfig[]>(() => {
     const routeMap = routes.value
     return Object.values(routeMap)
@@ -287,40 +186,26 @@ export function useTrellisConfig() {
       .map(serverRouteToRouteConfig)
   })
 
-  /**
-   * Get an ontology by its schema ID (e.g., 'trellis:schema/task')
-   */
   function getOntology(schemaId: string): ServerSchemaDefinition | null {
     return ontologies.value[schemaId] ?? null
   }
 
-  /**
-   * Get an ontology by entity type slug (e.g., 'task' → 'trellis:schema/task')
-   */
   function getOntologyByType(type: string): ServerSchemaDefinition | null {
     return ontologies.value[`trellis:schema/${type}`] ?? null
   }
 
-  /**
-   * Get a route definition by its ID (e.g., 'route:workspace')
-   */
   function getRoute(routeId: string): ServerRouteDefinition | null {
     return routes.value[routeId] ?? null
   }
 
-  /**
-   * Find a route definition by path
-   */
   function getRouteByPath(path: string): ServerRouteDefinition | null {
     const normalizedPath = path.startsWith('/') ? path : `/${path}`
 
-    // Search top-level routes
     for (const route of Object.values(routes.value)) {
       if (route.routePath === normalizedPath) return route
 
-      // Search children
       if (Array.isArray(route.children)) {
-        for (const child of route.children) {
+        for (const child of route.children as ServerRouteDefinition[]) {
           if (child.routePath === normalizedPath) return child
         }
       }
@@ -329,19 +214,12 @@ export function useTrellisConfig() {
     return null
   }
 
-  /**
-   * Build a DatabaseSchema from an ontology type slug.
-   */
   function buildSchemaFromType(type: string): DatabaseSchema | null {
     const ontology = getOntologyByType(type)
     if (!ontology) return null
     return ontologyToSchema(ontology)
   }
 
-  /**
-   * Build a DerivedPageConfig from a route path.
-   * This replaces buildPageConfigFromRoute() from appConfig.ts.
-   */
   function buildPageConfigFromRoute(routePath: string): DerivedPageConfig | null {
     const route = getRouteByPath(routePath)
     if (!route) return null
@@ -350,7 +228,6 @@ export function useTrellisConfig() {
     const ontology = entityType ? getOntologyByType(entityType) : null
     const schema = ontology ? ontologyToSchema(ontology) : null
 
-    // Projection types: route metadata → ontology → projection registry field signals
     let projectionTypes = route.projectionTypes ?? []
     if (!projectionTypes.length && ontology?.projections) {
       projectionTypes = ontology.projections
@@ -375,13 +252,7 @@ export function useTrellisConfig() {
     }
   }
 
-  /**
-   * Build a DerivedPageConfig from an entity type slug.
-   * Maps slugs like "tasks" → "task" and looks up the ontology.
-   * This replaces buildPageConfigFromSlug() from appConfig.ts.
-   */
   function buildPageConfigFromSlug(slug: string): DerivedPageConfig | null {
-    // Normalize: plural → singular (e.g., "tasks" → "task")
     const type = slug.endsWith('s') ? slug.slice(0, -1) : slug
 
     const ontology = getOntologyByType(type)
@@ -408,41 +279,35 @@ export function useTrellisConfig() {
     }
   }
 
-  /**
-   * Get the dev port from app metadata.
-   */
   function getDevPort(): number {
     const runtimePort = Number(useRuntimeConfig().public.trellisPort)
     return app.value?.devPort ?? (Number.isFinite(runtimePort) ? runtimePort : 1414)
   }
 
   return {
-    // Raw reactive state
-    config: computed(() => _config.value),
+    config: computed(() => (liveActive.value ? live!.config.value : _config.value)),
     app,
     routes,
     projections,
+    projectionViews,
     ontologies,
-    loading: computed(() => _loading.value),
-    error: computed(() => _error.value),
-    initialized: computed(() => _initialized.value),
+    loading,
+    error,
+    initialized,
+    transportMode: computed(() => (liveActive.value ? 'live' as const : 'fallback' as const)),
 
-    // Derived views
     routeConfigTree,
 
-    // Lookup helpers
     getOntology,
     getOntologyByType,
     getRoute,
     getRouteByPath,
 
-    // Page config builders (replaces appConfig.ts exports)
     buildSchemaFromType,
     buildPageConfigFromRoute,
     buildPageConfigFromSlug,
     getDevPort,
 
-    // Actions
     refresh: fetchConfig,
   }
 }

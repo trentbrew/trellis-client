@@ -12,8 +12,8 @@
 
 import { resolve } from 'node:path'
 import { mkdirSync, existsSync } from 'node:fs'
-import { TrellisKernel } from '@turtle.tech/tql'
-import { BetterSqliteBackend } from '@turtle.tech/tql/persist/better-sqlite'
+import { TrellisKernel } from '@turtle.tech/trellis-kernel'
+import { BetterSqliteBackend } from '@turtle.tech/trellis-kernel/persist/better-sqlite'
 import { createWorkspaceConfig } from '../utils/trellis-ontologies'
 import {
   FOUNDER_FACILITY_ID,
@@ -26,8 +26,9 @@ import {
 import { initZoneGuard } from '../utils/zone-guard'
 import { backfillEntityZones } from '../utils/campus-migration'
 import { shouldAutoCheckpoint } from '../utils/kernel-checkpoint'
+import { seedAppConfigFromModules } from '../lib/seed-app-config'
 
-import type { WorkspaceConfig } from '@turtle.tech/tql'
+import type { WorkspaceConfig } from '@turtle.tech/trellis-kernel'
 
 // Module-level singleton — accessible from API routes via useTrellisKernel()
 let _kernel: TrellisKernel | null = null
@@ -127,6 +128,13 @@ export default defineNitroPlugin(async (nitro) => {
   const workspaceConfig = createWorkspaceConfig()
   _workspaceConfig = workspaceConfig
   await kernel.boot(workspaceConfig)
+
+  const seedStats = await seedAppConfigFromModules(kernel)
+  console.log(
+    `[trellis-kernel] Seeded app config entities: ${seedStats.routes} routes, `
+      + `${seedStats.ontologies} ontologies, ${seedStats.projections} projections, `
+      + `${seedStats.projectionViews} projection views`,
+  )
 
   // ── Seed integration definitions (idempotent — createNode replaces existing) ──
   const INTEGRATION_DEFS: Array<{ id: string; data: Record<string, any> }> = [

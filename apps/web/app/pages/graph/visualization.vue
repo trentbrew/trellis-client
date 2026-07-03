@@ -1348,20 +1348,20 @@
           class="absolute top-3 left-3 z-10 flex items-center gap-1 bg-card/90 backdrop-blur-sm border border-border rounded-lg p-1 pointer-events-auto shadow-sm">
           <button
             @click="currentLayout = 'physics'"
-            class="px-2.5 py-1 rounded text-[11px] font-medium transition-colors"
+            class="px-2.5 py-1 rounded-full text-[11px] font-medium transition-colors"
             :class="
               currentLayout === 'physics'
-                ? 'bg-primary text-primary-foreground'
+                ? 'bg-foreground text-background'
                 : 'text-muted-foreground hover:bg-muted hover:text-foreground'
             ">
             Physics
           </button>
           <button
             @click="currentLayout = 'type'"
-            class="px-2.5 py-1 rounded text-[11px] font-medium transition-colors"
+            class="px-2.5 py-1 rounded-full text-[11px] font-medium transition-colors"
             :class="
               currentLayout === 'type'
-                ? 'bg-primary text-primary-foreground'
+                ? 'bg-foreground text-background'
                 : 'text-muted-foreground hover:bg-muted hover:text-foreground'
             ">
             By Type

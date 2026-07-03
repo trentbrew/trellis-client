@@ -673,6 +673,14 @@
       route.path.startsWith('/calendar/') ||
       routes.currentSidebarSection.value?.path === '/calendar',
   )
+  const isLocationsRoute = computed(
+    () =>
+      route.path === '/locations' ||
+      route.path.startsWith('/locations/') ||
+      route.path.includes('/locations') ||
+      routes.currentSidebarSection.value?.path === '/locations',
+  )
+  const isRouteSidebarPanel = computed(() => isCalendarRoute.value || isLocationsRoute.value)
 
   const _isGraphRoute = computed(
     () =>
@@ -1029,7 +1037,7 @@
             <div class="flex min-h-0 flex-1 flex-col overflow-y-auto overflow-x-hidden">
               <!-- Sticky sidebar filter -->
               <!-- <div class="sticky top-0 z-10 px-2.5 pt-2.5 pb-2.5" style="background: linear-gradient(to bottom, var(--card) 0%, transparent 100%)"> -->
-              <div v-if="!isCalendarRoute" class="sticky top-0 z-10 px-2.5 pt-2.5 pb-2.5">
+              <div v-if="!isRouteSidebarPanel" class="sticky top-0 z-10 px-2.5 pt-2.5 pb-2.5">
                 <div class="flex items-center gap-1.5">
                   <!-- Toggle placeholder: reserves space equal to the toggle button -->
                   <!-- <div v-if="!sidebarCollapse.isForcedCollapsed.value" class="shrink-0 h-[30px] w-[30px]" /> -->
@@ -1073,13 +1081,18 @@
                   :exit="{ opacity: 0, x: -8 }"
                   :transition="transitionsDisabled ? { duration: 0 } : { duration: 0.22, ease: 'easeOut' }"
                   :class="
-                    isCalendarRoute
+                    isRouteSidebarPanel
                       ? 'flex min-h-0 flex-1 flex-col overflow-hidden'
                       : 'flex min-h-0 flex-1 flex-col p-3 pl-2 pt-0 pb-24'
                   ">
                   <!-- Calendar Sidebar Panel (calendar route) -->
                   <template v-if="isCalendarRoute">
                     <CalendarSidebarPanel />
+                  </template>
+
+                  <!-- Locations Sidebar (locations route) -->
+                  <template v-else-if="isLocationsRoute">
+                    <LocationsSidebarPanel />
                   </template>
 
                   <!-- Chat Sidebar (messages route) -->

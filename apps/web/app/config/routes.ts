@@ -1,11 +1,12 @@
 /**
  * Route Configuration — Synchronous Baseline
  *
- * PRIMARY SOURCE: Server route definitions in `tql-routes.ts` served via
- * `GET /api/graph/config`. Use `useTrellisConfig().routeConfigTree` for
- * reactive, server-sourced routes in Vue components.
+ * PRIMARY SOURCE: Graph-resident app config via `GET /api/graph/config`
+ * (seeded on kernel boot — see `server/lib/seed-app-config.ts`).
+ * Use `useTrellisConfig().routeConfigTree` for reactive, server-sourced routes.
  *
- * This file provides:
+ * FALLBACK ONLY: This file's static `routeConfig` tree is used when the server
+ * config fetch fails or returns no routes (`useRoutes` effectiveRouteConfig).
  * - Static route tree (from app-config.jsonld via buildRouteConfigTree)
  * - Type definitions (RouteConfig, BadgeConfig, etc.)
  * - Route utility functions (flattenRoutes, getBreadcrumbs, etc.)
@@ -594,6 +595,7 @@ export function parseFullPath(path: string): ParsedPath {
     'archive',
     'learn',
     'graph',
+    'locations',
     'calendar',
     'contacts',
     'documents',

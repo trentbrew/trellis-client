@@ -21,7 +21,7 @@
  * cost is a single store scan.
  */
 
-import type { TrellisKernel } from '@turtle.tech/tql'
+import type { TrellisKernel } from '@turtle.tech/trellis-kernel'
 import { FOUNDER_FACILITY_ID, FOUNDER_LAB_ZONE_ID } from './tql-events'
 
 /** Campus substrate types whose entities do NOT belong inside a zone. */

@@ -17,7 +17,7 @@
  * which is filtered by shouldCaptureDecision().
  */
 
-import type { TrellisKernel } from '@turtle.tech/tql'
+import type { TrellisKernel } from '@turtle.tech/trellis-kernel'
 import { emitMutation } from './tql-events'
 
 /** Agent IDs whose mutations NEVER trigger a decision (internal subsystems). */
