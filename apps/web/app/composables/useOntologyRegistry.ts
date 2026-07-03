@@ -1,208 +1,33 @@
-import { ENTITY_NAMESPACE } from '~/lib/tql-namespace'
 import type { DataAdapter } from '~/lib/data-adapter'
 import { useSSESubscribe } from './useTrellisSSE'
+import { useTrellisConfig } from './useTrellisConfig'
 
 /**
  * Dynamic Ontology Registry
  *
- * Fetches ontologies from the TQL Graph API, subscribes to SSE events
- * for realtime updates, and converts SchemaDefinitions into EntityTypeConfig
- * shapes.
+ * Dual transport (ADR-002 TRL-20b):
+ * - **Live** (kernel-bridge / sidecar): reads ontologies from `useTrellisConfig` AppSchema subscribe
+ * - **Fallback**: GET /api/graph/ontologies + SSE refetch
  *
- * Server ontologies with UI metadata (entityClass, label, icon, etc.) are
- * treated as the PRIMARY source. The static entityRegistry.ts is a fallback
- * for types not yet served by the API or during initial load.
- *
- * This allows runtime-created ontologies (via CLI or MCP) to automatically
- * appear in the UI — sidebar, browse pages, dialogs — with zero code changes.
+ * Server ontologies with UI metadata are the PRIMARY source. Static entityRegistry.ts
+ * is a fallback for types not yet served by the API or during initial load.
  */
 
-import type {
-  EntityClass,
-  EntityType,
-  EntityTypeConfig,
-  EntityClassConfig,
-  PropertyFieldConfig,
-  PropertyFieldId,
-} from '~/types/entity'
-import type { ProjectionType } from '~/types/database'
-import { ENTITY_CLASSES, getEntityTypeConfig, getAllEntityTypeIds } from '~/config/entityRegistry'
+import type { EntityType, EntityTypeConfig } from '~/types/entity'
+import { getEntityTypeConfig, getAllEntityTypeIds } from '~/config/entityRegistry'
+import {
+  ONTOLOGY_SYSTEM_SCHEMA_IDS,
+  schemasRecordToServerTypes,
+  schemaToEntityTypeConfig,
+  type DynamicEntityTypeConfig,
+  type OntologySchemaDefinition,
+  type OntologySchemaField,
+  type OntologyTier,
+} from '~/lib/ontology-registry/schemas-to-server-types'
 
-// ── Types ──────────────────────────────────────────────────────────────
+export type { DynamicEntityTypeConfig, OntologyTier }
 
-interface SchemaField {
-  name: string
-  valueType: string
-  required?: boolean
-  description?: string
-  selectOptions?: any[]
-  // Relation metadata (from TQL schema)
-  relation?: {
-    targetSchema?: string
-    cardinality?: 'one' | 'many'
-    syncedProperty?: string
-  }
-  // UI metadata from server ontologies
-  icon?: string
-  group?: string
-  display?: string
-  editable?: boolean
-  computed?: boolean
-  modes?: string[]
-  defaultValue?: any
-}
-
-export type OntologyTier = 'core' | 'system' | 'user'
-
-interface SchemaDefinition {
-  '@id': string
-  '@type': string
-  version: string
-  tier?: OntologyTier
-  fields: SchemaField[]
-  // Extended UI metadata (populated by system ontologies)
-  entityClass?: EntityClass
-  label?: string
-  labelPlural?: string
-  icon?: string
-  color?: string
-  projections?: string[]
-  defaultProjection?: string
-  dialogShell?: string
-  panels?: { properties: string; content: string; footerActions: string[] }
-  propertyFieldIds?: string[]
-  defaultSortField?: string
-  searchFields?: string[]
-}
-
-export interface DynamicEntityTypeConfig extends Omit<EntityTypeConfig, 'type' | 'dialogShell'> {
-  type: string
-  dialogShell: string
-  dynamic: true
-  tier?: OntologyTier
-  schemaId: string
-  schemaVersion: string
-  fields: SchemaField[]
-}
-
-// ── Class inference (fallback for schemas without entityClass) ────────
-
-const TEMPORAL_FIELD_NAMES = new Set(['startDate', 'endDate', 'allDay', 'startTime', 'endTime', 'dueDate'])
-const DOCUMENT_FIELD_NAMES = new Set(['content', 'pinned', 'wordCount', 'body'])
-const ACTOR_FIELD_NAMES = new Set(['email', 'phone', 'avatar', 'firstName', 'lastName', 'role'])
-
-function inferEntityClass(fields: SchemaField[]): EntityClass {
-  const fieldNames = new Set(fields.map((f) => f.name))
-  const hasTemporalFields = [...TEMPORAL_FIELD_NAMES].some((n) => fieldNames.has(n))
-  if (hasTemporalFields) return 'temporal'
-  const hasDocumentFields = [...DOCUMENT_FIELD_NAMES].some((n) => fieldNames.has(n))
-  if (hasDocumentFields) return 'document'
-  const hasActorFields = [...ACTOR_FIELD_NAMES].some((n) => fieldNames.has(n))
-  if (hasActorFields) return 'actor'
-  return 'container'
-}
-
-// ── Schema → EntityTypeConfig conversion ───────────────────────────────
-
-function extractTypeSlug(schemaId: string): string {
-  const parts = schemaId.split('/')
-  return parts[parts.length - 1] || schemaId
-}
-
-function titleCase(str: string): string {
-  return str.replace(/[-_]/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase())
-}
-
-function pluralize(word: string): string {
-  if (word.endsWith('s') || word.endsWith('x') || word.endsWith('z')) return word + 'es'
-  if (word.endsWith('y') && !/[aeiou]y$/.test(word)) return word.slice(0, -1) + 'ies'
-  return word + 's'
-}
-
-const CLASS_COLORS: Record<EntityClass, string> = {
-  temporal: 'blue',
-  document: 'emerald',
-  actor: 'sky',
-  container: 'violet',
-}
-
-const CLASS_ICONS: Record<EntityClass, string> = {
-  temporal: 'lucide:calendar',
-  document: 'lucide:file-text',
-  actor: 'lucide:user',
-  container: 'lucide:folder',
-}
-
-/**
- * Convert propertyFieldIds from the server ontology into PropertyFieldConfig[].
- * Uses the field's own UI metadata from the schema when available,
- * otherwise falls back to a default config for that field ID.
- */
-function buildPropertyFields(schema: SchemaDefinition): PropertyFieldConfig[] {
-  const fieldIds = schema.propertyFieldIds || []
-  if (fieldIds.length === 0) return []
-
-  // Build a lookup from schema fields
-  const fieldMap = new Map<string, SchemaField>()
-  for (const f of schema.fields) {
-    fieldMap.set(f.name, f)
-  }
-
-  return fieldIds.map((id) => {
-    const schemaField = fieldMap.get(id)
-    return {
-      id: id as PropertyFieldId,
-      group: (schemaField?.group || 'identity') as PropertyFieldConfig['group'],
-      label: schemaField?.icon ? titleCase(id) : titleCase(id),
-      icon: schemaField?.icon || 'lucide:circle',
-      display: (schemaField?.display || 'popover') as PropertyFieldConfig['display'],
-      editable: schemaField?.editable ?? true,
-      required: schemaField?.required ?? false,
-      computed: schemaField?.computed ?? false,
-      modes: schemaField?.modes as PropertyFieldConfig['modes'],
-      defaultValue: schemaField?.defaultValue,
-    }
-  })
-}
-
-/**
- * Convert a server SchemaDefinition into a DynamicEntityTypeConfig.
- * If the schema has UI metadata (entityClass, label, icon, etc.), use it directly.
- * Otherwise, infer from fields (backward compat for user-created ontologies).
- */
-function schemaToEntityTypeConfig(schema: SchemaDefinition): DynamicEntityTypeConfig {
-  const slug = extractTypeSlug(schema['@id'])
-  const entityClass = schema.entityClass || inferEntityClass(schema.fields)
-  const classConfig: EntityClassConfig = ENTITY_CLASSES[entityClass]
-
-  // Use server-provided UI metadata when available, fall back to inference
-  const hasUIMetadata = !!schema.entityClass
-
-  return {
-    type: slug,
-    class: entityClass,
-    label: schema.label || titleCase(slug),
-    labelPlural: schema.labelPlural || titleCase(pluralize(slug)),
-    icon: schema.icon || CLASS_ICONS[entityClass],
-    color: schema.color || CLASS_COLORS[entityClass],
-    projections: (schema.projections || classConfig.baseProjections) as ProjectionType[],
-    defaultProjection: (schema.defaultProjection || classConfig.baseProjections[0]) as ProjectionType,
-    dialogShell: schema.dialogShell || entityClass,
-    panels: schema.panels || {
-      properties: hasUIMetadata ? `${titleCase(slug)}Properties` : 'DynamicProperties',
-      content: hasUIMetadata ? `${titleCase(slug)}Content` : 'DynamicContent',
-      footerActions: ['archive', 'delete'],
-    },
-    propertyFields: buildPropertyFields(schema),
-    defaultSortField: schema.defaultSortField || 'title',
-    searchFields: schema.searchFields || ['title', 'description'],
-    dynamic: true,
-    tier: schema.tier,
-    schemaId: schema['@id'],
-    schemaVersion: schema.version,
-    fields: schema.fields,
-  }
-}
+type SchemaDefinition = OntologySchemaDefinition
 
 // ── Composable state (module-level singletons) ─────────────────────────
 
@@ -211,25 +36,12 @@ const _loading = ref(false)
 const _error = ref<string | null>(null)
 const _initialized = ref(false)
 
-// Schema IDs that are storage-level (not entity types) — skip them
-const SYSTEM_SCHEMA_IDS = new Set([`trellis:schema/${ENTITY_NAMESPACE}`, 'trellis:schema/comment'])
-
 /**
- * Fetch core + system ontologies from TQL API.
- * These always come from the server regardless of ontologyBackend.
+ * Fetch core + system ontologies from TQL API (fallback path).
  */
 async function fetchOntologiesFromTql(): Promise<Map<string, DynamicEntityTypeConfig>> {
   const data = await $fetch<{ ontologies: Record<string, SchemaDefinition> }>('/api/graph/ontologies')
-  const ontologies = data.ontologies || {}
-  const map = new Map<string, DynamicEntityTypeConfig>()
-
-  for (const [, schema] of Object.entries(ontologies)) {
-    if (SYSTEM_SCHEMA_IDS.has(schema['@id'])) continue
-    const config = schemaToEntityTypeConfig(schema)
-    map.set(config.type, config)
-  }
-
-  return map
+  return schemasRecordToServerTypes(data.ontologies || {})
 }
 
 /**
@@ -254,7 +66,7 @@ async function fetchUserOntologiesFromAdapter(adapter: DataAdapter): Promise<Map
     for (const setting of settings) {
       const schema = setting.value as SchemaDefinition | null
       if (!schema || !schema['@id'] || !schema.fields) continue
-      if (SYSTEM_SCHEMA_IDS.has(schema['@id'])) continue
+      if (ONTOLOGY_SYSTEM_SCHEMA_IDS.has(schema['@id'])) continue
 
       // Ensure user ontologies have tier 'user'
       schema.tier = schema.tier || 'user'
@@ -295,9 +107,18 @@ async function fetchOntologies(): Promise<void> {
 
 // Reference to the adapter for ontology fetching
 let _adapterRef: DataAdapter | null = null
+let _usingLiveConfig = false
+let _lastLiveOntologies: Record<string, OntologySchemaDefinition> = {}
 
 let _sseCleanup: (() => void) | null = null
 let _adapterOntologyUnsub: (() => void) | null = null
+
+function unsubscribeFromOntologySSE(): void {
+  if (_sseCleanup) {
+    _sseCleanup()
+    _sseCleanup = null
+  }
+}
 
 function subscribeToSSE(): void {
   if (!import.meta.client) return
@@ -336,26 +157,60 @@ function subscribeToAdapterOntologies(adapter: DataAdapter): void {
       },
     },
     () => {
-      // Re-fetch all ontologies when adapter ontology settings change
+      if (_usingLiveConfig) {
+        void (async () => {
+          const tqlMap = schemasRecordToServerTypes(_lastLiveOntologies)
+          const adapterMap = await fetchUserOntologiesFromAdapter(adapter)
+          _serverTypes.value = new Map([...tqlMap, ...adapterMap])
+        })()
+        return
+      }
       fetchOntologies()
     },
   )
 }
 
 export function useOntologyRegistry() {
-  // Initialize on first use (client-side only)
-  if (import.meta.client && !_initialized.value && !_loading.value) {
-    // Capture adapter reference for ontology fetching
-    const adapter = useDataAdapter()
-    _adapterRef = adapter
+  const appConfig = useTrellisConfig()
+  const adapter = useDataAdapter()
+  _adapterRef = adapter
 
-    fetchOntologies()
-    subscribeToSSE()
+  if (import.meta.client) {
+    watchEffect(async () => {
+      const live = appConfig.transportMode.value === 'live'
+      _usingLiveConfig = live
 
-    // If ontologyBackend is 'adapter', also subscribe to adapter ontology changes
-    if (adapter.ontologyBackend === 'adapter') {
-      subscribeToAdapterOntologies(adapter)
-    }
+      if (live) {
+        unsubscribeFromOntologySSE()
+        _loading.value = appConfig.loading.value
+        _error.value = appConfig.error.value
+        _lastLiveOntologies = appConfig.ontologies.value as Record<string, OntologySchemaDefinition>
+
+        if (!appConfig.loading.value) {
+          const tqlMap = schemasRecordToServerTypes(_lastLiveOntologies)
+          let adapterMap = new Map<string, DynamicEntityTypeConfig>()
+          if (adapter.ontologyBackend === 'adapter') {
+            adapterMap = await fetchUserOntologiesFromAdapter(adapter)
+          }
+          _serverTypes.value = new Map([...tqlMap, ...adapterMap])
+          _initialized.value = true
+        }
+        if (adapter.ontologyBackend === 'adapter' && !_adapterOntologyUnsub) {
+          subscribeToAdapterOntologies(adapter)
+        }
+        return
+      }
+
+      if (!_initialized.value && !_loading.value) {
+        void fetchOntologies()
+      }
+      if (!_sseCleanup) {
+        subscribeToSSE()
+      }
+      if (adapter.ontologyBackend === 'adapter' && !_adapterOntologyUnsub) {
+        subscribeToAdapterOntologies(adapter)
+      }
+    })
   }
 
   // ── Computed views ────────────────────────────────────────────────
