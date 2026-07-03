@@ -118,6 +118,17 @@ Default dev (`just run-kernel`, `TRELLIS_SIDECAR=0`) registers a `TrellisDb` shi
 
 No import script required — reads P1-seeded kernel facts directly. Sidecar path takes priority when `TRELLIS_SIDECAR=1`.
 
+### Browse live (kernel-bridge only, TRL-17)
+
+Entity browse (`useTrellisEntities`) uses the same kernel-bridge client when `TRELLIS_SIDECAR=0`:
+
+| Layer | Transport |
+|-------|-----------|
+| Entity list | `GET /api/graph/kernel-bridge/entities?type=KernelBrowse` |
+| Live updates | Kernel SSE → refetch browse rows on `entity:*` mutations |
+
+`KernelBrowse` rows carry `payloadJson` (scalar entity fields; `references: []` in v1). Sidecar mode keeps the legacy TQL `FIND entity` path until entity import lands.
+
 ### Presence relay (optional)
 
 Cross-browser / cross-machine presence requires a relay. Same-browser multi-tab works without it.
