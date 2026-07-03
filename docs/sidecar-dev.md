@@ -148,6 +148,33 @@ Entity browse (`useTrellisEntities`) uses the same kernel-bridge client when `TR
 
 `useOntologyRegistry()` piggybacks **`useTrellisConfig` live ontologies** when `transportMode === 'live'` — same `AppSchema` kernel-bridge subscribe as the config rail (no duplicate `useEntities` subscription, no `/api/graph/ontologies` boot fetch). Fallback path: HTTP ontologies list + SSE refetch (P1).
 
+### Sidecar ontology import verify (TRL-20c)
+
+When `TRELLIS_SIDECAR=1`, live ontologies require **`AppSchema` rows in the sidecar DB** (imported from kernel config). Without import, `useTrellisConfig` falls back to HTTP snapshot — ontology sidebar may look empty.
+
+```bash
+# Import all app config (routes + ontologies + projections + views)
+node scripts/import-app-config-to-sidecar.mjs
+
+# Verify kernel ontology keys match sidecar AppSchema rows
+node scripts/import-app-config-to-sidecar.mjs --verify-only
+
+# Import then verify in one step
+node scripts/import-app-config-to-sidecar.mjs --import-and-verify
+
+# Via Nuxt proxy (both servers running, TRELLIS_SIDECAR=1 on Nuxt)
+TRELLIS_SIDECAR=1 node scripts/import-app-config-to-sidecar.mjs --verify-only
+
+# Smoke (assumes import already ran; does not import)
+pnpm smoke:app-config
+```
+
+`just verify-app-config-sidecar` and `just smoke-app-config` wrap the same commands.
+
+**Parity rule:** every `schemaId` in kernel `GET /api/graph/config` → `ontologies` must exist on a sidecar `AppSchema` entity (`attributes.schemaId`). Verify exits `1` with missing/extra diff on mismatch.
+
+**Unit tests:** `pnpm vitest run scripts/lib/app-config-import-tasks.test.ts`
+
 ### Presence relay (optional)
 
 Cross-browser / cross-machine presence requires a relay. Same-browser multi-tab works without it.
