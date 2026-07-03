@@ -8,8 +8,9 @@ export interface TrellisSidecarContext {
 }
 
 export function useTrellisDb(): TrellisDb | null {
-  const { $trellisSidecar } = useNuxtApp()
-  return $trellisSidecar?.client ?? null
+  const { $trellisSidecar, $trellisKernelBridge } = useNuxtApp()
+  if ($trellisSidecar?.client) return $trellisSidecar.client
+  return $trellisKernelBridge?.client ?? null
 }
 
 export function useTrellisSidecar(): TrellisSidecarContext {

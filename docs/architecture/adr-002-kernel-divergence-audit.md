@@ -16,7 +16,7 @@ This audit informs post-P3 convergence. Verdicts: **port** | **keep embedded** |
 | EQL-S query | `kernel.query()` / `/api/graph/query` | `db.query()` / WS subscribe | **port** — P3 starts with live entities |
 | Graph CRUD | `createNode` / `updateNode` / `deleteNode` | `useMutation` / HTTP entities API | **port** — sidecar path proven on pages |
 | Workspace config boot | `createWorkspaceConfig()` + `kernel.boot()` | Schema `defineType` + entity rows | **port** — P1 graph-residency done |
-| App config read (client) | SSE + `/api/graph/config` snapshot | `trellis/vue` `useEntities` (P3) | **port** — dual-path shipped P3 |
+| App config read (client) | SSE + `/api/graph/config` snapshot | `trellis/vue` `useEntities` (P3) | **port** — dual-path shipped P3; kernel-bridge shipped TRL-16 |
 | Ontology listing | `kernel.listOntologies()` | Schema registry + entity query | **keep embedded** until P3 browse cutover |
 | Projections | `kernel.listProjections()` | Entity-backed `AppProjection` rows | **port** — seeded P1 |
 | SSE mutation stream | `/api/graph/events` | WS `/realtime` diffs | **port** — sidecar WS for pages |
@@ -38,7 +38,7 @@ This audit informs post-P3 convergence. Verdicts: **port** | **keep embedded** |
 
 ## Recommended next ports (post-P3)
 
-1. **Kernel-bridge `TrellisDb`** — SSE-backed shim so `trellis/vue` works without sidecar (`TRELLIS_SIDECAR=0`).
+1. ~~**Kernel-bridge `TrellisDb`** — SSE-backed shim so `trellis/vue` works without sidecar (`TRELLIS_SIDECAR=0`).~~ **Shipped TRL-16.**
 2. **Browse / `useTrellisEntities`** — Option B Phase 2; replace kernel SSE version bump pattern.
 3. **Zone-gated relay join** — P2; move advisory guard to `trellis/realtime` middleware.
 4. **File-by-file fork audit** — `packages/trellis-kernel` diff vs `trellis@3.2` for query optimizer, workflows.

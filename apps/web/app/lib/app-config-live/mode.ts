@@ -4,7 +4,7 @@
 
 export type AppConfigTransportMode = 'live' | 'fallback'
 
-/** True when TrellisDb client is available (sidecar plugin registered a client). */
+/** True when TrellisDb client is available (sidecar or kernel-bridge plugin). */
 export function shouldAttemptLiveAppConfig(client: unknown): boolean {
   return client != null
 }
