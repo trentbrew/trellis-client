@@ -41,7 +41,7 @@ This audit informs post-P3 convergence. Verdicts: **port** | **keep embedded** |
 1. ~~**Kernel-bridge `TrellisDb`** — SSE-backed shim so `trellis/vue` works without sidecar (`TRELLIS_SIDECAR=0`).~~ **Shipped TRL-16.**
 2. ~~**Browse / `useTrellisEntities`** — Option B Phase 2; replace kernel SSE version bump pattern.~~ **Shipped TRL-17** (kernel-bridge `KernelBrowse` aggregate).
 3. **Zone-gated relay join** — P2; move advisory guard to `trellis/realtime` middleware.
-4. **File-by-file fork audit** — `packages/trellis-kernel` diff vs `trellis@3.2` for query optimizer, workflows.
+4. ~~**File-by-file fork audit** — `packages/trellis-kernel` diff vs `trellis@3.2` for query optimizer, workflows.~~ **Shipped TRL-18** (see `adr-002-kernel-fork-file-audit.md`).
 
 ---
 
