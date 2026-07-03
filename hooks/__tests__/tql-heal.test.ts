@@ -60,7 +60,7 @@ describe('checkWorkspaceJson', () => {
     expect(result!.issue).toContain('missing');
     expect(existsSync(wsPath)).toBe(true);
     const content = JSON.parse(readFileSync(wsPath, 'utf-8'));
-    expect(content.workspace.name).toBe('trellis-app-builder');
+    expect(content.workspace.name).toBe('trellis-client');
   });
 
   it('replaces corrupted workspace.json', () => {
