@@ -298,4 +298,8 @@
   :deep(.maplibregl-ctrl-logo) {
     opacity: 0.45;
   }
+
+  :deep(.maplibregl-ctrl) {
+    display: none !important;
+  }
 </style>
