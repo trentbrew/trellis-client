@@ -54,6 +54,7 @@ export default defineNuxtConfig({
 
   runtimeConfig: {
     trellisSidecar: process.env.TRELLIS_SIDECAR === '1',
+    trellisVcsRoot: process.env.TRELLIS_VCS_ROOT ?? '',
     trellisUrl: process.env.TRELLIS_URL ?? 'http://localhost:8230',
     trellisApiKey: process.env.TRELLIS_API_KEY ?? '',
     public: {

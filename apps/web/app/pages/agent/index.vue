@@ -150,6 +150,8 @@
     icon="lucide:flask-conical"
     :hide-sidebar="true">
     <div class="flex flex-col gap-4 p-6 max-w-5xl mx-auto w-full">
+      <LabSubNav active="op-log" />
+
       <!-- Facility header -->
       <UiCard class="border-primary/20 bg-primary/5">
         <UiCardContent class="p-4 flex items-center gap-4">
