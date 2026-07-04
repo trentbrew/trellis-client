@@ -1,13 +1,45 @@
 import type {
   VcsIssueDetail,
-  VcsIssueStatus,
+  VcsIssueFilters,
   VcsIssueSummary,
   VcsIssuesErrorResponse,
   VcsIssuesListResponse,
+  VcsKanbanViewMode,
 } from '~/types/vcs-issue'
-import { VCS_ISSUE_STATUSES } from '~/types/vcs-issue'
+import {
+  VCS_KANBAN_VIEW_STORAGE_KEY,
+  vcsKanbanCollapsedStorageKey,
+} from '~/types/vcs-issue'
+import {
+  buildSwimlanes,
+  buildTitleById,
+  distinctAssignees,
+  distinctLabels,
+  filterIssues,
+  groupIssuesByStatus,
+  inferDefaultViewMode,
+} from '~/lib/vcs-issue-filters'
 
 const POLL_MS = 15_000
+
+function readStoredViewMode(): VcsKanbanViewMode | null {
+  if (import.meta.server || typeof localStorage === 'undefined') return null
+  const value = localStorage.getItem(VCS_KANBAN_VIEW_STORAGE_KEY)
+  return value === 'grouped' || value === 'flat' ? value : null
+}
+
+function readStoredCollapsedEpics(): Set<string> {
+  if (import.meta.server || typeof localStorage === 'undefined') return new Set()
+  const collapsed = new Set<string>()
+  for (let i = 0; i < localStorage.length; i++) {
+    const key = localStorage.key(i)
+    if (!key?.startsWith('vcs-kanban-collapsed:')) continue
+    if (localStorage.getItem(key) === '1') {
+      collapsed.add(key.replace('vcs-kanban-collapsed:', ''))
+    }
+  }
+  return collapsed
+}
 
 export function useVcsIssues() {
   const issues = ref<VcsIssueSummary[]>([])
@@ -18,26 +50,69 @@ export function useVcsIssues() {
   const error = ref<VcsIssuesErrorResponse | null>(null)
   const lastFetchedAt = ref<Date | null>(null)
 
+  const filters = ref<VcsIssueFilters>({ labels: [], assignees: [] })
+  const viewMode = ref<VcsKanbanViewMode>('grouped')
+  const collapsedEpics = ref<Set<string>>(new Set())
+
   const selectedId = ref<string | null>(null)
   const detail = ref<VcsIssueDetail | null>(null)
   const detailLoading = ref(false)
   const lastFocusedCard = ref<HTMLElement | null>(null)
 
-  const columns = computed(() => {
-    const grouped = Object.fromEntries(VCS_ISSUE_STATUSES.map((status) => [status, [] as VcsIssueSummary[]])) as Record<
-      VcsIssueStatus,
-      VcsIssueSummary[]
-    >
+  const filteredIssues = computed(() => filterIssues(issues.value, filters.value))
+  const columns = computed(() => groupIssuesByStatus(filteredIssues.value))
+  const swimlanes = computed(() => buildSwimlanes(filteredIssues.value, buildTitleById(issues.value)))
+  const availableLabels = computed(() => distinctLabels(issues.value))
+  const availableAssignees = computed(() => distinctAssignees(issues.value))
 
-    for (const issue of issues.value) {
-      grouped[issue.status]?.push(issue)
+  const visibleCount = computed(() => ({
+    shown: filteredIssues.value.length,
+    total: issues.value.length,
+  }))
+
+  const hasActiveFilters = computed(
+    () => filters.value.labels.length > 0 || filters.value.assignees.length > 0,
+  )
+
+  const filtersMatchNothing = computed(
+    () => !loading.value && !error.value && issues.value.length > 0 && filteredIssues.value.length === 0,
+  )
+
+  function persistViewMode(mode: VcsKanbanViewMode) {
+    viewMode.value = mode
+    if (import.meta.client && typeof localStorage !== 'undefined') {
+      localStorage.setItem(VCS_KANBAN_VIEW_STORAGE_KEY, mode)
     }
+  }
 
-    return VCS_ISSUE_STATUSES.map((status) => ({
-      status,
-      issues: grouped[status] ?? [],
-    }))
-  })
+  function setFilters(next: VcsIssueFilters) {
+    filters.value = {
+      labels: [...next.labels],
+      assignees: [...next.assignees],
+    }
+  }
+
+  function clearFilters() {
+    filters.value = { labels: [], assignees: [] }
+  }
+
+  function isEpicCollapsed(epicId: string) {
+    return collapsedEpics.value.has(epicId)
+  }
+
+  function toggleEpicCollapsed(epicId: string) {
+    const next = new Set(collapsedEpics.value)
+    if (next.has(epicId)) next.delete(epicId)
+    else next.add(epicId)
+
+    collapsedEpics.value = next
+
+    if (import.meta.client && typeof localStorage !== 'undefined') {
+      const key = vcsKanbanCollapsedStorageKey(epicId)
+      if (next.has(epicId)) localStorage.setItem(key, '1')
+      else localStorage.removeItem(key)
+    }
+  }
 
   async function fetchList(isRefresh = false) {
     if (isRefresh) refreshing.value = true
@@ -50,6 +125,10 @@ export function useVcsIssues() {
       workspaceName.value = data.workspaceName
       lastFetchedAt.value = new Date(data.fetchedAt)
       error.value = null
+
+      if (!readStoredViewMode()) {
+        viewMode.value = inferDefaultViewMode(issues.value)
+      }
     } catch (err: unknown) {
       const fetchError = err as { data?: VcsIssuesErrorResponse; statusMessage?: string }
       error.value = fetchError.data ?? {
@@ -103,7 +182,7 @@ export function useVcsIssues() {
 
   function onKeydown(event: KeyboardEvent) {
     const target = event.target as HTMLElement | null
-    if (target?.closest('input, textarea, [contenteditable="true"]')) return
+    if (target?.closest('input, textarea, select, [contenteditable="true"]')) return
     if (event.key === 'r' && !event.metaKey && !event.ctrlKey && !event.altKey) {
       event.preventDefault()
       void refresh()
@@ -114,6 +193,9 @@ export function useVcsIssues() {
   }
 
   onMounted(() => {
+    collapsedEpics.value = readStoredCollapsedEpics()
+    const storedView = readStoredViewMode()
+    if (storedView) viewMode.value = storedView
     void fetchList()
     document.addEventListener('visibilitychange', onVisibilityChange)
     window.addEventListener('keydown', onKeydown)
@@ -135,7 +217,16 @@ export function useVcsIssues() {
 
   return {
     issues,
+    filters,
+    viewMode,
+    filteredIssues,
     columns,
+    swimlanes,
+    availableLabels,
+    availableAssignees,
+    visibleCount,
+    hasActiveFilters,
+    filtersMatchNothing,
     workspaceRoot,
     workspaceName,
     loading,
@@ -149,5 +240,10 @@ export function useVcsIssues() {
     refresh,
     openDetail,
     closeDetail,
+    setFilters,
+    clearFilters,
+    persistViewMode,
+    isEpicCollapsed,
+    toggleEpicCollapsed,
   }
 }

@@ -5,6 +5,7 @@
   defineProps<{
     status: VcsIssueStatus
     issues: VcsIssueSummary[]
+    hideParent?: boolean
   }>()
 
   const emit = defineEmits<{
@@ -38,6 +39,7 @@
         v-for="issue in issues"
         :key="issue.id"
         :issue="issue"
+        :hide-parent="hideParent"
         @select="(item, el) => emit('select', item, el)" />
 
       <div

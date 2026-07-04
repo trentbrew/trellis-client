@@ -3,6 +3,7 @@
 
   const props = defineProps<{
     issue: VcsIssueSummary
+    hideParent?: boolean
   }>()
 
   const emit = defineEmits<{
@@ -36,6 +37,7 @@
     ref="cardRef"
     type="button"
     class="w-full text-left rounded-[10px] border border-border bg-card/60 p-3 transition-colors hover:border-primary/35 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40"
+    data-testid="vcs-issue-card"
     :class="props.issue.status === 'closed' ? 'opacity-75' : ''"
     :aria-label="`${props.issue.id}, ${props.issue.title}, ${props.issue.status}`"
     @click="onClick">
@@ -56,7 +58,7 @@
     </div>
 
     <div class="mt-2 flex items-center justify-between gap-2 text-[11px] text-muted-foreground">
-      <span v-if="props.issue.parent" class="font-mono text-[10px]">← {{ props.issue.parent }}</span>
+      <span v-if="props.issue.parent && !props.hideParent" class="font-mono text-[10px]">← {{ props.issue.parent }}</span>
       <span v-else />
       <span class="inline-flex items-center gap-1 shrink-0">
         <span class="flex h-[18px] w-[18px] items-center justify-center rounded-full border border-border bg-muted text-[9px] uppercase">
