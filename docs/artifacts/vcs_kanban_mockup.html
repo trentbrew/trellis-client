@@ -1,0 +1,418 @@
+<!DOCTYPE html>
+<!-- trellis-design: slug=vcs_kanban scope=M0-read-only -->
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Trellis — VCS Issue Kanban (TRL-16 design mock)</title>
+  <style>
+    :root {
+      --background: #0a0a0c;
+      --surface: #141418;
+      --surface-elevated: #1a1a20;
+      --surface-glass: rgba(20, 20, 24, 0.72);
+      --text: #e8e8ec;
+      --text-muted: #888894;
+      --primary: #6366f1;
+      --border: #2a2a32;
+      --status-backlog: #6b7280;
+      --status-queue: #f59e0b;
+      --status-in-progress: #10b981;
+      --status-paused: #eab308;
+      --status-closed: #52525b;
+      --label-proposal: #8b5cf6;
+      --label-spec: #3b82f6;
+      --label-impl: #10b981;
+      --label-review: #f59e0b;
+      --label-design: #ec4899;
+      --ac-track: #6366f1;
+      --ac-track-bg: rgba(99, 102, 241, 0.15);
+      --radius-sm: 6px;
+      --radius-md: 10px;
+      --radius-pill: 9999px;
+      --font: "IBM Plex Sans", system-ui, sans-serif;
+      --font-mono: "IBM Plex Mono", ui-monospace, monospace;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: var(--font);
+      font-size: 13px;
+      background: var(--background);
+      color: var(--text);
+      height: 100dvh;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      .drawer, .drawer-backdrop { transition: none !important; }
+    }
+
+    .design-legend {
+      position: fixed; top: 6px; left: 50%; transform: translateX(-50%); z-index: 300;
+      font-size: 10px; color: var(--text-muted); background: rgba(0,0,0,0.9);
+      border: 1px dashed var(--status-in-progress); border-radius: var(--radius-pill);
+      padding: 3px 10px; pointer-events: none;
+    }
+
+    /* ── Lab header ── */
+    .lab-header {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 12px 20px 0; gap: 16px; flex-shrink: 0;
+    }
+    .lab-title { display: flex; align-items: center; gap: 8px; font-weight: 600; font-size: 15px; }
+    .lab-title svg { width: 18px; height: 18px; color: var(--primary); }
+
+    .sub-nav {
+      display: flex; gap: 4px; margin-top: 12px; padding: 0 20px;
+      border-bottom: 1px solid var(--border);
+    }
+    .sub-nav a {
+      padding: 8px 14px; font-size: 13px; color: var(--text-muted); text-decoration: none;
+      border-bottom: 2px solid transparent; margin-bottom: -1px;
+      display: flex; align-items: center; gap: 6px;
+    }
+    .sub-nav a.active { color: var(--text); border-bottom-color: var(--primary); }
+    .sub-nav a:hover:not(.active) { color: var(--text); }
+
+    .workspace-badge {
+      font-size: 11px; color: var(--text-muted); font-family: var(--font-mono);
+      background: var(--surface); border: 1px solid var(--border);
+      padding: 4px 10px; border-radius: var(--radius-pill);
+    }
+
+    /* ── Filter bar ── */
+    .filter-bar {
+      display: flex; align-items: center; gap: 10px; padding: 10px 20px;
+      background: rgba(255,255,255,0.02); border-bottom: 1px solid var(--border);
+      flex-shrink: 0;
+    }
+    .filter-chip {
+      font-size: 11px; padding: 4px 10px; border-radius: var(--radius-pill);
+      border: 1px solid var(--border); color: var(--text-muted); background: var(--surface);
+      cursor: not-allowed; opacity: 0.55;
+    }
+    .filter-chip::after { content: " ▾"; font-size: 9px; }
+    .filter-spacer { flex: 1; }
+    .btn-ghost {
+      font-size: 11px; padding: 4px 10px; border-radius: var(--radius-sm);
+      border: 1px solid var(--border); background: transparent; color: var(--text-muted);
+      cursor: pointer;
+    }
+    .btn-ghost:hover { color: var(--text); border-color: var(--primary); }
+    .sync-note { font-size: 11px; color: var(--text-muted); }
+
+    /* ── Board ── */
+    .board-wrap {
+      flex: 1; overflow: auto; padding: 16px 20px 24px;
+    }
+    .board {
+      display: flex; gap: 12px; min-height: 100%; align-items: flex-start;
+    }
+
+    .column {
+      flex: 0 0 260px; display: flex; flex-direction: column; gap: 8px;
+    }
+    .column-header {
+      display: flex; align-items: center; gap: 8px; padding: 6px 4px;
+      position: sticky; top: 0; background: var(--background); z-index: 2;
+    }
+    .column-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+    .column-title {
+      font-size: 11px; font-weight: 600; letter-spacing: 0.06em;
+      text-transform: uppercase; flex: 1;
+    }
+    .column-count {
+      font-size: 11px; min-width: 22px; height: 22px; display: flex;
+      align-items: center; justify-content: center; border-radius: var(--radius-pill);
+      background: var(--surface); border: 1px solid var(--border); color: var(--text-muted);
+    }
+
+    .column-body { display: flex; flex-direction: column; gap: 8px; min-height: 80px; }
+    .column-empty {
+      border: 1px dashed var(--border); border-radius: var(--radius-md);
+      padding: 20px 12px; text-align: center; font-size: 11px; color: var(--text-muted);
+    }
+
+    /* ── Cards ── */
+    .card {
+      background: rgba(20, 20, 24, 0.6); border: 1px solid var(--border);
+      border-radius: var(--radius-md); padding: 12px; cursor: pointer; text-align: left;
+      width: 100%; color: inherit; font: inherit;
+      transition: border-color 0.15s ease;
+    }
+    .card:hover, .card:focus-visible {
+      border-color: color-mix(in oklch, var(--primary) 35%, var(--border));
+      outline: none;
+    }
+    .card.closed { opacity: 0.75; }
+    .card-id { font-family: var(--font-mono); font-size: 11px; color: var(--primary); font-weight: 500; }
+    .card-title {
+      font-size: 13px; font-weight: 500; line-height: 1.35; margin: 6px 0 8px;
+      display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;
+    }
+    .labels { display: flex; flex-wrap: wrap; gap: 4px; margin-bottom: 8px; }
+    .label {
+      font-size: 10px; padding: 0 6px; height: 20px; display: inline-flex;
+      align-items: center; border-radius: var(--radius-sm); font-weight: 500;
+    }
+    .label-proposal { background: rgba(139,92,246,0.2); color: #c4b5fd; }
+    .label-spec { background: rgba(59,130,246,0.2); color: #93c5fd; }
+    .label-impl { background: rgba(16,185,129,0.2); color: #6ee7b7; }
+    .label-design { background: rgba(236,72,153,0.2); color: #f9a8d4; }
+    .label-needs-design { background: rgba(236,72,153,0.12); color: #f472b6; border: 1px dashed rgba(236,72,153,0.35); }
+
+    .card-meta {
+      display: flex; align-items: center; justify-content: space-between;
+      font-size: 11px; color: var(--text-muted);
+    }
+    .assignee {
+      display: flex; align-items: center; gap: 4px;
+    }
+    .avatar {
+      width: 18px; height: 18px; border-radius: 50%; background: var(--surface-elevated);
+      border: 1px solid var(--border); font-size: 9px; display: flex;
+      align-items: center; justify-content: center; color: var(--text-muted);
+    }
+    .parent-ref { font-family: var(--font-mono); font-size: 10px; }
+
+    .ac-bar { margin-top: 8px; height: 4px; border-radius: var(--radius-pill); background: var(--ac-track-bg); overflow: hidden; }
+    .ac-fill { height: 100%; background: var(--ac-track); border-radius: var(--radius-pill); }
+
+    /* ── Drawer ── */
+    .drawer-backdrop {
+      position: fixed; inset: 0; background: rgba(0,0,0,0.45); z-index: 100;
+      opacity: 0; pointer-events: none; transition: opacity 0.2s ease;
+    }
+    .drawer-backdrop.open { opacity: 1; pointer-events: auto; }
+
+    .drawer {
+      position: fixed; top: 0; right: 0; bottom: 0; width: 420px; max-width: 100vw;
+      background: var(--background); border-left: 1px solid var(--border);
+      z-index: 101; transform: translateX(100%); transition: transform 0.22s ease;
+      display: flex; flex-direction: column; overflow: hidden;
+    }
+    .drawer.open { transform: translateX(0); }
+
+    .drawer-header {
+      padding: 16px 20px; border-bottom: 1px solid var(--border);
+      display: flex; align-items: flex-start; gap: 12px;
+    }
+    .drawer-close {
+      margin-left: auto; background: none; border: none; color: var(--text-muted);
+      cursor: pointer; font-size: 20px; line-height: 1; padding: 4px;
+    }
+    .drawer-close:hover { color: var(--text); }
+    .drawer-body { flex: 1; overflow-y: auto; padding: 16px 20px; }
+    .drawer-section { margin-bottom: 20px; }
+    .drawer-section h3 {
+      font-size: 10px; text-transform: uppercase; letter-spacing: 0.06em;
+      color: var(--text-muted); margin-bottom: 8px; font-weight: 600;
+    }
+    .status-badge {
+      display: inline-flex; align-items: center; gap: 6px; font-size: 11px;
+      padding: 3px 8px; border-radius: var(--radius-pill); border: 1px solid var(--border);
+    }
+    .ac-row { display: flex; align-items: flex-start; gap: 8px; font-size: 12px; padding: 4px 0; color: var(--text-muted); }
+    .ac-row.pass { color: var(--text); }
+    .drawer-footer {
+      padding: 12px 20px; border-top: 1px solid var(--border);
+      font-size: 11px; color: var(--text-muted); font-family: var(--font-mono);
+    }
+  </style>
+</head>
+<body>
+  <div class="design-legend">TRL-16 design mock · M0 read-only · click card → drawer</div>
+
+  <header class="lab-header">
+    <div>
+      <div class="lab-title">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10 2v7.31M14 2v7.31M8.5 2h7M4.5 9.5a7.5 7.5 0 1 0 15 0"/></svg>
+        Lab
+      </div>
+      <nav class="sub-nav" data-design-note="Lab sub-nav: Op log vs Issues">
+        <a href="#" aria-current="false">Op log</a>
+        <a href="#" class="active" aria-current="page">Issues</a>
+      </nav>
+    </div>
+    <span class="workspace-badge" title="/Users/trentbrew/TURTLE/Projects/Packages/trellis-client">trellis-client</span>
+  </header>
+
+  <div class="filter-bar" data-design-note="Filters disabled M0 — visual placeholder for M1">
+    <span class="filter-chip">Labels</span>
+    <span class="filter-chip">Assignee</span>
+    <span class="filter-spacer"></span>
+    <button type="button" class="btn-ghost">↻ Refresh</button>
+    <span class="sync-note">Last sync 12s ago</span>
+  </div>
+
+  <div class="board-wrap">
+    <div class="board" role="region" aria-label="VCS issue board">
+
+      <div class="column" role="group" aria-label="Backlog, 1 issue">
+        <div class="column-header">
+          <span class="column-dot" style="background:var(--status-backlog)"></span>
+          <span class="column-title">Backlog</span>
+          <span class="column-count">1</span>
+        </div>
+        <div class="column-body">
+          <button type="button" class="card" data-issue="TRL-1" aria-label="TRL-1, Open source, backlog">
+            <div class="card-id">TRL-1</div>
+            <div class="card-title">Open source</div>
+            <div class="labels"><span class="label label-proposal">proposal</span></div>
+            <div class="card-meta"><span class="assignee"><span class="avatar">—</span> unassigned</span></div>
+          </button>
+        </div>
+      </div>
+
+      <div class="column" role="group" aria-label="Queue, 2 issues">
+        <div class="column-header">
+          <span class="column-dot" style="background:var(--status-queue)"></span>
+          <span class="column-title">Queue</span>
+          <span class="column-count">2</span>
+        </div>
+        <div class="column-body">
+          <button type="button" class="card" data-issue="TRL-15" aria-label="TRL-15, VCS issue kanban proposal, queue">
+            <div class="card-id">TRL-15</div>
+            <div class="card-title">Proposal: VCS issue kanban (Lab board)</div>
+            <div class="labels">
+              <span class="label label-proposal">proposal</span>
+              <span class="label label-needs-design">needs-design</span>
+            </div>
+            <div class="card-meta">
+              <span class="assignee"><span class="avatar">T</span> agent:trentbrew</span>
+            </div>
+          </button>
+          <button type="button" class="card" data-issue="TRL-16" aria-label="TRL-16, Design VCS kanban, queue">
+            <div class="card-id">TRL-16</div>
+            <div class="card-title">Design: VCS issue kanban (Lab board)</div>
+            <div class="labels"><span class="label label-design">design</span></div>
+            <div class="card-meta">
+              <span class="parent-ref">← TRL-15</span>
+              <span class="assignee"><span class="avatar">T</span> trentbrew</span>
+            </div>
+            <div class="ac-bar"><div class="ac-fill" style="width:40%"></div></div>
+          </button>
+        </div>
+      </div>
+
+      <div class="column" role="group" aria-label="In progress, 0 issues">
+        <div class="column-header">
+          <span class="column-dot" style="background:var(--status-in-progress)"></span>
+          <span class="column-title">In progress</span>
+          <span class="column-count">0</span>
+        </div>
+        <div class="column-body">
+          <div class="column-empty">Nothing in flight</div>
+        </div>
+      </div>
+
+      <div class="column" role="group" aria-label="Paused, 0 issues">
+        <div class="column-header">
+          <span class="column-dot" style="background:var(--status-paused)"></span>
+          <span class="column-title">Paused</span>
+          <span class="column-count">0</span>
+        </div>
+        <div class="column-body">
+          <div class="column-empty">—</div>
+        </div>
+      </div>
+
+      <div class="column" role="group" aria-label="Done, 1 issue">
+        <div class="column-header">
+          <span class="column-dot" style="background:var(--status-closed)"></span>
+          <span class="column-title">Done</span>
+          <span class="column-count">1</span>
+        </div>
+        <div class="column-body">
+          <button type="button" class="card closed" data-issue="TRL-14" aria-label="TRL-14, closed spec">
+            <div class="card-id">TRL-14</div>
+            <div class="card-title">Spec: P1 graph-residency migration routes</div>
+            <div class="labels"><span class="label label-spec">spec</span></div>
+            <div class="card-meta">
+              <span class="parent-ref">← TRL-13</span>
+              <span class="assignee"><span class="avatar">T</span> closed</span>
+            </div>
+            <div class="ac-bar"><div class="ac-fill" style="width:100%"></div></div>
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="drawer-backdrop" id="backdrop" aria-hidden="true"></div>
+  <aside class="drawer" id="drawer" role="dialog" aria-modal="true" aria-labelledby="drawer-title" aria-hidden="true">
+    <div class="drawer-header">
+      <div>
+        <div class="card-id" id="drawer-id">TRL-16</div>
+        <h2 id="drawer-title" style="font-size:16px;font-weight:600;margin-top:4px;">Design: VCS issue kanban (Lab board)</h2>
+        <div style="margin-top:8px;">
+          <span class="status-badge"><span class="column-dot" style="background:var(--status-queue);width:6px;height:6px;"></span> queue</span>
+        </div>
+      </div>
+      <button type="button" class="drawer-close" id="close-drawer" aria-label="Close">×</button>
+    </div>
+    <div class="drawer-body">
+      <div class="drawer-section">
+        <h3>Description</h3>
+        <p style="font-size:13px;line-height:1.5;color:var(--text-muted);">Interaction + visual design for read-first TrellisVCS issue board at /lab/issues. Five status columns, card detail drawer, Lab chrome reuse.</p>
+      </div>
+      <div class="drawer-section">
+        <h3>Acceptance criteria</h3>
+        <div class="ac-row pass">✓ docs/artifacts/vcs_kanban_design.md exists</div>
+        <div class="ac-row pass">✓ docs/artifacts/vcs_kanban_mockup.html exists</div>
+        <div class="ac-row pass">✓ Interaction matrix documented</div>
+        <div class="ac-row">○ A11y focus order verified in impl</div>
+        <div class="ac-row">○ Component anatomy mapped</div>
+      </div>
+      <div class="drawer-section">
+        <h3>Meta</h3>
+        <p style="font-size:12px;color:var(--text-muted);line-height:1.6;">
+          Parent: TRL-15<br>
+          Branch: issue/TRL-16-design-vcs-kanban<br>
+          Assignee: agent:trentbrew
+        </p>
+      </div>
+    </div>
+    <div class="drawer-footer">Edit via CLI: trellis issue show TRL-16</div>
+  </aside>
+
+  <script>
+    const drawer = document.getElementById('drawer');
+    const backdrop = document.getElementById('backdrop');
+    const closeBtn = document.getElementById('close-drawer');
+    let lastFocus = null;
+
+    function openDrawer(card) {
+      lastFocus = card;
+      document.getElementById('drawer-id').textContent = card.querySelector('.card-id').textContent;
+      document.getElementById('drawer-title').textContent = card.querySelector('.card-title').textContent;
+      drawer.classList.add('open');
+      backdrop.classList.add('open');
+      drawer.setAttribute('aria-hidden', 'false');
+      backdrop.setAttribute('aria-hidden', 'false');
+      closeBtn.focus();
+    }
+
+    function closeDrawer() {
+      drawer.classList.remove('open');
+      backdrop.classList.remove('open');
+      drawer.setAttribute('aria-hidden', 'true');
+      backdrop.setAttribute('aria-hidden', 'true');
+      if (lastFocus) lastFocus.focus();
+    }
+
+    document.querySelectorAll('.card').forEach(card => {
+      card.addEventListener('click', () => openDrawer(card));
+    });
+    closeBtn.addEventListener('click', closeDrawer);
+    backdrop.addEventListener('click', closeDrawer);
+    document.addEventListener('keydown', e => {
+      if (e.key === 'Escape') closeDrawer();
+    });
+  </script>
+</body>
+</html>
