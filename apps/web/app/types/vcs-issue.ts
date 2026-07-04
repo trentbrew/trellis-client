@@ -57,3 +57,24 @@ export const VCS_STATUS_LABELS: Record<VcsIssueStatus, string> = {
   paused: 'Paused',
   closed: 'Done',
 }
+
+export type VcsKanbanViewMode = 'grouped' | 'flat'
+
+export interface VcsIssueFilters {
+  labels: string[]
+  assignees: string[]
+}
+
+export const VCS_ASSIGNEE_UNASSIGNED = '__unassigned__'
+
+export interface VcsIssueSwimlane {
+  epicId: string
+  epicTitle: string
+  issues: VcsIssueSummary[]
+}
+
+export const VCS_KANBAN_VIEW_STORAGE_KEY = 'vcs-kanban-view'
+
+export function vcsKanbanCollapsedStorageKey(epicId: string) {
+  return `vcs-kanban-collapsed:${epicId}`
+}

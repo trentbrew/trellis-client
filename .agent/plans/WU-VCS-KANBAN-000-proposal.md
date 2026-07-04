@@ -1,6 +1,6 @@
 # WU-VCS-KANBAN-000: TrellisVCS issue board in the web client (proposal)
 
-**Status:** Shipped M0 (TRL-18 PASS · 2026-07-04) — spec TRL-17 open (AC hygiene)  
+**Status:** M1 reviewed PASS (TRL-24 · 2026-07-04) — M0 shipped 62c3bbc · M1 uncommitted pending ship  
 **Date:** 2026-07-04  
 **Repo:** `trellis-client` (`apps/web`)  
 **Pipeline context:** A WU-REMOTE-MCP ✅ · B TRL-10 spec ✅ · C **this wedge** · D TRL-12 review ✅

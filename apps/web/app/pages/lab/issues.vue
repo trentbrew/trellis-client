@@ -6,6 +6,14 @@
 
   const {
     columns,
+    swimlanes,
+    filters,
+    viewMode,
+    availableLabels,
+    availableAssignees,
+    visibleCount,
+    hasActiveFilters,
+    filtersMatchNothing,
     workspaceRoot,
     workspaceName,
     loading,
@@ -18,6 +26,12 @@
     refresh,
     openDetail,
     closeDetail,
+    setFilters,
+    clearFilters,
+    persistViewMode,
+    isEpicCollapsed,
+    toggleEpicCollapsed,
+    issues,
   } = useVcsIssues()
 
   const drawerOpen = computed({
@@ -26,6 +40,8 @@
       if (!value) closeDetail()
     },
   })
+
+  const hasIssues = computed(() => issues.value.length > 0)
 
   function onSelect(issue: import('~/types/vcs-issue').VcsIssueSummary, el: HTMLElement) {
     void openDetail(issue.id, el)
@@ -51,7 +67,19 @@
         </span>
       </header>
 
-      <VcsIssueFilterBar :refreshing="refreshing" :sync-label="syncLabel" @refresh="refresh()" />
+      <VcsIssueFilterBar
+        :refreshing="refreshing"
+        :sync-label="syncLabel"
+        :filters="filters"
+        :view-mode="viewMode"
+        :available-labels="availableLabels"
+        :available-assignees="availableAssignees"
+        :visible-count="visibleCount"
+        :has-active-filters="hasActiveFilters"
+        @refresh="refresh()"
+        @update:filters="setFilters"
+        @update:view-mode="persistViewMode"
+        @clear="clearFilters()" />
 
       <div v-if="error?.code === 'NO_VCS_REPO'" class="flex flex-1 flex-col items-center justify-center gap-3 px-6 text-center">
         <Icon name="lucide:folder-x" class="h-10 w-10 text-muted-foreground/50" />
@@ -67,14 +95,28 @@
         <UiButton variant="outline" size="sm" @click="refresh()">Retry</UiButton>
       </div>
 
-      <div v-else-if="!loading && columns.every((c) => c.issues.length === 0)" class="flex flex-1 flex-col items-center justify-center gap-3 px-6 text-center">
+      <div v-else-if="filtersMatchNothing" class="flex flex-1 flex-col items-center justify-center gap-3 px-6 text-center">
+        <Icon name="lucide:filter-x" class="h-10 w-10 text-muted-foreground/50" />
+        <div class="text-sm font-medium">No issues match filters</div>
+        <p class="text-sm text-muted-foreground">Try clearing filters or choosing different labels.</p>
+        <UiButton variant="outline" size="sm" @click="clearFilters()">Clear filters</UiButton>
+      </div>
+
+      <div v-else-if="!loading && !hasIssues" class="flex flex-1 flex-col items-center justify-center gap-3 px-6 text-center">
         <Icon name="lucide:inbox" class="h-10 w-10 text-muted-foreground/50" />
         <div class="text-sm font-medium">No issues yet</div>
         <p class="text-sm text-muted-foreground">Create one with <code class="rounded bg-muted px-1 py-0.5 font-mono text-xs">trellis issue create</code></p>
       </div>
 
       <div v-else class="min-h-0 flex-1 overflow-auto pt-4">
-        <VcsIssueBoard :loading="loading" :columns="columns" @select="onSelect" />
+        <VcsIssueBoard
+          :loading="loading"
+          :view-mode="viewMode"
+          :columns="columns"
+          :swimlanes="swimlanes"
+          :is-epic-collapsed="isEpicCollapsed"
+          @select="onSelect"
+          @toggle-epic="toggleEpicCollapsed" />
       </div>
 
       <VcsIssueDetailDrawer
