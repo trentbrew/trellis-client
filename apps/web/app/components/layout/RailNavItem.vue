@@ -5,33 +5,39 @@
    * `v-for` over routes without instantiating composables inside the loop.
    */
   import type { RouteConfig } from '~/config/routes'
+  import type { CampusZoneKind } from '~/composables/useZoneContext'
 
   const props = defineProps<{
     route: Pick<RouteConfig, 'path' | 'label' | 'icon'>
     isActive: boolean
     isBottom: boolean
     isInEditMode: boolean
+    zoneKind?: CampusZoneKind
   }>()
 
   // Reactive badge computed once per component instance — re-evaluates when
   // notifications arrive via SSE (see `useRouteBadge`).
   const badge = useRouteBadge(() => props.route.path)
+
+  const activeClass = computed(() => {
+    if (!props.isActive) {
+      return props.isInEditMode
+        ? 'text-accent-foreground/70 hover:bg-accent-foreground/10 hover:text-accent-foreground'
+        : 'text-rail-foreground/70 hover:bg-rail-foreground/10 hover:text-rail-foreground'
+    }
+    if (props.isInEditMode) {
+      return 'bg-accent-foreground/10 text-accent-foreground/80'
+    }
+    return 'rail-nav-active-zone text-foreground'
+  })
 </script>
 
 <template>
   <AppNavLink
     :to="route.path"
     class="group relative flex items-center justify-center rounded-full transition-all duration-200 ease-out overflow-visible"
-    :class="[
-      isBottom && isActive ? 'h-9 px-4 gap-2' : 'h-9 w-9',
-      isActive
-        ? isInEditMode
-          ? 'bg-accent-foreground/10 text-accent-foreground/80'
-          : 'bg-rail-foreground/10 text-foreground'
-        : isInEditMode
-          ? 'text-accent-foreground/70 hover:bg-accent-foreground/10 hover:text-accent-foreground'
-          : 'text-rail-foreground/70 hover:bg-rail-foreground/10 hover:text-rail-foreground',
-    ]">
+    :class="[isBottom && isActive ? 'h-9 px-4 gap-2' : 'h-9 w-9', activeClass]"
+    :data-campus-zone="isActive && zoneKind ? zoneKind : undefined">
     <Icon :name="route.icon" class="h-4.5 w-4.5 opacity-60 shrink-0" />
     <Transition
       enter-active-class="transition-all duration-200 ease-out"

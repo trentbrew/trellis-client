@@ -1,0 +1,838 @@
+<!DOCTYPE html>
+<!-- trellis-design-adopted: slug=campus_shell_chrome decision=three-layer-hybrid -->
+<html lang="en" data-campus-zone="lab">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Trellis — Campus Shell Chrome (design mock)</title>
+  <style>
+    /* Tokens mirror docs/artifacts/campus_shell_chrome_design.md */
+    :root {
+      --background: #0a0a0c;
+      --surface: #141418;
+      --surface-glass: rgba(20, 20, 24, 0.65);
+      --text: #e8e8ec;
+      --text-muted: #888894;
+      --primary: #6366f1;
+      --border: #2a2a32;
+      --zone-lab: #6366f1;
+      --zone-lobby: #f59e0b;
+      --zone-workshop: #10b981;
+      --zone-showroom: #8b5cf6;
+      --zone-vault: #f43f5e;
+      --local-badge: #34d399;
+      --destructive: #ef4444;
+      --radius-sm: 6px;
+      --radius-md: 10px;
+      --radius-lg: 12px;
+      --radius-pill: 9999px;
+      --font: "IBM Plex Sans", system-ui, -apple-system, sans-serif;
+      --campus-zone-accent: var(--zone-lab);
+    }
+
+    [data-campus-zone="lab"]       { --campus-zone-accent: var(--zone-lab); }
+    [data-campus-zone="lobby"]     { --campus-zone-accent: var(--zone-lobby); }
+    [data-campus-zone="workshop"]  { --campus-zone-accent: var(--zone-workshop); }
+    [data-campus-zone="showroom"]  { --campus-zone-accent: var(--zone-showroom); }
+    [data-campus-zone="vault"]     { --campus-zone-accent: var(--zone-vault); }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: var(--font);
+      font-size: 13px;
+      background: var(--background);
+      color: var(--text);
+      height: 100dvh;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+      transition: --campus-zone-accent 0.25s ease;
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      body, .dock-pill, .placard { transition: none !important; }
+    }
+
+    /* ── Legend (design notes) ── */
+    .design-legend {
+      position: fixed;
+      top: 8px;
+      left: 50%;
+      transform: translateX(-50%);
+      z-index: 200;
+      display: flex;
+      gap: 6px;
+      padding: 4px 10px;
+      background: rgba(0,0,0,0.85);
+      border: 1px dashed var(--zone-workshop);
+      border-radius: var(--radius-pill);
+      font-size: 10px;
+      color: var(--text-muted);
+      pointer-events: none;
+    }
+    .design-legend kbd {
+      background: var(--surface);
+      padding: 1px 5px;
+      border-radius: 4px;
+      border: 1px solid var(--border);
+      color: var(--text);
+    }
+
+    /* ── Header ── */
+    .header {
+      height: 56px;
+      display: flex;
+      align-items: center;
+      padding: 0 16px;
+      gap: 12px;
+      flex-shrink: 0;
+      border-bottom: 1px solid transparent;
+    }
+
+    .traffic { display: flex; gap: 8px; margin-right: 4px; }
+    .dot { width: 12px; height: 12px; border-radius: 50%; }
+    .dot-r { background: #ff5f57; }
+    .dot-y { background: #febc2e; }
+    .dot-g { background: #28c840; }
+
+    .logo {
+      width: 36px; height: 36px;
+      border-radius: var(--radius-lg);
+      background: color-mix(in oklch, var(--campus-zone-accent) 15%, var(--surface));
+      display: flex; align-items: center; justify-content: center;
+      font-size: 16px;
+    }
+
+    .breadcrumb-pickers {
+      display: flex; align-items: center; gap: 8px;
+      color: var(--text-muted); font-size: 12px;
+    }
+    .breadcrumb-pickers span.sep { opacity: 0.3; transform: rotate(10deg); }
+
+    /* Zone placard */
+    .placard {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      height: 28px;
+      padding: 0 10px;
+      border-radius: var(--radius-pill);
+      border: 1px solid color-mix(in oklch, var(--campus-zone-accent) 40%, var(--border));
+      background: color-mix(in oklch, var(--campus-zone-accent) 8%, var(--surface));
+      font-size: 12px;
+      font-weight: 600;
+      cursor: default;
+      transition: border-color 0.25s, background 0.25s;
+    }
+    .placard-icon { color: var(--campus-zone-accent); font-size: 14px; }
+
+    /* Projection URI — browser intent layer */
+    .projection-uri {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      height: 28px;
+      max-width: 280px;
+      padding: 0 10px;
+      border-radius: var(--radius-sm);
+      border: 1px solid var(--border);
+      background: rgba(0,0,0,0.25);
+      font-family: "IBM Plex Mono", ui-monospace, monospace;
+      font-size: 11px;
+      color: var(--text-muted);
+      cursor: pointer;
+      overflow: hidden;
+      white-space: nowrap;
+      transition: max-width 0.2s ease, border-color 0.15s;
+    }
+    .projection-uri:hover {
+      border-color: color-mix(in oklch, var(--campus-zone-accent) 35%, var(--border));
+      color: var(--text);
+    }
+    .projection-uri.expanded {
+      max-width: 480px;
+      color: var(--text);
+    }
+    .projection-uri .uri-zone { color: var(--campus-zone-accent); font-weight: 500; }
+    .projection-uri .uri-sep { opacity: 0.35; margin: 0 1px; }
+    .projection-uri .uri-expand {
+      margin-left: auto;
+      font-size: 9px;
+      opacity: 0.5;
+      flex-shrink: 0;
+    }
+
+    .header-spacer { flex: 1; min-width: 8px; }
+
+    /* Menubar */
+    .menubar {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      flex-shrink: 0;
+    }
+    .menubar-sep {
+      width: 1px; height: 16px;
+      background: color-mix(in oklch, var(--campus-zone-accent) 25%, var(--border));
+    }
+    .chip {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      height: 28px;
+      padding: 0 8px;
+      border-radius: var(--radius-pill);
+      border: 1px solid var(--border);
+      background: rgba(255,255,255,0.04);
+      font-size: 11px;
+      font-weight: 500;
+      color: var(--text-muted);
+      cursor: pointer;
+      white-space: nowrap;
+      transition: background 0.15s, color 0.15s;
+    }
+    .chip:hover { background: rgba(255,255,255,0.08); color: var(--text); }
+    .chip.primary-action {
+      width: 168px;
+      justify-content: flex-start;
+      padding-left: 10px;
+      gap: 8px;
+    }
+    .chip kbd {
+      margin-left: auto;
+      font-size: 10px;
+      opacity: 0.6;
+      font-family: inherit;
+    }
+    .chip .health-dot {
+      width: 6px; height: 6px;
+      border-radius: 50%;
+      background: var(--local-badge);
+    }
+
+    /* ── Body shell ── */
+    .shell {
+      flex: 1;
+      display: flex;
+      min-height: 0;
+      padding: 0 10px 10px;
+      gap: 0;
+    }
+
+    .sidebar {
+      width: 220px;
+      flex-shrink: 0;
+      padding: 16px 12px;
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
+    }
+    .sidebar-section-label {
+      font-size: 10px;
+      font-weight: 600;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      color: var(--text-muted);
+      opacity: 0.7;
+      margin-bottom: 6px;
+    }
+    .sidebar-item {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 6px 10px;
+      border-radius: var(--radius-sm);
+      color: var(--text-muted);
+      font-size: 13px;
+      cursor: pointer;
+    }
+    .sidebar-item:hover { background: rgba(255,255,255,0.04); color: var(--text); }
+    .sidebar-item.active {
+      background: rgba(255,255,255,0.08);
+      color: var(--text);
+    }
+    .sidebar-item .count {
+      font-size: 11px;
+      opacity: 0.5;
+      font-variant-numeric: tabular-nums;
+    }
+
+    .main {
+      flex: 1;
+      min-width: 0;
+      background: var(--surface);
+      border-radius: var(--radius-lg);
+      border: 1px solid var(--border);
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+
+    .page-header {
+      padding: 24px 28px 16px;
+      border-bottom: 1px solid var(--border);
+    }
+    .page-header h1 { font-size: 22px; font-weight: 600; margin-bottom: 4px; }
+    .page-header p { font-size: 13px; color: var(--text-muted); }
+    .page-toolbar {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 12px 28px;
+      border-bottom: 1px solid var(--border);
+    }
+    .btn {
+      height: 32px;
+      padding: 0 12px;
+      border-radius: var(--radius-sm);
+      border: 1px solid var(--border);
+      background: transparent;
+      color: var(--text-muted);
+      font-size: 12px;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .btn:hover { background: rgba(255,255,255,0.05); color: var(--text); }
+    .btn-primary {
+      background: color-mix(in oklch, var(--campus-zone-accent) 80%, #000);
+      border-color: transparent;
+      color: white;
+      margin-left: auto;
+    }
+    .search-inline {
+      flex: 1;
+      max-width: 280px;
+      height: 32px;
+      border-radius: var(--radius-sm);
+      border: 1px solid var(--border);
+      background: rgba(0,0,0,0.2);
+      padding: 0 12px;
+      color: var(--text-muted);
+      font-size: 12px;
+      display: flex;
+      align-items: center;
+    }
+
+    .card-grid {
+      flex: 1;
+      overflow: auto;
+      padding: 20px 28px;
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+      gap: 14px;
+      align-content: start;
+    }
+    .note-card {
+      aspect-ratio: 1.1;
+      border-radius: var(--radius-md);
+      border: 1px solid var(--border);
+      background: rgba(255,255,255,0.02);
+      padding: 14px;
+      font-size: 12px;
+      color: var(--text-muted);
+      line-height: 1.45;
+    }
+    .note-card strong { color: var(--text); display: block; margin-bottom: 6px; font-size: 13px; }
+
+    /* ── Bottom dock ── */
+    .dock-wrap {
+      padding: 0 10px 10px;
+      flex-shrink: 0;
+    }
+    .dock {
+      height: 48px;
+      display: flex;
+      align-items: center;
+      padding: 0 16px;
+      gap: 8px;
+      background: var(--surface-glass);
+      backdrop-filter: blur(16px);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-lg);
+    }
+
+    .dock-left, .dock-right {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      flex-shrink: 0;
+    }
+    .dock-center {
+      flex: 1;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 4px;
+    }
+
+    .dock-icon {
+      width: 36px; height: 36px;
+      border-radius: var(--radius-pill);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: var(--text-muted);
+      cursor: pointer;
+      font-size: 16px;
+      position: relative;
+      transition: all 0.2s ease;
+      border: none;
+      background: transparent;
+    }
+    .dock-icon:hover {
+      background: rgba(255,255,255,0.06);
+      color: var(--text);
+    }
+    .dock-pill {
+      width: auto;
+      padding: 0 14px;
+      gap: 8px;
+      font-size: 12px;
+      color: var(--text);
+      background: color-mix(in oklch, var(--campus-zone-accent) 12%, transparent);
+      border: 1px solid color-mix(in oklch, var(--campus-zone-accent) 20%, transparent);
+    }
+    .dock-pill .pill-icon { opacity: 0.7; font-size: 14px; }
+
+    .dock-zone-sep {
+      width: 1px; height: 20px;
+      background: var(--border);
+      opacity: 0.35;
+      margin: 0 4px;
+    }
+
+    .badge-count {
+      position: absolute;
+      top: 2px; right: 2px;
+      min-width: 16px; height: 16px;
+      padding: 0 4px;
+      border-radius: var(--radius-pill);
+      background: var(--destructive);
+      color: white;
+      font-size: 9px;
+      font-weight: 700;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .local-pill {
+      height: 28px;
+      padding: 0 8px;
+      border-radius: var(--radius-pill);
+      border: 1px solid color-mix(in oklch, var(--local-badge) 40%, var(--border));
+      background: color-mix(in oklch, var(--local-badge) 10%, transparent);
+      color: var(--local-badge);
+      font-size: 10px;
+      font-weight: 600;
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      cursor: default;
+    }
+    .local-pill .ldot {
+      width: 6px; height: 6px;
+      border-radius: 50%;
+      background: var(--local-badge);
+    }
+
+    .avatar-btn {
+      width: 32px; height: 32px;
+      border-radius: 50%;
+      border: 2px solid color-mix(in oklch, var(--campus-zone-accent) 50%, var(--border));
+      background: linear-gradient(135deg, #4f46e5, #7c3aed);
+      cursor: pointer;
+      overflow: hidden;
+    }
+    .avatar-btn img { width: 100%; height: 100%; object-fit: cover; }
+
+    .furnish-btn {
+      width: 36px; height: 36px;
+      border-radius: var(--radius-pill);
+      background: color-mix(in oklch, var(--campus-zone-accent) 85%, #000);
+      color: white;
+      border: none;
+      font-size: 20px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      line-height: 1;
+    }
+    .furnish-btn:hover { filter: brightness(1.1); }
+
+    /* ── Omnibox overlay ── */
+    .omnibox-backdrop {
+      display: none;
+      position: fixed;
+      inset: 0;
+      z-index: 150;
+      background: rgba(10,10,12,0.6);
+      backdrop-filter: blur(8px);
+      align-items: flex-start;
+      justify-content: center;
+      padding-top: 15vh;
+    }
+    .omnibox-backdrop.open { display: flex; }
+    .omnibox-card {
+      width: 100%;
+      max-width: 640px;
+      border-radius: 16px;
+      border: 1px solid var(--border);
+      background: color-mix(in oklch, var(--surface) 95%, transparent);
+      box-shadow: 0 24px 80px rgba(0,0,0,0.5);
+      overflow: hidden;
+    }
+    .omnibox-input-row {
+      display: flex;
+      align-items: center;
+      padding: 20px;
+      gap: 12px;
+      border-bottom: 1px solid var(--border);
+    }
+    .omnibox-input-row input {
+      flex: 1;
+      background: transparent;
+      border: none;
+      outline: none;
+      font-size: 16px;
+      color: var(--text);
+      font-family: inherit;
+    }
+    .omnibox-hint {
+      padding: 16px 20px;
+      font-size: 11px;
+      color: var(--text-muted);
+    }
+
+    /* ── Zone switcher (mock only) ── */
+    .zone-switcher {
+      position: fixed;
+      bottom: 72px;
+      right: 16px;
+      z-index: 100;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-md);
+      padding: 8px;
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+      font-size: 11px;
+      box-shadow: 0 8px 32px rgba(0,0,0,0.4);
+    }
+    .zone-switcher-title {
+      font-size: 9px;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      color: var(--text-muted);
+      padding: 4px 8px;
+    }
+    .zone-opt {
+      padding: 6px 10px;
+      border-radius: var(--radius-sm);
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      border: none;
+      background: transparent;
+      color: var(--text-muted);
+      font-family: inherit;
+      font-size: 11px;
+      text-align: left;
+    }
+    .zone-opt:hover { background: rgba(255,255,255,0.06); color: var(--text); }
+    .zone-opt.active { background: color-mix(in oklch, var(--campus-zone-accent) 15%, transparent); color: var(--text); }
+    .zone-swatch { width: 8px; height: 8px; border-radius: 50%; }
+
+    [data-design-note] { position: relative; }
+  </style>
+</head>
+<body>
+  <div class="design-legend">
+    Three-layer shell · <kbd>U</kbd> URI expand · <kbd>Z</kbd> zone · <kbd>⌘K</kbd> omnibox
+  </div>
+
+  <!-- ═══ HEADER ═══ -->
+  <header class="header" data-design-note="Three layers: threshold | placard+URI (Campus+Browser) | menubar sky (GNOME)">
+    <div class="traffic" aria-hidden="true">
+      <div class="dot dot-r"></div>
+      <div class="dot dot-y"></div>
+      <div class="dot dot-g"></div>
+    </div>
+    <div class="logo" title="Home">◈</div>
+    <div class="breadcrumb-pickers">
+      <span>Turtle Labs</span>
+      <span class="sep">/</span>
+      <span>Production</span>
+    </div>
+
+    <!-- CampusZonePlacard (Ground — spatial) -->
+    <div class="placard" id="placard" title="Mutations from this room tag entity:founder-facility-lab" data-design-note="CampusZonePlacard — which room">
+      <span class="placard-icon" id="placard-icon">🧪</span>
+      <span id="placard-label">Lab</span>
+    </div>
+
+    <!-- CampusProjectionUri (Intent — browser) -->
+    <button
+      type="button"
+      class="projection-uri"
+      id="projection-uri"
+      aria-label="Current projection address"
+      data-design-note="CampusProjectionUri — graph/projection address; click to expand"
+      title="Click to show graph address · copy segment">
+      <span id="uri-content"><span class="uri-zone" id="uri-zone">lab</span><span class="uri-sep">›</span><span id="uri-projection">notes</span></span>
+      <span class="uri-expand" id="uri-expand-icon">▾</span>
+    </button>
+
+    <div class="header-spacer"></div>
+
+    <!-- AppMenubar (Sky — GNOME ambient) -->
+    <nav class="menubar" aria-label="Facility sky" data-design-note="AppMenubar — GNOME ambient only, not navigation">
+      <button class="chip" type="button" title="Facility vitals">
+        <span class="health-dot"></span>
+        <span>28 entities</span>
+      </button>
+      <span class="menubar-sep" aria-hidden="true"></span>
+      <button class="chip" type="button" title="CPU 12% · MEM 4.2GB · BAT 87%">12% · 4.2G</button>
+      <span class="menubar-sep" aria-hidden="true"></span>
+      <button class="chip" type="button" title="San Francisco — Partly cloudy">☁️ 62°</button>
+      <span class="menubar-sep" aria-hidden="true"></span>
+      <button class="chip" type="button" id="clock-chip">Fri Jul 3 · 3:40 PM</button>
+      <span class="menubar-sep" aria-hidden="true"></span>
+      <button class="chip primary-action" type="button" id="omnibox-open" aria-label="Go anywhere (Omnibox)" data-design-note="MenubarSearch — apparition verb">
+        <span>⌕</span>
+        <span>Go anywhere…</span>
+        <kbd>⌘K</kbd>
+      </button>
+    </nav>
+  </header>
+
+  <!-- ═══ MAIN SHELL ═══ -->
+  <div class="shell">
+    <aside class="sidebar">
+      <div>
+        <div class="sidebar-section-label">Pinned</div>
+      </div>
+      <div>
+        <div class="sidebar-section-label">Types</div>
+        <div class="sidebar-item"><span>Events</span><span class="count">3</span></div>
+        <div class="sidebar-item"><span>Trips</span><span class="count">2</span></div>
+        <div class="sidebar-item active"><span>Notes</span><span class="count">28</span></div>
+        <div class="sidebar-item"><span>Tasks</span><span class="count">14</span></div>
+      </div>
+    </aside>
+
+    <main class="main">
+      <div class="page-header">
+        <h1>Notes</h1>
+        <p>Freeform text captures for ideas, research, and quick thoughts.</p>
+      </div>
+      <div class="page-toolbar">
+        <button class="btn">▦ Grid</button>
+        <button class="btn">☰ List</button>
+        <div class="search-inline">Search everything…</div>
+        <button class="btn">Last Updated ▾</button>
+        <button class="btn btn-primary">+ New Note</button>
+      </div>
+      <div class="card-grid">
+        <div class="note-card"><strong>Phase 1.3 memory-write</strong>Agent output earns residence…</div>
+        <div class="note-card"><strong>IPFS and Decentralized Protocols</strong>Research capture…</div>
+        <div class="note-card"><strong>Year View layout</strong>Quarter-column…</div>
+        <div class="note-card"><strong>Untitled</strong>Quick thought…</div>
+        <div class="note-card"><strong>Campus chrome</strong>Menubar sky + dock ground…</div>
+        <div class="note-card"><strong>☐ Checklist</strong>□ Item one □ Item two</div>
+      </div>
+    </main>
+  </div>
+
+  <!-- ═══ BOTTOM DOCK ═══ -->
+  <div class="dock-wrap">
+    <nav class="dock" aria-label="Campus ground" data-design-note="IconRail — three zones">
+      <!-- Left: memory palace + companion -->
+      <div class="dock-left">
+        <button class="dock-icon" type="button" title="Graph — memory palace" data-zone="workshop">🧠</button>
+        <button class="dock-icon" type="button" title="Chat — companion resident" data-zone="workshop">🤖</button>
+      </div>
+
+      <!-- Center: room doors by zone -->
+      <div class="dock-center" id="dock-center">
+        <button class="dock-icon dock-pill" type="button" data-route="notes" data-zone="lab">
+          <span class="pill-icon">📝</span><span>Notes</span>
+        </button>
+        <button class="dock-icon" type="button" title="Calendar" data-zone="lab">📅</button>
+        <button class="dock-icon" type="button" title="Mail" data-zone="lab">✉️</button>
+        <button class="dock-icon" type="button" title="Locations" data-zone="lab">📍</button>
+        <span class="dock-zone-sep" aria-hidden="true"></span>
+        <button class="dock-icon" type="button" title="Collections" data-zone="showroom">📚</button>
+        <button class="dock-icon" type="button" title="Pages" data-zone="showroom">📄</button>
+        <span class="dock-zone-sep" aria-hidden="true"></span>
+        <button class="dock-icon" type="button" title="Messages" data-zone="workshop">💬</button>
+        <span class="dock-zone-sep" aria-hidden="true"></span>
+        <button class="dock-icon" type="button" title="Settings" data-zone="vault">⚙️</button>
+      </div>
+
+      <!-- Right: Resident cluster -->
+      <div class="dock-right" data-design-note="AccountRailCluster">
+        <div class="local-pill" title="The disk is finite, and the disk is yours">
+          <span class="ldot"></span> Local
+        </div>
+        <button class="dock-icon" type="button" aria-label="Lobby — notifications" title="Lobby front door">
+          🔔<span class="badge-count">99+</span>
+        </button>
+        <button class="avatar-btn" type="button" aria-label="Resident menu" title="You"></button>
+        <button class="furnish-btn" type="button" aria-label="Furnish" title="Furnish — quick create in current zone">+</button>
+        <button class="dock-icon" type="button" aria-label="Capture" title="Quick capture ⌘⇧N">✎</button>
+      </div>
+    </nav>
+  </div>
+
+  <!-- Zone switcher (mock interaction aid) -->
+  <div class="zone-switcher" id="zone-switcher" hidden data-design-note="Mock-only — real app derives zone from route">
+    <div class="zone-switcher-title">Simulate zone (Z)</div>
+    <button class="zone-opt active" data-zone="lab"><span class="zone-swatch" style="background:var(--zone-lab)"></span>Lab</button>
+    <button class="zone-opt" data-zone="lobby"><span class="zone-swatch" style="background:var(--zone-lobby)"></span>Lobby</button>
+    <button class="zone-opt" data-zone="workshop"><span class="zone-swatch" style="background:var(--zone-workshop)"></span>Workshop</button>
+    <button class="zone-opt" data-zone="showroom"><span class="zone-swatch" style="background:var(--zone-showroom)"></span>Showroom</button>
+    <button class="zone-opt" data-zone="vault"><span class="zone-swatch" style="background:var(--zone-vault)"></span>Vault</button>
+  </div>
+
+  <!-- Omnibox overlay -->
+  <div class="omnibox-backdrop" id="omnibox" role="dialog" aria-modal="true" aria-label="Omnibox">
+    <div class="omnibox-card" onclick="event.stopPropagation()">
+      <div class="omnibox-input-row">
+        <span>✨</span>
+        <input type="text" placeholder="Search pages, or ask the agent anything…" autofocus />
+      </div>
+      <div class="omnibox-hint">Apparition — teleport when you know the address. Existing AppOmnibox overlay unchanged.</div>
+    </div>
+  </div>
+
+  <script>
+    const ZONE_META = {
+      lab:      { label: 'Lab',       icon: '🧪', id: 'entity:founder-facility-lab' },
+      lobby:    { label: 'Lobby',     icon: '🚪', id: 'entity:founder-facility-lobby' },
+      workshop: { label: 'Workshop',  icon: '🔨', id: 'entity:founder-facility-workshop' },
+      showroom: { label: 'Showroom',  icon: '✨', id: 'entity:founder-facility-showroom' },
+      vault:    { label: 'Vault',     icon: '🔒', id: 'entity:founder-facility-vault' },
+    };
+
+    const PROJECTIONS = {
+      notes:      { human: 'notes',      graph: 'projection:notes-grid' },
+      calendar:   { human: 'calendar', graph: 'projection:calendar-month' },
+      mail:       { human: 'mail',       graph: 'projection:mail-inbox' },
+      locations:  { human: 'locations',  graph: 'projection:locations-map' },
+      collections:{ human: 'collections',graph: 'projection:collections-browse' },
+      pages:      { human: 'pages',      graph: 'projection:pages-list' },
+      messages:   { human: 'messages',   graph: 'projection:messages-threads' },
+      settings:   { human: 'settings',   graph: 'projection:settings-root' },
+      graph:      { human: 'graph',      graph: 'projection:graph-viz' },
+      chat:       { human: 'chat',       graph: 'projection:agent-home' },
+    };
+
+    let currentZone = 'lab';
+    let currentProjection = 'notes';
+    let uriExpanded = false;
+
+    function renderUri() {
+      const zone = ZONE_META[currentZone];
+      const proj = PROJECTIONS[currentProjection] || PROJECTIONS.notes;
+      const el = document.getElementById('uri-content');
+      const expandIcon = document.getElementById('uri-expand-icon');
+      if (uriExpanded) {
+        el.innerHTML = `<span class="uri-zone">${zone.id}</span><span class="uri-sep">/</span><span>${proj.graph}</span>`;
+        expandIcon.textContent = '▴';
+      } else {
+        el.innerHTML = `<span class="uri-zone" id="uri-zone">${currentZone}</span><span class="uri-sep">›</span><span id="uri-projection">${proj.human}</span>`;
+        expandIcon.textContent = '▾';
+      }
+    }
+
+    function setZone(zone) {
+      currentZone = zone;
+      document.documentElement.dataset.campusZone = zone;
+      const meta = ZONE_META[zone];
+      document.getElementById('placard-label').textContent = meta.label;
+      document.getElementById('placard-icon').textContent = meta.icon;
+      document.querySelectorAll('.zone-opt').forEach(btn => {
+        btn.classList.toggle('active', btn.dataset.zone === zone);
+      });
+      renderUri();
+    }
+
+    function setProjection(key) {
+      if (PROJECTIONS[key]) {
+        currentProjection = key;
+        renderUri();
+      }
+    }
+
+    function toggleUri() {
+      uriExpanded = !uriExpanded;
+      document.getElementById('projection-uri').classList.toggle('expanded', uriExpanded);
+      renderUri();
+    }
+
+    // Dock navigation → zone + projection
+    document.querySelectorAll('.dock-icon[data-zone]').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const zone = btn.dataset.zone;
+        if (zone) setZone(zone);
+        const title = btn.getAttribute('title')?.toLowerCase() || '';
+        const projKey = Object.keys(PROJECTIONS).find(k => title.includes(k)) ||
+          (btn.dataset.route === 'notes' ? 'notes' : null);
+        if (projKey) setProjection(projKey);
+        document.querySelectorAll('.dock-pill').forEach(p => p.classList.remove('dock-pill'));
+        if (btn.dataset.route) btn.classList.add('dock-pill');
+      });
+    });
+
+    document.getElementById('projection-uri').addEventListener('click', toggleUri);
+
+    // Zone switcher
+    const switcher = document.getElementById('zone-switcher');
+    document.querySelectorAll('.zone-opt').forEach(btn => {
+      btn.addEventListener('click', () => setZone(btn.dataset.zone));
+    });
+
+    document.addEventListener('keydown', (e) => {
+      if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
+        e.preventDefault();
+        document.getElementById('omnibox').classList.add('open');
+      }
+      if (e.key === 'Escape') {
+        document.getElementById('omnibox').classList.remove('open');
+      }
+      if (e.key === 'z' && !e.metaKey && !e.ctrlKey && document.activeElement.tagName !== 'INPUT') {
+        switcher.hidden = !switcher.hidden;
+      }
+      if (e.key === 'u' && !e.metaKey && !e.ctrlKey && document.activeElement.tagName !== 'INPUT') {
+        toggleUri();
+      }
+    });
+
+    document.getElementById('omnibox-open').addEventListener('click', () => {
+      document.getElementById('omnibox').classList.add('open');
+    });
+    document.getElementById('omnibox').addEventListener('click', (e) => {
+      if (e.target.id === 'omnibox') e.currentTarget.classList.remove('open');
+    });
+
+    // Live clock
+    function tick() {
+      const now = new Date();
+      const fmt = now.toLocaleString('en-US', {
+        weekday: 'short', month: 'short', day: 'numeric',
+        hour: 'numeric', minute: '2-digit', hour12: true,
+      });
+      document.getElementById('clock-chip').textContent = fmt.replace(',', ' ·');
+    }
+    tick();
+    setInterval(tick, 1000);
+  </script>
+</body>
+</html>

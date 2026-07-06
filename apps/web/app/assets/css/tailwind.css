@@ -13,6 +13,7 @@
 @theme {
   --font-sans: Geist Mono, ui-monospace, monospace;
   --font-mono: JetBrains Mono, monospace;
+  --font-data: "IBM Plex Mono", ui-monospace, "SF Mono", Menlo, monospace;
   --font-serif: serif;
 
   --animate-shine: shine 3s ease-out infinite;
@@ -125,6 +126,7 @@
 
   --font-sans: var(--font-sans);
   --font-mono: var(--font-mono);
+  --font-data: var(--font-data);
   --font-serif: var(--font-serif);
 
   --radius-sm: calc(var(--radius) - 4px);
@@ -203,7 +205,8 @@
   --font-sans: Geist Mono, ui-monospace, monospace;
   --font-serif: serif;
   --font-mono: JetBrains Mono, monospace;
-  --radius: 0.75rem;
+  --font-data: "IBM Plex Mono", ui-monospace, "SF Mono", Menlo, monospace;
+  --zone-workshop: oklch(0.696 0.17 162.48);
   --shadow-x: 0px;
   --shadow-y: 1px;
   --shadow-blur: 4px;
@@ -266,7 +269,8 @@
   --font-sans: Geist Mono, ui-monospace, monospace;
   --font-serif: serif;
   --font-mono: JetBrains Mono, monospace;
-  --radius: 0.75rem;
+  --font-data: "IBM Plex Mono", ui-monospace, "SF Mono", Menlo, monospace;
+  --zone-workshop: oklch(0.696 0.17 162.48);
   --shadow-x: 0px;
   --shadow-y: 1px;
   --shadow-blur: 4px;
@@ -301,6 +305,31 @@
 
   .bg-surface-3 {
     background-color: var(--card);
+  }
+
+  .font-data {
+    font-family: var(--font-data);
+  }
+
+  /* Sheet / data grid surfaces */
+  .sheet-grid th,
+  .sheet-grid td {
+    font-variant-numeric: tabular-nums;
+  }
+
+  .sheet-cell-derived {
+    background-color: color-mix(in oklch, var(--warning) 6%, transparent);
+    color: var(--warning);
+  }
+
+  .sheet-cell-derived-negative {
+    color: var(--destructive);
+  }
+
+  .sheet-footer-row {
+    background-color: color-mix(in oklch, var(--warning) 5%, var(--muted));
+    color: var(--warning);
+    font-family: var(--font-data);
   }
 }
 
@@ -605,4 +634,34 @@ body.is-resizing * {
     box-shadow: 0 0 0 3px var(--primary) !important;
     transform: scale(1.02) !important;
   }
+}
+
+/* Campus zone accents — chrome frame only (set by CampusContextBreadcrumb) */
+[data-campus-zone='lab'] {
+  --campus-zone-accent: #6366f1;
+}
+[data-campus-zone='lobby'] {
+  --campus-zone-accent: #f59e0b;
+}
+[data-campus-zone='workshop'] {
+  --campus-zone-accent: #10b981;
+}
+[data-campus-zone='showroom'] {
+  --campus-zone-accent: #8b5cf6;
+}
+[data-campus-zone='vault'] {
+  --campus-zone-accent: #f43f5e;
+}
+
+.menubar-sep-accent {
+  background: color-mix(in oklch, var(--campus-zone-accent, var(--border)) 28%, var(--border));
+}
+
+.rail-nav-active-zone {
+  background: color-mix(in oklch, var(--campus-zone-accent, var(--muted)) 12%, transparent);
+  border: 1px solid color-mix(in oklch, var(--campus-zone-accent, var(--border)) 24%, transparent);
+}
+
+.rail-resident-btn {
+  @apply h-8 shrink-0;
 }
