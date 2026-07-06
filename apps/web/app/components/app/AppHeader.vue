@@ -51,14 +51,11 @@
   const showOrgPicker = computed(() => (organizations.value?.length || 0) > 1)
   const showAppPicker = computed(() => (applications.value?.length || 0) > 1)
   const { logoMarkForMode } = useBrandConfig()
-  const { userRole: _userRole, roleConfig } = useUserRole()
-  const { isInEditMode, toggleEditMode, canToggleEditMode, canManageMembers, isAdmin: _isAdmin } = useAdminUI()
-  const { totalMembers: _totalMembers, members: workspaceMembers, isUserOnline } = usePresence()
-  const { mode: adapterMode, entityBackend, ontologyBackend, isCloud } = useAdapterStatus()
-  const _isResizing = useState<boolean>('isSidebarResizing', () => false)
+  const { isInEditMode, canManageMembers } = useAdminUI()
+  const { members: workspaceMembers, isUserOnline } = usePresence()
+  const { isCloud } = useAdapterStatus()
 
-  // User avatar and auth
-  const { user, signOut } = useInstantAuth()
+  const { user } = useInstantAuth()
 
   const getInitials = (value: string) => {
     const cleaned = value.trim()
@@ -70,17 +67,27 @@
     return `${first}${second}`.toUpperCase().slice(0, 2)
   }
 
+  const initials = computed(() => {
+    const email = (user.value as any)?.email
+    const name = (user.value as any)?.name
+    return getInitials(name || email || 'User')
+  })
+
+  const currentUserAvatarUrl = computed(() => {
+    const u = user.value as { avatar?: string; imageURL?: string; picture?: string } | null
+    const candidate = u?.avatar || u?.imageURL || u?.picture
+    return typeof candidate === 'string' && candidate.trim() ? candidate.trim() : null
+  })
+
   const workspaceUsers = computed(() => {
-    // Current user + other members
     const all = []
 
-    // Add current user first
     if (user.value) {
       const color = getPresenceColor(user.value.id)
       all.push({
         id: user.value.id,
         name: (user.value as any).name || (user.value as any).email || 'You',
-        avatar: avatarUrl.value,
+        avatar: currentUserAvatarUrl.value,
         initials: initials.value,
         isOnline: true,
         isMe: true,
@@ -104,29 +111,8 @@
         }
       })
 
-    return [...all, ...others].slice(0, 5) // Limit to top 5
+    return [...all, ...others].slice(0, 5)
   })
-
-  const initials = computed(() => {
-    const email = (user.value as any)?.email
-    const name = (user.value as any)?.name
-    return getInitials(name || email || 'User')
-  })
-
-  const userDisplayName = computed(() => {
-    const u = user.value as any
-    return u?.name || u?.email || 'User'
-  })
-
-  const avatarUrl = computed(() => {
-    const u = user.value as any
-    const candidate = u?.avatar || u?.imageURL || u?.picture
-    return typeof candidate === 'string' && candidate.trim() ? candidate.trim() : null
-  })
-
-  const handleLogout = async () => {
-    await signOut()
-  }
 
   // Invite dialog
   const inviteDialogOpen = ref(false)
@@ -206,14 +192,6 @@
   const isSaving = saveState.isSaving
   const lastSaved = saveState.lastSaved
 
-  const adapterModeLabel = computed(() => (isCloud.value ? 'InstantDB' : 'Local'))
-  const adapterModeIcon = computed(() => (isCloud.value ? 'lucide:cloud' : 'lucide:hard-drive'))
-  const adapterModeClass = computed(() =>
-    isCloud.value
-      ? 'border-sky-500/30 bg-sky-500/10 text-sky-700 dark:text-sky-300'
-      : 'border-emerald-500/30 bg-emerald-500/10 text-emerald-700 dark:text-emerald-300',
-  )
-
   const _isCurrentPagePinned = computed(() => {
     return pinnedItems.isPinned(getCleanPath(route.path))
   })
@@ -250,6 +228,7 @@
           @click="toggleFullscreen" />
       </div>
       <!-- Logo / Home -->
+      <CampusNavigationControls />
       <div class="flex h-16 w-12 items-center justify-center shrink-0 border-b bg-transparent app-region-no-drag">
         <div
           class="flex h-9 w-9 items-center justify-center rounded-lg transition bg-transparent hover:bg-transparent"
@@ -262,9 +241,13 @@
         </div>
       </div>
 
+      <CampusChromeDivider class="app-region-no-drag" />
+
+      <CampusContextBreadcrumb />
+
       <!-- Organization Picker — hidden in single-org accounts (vault UX) -->
       <template v-if="showOrgPicker">
-        <span class="text-muted-foreground/30 mr-3 ml-1 rotate-10 text-lg">/</span>
+        <CampusChromeDivider class="mr-1 ml-0.5" />
         <ClientOnly>
           <OrganizationPicker />
         </ClientOnly>
@@ -272,20 +255,25 @@
 
       <!-- Workspace Picker — hidden in single-app accounts (vault UX) -->
       <template v-if="showAppPicker">
-        <span class="text-muted-foreground/30 mx-3 rotate-10 text-lg">/</span>
+        <CampusChromeDivider class="mx-1.5" />
         <ClientOnly>
           <AppPicker />
         </ClientOnly>
       </template>
 
-      <!-- Breadcrumbs have been moved in-page (see AppBreadcrumbs.vue) to keep the header globally stable. -->
+      <!-- Campus context (Local / Zone) precedes org/app when present. -->
     </nav>
 
-    <!-- Center: Omnibox (search + command palette trigger) -->
-    <AppOmnibox class="mx-2" />
+    <div class="flex-1 min-w-0" data-tauri-drag-region />
 
-    <!-- Right: actions (collection actions, save status, notifications, members, avatar) -->
-    <div class="flex shrink-0 items-center mr-4 gap-2 app-region-no-drag">
+    <!-- Right: sky menubar + contextual collection/cloud chrome -->
+    <div class="flex shrink-0 items-center mr-4 gap-3 app-region-no-drag">
+      <ClientOnly>
+        <AppMenubar />
+      </ClientOnly>
+
+      <AccountRailCluster v-if="user" placement="header" />
+
       <div v-if="showCollectionActions" class="flex items-center gap-1 mr-1">
         <UiButton
           v-if="canEditCollectionSchema"
@@ -331,30 +319,7 @@
         </UiSheetContent>
       </UiSheet>
 
-      <!-- Global Search lives in center AppOmnibox now (⌘K still works globally). -->
-
-      <UiTooltip>
-        <UiTooltipTrigger as-child>
-          <div
-            class="inline-flex h-7 shrink-0 items-center gap-1.5 rounded-full border px-2 text-[11px] font-medium tracking-wide"
-            :class="adapterModeClass"
-            :aria-label="`Data mode: ${adapterModeLabel}`">
-            <Icon :name="adapterModeIcon" class="h-3.5 w-3.5" />
-            <span>{{ adapterModeLabel }}</span>
-          </div>
-        </UiTooltipTrigger>
-        <UiTooltipContent side="bottom" :side-offset="8" class="max-w-xs">
-          <div class="space-y-1 text-xs">
-            <div class="font-medium">Data mode: {{ adapterModeLabel }}</div>
-            <div class="text-muted-foreground">Adapter: {{ adapterMode }}</div>
-            <div class="text-muted-foreground">Entities: {{ entityBackend }}</div>
-            <div class="text-muted-foreground">Ontologies: {{ ontologyBackend }}</div>
-          </div>
-        </UiTooltipContent>
-      </UiTooltip>
-
-      <!-- Trellis (local) notifications — TQL graph-backed -->
-      <NotificationBell />
+      <!-- Omnibox overlay mounted from AppMenubar (menubar variant). ⌘K via app.vue shortcut. -->
 
       <!-- Workspace Members & Presence -->
       <div v-if="showCloudCollaborationControls && workspaceUsers.length > 0" class="flex items-center ml-2 mr-1">
@@ -405,84 +370,8 @@
         Invite
       </UiButton>
 
-      <!-- User Avatar -->
-      <ClientOnly>
-        <div class="flex items-center gap-2">
-          <UiDropdownMenu>
-            <UiDropdownMenuTrigger as-child>
-              <button
-                type="button"
-                class="relative flex h-8 w-8 shrink-0 items-center justify-center overflow-hidden rounded-full border border-border bg-muted/50 text-xs font-semibold transition-all hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring active:scale-95"
-                aria-label="User menu">
-                <img
-                  v-if="avatarUrl"
-                  :src="avatarUrl"
-                  :alt="userDisplayName"
-                  class="h-full w-full rounded-full object-cover"
-                  referrerpolicy="no-referrer" />
-                <span v-else class="text-[10px] text-foreground/70">{{ initials }}</span>
-              </button>
-            </UiDropdownMenuTrigger>
-
-            <UiDropdownMenuContent align="end" class="w-[220px] shadow-2xl border-border/50">
-              <div class="px-2 py-2 mb-1 border-b bg-muted/5 flex items-center gap-3">
-                <div class="h-8 w-8 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
-                  <span class="text-[10px] font-bold text-primary">{{ initials }}</span>
-                </div>
-                <div class="flex-1 min-w-0">
-                  <div class="text-sm font-bold truncate leading-none">{{ userDisplayName }}</div>
-                  <div class="text-[10px] text-muted-foreground truncate mt-1 uppercase tracking-wider font-bold">
-                    {{ roleConfig?.label || 'Member' }}
-                  </div>
-                </div>
-              </div>
-
-              <UiDropdownMenuItem as-child>
-                <AppNavLink to="/settings/profile" class="flex w-full items-center">
-                  <Icon name="lucide:user" class="mr-2 h-4 w-4" />
-                  Profile settings
-                </AppNavLink>
-              </UiDropdownMenuItem>
-
-              <template v-if="canToggleEditMode">
-                <UiDropdownMenuSeparator />
-                <UiDropdownMenuItem class="flex items-center justify-between" @click="toggleEditMode">
-                  <div class="flex items-center gap-2">
-                    <Icon :name="isInEditMode ? 'lucide:pencil-off' : 'lucide:pencil'" class="h-4 w-4" />
-                    <span>{{ isInEditMode ? 'Exit Edit Mode' : 'Edit Mode' }}</span>
-                  </div>
-                  <div v-if="isInEditMode" class="h-2 w-2 rounded-full bg-amber-500 animate-pulse" />
-                </UiDropdownMenuItem>
-              </template>
-
-              <UiDropdownMenuSeparator />
-              <UiDropdownMenuItem class="text-destructive focus:text-destructive" @click="handleLogout">
-                <Icon name="lucide:log-out" class="mr-2 h-4 w-4" />
-                Sign out
-              </UiDropdownMenuItem>
-            </UiDropdownMenuContent>
-          </UiDropdownMenu>
-        </div>
-
-        <template #fallback>
-          <div class="flex items-center gap-2">
-            <div
-              class="flex h-8 w-8 items-center justify-center rounded-full bg-muted/50 text-[10px] font-semibold"
-              aria-label="User">
-              <Icon name="lucide:user" class="h-4 w-4 opacity-50" />
-            </div>
-            <div class="h-8 w-8 rounded-full bg-primary/20 animate-pulse" />
-          </div>
-        </template>
-      </ClientOnly>
-
       <!-- Member Invite Dialog -->
       <MemberInviteDialog v-model:open="inviteDialogOpen" />
-
-      <!-- Quick Create (persistent '+' button) -->
-      <ClientOnly>
-        <QuickCreateButton variant="primary" />
-      </ClientOnly>
     </div>
 
     <!-- Windows/Linux custom window controls -->

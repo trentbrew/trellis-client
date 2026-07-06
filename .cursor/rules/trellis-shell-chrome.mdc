@@ -1,0 +1,31 @@
+---
+description: Campus shell chrome invariants — resident cluster placement (always apply for UI work)
+alwaysApply: true
+---
+
+# Shell chrome — locked decisions
+
+## AccountRailCluster placement (human decision 2026-07-06)
+
+**`AccountRailCluster`** (bell, avatar, quick create, capture) mounts in **`AppHeader.vue` top-right** only:
+
+```vue
+<AccountRailCluster v-if="user" placement="header" />
+```
+
+**Never** mount `<AccountRailCluster>` on **`IconRail.vue`** — not on the dock end zone, not on left rail.
+
+### Why agents keep reverting this
+
+`docs/artifacts/campus_shell_chrome_p0b_spec.md` originally said "move cluster to dock". That goal is **cancelled**. Do not implement dock placement even if the spec body still mentions it.
+
+### Verification
+
+- Unit: `apps/web/app/components/layout/shell-chrome-placement.test.ts`
+- E2E: `apps/web/tests/e2e/campus-dock-resident.spec.ts` (bell/avatar in **header**, not rail)
+- `AGENTS.md` § Shell chrome
+
+### Menubar vs resident
+
+- **`AppMenubar`**: vitals, weather, clock, omnibox — ambient sky layer only
+- **`AccountRailCluster`**: bell, avatar, +, capture — header right, after menubar
