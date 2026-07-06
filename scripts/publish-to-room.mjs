@@ -81,7 +81,13 @@ const GREETER = {
       '</ul>',
       '<h3>Zones</h3>',
       '<p><strong>Lobby</strong> — notices like this one. <strong>Showroom</strong> —',
-      'published artifacts (decks, pages, demos). Both are public-read.</p>',
+      'published artifacts (decks, pages, demos, roadmap board). Both are public-read.</p>',
+      '<h3>Roadmap board (Showroom)</h3>',
+      '<p>A curated <strong>Issue</strong> board lives in Showroom — titles and statuses',
+      'only, not the owner\'s private backlog. Query it after <code>get_graph_summary</code>:</p>',
+      '<pre>find ?i where type = "Issue"</pre>',
+      '<p>Group by <code>status</code>: backlog → queue → in_progress → closed.</p>',
+      '<p>YC demo: <em>What\'s shipping for launch?</em> — pair with the Showroom deck query.</p>',
       '<h3>Write policy</h3>',
       '<p>Treat this room as world-readable. Writes must carry lane attribution',
       '(<code>X-Trellis-Lane</code> header or <code>lane</code> argument, e.g.',
@@ -178,6 +184,9 @@ class RoomMcp {
     if (msg?.error) throw new Error(`${name}: ${JSON.stringify(msg.error)}`)
     const content = msg?.result?.content?.[0]?.text
     if (msg?.result?.isError) throw new Error(`${name}: ${content?.slice(0, 300)}`)
+    if (typeof content === 'string' && /statement closed|authentication required/i.test(content)) {
+      throw new Error(`${name}: ${content.slice(0, 300)}`)
+    }
     try {
       return content ? JSON.parse(content) : null
     } catch {
@@ -200,6 +209,38 @@ function redact(node) {
     data[key] = value
   }
   return { data, dropped }
+}
+
+function loadVcsBoardManifest() {
+  const path = resolve(repoRoot, 'scripts/vcs-board-manifest.json')
+  return JSON.parse(readFileSync(path, 'utf8'))
+}
+
+async function publishVcsBoard(room, manifest) {
+  const board = loadVcsBoardManifest()
+  const zoneId = board.zoneId || 'entity:founder-facility-showroom'
+  const facilityId = board.facilityId || 'entity:founder-facility'
+  if (!ALLOWED_ZONES.has(zoneId)) {
+    throw new Error(`vcs-board zoneId ${zoneId} not in ALLOWED_ZONES`)
+  }
+
+  for (const issue of board.issues) {
+    const entityId = issue.id
+    const data = {
+      title: issue.title,
+      status: issue.status,
+      labels: issue.labels,
+      zoneId,
+      facilityId,
+      sourceGraph: 'vcs-board-manifest',
+      sourceId: entityId,
+      publishedBy: LANE,
+      publishedAt: new Date().toISOString(),
+    }
+    if (issue.assignee) data.assignee = issue.assignee
+    if (issue.priority) data.priority = issue.priority
+    await upsert(room, entityId, 'Issue', data, manifest, 'vcs-board')
+  }
 }
 
 async function upsert(room, entityId, type, data, manifest, kind) {
@@ -271,7 +312,10 @@ async function main() {
     }
   }
 
-  // 4. Links — only between entities that are both in the room
+  // 4. VCS board — curated Issue entities for remote MCP roadmap demo (M2.5)
+  await publishVcsBoard(room, manifest)
+
+  // 5. Links — only between entities that are both in the room
   let linkCount = 0
   for (const [entityId, node] of localById) {
     for (const link of node._links?.outgoing || []) {
@@ -293,7 +337,10 @@ async function main() {
       `${entry.action.padEnd(6)} [${entry.kind}] ${entry.entityId}  ${entry.type} — ${entry.title ?? ''}${redactedNote}`,
     )
   }
-  console.log(`\n${manifest.length} entities, ${linkCount} internal links${APPLY ? '' : ' (dry run — nothing written; use --apply)'}`)
+  const vcsCount = manifest.filter((e) => e.kind === 'vcs-board').length
+  console.log(
+    `\n${manifest.length} entities (${vcsCount} vcs-board), ${linkCount} internal links${APPLY ? '' : ' (dry run — nothing written; use --apply)'}`,
+  )
 }
 
 main().catch((err) => {
