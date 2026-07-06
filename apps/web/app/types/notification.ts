@@ -31,6 +31,10 @@ export type NotificationSource =
 
 export type NotificationPriority = 'critical' | 'high' | 'normal' | 'low'
 
+export type NotificationDelivery = 'interrupt' | 'passive'
+
+export type NotificationRequiredAction = 'none' | 'acknowledge' | 'navigate' | 'resolve'
+
 export type NotificationStatus = 'unread' | 'read' | 'archived' | 'snoozed'
 
 export type NotificationSound = 'success' | 'fail' | 'reminder' | 'email' | 'none'
@@ -90,6 +94,10 @@ export interface TrellisNotification {
   actions?: NotificationAction[]
   metadata?: Record<string, any>
   groupKey?: string
+  /** interrupt = bell/toast; passive = activity only */
+  delivery?: NotificationDelivery
+  /** EEMUA audit — why interrupt was granted */
+  requiredAction?: NotificationRequiredAction
   createdAt: string
   updatedAt?: string
 }
@@ -111,6 +119,8 @@ export interface CreateNotificationInput {
   actions?: NotificationAction[]
   metadata?: Record<string, any>
   groupKey?: string
+  delivery?: NotificationDelivery
+  requiredAction?: NotificationRequiredAction
 }
 
 // ============================================================================
@@ -152,4 +162,11 @@ export function resolveNotificationVisual(n: Pick<TrellisNotification, 'kind' | 
     color: n.color || base.color,
     sound: n.sound || base.sound,
   }
+}
+
+/** Legacy notifications without `delivery` default to interrupt (30-day compat). */
+export function resolveNotificationDelivery(
+  n: Pick<TrellisNotification, 'delivery'>,
+): NotificationDelivery {
+  return n.delivery ?? 'interrupt'
 }

@@ -40,7 +40,16 @@ const SILENT_AGENTS = new Set<string>([
 // ─── Helpers ───────────────────────────────────────────────────────────────
 
 function isEntityType(type: string | undefined): boolean {
-  return !!type && type === ENTITY_NAMESPACE
+  if (!type) return false
+  if (type === ENTITY_NAMESPACE) return true
+  // MCP/CLI pass ontology slug as `type` (e.g. person) — still an entity mutation.
+  return type !== NOTIFICATION_NAMESPACE
+}
+
+function isEntityMutation(ev: MutationEvent): boolean {
+  if (ev.type === NOTIFICATION_NAMESPACE) return false
+  if (isEntityType(ev.type)) return true
+  return ev.action === 'createNode' || ev.action === 'updateNode' || ev.action === 'deleteNode'
 }
 
 function getEntityTitle(entityId: string): string | null {
@@ -68,7 +77,7 @@ function getEntityField(entityId: string, attr: string): any {
 
 async function handleTaskCompletion(ev: MutationEvent): Promise<void> {
   if (ev.action !== 'updateNode') return
-  if (!isEntityType(ev.type)) return
+  if (!isEntityMutation(ev)) return
   const patch = ev.data || {}
   if (!('taskStatus' in patch)) return
   const nextStatus = String(patch.taskStatus || '').toLowerCase()
@@ -90,6 +99,8 @@ async function handleTaskCompletion(ev: MutationEvent): Promise<void> {
       source: 'graph',
       sourceId: `task-done:${entityId}:${ev.id}`,
       priority: 'low',
+      delivery: 'passive',
+      requiredAction: 'none',
       entityId,
       entityType: 'task',
       url: `#${entityId}`,
@@ -118,6 +129,8 @@ async function handleBulkOp(ev: MutationEvent): Promise<void> {
       source: 'ops',
       sourceId: `${ev.action}:${ev.id}`,
       priority: isDelete ? 'high' : 'normal',
+      delivery: 'passive',
+      requiredAction: 'none',
       actions: [{ id: 'dismiss', kind: 'dismiss', label: 'Dismiss', icon: 'lucide:x' }],
       metadata: { agentId: ev.agentId, count, query: ev.data?.query },
     },
@@ -141,7 +154,7 @@ const _bursts = new Map<string, BurstState>()
 
 function recordAgentCreate(ev: MutationEvent): void {
   if (ev.action !== 'createNode') return
-  if (!isEntityType(ev.type)) return
+  if (!isEntityMutation(ev)) return
   if (!ev.agentId || SILENT_AGENTS.has(ev.agentId)) return
   if (ev.agentId === 'browser') return // User-initiated creates — don't notify self
   const entityId = ev.entityId
@@ -198,6 +211,8 @@ async function flushAgentBurst(agent: string): Promise<void> {
       source: agent.includes('sync') || agent.includes('notifier') ? 'job' : 'ai',
       sourceId: `agent-burst:${agent}:${state.firstEventAt}`,
       priority: 'low',
+      delivery: 'passive',
+      requiredAction: 'none',
       entityId: count === 1 ? firstId : undefined,
       url: count === 1 ? `#${firstId}` : undefined,
       actions:

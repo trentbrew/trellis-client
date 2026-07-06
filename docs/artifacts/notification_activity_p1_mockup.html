@@ -1,0 +1,639 @@
+<!DOCTYPE html>
+<!-- trellis-design: slug=notification_activity_p1 parent=TRL-PROP-alarm-discipline-p1 -->
+<html lang="en" data-campus-zone="lobby">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Trellis — Alarm vs Activity (TRL-PROP-alarm-discipline-p1 design mock)</title>
+  <style>
+    :root {
+      --background: #0a0a0c;
+      --surface: #141418;
+      --surface-elevated: #1a1a20;
+      --surface-glass: rgba(20, 20, 24, 0.65);
+      --text: #e8e8ec;
+      --text-muted: #888894;
+      --primary: #6366f1;
+      --border: #2a2a32;
+      --zone-lobby: #f59e0b;
+      --interrupt: #ef4444;
+      --interrupt-muted: rgba(239, 68, 68, 0.12);
+      --passive: #64748b;
+      --passive-muted: rgba(100, 116, 139, 0.10);
+      --success: #34d399;
+      --radius-sm: 6px;
+      --radius-md: 10px;
+      --radius-lg: 12px;
+      --radius-pill: 9999px;
+      --font: "IBM Plex Sans", system-ui, -apple-system, sans-serif;
+      --font-mono: "IBM Plex Mono", ui-monospace, monospace;
+      --campus-zone-accent: var(--zone-lobby);
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: var(--font);
+      font-size: 13px;
+      background: var(--background);
+      color: var(--text);
+      min-height: 100dvh;
+      line-height: 1.5;
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      *, *::before, *::after { transition: none !important; animation: none !important; }
+    }
+
+    /* ── Design legend ── */
+    .legend {
+      position: fixed;
+      top: 8px;
+      left: 50%;
+      transform: translateX(-50%);
+      z-index: 100;
+      display: flex;
+      gap: 6px;
+      padding: 4px 12px;
+      background: rgba(0,0,0,0.9);
+      border: 1px dashed var(--zone-lobby);
+      border-radius: var(--radius-pill);
+      font-size: 10px;
+      color: var(--text-muted);
+    }
+    .legend strong { color: var(--zone-lobby); }
+
+    /* ── View switcher ── */
+    .switcher {
+      display: flex;
+      justify-content: center;
+      gap: 8px;
+      padding: 48px 16px 16px;
+    }
+    .switcher button {
+      font-family: var(--font);
+      font-size: 11px;
+      font-weight: 600;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+      padding: 8px 16px;
+      border-radius: var(--radius-pill);
+      border: 1px solid var(--border);
+      background: var(--surface);
+      color: var(--text-muted);
+      cursor: pointer;
+    }
+    .switcher button:hover { color: var(--text); border-color: var(--text-muted); }
+    .switcher button.active {
+      background: color-mix(in oklch, var(--zone-lobby) 15%, var(--surface));
+      border-color: color-mix(in oklch, var(--zone-lobby) 50%, var(--border));
+      color: var(--text);
+    }
+    .switcher button:focus-visible {
+      outline: 2px solid var(--zone-lobby);
+      outline-offset: 2px;
+    }
+
+    .view { display: none; padding: 0 16px 48px; }
+    .view.active { display: flex; justify-content: center; }
+
+    /* ── Alarm panel ── */
+    .alarm-panel {
+      width: 420px;
+      background: var(--surface);
+      border: 1px solid color-mix(in oklch, var(--border) 80%, transparent);
+      border-radius: var(--radius-lg);
+      box-shadow: 0 25px 50px -12px rgba(0,0,0,0.6);
+      overflow: hidden;
+    }
+    .alarm-header {
+      padding: 16px;
+      border-bottom: 1px solid var(--border);
+      background: color-mix(in oklch, var(--surface) 80%, var(--interrupt-muted));
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+    }
+    .alarm-header h2 {
+      font-size: 16px;
+      font-weight: 600;
+      letter-spacing: -0.02em;
+    }
+    .alarm-header p {
+      font-size: 11px;
+      color: var(--text-muted);
+      margin-top: 2px;
+    }
+    .btn-ghost {
+      font-size: 10px;
+      font-weight: 600;
+      padding: 6px 12px;
+      border-radius: var(--radius-sm);
+      border: none;
+      background: transparent;
+      color: var(--primary);
+      cursor: pointer;
+    }
+    .btn-ghost:hover { background: color-mix(in oklch, var(--primary) 10%, transparent); }
+
+    .alarm-list { max-height: 400px; overflow-y: auto; }
+
+    .row-interrupt {
+      position: relative;
+      display: flex;
+      gap: 12px;
+      padding: 12px;
+      border-bottom: 1px solid var(--border);
+      cursor: pointer;
+      background: color-mix(in oklch, var(--interrupt) 5%, transparent);
+    }
+    .row-interrupt:hover { background: color-mix(in oklch, var(--interrupt) 8%, transparent); }
+    .row-interrupt::before {
+      content: "";
+      position: absolute;
+      left: 0;
+      top: 8px;
+      bottom: 8px;
+      width: 3px;
+      border-radius: 0 2px 2px 0;
+      background: var(--interrupt);
+    }
+    .row-interrupt .icon {
+      width: 36px;
+      height: 36px;
+      border-radius: var(--radius-md);
+      background: var(--interrupt-muted);
+      color: var(--interrupt);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+      font-size: 16px;
+      box-shadow: inset 0 0 0 1px color-mix(in oklch, var(--interrupt) 30%, transparent);
+    }
+    .row-body { flex: 1; min-width: 0; }
+    .row-title {
+      font-size: 13px;
+      font-weight: 600;
+      display: flex;
+      justify-content: space-between;
+      gap: 8px;
+    }
+    .row-time {
+      font-size: 10px;
+      font-weight: 700;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      white-space: nowrap;
+    }
+    .row-desc {
+      font-size: 12px;
+      color: var(--text-muted);
+      margin-top: 4px;
+      line-height: 1.4;
+    }
+    .chips { display: flex; gap: 6px; margin-top: 8px; flex-wrap: wrap; align-items: center; }
+    .chip {
+      font-size: 9px;
+      font-weight: 800;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      padding: 2px 6px;
+      border-radius: 4px;
+      border: 1px solid var(--border);
+      background: color-mix(in oklch, var(--surface) 60%, transparent);
+      color: var(--text-muted);
+    }
+    .chip-action {
+      border-color: color-mix(in oklch, var(--interrupt) 40%, transparent);
+      background: var(--interrupt-muted);
+      color: var(--interrupt);
+    }
+    .row-actions { display: flex; gap: 4px; margin-top: 8px; }
+    .btn-sm {
+      font-size: 10px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      padding: 4px 10px;
+      border-radius: var(--radius-sm);
+      border: 1px solid var(--border);
+      background: var(--surface-elevated);
+      color: var(--text);
+      cursor: pointer;
+    }
+    .btn-sm.primary {
+      background: color-mix(in oklch, var(--primary) 20%, var(--surface));
+      border-color: color-mix(in oklch, var(--primary) 40%, transparent);
+      color: var(--primary);
+    }
+
+    .alarm-empty {
+      padding: 48px 24px;
+      text-align: center;
+      color: var(--text-muted);
+    }
+    .alarm-empty .icon-big { font-size: 48px; opacity: 0.15; margin-bottom: 12px; }
+    .alarm-empty h3 { font-size: 14px; font-weight: 600; color: var(--text); }
+    .alarm-empty p { font-size: 12px; margin-top: 4px; }
+
+    .alarm-footer {
+      padding: 12px;
+      border-top: 1px solid var(--border);
+      background: color-mix(in oklch, var(--surface) 95%, var(--zone-lobby));
+      text-align: center;
+    }
+    .alarm-footer a {
+      font-size: 12px;
+      font-weight: 700;
+      color: var(--text-muted);
+      text-decoration: none;
+    }
+    .alarm-footer a:hover { color: var(--zone-lobby); }
+
+    /* ── Activity page ── */
+    .activity-page {
+      width: 100%;
+      max-width: 720px;
+      background: var(--surface-elevated);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-lg);
+      overflow: hidden;
+    }
+    .activity-zone-bar {
+      height: 3px;
+      background: linear-gradient(90deg, var(--zone-lobby), transparent);
+    }
+    .activity-header {
+      padding: 24px 24px 16px;
+      border-bottom: 1px solid var(--border);
+    }
+    .eyebrow {
+      font-size: 10px;
+      font-weight: 600;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: var(--zone-lobby);
+      margin-bottom: 8px;
+    }
+    .activity-header h1 {
+      font-size: 18px;
+      font-weight: 600;
+      letter-spacing: -0.02em;
+    }
+    .activity-header .subtitle {
+      font-size: 12px;
+      color: var(--text-muted);
+      margin-top: 4px;
+    }
+    .tabs {
+      display: flex;
+      gap: 4px;
+      margin-top: 16px;
+    }
+    .tab {
+      font-size: 11px;
+      font-weight: 600;
+      padding: 6px 14px;
+      border-radius: var(--radius-pill);
+      border: 1px solid transparent;
+      background: transparent;
+      color: var(--text-muted);
+      cursor: pointer;
+    }
+    .tab.active {
+      background: var(--surface);
+      border-color: var(--border);
+      color: var(--text);
+    }
+    .tab:focus-visible { outline: 2px solid var(--zone-lobby); outline-offset: 2px; }
+
+    .day-group { padding: 0; }
+    .day-label {
+      position: sticky;
+      top: 0;
+      padding: 8px 24px;
+      font-size: 10px;
+      font-weight: 600;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      color: var(--text-muted);
+      background: color-mix(in oklch, var(--surface-elevated) 90%, transparent);
+      backdrop-filter: blur(8px);
+      border-bottom: 1px solid var(--border);
+    }
+
+    .row-passive {
+      display: flex;
+      gap: 12px;
+      padding: 12px 24px;
+      border-bottom: 1px solid color-mix(in oklch, var(--border) 60%, transparent);
+      cursor: pointer;
+      opacity: 0.92;
+    }
+    .row-passive:hover { background: color-mix(in oklch, var(--passive) 6%, transparent); }
+    .row-passive.read { opacity: 0.65; }
+    .row-passive .icon {
+      width: 32px;
+      height: 32px;
+      border-radius: var(--radius-sm);
+      background: var(--passive-muted);
+      color: var(--passive);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+      font-size: 14px;
+    }
+    .row-passive .row-title { font-weight: 500; }
+    .row-passive.read .row-title { font-weight: 400; color: var(--text-muted); }
+    .chip-status {
+      border-color: color-mix(in oklch, var(--passive) 30%, transparent);
+      color: var(--passive);
+    }
+
+    .activity-page .row-interrupt {
+      padding: 12px 24px;
+      background: color-mix(in oklch, var(--interrupt) 4%, var(--surface-elevated));
+    }
+
+    .activity-footer {
+      padding: 16px 24px;
+      border-top: 1px solid var(--border);
+      font-size: 11px;
+      color: var(--text-muted);
+    }
+    .activity-footer a {
+      color: var(--primary);
+      text-decoration: none;
+      font-weight: 600;
+    }
+    .activity-footer a:hover { text-decoration: underline; }
+
+    /* ── Rail mini mock ── */
+    .rail-mock {
+      margin-top: 24px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 8px;
+    }
+    .rail-bar {
+      display: flex;
+      gap: 8px;
+      padding: 8px 16px;
+      background: var(--surface-glass);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-pill);
+      backdrop-filter: blur(16px);
+    }
+    .rail-btn {
+      width: 32px;
+      height: 32px;
+      border-radius: 50%;
+      border: 1px solid var(--border);
+      background: var(--surface);
+      color: var(--text-muted);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      position: relative;
+      font-size: 14px;
+    }
+    .rail-btn.bell { color: var(--text); }
+    .rail-btn .badge {
+      position: absolute;
+      top: 2px;
+      right: 2px;
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: var(--interrupt);
+      box-shadow: 0 0 0 2px var(--surface);
+    }
+    .rail-btn .lobby-dot {
+      position: absolute;
+      bottom: 0;
+      right: 0;
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background: var(--zone-lobby);
+      box-shadow: 0 0 0 2px var(--surface);
+    }
+    .rail-note {
+      font-size: 10px;
+      color: var(--text-muted);
+      text-align: center;
+      max-width: 320px;
+    }
+
+    [data-design-note] {
+      outline: 1px dashed color-mix(in oklch, var(--zone-lobby) 50%, transparent);
+      outline-offset: 2px;
+    }
+  </style>
+</head>
+<body>
+  <div class="legend" aria-hidden="true">
+    <strong>TRL-PROP-alarm-discipline-p1</strong> · EEMUA split · interrupt = bell · passive = activity
+  </div>
+
+  <nav class="switcher" aria-label="Mock views">
+    <button type="button" class="active" data-view="alarm">Alarm panel</button>
+    <button type="button" data-view="alarm-empty">Bell empty</button>
+    <button type="button" data-view="activity">Activity stream</button>
+    <button type="button" data-view="rail">Rail placement</button>
+  </nav>
+
+  <!-- ── View: Alarm panel (interrupt only) ── -->
+  <section class="view active" id="view-alarm" aria-label="Alarm panel mock">
+    <div class="alarm-panel" data-design-note="Interrupt-only dropdown — 420px, matches NotificationBell">
+      <header class="alarm-header">
+        <div>
+          <h2>Action required</h2>
+          <p>1 needs your attention</p>
+        </div>
+        <button type="button" class="btn-ghost">Mark all read</button>
+      </header>
+      <div class="alarm-list">
+        <article class="row-interrupt" data-design-note="Only delivery=interrupt rows appear here">
+          <div class="icon" aria-hidden="true">⚠</div>
+          <div class="row-body">
+            <div class="row-title">
+              <span>Gmail connection lost</span>
+              <span class="row-time">2m</span>
+            </div>
+            <p class="row-desc">Reconnect to restore mail sync.</p>
+            <div class="chips">
+              <span class="chip">ops</span>
+              <span class="chip chip-action">Action</span>
+            </div>
+            <div class="row-actions">
+              <button type="button" class="btn-sm primary">Reconnect</button>
+              <button type="button" class="btn-sm">Dismiss</button>
+            </div>
+          </div>
+        </article>
+      </div>
+      <footer class="alarm-footer">
+        <a href="#activity">View activity in Lobby →</a>
+      </footer>
+    </div>
+  </section>
+
+  <!-- ── View: Bell empty (passive not shown) ── -->
+  <section class="view" id="view-alarm-empty" aria-label="Empty alarm panel">
+    <div class="alarm-panel">
+      <header class="alarm-header">
+        <div>
+          <h2>All caught up</h2>
+          <p>No action required</p>
+        </div>
+      </header>
+      <div class="alarm-empty">
+        <div class="icon-big" aria-hidden="true">🔔</div>
+        <h3>All caught up!</h3>
+        <p>Passive status lives in Lobby activity — no alarm fatigue.</p>
+      </div>
+      <footer class="alarm-footer">
+        <a href="#activity">View activity in Lobby →</a>
+      </footer>
+    </div>
+  </section>
+
+  <!-- ── View: Activity stream ── -->
+  <section class="view" id="view-activity" aria-label="Activity page mock">
+    <div class="activity-page" data-design-note="Route: /lobby/activity — unified timeline, passive + interrupt styling">
+      <div class="activity-zone-bar" aria-hidden="true"></div>
+      <header class="activity-header">
+        <p class="eyebrow">Lobby · Activity</p>
+        <h1>Activity</h1>
+        <p class="subtitle">Status and sync — review when ready.</p>
+        <div class="tabs" role="tablist">
+          <button type="button" class="tab active" role="tab" aria-selected="true">Status</button>
+          <button type="button" class="tab" role="tab" aria-selected="false">Alerts history</button>
+        </div>
+      </header>
+
+      <div class="day-group">
+        <div class="day-label">Today</div>
+
+        <article class="row-passive" data-design-note="delivery=passive — no left bar, STATUS chip, smaller icon">
+          <div class="icon" aria-hidden="true">✓</div>
+          <div class="row-body">
+            <div class="row-title">
+              <span>Task completed</span>
+              <span class="row-time">4m</span>
+            </div>
+            <p class="row-desc">Deploy v2 marked done.</p>
+            <div class="chips">
+              <span class="chip">graph</span>
+              <span class="chip chip-status">Status</span>
+            </div>
+          </div>
+        </article>
+
+        <article class="row-passive">
+          <div class="icon" aria-hidden="true">↻</div>
+          <div class="row-body">
+            <div class="row-title">
+              <span>Bulk update finished</span>
+              <span class="row-time">1h</span>
+            </div>
+            <p class="row-desc">12 entities updated.</p>
+            <div class="chips">
+              <span class="chip">graph</span>
+              <span class="chip chip-status">Status</span>
+            </div>
+          </div>
+        </article>
+
+        <article class="row-interrupt" data-design-note="Interrupt also visible in activity for audit — distinct styling">
+          <div class="icon" aria-hidden="true">⚠</div>
+          <div class="row-body">
+            <div class="row-title">
+              <span>Gmail connection lost</span>
+              <span class="row-time">2m</span>
+            </div>
+            <p class="row-desc">Also in bell — action required.</p>
+            <div class="chips">
+              <span class="chip">ops</span>
+              <span class="chip chip-action">Action</span>
+            </div>
+          </div>
+        </article>
+      </div>
+
+      <div class="day-group">
+        <div class="day-label">Yesterday</div>
+        <article class="row-passive read">
+          <div class="icon" aria-hidden="true">✉</div>
+          <div class="row-body">
+            <div class="row-title">
+              <span>12 messages synced</span>
+              <span class="row-time">1d</span>
+            </div>
+            <div class="chips">
+              <span class="chip">email</span>
+              <span class="chip chip-status">Status</span>
+            </div>
+          </div>
+        </article>
+      </div>
+
+      <footer class="activity-footer">
+        Mutation log (TQL ops) lives at
+        <a href="#">Ontologies → Activity log</a> — separate from notification status.
+      </footer>
+    </div>
+  </section>
+
+  <!-- ── View: Rail placement ── -->
+  <section class="view" id="view-rail" aria-label="Icon rail placement">
+    <div class="rail-mock">
+      <div class="rail-bar" data-design-note="Same AlarmPanel content — placement prop only changes popover side">
+        <div class="rail-btn" title="Local">L</div>
+        <div class="rail-btn bell" title="Lobby — notifications (1 unread)">
+          🔔
+          <span class="badge" aria-hidden="true"></span>
+        </div>
+        <div class="rail-btn" title="Account">👤</div>
+        <div class="rail-btn" title="Activity (new status)" data-design-note="Lobby dot = unread passive, no count">
+          📋
+          <span class="lobby-dot" aria-hidden="true"></span>
+        </div>
+      </div>
+      <p class="rail-note">
+        Bell badge = interrupt count only. Separate nav dot (amber) = unread passive on activity feed — no numeric badge.
+      </p>
+    </div>
+  </section>
+
+  <script>
+    const buttons = document.querySelectorAll('.switcher button');
+    const views = {
+      alarm: document.getElementById('view-alarm'),
+      'alarm-empty': document.getElementById('view-alarm-empty'),
+      activity: document.getElementById('view-activity'),
+      rail: document.getElementById('view-rail'),
+    };
+    buttons.forEach((btn) => {
+      btn.addEventListener('click', () => {
+        buttons.forEach((b) => b.classList.remove('active'));
+        btn.classList.add('active');
+        Object.values(views).forEach((v) => v.classList.remove('active'));
+        views[btn.dataset.view].classList.add('active');
+      });
+    });
+    document.querySelectorAll('.tab').forEach((tab, i, tabs) => {
+      tab.addEventListener('click', () => {
+        tabs.forEach((t) => { t.classList.remove('active'); t.setAttribute('aria-selected', 'false'); });
+        tab.classList.add('active');
+        tab.setAttribute('aria-selected', 'true');
+      });
+    });
+  </script>
+</body>
+</html>

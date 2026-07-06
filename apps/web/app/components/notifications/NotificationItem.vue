@@ -1,54 +1,64 @@
 <template>
   <div
     class="relative flex cursor-pointer gap-3 border-b p-3 transition-all duration-200 group last:border-0"
-    :class="[
-      isUnread ? 'bg-primary/5 hover:bg-primary/10' : 'bg-transparent hover:bg-muted/30',
-    ]"
+    :class="rowClass"
+    :data-delivery="resolvedDelivery"
+    :data-notification-title="notification.title"
     @click="handleRowClick">
-    <!-- Unread indicator -->
+    <!-- Interrupt accent bar -->
     <div
-      v-if="isUnread"
-      class="absolute left-0 top-2 bottom-2 w-1 rounded-r-full bg-primary transition-all duration-200 group-hover:w-1.5"></div>
+      v-if="isInterrupt && isUnread"
+      class="absolute left-0 top-2 bottom-2 w-[3px] rounded-r-full bg-destructive transition-all duration-200 group-hover:w-1" />
+
+    <!-- Unread indicator (non-interrupt legacy) -->
+    <div
+      v-else-if="isUnread && !isInterrupt"
+      class="absolute left-0 top-2 bottom-2 w-1 rounded-r-full bg-primary/60 transition-all duration-200 group-hover:w-1.5" />
 
     <!-- Icon -->
     <div
-      class="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl ring-1 transition-all duration-200 group-hover:scale-105"
+      class="flex shrink-0 items-center justify-center ring-1 transition-all duration-200 group-hover:scale-105"
+      :class="iconClass"
       :style="iconStyle">
       <Icon :name="visual.icon" class="h-4.5 w-4.5" />
     </div>
 
-    <div class="flex-1 min-w-0 space-y-1">
+    <div class="min-w-0 flex-1 space-y-1">
       <div class="flex items-center justify-between gap-2">
-        <span
-          class="text-sm font-semibold tracking-tight truncate"
-          :class="isUnread ? 'text-foreground' : 'text-muted-foreground/80'">
+        <span class="truncate text-sm tracking-tight" :class="titleClass">
           {{ notification.title }}
         </span>
-        <span class="text-[10px] font-bold text-muted-foreground/60 uppercase tracking-widest tabular-nums whitespace-nowrap">
+        <span
+          class="whitespace-nowrap text-[10px] font-bold uppercase tracking-widest text-muted-foreground/60 tabular-nums">
           {{ timeAgo(notification.createdAt) }}
         </span>
       </div>
 
       <p
         v-if="notification.body"
-        class="text-xs text-muted-foreground line-clamp-2 leading-relaxed">
+        class="line-clamp-2 text-xs leading-relaxed text-muted-foreground">
         {{ notification.body }}
       </p>
 
-      <div class="flex items-center gap-1.5 pt-1 flex-wrap">
+      <div class="flex flex-wrap items-center gap-1.5 pt-1">
         <span
-          class="rounded-md px-1.5 py-0.5 text-[9px] font-black uppercase tracking-[0.1em] ring-1 ring-border/40 bg-muted/40 text-muted-foreground">
+          class="rounded-md bg-muted/40 px-1.5 py-0.5 text-[9px] font-black uppercase tracking-[0.1em] text-muted-foreground ring-1 ring-border/40">
           {{ notification.source }}
         </span>
         <span
+          class="rounded-md px-1.5 py-0.5 text-[9px] font-black uppercase tracking-[0.1em] ring-1"
+          :class="deliveryChipClass">
+          {{ isInterrupt ? 'Action' : 'Status' }}
+        </span>
+        <span
           v-if="notification.priority && notification.priority !== 'normal'"
-          class="rounded-md px-1.5 py-0.5 text-[9px] font-black uppercase tracking-[0.1em] ring-1 ring-destructive/30 bg-destructive/10 text-destructive">
+          class="rounded-md bg-destructive/10 px-1.5 py-0.5 text-[9px] font-black uppercase tracking-[0.1em] text-destructive ring-1 ring-destructive/30">
           {{ notification.priority }}
         </span>
 
         <div class="flex-1" />
 
-        <div class="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+        <div class="flex items-center gap-1 opacity-0 transition-opacity group-hover:opacity-100">
           <UiButton
             v-for="a in (notification.actions || []).slice(0, 3)"
             :key="a.id"
@@ -90,10 +100,17 @@
 </template>
 
 <script setup lang="ts">
-import type { NotificationAction, TrellisNotification } from '~/types/notification'
+import type { NotificationAction, NotificationDelivery, TrellisNotification } from '~/types/notification'
+import { resolveNotificationDelivery } from '~/types/notification'
 import { useTrellisNotifications } from '~/composables/useTrellisNotifications'
 
-const props = defineProps<{ notification: TrellisNotification }>()
+const props = withDefaults(
+  defineProps<{
+    notification: TrellisNotification
+    deliveryVariant?: 'auto' | 'interrupt' | 'passive'
+  }>(),
+  { deliveryVariant: 'auto' },
+)
 
 const { markAsRead, snooze, archive, dismiss, runAction, resolveNotificationVisual, timeAgo } =
   useTrellisNotifications()
@@ -101,8 +118,36 @@ const { markAsRead, snooze, archive, dismiss, runAction, resolveNotificationVisu
 const isUnread = computed(() => props.notification.status === 'unread')
 const visual = computed(() => resolveNotificationVisual(props.notification))
 
-// Tailwind color token → subtle tinted chip using CSS var mapping.
-// Matches the existing graph/entity color-token approach (bg/10, text-/, ring-/30).
+const resolvedDelivery = computed<NotificationDelivery>(() => {
+  if (props.deliveryVariant === 'auto') return resolveNotificationDelivery(props.notification)
+  return props.deliveryVariant
+})
+
+const isInterrupt = computed(() => resolvedDelivery.value === 'interrupt')
+
+const rowClass = computed(() => {
+  if (isInterrupt.value && isUnread.value) return 'bg-destructive/5 hover:bg-destructive/10'
+  if (isUnread.value) return 'bg-primary/5 hover:bg-primary/10'
+  if (!isInterrupt.value) return 'bg-transparent hover:bg-muted/30 opacity-90'
+  return 'bg-transparent hover:bg-muted/30'
+})
+
+const titleClass = computed(() => {
+  if (isInterrupt.value && isUnread.value) return 'font-semibold text-foreground'
+  if (isUnread.value) return 'font-medium text-foreground'
+  return 'font-normal text-muted-foreground/80'
+})
+
+const iconClass = computed(() =>
+  isInterrupt.value ? 'h-9 w-9 rounded-xl' : 'h-8 w-8 rounded-lg opacity-90',
+)
+
+const deliveryChipClass = computed(() =>
+  isInterrupt.value
+    ? 'bg-destructive/10 text-destructive ring-destructive/30'
+    : 'bg-slate-500/10 text-slate-400 ring-slate-500/30',
+)
+
 const TOKEN_TO_RGB: Record<string, string> = {
   emerald: '16 185 129',
   red: '239 68 68',
@@ -124,8 +169,9 @@ const TOKEN_TO_RGB: Record<string, string> = {
 
 const iconStyle = computed(() => {
   const rgb = TOKEN_TO_RGB[visual.value.color] || TOKEN_TO_RGB.sky!
+  const alpha = isInterrupt.value ? 0.15 : 0.1
   return {
-    backgroundColor: `rgb(${rgb} / 0.15)`,
+    backgroundColor: `rgb(${rgb} / ${alpha})`,
     color: `rgb(${rgb})`,
     boxShadow: `inset 0 0 0 1px rgb(${rgb} / 0.30)`,
   }

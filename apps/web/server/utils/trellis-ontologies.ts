@@ -1776,7 +1776,7 @@ export const NOTIFICATION_NAMESPACE = 'notification'
 const notificationOntology: SchemaDefinition = {
   '@id': `trellis:schema/${NOTIFICATION_NAMESPACE}`,
   '@type': 'trellis:Schema',
-  version: '1.0.0',
+  version: '1.1.0',
   tier: 'system',
   fields: [
     f('title', 'title', { required: true }),
@@ -1793,6 +1793,14 @@ const notificationOntology: SchemaDefinition = {
     }),
     f('sourceId', 'rich_text'),
     f('priority', 'select', { selectOptions: ['critical', 'high', 'normal', 'low'], defaultValue: 'normal' }),
+    f('delivery', 'select', {
+      selectOptions: ['interrupt', 'passive'],
+      defaultValue: 'passive',
+    }),
+    f('requiredAction', 'select', {
+      selectOptions: ['none', 'acknowledge', 'navigate', 'resolve'],
+      defaultValue: 'none',
+    }),
     f('status', 'select', {
       selectOptions: ['unread', 'read', 'archived', 'snoozed'],
       required: true,

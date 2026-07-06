@@ -8,6 +8,7 @@
 
 import { useTrellisKernel, pushMutationLog } from '../plugins/trellis-kernel'
 import { emitMutation } from './trellis-events'
+import { admitNotification, recordNotificationOutcome } from './notification-policy'
 import type { CreateNotificationInput, NotificationAction, TrellisNotification } from '../../app/types/notification'
 import { NOTIFICATION_NAMESPACE } from './trellis-ontologies'
 
@@ -47,27 +48,30 @@ export async function createNotification(
   opts: { agentId?: string } = {},
 ): Promise<TrellisNotification> {
   const kernel = useTrellisKernel()
+  const admitted = admitNotification(input)
   const id = newId()
   const now = new Date().toISOString()
   const agent = opts.agentId || 'system'
 
   const record: Record<string, any> = {
-    title: input.title,
-    body: input.body,
-    kind: input.kind,
-    source: input.source,
-    sourceId: input.sourceId,
-    priority: input.priority || 'normal',
+    title: admitted.title,
+    body: admitted.body,
+    kind: admitted.kind,
+    source: admitted.source,
+    sourceId: admitted.sourceId,
+    priority: admitted.priority || 'normal',
+    delivery: admitted.delivery,
+    requiredAction: admitted.requiredAction,
     status: 'unread',
-    icon: input.icon,
-    color: input.color,
-    sound: input.sound,
-    entityId: input.entityId,
-    entityType: input.entityType,
-    url: input.url,
-    actions: serializeActions(input.actions),
-    metadata: serializeMetadata(input.metadata),
-    groupKey: input.groupKey,
+    icon: admitted.icon,
+    color: admitted.color,
+    sound: admitted.sound,
+    entityId: admitted.entityId,
+    entityType: admitted.entityType,
+    url: admitted.url,
+    actions: serializeActions(admitted.actions),
+    metadata: serializeMetadata(admitted.metadata),
+    groupKey: admitted.groupKey,
     createdAt: now,
     updatedAt: now,
   }
@@ -88,24 +92,46 @@ export async function createNotification(
 
   return {
     id,
-    title: input.title,
-    body: input.body,
-    kind: input.kind,
-    source: input.source,
-    sourceId: input.sourceId,
-    priority: input.priority || 'normal',
+    title: admitted.title,
+    body: admitted.body,
+    kind: admitted.kind,
+    source: admitted.source,
+    sourceId: admitted.sourceId,
+    priority: admitted.priority || 'normal',
+    delivery: admitted.delivery,
+    requiredAction: admitted.requiredAction,
     status: 'unread',
-    icon: input.icon,
-    color: input.color,
-    sound: input.sound,
-    entityId: input.entityId,
-    entityType: input.entityType,
-    url: input.url,
-    actions: input.actions,
-    metadata: input.metadata,
-    groupKey: input.groupKey,
+    icon: admitted.icon,
+    color: admitted.color,
+    sound: admitted.sound,
+    entityId: admitted.entityId,
+    entityType: admitted.entityType,
+    url: admitted.url,
+    actions: admitted.actions,
+    metadata: admitted.metadata,
+    groupKey: admitted.groupKey,
     createdAt: now,
     updatedAt: now,
+  }
+}
+
+/**
+ * Read notification fields needed for outcome tracking.
+ */
+export function getNotificationFields(id: string): Pick<TrellisNotification, 'source' | 'delivery'> | null {
+  try {
+    const kernel = useTrellisKernel()
+    const facts = kernel.getStore().getFactsByEntity(id)
+    if (facts.length === 0) return null
+    const source = facts.find((f) => f.a === 'source')?.v
+    const delivery = facts.find((f) => f.a === 'delivery')?.v
+    if (typeof source !== 'string') return null
+    return {
+      source: source as TrellisNotification['source'],
+      delivery: (typeof delivery === 'string' ? delivery : undefined) as TrellisNotification['delivery'],
+    }
+  } catch {
+    return null
   }
 }
 
@@ -115,10 +141,18 @@ export async function createNotification(
 export async function updateNotificationStatus(
   id: string,
   patch: Partial<Pick<TrellisNotification, 'status' | 'readAt' | 'snoozeUntil' | 'archivedAt'>>,
-  opts: { agentId?: string } = {},
+  opts: { agentId?: string; outcome?: 'acted' | 'dismissed' } = {},
 ): Promise<void> {
   const kernel = useTrellisKernel()
   const agent = opts.agentId || 'system'
+
+  if (opts.outcome) {
+    const fields = getNotificationFields(id)
+    if (fields?.source && fields.delivery === 'interrupt') {
+      recordNotificationOutcome(fields.source, opts.outcome)
+    }
+  }
+
   const data: Record<string, any> = { updatedAt: new Date().toISOString() }
   for (const [k, v] of Object.entries(patch)) if (v !== undefined) data[k] = v
   await kernel.updateNode(id, data, NOTIFICATION_NAMESPACE, { agentId: agent })
@@ -196,6 +230,8 @@ export async function createSystemAlert(input: SystemAlertInput): Promise<Trelli
       source: input.source || 'ops',
       sourceId: input.sourceId,
       priority: severity === 'error' ? 'high' : 'normal',
+      delivery: 'interrupt',
+      requiredAction: severity === 'error' ? 'resolve' : 'acknowledge',
       url: input.url,
       actions,
       metadata: input.metadata,
