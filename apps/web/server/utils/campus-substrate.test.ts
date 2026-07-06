@@ -293,6 +293,9 @@ describe('useZoneContext.zoneIdFromPath (client mirror)', () => {
       '/ontologies',
       '/',
       '/nonexistent/path',
+      '/w/my-workspace-2e313953/sheets',
+      '/w/my-workspace-2e313953/sheets/q3-runway',
+      '/w/my-workspace-2e313953/pages/about',
     ]
     for (const path of probes) {
       expect(zoneIdFromPath(path), `mismatch for ${path}`).toBe(zoneForPath(path).zoneId)

@@ -36,7 +36,7 @@ test.describe('Campus header resident cluster', () => {
 
   test('avatar opens resident menu', async ({ page }) => {
     const header = page.locator('[data-slot="app-header"]')
-    await header.getByRole('button', { name: 'Resident menu' }).click()
+    await header.getByRole('button', { name: /Resident menu|User menu/i }).click()
     const menu = page.getByRole('menu')
     await expect(menu.getByText('Profile settings')).toBeVisible({ timeout: 5_000 })
     await expect(menu.getByText('Sign out')).toBeVisible()

@@ -25,7 +25,7 @@
   })
 
   const bellAriaLabel = computed(() => {
-    const base = 'Lobby notifications'
+    const base = 'Lobby — notifications'
     return unreadCount.value > 0
       ? `${base}, ${unreadCount.value} action required`
       : `${base}, no action required`
