@@ -14,13 +14,18 @@ import { useOntologyRegistry } from '~/composables/useOntologyRegistry'
 import { useTrellisConfig } from '~/composables/useTrellisConfig'
 import { useSidebarTree } from '~/composables/useSidebarTree'
 import type { SidebarTreeNode } from '~/composables/useSidebarTree'
+import { sheetPathFromEntityId } from '~/lib/sheet-routes'
+import { deckPathFromEntityId, isDeckEntityType } from '~/lib/deck-routes'
+import {
+  isWorkshopSpecialItems,
+  resolveWorkshopSidebarItems,
+  WORKSHOP_BROWSE_LINKS,
+} from '~/lib/sidebar-affordances'
 
 type RailConfig = {
   primary: string[]
   secondary: string[]
 }
-
-const MAX_RAIL_ITEMS_TOTAL = 12
 
 const _sanitizeRailConfig = (config: RailConfig): RailConfig => {
   return {
@@ -67,6 +72,7 @@ export const useRoutes = () => {
 
   // Get user-created pages
   const { pages } = usePages()
+  const { items: allEntityItems } = useEntities()
 
   const pagesChildren = computed<RouteConfig[]>(() => {
     return (pages.value || []).map((p) => ({
@@ -79,6 +85,38 @@ export const useRoutes = () => {
         subtitle: 'Page',
       },
     }))
+  })
+
+  const sheetsChildren = computed<RouteConfig[]>(() => {
+    return (allEntityItems.value || [])
+      .filter((e) => e.type === 'sheet')
+      .map((s) => ({
+        path: sheetPathFromEntityId(s.id),
+        label: s.title || s.id,
+        icon: 'lucide:table-2',
+        tint: 'text-emerald-400',
+        meta: {
+          title: s.title,
+          subtitle: 'Sheet projection',
+        },
+      }))
+      .sort((a, b) => a.label.localeCompare(b.label))
+  })
+
+  const decksChildren = computed<RouteConfig[]>(() => {
+    return (allEntityItems.value || [])
+      .filter((e) => isDeckEntityType(e.type) || e.id.startsWith('entity:deck-'))
+      .map((d) => ({
+        path: deckPathFromEntityId(d.id),
+        label: d.title || d.id,
+        icon: 'lucide:presentation',
+        tint: 'text-violet-400',
+        meta: {
+          title: d.title,
+          subtitle: 'Deck projection',
+        },
+      }))
+      .sort((a, b) => a.label.localeCompare(b.label))
   })
 
   const collectionsChildren = computed<RouteConfig[]>(() => {
@@ -282,7 +320,6 @@ export const useRoutes = () => {
   const enforceRailConstraints = (config: RailConfig, priority: 'primary' | 'secondary' = 'primary'): RailConfig => {
     const out: RailConfig = { primary: [], secondary: [] }
     const seen = new Set<string>()
-    let total = 0
 
     const applyList = (position: 'primary' | 'secondary', paths: string[]) => {
       paths.forEach((raw) => {
@@ -297,15 +334,9 @@ export const useRoutes = () => {
             )
           return
         }
-        if (total >= MAX_RAIL_ITEMS_TOTAL) {
-          if (import.meta.dev)
-            console.warn(`[rail] Dropping rail item due to max limit (${MAX_RAIL_ITEMS_TOTAL}): ${path}`)
-          return
-        }
 
         seen.add(path)
         out[position].push(path)
-        total += 1
       })
     }
 
@@ -318,12 +349,21 @@ export const useRoutes = () => {
     return out
   }
 
+  const isChatRailPath = (path: string): boolean => {
+    if (path === '/home') return true
+    const route = railRoutesByPath.value.get(path)
+    if (!route) return false
+    return route.path === '/home' || ['home', 'chat'].includes(route.label?.toLowerCase() ?? '')
+  }
+
   const saveRailConfig = async (config: RailConfig) => {
     if (!import.meta.client) return
 
-    // Rail is currently code-driven (not user-editable). Keep the function for forward compatibility,
-    // but do not persist anything.
-    void config
+    try {
+      localStorage.setItem(_getRailSettingsKey(), JSON.stringify(_sanitizeRailConfig(config)))
+    } catch (err) {
+      if (import.meta.dev) console.warn('[rail] Failed to persist rail config', err)
+    }
   }
 
   const setRailSpaces = async (position: 'primary' | 'secondary', spacePaths: string[]) => {
@@ -421,7 +461,48 @@ export const useRoutes = () => {
     if (!import.meta.client) return
 
     const seeded = seedRailConfigFromDefaults()
-    railConfig.value = enforceRailConstraints(seeded)
+    const stored = localStorage.getItem(_getRailSettingsKey())
+
+    if (!stored) {
+      railConfig.value = enforceRailConstraints(seeded)
+      return
+    }
+
+    try {
+      const parsed = JSON.parse(stored)
+      const migrated = _migrateRailConfigToSpaces(parsed)
+      railConfig.value = enforceRailConstraints(migrated ?? seeded)
+    } catch {
+      railConfig.value = enforceRailConstraints(seeded)
+    }
+  }
+
+  const resetRailConfig = async () => {
+    if (import.meta.client) {
+      localStorage.removeItem(_getRailSettingsKey())
+    }
+    railConfig.value = enforceRailConstraints(seedRailConfigFromDefaults())
+  }
+
+  const reorderRailCenterItems = async (orderedCenterPaths: string[]) => {
+    const next = (railConfig.value || seedRailConfigFromDefaults()) as RailConfig
+    const chatPaths = next.primary.filter(isChatRailPath)
+    const secondarySet = new Set(next.secondary)
+
+    const newPrimary = [...chatPaths]
+    const newSecondary: string[] = []
+
+    orderedCenterPaths.forEach((path) => {
+      if (secondarySet.has(path)) {
+        newSecondary.push(path)
+      } else {
+        newPrimary.push(path)
+      }
+    })
+
+    const enforced = enforceRailConstraints({ primary: newPrimary, secondary: newSecondary })
+    railConfig.value = enforced
+    await saveRailConfig(enforced)
   }
 
   /**
@@ -442,6 +523,15 @@ export const useRoutes = () => {
       return defaults.map((p) => railRoutesByPath.value.get(p)).filter(Boolean) as RouteConfig[]
     }
 
+    return paths.map((p) => railRoutesByPath.value.get(p)).filter(Boolean) as RouteConfig[]
+  })
+
+  /**
+   * Center rail routes (graph + primary + secondary), excluding chat.
+   */
+  const centerRailRoutes = computed(() => {
+    const config = railConfig.value || seedRailConfigFromDefaults()
+    const paths = [...config.primary.filter((p) => !isChatRailPath(p)), ...config.secondary]
     return paths.map((p) => railRoutesByPath.value.get(p)).filter(Boolean) as RouteConfig[]
   })
 
@@ -482,7 +572,7 @@ export const useRoutes = () => {
     // Get dynamic children based on section
     switch (section.path) {
       case '/workspace':
-        dynamicChildren = [...pagesChildren.value]
+        dynamicChildren = [...pagesChildren.value, ...sheetsChildren.value, ...decksChildren.value]
         break
       case '/database':
         dynamicChildren = [
@@ -647,6 +737,28 @@ export const useRoutes = () => {
         items = pinned.getPinnedItems(currentSectionLinks.value)
       } else if (sectionNode.specialItems === 'pages') {
         items = [...pagesChildren.value]
+      } else if (isWorkshopSpecialItems(sectionNode.specialItems)) {
+        const staticItems = sectionNode.children
+          .filter((child) => child.nodeType === 'item' || child.nodeType === 'group')
+          .map((child) => ({
+            path: child.routePath || '',
+            label: child.label,
+            icon: child.icon,
+            _treeNodeId: child.id,
+            _locked: child.locked,
+            _nodeType: child.nodeType,
+            _children: child.nodeType === 'group' ? child.children : undefined,
+            _collapsed: child.collapsed,
+          }))
+        const browseLinks =
+          staticItems.length > 0
+            ? staticItems.map((item) => ({
+                path: item.path,
+                label: item.label,
+                icon: item.icon,
+              }))
+            : WORKSHOP_BROWSE_LINKS
+        items = resolveWorkshopSidebarItems(sheetsChildren.value, decksChildren.value, browseLinks as RouteConfig[])
       } else {
         // Convert child tree nodes to RouteConfig items (including groups with nested children)
         items = sectionNode.children
@@ -730,6 +842,29 @@ export const useRoutes = () => {
       ordered.unshift(pinnedSection)
     }
 
+    // Inject WORKSHOP sheets section when graph has sheet entities but tree lacks the section
+    // (existing sidebars seeded before WORKSHOP was added to sidebarSeeds)
+    const hasWorkshopSection = ordered.some((s) => s.key === 'workshop-sheets')
+    if (
+      !hasWorkshopSection &&
+      (sheetsChildren.value.length > 0 || decksChildren.value.length > 0)
+    ) {
+      ordered.push({
+        label: 'WORKSHOP',
+        key: 'workshop-sheets',
+        icon: 'lucide:hammer',
+        collapsible: true,
+        defaultCollapsed: false,
+        editable: true,
+        order: 15,
+        items: resolveWorkshopSidebarItems(sheetsChildren.value, decksChildren.value).filter(
+          (item) => item?.path && item.visible?.() !== false,
+        ),
+        itemsMode: 'workshop',
+        locked: false,
+      } as any)
+    }
+
     return ordered
   }
 
@@ -742,8 +877,9 @@ export const useRoutes = () => {
     const section = currentSidebarSection.value
     if (!section?.sidebarSections) return null
 
-    // Route type flags
-    const isDatabase = section.path === '/database'
+    // Route type flags (/database redirects to /ontologies; keep both keys)
+    const isOntologies = section.path === '/ontologies' || section.path === '/database'
+    const isDatabase = isOntologies
     const isWorkspace = section.path === '/workspace'
 
     // ── Tree-driven workspace sidebar ──────────────────────────────────
@@ -775,9 +911,17 @@ export const useRoutes = () => {
       } else if (isDatabase && sectionDef.key === 'database-tools') {
         // TOOLS section uses static items from route config (explorer, query, ontology, activity)
         items = Array.isArray(sectionDef.items) ? [...sectionDef.items] : []
+      } else if (isOntologies && sectionDef.key === 'ontologies-tools') {
+        items = Array.isArray(sectionDef.items) ? [...sectionDef.items] : []
+      } else if (isOntologies && sectionDef.key === 'ontologies-system') {
+        items = [...platformTypesChildren.value]
+      } else if (isOntologies && sectionDef.key === 'ontologies-core') {
+        items = [...entityTypesChildren.value]
       } else if (sectionDef.key === 'personal-pages') {
         // PAGES section gets user-created pages
         items = [...pagesChildren.value]
+      } else if (sectionDef.key === 'workshop-sheets') {
+        items = resolveWorkshopSidebarItems(sheetsChildren.value, decksChildren.value)
       } else if (sectionDef.key === 'workflows') {
         // WORKFLOWS section gets user-created workflows
         items = [...workflowsChildren.value]
@@ -815,7 +959,10 @@ export const useRoutes = () => {
 
       // Apply user-defined item order within this section
       // Only for: workspace sections (all) + database-custom
-      const canReorderItems = isWorkspace || (isDatabase && sectionDef.key === 'database-custom')
+      const canReorderItems =
+        isWorkspace ||
+        (isDatabase && sectionDef.key === 'database-custom') ||
+        (isOntologies && sectionDef.key === 'ontologies-custom')
       if (canReorderItems) {
         resolvedItems = sidebarOrder.applyItemOrder(sectionDef.key, resolvedItems)
       }
@@ -894,7 +1041,10 @@ export const useRoutes = () => {
     currentRouteTabs,
 
     // Rail configuration
+    centerRailRoutes,
     setRailSpaces,
+    reorderRailCenterItems,
+    resetRailConfig,
 
     // Sidebar tree (graph-backed)
     sidebarTree,

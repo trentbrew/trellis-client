@@ -1,0 +1,1377 @@
+<!-- trellis-design-adopted: slug=sheets_decks parent=TRL-P source=https://claude.ai/code/artifact/d1ef3a66-6b0a-4d38-9abb-a348d1979f14 -->
+<title>Trellis — Sheets &amp; Decks on the Graph (design mock)</title>
+<style>
+  :root {
+    color-scheme: dark;
+    --background: #0a0a0c;
+    --surface: #141418;
+    --surface-2: #1a1a21;
+    --surface-3: #202028;
+    --text: #e8e8ec;
+    --text-muted: #888894;
+    --text-faint: #55555f;
+    --border: #2a2a32;
+    --primary: #6366f1;
+    --zone-lab: #6366f1;
+    --zone-workshop: #10b981;
+    --zone-showroom: #8b5cf6;
+    --formula: #f59e0b;
+    --live: #34d399;
+    --destructive: #ef4444;
+    --series: #818cf8;
+    --radius-sm: 6px;
+    --radius-md: 10px;
+    --radius-lg: 14px;
+    --radius-pill: 9999px;
+    --font: "IBM Plex Sans", ui-sans-serif, system-ui, -apple-system, sans-serif;
+    --mono: "IBM Plex Mono", ui-monospace, "SF Mono", Menlo, monospace;
+    --zone: var(--primary);
+  }
+
+  * { box-sizing: border-box; }
+
+  body {
+    margin: 0;
+    background: var(--background);
+    color: var(--text);
+    font-family: var(--font);
+    font-size: 14px;
+    line-height: 1.55;
+  }
+
+  .page {
+    max-width: 1120px;
+    margin: 0 auto;
+    padding: 56px 28px 96px;
+    display: flex;
+    flex-direction: column;
+    gap: 72px;
+  }
+
+  a { color: inherit; }
+  code, kbd { font-family: var(--mono); }
+
+  /* ── Page header ─────────────────────────── */
+  .masthead { max-width: 720px; }
+  .eyebrow {
+    font-family: var(--mono);
+    font-size: 11px;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--text-muted);
+    margin: 0 0 14px;
+  }
+  .masthead h1 {
+    font-size: 34px;
+    line-height: 1.15;
+    font-weight: 650;
+    letter-spacing: -0.015em;
+    margin: 0 0 14px;
+    text-wrap: balance;
+  }
+  .thesis {
+    margin: 0 0 22px;
+    font-size: 15.5px;
+    color: var(--text-muted);
+    max-width: 58ch;
+  }
+  .thesis strong { color: var(--text); font-weight: 550; }
+
+  .zone-index { display: flex; flex-wrap: wrap; gap: 8px; }
+  .zone-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+    height: 30px;
+    padding: 0 12px;
+    border-radius: var(--radius-pill);
+    border: 1px solid color-mix(in oklch, var(--zc) 35%, var(--border));
+    background: color-mix(in oklch, var(--zc) 8%, var(--surface));
+    font-size: 12.5px;
+    font-weight: 550;
+    text-decoration: none;
+  }
+  .zone-chip .dot { width: 7px; height: 7px; border-radius: 50%; background: var(--zc); }
+  .zone-chip span.where { color: var(--text-muted); font-weight: 400; }
+
+  /* ── Sections ────────────────────────────── */
+  section[data-zone="workshop"] { --zone: var(--zone-workshop); }
+  section[data-zone="lab"]      { --zone: var(--zone-lab); }
+  section[data-zone="showroom"] { --zone: var(--zone-showroom); }
+
+  .section-head { max-width: 720px; margin-bottom: 22px; }
+  .section-head .eyebrow { color: var(--zone); margin-bottom: 8px; }
+  .section-head h2 {
+    font-size: 22px;
+    font-weight: 620;
+    letter-spacing: -0.01em;
+    margin: 0 0 8px;
+    text-wrap: balance;
+  }
+  .section-head p { margin: 0; color: var(--text-muted); max-width: 62ch; }
+
+  /* ── Mock window frame ───────────────────── */
+  .frame {
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    background: var(--surface);
+    overflow: hidden;
+    box-shadow: 0 24px 60px -30px rgba(0,0,0,0.8);
+  }
+  .frame-bar {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    height: 46px;
+    padding: 0 14px;
+    border-bottom: 1px solid var(--border);
+    background: var(--surface-2);
+    font-size: 12px;
+  }
+  .traffic { display: flex; gap: 7px; flex-shrink: 0; }
+  .traffic i { width: 11px; height: 11px; border-radius: 50%; background: var(--surface-3); border: 1px solid var(--border); }
+  .crumb { color: var(--text-muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .crumb b { color: var(--text); font-weight: 550; }
+  .crumb .sep { opacity: 0.35; padding: 0 4px; }
+  .bar-spacer { flex: 1; }
+
+  .badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    height: 24px;
+    padding: 0 9px;
+    border-radius: var(--radius-pill);
+    font-family: var(--mono);
+    font-size: 10.5px;
+    letter-spacing: 0.06em;
+    border: 1px solid color-mix(in oklch, var(--zone) 40%, var(--border));
+    background: color-mix(in oklch, var(--zone) 10%, var(--surface));
+    color: var(--text);
+    white-space: nowrap;
+  }
+  .badge .dot { width: 6px; height: 6px; border-radius: 50%; background: var(--zone); }
+  .badge.live { border-color: color-mix(in oklch, var(--live) 45%, var(--border)); background: color-mix(in oklch, var(--live) 10%, var(--surface)); }
+  .badge.live .dot { background: var(--live); }
+
+  .avatars { display: flex; }
+  .avatars i {
+    width: 24px; height: 24px;
+    border-radius: 50%;
+    border: 2px solid var(--surface-2);
+    font-style: normal;
+    font-size: 10px;
+    font-weight: 600;
+    display: flex; align-items: center; justify-content: center;
+  }
+  .avatars i + i { margin-left: -7px; }
+  .av-t { background: #3730a3; color: #e0e7ff; }
+  .av-j { background: #9d4310; color: #ffedd5; }
+
+  /* ── Annotation markers & cards ──────────── */
+  .mk {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 17px; height: 17px;
+    border-radius: 50%;
+    border: 1px dashed var(--zone);
+    color: var(--zone);
+    font-family: var(--mono);
+    font-size: 10px;
+    font-weight: 600;
+    flex-shrink: 0;
+    vertical-align: 2px;
+    background: var(--background);
+    cursor: default;
+  }
+  .notes {
+    margin-top: 18px;
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+    gap: 10px;
+  }
+  .note {
+    display: flex;
+    gap: 10px;
+    padding: 12px 14px;
+    border: 1px solid var(--border);
+    border-radius: var(--radius-md);
+    background: color-mix(in oklch, var(--surface) 60%, transparent);
+    font-size: 12.5px;
+    color: var(--text-muted);
+  }
+  .note b { color: var(--text); font-weight: 550; }
+  .note code { font-size: 11px; color: var(--text); background: var(--surface-3); padding: 1px 5px; border-radius: 4px; }
+
+  /* ── Sheet grid ──────────────────────────── */
+  .formula-bar {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 8px 14px;
+    border-bottom: 1px solid var(--border);
+    font-family: var(--mono);
+    font-size: 12px;
+  }
+  .cell-ref {
+    min-width: 52px;
+    text-align: center;
+    padding: 3px 8px;
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    background: var(--surface-2);
+    color: var(--text-muted);
+  }
+  .fx { color: var(--text-faint); font-style: italic; }
+  .formula-input {
+    flex: 1;
+    padding: 3px 10px;
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    background: var(--surface-2);
+    color: var(--formula);
+    overflow-x: auto;
+    white-space: nowrap;
+  }
+  .seg {
+    display: flex;
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    overflow: hidden;
+    flex-shrink: 0;
+  }
+  .seg button {
+    appearance: none;
+    border: 0;
+    background: transparent;
+    color: var(--text-muted);
+    font-family: var(--mono);
+    font-size: 11px;
+    padding: 4px 10px;
+    cursor: pointer;
+  }
+  .seg button[aria-pressed="true"] {
+    background: color-mix(in oklch, var(--zone) 18%, var(--surface-2));
+    color: var(--text);
+  }
+  .seg button:focus-visible { outline: 2px solid var(--zone); outline-offset: -2px; }
+
+  .grid-wrap { overflow-x: auto; }
+  table.sheet {
+    border-collapse: collapse;
+    width: 100%;
+    min-width: 940px;
+    font-size: 12.5px;
+    font-variant-numeric: tabular-nums;
+  }
+  table.sheet th, table.sheet td {
+    border-right: 1px solid var(--border);
+    border-bottom: 1px solid var(--border);
+    padding: 7px 12px;
+    text-align: left;
+    white-space: nowrap;
+  }
+  table.sheet th:last-child, table.sheet td:last-child { border-right: 0; }
+  table.sheet thead th {
+    background: var(--surface-2);
+    font-weight: 500;
+    color: var(--text-muted);
+    font-size: 11.5px;
+  }
+  th.rowhead, td.rowhead {
+    width: 38px;
+    text-align: center;
+    background: var(--surface-2);
+    color: var(--text-faint);
+    font-family: var(--mono);
+    font-size: 10.5px;
+  }
+  .col-label { display: flex; align-items: center; gap: 7px; }
+  .col-letter { font-family: var(--mono); font-size: 10px; color: var(--text-faint); }
+  .type-tag {
+    font-family: var(--mono);
+    font-size: 9.5px;
+    padding: 1px 6px;
+    border-radius: var(--radius-pill);
+    border: 1px solid var(--border);
+    color: var(--text-faint);
+    letter-spacing: 0.04em;
+  }
+  th .type-tag.fx { border-color: color-mix(in oklch, var(--formula) 45%, var(--border)); color: var(--formula); font-style: normal; }
+  th .type-tag.rel { border-color: color-mix(in oklch, var(--primary) 45%, var(--border)); color: var(--series); }
+
+  td.num { text-align: right; font-family: var(--mono); font-size: 12px; }
+  td.derived { background: color-mix(in oklch, var(--formula) 6%, transparent); color: var(--formula); }
+  td.derived.neg { color: var(--destructive); }
+
+  .status-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 2px 9px;
+    border-radius: var(--radius-pill);
+    font-size: 11px;
+    border: 1px solid var(--border);
+    color: var(--text-muted);
+  }
+  .status-chip i { width: 6px; height: 6px; border-radius: 50%; font-style: normal; }
+  .status-chip.ok i { background: var(--live); }
+  .status-chip.limit i { background: var(--formula); }
+  .status-chip.over { border-color: color-mix(in oklch, var(--destructive) 45%, var(--border)); color: #fca5a5; }
+  .status-chip.over i { background: var(--destructive); }
+
+  .mention {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    padding: 1px 8px 1px 3px;
+    border-radius: var(--radius-pill);
+    background: color-mix(in oklch, var(--primary) 14%, var(--surface-2));
+    border: 1px solid color-mix(in oklch, var(--primary) 35%, var(--border));
+    font-size: 11.5px;
+    color: #c7d2fe;
+  }
+  .mention i {
+    width: 15px; height: 15px;
+    border-radius: 50%;
+    font-style: normal;
+    font-size: 8.5px;
+    font-weight: 600;
+    display: inline-flex; align-items: center; justify-content: center;
+  }
+
+  tr.focused td { background: color-mix(in oklch, var(--zone) 5%, transparent); }
+  td.lease-cell {
+    position: relative;
+    outline: 2px solid var(--zone);
+    outline-offset: -2px;
+    background: var(--surface-2);
+  }
+
+  .lease {
+    position: absolute;
+    top: calc(100% + 6px);
+    left: -2px;
+    z-index: 30;
+    width: 320px;
+    border: 1px solid color-mix(in oklch, var(--zone) 45%, var(--border));
+    border-radius: var(--radius-md);
+    background: var(--surface-2);
+    box-shadow: 0 18px 44px -12px rgba(0,0,0,0.85);
+    font-size: 12.5px;
+    white-space: normal;
+  }
+  .lease-toolbar {
+    display: flex;
+    align-items: center;
+    gap: 2px;
+    padding: 5px 8px;
+    border-bottom: 1px solid var(--border);
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--text-muted);
+  }
+  .lease-toolbar span { padding: 1px 6px; border-radius: 4px; }
+  .lease-toolbar span.on { background: var(--surface-3); color: var(--text); }
+  .lease-toolbar .tag { margin-left: auto; font-size: 9.5px; color: var(--zone); letter-spacing: 0.06em; }
+  .lease-body { padding: 9px 11px; }
+  .caret { display: inline-block; width: 1.5px; height: 14px; background: var(--zone); vertical-align: -2px; animation: blink 1.1s steps(1) infinite; }
+  @keyframes blink { 50% { opacity: 0; } }
+  .slash-menu {
+    border-top: 1px solid var(--border);
+    padding: 5px;
+    display: flex;
+    flex-direction: column;
+  }
+  .slash-item {
+    display: flex;
+    align-items: baseline;
+    gap: 9px;
+    padding: 5px 8px;
+    border-radius: var(--radius-sm);
+    font-size: 12px;
+    color: var(--text-muted);
+  }
+  .slash-item.hl { background: color-mix(in oklch, var(--zone) 14%, transparent); color: var(--text); }
+  .slash-item code { font-size: 11px; color: var(--text); }
+  .slash-item small { margin-left: auto; color: var(--text-faint); font-size: 10.5px; }
+
+  tfoot td {
+    background: color-mix(in oklch, var(--formula) 5%, var(--surface-2));
+    font-family: var(--mono);
+    font-size: 11.5px;
+    color: var(--formula);
+    border-bottom: 0;
+  }
+  tfoot td.label { color: var(--text-faint); }
+
+  .grid-pad { height: 170px; border-top: 1px solid transparent; }
+
+  @media (max-width: 720px) {
+    .lease { display: none; }
+    .grid-pad { height: 0; }
+  }
+
+  /* ── Doc / transclusion mock ─────────────── */
+  .doc-body {
+    max-width: 680px;
+    margin: 0 auto;
+    padding: 36px 32px 44px;
+  }
+  .doc-body h3 {
+    font-size: 24px;
+    font-weight: 640;
+    letter-spacing: -0.01em;
+    margin: 0 0 6px;
+  }
+  .doc-meta {
+    font-size: 11.5px;
+    color: var(--text-faint);
+    font-family: var(--mono);
+    margin-bottom: 20px;
+  }
+  .doc-body p {
+    margin: 0 0 14px;
+    color: color-mix(in oklch, var(--text) 88%, var(--text-muted));
+    font-size: 14.5px;
+    max-width: 62ch;
+  }
+
+  .transclusion {
+    margin: 20px 0;
+    border: 1px solid color-mix(in oklch, var(--zone-workshop) 30%, var(--border));
+    border-radius: var(--radius-md);
+    background: var(--surface-2);
+    overflow: hidden;
+  }
+  .transclusion-bar {
+    display: flex;
+    align-items: center;
+    gap: 9px;
+    padding: 7px 12px;
+    border-bottom: 1px solid var(--border);
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--text-muted);
+  }
+  .transclusion-bar .glyph { color: var(--zone-workshop); font-size: 13px; }
+  .transclusion-bar .range { color: var(--text); }
+  .transclusion table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 12px;
+    font-variant-numeric: tabular-nums;
+  }
+  .transclusion th, .transclusion td {
+    padding: 6px 12px;
+    border-bottom: 1px solid var(--border);
+    text-align: left;
+  }
+  .transclusion tr:last-child td { border-bottom: 0; }
+  .transclusion th { color: var(--text-faint); font-weight: 500; font-size: 11px; }
+  .transclusion td.num, .transclusion th.num { text-align: right; font-family: var(--mono); }
+  .transclusion td.derived { color: var(--formula); }
+  .transclusion td.derived.neg { color: var(--destructive); }
+
+  /* ── Deck mock ───────────────────────────── */
+  .deck-shell {
+    display: grid;
+    grid-template-columns: 148px 1fr 208px;
+    min-height: 480px;
+  }
+  .sorter {
+    border-right: 1px solid var(--border);
+    padding: 12px 10px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    background: var(--surface-2);
+  }
+  .thumb {
+    appearance: none;
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    background: var(--surface);
+    padding: 0;
+    cursor: pointer;
+    text-align: left;
+    overflow: hidden;
+    display: block;
+    width: 100%;
+  }
+  .thumb:focus-visible { outline: 2px solid var(--zone); outline-offset: 2px; }
+  .thumb .mini {
+    aspect-ratio: 16 / 9;
+    padding: 8px 9px;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    justify-content: center;
+  }
+  .thumb .mini i {
+    display: block;
+    height: 4px;
+    border-radius: 2px;
+    background: var(--surface-3);
+  }
+  .thumb .mini i.t { height: 6px; background: var(--text-faint); width: 70%; }
+  .thumb .mini i.half { width: 45%; }
+  .thumb .mini .bars {
+    display: flex;
+    align-items: flex-end;
+    gap: 3px;
+    height: 26px;
+    margin-top: 2px;
+  }
+  .thumb .mini .bars i {
+    flex: 1;
+    height: var(--h);
+    border-radius: 2px 2px 0 0;
+    background: color-mix(in oklch, var(--series) 55%, var(--surface-3));
+  }
+  .thumb .label {
+    display: flex;
+    gap: 6px;
+    padding: 4px 8px;
+    border-top: 1px solid var(--border);
+    font-family: var(--mono);
+    font-size: 9.5px;
+    color: var(--text-faint);
+  }
+  .thumb[aria-current="true"] {
+    border-color: var(--zone);
+    box-shadow: 0 0 0 1px var(--zone);
+  }
+  .thumb[aria-current="true"] .label { color: var(--zone); }
+
+  .stage {
+    padding: 22px;
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+    min-width: 0;
+  }
+  .canvas {
+    aspect-ratio: 16 / 9;
+    border: 1px solid var(--border);
+    border-radius: var(--radius-md);
+    background: #0d0d11;
+    padding: clamp(16px, 4.5%, 40px);
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    gap: 14px;
+    position: relative;
+    overflow: hidden;
+  }
+  .canvas .slide-eyebrow {
+    font-family: var(--mono);
+    font-size: 10.5px;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--zone);
+  }
+  .canvas h4 {
+    margin: 0;
+    font-size: clamp(20px, 3.6vw, 34px);
+    font-weight: 650;
+    letter-spacing: -0.015em;
+    text-wrap: balance;
+  }
+  .canvas p.sub { margin: 0; color: var(--text-muted); font-size: clamp(12px, 1.6vw, 15px); max-width: 52ch; }
+  .canvas ul { margin: 0; padding-left: 1.1em; color: var(--text-muted); font-size: clamp(12px, 1.7vw, 15px); display: flex; flex-direction: column; gap: 6px; }
+  .canvas ul b { color: var(--text); font-weight: 550; }
+  .canvas .foot {
+    position: absolute;
+    bottom: 12px;
+    left: 0; right: 0;
+    text-align: center;
+    font-family: var(--mono);
+    font-size: 9.5px;
+    letter-spacing: 0.1em;
+    color: var(--text-faint);
+  }
+
+  .qv-block {
+    border: 1px solid color-mix(in oklch, var(--live) 25%, var(--border));
+    border-radius: var(--radius-md);
+    background: var(--surface);
+    padding: 12px 14px 10px;
+  }
+  .qv-head {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-family: var(--mono);
+    font-size: 10px;
+    color: var(--text-muted);
+    margin-bottom: 10px;
+  }
+  .qv-head .q { color: var(--text-faint); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+  .tiles { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-bottom: 12px; }
+  .tile {
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    padding: 8px 10px;
+  }
+  .tile .v {
+    font-size: clamp(15px, 2.2vw, 21px);
+    font-weight: 640;
+    font-variant-numeric: tabular-nums;
+    letter-spacing: -0.01em;
+  }
+  .tile .k { font-size: 10.5px; color: var(--text-muted); }
+
+  .chart { position: relative; }
+  .chart-title { font-size: 11px; color: var(--text-muted); margin-bottom: 6px; }
+  .plot {
+    display: flex;
+    align-items: flex-end;
+    gap: 8px;
+    height: 86px;
+    border-bottom: 1px solid var(--border);
+    background: repeating-linear-gradient(to top, transparent, transparent 27px, color-mix(in oklch, var(--border) 55%, transparent) 27px, color-mix(in oklch, var(--border) 55%, transparent) 28px);
+  }
+  .bar {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-end;
+    height: 100%;
+    position: relative;
+    cursor: default;
+  }
+  .bar i {
+    display: block;
+    height: var(--h);
+    border-radius: 4px 4px 0 0;
+    background: color-mix(in oklch, var(--series) 45%, var(--surface-3));
+  }
+  .bar.hi i { background: var(--series); }
+  .bar .dl {
+    position: absolute;
+    top: calc(100% - var(--h) - 17px);
+    left: 50%;
+    transform: translateX(-50%);
+    font-family: var(--mono);
+    font-size: 10px;
+    color: var(--text);
+    white-space: nowrap;
+  }
+  .bar:hover i, .bar:focus-visible i { background: var(--series); }
+  .x-labels {
+    display: flex;
+    gap: 8px;
+    margin-top: 4px;
+    font-family: var(--mono);
+    font-size: 9.5px;
+    color: var(--text-faint);
+  }
+  .x-labels span { flex: 1; text-align: center; }
+
+  .chart-tip {
+    position: absolute;
+    z-index: 20;
+    padding: 4px 8px;
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    background: var(--surface-3);
+    font-family: var(--mono);
+    font-size: 10.5px;
+    color: var(--text);
+    pointer-events: none;
+    transform: translate(-50%, -130%);
+    display: none;
+    white-space: nowrap;
+  }
+
+  .notes-strip {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    border: 1px solid var(--border);
+    border-radius: var(--radius-md);
+    padding: 9px 13px;
+    font-size: 12.5px;
+    color: var(--text-muted);
+    background: var(--surface-2);
+  }
+  .notes-strip .k {
+    font-family: var(--mono);
+    font-size: 9.5px;
+    letter-spacing: 0.1em;
+    color: var(--text-faint);
+    flex-shrink: 0;
+  }
+
+  .inspector {
+    border-left: 1px solid var(--border);
+    padding: 16px 14px;
+    display: flex;
+    flex-direction: column;
+    gap: 18px;
+    background: var(--surface-2);
+    font-size: 12px;
+  }
+  .inspector h5 {
+    margin: 0 0 8px;
+    font-family: var(--mono);
+    font-size: 9.5px;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--text-faint);
+    font-weight: 500;
+  }
+  .layout-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 7px; }
+  .layout-opt {
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    aspect-ratio: 16 / 10;
+    padding: 6px;
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+    justify-content: center;
+  }
+  .layout-opt i { display: block; height: 3px; border-radius: 2px; background: var(--surface-3); }
+  .layout-opt i.t { background: var(--text-faint); width: 60%; }
+  .layout-opt.sel { border-color: var(--zone); box-shadow: 0 0 0 1px var(--zone); }
+  .layout-opt .lo-label {
+    font-family: var(--mono);
+    font-size: 8.5px;
+    color: var(--text-faint);
+    text-align: center;
+    margin-top: 2px;
+  }
+  .layout-opt.sel .lo-label { color: var(--zone); }
+  .vantage { display: flex; flex-wrap: wrap; gap: 6px; }
+  .vantage span {
+    padding: 3px 9px;
+    border-radius: var(--radius-pill);
+    border: 1px solid var(--border);
+    font-family: var(--mono);
+    font-size: 10px;
+    color: var(--text-muted);
+  }
+  .vantage span.on {
+    border-color: var(--zone);
+    color: var(--text);
+    background: color-mix(in oklch, var(--zone) 12%, transparent);
+  }
+  .present-btn {
+    margin-top: auto;
+    appearance: none;
+    border: 1px solid color-mix(in oklch, var(--zone) 50%, var(--border));
+    background: color-mix(in oklch, var(--zone) 16%, var(--surface));
+    color: var(--text);
+    font-family: var(--font);
+    font-size: 12.5px;
+    font-weight: 550;
+    padding: 8px 12px;
+    border-radius: var(--radius-md);
+    cursor: pointer;
+  }
+  .present-btn:focus-visible { outline: 2px solid var(--zone); outline-offset: 2px; }
+
+  @media (max-width: 900px) {
+    .deck-shell { grid-template-columns: 1fr; }
+    .sorter { flex-direction: row; overflow-x: auto; border-right: 0; border-bottom: 1px solid var(--border); }
+    .thumb { min-width: 120px; }
+    .inspector { border-left: 0; border-top: 1px solid var(--border); }
+  }
+
+  /* ── Shared spine diagram ────────────────── */
+  .spine { display: flex; flex-direction: column; gap: 0; }
+  .spine-surfaces {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 12px;
+  }
+  .spine-surface {
+    border: 1px solid color-mix(in oklch, var(--sc) 35%, var(--border));
+    background: color-mix(in oklch, var(--sc) 7%, var(--surface));
+    border-radius: var(--radius-md);
+    padding: 14px 16px;
+  }
+  .spine-surface .name { font-weight: 600; font-size: 14px; display: flex; align-items: center; gap: 8px; }
+  .spine-surface .name i { width: 8px; height: 8px; border-radius: 50%; background: var(--sc); }
+  .spine-surface .desc { font-size: 12px; color: var(--text-muted); margin-top: 4px; }
+  .spine-connectors {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    height: 22px;
+  }
+  .spine-connectors i { border-left: 1px dashed var(--text-faint); justify-self: center; }
+  .spine-band {
+    border: 1px solid var(--border);
+    border-radius: var(--radius-md);
+    background: var(--surface);
+    padding: 12px 16px;
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    gap: 8px 10px;
+  }
+  .spine-band .band-label {
+    font-family: var(--mono);
+    font-size: 9.5px;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--text-faint);
+    margin-right: 6px;
+  }
+  .vocab {
+    font-family: var(--mono);
+    font-size: 11px;
+    padding: 3px 9px;
+    border-radius: var(--radius-pill);
+    border: 1px solid var(--border);
+    color: var(--text-muted);
+  }
+  .vocab.new { border-color: color-mix(in oklch, var(--zone-workshop) 45%, var(--border)); color: var(--zone-workshop); }
+  .spine-band.graph {
+    border-color: color-mix(in oklch, var(--primary) 35%, var(--border));
+    background: color-mix(in oklch, var(--primary) 6%, var(--surface));
+  }
+  .single-connector { height: 22px; display: flex; justify-content: center; }
+  .single-connector i { border-left: 1px dashed var(--text-faint); }
+
+  /* ── Milestone strip ─────────────────────── */
+  .milestone {
+    border: 1px dashed color-mix(in oklch, var(--zone-workshop) 50%, var(--border));
+    border-radius: var(--radius-md);
+    background: color-mix(in oklch, var(--zone-workshop) 5%, var(--surface));
+    padding: 18px 22px;
+    display: flex;
+    gap: 16px;
+    align-items: baseline;
+    flex-wrap: wrap;
+  }
+  .milestone .m-label {
+    font-family: var(--mono);
+    font-size: 10px;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--zone-workshop);
+    flex-shrink: 0;
+  }
+  .milestone p { margin: 0; font-size: 13.5px; color: var(--text-muted); max-width: 72ch; }
+  .milestone p b { color: var(--text); font-weight: 550; }
+
+  @media (prefers-reduced-motion: reduce) {
+    .caret { animation: none; }
+  }
+</style>
+
+<div class="page">
+
+  <!-- ═══════════ Masthead ═══════════ -->
+  <header class="masthead">
+    <p class="eyebrow">Trellis · design mock · July 2026</p>
+    <h1>Sheets &amp; decks on the graph</h1>
+    <p class="thesis">
+      Neither one lives <em>inside</em> the editor. <strong>The graph owns structure</strong> —
+      sheet, column, row, deck, slide — and <strong>TipTap is the leaf-level text runtime</strong>,
+      leased to whatever cell or region has focus. Three projections, one substrate,
+      one extension vocabulary.
+    </p>
+    <nav class="zone-index">
+      <a class="zone-chip" style="--zc: var(--zone-workshop)" href="#sheet"><span class="dot"></span>Sheet <span class="where">· workshop</span></a>
+      <a class="zone-chip" style="--zc: var(--zone-lab)" href="#doc"><span class="dot"></span>Transclusion <span class="where">· lab</span></a>
+      <a class="zone-chip" style="--zc: var(--zone-showroom)" href="#deck"><span class="dot"></span>Deck <span class="where">· showroom</span></a>
+    </nav>
+  </header>
+
+  <!-- ═══════════ 1 · Sheet ═══════════ -->
+  <section id="sheet" data-zone="workshop">
+    <div class="section-head">
+      <p class="eyebrow">01 · Workshop</p>
+      <h2>A sheet is a projection, not a container</h2>
+      <p>Rows are entities returned by a TQL query. Columns are attributes. A cell is a triple.
+         The grid is a virtualized Vue component — ProseMirror never sees it.</p>
+    </div>
+
+    <div class="frame">
+      <div class="frame-bar">
+        <div class="traffic"><i></i><i></i><i></i></div>
+        <div class="crumb">turtle-labs <span class="sep">▸</span> workshop <span class="sep">▸</span> <b>q3-runway.sheet</b></div>
+        <span class="badge"><span class="dot"></span>PROJECTION <span class="mk">1</span></span>
+        <span class="badge" style="border-color: var(--border); background: var(--surface);"><code style="font-size:10.5px; color: var(--text-muted);">find expense where quarter = "Q3-2026"</code></span>
+        <div class="bar-spacer"></div>
+        <span class="badge live"><span class="dot"></span>LIVE</span>
+        <div class="avatars"><i class="av-t">TB</i><i class="av-j">JH</i></div>
+      </div>
+
+      <div class="formula-bar">
+        <span class="cell-ref" id="cellRef">E8</span>
+        <span class="fx">fx</span>
+        <div class="formula-input" id="formulaText">=C8-D8</div>
+        <div class="seg" role="group" aria-label="Formula reference rendering">
+          <button type="button" id="refA1" aria-pressed="true">A1</button>
+          <button type="button" id="refAttr" aria-pressed="false">attrs</button>
+        </div>
+        <span class="mk">2</span>
+      </div>
+
+      <div class="grid-wrap">
+        <table class="sheet">
+          <thead>
+            <tr>
+              <th class="rowhead"></th>
+              <th><div class="col-label"><span class="col-letter">A</span> Vendor <span class="type-tag">text</span></div></th>
+              <th><div class="col-label"><span class="col-letter">B</span> Category <span class="type-tag">select</span></div></th>
+              <th><div class="col-label"><span class="col-letter">C</span> Budgeted <span class="type-tag">$ usd</span></div></th>
+              <th><div class="col-label"><span class="col-letter">D</span> Spent <span class="type-tag">$ usd</span></div></th>
+              <th><div class="col-label"><span class="col-letter">E</span> Remaining <span class="type-tag fx">= fx</span></div></th>
+              <th><div class="col-label"><span class="col-letter">F</span> Status <span class="type-tag fx">= fx</span></div></th>
+              <th><div class="col-label"><span class="col-letter">G</span> Owner <span class="type-tag rel">→ person</span> <span class="mk">4</span></div></th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td class="rowhead">2</td>
+              <td>e2b.dev sandboxes</td>
+              <td><span class="status-chip">Infra</span></td>
+              <td class="num">900.00</td>
+              <td class="num">742.10</td>
+              <td class="num derived">157.90</td>
+              <td><span class="status-chip ok"><i></i>On track</span></td>
+              <td><span class="mention"><i class="av-t">TB</i>Trent Brew</span></td>
+            </tr>
+            <tr>
+              <td class="rowhead">3</td>
+              <td>Fly.io hosting</td>
+              <td><span class="status-chip">Infra</span></td>
+              <td class="num">360.00</td>
+              <td class="num">389.40</td>
+              <td class="num derived neg">−29.40</td>
+              <td><span class="status-chip over"><i></i>Over</span></td>
+              <td><span class="mention"><i class="av-t">TB</i>Trent Brew</span></td>
+            </tr>
+            <tr>
+              <td class="rowhead">4</td>
+              <td>npm org + domains</td>
+              <td><span class="status-chip">Infra</span></td>
+              <td class="num">240.00</td>
+              <td class="num">180.00</td>
+              <td class="num derived">60.00</td>
+              <td><span class="status-chip ok"><i></i>On track</span></td>
+              <td><span class="mention"><i class="av-t">TB</i>Trent Brew</span></td>
+            </tr>
+            <tr>
+              <td class="rowhead">5</td>
+              <td>SF housing — July</td>
+              <td><span class="status-chip">Travel</span></td>
+              <td class="num">2,400.00</td>
+              <td class="num">2,400.00</td>
+              <td class="num derived">0.00</td>
+              <td><span class="status-chip limit"><i></i>At limit</span></td>
+              <td><span class="mention"><i class="av-t">TB</i>Trent Brew</span></td>
+            </tr>
+            <tr>
+              <td class="rowhead">6</td>
+              <td>Caltrain + Muni</td>
+              <td><span class="status-chip">Travel</span></td>
+              <td class="num">150.00</td>
+              <td class="num">88.25</td>
+              <td class="num derived">61.75</td>
+              <td><span class="status-chip ok"><i></i>On track</span></td>
+              <td><span class="mention"><i class="av-t">TB</i>Trent Brew</span></td>
+            </tr>
+            <tr>
+              <td class="rowhead">7</td>
+              <td>Figma + tooling</td>
+              <td><span class="status-chip">Tools</span></td>
+              <td class="num">180.00</td>
+              <td class="num">165.00</td>
+              <td class="num derived">15.00</td>
+              <td><span class="status-chip ok"><i></i>On track</span></td>
+              <td><span class="mention"><i class="av-t">TB</i>Trent Brew</span></td>
+            </tr>
+            <tr class="focused">
+              <td class="rowhead">8</td>
+              <td class="lease-cell">
+                YC S26 demo assets
+                <div class="lease" role="presentation">
+                  <div class="lease-toolbar">
+                    <span class="on">B</span><span><em>I</em></span><span>@</span><span>/</span>
+                    <span class="tag">EDITOR LEASE <span class="mk" style="vertical-align:0">3</span></span>
+                  </div>
+                  <div class="lease-body">
+                    Demo assets — brief w/ <span class="mention"><i class="av-j">JH</i>Jay Higginbotham</span> /<span class="caret"></span>
+                  </div>
+                  <div class="slash-menu">
+                    <div class="slash-item hl"><code>/mention</code> link a person or entity <small>↵</small></div>
+                    <div class="slash-item"><code>/embed</code> entity card</div>
+                    <div class="slash-item"><code>/query</code> live TQL view</div>
+                  </div>
+                </div>
+              </td>
+              <td><span class="status-chip">GTM</span></td>
+              <td class="num">500.00</td>
+              <td class="num">120.00</td>
+              <td class="num derived">380.00</td>
+              <td><span class="status-chip ok"><i></i>On track</span></td>
+              <td><span class="mention"><i class="av-j">JH</i>Jay Higginbotham</span></td>
+            </tr>
+          </tbody>
+          <tfoot>
+            <tr>
+              <td class="rowhead">Σ</td>
+              <td class="label">$sum(...) <span class="mk">5</span></td>
+              <td></td>
+              <td class="num">4,730.00</td>
+              <td class="num">4,084.75</td>
+              <td class="num">645.25</td>
+              <td class="label">86% utilized</td>
+              <td></td>
+            </tr>
+          </tfoot>
+        </table>
+        <div class="grid-pad"></div>
+      </div>
+    </div>
+
+    <div class="notes">
+      <div class="note"><span class="mk">1</span><div><b>Rows are entities.</b> The sheet is a live TQL projection — add a matching entity anywhere in the graph and it appears here. No import, no copy.</div></div>
+      <div class="note"><span class="mk">2</span><div><b>Formulas store attribute refs, render A1.</b> Toggle it: <code>=C8-D8</code> is just a view of <code>=this.budgeted - this.spent</code>. Sorting and filtering can never break a reference.</div></div>
+      <div class="note"><span class="mk">3</span><div><b>The editor lease.</b> Cells render as static HTML; one shared TipTap instance mounts into the focused cell. Mentions, slash commands, embeds work in cells with zero new extension code.</div></div>
+      <div class="note"><span class="mk">4</span><div><b>Columns can be relations.</b> Owner is a <code>→ person</code> edge, not a string — so agents and TQL can traverse it.</div></div>
+      <div class="note"><span class="mk">5</span><div><b>Aggregates reuse the existing engine.</b> <code>$sum</code>, <code>$avg</code>, <code>$percent</code> from <code>useCollectionFormulas</code>, plus a dependency graph for incremental recompute.</div></div>
+    </div>
+  </section>
+
+  <!-- ═══════════ 2 · Transclusion ═══════════ -->
+  <section id="doc" data-zone="lab">
+    <div class="section-head">
+      <p class="eyebrow">02 · Lab</p>
+      <h2>Docs reference the sheet — they never copy it</h2>
+      <p>A <code style="font-size:12px">sheetRange</code> atom node, structural sibling of the existing
+         <code style="font-size:12px">queryView</code>. The document stores a reference and a range;
+         values render live from the graph.</p>
+    </div>
+
+    <div class="frame">
+      <div class="frame-bar">
+        <div class="traffic"><i></i><i></i><i></i></div>
+        <div class="crumb">turtle-labs <span class="sep">▸</span> lab <span class="sep">▸</span> <b>yc-s26-financial-narrative.doc</b></div>
+        <div class="bar-spacer"></div>
+        <span class="badge"><span class="dot"></span>DOC</span>
+      </div>
+      <div class="doc-body">
+        <h3>Financial narrative — YC S26</h3>
+        <p class="doc-meta">edited 2m ago · shared with <span style="color: var(--text-muted)">@jay</span></p>
+        <p>Runway math stays deliberately boring: infra is lean because Trellis is local-first —
+           the cloud accelerates sync, it never owns state. Q3 spend to date, live from the
+           workshop sheet:</p>
+
+        <div class="transclusion">
+          <div class="transclusion-bar">
+            <span class="glyph">⟴</span>
+            <span class="range">q3-runway.sheet · A2:E8</span>
+            <span class="mk" style="--zone: var(--zone-workshop)">6</span>
+            <div class="bar-spacer"></div>
+            <span class="badge live" style="height:20px; font-size:9.5px;"><span class="dot"></span>LIVE</span>
+          </div>
+          <table>
+            <tbody>
+            <tr><th>Vendor</th><th>Category</th><th class="num">Budgeted</th><th class="num">Spent</th><th class="num">Remaining</th></tr>
+            <tr><td>e2b.dev sandboxes</td><td>Infra</td><td class="num">900.00</td><td class="num">742.10</td><td class="num derived">157.90</td></tr>
+            <tr><td>Fly.io hosting</td><td>Infra</td><td class="num">360.00</td><td class="num">389.40</td><td class="num derived neg">−29.40</td></tr>
+            <tr><td>SF housing — July</td><td>Travel</td><td class="num">2,400.00</td><td class="num">2,400.00</td><td class="num derived">0.00</td></tr>
+            <tr><td>YC S26 demo assets</td><td>GTM</td><td class="num">500.00</td><td class="num">120.00</td><td class="num derived">380.00</td></tr>
+            </tbody>
+          </table>
+        </div>
+
+        <p>Fly.io is running hot <span class="mk" style="--zone: var(--zone-lab)">7</span> — worth consolidating
+           relay nodes before the batch starts. Everything else lands inside plan.</p>
+      </div>
+    </div>
+
+    <div class="notes">
+      <div class="note" style="--zone: var(--zone-workshop)"><span class="mk">6</span><div><b>Transclusion, not paste.</b> The doc holds <code>{sheet: e91a, range: A2:E8}</code>. Edit the sheet and this block updates — same numbers as section 01 because they <em>are</em> the same triples.</div></div>
+      <div class="note" style="--zone: var(--zone-lab)"><span class="mk">7</span><div><b>Prose and data interleave.</b> The paragraph, the mention, and the live range are peers in one TipTap doc — the range is just an atom node like <code>queryView</code> already is.</div></div>
+    </div>
+  </section>
+
+  <!-- ═══════════ 3 · Deck ═══════════ -->
+  <section id="deck" data-zone="showroom">
+    <div class="section-head">
+      <p class="eyebrow">03 · Showroom</p>
+      <h2>A deck is an ordered relation of slide entities</h2>
+      <p>Reorder is a graph op. History is per slide. Regions inside a slide are TipTap fragments —
+         and a region can be a live query, so the deck updates itself.</p>
+    </div>
+
+    <div class="frame">
+      <div class="frame-bar">
+        <div class="traffic"><i></i><i></i><i></i></div>
+        <div class="crumb">turtle-labs <span class="sep">▸</span> showroom <span class="sep">▸</span> <b>yc-s26-pitch.deck</b></div>
+        <span class="badge"><span class="dot"></span>5 SLIDES <span class="mk">8</span></span>
+        <div class="bar-spacer"></div>
+        <div class="avatars"><i class="av-t">TB</i></div>
+      </div>
+
+      <div class="deck-shell">
+        <div class="sorter" role="tablist" aria-label="Slides">
+          <button class="thumb" type="button" role="tab" data-slide="0" aria-current="false">
+            <span class="mini" style="align-items:center"><i class="t" style="width:55%"></i><i class="half" style="width:38%"></i></span>
+            <span class="label">1 · title</span>
+          </button>
+          <button class="thumb" type="button" role="tab" data-slide="1" aria-current="false">
+            <span class="mini"><i class="t"></i><i></i><i class="half"></i><i style="width:60%"></i></span>
+            <span class="label">2 · problem</span>
+          </button>
+          <button class="thumb" type="button" role="tab" data-slide="2" aria-current="true">
+            <span class="mini"><i class="t" style="width:45%"></i><span class="bars"><i style="--h:30%"></i><i style="--h:45%"></i><i style="--h:60%"></i><i style="--h:60%"></i><i style="--h:78%"></i><i style="--h:100%"></i></span></span>
+            <span class="label">3 · traction ●</span>
+          </button>
+          <button class="thumb" type="button" role="tab" data-slide="3" aria-current="false">
+            <span class="mini"><i class="t"></i><i class="half"></i><i style="width:65%"></i></span>
+            <span class="label">4 · product</span>
+          </button>
+          <button class="thumb" type="button" role="tab" data-slide="4" aria-current="false">
+            <span class="mini" style="align-items:center"><i class="t" style="width:40%"></i><i class="half" style="width:50%"></i></span>
+            <span class="label">5 · ask</span>
+          </button>
+        </div>
+
+        <div class="stage">
+          <div class="canvas" id="canvas" aria-live="polite"></div>
+          <div class="notes-strip">
+            <span class="k">SPEAKER NOTES</span>
+            <span id="speakerNotes">MRR is small but real — lead with the 4 stations, then the graph.</span>
+            <span class="mk">9</span>
+          </div>
+        </div>
+
+        <aside class="inspector">
+          <div>
+            <h5>Slide layout</h5>
+            <div class="layout-grid">
+              <div class="layout-opt"><i class="t" style="align-self:center"></i><i class="half" style="align-self:center"></i><span class="lo-label">title</span></div>
+              <div class="layout-opt"><i class="t"></i><i></i><i class="half"></i><span class="lo-label">content</span></div>
+              <div class="layout-opt"><i class="t"></i><i></i><i></i><span class="lo-label">two-col</span></div>
+              <div class="layout-opt sel"><i class="t"></i><i style="height:12px; background: color-mix(in oklch, var(--live) 30%, var(--surface-3)); border-radius:3px;"></i><span class="lo-label">live data</span></div>
+            </div>
+          </div>
+          <div>
+            <h5>Vantage <span class="mk" style="vertical-align:0">11</span></h5>
+            <div class="vantage">
+              <span>thumb</span><span>sorter</span><span class="on">editor</span><span>present</span>
+            </div>
+          </div>
+          <div>
+            <h5>Slide entity</h5>
+            <div style="font-family: var(--mono); font-size: 10.5px; color: var(--text-faint); line-height: 1.7;">
+              id <span style="color: var(--text-muted)">slide:7c2f</span><br>
+              rel <span style="color: var(--text-muted)">deck:a419 · position 3</span><br>
+              history <span style="color: var(--text-muted)">14 ops</span>
+            </div>
+          </div>
+          <button class="present-btn" type="button">▶ Present</button>
+        </aside>
+      </div>
+    </div>
+
+    <div class="notes">
+      <div class="note"><span class="mk">8</span><div><b>Slides are entities.</b> The deck is an ordered relation — reordering, duplicating across decks, and per-slide history are graph ops on the op-log, not tree surgery on one big document.</div></div>
+      <div class="note"><span class="mk">9</span><div><b>Every text region is a TipTap fragment.</b> Titles, bullets, speaker notes — same extensions as docs and cells: mentions, embeds, inline comments.</div></div>
+      <div class="note"><span class="mk">10</span><div><b>The traction slide is a live query.</b> A <code>queryView</code> region — the pitch deck's metrics update themselves. No deck tool can do this without a graph underneath.</div></div>
+      <div class="note"><span class="mk">11</span><div><b>One slide, four vantages.</b> Thumbnail, sorter, editor, projector are the same component rendered at different vantage levels — this is what fractal responsiveness is for.</div></div>
+    </div>
+  </section>
+
+  <!-- ═══════════ Shared spine ═══════════ -->
+  <section data-zone="lab">
+    <div class="section-head">
+      <p class="eyebrow">The shared spine</p>
+      <h2>Three projections, one vocabulary, one graph</h2>
+    </div>
+    <div class="spine">
+      <div class="spine-surfaces">
+        <div class="spine-surface" style="--sc: var(--zone-lab)">
+          <div class="name"><i></i>Doc</div>
+          <div class="desc">ProseMirror tree · Yjs collab · prose is the structure</div>
+        </div>
+        <div class="spine-surface" style="--sc: var(--zone-workshop)">
+          <div class="name"><i></i>Sheet</div>
+          <div class="desc">TQL projection · virtualized grid · cells lease the editor</div>
+        </div>
+        <div class="spine-surface" style="--sc: var(--zone-showroom)">
+          <div class="name"><i></i>Deck</div>
+          <div class="desc">Ordered slide entities · regions are TipTap fragments</div>
+        </div>
+      </div>
+      <div class="spine-connectors"><i></i><i></i><i></i></div>
+      <div class="spine-band">
+        <span class="band-label">Extension vocabulary</span>
+        <span class="vocab">@mention</span>
+        <span class="vocab">entity-embed</span>
+        <span class="vocab">query-view</span>
+        <span class="vocab new">sheetRange · new</span>
+        <span class="vocab">/slash</span>
+        <span class="vocab">inline-comment</span>
+        <span class="vocab">callout · tabs · cards</span>
+      </div>
+      <div class="single-connector"><i></i></div>
+      <div class="spine-band graph">
+        <span class="band-label">Trellis graph</span>
+        <span class="vocab">entities</span>
+        <span class="vocab">attributes</span>
+        <span class="vocab">relations</span>
+        <span class="vocab">op-log</span>
+        <span class="vocab">TQL</span>
+        <span class="vocab">$formulas</span>
+      </div>
+    </div>
+  </section>
+
+  <!-- ═══════════ Milestone ═══════════ -->
+  <section data-zone="workshop">
+    <div class="milestone">
+      <span class="m-label">First milestone</span>
+      <p><b>Sheet-as-projection + formula columns + the <code style="font-size:12px">sheetRange</code> node.</b>
+         One vertical slice that exercises every layer — graph, formula engine, editor lease,
+         transclusion — before a single line of deck code exists.</p>
+    </div>
+  </section>
+
+</div>
+
+<script>
+  // Formula reference rendering toggle (stored semantic, rendered A1)
+  const formulaText = document.getElementById('formulaText');
+  const cellRef = document.getElementById('cellRef');
+  const refA1 = document.getElementById('refA1');
+  const refAttr = document.getElementById('refAttr');
+  function setRefMode(mode) {
+    const a1 = mode === 'a1';
+    refA1.setAttribute('aria-pressed', String(a1));
+    refAttr.setAttribute('aria-pressed', String(!a1));
+    formulaText.textContent = a1 ? '=C8-D8' : '=this.budgeted - this.spent';
+    cellRef.textContent = a1 ? 'E8' : 'expense:b3d1.remaining';
+  }
+  refA1.addEventListener('click', () => setRefMode('a1'));
+  refAttr.addEventListener('click', () => setRefMode('attr'));
+
+  // Deck: slide switching
+  const slides = [
+    {
+      notes: 'Ten years of side projects converged into one architecture. Say that plainly.',
+      html: `
+        <div style="text-align:center; display:flex; flex-direction:column; gap:12px; align-items:center;">
+          <div class="slide-eyebrow">Turtle Labs</div>
+          <h4 style="font-size: clamp(28px, 5vw, 48px);">Trellis</h4>
+          <p class="sub">The local-first graph OS. Your data is a graph; every app is a projection.</p>
+        </div>
+        <div class="foot">YC S26 · 1 / 5</div>`
+    },
+    {
+      notes: 'Every tool rebuilds the same graph and holds it hostage. Land the blob line.',
+      html: `
+        <div class="slide-eyebrow">Problem</div>
+        <h4>Your tools don't share a brain</h4>
+        <ul>
+          <li><b>Files are blobs.</b> Docs, sheets, and decks can't reference each other's contents.</li>
+          <li><b>Every app rebuilds the same graph</b> — people, projects, tasks — and silos it.</li>
+          <li><b>Sync services own your state.</b> Local-first should be the default, not a feature.</li>
+        </ul>
+        <div class="foot">YC S26 · 2 / 5</div>`
+    },
+    {
+      notes: 'MRR is small but real — lead with the 4 stations, then the graph.',
+      html: `
+        <div class="slide-eyebrow">Traction</div>
+        <h4 style="font-size: clamp(18px, 2.8vw, 26px);">Raster.tv pays the bills while Trellis compounds</h4>
+        <div class="qv-block">
+          <div class="qv-head">
+            <span class="badge live" style="height:20px; font-size:9px;"><span class="dot"></span>LIVE · queryView</span>
+            <span class="q">find revenue where product = "raster" group by month</span>
+            <span class="mk" style="margin-left:auto">10</span>
+          </div>
+          <div class="tiles">
+            <div class="tile"><div class="v">4</div><div class="k">station partners</div></div>
+            <div class="tile"><div class="v">$2.4k</div><div class="k">MRR · Jul</div></div>
+            <div class="tile"><div class="v">128k</div><div class="k">entities synced</div></div>
+          </div>
+          <div class="chart">
+            <div class="chart-title">Raster.tv MRR — Feb–Jul 2026 ($k)</div>
+            <div class="plot" id="plot">
+              <div class="bar" tabindex="0" style="--h:33%" data-v="$0.8k · Feb"><i></i></div>
+              <div class="bar" tabindex="0" style="--h:50%" data-v="$1.2k · Mar"><i></i></div>
+              <div class="bar" tabindex="0" style="--h:66%" data-v="$1.6k · Apr"><i></i></div>
+              <div class="bar" tabindex="0" style="--h:66%" data-v="$1.6k · May"><i></i></div>
+              <div class="bar" tabindex="0" style="--h:83%" data-v="$2.0k · Jun"><i></i></div>
+              <div class="bar hi" tabindex="0" style="--h:100%" data-v="$2.4k · Jul"><i></i><span class="dl">$2.4k</span></div>
+            </div>
+            <div class="x-labels"><span>Feb</span><span>Mar</span><span>Apr</span><span>May</span><span>Jun</span><span>Jul</span></div>
+            <div class="chart-tip" id="chartTip"></div>
+          </div>
+        </div>
+        <div class="foot">YC S26 · 3 / 5</div>`
+    },
+    {
+      notes: 'Demo beats claims — npx trellis studio, then show the sheet feeding the deck.',
+      html: `
+        <div class="slide-eyebrow">Product</div>
+        <h4>One graph, every surface</h4>
+        <ul>
+          <li><b>Docs, sheets, decks</b> are projections over the same entities — they reference, never copy.</li>
+          <li><b>Local-first:</b> the cloud accelerates and relays; it never owns state.</li>
+          <li><b>Agent-native:</b> everything readable and writable through TQL.</li>
+        </ul>
+        <p class="sub" style="font-family: var(--mono); font-size: 13px;">npx trellis studio</p>
+        <div class="foot">YC S26 · 4 / 5</div>`
+    },
+    {
+      notes: 'Close on the wedge: Raster.tv revenue now, Trellis platform next.',
+      html: `
+        <div style="text-align:center; display:flex; flex-direction:column; gap:12px; align-items:center;">
+          <div class="slide-eyebrow">Ask</div>
+          <h4>Fund the substrate</h4>
+          <p class="sub">Raster.tv is the wedge. Trellis is the platform every tool ends up needing.</p>
+        </div>
+        <div class="foot">YC S26 · 5 / 5</div>`
+    },
+  ];
+
+  const canvas = document.getElementById('canvas');
+  const speakerNotes = document.getElementById('speakerNotes');
+  const thumbs = Array.from(document.querySelectorAll('.thumb'));
+
+  function showSlide(i) {
+    canvas.innerHTML = slides[i].html;
+    speakerNotes.textContent = slides[i].notes;
+    thumbs.forEach((t, j) => t.setAttribute('aria-current', String(i === j)));
+    wireChart();
+  }
+  thumbs.forEach((t) => t.addEventListener('click', () => showSlide(Number(t.dataset.slide))));
+
+  // Per-mark hover tooltip on the traction chart
+  function wireChart() {
+    const plot = document.getElementById('plot');
+    const tip = document.getElementById('chartTip');
+    if (!plot || !tip) return;
+    plot.querySelectorAll('.bar').forEach((bar) => {
+      const show = () => {
+        tip.textContent = bar.dataset.v;
+        const pr = plot.parentElement.getBoundingClientRect();
+        const br = bar.getBoundingClientRect();
+        tip.style.left = (br.left - pr.left + br.width / 2) + 'px';
+        tip.style.top = (br.bottom - pr.top - (parseFloat(bar.style.getPropertyValue('--h')) / 100) * br.height) + 'px';
+        tip.style.display = 'block';
+      };
+      const hide = () => { tip.style.display = 'none'; };
+      bar.addEventListener('mouseenter', show);
+      bar.addEventListener('mouseleave', hide);
+      bar.addEventListener('focus', show);
+      bar.addEventListener('blur', hide);
+    });
+  }
+
+  showSlide(2);
+</script>

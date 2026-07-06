@@ -28,6 +28,8 @@
   // TableControls replaced by enhanced table system (TableHandleExtension + Vue components)
   import { EntityEmbed } from '~/lib/entity-embed-extension'
   import { QueryView } from '~/lib/query-view-extension'
+  import { SheetRange } from '~/lib/sheet-range-extension'
+  import { parseA1Range } from '~/lib/sheet-a1'
   import { UrlEmbed, UrlEmbedPasteHandler } from '~/lib/url-embed-extension'
   import { useEntitySearch } from '~/composables/useEntitySearch'
   import type { EntitySearchItem } from '~/composables/useEntitySearch'
@@ -157,10 +159,10 @@
   }
 
   const editorClass = props.seamless
-    ? 'min-h-[24px] focus:outline-none prose-sm prose-p:my-0.5 prose-headings:my-1 prose-ul:my-0.5 prose-li:my-0'
+    ? 'min-h-[24px] focus:outline-none prose-lg prose-p:my-0.5 prose-headings:my-1 prose-ul:my-0.5 prose-li:my-0'
     : props.compact
-      ? 'min-h-[60px] focus:outline-none prose-sm prose-p:my-1 prose-headings:my-2 prose-ul:my-1 prose-li:my-0.5'
-      : 'min-h-[100px] focus:outline-none prose-sm prose-p:my-2 prose-headings:my-3 prose-ul:my-2 prose-li:my-1'
+      ? 'min-h-[60px] focus:outline-none prose-lg prose-p:my-1 prose-headings:my-2 prose-ul:my-1 prose-li:my-0.5'
+      : 'min-h-[100px] focus:outline-none prose-lg prose-p:my-2 prose-headings:my-3 prose-ul:my-2 prose-li:my-1'
 
   // Build entity search for mentions and embeds
   const entitySearch = props.mentions || props.embeds ? useEntitySearch() : null
@@ -202,8 +204,14 @@
   // ── Embed picker state ──────────────────────────────────────────────
   const showEntityPicker = ref(false)
   const showQueryPicker = ref(false)
+  const showSheetRangePicker = ref(false)
   const entityPickerSearch = ref('')
   const queryPickerType = ref('task')
+  const sheetRangePickerSearch = ref('')
+  const sheetRangePickerId = ref('')
+  const sheetRangePickerRange = ref('A2:E6')
+  const sheetRangePickerTitle = ref('')
+  const sheetRangePickerError = ref('')
 
   const entityPickerItems = computed(() => {
     if (!entitySearch || !showEntityPicker.value) return []
@@ -221,6 +229,51 @@
   function handleEmbedQuery(_editor: any) {
     showQueryPicker.value = true
     queryPickerType.value = 'task'
+  }
+
+  function handleEmbedSheetRange(_editor: any) {
+    showSheetRangePicker.value = true
+    sheetRangePickerSearch.value = ''
+    sheetRangePickerId.value = ''
+    sheetRangePickerRange.value = 'A2:E6'
+    sheetRangePickerTitle.value = ''
+    sheetRangePickerError.value = ''
+  }
+
+  const sheetPickerItems = computed(() => {
+    if (!entitySearch || !showSheetRangePicker.value) return []
+    const q = sheetRangePickerSearch.value.toLowerCase().trim()
+    const items = (entitySearch.filteredItems.value as EntitySearchItem[]).filter((i) => i.type === 'sheet')
+    if (!q) return items.slice(0, 20)
+    return items.filter((i) => i.title?.toLowerCase().includes(q) || i.id?.toLowerCase().includes(q)).slice(0, 20)
+  })
+
+  function selectSheetForRange(item: EntitySearchItem) {
+    sheetRangePickerId.value = item.id
+    sheetRangePickerTitle.value = item.title || 'Sheet range'
+    sheetRangePickerSearch.value = item.title || item.id
+  }
+
+  function insertSheetRangeBlock() {
+    sheetRangePickerError.value = ''
+    if (!sheetRangePickerId.value) {
+      sheetRangePickerError.value = 'Pick a sheet entity'
+      return
+    }
+    if (!parseA1Range(sheetRangePickerRange.value)) {
+      sheetRangePickerError.value = 'Range must look like A2:E6'
+      return
+    }
+    editor.value
+      ?.chain()
+      .focus()
+      .insertSheetRange({
+        sheetId: sheetRangePickerId.value,
+        range: sheetRangePickerRange.value.trim(),
+        title: sheetRangePickerTitle.value.trim() || undefined,
+      })
+      .run()
+    showSheetRangePicker.value = false
   }
 
   function handleEmbedImage(_editor: any) {
@@ -562,6 +615,7 @@
           chatMode: !!props.chatMode,
           onEmbedEntity: props.embeds ? handleEmbedEntity : undefined,
           onEmbedQuery: props.embeds ? handleEmbedQuery : undefined,
+          onEmbedSheetRange: props.embeds ? handleEmbedSheetRange : undefined,
           onEmbedImage: props.embeds && props.images ? handleEmbedImage : undefined,
           onEmbedUrl: props.embeds ? handleEmbedUrl : undefined,
           onEmbedImageUrl: props.embeds ? handleEmbedImageUrl : undefined,
@@ -590,6 +644,7 @@
           Card as any,
           EntityEmbed as any,
           QueryView as any,
+          SheetRange as any,
           UrlEmbed as any,
           UrlEmbedPasteHandler as any,
         )
@@ -1872,7 +1927,7 @@
       :editor="editor"
       class="prose prose-sm dark:prose-invert max-w-none text-sm text-foreground"
       :class="[
-        seamless ? 'px-0 py-0' : fillHeight ? 'px-8 py-0' : 'px-8 py-8',
+        seamless ? 'px-0 py-0' : fillHeight ? 'px-0 py-0' : 'px-0 py-0',
         seamless ? 'min-h-[24px]' : compact ? 'min-h-[60px]' : 'min-h-[100px]',
         fillHeight ? 'flex-1 min-h-0 overflow-y-auto' : '',
       ]" />
@@ -1950,6 +2005,65 @@
             </button>
           </div>
           <UiButton class="w-full shrink-0" size="sm" @click="selectTypeForQuery">Insert</UiButton>
+        </div>
+      </UiDialogContent>
+    </UiDialog>
+
+    <!-- ── Sheet Range Picker Dialog ── -->
+    <UiDialog v-if="embeds" :open="showSheetRangePicker" @update:open="showSheetRangePicker = $event">
+      <UiDialogContent class="sm:max-w-md">
+        <UiDialogHeader>
+          <UiDialogTitle>Embed Sheet Range</UiDialogTitle>
+          <UiDialogDescription>Pick a sheet and A1 range for live transclusion.</UiDialogDescription>
+        </UiDialogHeader>
+        <div class="flex flex-col gap-3 py-2 min-w-0">
+          <input
+            v-model="sheetRangePickerSearch"
+            type="text"
+            placeholder="Search sheets…"
+            class="h-9 w-full rounded-md border border-input bg-background px-3 py-1 text-sm shadow-sm transition-colors placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+            @focus="sheetRangePickerId = ''" />
+          <div v-if="!sheetRangePickerId" class="max-h-48 overflow-y-auto space-y-0 min-w-0">
+            <button
+              v-for="item in sheetPickerItems"
+              :key="item.id"
+              type="button"
+              class="flex w-full items-center gap-2.5 rounded-md px-2.5 py-2 text-left text-sm hover:bg-accent transition-colors"
+              @click="selectSheetForRange(item)">
+              <Icon name="lucide:table-2" class="h-4 w-4 shrink-0 text-muted-foreground" />
+              <div class="min-w-0 flex-1">
+                <span class="block truncate font-medium">{{ item.title || 'Untitled' }}</span>
+                <span class="block truncate font-data text-[10px] text-muted-foreground">{{ item.id }}</span>
+              </div>
+            </button>
+            <p v-if="!sheetPickerItems.length" class="py-4 text-center text-xs text-muted-foreground">
+              No sheet entities found — seed q3-runway demo first
+            </p>
+          </div>
+          <div v-else class="space-y-3">
+            <p class="text-xs text-muted-foreground">
+              Sheet: <span class="font-medium text-foreground">{{ sheetRangePickerTitle }}</span>
+            </p>
+            <div class="space-y-1">
+              <label class="text-xs font-medium text-muted-foreground">A1 range</label>
+              <input
+                v-model="sheetRangePickerRange"
+                type="text"
+                placeholder="A2:E6"
+                class="h-9 w-full rounded-md border border-input bg-background px-3 py-1 font-data text-sm shadow-sm focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring" />
+            </div>
+            <div class="space-y-1">
+              <label class="text-xs font-medium text-muted-foreground">Block title (optional)</label>
+              <input
+                v-model="sheetRangePickerTitle"
+                type="text"
+                class="h-9 w-full rounded-md border border-input bg-background px-3 py-1 text-sm shadow-sm focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring" />
+            </div>
+          </div>
+          <p v-if="sheetRangePickerError" class="text-xs text-destructive">{{ sheetRangePickerError }}</p>
+          <UiButton class="w-full shrink-0" size="sm" :disabled="!sheetRangePickerId" @click="insertSheetRangeBlock">
+            Insert
+          </UiButton>
         </div>
       </UiDialogContent>
     </UiDialog>

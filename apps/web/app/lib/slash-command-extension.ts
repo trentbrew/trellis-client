@@ -181,6 +181,16 @@ function getBuiltInCommands(hasEmbeds: boolean, hasImages: boolean): SlashComman
         },
       },
       {
+        id: 'sheet-range',
+        label: 'Sheet Range',
+        description: 'Live transclusion from a sheet projection',
+        icon: 'lucide:table-2',
+        group: 'Embeds',
+        action: (_editor) => {
+          // Handled by onEmbedSheetRange callback in RichTextEditor
+        },
+      },
+      {
         id: 'diagram',
         label: 'Diagram',
         description: 'Mermaid flowchart, sequence, Gantt, and more',
@@ -252,13 +262,14 @@ export interface SlashCommandConfig {
   onEmbedImageUrl?: (editor: any) => void
   onEmbedYoutube?: (editor: any) => void
   onEmbedSpotify?: (editor: any) => void
+  onEmbedSheetRange?: (editor: any) => void
   getTemplates?: () => NoteTemplate[]
 }
 
 const CHAT_EXCLUDED_IDS = new Set(['heading-1', 'heading-2', 'heading-3', 'table', 'diagram'])
 
 export function createSlashCommandExtension(config: SlashCommandConfig = {}) {
-  const { hasEmbeds = false, hasImages = false, chatMode = false, onEmbedEntity, onEmbedQuery, onEmbedImage, onEmbedUrl, onEmbedImageUrl, onEmbedYoutube, onEmbedSpotify, getTemplates } = config
+  const { hasEmbeds = false, hasImages = false, chatMode = false, onEmbedEntity, onEmbedQuery, onEmbedImage, onEmbedUrl, onEmbedImageUrl, onEmbedYoutube, onEmbedSpotify, onEmbedSheetRange, getTemplates } = config
 
   return Extension.create({
     name: 'slashCommand',
@@ -301,6 +312,10 @@ export function createSlashCommandExtension(config: SlashCommandConfig = {}) {
             }
             if (item.id === 'spotify-embed' && onEmbedSpotify) {
               onEmbedSpotify(editor)
+              return
+            }
+            if (item.id === 'sheet-range' && onEmbedSheetRange) {
+              onEmbedSheetRange(editor)
               return
             }
             item.action(editor)

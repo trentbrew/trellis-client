@@ -110,6 +110,15 @@ const workspaceRoute: RouteDefinition = {
       order: 20,
       items: [],
     },
+    {
+      label: 'WORKSHOP',
+      key: 'workshop-sheets',
+      icon: 'lucide:hammer',
+      collapsible: true,
+      editable: true,
+      order: 25,
+      items: [],
+    },
   ],
   children: [
     {
@@ -311,6 +320,100 @@ const locationsRoute: RouteDefinition = {
     fullWidth: true,
     hideSidebar: false,
   },
+}
+
+// ============================================================================
+// Sheets Route — /sheets (Workshop zone; icon rail)
+// ============================================================================
+
+const sheetsRoute: RouteDefinition = {
+  '@id': 'route:sheets',
+  '@type': 'trellis:Route',
+  routePath: '/sheets',
+  label: 'Sheets',
+  icon: 'lucide:table-2',
+  order: 25,
+  inRail: true,
+  railPosition: 'primary',
+  inCommandPalette: true,
+  requiresAuth: true,
+  searchKeywords: ['sheets', 'spreadsheet', 'projection', 'workshop'],
+  meta: {
+    title: 'Sheets',
+    description: 'Graph-native sheet projections',
+    sidebarSectionPath: '/workspace',
+    fullWidth: true,
+    hideSidebar: false,
+  },
+  children: [
+    {
+      '@id': 'route:sheets/sheet',
+      '@type': 'trellis:Route',
+      routePath: '/sheets/:id',
+      label: 'Sheet',
+      icon: 'lucide:table-2',
+      meta: {
+        title: 'Sheet',
+        sidebarSectionPath: '/workspace',
+        fullWidth: true,
+      },
+    },
+  ],
+}
+
+const decksRoute: RouteDefinition = {
+  '@id': 'route:decks',
+  '@type': 'trellis:Route',
+  routePath: '/decks',
+  label: 'Decks',
+  icon: 'lucide:presentation',
+  order: 26,
+  inRail: true,
+  railPosition: 'primary',
+  inCommandPalette: true,
+  requiresAuth: true,
+  searchKeywords: ['decks', 'presentation', 'slides', 'workshop'],
+  sidebarSections: [
+    {
+      label: 'DECKS',
+      key: 'decks-list',
+      icon: 'lucide:presentation',
+      collapsible: true,
+      editable: true,
+      order: 10,
+      items: [],
+    },
+  ],
+  meta: {
+    title: 'Decks',
+    description: 'Graph-native deck projections',
+    fullWidth: true,
+    hideSidebar: false,
+  },
+  children: [
+    {
+      '@id': 'route:decks/deck',
+      '@type': 'trellis:Route',
+      routePath: '/decks/:id',
+      label: 'Deck',
+      icon: 'lucide:presentation',
+      meta: {
+        title: 'Deck',
+        fullWidth: true,
+      },
+    },
+    {
+      '@id': 'route:decks/present',
+      '@type': 'trellis:Route',
+      routePath: '/decks/:id/present',
+      label: 'Present',
+      icon: 'lucide:monitor-play',
+      meta: {
+        title: 'Present',
+        fullWidth: true,
+      },
+    },
+  ],
 }
 
 // ============================================================================
@@ -675,6 +778,8 @@ export function getRouteDefinitions(): Record<string, RouteDefinition> {
     'route:query': queryRoute,
     'route:graph': graphRoute,
     'route:locations': locationsRoute,
+    'route:sheets': sheetsRoute,
+    'route:decks': decksRoute,
     'route:settings': settingsRoute,
   }
 }
@@ -692,5 +797,7 @@ export {
   queryRoute,
   graphRoute,
   locationsRoute,
+  sheetsRoute,
+  decksRoute,
   settingsRoute,
 }
