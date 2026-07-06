@@ -18,7 +18,7 @@ import type {
   NotificationStatus,
   TrellisNotification,
 } from '~/types/notification'
-import { NOTIFICATION_KIND_VISUALS, NOTIFICATION_SOUND_FILES, resolveNotificationVisual } from '~/types/notification'
+import { NOTIFICATION_KIND_VISUALS, NOTIFICATION_SOUND_FILES, resolveNotificationDelivery, resolveNotificationVisual } from '~/types/notification'
 import { useSSESubscribe } from '~/composables/useTrellisSSE'
 import { useTrellisGraph } from '~/composables/useTrellisGraph'
 
@@ -90,6 +90,8 @@ function rowToNotification(row: Record<string, any>): TrellisNotification {
     actions: parseActions(get('actions')),
     metadata: parseMetadata(get('metadata')),
     groupKey: get('groupKey'),
+    delivery: get('delivery'),
+    requiredAction: get('requiredAction'),
     createdAt: get('createdAt') || new Date().toISOString(),
     updatedAt: get('updatedAt'),
   }
@@ -126,17 +128,20 @@ export function useTrellisNotifications() {
 
   async function refresh() {
     try {
-      // EQL-S RETURN has inner-join semantics — any attr missing on a
-      // notification drops the entire row. We only project fields that
-      // every notification is guaranteed to carry. Optional fields
-      // (body, url, icon, color, actions, metadata, groupKey, sourceId,
-      // entityId, entityType, readAt, snoozeUntil, archivedAt, sound)
-      // are parsed as undefined and filled lazily by the UI if present.
+      // EQL-S RETURN has inner-join semantics — attrs missing on a node
+      // drop the row. P0+ notifications always persist `delivery`; legacy
+      // rows without it may disappear from results (resolveNotificationDelivery
+      // still defaults missing → interrupt when a row is returned).
       const result = await queryOnce(
-        `FIND ${NOTIFICATION_TYPE} AS ?n RETURN ?n.title, ?n.kind, ?n.source, ?n.priority, ?n.status, ?n.createdAt, ?n.updatedAt ORDER BY ?n.createdAt DESC LIMIT 100`,
+        `FIND ${NOTIFICATION_TYPE} AS ?n RETURN ?n.title, ?n.kind, ?n.source, ?n.priority, ?n.status, ?n.delivery, ?n.requiredAction, ?n.createdAt, ?n.updatedAt ORDER BY ?n.createdAt DESC LIMIT 100`,
       )
       const next = (result.data || []).map(rowToNotification)
-      const incoming = next.filter((n) => !_lastSeenIds.has(n.id) && n.status === 'unread')
+      const incoming = next.filter(
+        (n) =>
+          !_lastSeenIds.has(n.id) &&
+          n.status === 'unread' &&
+          resolveNotificationDelivery(n) === 'interrupt',
+      )
 
       // After first load, detect genuinely new notifications → play sound + toast
       if (_initialized.value && incoming.length > 0 && typeof window !== 'undefined') {
@@ -176,7 +181,14 @@ export function useTrellisNotifications() {
   // ── Derived ───────────────────────────────────────────────────────────────
   const notifications = computed(() => _list.value)
   const unread = computed(() => _list.value.filter((n) => n.status === 'unread'))
-  const unreadCount = computed(() => unread.value.length)
+  const interruptUnread = computed(() =>
+    unread.value.filter((n) => resolveNotificationDelivery(n) === 'interrupt'),
+  )
+  const unreadCount = computed(() => interruptUnread.value.length)
+  const passiveUnread = computed(() =>
+    unread.value.filter((n) => resolveNotificationDelivery(n) === 'passive'),
+  )
+  const hasUnreadPassive = computed(() => passiveUnread.value.length > 0)
   const snoozed = computed(() => _list.value.filter((n) => n.status === 'snoozed'))
   const archived = computed(() => _list.value.filter((n) => n.status === 'archived'))
   const loading = computed(() => _loading.value)
@@ -215,7 +227,7 @@ export function useTrellisNotifications() {
   }
 
   async function markAllAsRead() {
-    const ids = _list.value.filter((n) => n.status === 'unread').map((n) => n.id)
+    const ids = interruptUnread.value.map((n) => n.id)
     await Promise.all(ids.map((id) => markAsRead(id)))
   }
 
@@ -314,6 +326,8 @@ export function useTrellisNotifications() {
     notifications,
     unread,
     unreadCount,
+    passiveUnread,
+    hasUnreadPassive,
     snoozed,
     archived,
     loading,

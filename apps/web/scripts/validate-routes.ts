@@ -38,6 +38,7 @@ const IGNORED_ORPHAN_PREFIXES = [
   '/graph',
   '/layouts',
   '/learn',
+  '/lobby',
   '/members',
   '/notifications',
   '/onboarding',
