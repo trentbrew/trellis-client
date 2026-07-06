@@ -1,0 +1,87 @@
+{
+  "description": "Curated public roadmap for campus-commons (M2.5). Redacted slice — not live .trellis/ sync.",
+  "zoneId": "entity:founder-facility-showroom",
+  "facilityId": "entity:founder-facility",
+  "issues": [
+    {
+      "id": "issue:yc-deck-showroom",
+      "title": "YC S26 pitch deck in Showroom",
+      "status": "closed",
+      "labels": "yc,showroom,deck",
+      "assignee": "agent:claude",
+      "priority": "high"
+    },
+    {
+      "id": "issue:yc-remote-mcp-m1",
+      "title": "Remote MCP — claude.ai + ChatGPT connectors",
+      "status": "in_progress",
+      "labels": "yc,remote-mcp,m1",
+      "assignee": "agent:claude",
+      "priority": "high"
+    },
+    {
+      "id": "issue:yc-campus-commons-publish",
+      "title": "campus-commons curated publish pipeline",
+      "status": "closed",
+      "labels": "yc,remote-mcp,m2",
+      "assignee": "agent:claude",
+      "priority": "high"
+    },
+    {
+      "id": "issue:yc-vcs-board-mcp",
+      "title": "Roadmap board queryable over remote MCP",
+      "status": "in_progress",
+      "labels": "yc,vcs,remote-mcp,m2.5",
+      "assignee": "agent:cursor",
+      "priority": "high"
+    },
+    {
+      "id": "issue:yc-vcs-kanban-lab",
+      "title": "Local VCS issue board at /lab/issues",
+      "status": "closed",
+      "labels": "vcs,studio,lab",
+      "assignee": "agent:cursor",
+      "priority": "medium"
+    },
+    {
+      "id": "issue:yc-adr002-p3",
+      "title": "ADR-002 P3 — room-backed local client",
+      "status": "backlog",
+      "labels": "adr-002,kernel,convergence",
+      "assignee": "agent:claude",
+      "priority": "medium"
+    },
+    {
+      "id": "issue:yc-sheets-decks",
+      "title": "Sheets + Decks projection hardening",
+      "status": "queue",
+      "labels": "sheets,decks,projection",
+      "assignee": "agent:cursor",
+      "priority": "medium"
+    },
+    {
+      "id": "issue:yc-oauth-dcr",
+      "title": "OAuth dynamic client registration (F3)",
+      "status": "backlog",
+      "labels": "remote-mcp,oauth,security",
+      "assignee": "agent:claude",
+      "priority": "low"
+    },
+    {
+      "id": "issue:yc-headless-thesis",
+      "title": "Headless-first demo — one room, three doors",
+      "status": "queue",
+      "labels": "yc,demo,architecture",
+      "assignee": "agent:claude",
+      "priority": "high"
+    },
+    {
+      "id": "issue:yc-agent-attribution",
+      "title": "Agent lane attribution + decision traces in room",
+      "status": "closed",
+      "labels": "yc,agents,audit",
+      "assignee": "agent:claude",
+      "priority": "medium"
+    }
+  ]
+}
