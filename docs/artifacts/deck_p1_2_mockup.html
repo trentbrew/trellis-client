@@ -1,0 +1,341 @@
+<!-- trellis-design-adopted: slug=deck_p1_2 parent=TRL-302 source=derived from deck_p1_1_mockup.html + sheets_decks_mockup.html#deck -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<title>Trellis — Deck P1.2 (TRL-303 design mock)</title>
+<style>
+  :root {
+    color-scheme: dark;
+    --background: #0a0a0c;
+    --surface: #141418;
+    --surface-2: #1a1a21;
+    --surface-3: #202028;
+    --text: #e8e8ec;
+    --text-muted: #888894;
+    --text-faint: #55555f;
+    --border: #2a2a32;
+    --zone-showroom: #8b5cf6;
+    --live: #34d399;
+    --live-pulse: #6ee7b7;
+    --series: #6366f1;
+    --radius-sm: 6px;
+    --radius-md: 10px;
+    --radius-lg: 14px;
+    --radius-pill: 9999px;
+    --font: "IBM Plex Sans", ui-sans-serif, system-ui, sans-serif;
+    --mono: "IBM Plex Mono", ui-monospace, Menlo, monospace;
+    --zone: var(--zone-showroom);
+    --vantage-duration: 280ms;
+    --editor-opacity: 1;
+    --present-opacity: 0;
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--background); color: var(--text); font-family: var(--font); font-size: 14px; line-height: 1.55; }
+  .page { max-width: 1100px; margin: 0 auto; padding: 40px 24px 64px; }
+  .masthead { margin-bottom: 20px; max-width: 720px; }
+  .eyebrow { font-family: var(--mono); font-size: 11px; letter-spacing: 0.14em; text-transform: uppercase; color: var(--zone); margin: 0 0 8px; }
+  h1 { margin: 0 0 8px; font-size: 28px; font-weight: 650; }
+  .sub { margin: 0 0 16px; color: var(--text-muted); font-size: 14px; max-width: 68ch; }
+  .p12-tag { display: inline-block; margin-top: 8px; padding: 4px 10px; border-radius: var(--radius-pill); border: 1px solid var(--series); font-family: var(--mono); font-size: 10px; color: var(--series); }
+  .mode-toggle { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 16px; }
+  .mode-toggle button { appearance: none; border: 1px solid var(--border); background: var(--surface-2); color: var(--text-muted); font-family: var(--mono); font-size: 10px; letter-spacing: 0.06em; text-transform: uppercase; padding: 6px 12px; border-radius: var(--radius-pill); cursor: pointer; }
+  .mode-toggle button.on { border-color: var(--zone); color: var(--text); background: color-mix(in oklch, var(--zone) 12%, var(--surface)); }
+  .demo-bar { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 20px; }
+  .demo-bar button { appearance: none; border: 1px solid var(--border); background: var(--surface-2); color: var(--text-muted); font-family: var(--mono); font-size: 9.5px; padding: 5px 10px; border-radius: var(--radius-sm); cursor: pointer; }
+  .demo-bar button:hover { border-color: var(--zone); color: var(--text); }
+  .viewport { position: relative; min-height: 520px; }
+  .shell-layer { transition: opacity var(--vantage-duration) ease, transform var(--vantage-duration) ease; }
+  .shell-editor { opacity: var(--editor-opacity); transform: scale(calc(0.98 + var(--editor-opacity) * 0.02)); }
+  .shell-present { position: fixed; inset: 0; z-index: 50; background: #000; display: flex; flex-direction: column; align-items: center; justify-content: center; opacity: var(--present-opacity); pointer-events: none; }
+  .shell-present.active { pointer-events: auto; }
+  body[data-vantage="present"] { --editor-opacity: 0; --present-opacity: 1; overflow: hidden; }
+  .frame { border: 1px solid var(--border); border-radius: var(--radius-lg); background: var(--surface); overflow: hidden; box-shadow: 0 24px 60px -30px rgba(0,0,0,0.8); }
+  .frame-bar { display: flex; align-items: center; gap: 12px; height: 46px; padding: 0 14px; border-bottom: 1px solid var(--border); background: var(--surface-2); font-size: 12px; }
+  .crumb { color: var(--text-muted); }
+  .crumb b { color: var(--text); }
+  .crumb .sep { opacity: 0.35; padding: 0 4px; }
+  .bar-spacer { flex: 1; }
+  .badge { display: inline-flex; align-items: center; gap: 6px; height: 24px; padding: 0 9px; border-radius: var(--radius-pill); font-family: var(--mono); font-size: 10.5px; letter-spacing: 0.06em; border: 1px solid color-mix(in oklch, var(--zone) 40%, var(--border)); background: color-mix(in oklch, var(--zone) 10%, var(--surface)); }
+  .badge .dot { width: 6px; height: 6px; border-radius: 50%; background: var(--zone); }
+  .badge.live { border-color: color-mix(in oklch, var(--live) 40%, var(--border)); background: color-mix(in oklch, var(--live) 10%, var(--surface)); }
+  .badge.live .dot { background: var(--live); }
+  .badge.live.pulse .dot { animation: livePulse 400ms ease; }
+  @keyframes livePulse { 0%,100% { transform: scale(1); background: var(--live); } 50% { transform: scale(1.4); background: var(--live-pulse); } }
+  .deck-shell { display: grid; grid-template-columns: 148px 1fr 208px; min-height: 480px; }
+  .sorter { border-right: 1px solid var(--border); padding: 12px 10px; display: flex; flex-direction: column; gap: 10px; background: var(--surface-2); position: relative; }
+  .drop-line { height: 2px; background: var(--zone); border-radius: 1px; margin: -5px 0; opacity: 0; transition: opacity 120ms; }
+  .drop-line.show { opacity: 1; }
+  .thumb { appearance: none; border: 1px solid var(--border); border-radius: var(--radius-sm); background: var(--surface); padding: 0; cursor: grab; text-align: left; overflow: hidden; display: block; width: 100%; position: relative; transition: transform 180ms, opacity 180ms, box-shadow 180ms; }
+  .thumb.dragging { opacity: 0.45; cursor: grabbing; }
+  .thumb.ghost { position: fixed; z-index: 200; width: 128px; opacity: 0.85; pointer-events: none; box-shadow: 0 12px 40px rgba(0,0,0,0.5); transform: scale(1.02); }
+  .thumb .grip { position: absolute; left: 4px; top: 50%; transform: translateY(-50%); font-size: 8px; color: var(--text-faint); opacity: 0.85; cursor: grab; }
+  .thumb .mini { aspect-ratio: 16/9; padding: 8px 8px 8px 14px; display: flex; flex-direction: column; gap: 4px; justify-content: center; }
+  .thumb .mini i { display: block; height: 4px; border-radius: 2px; background: var(--surface-3); }
+  .thumb .mini i.t { height: 6px; background: var(--text-faint); width: 70%; }
+  .thumb .label { display: flex; gap: 6px; padding: 4px 8px; border-top: 1px solid var(--border); font-family: var(--mono); font-size: 9.5px; color: var(--text-faint); }
+  .thumb[aria-current="true"] { border-color: var(--zone); box-shadow: 0 0 0 1px var(--zone); }
+  .thumb[aria-current="true"] .label { color: var(--zone); }
+  .stage { padding: 22px; display: flex; flex-direction: column; gap: 14px; min-width: 0; }
+  .canvas { aspect-ratio: 16/9; border: 1px solid var(--border); border-radius: var(--radius-md); background: #0d0d11; padding: clamp(14px, 3.5%, 28px); display: flex; flex-direction: column; justify-content: center; gap: 10px; position: relative; overflow: hidden; }
+  .canvas .slide-eyebrow { font-family: var(--mono); font-size: 10.5px; letter-spacing: 0.14em; text-transform: uppercase; color: var(--zone); }
+  .canvas h4 { margin: 0; font-size: clamp(16px, 2.8vw, 26px); font-weight: 650; }
+  .canvas .body { margin: 0; color: var(--text-muted); font-size: 13px; text-align: center; max-width: 36ch; align-self: center; outline: none; border-radius: 4px; padding: 4px; }
+  .canvas .body.editing { outline: 2px solid var(--zone); outline-offset: 4px; color: var(--text); }
+  .canvas .foot { position: absolute; bottom: 10px; left: 0; right: 0; text-align: center; font-family: var(--mono); font-size: 9.5px; color: var(--text-faint); }
+  .qv-block { border: 1px solid var(--border); border-radius: var(--radius-md); background: var(--surface-2); overflow: hidden; }
+  .qv-head { display: flex; align-items: center; gap: 8px; padding: 6px 10px; border-bottom: 1px solid var(--border); font-family: var(--mono); font-size: 9px; color: var(--text-faint); }
+  .qv-head .q { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .qv-fallback { font-size: 8px; color: var(--text-faint); padding: 2px 6px; border: 1px solid var(--border); border-radius: var(--radius-pill); }
+  .tiles { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; padding: 10px; }
+  .tile { text-align: center; padding: 8px; border-radius: var(--radius-sm); background: var(--surface-3); transition: background 300ms; }
+  .tile.flash { background: color-mix(in oklch, var(--live) 15%, var(--surface-3)); }
+  .tile .v { font-size: 18px; font-weight: 650; font-variant-numeric: tabular-nums; }
+  .tile .k { font-family: var(--mono); font-size: 9px; color: var(--text-faint); margin-top: 2px; }
+  .chart { padding: 0 10px 10px; }
+  .plot { display: flex; align-items: flex-end; gap: 6px; height: 56px; }
+  .plot .bar { flex: 1; height: var(--h); background: color-mix(in oklch, var(--series) 60%, var(--surface-3)); border-radius: 2px 2px 0 0; transition: height 400ms ease; }
+  .plot .bar.hi { background: var(--series); }
+  .notes-strip { display: flex; align-items: flex-start; gap: 10px; border: 1px solid var(--border); border-radius: var(--radius-md); padding: 9px 13px; font-size: 12.5px; color: var(--text-muted); background: var(--surface-2); }
+  .notes-strip .k { font-family: var(--mono); font-size: 9.5px; letter-spacing: 0.1em; color: var(--text-faint); flex-shrink: 0; }
+  .inspector { border-left: 1px solid var(--border); padding: 16px 14px; display: flex; flex-direction: column; gap: 18px; background: var(--surface-2); font-size: 12px; }
+  .inspector h5 { margin: 0 0 8px; font-family: var(--mono); font-size: 9.5px; letter-spacing: 0.12em; text-transform: uppercase; color: var(--text-faint); font-weight: 500; }
+  .layout-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 7px; }
+  .layout-opt { border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 8px 6px 6px; display: flex; flex-direction: column; gap: 4px; cursor: pointer; background: var(--surface); min-height: 52px; }
+  .layout-opt i { display: block; height: 3px; border-radius: 2px; background: var(--surface-3); }
+  .layout-opt i.t { background: var(--text-faint); width: 60%; }
+  .layout-opt i.live { height: 10px; background: color-mix(in oklch, var(--live) 30%, var(--surface-3)); border-radius: 3px; }
+  .layout-opt.sel { border-color: var(--zone); box-shadow: 0 0 0 1px var(--zone); }
+  .layout-opt .lo-label { font-family: var(--mono); font-size: 8.5px; color: var(--text-faint); text-transform: uppercase; margin-top: auto; }
+  .layout-opt.sel .lo-label { color: var(--zone); }
+  .vantage { display: flex; flex-wrap: wrap; gap: 6px; }
+  .vantage span { padding: 3px 9px; border-radius: var(--radius-pill); border: 1px solid var(--border); font-family: var(--mono); font-size: 10px; color: var(--text-muted); cursor: pointer; }
+  .vantage span.on { border-color: var(--zone); color: var(--text); background: color-mix(in oklch, var(--zone) 12%, transparent); }
+  .present-btn { margin-top: auto; appearance: none; border: 1px solid color-mix(in oklch, var(--zone) 50%, var(--border)); background: color-mix(in oklch, var(--zone) 16%, var(--surface)); color: var(--text); font-size: 12.5px; font-weight: 550; padding: 8px 12px; border-radius: var(--radius-md); cursor: pointer; }
+  .present-stage { width: min(100%, calc(100vh * 16 / 9 - 80px)); aspect-ratio: 16/9; border: 1px solid #222; border-radius: var(--radius-md); background: #0d0d11; padding: clamp(20px, 4%, 40px); display: flex; flex-direction: column; justify-content: center; gap: 12px; position: relative; overflow: hidden; }
+  .present-controls { position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%); display: flex; gap: 12px; align-items: center; padding: 8px 16px; border-radius: var(--radius-pill); background: rgba(20,20,24,0.85); border: 1px solid #333; backdrop-filter: blur(8px); font-family: var(--mono); font-size: 11px; color: var(--text-muted); }
+  .present-controls button { appearance: none; border: 1px solid #444; background: transparent; color: var(--text); padding: 4px 12px; border-radius: var(--radius-pill); cursor: pointer; font-family: inherit; font-size: 11px; }
+  .legend { margin-top: 24px; padding: 14px 16px; border: 1px dashed var(--border); border-radius: var(--radius-md); font-size: 12px; color: var(--text-muted); }
+  .legend b { color: var(--text); }
+  @media (max-width: 900px) { .deck-shell { grid-template-columns: 1fr; } }
+  @media (prefers-reduced-motion: reduce) {
+    :root { --vantage-duration: 0ms; }
+    * { animation: none !important; transition-duration: 0ms !important; }
+  }
+</style>
+</head>
+<body data-vantage="editor">
+<div class="page" data-zone="showroom">
+  <header class="masthead">
+    <p class="eyebrow">P1.2 · Showroom</p>
+    <h1>Deck projection — live data, reorder, crossfade</h1>
+    <p class="sub">Extends P1.1 with <strong>live TQL queryView</strong>, <strong>thumb drag-reorder</strong>, <strong>body lease</strong>, <strong>layout picker</strong>, and <strong>280ms editor↔present crossfade</strong>. Baseline: <a href="./deck_p1_1_mockup.html">deck_p1_1_mockup.html</a></p>
+    <span class="p12-tag">P1.2 · live queryView + DnD + --vantage crossfade</span>
+  </header>
+
+  <div class="mode-toggle" role="group" aria-label="Preview mode">
+    <button type="button" class="on" id="btnEditor">Editor vantage</button>
+    <button type="button" id="btnPresent">Present vantage (crossfade)</button>
+  </div>
+
+  <div class="demo-bar" aria-label="Demo controls">
+    <button type="button" id="btnRefresh">Simulate SSE query refresh</button>
+    <button type="button" id="btnSlide0">Slide 1 · title</button>
+    <button type="button" id="btnSlide1">Slide 2 · problem (body lease)</button>
+    <button type="button" id="btnSlide2">Slide 3 · traction (live query)</button>
+  </div>
+
+  <div class="viewport">
+    <div class="shell-layer shell-editor" id="editorShell" data-design-note="DeckProjectionFrame — P1.2 extensions">
+      <div class="frame">
+        <div class="frame-bar">
+          <div class="crumb">turtle-labs <span class="sep">▸</span> showroom <span class="sep">▸</span> <b>yc-s26-pitch.deck</b></div>
+          <span class="badge"><span class="dot"></span>PROJECTION</span>
+          <div class="bar-spacer"></div>
+          <span class="badge live" id="liveBadge"><span class="dot"></span>LIVE</span>
+        </div>
+        <div class="deck-shell">
+          <div class="sorter" role="tablist" aria-label="Slides" id="sorter" data-design-note="SlideThumbList — drag reorder enabled">
+            <!-- thumbs injected -->
+          </div>
+          <div class="stage">
+            <div class="canvas" id="canvas" role="tabpanel" aria-live="polite"></div>
+            <div class="notes-strip"><span class="k">SPEAKER NOTES</span><span id="speakerNotes">—</span></div>
+          </div>
+          <aside class="inspector">
+            <div>
+              <h5>Slide layout</h5>
+              <div class="layout-grid" role="radiogroup" aria-label="Slide layout" id="layoutPicker" data-design-note="LayoutPicker — 2×2 grid"></div>
+            </div>
+            <div>
+              <h5>Vantage</h5>
+              <div class="vantage" role="group" aria-label="Deck vantage">
+                <span>thumb</span><span>sorter</span><span class="on" id="chipEditor">editor</span><span id="chipPresent">present</span>
+              </div>
+            </div>
+            <button class="present-btn" type="button" id="openPresent">▶ Present</button>
+          </aside>
+        </div>
+      </div>
+    </div>
+
+    <div class="shell-layer shell-present" id="presentShell" aria-label="Presentation mode" data-design-note="DeckPresentShell — crossfade target">
+      <div class="present-stage" id="presentCanvas"></div>
+      <div class="present-controls">
+        <button type="button" id="prevSlide">← Prev</button>
+        <span id="presentCounter">1 / 3</span>
+        <button type="button" id="nextSlide">Next →</button>
+        <button type="button" id="exitPresent">Esc · Exit</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="legend">
+    <b>P1.2 interaction notes:</b> Drag ⋮⋮ grips to reorder thumbs · Double-click body on slide 2 · Layout picker switches region stack · "Simulate SSE" pulses LIVE queryView · Present uses <code>--vantage-duration: 280ms</code> crossfade (0ms under reduced-motion).
+  </div>
+</div>
+
+<script>
+  const layouts = [
+    { id: 'title', label: 'title', html: '<i class="t" style="align-self:center"></i><i style="width:40%;align-self:center"></i>' },
+    { id: 'content', label: 'content', html: '<i class="t"></i><i></i><i style="width:55%"></i>' },
+    { id: 'two-col', label: 'two-col', html: '<i class="t"></i><i></i><i></i>' },
+    { id: 'live-data', label: 'live data', html: '<i class="t"></i><i class="live"></i>' },
+  ];
+  let slides = [
+    { id: 0, key: 'title', layoutId: 'title', notes: 'Lead with the substrate story.', title: 'Trellis', eyebrow: 'Turtle Labs', body: 'The local-first graph OS.' },
+    { id: 1, key: 'problem', layoutId: 'content', notes: 'Land the blob line.', title: "Your tools don't share a brain", eyebrow: 'Problem', body: 'Files are blobs; every app rebuilds the same graph.' },
+    { id: 2, key: 'traction', layoutId: 'live-data', notes: 'MRR is small but real.', title: 'Raster.tv pays the bills while Trellis compounds', eyebrow: 'Traction', mrr: 2.4, partners: 4 },
+  ];
+  let idx = 2;
+  let dragFrom = null;
+  let liveMode = true;
+  const sorter = document.getElementById('sorter');
+  const canvas = document.getElementById('canvas');
+  const presentCanvas = document.getElementById('presentCanvas');
+  const layoutPicker = document.getElementById('layoutPicker');
+  const liveBadge = document.getElementById('liveBadge');
+
+  function renderThumbs() {
+    sorter.innerHTML = slides.map((s, i) => `
+      <div class="drop-line" data-drop="${i}"></div>
+      <button class="thumb" type="button" role="tab" draggable="true" data-idx="${i}" aria-current="${i === idx}">
+        <span class="grip" aria-hidden="true">⋮⋮</span>
+        <span class="mini"><i class="t" style="width:55%"></i></span>
+        <span class="label">${i + 1} · ${s.key}</span>
+      </button>
+    `).join('') + '<div class="drop-line" data-drop="' + slides.length + '"></div>';
+    sorter.querySelectorAll('.thumb').forEach((t) => {
+      t.addEventListener('click', () => { idx = Number(t.dataset.idx); renderAll(); });
+      t.addEventListener('dragstart', (e) => { dragFrom = Number(t.dataset.idx); t.classList.add('dragging'); e.dataTransfer.effectAllowed = 'move'; });
+      t.addEventListener('dragend', () => { dragFrom = null; sorter.querySelectorAll('.thumb').forEach(x => x.classList.remove('dragging')); sorter.querySelectorAll('.drop-line').forEach(x => x.classList.remove('show')); });
+      t.addEventListener('dragover', (e) => { e.preventDefault(); });
+    });
+    sorter.querySelectorAll('.drop-line').forEach((line) => {
+      line.addEventListener('dragover', (e) => { e.preventDefault(); line.classList.add('show'); });
+      line.addEventListener('dragleave', () => line.classList.remove('show'));
+      line.addEventListener('drop', (e) => {
+        e.preventDefault();
+        const to = Number(line.dataset.drop);
+        if (dragFrom === null || dragFrom === to || dragFrom + 1 === to) return;
+        const item = slides.splice(dragFrom, 1)[0];
+        const insertAt = to > dragFrom ? to - 1 : to;
+        slides.splice(insertAt, 0, item);
+        idx = slides.findIndex(s => s.id === item.id);
+        renderAll();
+      });
+    });
+  }
+
+  function renderLayoutPicker() {
+    const cur = slides[idx].layoutId;
+    layoutPicker.innerHTML = layouts.map(l => `
+      <div class="layout-opt ${l.id === cur ? 'sel' : ''}" role="radio" aria-checked="${l.id === cur}" tabindex="0" data-layout="${l.id}">
+        ${l.html}<span class="lo-label">${l.label}</span>
+      </div>
+    `).join('');
+    layoutPicker.querySelectorAll('.layout-opt').forEach(opt => {
+      opt.addEventListener('click', () => { slides[idx].layoutId = opt.dataset.layout; renderAll(); });
+    });
+  }
+
+  function qvHtml(slide) {
+    const p = slide.partners ?? 4;
+    const m = slide.mrr ?? 2.4;
+    const fallback = !liveMode ? '<span class="qv-fallback">demo fallback</span>' : '';
+    return `
+      <div class="qv-block" role="region" aria-label="Live query view">
+        <div class="qv-head">
+          <span class="badge live" id="qvLive"><span class="dot"></span>LIVE · queryView</span>
+          <span class="q">find revenue where product = "raster" group by month</span>${fallback}
+        </div>
+        <div class="tiles">
+          <div class="tile" id="tile0"><div class="v">${p}</div><div class="k">station partners</div></div>
+          <div class="tile" id="tile1"><div class="v">$${m.toFixed(1)}k</div><div class="k">MRR · Jul</div></div>
+          <div class="tile" id="tile2"><div class="v">128k</div><div class="k">entities synced</div></div>
+        </div>
+        <div class="chart"><div class="plot"><div class="bar" style="--h:33%"></div><div class="bar" style="--h:50%"></div><div class="bar" style="--h:66%"></div><div class="bar" style="--h:66%"></div><div class="bar" style="--h:83%"></div><div class="bar hi" style="--h:100%"></div></div></div>
+      </div>`;
+  }
+
+  function slideHtml(slide, i) {
+    const foot = `<div class="foot">YC S26 · ${i + 1} / ${slides.length}</div>`;
+    const layout = slide.layoutId;
+    let inner = `<div class="slide-eyebrow">${slide.eyebrow || ''}</div><h4 aria-label="Slide title">${slide.title}</h4>`;
+    if (layout === 'content' || layout === 'two-col') {
+      inner += `<p class="body" tabindex="0" aria-label="Slide body" data-editable="body">${slide.body || ''}</p>`;
+    }
+    if (layout === 'live-data') inner += qvHtml(slide);
+    return inner + foot;
+  }
+
+  function renderCanvas(target) {
+    target.innerHTML = slideHtml(slides[idx], idx);
+    document.getElementById('speakerNotes').textContent = slides[idx].notes;
+    const body = target.querySelector('.body[data-editable]');
+    if (body) {
+      body.addEventListener('dblclick', () => { body.contentEditable = 'true'; body.classList.add('editing'); body.focus(); });
+      body.addEventListener('blur', () => { body.contentEditable = 'false'; body.classList.remove('editing'); slides[idx].body = body.textContent; });
+    }
+  }
+
+  function renderAll() {
+    renderThumbs();
+    renderLayoutPicker();
+    renderCanvas(canvas);
+    if (document.body.dataset.vantage === 'present') renderCanvas(presentCanvas);
+    document.getElementById('presentCounter').textContent = (idx + 1) + ' / ' + slides.length;
+  }
+
+  function setVantage(v) {
+    document.body.dataset.vantage = v;
+    document.getElementById('presentShell').classList.toggle('active', v === 'present');
+    document.getElementById('btnEditor').classList.toggle('on', v === 'editor');
+    document.getElementById('btnPresent').classList.toggle('on', v === 'present');
+    if (v === 'present') renderCanvas(presentCanvas);
+  }
+
+  document.getElementById('btnRefresh').addEventListener('click', () => {
+    slides[2].mrr = +(2.2 + Math.random() * 0.6).toFixed(1);
+    slides[2].partners = 4 + Math.floor(Math.random() * 2);
+    liveBadge.classList.add('pulse');
+    setTimeout(() => liveBadge.classList.remove('pulse'), 400);
+    renderAll();
+    document.querySelectorAll('.tile').forEach(t => { t.classList.add('flash'); setTimeout(() => t.classList.remove('flash'), 400); });
+  });
+  document.getElementById('openPresent').addEventListener('click', () => setVantage('present'));
+  document.getElementById('chipPresent').addEventListener('click', () => setVantage('present'));
+  document.getElementById('btnPresent').addEventListener('click', () => setVantage('present'));
+  document.getElementById('btnEditor').addEventListener('click', () => setVantage('editor'));
+  document.getElementById('exitPresent').addEventListener('click', () => setVantage('editor'));
+  document.getElementById('prevSlide').addEventListener('click', () => { idx = Math.max(0, idx - 1); renderAll(); });
+  document.getElementById('nextSlide').addEventListener('click', () => { idx = Math.min(slides.length - 1, idx + 1); renderAll(); });
+  document.addEventListener('keydown', (e) => { if (e.key === 'Escape' && document.body.dataset.vantage === 'present') setVantage('editor'); });
+  document.getElementById('btnSlide0').addEventListener('click', () => { idx = 0; renderAll(); });
+  document.getElementById('btnSlide1').addEventListener('click', () => { idx = 1; renderAll(); });
+  document.getElementById('btnSlide2').addEventListener('click', () => { idx = 2; renderAll(); });
+
+  renderAll();
+</script>
+</body>
+</html>

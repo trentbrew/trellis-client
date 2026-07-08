@@ -1,5 +1,6 @@
 <script setup lang="ts">
   import type { DatabaseField } from '~/types/database'
+  import TypeTag from '~/components/data/TypeTag.vue'
 
   const FIELD_TYPE_META: Record<string, { label: string; icon: string }> = {
     text: { label: 'Text', icon: 'lucide:type' },
@@ -178,6 +179,7 @@
         @click="canSort && emit('sort')">
         <Icon :name="typeMeta.icon" class="h-3.5 w-3.5 shrink-0 opacity-40" />
         <span class="truncate">{{ field.name }}</span>
+        <TypeTag :kind="field.type" />
         <Icon
           v-if="sortDirection"
           :name="sortDirection === 'asc' ? 'lucide:chevron-up' : 'lucide:chevron-down'"

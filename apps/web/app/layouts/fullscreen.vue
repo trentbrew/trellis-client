@@ -21,10 +21,12 @@
   <div class="bg-background text-foreground flex h-dvh flex-col">
     <AppHeader />
 
-    <!-- Global omnibox lives inside AppHeader via <AppOmnibox />. -->
+    <!-- Sky menubar + Omnibox overlay live in AppHeader via AppMenubar. Resident cluster in IconRail. -->
 
     <div class="flex flex-1 overflow-hidden">
-      <IconRail v-if="showIconRail" />
+      <div v-if="showIconRail" class="pl-2.5 py-2.5 shrink-0 flex self-stretch">
+        <IconRail position="left" />
+      </div>
 
       <!-- Conditional sidebar slot - pages can choose to render sidebar or not -->
       <slot name="sidebar">

@@ -10,7 +10,6 @@ export const BROWSE_DOMAIN_TYPES = [
   'deadline',
   'milestone',
   'sprint',
-  'budget',
   // document
   'note',
   'file',

@@ -8,6 +8,7 @@
  * For dynamic/user types, builds defaults from field definitions.
  */
 
+import { getFieldDefaultValue } from '~/lib/ontology-form-spec'
 import { createDefaultBase, createDefaultItem } from '~/types/entity'
 import type { EntityType } from '~/types/entity'
 
@@ -29,46 +30,9 @@ interface SchemaField {
   selectOptions?: { name: string }[]
 }
 
-/**
- * Default value for a field based on its valueType.
- */
+/** Default value for a field based on its valueType. */
 function defaultForValueType(field: SchemaField): unknown {
-  // Explicit default takes priority
-  if (field.defaultValue !== undefined) return field.defaultValue
-
-  switch (field.valueType) {
-    case 'title':
-      return ''
-    case 'rich_text':
-      return ''
-    case 'number':
-      return undefined
-    case 'checkbox':
-      return false
-    case 'date':
-      return undefined
-    case 'select':
-    case 'status':
-      // If required and has options, default to first option
-      if (field.required && field.selectOptions && field.selectOptions.length > 0) {
-        return field.selectOptions[0]!.name
-      }
-      return ''
-    case 'multi_select':
-      return []
-    case 'url':
-    case 'email':
-    case 'phone_number':
-      return ''
-    case 'people':
-      return []
-    case 'relation':
-      return undefined
-    case 'files':
-      return []
-    default:
-      return undefined
-  }
+  return getFieldDefaultValue(field)
 }
 
 /**

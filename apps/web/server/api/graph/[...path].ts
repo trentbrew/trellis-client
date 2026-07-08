@@ -280,6 +280,10 @@ export default defineEventHandler(async (event) => {
       const facts = store.getFactsByEntity(entityId)
       if (facts.length > 0) {
         const node = factsToNode(entityId, facts)
+        // Never ship OAuth secrets to the browser — credentials live server-side only.
+        if (node.type === 'integration_connection' && 'credentialsRef' in node) {
+          delete node.credentialsRef
+        }
         node._links = {
           outgoing: outgoingByEntity.get(entityId) || [],
           incoming: incomingByEntity.get(entityId) || [],

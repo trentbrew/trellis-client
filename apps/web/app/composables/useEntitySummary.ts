@@ -2,9 +2,8 @@
  * useEntitySummary — AI-generated descriptions for entities.
  *
  * Takes an entity's raw `description` (often noisy HTML from GCal/Gmail
- * imports) and produces a clean 1–3 sentence `summary` persisted back
- * onto the entity. Regenerates only when the source changes (tracked via
- * a hash stored in `summarySourceHash`).
+ * imports) or `content` (for note/page document types) and produces a clean
+ * 1–3 sentence `summary` persisted back onto the entity.
  *
  * Usage:
  *   const { ensure, regenerate, generating } = useEntitySummary()
@@ -17,12 +16,16 @@
  */
 
 import type { EntityType } from '~/types/entity'
+import { isDocumentChromeType } from '~/lib/document-chrome'
+import { stripHtml } from '~/utils/stripHtml'
+import { bumpGraphVersion } from '~/composables/useTrellisGraph'
 
-interface EntityLike {
+export interface EntityLike {
   id: string
   type?: EntityType | string
   title?: string
   description?: string
+  content?: string
   summary?: string
   summaryGeneratedAt?: string
   summarySourceHash?: string
@@ -39,7 +42,16 @@ function hashText(input: string): string {
 }
 
 // Skip summarization for content this short — the raw text is already concise.
-const MIN_SOURCE_LENGTH = 120
+export const MIN_SUMMARY_SOURCE_LENGTH = 120
+
+export function resolveSummarySource(entity: EntityLike): 'content' | 'description' {
+  return isDocumentChromeType(entity.type) ? 'content' : 'description'
+}
+
+export function resolveSummaryText(entity: EntityLike): string {
+  const field = resolveSummarySource(entity) === 'content' ? entity.content : entity.description
+  return stripHtml(field).trim()
+}
 
 export function useEntitySummary() {
   const { update } = useEntities()
@@ -63,8 +75,8 @@ export function useEntitySummary() {
    * Generate + persist a summary. Always runs, ignoring cache.
    */
   async function regenerate(entity: EntityLike): Promise<boolean> {
-    const source = (entity.description || '').trim()
-    if (!entity.id || !source || source.length < MIN_SOURCE_LENGTH) return false
+    const source = resolveSummaryText(entity)
+    if (!entity.id || !source || source.length < MIN_SUMMARY_SOURCE_LENGTH) return false
     if (generating.value.has(entity.id)) return false
 
     generating.value = new Set([...generating.value, entity.id])
@@ -81,6 +93,7 @@ export function useEntitySummary() {
         summarySourceHash: hashText(source),
       }
       await update(patch as any)
+      bumpGraphVersion()
       return true
     } catch (err: any) {
       lastError.value = err?.data?.message || err?.message || 'Summary failed'
@@ -93,11 +106,11 @@ export function useEntitySummary() {
   }
 
   /**
-   * Ensure a fresh summary exists. No-op if cached for current description.
+   * Ensure a fresh summary exists. No-op if cached for current source text.
    */
   async function ensure(entity: EntityLike): Promise<boolean> {
-    const source = (entity.description || '').trim()
-    if (!entity.id || !source || source.length < MIN_SOURCE_LENGTH) return false
+    const source = resolveSummaryText(entity)
+    if (!entity.id || !source || source.length < MIN_SUMMARY_SOURCE_LENGTH) return false
 
     const currentHash = hashText(source)
     if (entity.summary && entity.summarySourceHash === currentHash) {

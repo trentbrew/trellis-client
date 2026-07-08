@@ -53,6 +53,9 @@ const ROUTE_ZONE_RULES: Array<{ match: RegExp; zoneId: string }> = [
   { match: /^\/messages(\/|$)/, zoneId: FOUNDER_WORKSHOP_ZONE_ID },
   { match: /^\/members/, zoneId: FOUNDER_WORKSHOP_ZONE_ID },
   { match: /^\/workflows/, zoneId: FOUNDER_WORKSHOP_ZONE_ID },
+  { match: /^\/sheets(\/|$)/, zoneId: FOUNDER_WORKSHOP_ZONE_ID },
+  { match: /^\/decks(\/|$)/, zoneId: FOUNDER_WORKSHOP_ZONE_ID },
+  { match: /^\/canvases(\/|$)/, zoneId: FOUNDER_WORKSHOP_ZONE_ID },
 
   // ── Lobby — public front door, notifications, onboarding ──
   { match: /^\/notifications/, zoneId: FOUNDER_LOBBY_ZONE_ID },
@@ -72,8 +75,11 @@ const ROUTE_ZONE_RULES: Array<{ match: RegExp; zoneId: string }> = [
  * Defaults to the Lab when no rule matches.
  */
 export function zoneForPath(pathname: string): ZoneContext {
+  const wsMatch = pathname.match(/^\/w\/[^/]+(\/.*)?$/)
+  const path = wsMatch ? wsMatch[1] || '/' : pathname
+
   for (const rule of ROUTE_ZONE_RULES) {
-    if (rule.match.test(pathname)) {
+    if (rule.match.test(path)) {
       return {
         zoneId: rule.zoneId,
         facilityId: FOUNDER_FACILITY_ID,

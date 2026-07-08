@@ -28,12 +28,12 @@ const homeRoute: RouteDefinition = {
   railPosition: 'primary',
   inCommandPalette: true,
   requiresAuth: true,
-  collapseSidebar: true,
+  collapseSidebar: false,
   searchKeywords: ['home', 'chat', 'ask', 'assistant', 'agent'],
   meta: {
     title: 'Chat',
     description: 'Chat with your Trellis assistant',
-    hideSidebar: true,
+    hideSidebar: false,
   },
 }
 
@@ -373,17 +373,6 @@ const decksRoute: RouteDefinition = {
   inCommandPalette: true,
   requiresAuth: true,
   searchKeywords: ['decks', 'presentation', 'slides', 'workshop'],
-  sidebarSections: [
-    {
-      label: 'DECKS',
-      key: 'decks-list',
-      icon: 'lucide:presentation',
-      collapsible: true,
-      editable: true,
-      order: 10,
-      items: [],
-    },
-  ],
   meta: {
     title: 'Decks',
     description: 'Graph-native deck projections',
@@ -397,8 +386,33 @@ const decksRoute: RouteDefinition = {
       routePath: '/decks/:id',
       label: 'Deck',
       icon: 'lucide:presentation',
+      collapseSidebar: true,
       meta: {
         title: 'Deck',
+        fullWidth: true,
+      },
+    },
+    {
+      '@id': 'route:decks/sorter',
+      '@type': 'trellis:Route',
+      routePath: '/decks/:id/sorter',
+      label: 'Sorter',
+      icon: 'lucide:gallery-horizontal',
+      collapseSidebar: true,
+      meta: {
+        title: 'Deck sorter',
+        fullWidth: true,
+      },
+    },
+    {
+      '@id': 'route:decks/thumb',
+      '@type': 'trellis:Route',
+      routePath: '/decks/:id/thumb',
+      label: 'Thumbnails',
+      icon: 'lucide:layout-grid',
+      collapseSidebar: true,
+      meta: {
+        title: 'Deck thumbnails',
         fullWidth: true,
       },
     },
@@ -408,9 +422,55 @@ const decksRoute: RouteDefinition = {
       routePath: '/decks/:id/present',
       label: 'Present',
       icon: 'lucide:monitor-play',
+      collapseSidebar: true,
       meta: {
         title: 'Present',
         fullWidth: true,
+      },
+    },
+  ],
+}
+
+const canvasesRoute: RouteDefinition = {
+  '@id': 'route:canvases',
+  '@type': 'trellis:Route',
+  routePath: '/canvases',
+  label: 'Canvases',
+  icon: 'lucide:layout-dashboard',
+  order: 27,
+  inRail: true,
+  railPosition: 'primary',
+  inCommandPalette: true,
+  requiresAuth: true,
+  searchKeywords: ['canvas', 'board', 'spatial', 'workshop'],
+  sidebarSections: [
+    {
+      label: 'CANVASES',
+      key: 'canvases-list',
+      icon: 'lucide:layout-dashboard',
+      collapsible: true,
+      editable: true,
+      order: 11,
+      items: [],
+    },
+  ],
+  meta: {
+    title: 'Canvases',
+    description: 'Graph-native spatial canvas boards',
+    fullWidth: true,
+    hideSidebar: false,
+  },
+  children: [
+    {
+      '@id': 'route:canvases/canvas',
+      '@type': 'trellis:Route',
+      routePath: '/canvases/:id',
+      label: 'Canvas',
+      icon: 'lucide:layout-dashboard',
+      meta: {
+        title: 'Canvas',
+        fullWidth: true,
+        sidebarCollapsible: true,
       },
     },
   ],
@@ -780,6 +840,7 @@ export function getRouteDefinitions(): Record<string, RouteDefinition> {
     'route:locations': locationsRoute,
     'route:sheets': sheetsRoute,
     'route:decks': decksRoute,
+    'route:canvases': canvasesRoute,
     'route:settings': settingsRoute,
   }
 }
@@ -799,5 +860,6 @@ export {
   locationsRoute,
   sheetsRoute,
   decksRoute,
+  canvasesRoute,
   settingsRoute,
 }

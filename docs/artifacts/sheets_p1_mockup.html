@@ -1,0 +1,238 @@
+<!-- trellis-design-adopted: slug=sheets_p1 parent=TRL-312 source=derived from sheets_decks_mockup.html#sheet -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<title>Trellis — Sheets P1 (TRL-313 design mock)</title>
+<style>
+  :root {
+    color-scheme: dark;
+    --background: #0a0a0c;
+    --surface: #141418;
+    --surface-2: #1a1a21;
+    --surface-3: #202028;
+    --text: #e8e8ec;
+    --text-muted: #888894;
+    --text-faint: #55555f;
+    --border: #2a2a32;
+    --zone-workshop: #10b981;
+    --live: #34d399;
+    --formula: #f59e0b;
+    --destructive: #ef4444;
+    --selection: #6366f1;
+    --fill-handle: #818cf8;
+    --stale: #f59e0b;
+    --radius-sm: 6px;
+    --radius-md: 10px;
+    --radius-lg: 14px;
+    --radius-pill: 9999px;
+    --font: "IBM Plex Sans", ui-sans-serif, system-ui, sans-serif;
+    --mono: "IBM Plex Mono", ui-monospace, Menlo, monospace;
+    --zone: var(--zone-workshop);
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--background); color: var(--text); font-family: var(--font); font-size: 13px; line-height: 1.5; }
+  .page { max-width: 1100px; margin: 0 auto; padding: 36px 20px 56px; }
+  .masthead { margin-bottom: 18px; max-width: 720px; }
+  .eyebrow { font-family: var(--mono); font-size: 11px; letter-spacing: 0.14em; text-transform: uppercase; color: var(--zone); margin: 0 0 8px; }
+  h1 { margin: 0 0 8px; font-size: 26px; font-weight: 650; }
+  .sub { margin: 0; color: var(--text-muted); font-size: 13px; max-width: 68ch; }
+  .mode-toggle { display: flex; gap: 8px; flex-wrap: wrap; margin: 20px 0 16px; }
+  .mode-toggle button { appearance: none; border: 1px solid var(--border); background: var(--surface-2); color: var(--text-muted); font-family: var(--mono); font-size: 10px; letter-spacing: 0.06em; text-transform: uppercase; padding: 6px 12px; border-radius: var(--radius-pill); cursor: pointer; }
+  .mode-toggle button.on { border-color: var(--zone); color: var(--text); background: color-mix(in oklch, var(--zone) 12%, var(--surface)); }
+  .legend { font-family: var(--mono); font-size: 10px; color: var(--text-muted); padding: 10px 14px; border: 1px dashed var(--border); border-radius: var(--radius-sm); margin-bottom: 16px; display: none; }
+  .legend.on { display: block; }
+  .legend kbd { background: var(--surface-3); border: 1px solid var(--border); border-radius: 4px; padding: 1px 5px; color: var(--text); }
+  .frame { border: 1px solid var(--border); border-radius: var(--radius-lg); background: var(--surface); overflow: hidden; box-shadow: 0 20px 50px -28px rgba(0,0,0,0.75); }
+  .frame-bar { display: flex; align-items: center; gap: 10px; height: 44px; padding: 0 14px; border-bottom: 1px solid var(--border); background: var(--surface-2); font-size: 12px; }
+  .crumb { color: var(--text-muted); }
+  .crumb b { color: var(--text); }
+  .badge { display: inline-flex; align-items: center; gap: 6px; height: 22px; padding: 0 9px; border-radius: var(--radius-pill); font-family: var(--mono); font-size: 10px; border: 1px solid color-mix(in oklch, var(--zone) 40%, var(--border)); background: color-mix(in oklch, var(--zone) 10%, var(--surface)); }
+  .badge .dot { width: 6px; height: 6px; border-radius: 50%; background: var(--zone); }
+  .badge.live { border-color: color-mix(in oklch, var(--live) 45%, var(--border)); color: var(--live); }
+  .badge.live .dot { background: var(--live); }
+  .bar-spacer { flex: 1; }
+  .formula-bar { display: flex; align-items: center; gap: 10px; height: 36px; padding: 0 12px; border-bottom: 1px solid var(--border); background: var(--surface-2); font-family: var(--mono); font-size: 11px; }
+  .formula-bar .ref { color: var(--text-muted); min-width: 36px; }
+  .formula-bar .fx { color: var(--formula); font-weight: 600; }
+  .formula-bar .val { color: var(--text); flex: 1; }
+  .ref-toggle { display: flex; gap: 4px; }
+  .ref-toggle button { appearance: none; border: 1px solid var(--border); background: var(--surface); color: var(--text-muted); font-family: var(--mono); font-size: 9px; padding: 3px 8px; border-radius: var(--radius-sm); cursor: pointer; }
+  .ref-toggle button[aria-pressed="true"] { border-color: var(--zone); color: var(--zone); }
+  .grid-wrap { overflow: auto; max-height: 340px; position: relative; }
+  table.sheet { width: 100%; border-collapse: collapse; font-size: 12.5px; }
+  table.sheet th, table.sheet td { border: 1px solid var(--border); padding: 6px 10px; white-space: nowrap; }
+  table.sheet thead th { position: sticky; top: 0; z-index: 5; background: var(--surface-2); font-family: var(--mono); font-size: 10.5px; font-weight: 500; text-align: left; }
+  th .hdr { display: flex; align-items: center; gap: 6px; }
+  th .grip { cursor: grab; color: var(--text-faint); font-size: 12px; opacity: 0.6; user-select: none; }
+  th.dragging { opacity: 0.45; background: var(--surface-3); }
+  th.drop-before { box-shadow: inset 3px 0 0 var(--selection); }
+  th .type-tag { font-size: 9px; color: var(--text-faint); border: 1px solid var(--border); border-radius: 3px; padding: 1px 4px; margin-left: auto; }
+  th .type-tag.fx { color: var(--formula); border-color: color-mix(in oklch, var(--formula) 40%, var(--border)); }
+  td.row-num { width: 36px; text-align: center; color: var(--text-faint); font-family: var(--mono); font-size: 10px; background: var(--surface-2); }
+  td.focused { outline: 2px solid var(--selection); outline-offset: -2px; z-index: 2; position: relative; }
+  td.selected { background: color-mix(in oklch, var(--selection) 14%, transparent); box-shadow: inset 0 0 0 1px color-mix(in oklch, var(--selection) 55%, var(--border)); }
+  td.derived { color: var(--formula); background: color-mix(in oklch, var(--formula) 5%, transparent); }
+  td.relation { color: var(--text-muted); }
+  .fill-handle { position: absolute; width: 8px; height: 8px; background: var(--fill-handle); border: 1px solid var(--surface); border-radius: 2px; cursor: crosshair; z-index: 10; display: none; }
+  .fill-handle.on { display: block; }
+  .popover { position: absolute; z-index: 20; min-width: 200px; background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-md); box-shadow: 0 12px 32px rgba(0,0,0,0.5); padding: 8px; display: none; }
+  .popover.on { display: block; }
+  .popover input { width: 100%; background: var(--surface-2); border: 1px solid var(--border); border-radius: var(--radius-sm); color: var(--text); font-size: 11px; padding: 6px 8px; margin-bottom: 6px; }
+  .popover .opt { padding: 6px 8px; border-radius: var(--radius-sm); cursor: pointer; font-size: 12px; }
+  .popover .opt:hover, .popover .opt.sel { background: color-mix(in oklch, var(--zone) 12%, var(--surface)); }
+  .popover .opt.muted { color: var(--text-faint); font-size: 11px; }
+  .secondary { margin-top: 28px; }
+  .secondary h3 { font-family: var(--mono); font-size: 11px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--text-faint); margin: 0 0 12px; }
+  .stale-block { border: 1px dashed color-mix(in oklch, var(--stale) 50%, var(--border)); border-radius: var(--radius-md); background: color-mix(in oklch, var(--stale) 6%, var(--surface-2)); padding: 14px 16px; max-width: 520px; }
+  .stale-block.error { border-color: color-mix(in oklch, var(--destructive) 50%, var(--border)); background: color-mix(in oklch, var(--destructive) 6%, var(--surface-2)); }
+  .stale-head { display: flex; align-items: center; gap: 8px; font-family: var(--mono); font-size: 10px; margin-bottom: 8px; }
+  .stale-head .tag { padding: 2px 8px; border-radius: var(--radius-pill); border: 1px solid var(--stale); color: var(--stale); }
+  .stale-block.error .stale-head .tag { border-color: var(--destructive); color: var(--destructive); }
+  .stale-actions { display: flex; gap: 8px; margin-top: 10px; }
+  .stale-actions button { appearance: none; border: 1px solid var(--border); background: var(--surface); color: var(--text-muted); font-family: var(--mono); font-size: 9px; padding: 5px 10px; border-radius: var(--radius-sm); cursor: pointer; }
+  .notes { margin-top: 24px; font-family: var(--mono); font-size: 10px; color: var(--text-faint); max-width: 72ch; line-height: 1.6; }
+  .panel-hidden { display: none !important; }
+</style>
+</head>
+<body>
+<div class="page">
+  <header class="masthead">
+    <p class="eyebrow">Workshop · Sheet projection · P1</p>
+    <h1>Keyboard nav, multi-select, column DnD</h1>
+    <p class="sub">Extends P0 <code>q3-runway</code> grid — one TipTap lease, spreadsheet selection semantics, column reorder by stable id.</p>
+  </header>
+
+  <div class="mode-toggle" role="tablist" aria-label="Demo modes">
+    <button type="button" class="on" data-mode="selection">Selection + fill</button>
+    <button type="button" data-mode="keyboard">Keyboard nav</button>
+    <button type="button" data-mode="column">Column DnD</button>
+    <button type="button" data-mode="relation">Relation picker</button>
+    <button type="button" data-mode="stale">sheetRange stale</button>
+  </div>
+
+  <div id="legend-keyboard" class="legend" data-design-note="Keyboard nav legend">
+    <kbd>↑↓←→</kbd> move focus · <kbd>Shift+arrow</kbd> extend selection · <kbd>Tab</kbd> next editable · <kbd>Enter</kbd> lease text cell · <kbd>Esc</kbd> commit lease
+  </div>
+
+  <div id="panel-main">
+    <div class="frame" data-design-note="Sheet projection frame — P1 extensions">
+      <div class="frame-bar">
+        <span class="crumb">workshop <span style="opacity:.35">▸</span> <b>q3-runway.sheet</b></span>
+        <span class="badge"><span class="dot"></span> PROJECTION</span>
+        <code style="font-family:var(--mono);font-size:10px;color:var(--text-muted);max-width:200px;overflow:hidden;text-overflow:ellipsis">FIND entity WHERE …</code>
+        <span class="bar-spacer"></span>
+        <span class="badge live"><span class="dot"></span> LIVE</span>
+      </div>
+      <div class="formula-bar">
+        <span class="ref" id="cellRef">C3:E5</span>
+        <span class="fx">fx</span>
+        <span class="val" id="formulaVal">(multi-cell selection)</span>
+        <div class="ref-toggle" role="group" aria-label="Formula reference rendering">
+          <button type="button" aria-pressed="true">A1</button>
+          <button type="button" aria-pressed="false">attrs</button>
+        </div>
+      </div>
+      <div class="grid-wrap" id="gridWrap">
+        <table class="sheet" role="grid" aria-label="Q3 runway expenses">
+          <thead>
+            <tr>
+              <th scope="col"></th>
+              <th scope="col" data-col="vendor"><span class="hdr"><span class="grip">≡</span> A <span>Vendor</span><span class="type-tag">text</span></span></th>
+              <th scope="col" data-col="category"><span class="hdr"><span class="grip">≡</span> B <span>Category</span><span class="type-tag">select</span></span></th>
+              <th scope="col" data-col="budgeted"><span class="hdr"><span class="grip">≡</span> C <span>Budgeted</span><span class="type-tag">$ usd</span></span></th>
+              <th scope="col" data-col="spent"><span class="hdr"><span class="grip">≡</span> D <span>Spent</span><span class="type-tag">$ usd</span></span></th>
+              <th scope="col" data-col="remaining"><span class="hdr"><span class="grip">≡</span> E <span>Remaining</span><span class="type-tag fx">= fx</span></span></th>
+              <th scope="col" data-col="owner"><span class="hdr"><span class="grip">≡</span> F <span>Owner</span><span class="type-tag">→ person</span></span></th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr><td class="row-num">2</td><td>e2b.dev sandboxes</td><td>Infra</td><td>4,200</td><td>3,890</td><td class="derived">310</td><td class="relation">Rebecca Smith</td></tr>
+            <tr><td class="row-num">3</td><td class="selected">SF housing</td><td class="selected">Ops</td><td class="selected focused">6,000</td><td class="selected">5,200</td><td class="selected derived">800</td><td class="relation">—</td></tr>
+            <tr><td class="row-num">4</td><td class="selected">NLnet filing</td><td class="selected">Legal</td><td class="selected">800</td><td class="selected">0</td><td class="selected derived">800</td><td class="relation">—</td></tr>
+            <tr><td class="row-num">5</td><td>Raster CDN</td><td>Infra</td><td>1,100</td><td>980</td><td class="derived">120</td><td class="relation">Jay Higginbotham</td></tr>
+          </tbody>
+        </table>
+        <div class="fill-handle on" id="fillHandle" style="right:118px;bottom:72px" role="button" aria-label="Fill selection down" title="Drag to fill"></div>
+        <div class="popover" id="relationPopover" style="left:520px;top:140px">
+          <input type="search" placeholder="Search people…" aria-label="Search people" />
+          <div class="opt sel">Rebecca Smith</div>
+          <div class="opt">Jay Higginbotham</div>
+          <div class="opt muted">(clear)</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div id="panel-stale" class="secondary panel-hidden">
+    <h3>Doc transclusion — stale states</h3>
+    <div class="stale-block" data-design-note="STALE — sheet deleted or SSE lost">
+      <div class="stale-head">
+        <span>q3-runway.sheet · A2:E6</span>
+        <span class="tag">STALE</span>
+      </div>
+      <p style="margin:0;font-size:12px;color:var(--text-muted)">Sheet unavailable or connection lost. Values may be outdated.</p>
+      <div class="stale-actions">
+        <button type="button">Open sheet</button>
+        <button type="button">Remove block</button>
+      </div>
+    </div>
+    <div class="stale-block error" style="margin-top:16px" data-design-note="ERROR — invalid range">
+      <div class="stale-head">
+        <span>deleted-sheet · Z99:Z100</span>
+        <span class="tag">ERROR</span>
+      </div>
+      <p style="margin:0;font-size:12px;color:var(--text-muted)">Sheet entity not found or range invalid.</p>
+      <div class="stale-actions">
+        <button type="button">Remove block</button>
+      </div>
+    </div>
+  </div>
+
+  <p class="notes">P1 invariant: one TipTap lease on text cells only. Column reorder permutes <code>columns[]</code> on sheet entity — stable <code>id</code> fields preserve semantic formulas. Fill handle copies numbers/text down; skips formula + relation columns.</p>
+</div>
+<script>
+(function () {
+  const modes = document.querySelectorAll('.mode-toggle button');
+  const legend = document.getElementById('legend-keyboard');
+  const panelMain = document.getElementById('panel-main');
+  const panelStale = document.getElementById('panel-stale');
+  const fillHandle = document.getElementById('fillHandle');
+  const popover = document.getElementById('relationPopover');
+  const cellRef = document.getElementById('cellRef');
+  const formulaVal = document.getElementById('formulaVal');
+  const headers = document.querySelectorAll('thead th[data-col]');
+
+  function setMode(mode) {
+    modes.forEach((b) => b.classList.toggle('on', b.dataset.mode === mode));
+    legend.classList.toggle('on', mode === 'keyboard');
+    panelMain.classList.toggle('panel-hidden', mode === 'stale');
+    panelStale.classList.toggle('panel-hidden', mode !== 'stale');
+    fillHandle.classList.toggle('on', mode === 'selection');
+    popover.classList.toggle('on', mode === 'relation');
+    headers.forEach((h) => h.classList.remove('dragging', 'drop-before'));
+    if (mode === 'selection') {
+      cellRef.textContent = 'C3:E5';
+      formulaVal.textContent = '(multi-cell selection)';
+    } else if (mode === 'keyboard') {
+      cellRef.textContent = 'C3';
+      formulaVal.textContent = '6000';
+    } else if (mode === 'column') {
+      cellRef.textContent = 'C3';
+      formulaVal.textContent = '6000';
+      const spent = document.querySelector('th[data-col="spent"]');
+      if (spent) spent.classList.add('dragging');
+      const budgeted = document.querySelector('th[data-col="budgeted"]');
+      if (budgeted) budgeted.classList.add('drop-before');
+    } else if (mode === 'relation') {
+      cellRef.textContent = 'F3';
+      formulaVal.textContent = '—';
+    }
+  }
+
+  modes.forEach((btn) => btn.addEventListener('click', () => setMode(btn.dataset.mode)));
+  setMode('selection');
+})();
+</script>
+</body>
+</html>

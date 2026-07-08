@@ -46,11 +46,15 @@ export async function disableAuthBypass(page: any) {
 }
 
 /**
- * Navigate to a page with auth bypass enabled
+ * Navigate to a page with auth bypass enabled.
+ * Query params must precede the URL hash — appending after `#` would land in the fragment.
  */
 export async function gotoWithAuthBypass(page: any, path: string) {
-  const separator = path.includes('?') ? '&' : '?'
-  await page.goto(`${path}${separator}testAuthBypass=true`)
+  const hashIndex = path.indexOf('#')
+  const base = hashIndex >= 0 ? path.slice(0, hashIndex) : path
+  const hash = hashIndex >= 0 ? path.slice(hashIndex) : ''
+  const separator = base.includes('?') ? '&' : '?'
+  await page.goto(`${base}${separator}testAuthBypass=true${hash}`)
 }
 
 /**

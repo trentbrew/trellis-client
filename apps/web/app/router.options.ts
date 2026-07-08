@@ -13,6 +13,29 @@ import type { RouterConfig } from 'nuxt/schema'
  *   /w/trent-ws/workspace/notes → workspace-scoped (orgSlug in URL)
  */
 export default <RouterConfig>{
+  /**
+   * Entity dialog hashes (`#entity:…`) are not DOM anchors. Vue Router's default
+   * scroll uses querySelector on the hash and throws when IDs contain `:`.
+   */
+  scrollBehavior(to, _from, savedPosition) {
+    const hash = to.hash
+    if (!hash) {
+      return savedPosition ?? { top: 0, left: 0 }
+    }
+    if (hash.startsWith('#entity:') || hash.startsWith('#calendaritem:')) {
+      return savedPosition ?? { top: 0, left: 0 }
+    }
+    try {
+      const el = document.querySelector(hash)
+      if (el) {
+        return { el, behavior: 'smooth' as const }
+      }
+    } catch {
+      // Invalid CSS selector — ignore
+    }
+    return savedPosition ?? { top: 0, left: 0 }
+  },
+
   routes: (_routes) => {
     // Top-level path segments that should be workspace-scoped
     const WORKSPACE_SCOPED = new Set([
@@ -33,6 +56,9 @@ export default <RouterConfig>{
       'pages',
       'query',
       'settings',
+      'sheets',
+      'decks',
+      'canvases',
       'types',
       'workflows',
     ])

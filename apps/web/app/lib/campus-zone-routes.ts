@@ -34,7 +34,9 @@ export function isWorkshopProjectionPath(path: string): boolean {
     clean === '/sheets' ||
     clean.startsWith('/sheets/') ||
     clean === '/decks' ||
-    clean.startsWith('/decks/')
+    clean.startsWith('/decks/') ||
+    clean === '/canvases' ||
+    clean.startsWith('/canvases/')
   )
 }
 

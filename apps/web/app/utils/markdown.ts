@@ -58,6 +58,39 @@ export function isHtmlContent(content: string): boolean {
   return /<(?:p|h[1-6]|ul|ol|li|blockquote|pre|div|table|hr)\b/i.test(content)
 }
 
+/** Heuristic: plain text that looks like markdown source (not already HTML). */
+export function looksLikeMarkdown(text: string): boolean {
+  const trimmed = text.trim()
+  if (!trimmed || isHtmlContent(trimmed)) return false
+  return /^(#{1,6}\s|[-*+]\s|[-*+]\s*\[[ xX]\]|\d+\.\s|>\s|```|!\[[^\]]*\]\([^)]+\)|\[[^\]]+\]\([^)]+\))/m.test(
+    trimmed,
+  )
+}
+
+/** Clipboard HTML that is only a code/pre wrapper around plain text (e.g. VS Code copy). */
+export function isPlainTextCodeBlockHtml(html: string): boolean {
+  const trimmed = html.trim()
+  if (!trimmed) return false
+  return (
+    /^<(?:pre|div)[^>]*>\s*<code[^>]*>[\s\S]*<\/code>\s*<\/(?:pre|div)>\s*$/i.test(trimmed) ||
+    /^<code[^>]*>[\s\S]*<\/code>\s*$/i.test(trimmed)
+  )
+}
+
+/**
+ * Prefer markdown → rich HTML paste when clipboard plain text is markdown-like
+ * and HTML is absent or is a code-block wrapper (not real rich text).
+ */
+export function shouldPasteMarkdownAsRichText(html: string, text: string): boolean {
+  if (!text.trim() || !looksLikeMarkdown(text)) return false
+  if (!html.trim()) return true
+  if (isPlainTextCodeBlockHtml(html)) return true
+  const hasRichStructure = /<(?:p|h[1-6]|ul|ol|li|blockquote|strong|em|table)\b/i.test(html)
+  if (!hasRichStructure) return true
+  const stripped = html.replace(/<[^>]+>/g, '').trim()
+  return stripped === text.trim()
+}
+
 /**
  * Convert marked checkbox list HTML to TipTap TaskList format.
  * marked produces: <ul><li><input type="checkbox"> text</li></ul>

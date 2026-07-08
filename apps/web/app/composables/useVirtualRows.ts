@@ -44,5 +44,14 @@ export function useVirtualRows(count: Ref<number>, options: UseVirtualRowsOption
     return { start, end }
   })
 
-  return { scrollerRef, measure, range }
+  function scrollToIndex(index: number) {
+    const el = scrollerRef.value
+    if (!el || index < 0) return
+    const top = index * options.rowHeight
+    const bottom = top + options.rowHeight
+    if (top < el.scrollTop) el.scrollTop = top
+    else if (bottom > el.scrollTop + el.clientHeight) el.scrollTop = bottom - el.clientHeight
+  }
+
+  return { scrollerRef, measure, range, scrollToIndex }
 }

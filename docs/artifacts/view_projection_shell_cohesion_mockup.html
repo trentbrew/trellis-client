@@ -1,0 +1,492 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Trellis - View Projection Shell Cohesion (TRL-27 design mock)</title>
+    <style>
+      :root {
+        --background: #0b0b0f;
+        --surface: #141419;
+        --surface-raised: #1b1b22;
+        --text: #e9e7ef;
+        --text-muted: #8f8a9d;
+        --primary: #8b5cf6;
+        --secondary: #22d3ee;
+        --accent: #f8c471;
+        --border: #2b2934;
+        --success: #34d399;
+        --radius-sm: 5px;
+        --radius-md: 10px;
+        --radius-lg: 16px;
+        --space-xs: 4px;
+        --space-sm: 8px;
+        --space-md: 14px;
+        --space-lg: 22px;
+        --space-xl: 32px;
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      body {
+        margin: 0;
+        min-height: 100vh;
+        background:
+          radial-gradient(circle at 18% 0%, rgba(139, 92, 246, 0.22), transparent 34%),
+          radial-gradient(circle at 88% 12%, rgba(34, 211, 238, 0.12), transparent 30%),
+          var(--background);
+        color: var(--text);
+        font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+        font-size: 13px;
+        line-height: 1.5;
+      }
+
+      button {
+        font: inherit;
+      }
+
+      .page {
+        width: min(1180px, calc(100vw - 32px));
+        margin: 32px auto;
+        border: 1px solid var(--border);
+        border-radius: 22px;
+        background: rgba(20, 20, 25, 0.86);
+        box-shadow: 0 24px 80px rgba(0, 0, 0, 0.34);
+        overflow: hidden;
+      }
+
+      .page-header {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        padding: 14px 18px;
+        border-bottom: 1px solid var(--border);
+        background: rgba(11, 11, 15, 0.42);
+      }
+
+      .title {
+        font-weight: 650;
+        letter-spacing: -0.02em;
+      }
+
+      .crumb {
+        color: var(--text-muted);
+        font-family: "JetBrains Mono", ui-monospace, SFMono-Regular, monospace;
+        font-size: 10px;
+        letter-spacing: 0.04em;
+        text-transform: uppercase;
+      }
+
+      .status {
+        margin-left: auto;
+        display: inline-flex;
+        align-items: center;
+        gap: 7px;
+        color: var(--success);
+        font-family: "JetBrains Mono", ui-monospace, SFMono-Regular, monospace;
+        font-size: 10px;
+        text-transform: uppercase;
+      }
+
+      .status::before {
+        content: "";
+        width: 7px;
+        height: 7px;
+        border-radius: 999px;
+        background: var(--success);
+      }
+
+      .projection-shell {
+        display: grid;
+        grid-template-columns: 52px minmax(0, 1fr) 260px;
+        min-height: 680px;
+      }
+
+      .spine {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 8px;
+        padding: 12px 7px;
+        border-right: 1px solid var(--border);
+        background: var(--surface);
+      }
+
+      .spine-label {
+        writing-mode: vertical-rl;
+        transform: rotate(180deg);
+        margin: 6px 0 10px;
+        color: var(--text-muted);
+        font-family: "JetBrains Mono", ui-monospace, SFMono-Regular, monospace;
+        font-size: 9px;
+        letter-spacing: 0.12em;
+        text-transform: uppercase;
+      }
+
+      .projection-button {
+        width: 36px;
+        height: 36px;
+        display: grid;
+        place-items: center;
+        border: 1px solid transparent;
+        border-radius: 12px;
+        background: transparent;
+        color: var(--text-muted);
+        cursor: pointer;
+      }
+
+      .projection-button[aria-pressed="true"] {
+        border-color: rgba(139, 92, 246, 0.68);
+        background: rgba(139, 92, 246, 0.18);
+        color: var(--text);
+        box-shadow: inset 3px 0 0 var(--primary);
+      }
+
+      .projection-button:focus-visible {
+        outline: 2px solid var(--secondary);
+        outline-offset: 2px;
+      }
+
+      .projection-button[disabled] {
+        opacity: 0.36;
+        cursor: not-allowed;
+      }
+
+      .workbench {
+        min-width: 0;
+        display: grid;
+        grid-template-rows: auto minmax(0, 1fr) auto;
+      }
+
+      .toolbar {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        padding: 12px 14px;
+        border-bottom: 1px solid var(--border);
+        background: rgba(27, 27, 34, 0.68);
+      }
+
+      .pill {
+        border: 1px solid var(--border);
+        border-radius: 999px;
+        padding: 5px 9px;
+        color: var(--text-muted);
+        font-family: "JetBrains Mono", ui-monospace, SFMono-Regular, monospace;
+        font-size: 10px;
+      }
+
+      .pill.live {
+        border-color: rgba(34, 211, 238, 0.34);
+        color: var(--secondary);
+      }
+
+      .body {
+        padding: 16px;
+        overflow: hidden;
+      }
+
+      .renderer {
+        height: 100%;
+        min-height: 500px;
+        border: 1px solid var(--border);
+        border-radius: var(--radius-lg);
+        background: var(--surface-raised);
+        overflow: hidden;
+      }
+
+      .cards {
+        display: grid;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        gap: 12px;
+        padding: 14px;
+      }
+
+      .card {
+        min-height: 130px;
+        border: 1px solid var(--border);
+        border-radius: var(--radius-md);
+        background: rgba(11, 11, 15, 0.42);
+        padding: 12px;
+      }
+
+      .card strong,
+      .column strong {
+        display: block;
+        margin-bottom: 8px;
+      }
+
+      .muted {
+        color: var(--text-muted);
+      }
+
+      .table {
+        width: 100%;
+        border-collapse: collapse;
+      }
+
+      .table th,
+      .table td {
+        padding: 12px 14px;
+        border-bottom: 1px solid var(--border);
+        text-align: left;
+      }
+
+      .table th {
+        color: var(--text-muted);
+        font-family: "JetBrains Mono", ui-monospace, SFMono-Regular, monospace;
+        font-size: 10px;
+        text-transform: uppercase;
+      }
+
+      .kanban {
+        display: grid;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        gap: 12px;
+        padding: 14px;
+      }
+
+      .column {
+        min-height: 430px;
+        border: 1px solid var(--border);
+        border-radius: var(--radius-md);
+        background: rgba(11, 11, 15, 0.32);
+        padding: 12px;
+      }
+
+      .canvas {
+        height: 100%;
+        min-height: 500px;
+        background-image:
+          linear-gradient(rgba(43, 41, 52, 0.7) 1px, transparent 1px),
+          linear-gradient(90deg, rgba(43, 41, 52, 0.7) 1px, transparent 1px);
+        background-size: 24px 24px;
+        display: grid;
+        place-items: center;
+      }
+
+      .artboard {
+        width: min(620px, 80%);
+        aspect-ratio: 16 / 9;
+        border: 1px solid var(--border);
+        border-radius: var(--radius-md);
+        background: #0d0d11;
+        padding: 28px;
+        position: relative;
+      }
+
+      .selection {
+        border: 1px solid var(--primary);
+        border-radius: var(--radius-sm);
+        padding: 10px;
+        box-shadow: 0 0 0 6px rgba(139, 92, 246, 0.13);
+      }
+
+      .unsupported {
+        min-height: 500px;
+        display: grid;
+        place-items: center;
+        text-align: center;
+        color: var(--text-muted);
+      }
+
+      .footer {
+        padding: 10px 14px;
+        border-top: 1px solid var(--border);
+        color: var(--text-muted);
+        font-family: "JetBrains Mono", ui-monospace, SFMono-Regular, monospace;
+        font-size: 10px;
+      }
+
+      .inspector {
+        border-left: 1px solid var(--border);
+        background: var(--surface);
+        padding: 16px;
+      }
+
+      .inspector h2 {
+        margin: 0 0 4px;
+        font-size: 14px;
+      }
+
+      .field {
+        margin-top: 16px;
+        padding-top: 14px;
+        border-top: 1px solid var(--border);
+      }
+
+      .field label {
+        display: block;
+        margin-bottom: 6px;
+        color: var(--text-muted);
+        font-size: 10px;
+        font-weight: 700;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+      }
+
+      .field div {
+        border: 1px solid var(--border);
+        border-radius: var(--radius-sm);
+        padding: 8px;
+        background: rgba(11, 11, 15, 0.42);
+      }
+
+      [hidden] {
+        display: none !important;
+      }
+
+      @media (max-width: 880px) {
+        .projection-shell {
+          grid-template-columns: 1fr;
+        }
+
+        .spine {
+          flex-direction: row;
+          border-right: 0;
+          border-bottom: 1px solid var(--border);
+        }
+
+        .spine-label {
+          writing-mode: initial;
+          transform: none;
+          margin: 0 auto 0 0;
+        }
+
+        .inspector {
+          border-left: 0;
+          border-top: 1px solid var(--border);
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <main class="page">
+      <header class="page-header">
+        <div>
+          <div class="title">Projection shell</div>
+          <div class="crumb">TRL-27 / Page.vue + ProjectionOutlet</div>
+        </div>
+        <div class="status" aria-live="polite">live registry</div>
+      </header>
+
+      <section class="projection-shell" aria-label="Projection shell mock">
+        <nav class="spine" aria-label="Projection layouts" data-design-note="Projection spine: registry-driven layout choices">
+          <div class="spine-label">views</div>
+          <button class="projection-button" type="button" data-view="cards" aria-label="Card grid view" aria-pressed="true">Grid</button>
+          <button class="projection-button" type="button" data-view="table" aria-label="Table view" aria-pressed="false">Table</button>
+          <button class="projection-button" type="button" data-view="kanban" aria-label="Kanban view" aria-pressed="false">Board</button>
+          <button class="projection-button" type="button" data-view="canvas" aria-label="Canvas view" aria-pressed="false">Canvas</button>
+          <button class="projection-button" type="button" data-view="unsupported" aria-label="Chart view unavailable" aria-pressed="false">Chart</button>
+        </nav>
+
+        <section class="workbench">
+          <div class="toolbar" data-design-note="Toolbar belongs to the shell or recipe, not individual renderers">
+            <span class="pill" id="activeProjection">card-grid</span>
+            <span class="pill live">capability gated</span>
+            <span class="pill">showing 24 of 42</span>
+          </div>
+
+          <div class="body">
+            <section class="renderer" data-panel="cards" aria-label="Card grid projection">
+              <div class="cards">
+                <article class="card"><strong>Research brief</strong><span class="muted">Card renderer through ProjectionOutlet</span></article>
+                <article class="card"><strong>YC deck</strong><span class="muted">Slide-deck can become a projection recipe</span></article>
+                <article class="card"><strong>Issue board</strong><span class="muted">Kanban recipe shares shell chrome</span></article>
+              </div>
+            </section>
+
+            <section class="renderer" data-panel="table" aria-label="Table projection" hidden>
+              <table class="table">
+                <thead><tr><th>Name</th><th>Type</th><th>Status</th></tr></thead>
+                <tbody>
+                  <tr><td>Research brief</td><td>note</td><td>active</td></tr>
+                  <tr><td>YC deck</td><td>slide-deck</td><td>draft</td></tr>
+                  <tr><td>Issue board</td><td>kanban</td><td>live</td></tr>
+                </tbody>
+              </table>
+            </section>
+
+            <section class="renderer" data-panel="kanban" aria-label="Kanban projection" hidden>
+              <div class="kanban">
+                <div class="column"><strong>Queue</strong><div class="card">Proposal recipes</div></div>
+                <div class="column"><strong>Building</strong><div class="card">ProjectionOutlet M2</div></div>
+                <div class="column"><strong>Review</strong><div class="card">Canvas shell cohesion</div></div>
+              </div>
+            </section>
+
+            <section class="renderer" data-panel="canvas" aria-label="Canvas projection" hidden>
+              <div class="canvas">
+                <div class="artboard">
+                  <div class="selection">
+                    <strong>Selectable object</strong>
+                    <p class="muted">Canvas projections use the same shell, plus an optional inspector slot.</p>
+                  </div>
+                </div>
+              </div>
+            </section>
+
+            <section class="renderer unsupported" data-panel="unsupported" aria-label="Unsupported projection" hidden>
+              <div>
+                <strong>Chart view is known, but not wired here yet.</strong>
+                <p>Keep the registry visible and explain unavailable renderers instead of dropping them silently.</p>
+              </div>
+            </section>
+          </div>
+
+          <footer class="footer" id="announce" aria-live="polite">Switched to card-grid projection.</footer>
+        </section>
+
+        <aside class="inspector" aria-label="Projection inspector" data-design-note="Optional slot for object-aware projections">
+          <h2 id="inspectorTitle">Projection properties</h2>
+          <div class="muted" id="inspectorSub">Card grid recipe</div>
+          <div class="field">
+            <label>Renderer</label>
+            <div id="rendererField">EntityCardCollection</div>
+          </div>
+          <div class="field">
+            <label>Inspector mode</label>
+            <div id="modeField">Selection optional</div>
+          </div>
+        </aside>
+      </section>
+    </main>
+
+    <script>
+      const labels = {
+        cards: ['card-grid', 'EntityCardCollection', 'Selection optional'],
+        table: ['table', 'BrowseSpreadsheetView', 'Cell editing'],
+        kanban: ['kanban', 'BrowseKanbanView / VCS recipe', 'Swimlane filters'],
+        canvas: ['slide-deck canvas', 'DeckStageViewport', 'Object inspector'],
+        unsupported: ['chart', 'ProjectionOutlet fallback', 'Unavailable reason'],
+      };
+
+      const buttons = Array.from(document.querySelectorAll('[data-view]'));
+      const panels = Array.from(document.querySelectorAll('[data-panel]'));
+      const activeProjection = document.getElementById('activeProjection');
+      const announce = document.getElementById('announce');
+      const inspectorSub = document.getElementById('inspectorSub');
+      const rendererField = document.getElementById('rendererField');
+      const modeField = document.getElementById('modeField');
+
+      buttons.forEach((button) => {
+        button.addEventListener('click', () => {
+          const view = button.dataset.view;
+          buttons.forEach((item) => item.setAttribute('aria-pressed', String(item === button)));
+          panels.forEach((panel) => {
+            panel.hidden = panel.dataset.panel !== view;
+          });
+
+          const [projection, renderer, mode] = labels[view];
+          activeProjection.textContent = projection;
+          inspectorSub.textContent = `${projection} recipe`;
+          rendererField.textContent = renderer;
+          modeField.textContent = mode;
+          announce.textContent = `Switched to ${projection} projection.`;
+        });
+      });
+    </script>
+  </body>
+</html>

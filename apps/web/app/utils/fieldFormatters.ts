@@ -6,6 +6,11 @@
  * display-friendly string, component hint, or structured object.
  */
 
+import type { EntityType } from '~/types/entity'
+import { getEntityTypeConfig, getPropertyFieldsForType } from '~/config/entityRegistry'
+import { resolvePropertyKey } from '~/lib/fieldEditorConfig'
+import { TABLE_SKIP_FIELD_NAMES } from '~/lib/ontology-sidebar-fields'
+
 // ── Constants ─────────────────────────────────────────────────────────
 
 const SORTABLE_TYPES = new Set(['title', 'number', 'date', 'select', 'status', 'checkbox'])
@@ -30,7 +35,14 @@ export function formatFieldValue(value: unknown, valueType: string): string {
 
     case 'date': {
       try {
-        const d = new Date(String(value))
+        const numeric =
+          typeof value === 'number'
+            ? value
+            : typeof value === 'string' && /^\d+$/.test(value)
+              ? Number(value)
+              : NaN
+        const d =
+          !Number.isNaN(numeric) && numeric > 1e11 ? new Date(numeric) : new Date(String(value))
         if (isNaN(d.getTime())) return String(value)
         return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
       } catch {
@@ -62,8 +74,20 @@ export function formatFieldValue(value: unknown, valueType: string): string {
       if (Array.isArray(value)) return `${value.length} linked`
       return value ? '1 linked' : ''
 
-    default:
+    default: {
+      if (typeof value === 'number' && value > 1e11) {
+        try {
+          return new Date(value).toLocaleDateString('en-US', {
+            month: 'short',
+            day: 'numeric',
+            year: 'numeric',
+          })
+        } catch {
+          return String(value)
+        }
+      }
       return String(value)
+    }
   }
 }
 
@@ -103,13 +127,13 @@ export interface AutoTableColumn {
 
 /**
  * Given ontology schema fields, generate table columns suitable for a data table.
- * Excludes rich_text and files (too large for table cells).
+ * Excludes files and formula fields (too large or computed for table cells).
  */
 export function generateTableColumns(
   fields: { name: string; valueType: string }[],
 ): AutoTableColumn[] {
   return fields
-    .filter((f) => f.valueType !== 'rich_text' && f.valueType !== 'files')
+    .filter((f) => f.valueType !== 'files' && f.valueType !== 'formula')
     .map((f) => ({
       key: f.name,
       label: titleCase(f.name),
@@ -118,6 +142,57 @@ export function generateTableColumns(
       isTitle: f.valueType === 'title',
       sortable: SORTABLE_TYPES.has(f.valueType),
     }))
+}
+
+/**
+ * Build table columns from the static entityRegistry when server ontologies
+ * haven't loaded yet (startup race / offline fallback).
+ */
+export function buildStaticBrowseTableColumns(entityType: string): AutoTableColumn[] {
+  const cfg = getEntityTypeConfig(entityType as EntityType)
+  if (!cfg) return []
+
+  const PROPERTY_VALUE_TYPES: Partial<Record<string, string>> = {
+    startDate: 'date',
+    endDate: 'date',
+    allDay: 'checkbox',
+    email: 'email',
+    phone: 'phone_number',
+    amount: 'number',
+    latitude: 'number',
+    longitude: 'number',
+    status: 'status',
+    taskStatus: 'status',
+    tripStatus: 'status',
+    paymentStatus: 'status',
+    sprintStatus: 'status',
+    budgetStatus: 'status',
+    category: 'select',
+    priority: 'select',
+    urgency: 'select',
+    eventSubtype: 'select',
+    currency: 'select',
+    pin: 'checkbox',
+    achieved: 'checkbox',
+    recurring: 'checkbox',
+    location: 'rich_text',
+    origin: 'rich_text',
+    destination: 'rich_text',
+    conferenceLink: 'url',
+    avatar: 'url',
+  }
+
+  const schemaLike = [
+    { name: 'title', valueType: 'title' },
+    ...getPropertyFieldsForType(entityType as EntityType)
+      .filter((f) => f.id !== 'type' && !TABLE_SKIP_FIELD_NAMES.has(f.id))
+      .map((f) => ({
+        name: f.id === 'status' ? resolvePropertyKey('status', entityType as EntityType) : f.id,
+        valueType: PROPERTY_VALUE_TYPES[f.id] ?? 'rich_text',
+      })),
+  ]
+
+  return generateTableColumns(schemaLike)
 }
 
 // ── Sort/filter/search auto-generation ─────────────────────────────────

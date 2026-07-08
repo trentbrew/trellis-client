@@ -16,7 +16,7 @@
   import FilterBuilder from '~/components/layout/FilterBuilder.vue'
   import ColumnHeader from './DataTable/ColumnHeader.vue'
   import EditableCell from './DataTable/EditableCell.vue'
-  import * as XLSX from 'xlsx'
+  import { exportData, type ExportFormat } from '~/lib/entity-export'
   import { todayYmdLocal } from '~/utils/date'
 
   const props = defineProps<{
@@ -165,8 +165,6 @@
 
   // --- Export ---
 
-  type ExportFormat = 'csv' | 'json' | 'jsonld' | 'xlsx'
-
   const getExportRows = (): Record<string, any>[] => {
     const rows = table.getFilteredRowModel().rows
     return rows.map((r) => {
@@ -179,84 +177,13 @@
     })
   }
 
-  const getExportFileName = (ext: string) => {
-    const slug = props.collectionId.replace(/[^a-zA-Z0-9-_]/g, '_')
-    return `${slug}-export.${ext}`
-  }
-
-  const downloadBlob = (blob: Blob, filename: string) => {
-    const url = URL.createObjectURL(blob)
-    const a = document.createElement('a')
-    a.href = url
-    a.download = filename
-    document.body.appendChild(a)
-    a.click()
-    document.body.removeChild(a)
-    URL.revokeObjectURL(url)
-  }
-
   const handleExport = (format: ExportFormat) => {
     const rows = getExportRows()
-    if (!rows.length) return
-
-    switch (format) {
-      case 'csv': {
-        const keys = derivedKeys.value
-        const header = keys.map((k) => `"${k.replace(/"/g, '""')}"`).join(',')
-        const lines = rows.map((row) =>
-          keys
-            .map((k) => {
-              const v = row[k]
-              if (v == null) return ''
-              if (typeof v === 'object') return `"${JSON.stringify(v).replace(/"/g, '""')}"`
-              return `"${String(v).replace(/"/g, '""')}"`
-            })
-            .join(','),
-        )
-        const csv = [header, ...lines].join('\n')
-        downloadBlob(new Blob([csv], { type: 'text/csv;charset=utf-8' }), getExportFileName('csv'))
-        break
-      }
-
-      case 'json': {
-        const json = JSON.stringify(rows, null, 2)
-        downloadBlob(new Blob([json], { type: 'application/json;charset=utf-8' }), getExportFileName('json'))
-        break
-      }
-
-      case 'jsonld': {
-        const ld = {
-          '@context': {
-            '@vocab': 'https://trellis.dev/ns/',
-            'trellis': 'https://trellis.dev/ns/',
-          },
-          '@type': 'trellis:Collection',
-          '@id': `trellis:collection/${props.collectionId}`,
-          'trellis:records': rows.map((row) => {
-            const record: Record<string, any> = { '@type': 'trellis:Record' }
-            for (const [k, v] of Object.entries(row)) {
-              record[k] = v
-            }
-            return record
-          }),
-        }
-        const json = JSON.stringify(ld, null, 2)
-        downloadBlob(new Blob([json], { type: 'application/ld+json;charset=utf-8' }), getExportFileName('jsonld'))
-        break
-      }
-
-      case 'xlsx': {
-        const ws = XLSX.utils.json_to_sheet(rows, { header: derivedKeys.value })
-        const wb = XLSX.utils.book_new()
-        XLSX.utils.book_append_sheet(wb, ws, 'Records')
-        const buf = XLSX.write(wb, { bookType: 'xlsx', type: 'array' })
-        downloadBlob(
-          new Blob([buf], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' }),
-          getExportFileName('xlsx'),
-        )
-        break
-      }
-    }
+    const slug = props.collectionId.replace(/[^a-zA-Z0-9-_]/g, '_')
+    exportData(rows, derivedKeys.value, format, {
+      filenameSlug: slug,
+      collectionId: props.collectionId,
+    })
   }
 
   // Add-column popover state

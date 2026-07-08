@@ -1,3 +1,4 @@
+import type { Editor } from '@tiptap/core'
 import { Extension } from '@tiptap/core'
 import { VueRenderer } from '@tiptap/vue-3'
 import Suggestion from '@tiptap/suggestion'
@@ -5,6 +6,53 @@ import tippy, { type Instance as TippyInstance } from 'tippy.js'
 import type { SuggestionKeyDownProps } from '@tiptap/suggestion'
 import SlashCommandMenu from '~/components/Ui/SlashCommandMenu.vue'
 import type { NoteTemplate } from '~/lib/noteTemplates'
+import { HTML_BLOCK_DEFINITION } from '~/lib/block-registry/registry'
+
+type SuggestionRectProps = {
+  clientRect?: (() => DOMRect | null) | null
+  editor: Editor
+  range: { from: number }
+}
+
+function coordsClientRect(editor: Editor, from: number): DOMRect {
+  const coords = editor.view.coordsAtPos(from)
+  return new DOMRect(
+    coords.left,
+    coords.top,
+    Math.max(coords.right - coords.left, 1),
+    Math.max(coords.bottom - coords.top, 20),
+  )
+}
+
+/** TipTap can omit clientRect inside dialogs; fall back to caret coords so the menu still mounts. */
+function resolveSuggestionClientRect(props: SuggestionRectProps): () => DOMRect {
+  const fallback = () => coordsClientRect(props.editor, props.range.from)
+  if (!props.clientRect) return fallback
+  return () => {
+    const rect = props.clientRect?.() ?? null
+    if (!rect || (rect.width === 0 && rect.height === 0)) return fallback()
+    return rect
+  }
+}
+
+function resolveSuggestionAppendTo(editor: Editor): HTMLElement {
+  return (editor.view.dom.closest('[role="dialog"]') ?? document.body) as HTMLElement
+}
+
+function mountSlashPopup(props: SuggestionRectProps, component: VueRenderer): TippyInstance {
+  const appendTo = resolveSuggestionAppendTo(props.editor)
+  return tippy(document.body as Element, {
+    getReferenceClientRect: resolveSuggestionClientRect(props),
+    appendTo: () => appendTo,
+    content: component.element as Element,
+    showOnCreate: true,
+    interactive: true,
+    trigger: 'manual',
+    placement: 'bottom-start',
+    zIndex: 9999,
+    maxWidth: 320,
+  })
+}
 
 export interface SlashCommandItem {
   id: string
@@ -160,6 +208,16 @@ function getBuiltInCommands(hasEmbeds: boolean, hasImages: boolean): SlashComman
 
     items.push(
       {
+        id: 'html-embed',
+        label: HTML_BLOCK_DEFINITION.label,
+        description: HTML_BLOCK_DEFINITION.description,
+        icon: HTML_BLOCK_DEFINITION.icon,
+        group: 'Embeds',
+        action: (_editor) => {
+          // Handled by onEmbedHtml callback in RichTextEditor
+        },
+      },
+      {
         id: 'entity-embed',
         label: 'Entity',
         description: 'Embed a live entity card',
@@ -254,22 +312,23 @@ export interface SlashCommandConfig {
   hasEmbeds?: boolean
   hasImages?: boolean
   chatMode?: boolean
-  onEmbedEntity?: (editor: any) => void
-  onEmbedQuery?: (editor: any) => void
-  onEmbedDiagram?: (editor: any) => void
-  onEmbedImage?: (editor: any) => void
-  onEmbedUrl?: (editor: any) => void
-  onEmbedImageUrl?: (editor: any) => void
-  onEmbedYoutube?: (editor: any) => void
-  onEmbedSpotify?: (editor: any) => void
-  onEmbedSheetRange?: (editor: any) => void
+  onEmbedEntity?: (_editor: any) => void
+  onEmbedQuery?: (_editor: any) => void
+  onEmbedHtml?: (_editor: any) => void
+  onEmbedDiagram?: (_editor: any) => void
+  onEmbedImage?: (_editor: any) => void
+  onEmbedUrl?: (_editor: any) => void
+  onEmbedImageUrl?: (_editor: any) => void
+  onEmbedYoutube?: (_editor: any) => void
+  onEmbedSpotify?: (_editor: any) => void
+  onEmbedSheetRange?: (_editor: any) => void
   getTemplates?: () => NoteTemplate[]
 }
 
 const CHAT_EXCLUDED_IDS = new Set(['heading-1', 'heading-2', 'heading-3', 'table', 'diagram'])
 
 export function createSlashCommandExtension(config: SlashCommandConfig = {}) {
-  const { hasEmbeds = false, hasImages = false, chatMode = false, onEmbedEntity, onEmbedQuery, onEmbedImage, onEmbedUrl, onEmbedImageUrl, onEmbedYoutube, onEmbedSpotify, onEmbedSheetRange, getTemplates } = config
+  const { hasEmbeds = false, hasImages = false, chatMode = false, onEmbedEntity, onEmbedQuery, onEmbedHtml, onEmbedImage, onEmbedUrl, onEmbedImageUrl, onEmbedYoutube, onEmbedSpotify, onEmbedSheetRange, getTemplates } = config
 
   return Extension.create({
     name: 'slashCommand',
@@ -278,7 +337,7 @@ export function createSlashCommandExtension(config: SlashCommandConfig = {}) {
       return {
         suggestion: {
           char: '/',
-          startOfLine: true,
+          startOfLine: false,
           command: ({ editor, range, props: itemProps }: any) => {
             // Delete the slash + query text
             editor.chain().focus().deleteRange(range).run()
@@ -292,6 +351,10 @@ export function createSlashCommandExtension(config: SlashCommandConfig = {}) {
             }
             if (item.id === 'query-view' && onEmbedQuery) {
               onEmbedQuery(editor)
+              return
+            }
+            if (item.id === 'html-embed' && onEmbedHtml) {
+              onEmbedHtml(editor)
               return
             }
             if (item.id === 'image-embed' && onEmbedImage) {
@@ -349,7 +412,8 @@ export function createSlashCommandExtension(config: SlashCommandConfig = {}) {
               (item) =>
                 item.label.toLowerCase().includes(q)
                 || item.description.toLowerCase().includes(q)
-                || item.id.includes(q),
+                || item.id.includes(q)
+                || (q === 'html' && item.id === 'html-embed'),
             )
           },
           render: () => {
@@ -366,22 +430,7 @@ export function createSlashCommandExtension(config: SlashCommandConfig = {}) {
                   editor: props.editor,
                 })
 
-                if (!props.clientRect) return
-
-                const editorEl = props.editor.view.dom
-                const dialogContent = editorEl.closest('[role="dialog"]') || document.body
-
-                popup = tippy(document.body as Element, {
-                  getReferenceClientRect: props.clientRect as () => DOMRect,
-                  appendTo: () => dialogContent as HTMLElement,
-                  content: component.element as Element,
-                  showOnCreate: true,
-                  interactive: true,
-                  trigger: 'manual',
-                  placement: 'bottom-start',
-                  zIndex: 9999,
-                  maxWidth: 320,
-                })
+                popup = mountSlashPopup(props, component)
               },
 
               onUpdate(props: any) {
@@ -390,10 +439,13 @@ export function createSlashCommandExtension(config: SlashCommandConfig = {}) {
                   command: props.command,
                 })
 
-                if (!props.clientRect) return
+                if (!popup) {
+                  popup = mountSlashPopup(props, component)
+                  return
+                }
 
-                popup?.setProps({
-                  getReferenceClientRect: props.clientRect as () => DOMRect,
+                popup.setProps({
+                  getReferenceClientRect: resolveSuggestionClientRect(props),
                 })
               },
 

@@ -11,6 +11,7 @@ test.describe('VCS issue kanban (TRL-17)', () => {
 
   test('renders board shell, sub-nav, and column headers', async ({ page }) => {
     await expect(page).toHaveURL(/\/lab\/issues/)
+    await expect(page.locator('[data-projection-recipe="kanban"]')).toBeVisible()
 
     const nav = page.getByRole('navigation', { name: 'Lab views' })
     await expect(nav).toBeVisible({ timeout: 15_000 })

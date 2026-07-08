@@ -58,6 +58,9 @@ const ROUTE_RULES: RouteRule[] = [
   { prefix: '/messages', zoneId: CAMPUS_ZONES.workshop },
   { prefix: '/members', zoneId: CAMPUS_ZONES.workshop },
   { prefix: '/workflows', zoneId: CAMPUS_ZONES.workshop },
+  { prefix: '/sheets', zoneId: CAMPUS_ZONES.workshop },
+  { prefix: '/decks', zoneId: CAMPUS_ZONES.workshop },
+  { prefix: '/canvases', zoneId: CAMPUS_ZONES.workshop },
 
   // Lobby — public onboarding / help surfaces
   { prefix: '/notifications', zoneId: CAMPUS_ZONES.lobby },
@@ -69,10 +72,16 @@ const ROUTE_RULES: RouteRule[] = [
   { prefix: '/onboarding', zoneId: CAMPUS_ZONES.lobby },
 ]
 
+/** Strip `/w/:orgSlug` prefix so zone rules match workspace-scoped URLs. */
+function normalizePathname(path: string): string {
+  const wsMatch = path.match(/^\/w\/[^/]+(\/.*)?$/)
+  return wsMatch ? wsMatch[1] || '/' : path
+}
+
 /** Resolve a zone id from a pathname. Anything unmatched → Lab (private). */
 export function zoneIdFromPath(path: string | undefined | null): string {
   if (!path) return CAMPUS_ZONES.lab
-  const clean = path.replace(/\/+$/, '') // trim trailing slash
+  const clean = normalizePathname(path).replace(/\/+$/, '') // trim trailing slash
   for (const rule of ROUTE_RULES) {
     if (clean === rule.prefix || clean.startsWith(rule.prefix + '/')) {
       return rule.zoneId

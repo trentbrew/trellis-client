@@ -7,6 +7,10 @@
         "TRELLIS_PORT": "1414",
         "TRELLIS_AGENT_ID": "claude"
       }
+    },
+    "agent-browser": {
+      "command": "agent-browser",
+      "args": ["mcp", "--tools", "core,tabs,debug"]
     }
   }
 }

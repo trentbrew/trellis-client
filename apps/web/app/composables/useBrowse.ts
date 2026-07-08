@@ -1,19 +1,28 @@
 import { ref, computed, type Ref, type ComputedRef } from 'vue'
 
-export type BrowseViewMode =
-  | 'grid'
-  | 'list'
-  | 'table'
-  | 'spreadsheet'
-  | 'calendar'
-  | 'kanban'
-  | 'timeline'
-  | 'gantt'
-  | 'month'
-  | 'week'
-  | 'agenda'
-  | 'moodboard'
-  | 'graph'
+/**
+ * Legacy browse-page view vocabulary. Being reconciled to the canonical
+ * `ProjectionType` (see `lib/trellis-projection-registry/browse-view-mode.ts`).
+ * Kept as a `const` tuple so the reconciliation map/test can enumerate every mode.
+ */
+export const BROWSE_VIEW_MODES = [
+  'grid',
+  'list',
+  'table',
+  'spreadsheet',
+  'calendar',
+  'kanban',
+  'timeline',
+  'gantt',
+  'month',
+  'week',
+  'agenda',
+  'moodboard',
+  'graph',
+  'form',
+] as const
+
+export type BrowseViewMode = (typeof BROWSE_VIEW_MODES)[number]
 
 export type BrowseVariant = 'default' | 'people' | 'media' | 'articles'
 

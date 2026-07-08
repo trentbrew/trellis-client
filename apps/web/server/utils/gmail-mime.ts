@@ -50,7 +50,7 @@ export interface NormalizedGmailThread {
   messages: NormalizedGmailMessage[]
 }
 
-export function getHeader(headers: GmailHeader[] | undefined, name: string): string {
+export function getGmailHeader(headers: GmailHeader[] | undefined, name: string): string {
   if (!headers) return ''
   const h = headers.find((x) => x.name.toLowerCase() === name.toLowerCase())
   return h?.value || ''
@@ -89,17 +89,17 @@ export function extractBody(payload: GmailMessagePart | undefined): { text?: str
 export function normalizeMessage(msg: GmailMessageRaw): NormalizedGmailMessage {
   const headers = msg.payload?.headers
   const body = extractBody(msg.payload)
-  const dateHeader = getHeader(headers, 'Date')
+  const dateHeader = getGmailHeader(headers, 'Date')
   const internalDateMs = msg.internalDate ? Number(msg.internalDate) : 0
   const date = dateHeader || (internalDateMs ? new Date(internalDateMs).toISOString() : '')
 
   return {
     id: msg.id,
-    messageId: getHeader(headers, 'Message-ID'),
-    subject: getHeader(headers, 'Subject'),
-    from: getHeader(headers, 'From'),
-    to: getHeader(headers, 'To'),
-    cc: getHeader(headers, 'Cc') || undefined,
+    messageId: getGmailHeader(headers, 'Message-ID'),
+    subject: getGmailHeader(headers, 'Subject'),
+    from: getGmailHeader(headers, 'From'),
+    to: getGmailHeader(headers, 'To'),
+    cc: getGmailHeader(headers, 'Cc') || undefined,
     date,
     snippet: msg.snippet || '',
     labelIds: msg.labelIds || [],
@@ -115,4 +115,35 @@ export function normalizeThread(raw: { id: string; messages: GmailMessageRaw[] }
     labelIds: Array.from(new Set(raw.messages.flatMap((m) => m.labelIds || []))),
     messages: raw.messages.map(normalizeMessage),
   }
+}
+
+export interface MimeMessageOptions {
+  to: string
+  subject: string
+  body: string
+  cc?: string
+  bcc?: string
+  isHtml?: boolean
+  inReplyTo?: string
+  references?: string
+}
+
+export function base64UrlEncode(input: string): string {
+  return Buffer.from(input, 'utf-8').toString('base64').replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '')
+}
+
+export function buildMimeMessage(opts: MimeMessageOptions): string {
+  const lines: string[] = []
+  lines.push(`To: ${opts.to}`)
+  if (opts.cc) lines.push(`Cc: ${opts.cc}`)
+  if (opts.bcc) lines.push(`Bcc: ${opts.bcc}`)
+  lines.push(`Subject: ${opts.subject}`)
+  lines.push('MIME-Version: 1.0')
+  lines.push(`Content-Type: ${opts.isHtml ? 'text/html' : 'text/plain'}; charset="UTF-8"`)
+  lines.push('Content-Transfer-Encoding: 7bit')
+  if (opts.inReplyTo) lines.push(`In-Reply-To: ${opts.inReplyTo}`)
+  if (opts.references) lines.push(`References: ${opts.references}`)
+  lines.push('')
+  lines.push(opts.body)
+  return lines.join('\r\n')
 }

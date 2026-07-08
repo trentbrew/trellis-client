@@ -8,11 +8,10 @@
 import {
   useContentEnrichment,
   type ContentEntityCandidate,
-  type EnrichmentSuggestion as GenericSuggestion,
 } from '~/composables/useContentEnrichment'
+import type { EnrichmentSuggestion } from '~/types/enrichment'
 
 export type EventEntityCandidate = ContentEntityCandidate
-export type EnrichmentSuggestion = GenericSuggestion
 
 export function useEventEnrichment() {
   const enrichment = useContentEnrichment({

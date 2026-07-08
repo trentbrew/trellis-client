@@ -20,10 +20,12 @@
     createdAt?: string | number
     /** Full editable entity — used by the embedded AI suggestions panel. */
     item?: any
-    /** Whether the sidebar is collapsed into a narrow strip. */
+    /** Whether the sidebar is collapsed (panel hidden; toggle via header control). */
     collapsed?: boolean
     /** Whether to show the Properties tab. Defaults to true. */
     showProperties?: boolean
+    /** Show schema footer on Properties tab. Defaults to true. */
+    showSchemaFooter?: boolean
     /** Initial active tab. Defaults to 'properties' when shown, else 'references'. */
     defaultTab?: 'properties' | 'references' | 'activity'
   }>()
@@ -42,47 +44,25 @@
   }>()
 
   const slots = useSlots()
+  const showSchemaFooter = computed(() => props.showSchemaFooter !== false)
   const showProperties = computed(() => {
     if (props.showProperties === false) return false
+    if (props.showProperties === true) return true
     return !!slots.properties
   })
   const activeTab = ref<'properties' | 'references' | 'activity'>(
     props.defaultTab ?? (showProperties.value ? 'properties' : 'references'),
   )
 
-  function toggleCollapsed() {
-    emit('update:collapsed', !props.collapsed)
-  }
+  watch(showProperties, (visible) => {
+    if (visible && activeTab.value === 'references' && props.defaultTab === undefined) {
+      activeTab.value = 'properties'
+    }
+  })
 </script>
 
 <template>
-  <!-- Collapsed strip — just an expand button + activity count badge -->
-  <div v-if="collapsed" class="flex flex-col items-center h-full py-2 overflow-hidden">
-    <button
-      class="h-7 w-7 rounded-md flex items-center justify-center hover:bg-muted text-muted-foreground hover:text-foreground transition-colors"
-      title="Expand sidebar"
-      @click="toggleCollapsed">
-      <Icon name="lucide:panel-right-open" class="h-4 w-4" />
-    </button>
-    <button
-      v-if="!isCreateMode && displayActivity.length"
-      class="mt-2 h-7 w-7 rounded-md flex items-center justify-center hover:bg-muted text-muted-foreground hover:text-foreground transition-colors relative"
-      title="Activity"
-      @click="
-        () => {
-          activeTab = 'activity'
-          toggleCollapsed()
-        }
-      ">
-      <Icon name="lucide:activity" class="h-4 w-4" />
-      <span
-        class="absolute -top-0.5 -right-0.5 text-[8px] font-medium bg-primary text-primary-foreground rounded-full h-3.5 min-w-3.5 px-1 flex items-center justify-center">
-        {{ displayActivity.length }}
-      </span>
-    </button>
-  </div>
-
-  <div v-else class="flex flex-col h-full overflow-hidden">
+  <div v-if="!collapsed" class="flex flex-col h-full overflow-hidden">
     <!-- Tab bar -->
     <div class="flex border-b border-border shrink-0">
       <button
@@ -120,12 +100,6 @@
           {{ displayActivity.length }}
         </span>
       </button>
-      <button
-        class="px-2 flex items-center justify-center text-muted-foreground hover:text-foreground transition-colors shrink-0"
-        title="Collapse sidebar"
-        @click="toggleCollapsed">
-        <Icon name="lucide:panel-right-close" class="h-4 w-4" />
-      </button>
     </div>
 
     <!-- Tab content -->
@@ -138,7 +112,9 @@
               <div class="p-4 text-xs text-muted-foreground italic">No properties.</div>
             </slot>
           </div>
-          <div class="px-3 py-2 border-t border-border shrink-0 flex items-center justify-between">
+          <div
+            v-if="showSchemaFooter"
+            class="px-3 py-2 border-t border-border shrink-0 flex items-center justify-between">
             <span class="text-[10px] text-muted-foreground/60 uppercase tracking-wide">Schema</span>
             <button
               class="text-[10px] text-muted-foreground hover:text-foreground transition-colors inline-flex items-center gap-1"
@@ -168,7 +144,15 @@
       </template>
 
       <!-- Activity tab -->
-      <div v-if="activeTab === 'activity' && !isCreateMode" class="p-3 pb-0 space-y-2 flex flex-col h-full">
+      <slot
+        v-if="activeTab === 'activity' && !isCreateMode"
+        name="activity"
+        :display-activity="displayActivity"
+        :comments-loading="commentsLoading"
+        :new-comment="newComment"
+        :update-new-comment="(val: string) => emit('update:newComment', val)"
+        :add-comment="() => emit('add-comment')">
+        <div class="p-3 pb-0 space-y-2 flex flex-col h-full">
         <!-- Comment input at top -->
         <div class="flex items-center gap-2 border border-border bg-card py-3 px-2 rounded-lg shrink-0">
           <div class="w-5 h-5 rounded-full bg-muted/60 flex items-center justify-center shrink-0">
@@ -223,6 +207,7 @@
           </div>
         </div>
       </div>
+      </slot>
     </div>
 
     <!-- Last edited -->

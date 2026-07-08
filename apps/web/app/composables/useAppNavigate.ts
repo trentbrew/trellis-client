@@ -29,49 +29,56 @@ const scrollToTop = () => {
   pageElement.scrollTo({ top: 0, behavior: 'instant' })
 }
 
-const selectFirstItem = () => {
-  if (!import.meta.client) return
+const createSelectFirstItem = (
+  router: ReturnType<typeof useRouter>,
+  routes: ReturnType<typeof useRoutes>,
+  pinned: ReturnType<typeof usePinnedItems>,
+) => {
+  return () => {
+    if (!import.meta.client) return
 
-  nextTick(() => {
-    const routes = useRoutes()
-    const pinned = usePinnedItems()
-    const router = useRouter()
-
-    navLog('selectFirstItem: start', {
-      currentPath: router.currentRoute.value.path,
-    })
-
-    const currentSectionLinks = routes.currentSectionLinks.value
-    const pinnedItems = pinned.getPinnedItems(currentSectionLinks)
-    const unpinnedItems = pinned.getUnpinnedItems(currentSectionLinks)
-
-    const allItems = [...pinnedItems, ...unpinnedItems]
-
-    if (allItems.length > 0 && allItems[0]?.path) {
-      const firstItemPath = allItems[0].path
-
-      navLog('selectFirstItem: candidate', {
-        firstItemPath,
+    nextTick(() => {
+      navLog('selectFirstItem: start', {
         currentPath: router.currentRoute.value.path,
       })
 
-      if (router.currentRoute.value.path !== firstItemPath) {
-        navLog('selectFirstItem: redirecting', {
-          from: router.currentRoute.value.path,
-          to: firstItemPath,
+      const currentSectionLinks = routes.currentSectionLinks.value
+      const pinnedItems = pinned.getPinnedItems(currentSectionLinks)
+      const unpinnedItems = pinned.getUnpinnedItems(currentSectionLinks)
+
+      const allItems = [...pinnedItems, ...unpinnedItems]
+
+      if (allItems.length > 0 && allItems[0]?.path) {
+        const firstItemPath = allItems[0].path
+
+        navLog('selectFirstItem: candidate', {
+          firstItemPath,
+          currentPath: router.currentRoute.value.path,
         })
-        router.push(firstItemPath)
+
+        if (router.currentRoute.value.path !== firstItemPath) {
+          navLog('selectFirstItem: redirecting', {
+            from: router.currentRoute.value.path,
+            to: firstItemPath,
+          })
+          router.push(firstItemPath)
+        }
       }
-    }
-  })
+    })
+  }
 }
 
 const isPlainLeftClick = (e: MouseEvent) => {
   return e.button === 0 && !e.metaKey && !e.ctrlKey && !e.shiftKey && !e.altKey
 }
 
+function canAnimateElement(el: HTMLElement | null): el is HTMLElement {
+  return !!el && el.isConnected
+}
+
 const performTransition = async (direction: 'forward' | 'back' = 'forward', skipLeave = false) => {
   if (!import.meta.client || !pageElement || isTransitioning) return
+  if (!canAnimateElement(pageElement)) return
 
   isTransitioning = true
   const el = pageElement
@@ -133,7 +140,10 @@ const performTransition = async (direction: 'forward' | 'back' = 'forward', skip
 export const useAppNavigate = () => {
   const router = useRouter()
   const route = useRoute()
+  const routes = useRoutes()
+  const pinned = usePinnedItems()
   const { animationsEnabled } = useAnimationSettings()
+  const selectFirstItem = createSelectFirstItem(router, routes, pinned)
 
   const resolvePath = (to: string): string => {
     if (typeof to !== 'string' || !to) return to
@@ -168,6 +178,12 @@ export const useAppNavigate = () => {
     if (!import.meta.client || !pageElement) {
       navLog('navigate: router.push (no page element)')
       await router.push(resolvedTo)
+      return
+    }
+
+    if (!canAnimateElement(pageElement)) {
+      await router.push(resolvedTo)
+      scrollToTop()
       return
     }
 

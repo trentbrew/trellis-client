@@ -21,8 +21,25 @@
 
   const route = useRoute()
   const router = useRouter()
+  const { $toast } = useNuxtApp()
 
   const { isConnected, connect, fetchThreads, fetchThread, sendMessage, listLabels, persistThreadToTql } = useGmail()
+
+  function handleOAuthReturn() {
+    const connected = route.query.connected
+    const error = route.query.error
+    if (connected === 'gmail') {
+      $toast?.success('Gmail connected')
+    } else if (typeof error === 'string' && error) {
+      $toast?.error(`Gmail connection failed: ${error.replace(/_/g, ' ')}`)
+    }
+    if (connected || error) {
+      const { connected: _c, error: _e, ...rest } = route.query
+      router.replace({ path: route.path, query: rest })
+    }
+  }
+
+  onMounted(handleOAuthReturn)
 
   // ── URL-driven state ────────────────────────────────────────────────
   // Label is driven by ?label=INBOX query so the sidebar links work.

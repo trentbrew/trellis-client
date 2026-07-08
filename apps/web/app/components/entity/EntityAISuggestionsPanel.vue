@@ -7,9 +7,9 @@
    * right sidebar of EntityDialog, sitting at the bottom of the References tab.
    */
   import type { EntityType } from '~/types/entity'
-  import type { ProposedField, ProposedInstance, TypeProposal } from '~/types/enrichment'
+  import type { EnrichmentSuggestion, ProposedField, ProposedInstance, TypeProposal } from '~/types/enrichment'
   import { getEntityTypeConfig } from '~/config/entityRegistry'
-  import { useContentEnrichment, type ContentKind, type EnrichmentSuggestion } from '~/composables/useContentEnrichment'
+  import { useContentEnrichment, type ContentKind } from '~/composables/useContentEnrichment'
   import { useActiveVideoPlayer } from '~/composables/useActiveVideoPlayer'
   import { parseChapters, parseTranscript } from '~/composables/useYoutubeTranscript'
 

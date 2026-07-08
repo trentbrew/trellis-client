@@ -6,6 +6,16 @@
     inheritAttrs: false,
   })
 
+  const props = withDefaults(
+    defineProps<{
+      /** `center` = full-width header field; `menubar` = compact sky chip */
+      variant?: 'center' | 'menubar'
+    }>(),
+    { variant: 'center' },
+  )
+
+  const isMenubar = computed(() => props.variant === 'menubar')
+
   const commandDialog = useCommandDialog()
   const routes = useRoutes()
   const appNavigate = useAppNavigate()
@@ -144,8 +154,8 @@
 </script>
 
 <template>
-  <!-- Compact header trigger -->
-  <div v-bind="$attrs" class="flex flex-1 justify-center min-w-0 app-region-no-drag">
+  <!-- Center header trigger -->
+  <div v-if="!isMenubar" v-bind="$attrs" class="flex flex-1 justify-center min-w-0 app-region-no-drag">
     <button
       type="button"
       aria-label="Search or ask the agent"
@@ -162,6 +172,21 @@
       </UiKbd>
     </button>
   </div>
+
+  <!-- Menubar compact trigger -->
+  <button
+    v-else
+    type="button"
+    aria-label="Go anywhere (Omnibox)"
+    :aria-expanded="commandDialog.isOpen.value"
+    class="menubar-chip relative inline-flex h-7 w-[168px] shrink-0 items-center gap-1.5 rounded-full border border-border/40 bg-muted/30 pl-8 pr-2 text-[11px] text-left text-muted-foreground hover:bg-muted/50 hover:text-foreground outline-none transition-colors app-region-no-drag"
+    @click="openTrigger">
+    <Icon
+      name="lucide:search"
+      class="h-3.5 w-3.5 text-muted-foreground/70 absolute left-2.5 top-1/2 -translate-y-1/2 pointer-events-none" />
+    <span class="truncate">Go anywhere…</span>
+    <UiKbd class="ml-auto bg-muted/60 border-none text-[9px] h-4 px-1 pointer-events-none shrink-0">⌘K</UiKbd>
+  </button>
 
   <!-- Immersive overlay -->
   <Teleport to="body">

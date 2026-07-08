@@ -1,0 +1,97 @@
+
+ RUN  v3.2.4 /Users/trentbrew/TURTLE/Projects/Packages/trellis-client/apps/web
+
+stderr | app/lib/ontology-reserved-keys.test.ts
+[instant.client] Could not init local storage dir: [POST] "/api/storage/init-local": 404 Cannot find any path matching /api/storage/init-local.
+
+stderr | app/lib/ontology-capabilities.test.ts
+[instant.client] Could not init local storage dir: [POST] "/api/storage/init-local": 404 Cannot find any path matching /api/storage/init-local.
+
+stderr | app/lib/collections-browse-dispatch.test.ts
+[instant.client] Could not init local storage dir: [POST] "/api/storage/init-local": 404 Cannot find any path matching /api/storage/init-local.
+
+stderr | app/lib/ontology-reserved-keys.test.ts
+[Vue warn]: Unhandled error during execution of watcher callback
+[Vue warn]: Unhandled error during execution of scheduler flush
+
+stderr | app/lib/ontology-capabilities.test.ts
+[Vue warn]: Unhandled error during execution of watcher callback
+[Vue warn]: Unhandled error during execution of scheduler flush
+
+stderr | app/lib/collections-browse-dispatch.test.ts
+[Vue warn]: Unhandled error during execution of watcher callback
+[Vue warn]: Unhandled error during execution of scheduler flush
+
+ ✓ app/lib/ontology-capabilities.test.ts (6 tests) 3ms
+ ✓ app/lib/collections-browse-dispatch.test.ts (4 tests) 3ms
+ ✓ app/lib/ontology-reserved-keys.test.ts (4 tests) 5ms
+⎯⎯⎯⎯⎯⎯ Unhandled Errors ⎯⎯⎯⎯⎯⎯
+
+Vitest caught 3 unhandled errors during the test run.
+This might cause false positive tests. Resolve unhandled errors to make sure your tests are not affected.
+
+⎯⎯⎯⎯ Unhandled Rejection ⎯⎯⎯⎯⎯
+TypeError: helper.removeColorScheme is not a function
+ ❯ ../../node_modules/.pnpm/@nuxtjs+color-mode@3.5.2_magicast@0.5.2/node_modules/@nuxtjs/color-mode/dist/runtime/plugin.client.js:86:12
+     84|       window.document.head.appendChild(style);
+     85|     }
+     86|     helper.removeColorScheme(oldValue);
+       |            ^
+     87|     helper.addColorScheme(newValue);
+     88|     if (disableTransition) {
+ ❯ callWithErrorHandling ../../node_modules/.pnpm/@vue+runtime-core@3.5.32/node_modules/@vue/runtime-core/dist/runtime-core.cjs.js:200:19
+ ❯ callWithAsyncErrorHandling ../../node_modules/.pnpm/@vue+runtime-core@3.5.32/node_modules/@vue/runtime-core/dist/runtime-core.cjs.js:207:17
+ ❯ baseWatchOptions.call ../../node_modules/.pnpm/@vue+runtime-core@3.5.32/node_modules/@vue/runtime-core/dist/runtime-core.cjs.js:884:47
+ ❯ job ../../node_modules/.pnpm/@vue+reactivity@3.5.32/node_modules/@vue/reactivity/dist/reactivity.cjs.js:1902:18
+ ❯ callWithErrorHandling ../../node_modules/.pnpm/@vue+runtime-core@3.5.32/node_modules/@vue/runtime-core/dist/runtime-core.cjs.js:200:33
+ ❯ flushJobs ../../node_modules/.pnpm/@vue+runtime-core@3.5.32/node_modules/@vue/runtime-core/dist/runtime-core.cjs.js:405:9
+ ❯ processTicksAndRejections node:internal/process/task_queues:103:5
+
+This error originated in "app/lib/ontology-capabilities.test.ts" test file. It doesn't mean the error was thrown inside the file itself, but while it was running.
+
+⎯⎯⎯⎯ Unhandled Rejection ⎯⎯⎯⎯⎯
+TypeError: helper.removeColorScheme is not a function
+ ❯ ../../node_modules/.pnpm/@nuxtjs+color-mode@3.5.2_magicast@0.5.2/node_modules/@nuxtjs/color-mode/dist/runtime/plugin.client.js:86:12
+     84|       window.document.head.appendChild(style);
+     85|     }
+     86|     helper.removeColorScheme(oldValue);
+       |            ^
+     87|     helper.addColorScheme(newValue);
+     88|     if (disableTransition) {
+ ❯ callWithErrorHandling ../../node_modules/.pnpm/@vue+runtime-core@3.5.32/node_modules/@vue/runtime-core/dist/runtime-core.cjs.js:200:19
+ ❯ callWithAsyncErrorHandling ../../node_modules/.pnpm/@vue+runtime-core@3.5.32/node_modules/@vue/runtime-core/dist/runtime-core.cjs.js:207:17
+ ❯ baseWatchOptions.call ../../node_modules/.pnpm/@vue+runtime-core@3.5.32/node_modules/@vue/runtime-core/dist/runtime-core.cjs.js:884:47
+ ❯ job ../../node_modules/.pnpm/@vue+reactivity@3.5.32/node_modules/@vue/reactivity/dist/reactivity.cjs.js:1902:18
+ ❯ callWithErrorHandling ../../node_modules/.pnpm/@vue+runtime-core@3.5.32/node_modules/@vue/runtime-core/dist/runtime-core.cjs.js:200:33
+ ❯ flushJobs ../../node_modules/.pnpm/@vue+runtime-core@3.5.32/node_modules/@vue/runtime-core/dist/runtime-core.cjs.js:405:9
+ ❯ processTicksAndRejections node:internal/process/task_queues:103:5
+
+This error originated in "app/lib/collections-browse-dispatch.test.ts" test file. It doesn't mean the error was thrown inside the file itself, but while it was running.
+
+⎯⎯⎯⎯ Unhandled Rejection ⎯⎯⎯⎯⎯
+TypeError: helper.removeColorScheme is not a function
+ ❯ ../../node_modules/.pnpm/@nuxtjs+color-mode@3.5.2_magicast@0.5.2/node_modules/@nuxtjs/color-mode/dist/runtime/plugin.client.js:86:12
+     84|       window.document.head.appendChild(style);
+     85|     }
+     86|     helper.removeColorScheme(oldValue);
+       |            ^
+     87|     helper.addColorScheme(newValue);
+     88|     if (disableTransition) {
+ ❯ callWithErrorHandling ../../node_modules/.pnpm/@vue+runtime-core@3.5.32/node_modules/@vue/runtime-core/dist/runtime-core.cjs.js:200:19
+ ❯ callWithAsyncErrorHandling ../../node_modules/.pnpm/@vue+runtime-core@3.5.32/node_modules/@vue/runtime-core/dist/runtime-core.cjs.js:207:17
+ ❯ baseWatchOptions.call ../../node_modules/.pnpm/@vue+runtime-core@3.5.32/node_modules/@vue/runtime-core/dist/runtime-core.cjs.js:884:47
+ ❯ job ../../node_modules/.pnpm/@vue+reactivity@3.5.32/node_modules/@vue/reactivity/dist/reactivity.cjs.js:1902:18
+ ❯ callWithErrorHandling ../../node_modules/.pnpm/@vue+runtime-core@3.5.32/node_modules/@vue/runtime-core/dist/runtime-core.cjs.js:200:33
+ ❯ flushJobs ../../node_modules/.pnpm/@vue+runtime-core@3.5.32/node_modules/@vue/runtime-core/dist/runtime-core.cjs.js:405:9
+ ❯ processTicksAndRejections node:internal/process/task_queues:103:5
+
+This error originated in "app/lib/ontology-reserved-keys.test.ts" test file. It doesn't mean the error was thrown inside the file itself, but while it was running.
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯
+
+
+ Test Files  3 passed (3)
+      Tests  14 passed (14)
+     Errors  3 errors
+   Start at  16:52:30
+   Duration  9.30s (transform 6.30s, setup 25.18s, collect 107ms, tests 10ms, environment 546ms, prepare 508ms)
+

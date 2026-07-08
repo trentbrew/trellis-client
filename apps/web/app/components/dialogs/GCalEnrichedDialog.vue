@@ -228,31 +228,6 @@
   const rightSidebarTab = ref<'references' | 'activity'>('references')
   const rightSidebarW = ref(360)
   const rightSidebarCollapsed = ref(false)
-  const isResizingSidebar = ref(false)
-
-  const startSidebarResize = (e: PointerEvent) => {
-    e.preventDefault()
-    e.stopPropagation()
-    const el = e.currentTarget as HTMLElement
-    el.setPointerCapture(e.pointerId)
-    isResizingSidebar.value = true
-    const startX = e.clientX
-    const startW = rightSidebarW.value
-    document.body.style.cursor = 'ew-resize'
-    const onMove = (ev: PointerEvent) => {
-      const dx = ev.clientX - startX
-      rightSidebarW.value = Math.max(200, Math.min(480, startW - dx))
-    }
-    const onUp = () => {
-      isResizingSidebar.value = false
-      document.body.style.cursor = ''
-      el.releasePointerCapture(e.pointerId)
-      el.removeEventListener('pointermove', onMove)
-      el.removeEventListener('pointerup', onUp)
-    }
-    el.addEventListener('pointermove', onMove)
-    el.addEventListener('pointerup', onUp)
-  }
 
   const handleAddComment = async () => {
     if (!newComment.value.trim()) return
@@ -372,6 +347,9 @@
     dialog-description="View Google Calendar event details and add Trellis enrichment."
     @update:open="close"
     @close="close">
+    <template #header-actions>
+      <RightSidebarToggle v-model:collapsed="rightSidebarCollapsed" />
+    </template>
     <!-- Header badges: GCal source indicator -->
     <template #header-badges>
       <span
@@ -539,29 +517,8 @@
         </div>
       </div>
 
-      <!-- Right sidebar: collapsed strip -->
-      <div
-        v-if="rightSidebarCollapsed"
-        class="shrink-0 border-l border-border flex flex-col items-center py-2 w-10 bg-card/50">
-        <button
-          class="h-7 w-7 rounded-md flex items-center justify-center hover:bg-muted text-muted-foreground hover:text-foreground transition-colors"
-          title="Expand sidebar"
-          @click="rightSidebarCollapsed = false">
-          <Icon name="lucide:panel-right-open" class="h-4 w-4" />
-        </button>
-      </div>
-
-      <!-- Right sidebar: References + Activity -->
-      <aside
-        v-else
-        class="shrink-0 border-l border-border overflow-hidden flex flex-col relative transition-[width] duration-150"
-        :class="isResizingSidebar ? 'select-none' : ''"
-        :style="{ width: rightSidebarW + 'px' }">
-        <!-- Resize handle -->
-        <div
-          class="absolute inset-y-0 left-0 w-1 cursor-ew-resize z-10 hover:bg-primary/20 transition-colors"
-          @pointerdown="startSidebarResize($event)" />
-
+      <ResizableRightPanel v-model:collapsed="rightSidebarCollapsed" v-model:width="rightSidebarW">
+        <div class="flex h-full flex-col overflow-hidden">
         <!-- Tab bar -->
         <div class="flex border-b border-border shrink-0">
           <button
@@ -586,12 +543,6 @@
             <span v-if="displayActivity.length" class="ml-1 text-[9px] bg-muted rounded-full px-1.5 py-0.5">
               {{ displayActivity.length }}
             </span>
-          </button>
-          <button
-            class="px-2 flex items-center justify-center text-muted-foreground hover:text-foreground transition-colors shrink-0"
-            title="Collapse sidebar"
-            @click="rightSidebarCollapsed = true">
-            <Icon name="lucide:panel-right-close" class="h-4 w-4" />
           </button>
         </div>
 
@@ -673,7 +624,8 @@
             </div>
           </div>
         </div>
-      </aside>
+        </div>
+      </ResizableRightPanel>
     </div>
 
     <!-- Footer left: save status indicator -->

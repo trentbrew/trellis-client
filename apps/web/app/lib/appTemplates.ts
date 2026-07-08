@@ -69,7 +69,7 @@ export const APP_TEMPLATES: AppTemplate[] = [
     description: 'Payments, budgets, invoices, and financial tracking',
     icon: 'lucide:wallet',
     color: '#10b981',
-    ontologies: ['payment', 'budget', 'goal', 'note', 'file', 'organization', 'vendor'],
+    ontologies: ['payment', 'sheet', 'goal', 'note', 'file', 'organization', 'vendor'],
     category: 'business',
   },
 

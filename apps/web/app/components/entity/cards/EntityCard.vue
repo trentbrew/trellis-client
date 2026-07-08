@@ -1,5 +1,10 @@
 <script setup lang="ts">
   import type { Entity, EntityType, PropertyFieldId } from '~/types/entity'
+  import type { CardPropertyKey } from '~/lib/card-property-visibility'
+  import type { ViewFieldDefinition } from '~/lib/view-field-catalog'
+  import { buildViewFieldCatalog, partitionViewFields } from '~/lib/view-field-catalog'
+  import { filterFileCardVisibleKeys, getFileCategoryBadges } from '~/lib/file-card-view-profiles'
+  import EntityCardOrderedFields from '~/components/entity/cards/EntityCardOrderedFields.vue'
   import { getEntityTypeConfig } from '~/config/entityRegistry'
   import { getEntityClass } from '~/types/entity'
   import { stripHtml } from '~/utils/stripHtml'
@@ -20,9 +25,35 @@
       owners?: { id: string; name: string }[]
       /** Custom fields for dynamic entity types — rendered in preview area */
       fields?: { key: string; label: string; value: unknown }[]
+      /** Ordered card-face property keys to show. Omit for all defaults. */
+      visibleProperties?: CardPropertyKey[] | null
+      /** P1: ordered visible field keys (builtins + ontology). */
+      visibleFields?: string[] | null
+      fieldCatalog?: ViewFieldDefinition[]
+      /** When false, hide description placeholders for empty values. */
+      showEmptyProperties?: boolean
+      /** Dense list/kanban face — tiny title icon, collapsible badge props. */
+      compact?: boolean
+      propertiesExpanded?: boolean
     }>(),
-    { layout: 'grid', selected: false, editable: false, owners: () => [] },
+    { layout: 'grid', selected: false, editable: false, owners: () => [], showEmptyProperties: false, compact: false, propertiesExpanded: false },
   )
+
+  const resolvedCatalog = computed(() =>
+    props.fieldCatalog?.length ? props.fieldCatalog : buildViewFieldCatalog('all'),
+  )
+
+  const effectiveVisible = computed(() => props.visibleFields ?? props.visibleProperties ?? null)
+
+  const fieldPartition = computed(() => partitionViewFields(effectiveVisible.value, resolvedCatalog.value))
+
+  const ontologyDefByKey = computed(() => {
+    const map: Record<string, ViewFieldDefinition> = {}
+    for (const field of resolvedCatalog.value) {
+      if (field.source === 'ontology') map[field.key] = field
+    }
+    return map
+  })
 
   const config = computed(() => getEntityTypeConfig(props.item.type as any))
   const entityClass = computed(() => getEntityClass(props.item.type as EntityType))
@@ -39,6 +70,28 @@
   const isNote = computed(() => i.value.type === 'note')
   const isProject = computed(() => i.value.type === 'project')
   const isFile = computed(() => i.value.type === 'file')
+
+  const cardFieldPartition = computed(() => {
+    const part = fieldPartition.value
+    if (!isFile.value) return part
+    const filtered = filterFileCardVisibleKeys(
+      [...part.meta, ...part.body],
+      i.value as Record<string, unknown>,
+    )
+    return {
+      meta: filtered.filter((k) => part.meta.includes(k)),
+      body: filtered.filter((k) => part.body.includes(k)),
+    }
+  })
+
+  const fileCategoryBadges = computed(() => {
+    if (!isFile.value) return []
+    // Preview overlay already shows extension + size — footer badges are category enrichment only.
+    return getFileCategoryBadges(i.value as Record<string, unknown>).filter(
+      (b) => !['sizeBytes', 'fileExtension', 'mimeType'].includes(b.key),
+    )
+  })
+
   // Guard against stale blob: URLs baked into older file entities — those
   // blob handles are dead after reload and trigger WebKitBlobResource errors.
   const fileUrl = computed<string | null>(() => {
@@ -111,6 +164,20 @@
     return getFileCategoryMeta(category)
   })
 
+  const formatFileSize = (bytes?: number): string => {
+    if (!bytes) return ''
+    if (bytes < 1024) return `${bytes} B`
+    if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`
+    if (bytes < 1024 * 1024 * 1024) return `${(bytes / (1024 * 1024)).toFixed(1)} MB`
+    return `${(bytes / (1024 * 1024 * 1024)).toFixed(1)} GB`
+  }
+
+  const fileExtensionLabel = computed(() => {
+    const ext = i.value.fileExtension
+    if (typeof ext === 'string' && ext.trim()) return ext.toUpperCase()
+    return fileMeta.value.label
+  })
+
   // ─── Spreadsheet / CSV thumbnail data ───
   const isTableFile = computed(() => i.value.fileCategory === 'spreadsheet' || i.value.fileExtension === 'csv')
   const cardTableData = ref<{ headers: string[]; rows: any[][] } | null>(null)
@@ -140,6 +207,14 @@
   const description = computed(() => {
     const d = i.value.description || i.value.excerpt || ''
     return stripHtml(d).slice(0, 300)
+  })
+
+  const fileCardSubtitle = computed(() => {
+    if (!isFile.value) return ''
+    const desc = description.value.trim()
+    if (desc) return desc
+    if (i.value.updatedAt) return `Edited ${formatRelativeTime(i.value.updatedAt)}`
+    return ''
   })
 
   const contentPreview = computed(() => {
@@ -283,6 +358,8 @@
     click: []
     select: [event: MouseEvent]
     'field-update': [fieldId: PropertyFieldId, value: unknown]
+    'column-update': [key: string, value: unknown]
+    'toggle-properties': []
   }>()
 </script>
 
@@ -290,10 +367,13 @@
   <!-- ═══════ LIST LAYOUT ═══════ -->
   <div
     v-if="layout === 'list'"
-    class="flex items-start gap-3 rounded-lg border border-border bg-card p-3 hover:bg-muted/50 transition-all cursor-pointer group"
+    class="rounded-lg border border-border bg-card hover:bg-muted/50 transition-all cursor-pointer group"
+    :class="compact ? 'p-2' : 'flex items-start gap-3 p-3'"
     @click="$emit('click')">
-    <!-- Preview thumbnail (left) -->
-    <div class="shrink-0 w-12 h-12 rounded-md overflow-hidden bg-muted/40 flex items-center justify-center">
+    <!-- Preview thumbnail (default list only) -->
+    <div
+      v-if="!compact"
+      class="shrink-0 w-12 h-12 rounded-md overflow-hidden bg-muted/40 flex items-center justify-center">
       <img
         v-if="isBookmark && thumbnailSrc"
         :src="thumbnailSrc"
@@ -311,47 +391,21 @@
       <Icon v-else :name="config.icon" :class="['h-5 w-5', `text-${config.color}-500`]" />
     </div>
 
-    <!-- Content (right) -->
-    <div class="flex-1 min-w-0">
-      <div class="flex items-center gap-2 mb-0.5">
-        <h3 class="text-sm font-medium truncate" :class="{ 'line-through text-muted-foreground': isCompleted }">
-          {{ item.title }}
-        </h3>
-        <Icon v-if="isDocument && i.pinned" name="lucide:pin" class="h-3 w-3 text-amber-500 shrink-0" />
-        <span
-          v-if="itemStatus"
-          :class="[
-            'ml-auto shrink-0 rounded-full px-1.5 py-0.5 text-[10px] font-medium',
-            statusColors[itemStatus] || 'bg-muted text-muted-foreground',
-          ]">
-          {{ itemStatus }}
-        </span>
-      </div>
-
-      <p v-if="isActor && (i.jobTitle || i.organization)" class="text-xs text-muted-foreground truncate mb-0.5">
-        {{ [i.jobTitle, i.organization].filter(Boolean).join(' · ') }}
-      </p>
-
-      <p v-if="description || contentPreview" class="text-xs text-muted-foreground line-clamp-1 mb-1">
-        {{ description || contentPreview }}
-      </p>
-
-      <div class="flex items-center gap-2 text-xs text-muted-foreground flex-wrap">
-        <span v-if="(isTemporal || isContainer) && dateDisplay" class="flex items-center gap-1">
-          <Icon name="lucide:calendar" class="h-3 w-3 opacity-50" />
-          {{ dateDisplay }}
-        </span>
-        <span v-if="isFile && i.sizeBytes" class="opacity-60">{{ formatBytes(i.sizeBytes) }}</span>
-        <template v-if="(item.tags || []).length">
-          <span
-            v-for="tag in item.tags.slice(0, 2)"
-            :key="tag"
-            class="bg-muted/80 px-1.5 py-0.5 rounded text-[10px] font-medium">
-            #{{ tag }}
-          </span>
-        </template>
-      </div>
-    </div>
+    <!-- Content -->
+    <EntityCardOrderedFields
+      :class="compact ? 'min-w-0 w-full' : 'flex-1 min-w-0'"
+      :item="item"
+      layout="list"
+      :ordered-meta-keys="cardFieldPartition.meta"
+      :ordered-body-keys="cardFieldPartition.body"
+      :ontology-def-by-key="ontologyDefByKey"
+      :editable="editable"
+      :show-empty-properties="showEmptyProperties"
+      :compact="compact"
+      :properties-expanded="propertiesExpanded"
+      @field-update="(fieldId, value) => emit('field-update', fieldId, value)"
+      @column-update="(key, value) => emit('column-update', key, value)"
+      @toggle-properties="emit('toggle-properties')" />
   </div>
 
   <!-- ═══════ GRID / MOODBOARD LAYOUT ═══════ -->
@@ -470,34 +524,34 @@
     </div>
 
     <!-- ─── Preview: File (actual content for images/video/pdf, table thumbnail, icon otherwise) ─── -->
-    <div v-else-if="isFile" class="aspect-video border-b border-border overflow-hidden relative bg-muted/20">
+    <div v-else-if="isFile" class="relative aspect-video overflow-hidden border-b border-border bg-muted/20">
       <img
         v-if="i.mimeType?.startsWith('image/') && fileUrl"
         :src="fileUrl"
         :alt="item.title"
-        class="w-full h-full object-cover pointer-events-none"
+        class="pointer-events-none h-full w-full object-cover"
         loading="lazy" />
       <iframe
         v-else-if="i.mimeType === 'application/pdf' && fileUrl"
         :src="fileUrl + '#toolbar=0&navpanes=0&scrollbar=0'"
-        class="w-full h-full border-0 pointer-events-none" />
+        class="pointer-events-none h-full w-full border-0" />
       <video
         v-else-if="i.mimeType?.startsWith('video/') && fileUrl"
         :src="fileUrl"
-        class="w-full h-full object-cover pointer-events-none"
+        class="pointer-events-none h-full w-full object-cover"
         preload="metadata"
         muted />
       <!-- Spreadsheet / CSV table thumbnail -->
       <div
         v-else-if="isTableFile && cardTableData"
-        class="absolute inset-0 overflow-hidden bg-card pointer-events-none">
-        <table class="w-full text-[8px] border-collapse">
-          <thead class="bg-muted sticky top-0">
+        class="pointer-events-none absolute inset-0 overflow-hidden bg-card">
+        <table class="w-full border-collapse text-[8px]">
+          <thead class="sticky top-0 bg-muted">
             <tr>
               <th
                 v-for="(col, c) in cardTableData.headers.slice(0, 8)"
                 :key="c"
-                class="px-1.5 py-0.5 text-left font-semibold text-muted-foreground border-b border-border truncate max-w-[60px]">
+                class="max-w-[60px] truncate border-b border-border px-1.5 py-0.5 text-left font-semibold text-muted-foreground">
                 {{ col }}
               </th>
             </tr>
@@ -507,19 +561,31 @@
               <td
                 v-for="(_, c) in cardTableData.headers.slice(0, 8)"
                 :key="c"
-                class="px-1.5 py-0.5 truncate max-w-[60px] text-muted-foreground border-b border-border/30">
+                class="max-w-[60px] truncate border-b border-border/30 px-1.5 py-0.5 text-muted-foreground">
                 {{ row[c] ?? '' }}
               </td>
             </tr>
           </tbody>
         </table>
-        <!-- Fade overlay at bottom to indicate more rows -->
-        <div class="absolute bottom-0 inset-x-0 h-8 bg-gradient-to-t from-card to-transparent" />
+        <div class="absolute inset-x-0 bottom-0 h-8 bg-gradient-to-t from-card to-transparent" />
       </div>
-      <div v-else class="h-full flex flex-col items-center justify-center gap-2">
+      <div v-else class="flex h-full flex-col items-center justify-center gap-2">
         <Icon :name="fileMeta.icon" :class="['h-10 w-10', `text-${fileMeta.color}-500`]" />
-        <span class="text-[10px] text-muted-foreground/50 uppercase tracking-wide font-medium">
-          {{ i.fileExtension || fileMeta.label }}
+        <span class="text-[10px] font-medium uppercase tracking-wide text-muted-foreground/50">
+          {{ fileExtensionLabel }}
+        </span>
+      </div>
+      <!-- Finder-style type + size chip on preview -->
+      <div
+        class="pointer-events-none absolute bottom-2 left-2 z-10 flex max-w-[calc(100%-1rem)] items-center gap-1">
+        <span
+          class="truncate rounded-md border border-border/40 bg-background/85 px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-foreground/90 backdrop-blur-sm">
+          {{ fileExtensionLabel }}
+        </span>
+        <span
+          v-if="i.sizeBytes"
+          class="shrink-0 rounded-md border border-border/40 bg-background/85 px-1.5 py-0.5 text-[10px] text-muted-foreground backdrop-blur-sm">
+          {{ formatFileSize(Number(i.sizeBytes)) }}
         </span>
       </div>
     </div>
@@ -632,113 +698,49 @@
     </div>
 
     <!-- ─── Content area ─── -->
-    <div class="p-3 space-y-1.5 flex-1">
-      <!-- Meta row -->
-      <div class="flex items-center gap-1.5 min-w-0">
-        <Icon
-          :name="config?.icon || 'lucide:layers'"
-          :class="['h-3 w-3 shrink-0', `text-${config?.color || 'gray'}-500`]" />
-        <span class="text-[11px] text-muted-foreground/60 font-medium truncate">
-          {{ config?.label || item.type }}
-        </span>
-
-        <div class="flex-1" />
-
-        <!-- Priority: inline editor or static badge (temporal only) -->
-        <template v-if="isTemporal && i.priority">
-          <div v-if="editable" @click.stop>
-            <EntityFieldEditor
-              :field-id="'priority'"
-              :model-value="i.priority"
-              :entity-type="i.type"
-              compact
-              display="pill"
-              @update:model-value="$emit('field-update', 'priority', $event)" />
-          </div>
-          <span v-else :class="['text-[10px] font-medium', priorityColors[i.priority] || 'text-muted-foreground']">
-            {{ i.priority }}
-          </span>
-        </template>
-
-        <!-- Status: inline editor or static badge (temporal + container only, not projects) -->
-        <template v-if="(isTemporal || (isContainer && !isProject)) && itemStatus">
-          <div v-if="editable" @click.stop>
-            <EntityFieldEditor
-              :field-id="'status'"
-              :model-value="itemStatus"
-              :entity-type="i.type"
-              compact
-              display="pill"
-              @update:model-value="$emit('field-update', 'status', $event)" />
-          </div>
-          <span
-            v-else
-            :class="[
-              'rounded-full px-1.5 py-0.5 text-[10px] font-medium',
-              statusColors[itemStatus] || 'bg-muted text-muted-foreground',
-            ]">
-            {{ itemStatus }}
-          </span>
-        </template>
-      </div>
-
-      <!-- Title -->
+    <!-- File cards: compact footer (metadata on preview + dialog sidebar) -->
+    <div v-if="isFile && layout !== 'list'" class="flex flex-col gap-1 p-3">
       <h3
-        class="text-sm font-medium leading-snug line-clamp-2 group-hover:text-primary transition-colors"
-        :class="[
-          isCompleted ? 'line-through text-muted-foreground' : '',
-          !hasRealTitle ? 'text-muted-foreground/50 italic' : '',
-        ]">
-        {{ displayTitle }}
+        class="text-sm font-medium leading-snug line-clamp-2 transition-colors group-hover:text-primary"
+        :class="item.title ? '' : 'italic text-muted-foreground/50'">
+        {{ item.title || 'Untitled' }}
       </h3>
-
-      <!-- Actor subtitle -->
-      <p v-if="isActor && (i.jobTitle || i.organization)" class="text-xs text-muted-foreground truncate">
-        {{ [i.jobTitle, i.organization].filter(Boolean).join(' · ') }}
+      <p v-if="fileCardSubtitle" class="line-clamp-2 text-[11px] leading-snug text-muted-foreground">
+        {{ fileCardSubtitle }}
       </p>
-
-      <!-- Email: from address + date -->
-      <template v-if="isEmail">
-        <p class="text-xs text-muted-foreground flex items-center gap-1 truncate">
-          <Icon name="lucide:user-circle" class="h-3 w-3 shrink-0 opacity-50" />
-          <span class="truncate">{{ i.from || 'Unknown sender' }}</span>
-        </p>
-        <p v-if="i.date" class="text-[10px] text-muted-foreground/50 flex items-center gap-1">
-          <Icon name="lucide:clock" class="h-3 w-3 shrink-0 opacity-50" />
-          {{ new Date(i.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) }}
-        </p>
-      </template>
-      <!-- Description for all other types -->
-      <p
-        v-else
-        class="text-xs"
-        :class="[
-          layout === 'moodboard' ? 'line-clamp-4' : 'line-clamp-2',
-          hasRealDescription ? 'text-muted-foreground' : 'text-muted-foreground/40 italic',
-        ]">
-        {{ displayDescription }}
-      </p>
-
-      <!-- Recurrence badge -->
-      <div v-if="recurrenceLabel" class="flex items-center gap-1 text-[10px] text-primary/70">
-        <Icon name="lucide:repeat" class="h-3 w-3 shrink-0" />
-        <span class="truncate">{{ recurrenceLabel }}</span>
-      </div>
-
-      <!-- Actor contact info -->
-      <div v-if="isActor && (i.email || i.phone)" class="flex items-center gap-3 text-xs text-muted-foreground">
-        <span v-if="i.email" class="flex items-center gap-1 truncate">
-          <Icon name="lucide:mail" class="h-3 w-3 shrink-0 opacity-50" />
-          {{ i.email }}
-        </span>
-        <span v-if="i.phone" class="flex items-center gap-1">
-          <Icon name="lucide:phone" class="h-3 w-3 shrink-0 opacity-50" />
-          {{ i.phone }}
+      <div
+        v-if="fileCategoryBadges.length"
+        class="flex flex-wrap items-stretch gap-1.5">
+        <span
+          v-for="badge in fileCategoryBadges"
+          :key="badge.key"
+          class="inline-flex min-h-8 min-w-[5.5rem] max-w-full flex-col justify-center gap-0.5 rounded bg-muted/80 px-2 py-1 text-[10px] font-medium text-muted-foreground"
+          :title="`${badge.label}: ${badge.value}`">
+          <span class="truncate text-[9px] font-medium uppercase tracking-wide text-muted-foreground/55">
+            {{ badge.label }}
+          </span>
+          <span class="truncate text-xs font-medium text-foreground/85">{{ badge.value }}</span>
         </span>
       </div>
-
-      <!-- File size -->
-      <p v-if="isFile && i.sizeBytes" class="text-xs text-muted-foreground">{{ formatBytes(i.sizeBytes) }}</p>
+      <TagsSection
+        v-if="(item.tags || []).length"
+        :model-value="item.tags || []"
+        readonly
+        inline
+        class="mt-0.5" />
     </div>
+
+    <EntityCardOrderedFields
+      v-else
+      class="p-3 flex-1"
+      :item="item"
+      :layout="layout === 'moodboard' ? 'moodboard' : 'grid'"
+      :ordered-meta-keys="cardFieldPartition.meta"
+      :ordered-body-keys="cardFieldPartition.body"
+      :ontology-def-by-key="ontologyDefByKey"
+      :editable="editable"
+      :show-empty-properties="showEmptyProperties"
+      @field-update="(fieldId, value) => emit('field-update', fieldId, value)"
+      @column-update="(key, value) => emit('column-update', key, value)" />
   </div>
 </template>

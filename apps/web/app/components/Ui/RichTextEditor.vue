@@ -30,12 +30,13 @@
   import { QueryView } from '~/lib/query-view-extension'
   import { SheetRange } from '~/lib/sheet-range-extension'
   import { parseA1Range } from '~/lib/sheet-a1'
+  import { HtmlEmbed, HtmlEmbedPasteHandler } from '~/lib/html-embed-extension'
   import { UrlEmbed, UrlEmbedPasteHandler } from '~/lib/url-embed-extension'
   import { useEntitySearch } from '~/composables/useEntitySearch'
   import type { EntitySearchItem } from '~/composables/useEntitySearch'
   import { createDefaultItem } from '~/types/entity'
   import { useImageUpload } from '~/composables/useImageUpload'
-  import { markdownToHtml } from '~/utils/markdown'
+  import { markdownToHtml, shouldPasteMarkdownAsRichText } from '~/utils/markdown'
   import { BUILTIN_TEMPLATES } from '~/lib/noteTemplates'
 
   const lowlight = createLowlight(common)
@@ -282,6 +283,10 @@
 
   function handleEmbedUrl(_editor: any) {
     editor.value?.commands.insertUrlEmbed({ mode: 'embed' })
+  }
+
+  function handleEmbedHtml(_editor: any) {
+    editor.value?.commands.insertHtmlEmbed()
   }
 
   function handleEmbedImageUrl(_editor: any) {
@@ -615,6 +620,7 @@
           chatMode: !!props.chatMode,
           onEmbedEntity: props.embeds ? handleEmbedEntity : undefined,
           onEmbedQuery: props.embeds ? handleEmbedQuery : undefined,
+          onEmbedHtml: props.embeds ? handleEmbedHtml : undefined,
           onEmbedSheetRange: props.embeds ? handleEmbedSheetRange : undefined,
           onEmbedImage: props.embeds && props.images ? handleEmbedImage : undefined,
           onEmbedUrl: props.embeds ? handleEmbedUrl : undefined,
@@ -645,6 +651,8 @@
           EntityEmbed as any,
           QueryView as any,
           SheetRange as any,
+          HtmlEmbed as any,
+          HtmlEmbedPasteHandler as any,
           UrlEmbed as any,
           UrlEmbedPasteHandler as any,
         )
@@ -809,6 +817,13 @@
           event.preventDefault()
           const converted = markdownToHtml(text || '')
           editor.value?.commands.insertContent(converted)
+          return true
+        }
+
+        // Markdown copied from editors often includes text/html as <pre><code> — convert to rich text.
+        if (shouldPasteMarkdownAsRichText(html, text)) {
+          event.preventDefault()
+          editor.value?.commands.insertContent(markdownToHtml(text))
           return true
         }
 
@@ -1044,6 +1059,7 @@
   <div
     v-if="editor"
     :class="[
+      'w-full min-w-0',
       seamless ? 'overflow-hidden' : 'rounded-none border-none bg-card/0 overflow-hidden',
       fillHeight ? 'flex flex-col min-h-0' : '',
       fillHeight && !seamless ? 'rte-scroll-pad-content' : '',
@@ -1925,7 +1941,7 @@
     <!-- Editor Content -->
     <EditorContent
       :editor="editor"
-      class="prose prose-sm dark:prose-invert max-w-none text-sm text-foreground"
+      class="prose prose-sm dark:prose-invert max-w-none w-full min-w-0 text-sm text-foreground"
       :class="[
         seamless ? 'px-0 py-0' : fillHeight ? 'px-0 py-0' : 'px-0 py-0',
         seamless ? 'min-h-[24px]' : compact ? 'min-h-[60px]' : 'min-h-[100px]',
@@ -2079,6 +2095,7 @@
   :deep(.ProseMirror) {
     outline: none;
     color: var(--foreground) !important;
+    max-width: 100%;
   }
 
   :deep(.tiptap) {
@@ -2163,7 +2180,7 @@
 
   :deep(.ProseMirror .table-container) {
     overflow-x: auto;
-    width: fit-content;
+    width: 100%;
     max-width: 100%;
     border-radius: calc(var(--radius) - 4px);
     border: 1px solid var(--border);

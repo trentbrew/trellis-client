@@ -13,6 +13,7 @@
  */
 
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
+import type { UploadResult } from '~/types/upload'
 
 // ── Path builder (mirrors useFileUpload.ts) ─────────────────────────────
 
@@ -112,14 +113,6 @@ describe('Local-mode upload URL format', () => {
 })
 
 // ── Upload result shape ────────────────────────────────────────────────────
-
-interface UploadResult {
-  url: string
-  path: string
-  filename: string
-  contentType: string
-  size: number
-}
 
 function makeLocalUploadResult(relativePath: string, filename: string, size: number, contentType: string): UploadResult {
   return {

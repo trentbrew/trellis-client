@@ -81,7 +81,7 @@ const FINANCE_SIDEBAR: SidebarNodeSeed[] = [
     locked: true,
     order: 20,
     children: [
-      { id: 'fin-budgets', label: 'Budgets', icon: 'lucide:wallet', routePath: '/workspace/budgets', entityType: 'budget', scope: 'workspace', nodeType: 'item', order: 1 },
+      { id: 'fin-budgets', label: 'Budget sheets', icon: 'lucide:wallet', routePath: '/sheets', scope: 'workspace', nodeType: 'item', order: 1 },
       { id: 'fin-payments', label: 'Transactions', icon: 'lucide:credit-card', routePath: '/workspace/payments', entityType: 'payment', scope: 'workspace', nodeType: 'item', order: 2 },
     ],
   },
@@ -131,7 +131,7 @@ export const FINANCE_TEMPLATE: WorkspaceTemplate = {
   rating: 4.7,
   sidebarTree: FINANCE_SIDEBAR,
   entityTypes: [
-    { id: 'budget', name: 'Budget', pluralName: 'Budgets', icon: 'lucide:wallet', description: 'Monthly/yearly budgets', fields: [{ id: 'title', name: 'Name', type: 'text', required: true }, { id: 'amount', name: 'Amount', type: 'currency' }, { id: 'startDate', name: 'Period Start', type: 'date' }], views: ['list', 'table'] },
+    { id: 'sheet', name: 'Sheet', pluralName: 'Sheets', icon: 'lucide:table-2', description: 'Budget and expense projections', fields: [{ id: 'title', name: 'Name', type: 'text', required: true }, { id: 'query', name: 'Query', type: 'text' }], views: ['table'] },
     { id: 'payment', name: 'Transaction', pluralName: 'Transactions', icon: 'lucide:credit-card', description: 'Income and expenses', fields: [{ id: 'title', name: 'Description', type: 'text', required: true }, { id: 'amount', name: 'Amount', type: 'currency' }, { id: 'startDate', name: 'Date', type: 'date' }], views: ['table', 'list'] },
     { id: 'goal', name: 'Financial Goal', pluralName: 'Financial Goals', icon: 'lucide:target', description: 'Savings and investment goals', fields: [{ id: 'title', name: 'Goal', type: 'text', required: true }, { id: 'targetValue', name: 'Target', type: 'currency' }, { id: 'currentValue', name: 'Current', type: 'currency' }], views: ['kanban', 'list'] },
   ],
@@ -205,7 +205,7 @@ const COMPANY_SIDEBAR: SidebarNodeSeed[] = [
     children: [
       { id: 'co-calendar', label: 'Calendar', icon: 'lucide:calendar', routePath: '/workspace/calendar', entityType: 'event', scope: 'workspace', nodeType: 'item', order: 1 },
       { id: 'co-goals', label: 'Goals & OKRs', icon: 'lucide:target', routePath: '/workspace/goals', entityType: 'goal', scope: 'workspace', nodeType: 'item', order: 2 },
-      { id: 'co-budgets', label: 'Budgets', icon: 'lucide:wallet', routePath: '/workspace/budgets', entityType: 'budget', scope: 'workspace', nodeType: 'item', order: 3 },
+      { id: 'co-budgets', label: 'Budget sheets', icon: 'lucide:wallet', routePath: '/sheets', scope: 'workspace', nodeType: 'item', order: 3 },
     ],
   },
   {
@@ -330,7 +330,7 @@ const GAMEDEV_SIDEBAR: SidebarNodeSeed[] = [
       { id: 'gd-projects', label: 'Projects', icon: 'lucide:folder-kanban', routePath: '/workspace/projects', entityType: 'project', scope: 'workspace', nodeType: 'item', order: 1 },
       { id: 'gd-milestones', label: 'Milestones', icon: 'lucide:flag', routePath: '/workspace/milestones', entityType: 'milestone', scope: 'workspace', nodeType: 'item', order: 2 },
       { id: 'gd-calendar', label: 'Timeline', icon: 'lucide:calendar', routePath: '/workspace/calendar', entityType: 'event', scope: 'workspace', nodeType: 'item', order: 3 },
-      { id: 'gd-budgets', label: 'Budget', icon: 'lucide:wallet', routePath: '/workspace/budgets', entityType: 'budget', scope: 'workspace', nodeType: 'item', order: 4 },
+      { id: 'gd-budgets', label: 'Budget sheets', icon: 'lucide:wallet', routePath: '/sheets', scope: 'workspace', nodeType: 'item', order: 4 },
     ],
   },
   {

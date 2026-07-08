@@ -74,6 +74,16 @@
     },
   })
 
+  const colorMode = useColorMode()
+  const isDark = computed(() => colorMode.value === 'dark')
+  const selectedRepeat = ref('none')
+  const emptyScheduleDescription = {
+    scheduleText: '',
+    statusText: '',
+    isOverdue: false,
+    isRecurring: false,
+  }
+
   // ── Person-specific UI state ─────────────────────────────────────
   const categoryOpen = ref(false)
   const ownerOpen = ref(false)
@@ -135,6 +145,9 @@
     @navigate-prev="emit('navigatePrev')"
     @navigate-next="emit('navigateNext')"
     @regenerate-summary="regenerateSummary">
+    <template #header-actions>
+      <RightSidebarToggle v-model:collapsed="rightSidebarCollapsed" />
+    </template>
     <!-- Tags next to Person badge -->
     <template v-if="hasField('tags')" #header-badges>
       <TagsSection v-model="editableItem.tags" :readonly="isViewMode" inline />
@@ -488,18 +501,14 @@
     <div class="flex flex-1 min-h-0 overflow-hidden">
       <!-- Center Content -->
       <div class="flex-1 overflow-y-auto min-w-0">
-        <EntitySummaryPanel :model-value="editableItem" :mode="mode" />
+        <ActorBodyContent v-model="editableItem" :mode="mode" placeholder="Bio, background, notes…" />
       </div>
 
       <!-- Right Sidebar -->
-      <aside
-        class="shrink-0 border-l border-border overflow-hidden md:flex hidden flex-col relative transition-[width] duration-150"
-        :class="isResizingSidebar ? 'select-none' : ''"
-        :style="{ width: rightSidebarCollapsed ? '40px' : rightSidebarW + 'px' }">
-        <div
-          v-if="!rightSidebarCollapsed"
-          class="absolute inset-y-0 left-0 w-1 cursor-ew-resize z-10 hover:bg-primary/20 transition-colors"
-          @pointerdown="startRightSidebarResize($event)" />
+      <ResizableRightPanel
+        v-model:collapsed="rightSidebarCollapsed"
+        v-model:width="rightSidebarW"
+        class="hidden md:block">
         <EntityRightSidebar
           v-model:collapsed="rightSidebarCollapsed"
           :references="editableItem.references"
@@ -528,8 +537,20 @@
             }
           "
           @create-entity="handleCreateEntityOfType"
-          @add-comment="handleAddComment" />
-      </aside>
+          @add-comment="handleAddComment">
+          <template #properties>
+            <OntologyPropertiesTab
+              v-model:editable-item="editableItem"
+              v-model:selected-repeat="selectedRepeat"
+              :has-field="hasField"
+              :is-view-mode="isViewMode"
+              :is-dark="isDark"
+              :owners="owners"
+              :folders="[]"
+              :schedule-description="emptyScheduleDescription" />
+          </template>
+        </EntityRightSidebar>
+      </ResizableRightPanel>
     </div>
 
     <!-- Footer -->

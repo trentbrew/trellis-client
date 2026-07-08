@@ -12,44 +12,17 @@
  */
 
 import type { EntityReference, EntityType } from '~/types/entity'
-import type { ProposedField, ProposedInstance, TypeProposal } from '~/types/enrichment'
+import type {
+  ContentEntityCandidate,
+  EnrichmentSuggestion,
+  ProposedField,
+  ProposedInstance,
+  TypeProposal,
+} from '~/types/enrichment'
 import { entityId as toEntityId } from '~/lib/tql-namespace'
 
-export type { TypeProposal, ProposedField, ProposedInstance } from '~/types/enrichment'
-
-/**
- * Expanded entity candidate types the LLM can extract. Keep in sync with
- * VALID_TYPES in server/api/extract-entities-llm.post.ts.
- */
-export type EnrichmentCandidateType =
-  | 'person'
-  | 'organization'
-  | 'project'
-  | 'task'
-  | 'event'
-  | 'appointment'
-  | 'trip'
-  | 'deadline'
-  | 'payment'
-
-export interface ContentEntityCandidate {
-  name: string
-  type: EnrichmentCandidateType
-  confidence: 'high' | 'medium' | 'low'
-  context: string
-}
-
-export interface EnrichmentSuggestion {
-  candidate: ContentEntityCandidate
-  existingEntity?: { id: string; title: string; type: string }
-  status: 'matched' | 'new'
-  /**
-   * Timestamp (seconds) of the first mention of this entity in the source
-   * content. Only populated for `video` kind where we can resolve the
-   * candidate's name against transcript cues. Undefined otherwise.
-   */
-  firstMentionAt?: number
-}
+export type { ProposedField, ProposedInstance, TypeProposal } from '~/types/enrichment'
+export type { ContentEntityCandidate, EnrichmentCandidateType } from '~/types/enrichment'
 
 export type ContentKind = 'email' | 'event' | 'video' | 'file' | 'generic'
 

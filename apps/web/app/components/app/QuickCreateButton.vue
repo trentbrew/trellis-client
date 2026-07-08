@@ -1,6 +1,6 @@
 <script lang="ts" setup>
   /**
-   * QuickCreateButton — persistent '+' affordance in the app header.
+   * QuickCreateButton — typed entity creation menu ('+' affordance).
    *
    * Lets the user spawn their most frequently/recently used entities in one
    * click. Prioritized defaults: note, page, event, deadline, bookmark.
@@ -16,18 +16,31 @@
   import EntityDialog from '~/components/dialogs/EntityDialog.vue'
   import type { Entity, EntityType } from '~/types/entity'
   import { createDefaultItem } from '~/types/entity'
-  import { getAllEntityTypes } from '~/config/entityRegistry'
+  import { getBrowseEntityTypes } from '~/config/entityRegistry'
 
-  const props = defineProps<{
-    variant?: 'ghost' | 'primary'
-  }>()
-
-  const isPrimary = computed(() => props.variant === 'primary')
-  const buttonClass = computed(() =>
-    isPrimary.value
-      ? '!rounded-full h-8 w-8 bg-primary hover:bg-primary/90 text-primary-foreground shadow-lg transition-all active:scale-95'
-      : '!rounded-full h-8 w-8 text-muted-foreground hover:text-foreground bg-transparent hover:bg-muted/50 transition-all active:scale-95',
+  const props = withDefaults(
+    defineProps<{
+      /** Visual context — rail matches Quick Capture cluster styling. */
+      placement?: 'header' | 'rail'
+      /** Rail orientation when placement is rail. */
+      railPosition?: 'left' | 'bottom'
+      variant?: 'ghost' | 'primary'
+    }>(),
+    { placement: 'header', railPosition: 'left', variant: 'primary' },
   )
+
+  const isRail = computed(() => props.placement === 'rail')
+  const isPrimary = computed(() => props.variant === 'primary')
+  const menuSide = computed(() => {
+    if (!isRail.value) return 'bottom'
+    return props.railPosition === 'bottom' ? 'top' : 'right'
+  })
+  const buttonClass = computed(() => {
+    if (isPrimary.value) {
+      return '!rounded-full h-8 w-8 bg-primary hover:bg-primary/90 text-primary-foreground shadow-lg transition-all active:scale-95'
+    }
+    return '!rounded-full h-8 w-8 text-muted-foreground hover:text-foreground bg-transparent hover:bg-muted/50 transition-all active:scale-95'
+  })
 
   interface QuickType {
     type: EntityType
@@ -37,12 +50,18 @@
     shortcut?: string
   }
 
-  const ALL_TYPES: QuickType[] = getAllEntityTypes().map((cfg) => ({
+  const ALL_TYPES: QuickType[] = getBrowseEntityTypes().map((cfg) => ({
     type: cfg.type,
     label: cfg.label,
     icon: cfg.icon,
     colorClass: `text-${cfg.color}-400`,
   }))
+
+  /** Workshop projections open canvas routes — not entity dialogs. */
+  const WORKSHOP_PINNED: EntityType[] = ['slide_deck', 'sheet']
+
+  const { createDeck } = useCreateDeck()
+  const { createSheet } = useCreateSheet()
 
   const STORAGE_KEY = 'trellis:quick-create:usage'
 
@@ -82,7 +101,7 @@
 
   const orderedTypes = computed<QuickType[]>(() => {
     const indexOf = new Map(ALL_TYPES.map((t, i) => [t.type, i]))
-    return [...ALL_TYPES].sort((a, b) => {
+    const sorted = [...ALL_TYPES].sort((a, b) => {
       const ua = usage.value[a.type]
       const ub = usage.value[b.type]
       const scoreA = (ua?.count ?? 0) + recencyBoost(ua?.lastUsedAt ?? 0)
@@ -93,6 +112,11 @@
       if (recB !== recA) return recB - recA
       return (indexOf.get(a.type) ?? 0) - (indexOf.get(b.type) ?? 0)
     })
+    const pinned = WORKSHOP_PINNED.map((type) => ALL_TYPES.find((t) => t.type === type)).filter(
+      (t): t is QuickType => !!t,
+    )
+    const rest = sorted.filter((t) => !WORKSHOP_PINNED.includes(t.type))
+    return [...pinned, ...rest]
   })
 
   const trackUsage = (type: EntityType) => {
@@ -118,6 +142,14 @@
 
   const handleQuickCreate = async (type: EntityType) => {
     trackUsage(type)
+    if (type === 'slide_deck') {
+      await createDeck()
+      return
+    }
+    if (type === 'sheet') {
+      await createSheet()
+      return
+    }
     const defaults = createDefaultItem(type)
     const newId = await create({ ...defaults, type, title: '' } as Entity)
     pendingItem.value = { ...defaults, id: newId } as Entity
@@ -146,12 +178,13 @@
           aria-label="Quick create"
           title="Quick create"
           :class="buttonClass">
-          <Icon name="lucide:plus" class="h-4 w-4" />
+          <Icon name="lucide:plus" class="h-4 w-4" :class="isPrimary ? '' : 'opacity-50'" />
         </UiButton>
       </UiDropdownMenuTrigger>
 
       <UiDropdownMenuContent
-        align="end"
+        :align="isRail ? 'start' : 'end'"
+        :side="menuSide"
         :side-offset="8"
         :collision-padding="16"
         class="w-56 max-h-80 overflow-y-auto shadow-2xl border-border/50">

@@ -181,7 +181,7 @@
             <span class="truncate max-w-[240px]">{{ parentTitle }}</span>
           </button>
         </div>
-        <div :class="isStacked && parentTitle ? 'px-4 pt-2 pb-3' : 'px-4 pt-4 pb-3'">
+        <div :class="isStacked && parentTitle ? 'p-3' : 'p-3'">
           <div class="flex items-center justify-between gap-3 mb-3">
             <div class="flex items-center gap-2 min-w-0">
               <span
@@ -216,6 +216,11 @@
                   <Icon name="lucide:chevron-down" class="h-4 w-4" />
                 </UiButton>
               </template>
+              <span
+                v-if="!isCreateMode && !hideNavigation"
+                class="mx-0.5 h-4 w-px shrink-0 bg-border/60"
+                aria-hidden="true" />
+              <slot name="header-actions" />
               <UiButton v-if="!isStacked" variant="ghost" size="icon" class="h-7 w-7" @click="closeDialog">
                 <Icon name="lucide:x" class="h-4 w-4" />
               </UiButton>

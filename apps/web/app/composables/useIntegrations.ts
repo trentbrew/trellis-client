@@ -70,7 +70,7 @@ function hydrateConnection(node: Record<string, any>): IntegrationConnection {
     accountEmail: node.accountEmail as string | undefined,
     accountName: node.accountName as string | undefined,
     config: node.config as string | undefined,
-    credentialsRef: node.credentialsRef as string | undefined,
+    // credentialsRef is stripped server-side — never hydrate OAuth secrets client-side
     watchChannelId: node.watchChannelId as string | undefined,
     watchExpiration: node.watchExpiration as string | undefined,
     errorMessage: node.errorMessage as string | undefined,

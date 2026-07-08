@@ -8,12 +8,11 @@
 import {
   useContentEnrichment,
   type ContentEntityCandidate,
-  type EnrichmentSuggestion as GenericSuggestion,
 } from '~/composables/useContentEnrichment'
+import type { EnrichmentSuggestion } from '~/types/enrichment'
 
 // Back-compat re-exports (EmailContent.vue imports these by name).
 export type EmailEntityCandidate = ContentEntityCandidate
-export type EnrichmentSuggestion = GenericSuggestion
 
 export function useEmailEnrichment() {
   const enrichment = useContentEnrichment({

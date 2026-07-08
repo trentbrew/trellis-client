@@ -2,13 +2,7 @@
  * useFileUpload — generic file upload composable (local filesystem).
  */
 
-export interface UploadResult {
-  url: string
-  path: string
-  filename: string
-  contentType: string
-  size: number
-}
+import type { UploadResult } from '~/types/upload'
 
 export function useFileUpload(entityId?: string) {
   const isUploading = ref(false)

@@ -4,6 +4,8 @@
 export const useSidebarCollapse = () => {
   const storageKey = 'sidebar-collapsed'
   const explicitKey = 'sidebar-collapsed:explicit'
+  const route = useRoute()
+  const { findRoute } = useRoutes()
 
   // Shared state so AppHeader + AppSidebar always see the same collapse value
   const isCollapsed = useState<boolean>('sidebarCollapsed', () => false)
@@ -65,9 +67,6 @@ export const useSidebarCollapse = () => {
   const applyRouteCollapseBehavior = () => {
     if (!import.meta.client) return
 
-    const route = useRoute()
-    const { findRoute } = useRoutes()
-
     const routeConfig = findRoute(route.path)
 
     if (routeConfig?.collapseSidebar === true) {
@@ -102,7 +101,7 @@ export const useSidebarCollapse = () => {
 
   // Watch for route changes and apply route-based collapse behavior
   watch(
-    () => useRoute().path,
+    () => route.path,
     () => {
       nextTick(() => {
         applyRouteCollapseBehavior()

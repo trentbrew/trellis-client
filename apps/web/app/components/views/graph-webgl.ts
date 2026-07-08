@@ -1,16 +1,10 @@
 // 3D / WebGL renderer for GraphView.vue.
 //
-// Mounted alongside the existing VueFlow + d3-force renderers. Activated by
-// `graphMode === 'webgl'`. Visual goals (mirrored from trellis-opencode):
-//   - sphere (type color) + icon sprite per node
-//   - 1-hop edge closure brightens on hover
-//   - depth fog so distant geometry blends into the surface bg
-//
-// Imperative mount API matching the trellis-opencode `RenderHandle` shape so
-// the call site can swap renderers without coupling to ForceGraph3D internals.
+// Celestial orb nodes, depth-aware edges, selection orbit, and orbit/pan controls.
 
 import ForceGraph3D from "3d-force-graph"
 import * as THREE from "three"
+import { CSS2DObject, CSS2DRenderer } from "three/examples/jsm/renderers/CSS2DRenderer.js"
 
 export type WebGLNode = {
   id: string
@@ -44,6 +38,42 @@ export type WebGLHandle = {
   stop: () => void
   focus: (id: string | null) => void
   setHoveredId: (id: string | null) => void
+  clearSelection: () => void
+}
+
+const _cam = new THREE.Vector3()
+const _nodePos = new THREE.Vector3()
+const _mid = new THREE.Vector3()
+
+function truncateTitle(title: string, max = 22): string {
+  const t = title.trim()
+  return t.length > max ? `${t.slice(0, max)}…` : t
+}
+
+function clamp01(v: number): number {
+  return Math.max(0, Math.min(1, v))
+}
+
+/** Far fade + close "aperture" fade when the orb fills the viewport. */
+function nodeOpacityForDistance(dist: number, near: number, far: number, closeNear: number): number {
+  let opacity: number
+  if (dist <= near) opacity = 0.96
+  else if (dist >= far) opacity = 0.1
+  else {
+    const t = (dist - near) / (far - near)
+    opacity = 0.96 - t * 0.86
+  }
+  if (dist < closeNear) {
+    const t = dist / closeNear
+    opacity *= 0.28 + 0.72 * t
+  }
+  return opacity
+}
+
+function linkEndpoint(l: any, side: "source" | "target"): WebGLNode | null {
+  const v = l[side]
+  if (v && typeof v === "object" && v.id) return v as WebGLNode
+  return null
 }
 
 export function mountGraphWebGL(
@@ -52,9 +82,6 @@ export function mountGraphWebGL(
   links: WebGLLink[],
   cb: WebGLCallbacks,
 ): WebGLHandle {
-  // ---------------------------------------------------------------------------
-  // Adjacency for hover closure
-  // ---------------------------------------------------------------------------
   const byId = new Map<string, WebGLNode>()
   for (const n of nodes) byId.set(n.id, n)
 
@@ -65,19 +92,114 @@ export function mountGraphWebGL(
     adj.get(l.target)?.add(l.source)
   }
 
-  function linkInClosure(l: any): boolean {
-    if (!hoveredId) return false
-    const s = typeof l.source === "object" ? l.source.id : l.source
-    const t = typeof l.target === "object" ? l.target.id : l.target
-    return s === hoveredId || t === hoveredId
-  }
-
-  // ---------------------------------------------------------------------------
-  // Per-node Object3D bookkeeping
-  // ---------------------------------------------------------------------------
   const meshById = new Map<string, THREE.Mesh>()
+  const glowById = new Map<string, THREE.Mesh>()
+  const spriteById = new Map<string, THREE.Sprite>()
+  const labelById = new Map<string, CSS2DObject>()
   const baseColorById = new Map<string, THREE.Color>()
   const disposables: Array<{ dispose: () => void }> = []
+
+  const size = nodes.length
+  const depthNear = size > 1200 ? 80 : 60
+  const depthFar = size > 2000 ? 900 : size > 500 ? 650 : 420
+  const closeNear = size > 1200 ? 48 : 36
+  const labelMaxDist = size > 1200 ? 280 : 200
+  const baseLinkWidth = size > 1200 ? 0.75 : 1.1
+  const orbitRadius = size > 1200 ? 165 : 130
+
+  let hoveredId: string | null = null
+  let selectedId: string | null = null
+  let orbitActive = false
+  let flyToTimer: ReturnType<typeof setTimeout> | null = null
+  let lastTinted: string | null = null
+
+  const focusSet = new Set<string>()
+
+  function rebuildFocusSet() {
+    focusSet.clear()
+    if (!selectedId) return
+    focusSet.add(selectedId)
+    const nb = adj.get(selectedId)
+    if (nb) for (const id of nb) focusSet.add(id)
+  }
+
+  function stopAutoOrbit() {
+    orbitActive = false
+    if (controls) controls.autoRotate = false
+  }
+
+  function startAutoOrbit() {
+    if (!controls) return
+    syncOrbitTarget()
+    orbitActive = true
+    controls.autoRotate = true
+    controls.autoRotateSpeed = 0.75
+  }
+
+  function syncOrbitTarget() {
+    if (!controls || !selectedId) return
+    const n = byId.get(selectedId)
+    if (!n) return
+    controls.target.set(n.x ?? 0, n.y ?? 0, n.z ?? 0)
+  }
+
+  function scheduleAutoOrbitAfterFlyTo(n: WebGLNode) {
+    if (flyToTimer) clearTimeout(flyToTimer)
+    flyToTimer = setTimeout(() => {
+      flyToTimer = null
+      if (selectedId === n.id) startAutoOrbit()
+    }, 950)
+  }
+
+  function linkInClosure(l: any): boolean {
+    const focus = hoveredId || selectedId
+    if (!focus) return false
+    const s = typeof l.source === "object" ? l.source.id : l.source
+    const t = typeof l.target === "object" ? l.target.id : l.target
+    return s === focus || t === focus
+  }
+
+  function focusDim(id: string): number {
+    if (!selectedId) return 1
+    if (focusSet.has(id)) return id === selectedId ? 1 : 0.78
+    return 0.09
+  }
+
+  function linkMidDistance(l: any): number {
+    const s = linkEndpoint(l, "source")
+    const t = linkEndpoint(l, "target")
+    if (!s || !t) return depthFar
+    _mid.set(((s.x ?? 0) + (t.x ?? 0)) / 2, ((s.y ?? 0) + (t.y ?? 0)) / 2, ((s.z ?? 0) + (t.z ?? 0)) / 2)
+    return _cam.distanceTo(_mid)
+  }
+
+  function linkDepthStyle(l: any): { color: string; opacity: number } {
+    const dist = linkMidDistance(l)
+    const t = clamp01((dist - depthNear) / (depthFar - depthNear))
+    const nearOpacity = 0.22
+    const farOpacity = 0.035
+    const opacity = nearOpacity - t * (nearOpacity - farOpacity)
+
+    if (linkInClosure(l)) {
+      return { color: "rgb(180, 195, 220)", opacity: Math.min(0.55, opacity + 0.2) }
+    }
+    if (selectedId && !linkInClosure(l)) {
+      return { color: "rgb(70, 78, 95)", opacity: opacity * 0.12 }
+    }
+    const r = Math.round(72 + t * 28)
+    const g = Math.round(82 + t * 24)
+    const b = Math.round(102 + t * 20)
+    return { color: `rgb(${r}, ${g}, ${b})`, opacity }
+  }
+
+  function linkWidthFn(l: any): number {
+    const dist = linkMidDistance(l)
+    const t = clamp01((dist - depthNear) / (depthFar - depthNear))
+    const width = baseLinkWidth * (1.15 - t * 0.55)
+    if (linkInClosure(l)) return width * 2.4
+    if (selectedId) return width * 0.35
+    return width
+  }
 
   function nodeRadius(n: WebGLNode): number {
     const t = n.nodeType
@@ -95,22 +217,60 @@ export function mountGraphWebGL(
     const r = nodeRadius(n)
     const color = new THREE.Color(n.color || "#8b5cf6")
     const group = new THREE.Group()
+    group.renderOrder = 10
 
-    const geom = new THREE.SphereGeometry(r, 16, 12)
-    const mat = new THREE.MeshBasicMaterial({
+    const glowGeom = new THREE.SphereGeometry(r * 1.85, 18, 14)
+    const glowMat = new THREE.MeshBasicMaterial({
       color: color.clone(),
       transparent: true,
-      opacity: 0.95,
-      fog: true,
+      opacity: 0.2,
+      blending: THREE.AdditiveBlending,
+      depthWrite: false,
+      fog: false,
     })
-    const mesh = new THREE.Mesh(geom, mat)
-    group.add(mesh)
-    meshById.set(n.id, mesh)
-    baseColorById.set(n.id, color.clone())
-    disposables.push(geom, mat)
+    const glow = new THREE.Mesh(glowGeom, glowMat)
+    glow.renderOrder = 9
+    group.add(glow)
+    glowById.set(n.id, glow)
+    disposables.push(glowGeom, glowMat)
 
-    // Async-load the icon sprite. The sphere shows immediately; the sprite
-    // pops in once the SVG has rasterized to a canvas.
+    const coreGeom = new THREE.SphereGeometry(r, 28, 20)
+    const coreMat = new THREE.MeshBasicMaterial({
+      color: color.clone(),
+      transparent: true,
+      opacity: 0.88,
+      fog: false,
+    })
+    const core = new THREE.Mesh(coreGeom, coreMat)
+    core.renderOrder = 10
+    group.add(core)
+    meshById.set(n.id, core)
+    baseColorById.set(n.id, color.clone())
+    disposables.push(coreGeom, coreMat)
+
+    const haloGeom = new THREE.SphereGeometry(r * 1.25, 16, 12)
+    const haloMat = new THREE.MeshBasicMaterial({
+      color: color.clone(),
+      transparent: true,
+      opacity: 0.35,
+      blending: THREE.AdditiveBlending,
+      depthWrite: false,
+      fog: false,
+    })
+    const halo = new THREE.Mesh(haloGeom, haloMat)
+    halo.renderOrder = 10
+    group.add(halo)
+    disposables.push(haloGeom, haloMat)
+
+    const labelEl = document.createElement("div")
+    labelEl.className = "gv-webgl-label"
+    labelEl.textContent = truncateTitle(n.title)
+    const label = new CSS2DObject(labelEl)
+    label.position.set(0, r + 12, 0)
+    label.visible = false
+    group.add(label)
+    labelById.set(n.id, label)
+
     const iconPx = Math.max(24, Math.round(r * 4))
     cb.getIconCanvas(n.icon || "lucide:circle", "#ffffff", iconPx)
       .then((canvas) => {
@@ -122,14 +282,17 @@ export function mountGraphWebGL(
         const spriteMat = new THREE.SpriteMaterial({
           map: tex,
           transparent: true,
+          opacity: 0.92,
           depthTest: false,
-          fog: true,
+          fog: false,
         })
         const sprite = new THREE.Sprite(spriteMat)
-        const s = r * 1.4
+        sprite.renderOrder = 11
+        const s = r * 1.15
         sprite.scale.set(s, s, 1)
-        sprite.position.set(0, 0, r * 0.05)
+        sprite.position.set(0, 0, r * 0.08)
         group.add(sprite)
+        spriteById.set(n.id, sprite)
         disposables.push(tex, spriteMat)
       })
       .catch(() => {})
@@ -137,61 +300,197 @@ export function mountGraphWebGL(
     return group
   }
 
-  // ---------------------------------------------------------------------------
-  // Hover state + edge styling
-  // ---------------------------------------------------------------------------
-  let hoveredId: string | null = null
-  let lastTinted: string | null = null
-
-  const baseLinkRgba = "rgba(180,180,200,0.22)"
-  const hotLinkRgba = "rgba(255,255,255,0.85)"
-  const dimLinkRgba = "rgba(180,180,200,0.06)"
-
-  function linkColorFn(l: any): string {
-    if (!hoveredId) return baseLinkRgba
-    if (linkInClosure(l)) return hotLinkRgba
-    return dimLinkRgba
-  }
-  function linkWidthFn(l: any): number {
-    if (!hoveredId) return 0.5
-    return linkInClosure(l) ? 1.6 : 0.3
-  }
-
-  function tintHoveredSphere(id: string | null) {
+  function applyNodeTint(id: string | null) {
     if (lastTinted && lastTinted !== id) {
-      const m = meshById.get(lastTinted)
       const base = baseColorById.get(lastTinted)
-      if (m && base) (m.material as THREE.MeshBasicMaterial).color.copy(base)
+      const m = meshById.get(lastTinted)
+      const g = glowById.get(lastTinted)
+      if (base && m) (m.material as THREE.MeshBasicMaterial).color.copy(base)
+      if (base && g) (g.material as THREE.MeshBasicMaterial).color.copy(base)
     }
     if (id) {
+      const base = baseColorById.get(id)
       const m = meshById.get(id)
-      if (m) (m.material as THREE.MeshBasicMaterial).color.set("#ffffff")
+      const g = glowById.get(id)
+      if (base && m) {
+        const bright = base.clone().multiplyScalar(1.45)
+        ;(m.material as THREE.MeshBasicMaterial).color.copy(bright)
+      }
+      if (base && g) {
+        const bloom = base.clone().multiplyScalar(1.2)
+        ;(g.material as THREE.MeshBasicMaterial).color.copy(bloom)
+      }
     }
     lastTinted = id
   }
 
   function refreshLinks() {
-    fg.linkColor(linkColorFn).linkWidth(linkWidthFn)
+    fg.linkWidth(linkWidthFn)
+    updateLinkVisuals()
+    patchLinkMeshes()
   }
 
-  // ---------------------------------------------------------------------------
-  // ForceGraph3D
-  // ---------------------------------------------------------------------------
-  const fg = new ForceGraph3D(container)
+  /** Unlit link material — avoids Lambert + scene lights washing edges to white. */
+  function linkMaterialFor(l: any): THREE.MeshBasicMaterial {
+    const style = linkDepthStyle(l)
+    const mat = new THREE.MeshBasicMaterial({
+      color: new THREE.Color().setStyle(style.color),
+      transparent: true,
+      opacity: style.opacity,
+      depthWrite: false,
+      depthTest: true,
+    })
+    disposables.push(mat)
+    return mat
+  }
+
+  function updateLinkVisuals() {
+    scene.traverse((obj: THREE.Object3D & { __graphObjType?: string; __data?: any }) => {
+      if (obj.__graphObjType !== "link") return
+      const style = linkDepthStyle(obj.__data)
+      const mesh = obj as THREE.Mesh
+      const mat = mesh.material as THREE.MeshBasicMaterial
+      if (!mat?.isMeshBasicMaterial) return
+      mat.color.setStyle(style.color)
+      mat.opacity = style.opacity
+    })
+  }
+
+  function patchLinkMeshes() {
+    scene.traverse((obj: THREE.Object3D & { __graphObjType?: string }) => {
+      if (obj.__graphObjType !== "link") return
+      obj.renderOrder = 0
+      const mesh = obj as THREE.Mesh
+      const mat = mesh.material
+      if (mat && !Array.isArray(mat)) {
+        mat.depthWrite = false
+        mat.transparent = true
+      }
+    })
+  }
+
+  const labelRenderer = new CSS2DRenderer()
+  labelRenderer.domElement.style.position = "absolute"
+  labelRenderer.domElement.style.inset = "0"
+  labelRenderer.domElement.style.pointerEvents = "none"
+  labelRenderer.domElement.style.zIndex = "2"
+  container.appendChild(labelRenderer.domElement)
+
+  const fg = ForceGraph3D({ controlType: "orbit" })(container)
     .backgroundColor("rgba(0,0,0,0)")
     .showNavInfo(false)
     .nodeRelSize(1)
-    .nodeOpacity(0.95)
+    .nodeOpacity(1)
+    .enableNodeDrag(false)
     .nodeThreeObject(((n: any) => buildNodeObject(n as WebGLNode)) as any)
     .nodeThreeObjectExtend(false)
-    .linkColor(linkColorFn)
     .linkWidth(linkWidthFn)
+    .linkMaterial((link: any) => linkMaterialFor(link))
     .linkDirectionalParticles(0)
     .onNodeHover((n: any) => onHover(n))
     .onNodeClick((n: any) => onClick(n))
-    .onBackgroundClick(() => cb.onDeselect?.())
+    .onBackgroundClick(() => clearSelection())
 
-  const size = nodes.length
+  const controls = fg.controls() as any
+  let removeWheelHandler: (() => void) | null = null
+  let removeGestureHandlers: (() => void) | null = null
+
+  /** Direct camera dolly toward/away from a screen point — works regardless of enableZoom. */
+  function dollyCamera(deltaY: number, clientX: number, clientY: number) {
+    const camera = fg.camera() as THREE.PerspectiveCamera
+    const target = controls.target as THREE.Vector3
+    const offset = new THREE.Vector3().copy(camera.position).sub(target)
+    const dist = offset.length()
+    if (dist < 1) return
+    // Match OrbitControls zoom speed: scale factor based on deltaY.
+    const speed = 0.95
+    const factor = Math.exp(deltaY * 0.0028 * speed)
+    const newDist = Math.max(2, Math.min(4000, dist * factor))
+    offset.setLength(newDist)
+    camera.position.copy(target).add(offset)
+    camera.updateProjectionMatrix()
+    controls.update()
+  }
+  if (controls) {
+    controls.mouseButtons = {
+      LEFT: THREE.MOUSE.PAN,
+      MIDDLE: THREE.MOUSE.DOLLY,
+      RIGHT: THREE.MOUSE.ROTATE,
+    }
+    controls.touches = {
+      ONE: THREE.TOUCH.ROTATE,
+      TWO: THREE.TOUCH.ROTATE,
+    }
+    // Invert orbit for swipe / right-drag / touch rotate.
+    controls.rotateSpeed = -(Math.abs(controls.rotateSpeed ?? 1))
+
+    // Trackpad two-finger swipe emits wheel events — default OrbitControls maps those to
+    // zoom. Swipe → orbit; pinch (ctrl/meta wheel) → zoom.
+    controls.enableZoom = false
+
+    const dom = fg.renderer().domElement as HTMLElement
+    const twoPi = Math.PI * 2
+
+    const onWheel = (event: WheelEvent) => {
+      if (!controls.enabled) return
+      event.preventDefault()
+      event.stopPropagation()
+      stopAutoOrbit()
+
+      const isPinchZoom = event.ctrlKey || event.metaKey
+
+      if (isPinchZoom) {
+        // Direct camera dolly — reliable regardless of enableZoom state.
+        dollyCamera(event.deltaY, event.clientX, event.clientY)
+        return
+      }
+
+      if (!controls.enableRotate) return
+      const speed = controls.rotateSpeed ?? -1
+      const factor = (twoPi * speed) / (dom.clientHeight || 600)
+      if (event.deltaX) controls._rotateLeft(event.deltaX * factor)
+      if (event.deltaY) controls._rotateUp(event.deltaY * factor)
+      controls.update()
+    }
+
+    dom.addEventListener("wheel", onWheel, { passive: false, capture: true })
+    removeWheelHandler = () => dom.removeEventListener("wheel", onWheel, { capture: true })
+
+    // Mac trackpad pinch sometimes emits gesture events instead of ctrl+wheel.
+    let gestureScale = 1
+    const onGestureStart = (e: any) => {
+      if (!controls.enabled) return
+      e.preventDefault()
+      stopAutoOrbit()
+      gestureScale = e.scale ?? 1
+    }
+    const onGestureChange = (e: any) => {
+      if (!controls.enabled) return
+      e.preventDefault()
+      stopAutoOrbit()
+      const scale = e.scale ?? 1
+      // scale > 1 = pinch out (zoom in); scale < 1 = pinch in (zoom out)
+      const delta = (scale - gestureScale) * 200
+      gestureScale = scale
+      dollyCamera(delta, e.clientX ?? dom.clientWidth / 2, e.clientY ?? dom.clientHeight / 2)
+    }
+    const onGestureEnd = (_e: any) => {
+      gestureScale = 1
+    }
+    dom.addEventListener("gesturestart", onGestureStart as any, { passive: false, capture: true })
+    dom.addEventListener("gesturechange", onGestureChange as any, { passive: false, capture: true })
+    dom.addEventListener("gestureend", onGestureEnd as any, { passive: false, capture: true })
+    removeGestureHandlers = () => {
+      dom.removeEventListener("gesturestart", onGestureStart as any, { capture: true })
+      dom.removeEventListener("gesturechange", onGestureChange as any, { capture: true })
+      dom.removeEventListener("gestureend", onGestureEnd as any, { capture: true })
+    }
+
+    controls.addEventListener("start", () => {
+      stopAutoOrbit()
+    })
+  }
+
   const baseDist = size > 2200 ? 30 : size > 1200 ? 50 : 80
   const baseCharge = size > 2200 ? -90 : size > 1200 ? -130 : -250
 
@@ -203,61 +502,146 @@ export function mountGraphWebGL(
   fg.graphData({ nodes: nodes as any, links: links as any })
 
   const scene = fg.scene()
-  const fogNear = 120
-  const fogFar = size > 2000 ? 2400 : size > 500 ? 1800 : 1200
-  scene.fog = new THREE.Fog(new THREE.Color(cb.bgColor || "#0a0a0c"), fogNear, fogFar)
+  // Links render before nodes (lower renderOrder + depthWrite off on link materials).
+  requestAnimationFrame(() => patchLinkMeshes())
 
   const ro = new ResizeObserver(() => {
-    fg.width(container.clientWidth).height(container.clientHeight)
+    const w = container.clientWidth
+    const h = container.clientHeight
+    fg.width(w).height(h)
+    labelRenderer.setSize(w, h)
   })
   ro.observe(container)
-  fg.width(container.clientWidth).height(container.clientHeight)
+  const initW = container.clientWidth
+  const initH = container.clientHeight
+  fg.width(initW).height(initH)
+  labelRenderer.setSize(initW, initH)
 
-  // ---------------------------------------------------------------------------
-  // Hover + click handlers
-  // ---------------------------------------------------------------------------
+  function updateSceneVisuals() {
+    const camera = fg.camera()
+    _cam.copy(camera.position)
+
+    for (const n of nodes) {
+      _nodePos.set(n.x ?? 0, n.y ?? 0, n.z ?? 0)
+      const dist = _cam.distanceTo(_nodePos)
+      let opacity = nodeOpacityForDistance(dist, depthNear, depthFar, closeNear)
+      opacity *= focusDim(n.id)
+
+      const isHot = n.id === hoveredId || n.id === selectedId
+      if (isHot) opacity = Math.min(1, opacity + 0.12)
+
+      const mesh = meshById.get(n.id)
+      if (mesh) (mesh.material as THREE.MeshBasicMaterial).opacity = opacity
+
+      const glow = glowById.get(n.id)
+      if (glow) {
+        const glowOp = isHot ? Math.min(0.55, opacity * 0.45) : opacity * 0.32
+        ;(glow.material as THREE.MeshBasicMaterial).opacity = glowOp
+        const closeBoost = dist < closeNear ? 1 + (1 - dist / closeNear) * 0.35 : 1
+        glow.scale.setScalar(closeBoost)
+      }
+
+      const sprite = spriteById.get(n.id)
+      if (sprite) (sprite.material as THREE.SpriteMaterial).opacity = opacity * 0.95
+
+      const label = labelById.get(n.id)
+      if (label) {
+        const showLabel =
+          (selectedId === n.id || (dist < labelMaxDist && opacity > 0.4)) && opacity > 0.15
+        label.visible = showLabel
+        label.element.style.opacity = String(Math.min(1, opacity + 0.2))
+      }
+    }
+
+    if (orbitActive && selectedId) syncOrbitTarget()
+
+    refreshLinks()
+    labelRenderer.render(scene, camera)
+  }
+
+  fg.onEngineTick(updateSceneVisuals)
+
   function onHover(n: WebGLNode | null) {
     const id = n?.id ?? null
     if (id === hoveredId) return
     hoveredId = id
-    tintHoveredSphere(id)
+    applyNodeTint(selectedId || id)
     refreshLinks()
     container.style.cursor = id ? "pointer" : "default"
     cb.onHover?.(n)
   }
 
+  function beginOrbit(n: WebGLNode) {
+    selectedId = n.id
+    rebuildFocusSet()
+    stopAutoOrbit()
+    applyNodeTint(n.id)
+    refreshLinks()
+    syncOrbitTarget()
+  }
+
+  function clearSelection() {
+    selectedId = null
+    stopAutoOrbit()
+    if (flyToTimer) {
+      clearTimeout(flyToTimer)
+      flyToTimer = null
+    }
+    focusSet.clear()
+    applyNodeTint(hoveredId)
+    refreshLinks()
+    cb.onDeselect?.()
+  }
+
   function onClick(n: WebGLNode) {
     cb.onSelect?.(n)
+    beginOrbit(n)
     flyTo(n)
+    scheduleAutoOrbitAfterFlyTo(n)
   }
 
   function flyTo(n: WebGLNode) {
     const x = n.x ?? 0
     const y = n.y ?? 0
     const z = n.z ?? 0
-    const dist = 120
-    const len = Math.hypot(x, y, z) || 1
-    const r = 1 + dist / len
-    fg.cameraPosition({ x: x * r, y: y * r, z: z * r }, { x, y, z }, 800)
+    fg.cameraPosition(
+      { x: x + orbitRadius * 0.6, y: y + orbitRadius * 0.25, z: z + orbitRadius * 0.85 },
+      { x, y, z },
+      900,
+    )
   }
 
   function focus(id: string | null) {
     if (!id) return
     const n = byId.get(id)
-    if (n) flyTo(n)
+    if (n) {
+      beginOrbit(n)
+      flyTo(n)
+      scheduleAutoOrbitAfterFlyTo(n)
+    }
   }
 
   function setHoveredId(id: string | null) {
     if (id && !byId.has(id)) return
     if (id === hoveredId) return
     hoveredId = id
-    tintHoveredSphere(id)
+    applyNodeTint(selectedId || id)
     refreshLinks()
   }
 
   function stop() {
     ro.disconnect()
+    if (flyToTimer) {
+      clearTimeout(flyToTimer)
+      flyToTimer = null
+    }
+    stopAutoOrbit()
+    removeWheelHandler?.()
+    removeWheelHandler = null
+    removeGestureHandlers?.()
+    removeGestureHandlers = null
     fg._destructor?.()
+    labelRenderer.domElement.remove()
     for (const d of disposables) {
       try {
         d.dispose()
@@ -265,9 +649,12 @@ export function mountGraphWebGL(
     }
     disposables.length = 0
     meshById.clear()
+    glowById.clear()
+    spriteById.clear()
+    labelById.clear()
     baseColorById.clear()
     while (container.firstChild) container.removeChild(container.firstChild)
   }
 
-  return { stop, focus, setHoveredId }
+  return { stop, focus, setHoveredId, clearSelection }
 }

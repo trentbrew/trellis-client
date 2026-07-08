@@ -5,6 +5,9 @@
   import { typeHasField } from '~/config/entityRegistry'
   import { useComments } from '~/composables/useComments'
   import { extractYmd, parseYmdLocal, todayYmdLocal } from '~/utils/date'
+  import { isDocumentChromeType } from '~/lib/document-chrome'
+  import { entityId as toEntityId } from '~/lib/tql-namespace'
+  import { resolveSummaryText, MIN_SUMMARY_SOURCE_LENGTH } from '~/composables/useEntitySummary'
 
   const colorMode = useColorMode()
   const isDark = computed(() => colorMode.value === 'dark')
@@ -95,6 +98,22 @@
     { immediate: true },
   )
 
+  // Sync AI summary fields from the live store without clobbering in-progress edits.
+  watch(
+    () =>
+      [
+        props.item?.summary,
+        props.item?.summaryGeneratedAt,
+        props.item?.summarySourceHash,
+      ] as const,
+    ([summary, generatedAt, sourceHash]) => {
+      if (!props.item?.id || props.item.id !== _loadedItemId.value) return
+      if (summary !== undefined) editableItem.summary = summary
+      if (generatedAt !== undefined) editableItem.summaryGeneratedAt = generatedAt
+      if (sourceHash !== undefined) editableItem.summarySourceHash = sourceHash
+    },
+  )
+
   watch(
     () => [editableItem.startDate, editableItem.category, editableItem.type],
     () => {
@@ -117,14 +136,44 @@
     regenerate: regenerateSummaryFn,
     isGenerating: isSummaryGenerating,
   } = useEntitySummary()
+  const { fetchNode } = useTrellisGraph()
+
+  async function hydrateDocumentContentForSummary(): Promise<string> {
+    const mergedContent = editableItem.content || props.item?.content || ''
+    if (!isDocumentChromeType(editableItem.type) || !editableItem.id) return mergedContent
+    if (resolveSummaryText({ ...editableItem, content: mergedContent }).length >= MIN_SUMMARY_SOURCE_LENGTH) {
+      return mergedContent
+    }
+
+    try {
+      const { node } = await fetchNode(toEntityId(editableItem.id))
+      const content = (node?.content as string) || ''
+      if (content) editableItem.content = content
+      return content || mergedContent
+    } catch {
+      return mergedContent
+    }
+  }
 
   watch(
-    () => [editableItem.id, editableItem.description] as const,
+    () =>
+      [
+        editableItem.id,
+        editableItem.type,
+        editableItem.description,
+        editableItem.content,
+        props.item?.content,
+      ] as const,
     () => {
       if (isCreateMode.value) return
-      if (!editableItem.id || !editableItem.description) return
-      // Fire-and-forget; composable dedupes via source hash.
-      void ensureSummary(editableItem)
+      if (!editableItem.id) return
+      void (async () => {
+        const content = await hydrateDocumentContentForSummary()
+        const entity = { ...editableItem, content }
+        const source = resolveSummaryText(entity)
+        if (source.length < MIN_SUMMARY_SOURCE_LENGTH) return
+        void ensureSummary(entity)
+      })()
     },
     { immediate: true },
   )
@@ -146,36 +195,22 @@
   const entityPickerFilterType = ref<string | undefined>(undefined)
 
   // Sidebar state
-  const leftSidebarW = ref(288)
   const rightSidebarW = ref(360)
   const rightSidebarCollapsed = ref(false)
-  const isResizingSidebar = ref(false)
 
-  const startSidebarResize = (side: 'left' | 'right', e: PointerEvent) => {
-    e.preventDefault()
-    e.stopPropagation()
-    const el = e.currentTarget as HTMLElement
-    el.setPointerCapture(e.pointerId)
-    isResizingSidebar.value = true
-    const startX = e.clientX
-    const startW = side === 'left' ? leftSidebarW.value : rightSidebarW.value
-    document.body.style.cursor = 'ew-resize'
-    const onMove = (ev: PointerEvent) => {
-      const dx = ev.clientX - startX
-      const newW = Math.max(200, Math.min(480, startW + (side === 'left' ? dx : -dx)))
-      if (side === 'left') leftSidebarW.value = newW
-      else rightSidebarW.value = newW
-    }
-    const onUp = () => {
-      isResizingSidebar.value = false
-      document.body.style.cursor = ''
-      el.releasePointerCapture(e.pointerId)
-      el.removeEventListener('pointermove', onMove)
-      el.removeEventListener('pointerup', onUp)
-    }
-    el.addEventListener('pointermove', onMove)
-    el.addEventListener('pointerup', onUp)
-  }
+  // Bookmarks: preview-first with metadata sidebar collapsed.
+  // Files: preview-first with properties sidebar open by default.
+  watch(
+    () => ({ open: props.open, id: editableItem.id, type: editableItem.type as string, variant: props.variant }),
+    (cur, prev) => {
+      if (!cur.open || cur.variant === 'inset') return
+      const opened = cur.open && !prev?.open
+      const switched = !!cur.id && cur.id !== prev?.id
+      if (!opened && !switched) return
+      if (cur.type === 'bookmark') rightSidebarCollapsed.value = true
+      if (cur.type === 'file') rightSidebarCollapsed.value = false
+    },
+  )
 
   const owners = computed(() => props.owners ?? [])
   const folders = computed(() => props.folders ?? [])
@@ -463,7 +498,18 @@
     }
   }
 
+  const { getEntityConfig } = useOntologyRegistry()
+
+  const hasOntologyFields = computed(() => {
+    const config = getEntityConfig(editableItem.type)
+    return !!(config && 'fields' in config && Array.isArray(config.fields) && config.fields.length > 0)
+  })
+
   const hasVisibleProperties = computed(() => {
+    if (editableItem.type === 'bookmark') return true
+    if (editableItem.type === 'file') return true
+    if (isDocumentChrome.value) return true
+    if (hasOntologyFields.value) return true
     if (hasField('startDate')) return true
     if (hasField('status')) return true
     if (hasField('priority')) return true
@@ -472,7 +518,6 @@
     if (hasField('owner')) return true
     if (hasField('involved')) return true
     if (hasField('folder')) return true
-    // Type-specific fields
     if (hasField('paymentStatus')) return true
     if (hasField('tripStatus')) return true
     if (hasField('sprintStatus')) return true
@@ -481,10 +526,16 @@
     if (hasField('metric')) return true
     if (hasField('location')) return true
     if (hasField('eventSubtype')) return true
-    // Email: always show pills (from / to / date / labels)
     if (editableItem.type === 'email') return true
     return false
   })
+
+  const isBookmark = computed(() => editableItem.type === 'bookmark')
+  const isFile = computed(() => editableItem.type === 'file')
+  const isPreviewFirst = computed(() => isBookmark.value || isFile.value)
+  const isDocumentChrome = computed(() => isDocumentChromeType(editableItem.type))
+  const { columnClass: documentColumnClass } = useDocumentReadingWidth()
+  const isDialogVariant = computed(() => props.variant === 'dialog')
 
   // ── Email helpers ───────────────────────────────────────────────────
   const emailFromName = computed(() => {
@@ -544,6 +595,7 @@
   <EntityDialogShell
     :open="open"
     :variant="variant"
+    :inline-header-tags="isDialogVariant"
     :title="editableItem.title"
     :description="editableItem.description"
     :mode="mode"
@@ -571,6 +623,10 @@
     @navigate-prev="emit('navigatePrev')"
     @navigate-next="emit('navigateNext')"
     @regenerate-summary="handleRegenerateSummary">
+    <template v-if="!isInset" #header-actions>
+      <DocumentReadingWidthToggle v-if="isDocumentChrome" />
+      <RightSidebarToggle v-model:collapsed="rightSidebarCollapsed" />
+    </template>
     <!-- Header badges: Pin + Event Type (for events) + Schedule badge (edit mode) -->
     <template #header-badges>
       <!-- Pin toggle -->
@@ -624,20 +680,27 @@
       <TagsSection v-model="editableItem.tags" :readonly="isViewMode" inline />
     </template>
 
-    <div v-if="!isInset" class="flex-1 flex flex-col min-w-0 overflow-y-auto">
-      <EntityBodyHeader
-        :title="editableItem.title"
-        :description="editableItem.description"
+    <div v-if="!isInset" :class="['flex-1 flex flex-col min-w-0 min-h-0', isPreviewFirst ? 'overflow-hidden' : 'overflow-y-auto']">
+      <EntityContentPanel
+        v-if="isPreviewFirst"
+        v-model="editableItem"
         :mode="mode"
-        :title-placeholder="`${currentType?.label || 'Item'} name...`"
-        :summary="entitySummary"
-        :is-generating-summary="generatingSummary"
-        :entity-id="editableItem.id || undefined"
-        :ai-only="editableItem.type === 'email'"
-        @update:title="editableItem.title = $event"
-        @update:description="editableItem.description = $event"
-        @regenerate-summary="handleRegenerateSummary">
-        <template v-if="editableItem.type === 'email'" #below>
+        class="flex-1 min-h-0 flex flex-col h-full" />
+      <div v-else :class="isDocumentChrome ? documentColumnClass : ''">
+        <EntityBodyHeader
+          :variant="isDocumentChrome ? 'document' : 'default'"
+          :title="editableItem.title"
+          :description="editableItem.description"
+          :mode="mode"
+          :title-placeholder="isDocumentChrome ? 'Untitled' : `${currentType?.label || 'Item'} name...`"
+          :summary="entitySummary"
+          :is-generating-summary="generatingSummary"
+          :entity-id="editableItem.id || undefined"
+          :ai-only="editableItem.type === 'email'"
+          @update:title="editableItem.title = $event"
+          @update:description="editableItem.description = $event"
+          @regenerate-summary="handleRegenerateSummary">
+          <template v-if="editableItem.type === 'email'" #below>
           <div class="flex flex-wrap items-center gap-1.5 mt-3 text-xs">
             <span
               v-if="emailFromName"
@@ -692,21 +755,18 @@
             </button>
           </div>
         </template>
-      </EntityBodyHeader>
-      <EntityContentPanel v-model="editableItem" :mode="mode" />
+        </EntityBodyHeader>
+        <div :class="isDocumentChrome ? 'pb-6' : 'px-6 pb-6'">
+          <EntityContentPanel v-model="editableItem" :mode="mode" />
+        </div>
+      </div>
     </div>
 
     <!-- Right sidebar: tabbed references + activity (non-inset) -->
-    <aside
+    <ResizableRightPanel
       v-if="!isInset"
-      class="shrink-0 border-l border-border overflow-hidden flex flex-col relative transition-[width] duration-150"
-      :class="isResizingSidebar ? 'select-none' : ''"
-      :style="{ width: rightSidebarCollapsed ? '40px' : rightSidebarW + 'px' }">
-      <!-- Resize handle -->
-      <div
-        v-if="!rightSidebarCollapsed"
-        class="absolute inset-y-0 left-0 w-1 cursor-ew-resize z-10 hover:bg-primary/20 transition-colors"
-        @pointerdown="startSidebarResize('right', $event)" />
+      v-model:collapsed="rightSidebarCollapsed"
+      v-model:width="rightSidebarW">
       <EntityRightSidebar
         v-model:collapsed="rightSidebarCollapsed"
         :references="editableItem.references"
@@ -740,7 +800,51 @@
         @create-entity="handleCreateEntityOfType"
         @add-comment="handleAddComment">
         <template #properties>
+          <BookmarkPropertiesTab
+            v-if="isBookmark"
+            v-model:editable-item="editableItem"
+            :is-view-mode="isViewMode"
+            :summary="entitySummary"
+            :is-generating-summary="generatingSummary"
+            @regenerate-summary="handleRegenerateSummary" />
+          <FilePropertiesTab
+            v-else-if="isFile"
+            v-model:editable-item="editableItem"
+            v-model:selected-repeat="selectedRepeat"
+            :has-field="hasField"
+            :is-view-mode="isViewMode"
+            :is-dark="isDark"
+            :owners="owners"
+            :folders="folders"
+            :schedule-description="scheduleDescription"
+            :summary="entitySummary"
+            :is-generating-summary="generatingSummary"
+            @regenerate-summary="handleRegenerateSummary" />
+          <DocumentPropertiesTab
+            v-else-if="isDocumentChrome"
+            v-model:editable-item="editableItem"
+            v-model:selected-repeat="selectedRepeat"
+            :has-field="hasField"
+            :is-view-mode="isViewMode"
+            :is-dark="isDark"
+            :owners="owners"
+            :folders="folders"
+            :schedule-description="scheduleDescription"
+            :summary="entitySummary"
+            :is-generating-summary="generatingSummary"
+            @regenerate-summary="handleRegenerateSummary" />
+          <OntologyPropertiesTab
+            v-else-if="hasOntologyFields"
+            v-model:editable-item="editableItem"
+            v-model:selected-repeat="selectedRepeat"
+            :has-field="hasField"
+            :is-view-mode="isViewMode"
+            :is-dark="isDark"
+            :owners="owners"
+            :folders="folders"
+            :schedule-description="scheduleDescription" />
           <EntityPropertiesTab
+            v-else
             v-model:editable-item="editableItem"
             v-model:selected-repeat="selectedRepeat"
             :has-field="hasField"
@@ -751,7 +855,7 @@
             :schedule-description="scheduleDescription" />
         </template>
       </EntityRightSidebar>
-    </aside>
+    </ResizableRightPanel>
 
     <!-- ═══ Inset tabbed layout (narrow sidebar mode) ═══ -->
     <div v-if="isInset" class="flex-1 flex flex-col min-w-0 overflow-hidden">
@@ -779,11 +883,73 @@
       <!-- Tab content -->
       <div class="flex-1 overflow-hidden min-h-0">
         <!-- Preview -->
-        <div v-if="activeInsetTab === 'preview'" class="h-full flex flex-col overflow-y-auto">
-          <EntityContentPanel v-model="editableItem" :mode="mode" />
+        <div
+          v-if="activeInsetTab === 'preview'"
+          :class="['h-full flex flex-col min-h-0', isPreviewFirst ? 'overflow-hidden' : 'overflow-y-auto']">
+          <EntityBodyHeader
+            v-if="!isPreviewFirst"
+            density="inset"
+            :variant="isDocumentChrome ? 'document' : 'default'"
+            :title="editableItem.title"
+            :description="editableItem.description"
+            :mode="mode"
+            :title-placeholder="isDocumentChrome ? 'Untitled' : `${currentType?.label || 'Item'} name...`"
+            :summary="entitySummary"
+            :is-generating-summary="generatingSummary"
+            :entity-id="editableItem.id || undefined"
+            :ai-only="editableItem.type === 'email'"
+            @update:title="editableItem.title = $event"
+            @update:description="editableItem.description = $event"
+            @regenerate-summary="handleRegenerateSummary" />
+          <div :class="['flex-1 min-h-0 flex flex-col', isPreviewFirst ? '' : 'px-4 pt-2 pb-6']">
+            <EntityContentPanel v-model="editableItem" :mode="mode" class="flex-1 min-h-0" />
+          </div>
         </div>
 
         <!-- Properties -->
+        <BookmarkPropertiesTab
+          v-else-if="activeInsetTab === 'properties' && isBookmark"
+          v-model:editable-item="editableItem"
+          :is-view-mode="isViewMode"
+          :summary="entitySummary"
+          :is-generating-summary="generatingSummary"
+          @regenerate-summary="handleRegenerateSummary" />
+        <FilePropertiesTab
+          v-else-if="activeInsetTab === 'properties' && isFile"
+          v-model:editable-item="editableItem"
+          v-model:selected-repeat="selectedRepeat"
+          :has-field="hasField"
+          :is-view-mode="isViewMode"
+          :is-dark="isDark"
+          :owners="owners"
+          :folders="folders"
+          :schedule-description="scheduleDescription"
+          :summary="entitySummary"
+          :is-generating-summary="generatingSummary"
+          @regenerate-summary="handleRegenerateSummary" />
+        <DocumentPropertiesTab
+          v-else-if="activeInsetTab === 'properties' && isDocumentChrome"
+          v-model:editable-item="editableItem"
+          v-model:selected-repeat="selectedRepeat"
+          :has-field="hasField"
+          :is-view-mode="isViewMode"
+          :is-dark="isDark"
+          :owners="owners"
+          :folders="folders"
+          :schedule-description="scheduleDescription"
+          :summary="entitySummary"
+          :is-generating-summary="generatingSummary"
+          @regenerate-summary="handleRegenerateSummary" />
+        <OntologyPropertiesTab
+          v-else-if="activeInsetTab === 'properties' && hasOntologyFields"
+          v-model:editable-item="editableItem"
+          v-model:selected-repeat="selectedRepeat"
+          :has-field="hasField"
+          :is-view-mode="isViewMode"
+          :is-dark="isDark"
+          :owners="owners"
+          :folders="folders"
+          :schedule-description="scheduleDescription" />
         <EntityPropertiesTab
           v-else-if="activeInsetTab === 'properties'"
           v-model:editable-item="editableItem"

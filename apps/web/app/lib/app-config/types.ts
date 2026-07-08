@@ -32,6 +32,7 @@ export interface ServerSchemaDefinition {
   propertyFieldIds?: string[]
   defaultSortField?: string
   searchFields?: string[]
+  formPresentation?: 'entity-dialog' | 'stacked' | 'survey' | 'wizard'
 }
 
 export interface ServerRouteDefinition {
@@ -55,6 +56,7 @@ export interface ServerRouteDefinition {
     subtitle?: string
     showBackButton?: boolean
     fullWidth?: boolean
+    sidebarCollapsible?: boolean
   }
   sidebarSections?: unknown[]
   children?: unknown[]

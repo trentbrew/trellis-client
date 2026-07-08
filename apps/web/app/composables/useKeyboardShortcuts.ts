@@ -25,6 +25,8 @@ export const DEFAULT_SHORTCUTS: ShortcutDefinition[] = [
   { id: 'go-database', label: 'Go to database', keys: 'mod+shift+d', scope: 'global', category: 'Navigation' },
   { id: 'go-settings', label: 'Go to settings', keys: 'mod+,', scope: 'global', category: 'Navigation' },
   { id: 'toggle-sidebar', label: 'Toggle sidebar', keys: 'mod+b', scope: 'global', category: 'Navigation', showToast: false },
+  { id: 'nav-back', label: 'Go back', keys: 'mod+[', scope: 'global', category: 'Navigation', showToast: false },
+  { id: 'nav-forward', label: 'Go forward', keys: 'mod+]', scope: 'global', category: 'Navigation', showToast: false },
 
   // ── Editing ──────────────────────────────────────────────────────────
   { id: 'undo', label: 'Undo', keys: 'mod+z', scope: 'global', category: 'Editing', showToast: 'Undo' },

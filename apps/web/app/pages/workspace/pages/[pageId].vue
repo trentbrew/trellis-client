@@ -11,7 +11,7 @@
   import { useDialogUrl } from '~/composables/useDialogUrl'
   import { useHashDialogRestore } from '~/composables/useHashDialogRestore'
   import { useGridLayout } from '~/composables/useGridLayout'
-  import EntityDialog from '~/components/dialogs/EntityDialog.vue'
+  import ResolvedEntityDialog from '~/components/dialogs/ResolvedEntityDialog.vue'
   import GridEditor from '~/components/grid/GridEditor.vue'
   import GridEntityDetail from '~/components/grid/projections/GridEntityDetail.vue'
   import GridChartProjection from '~/components/grid/projections/GridChartProjection.vue'
@@ -808,7 +808,7 @@
     </GridEditor>
 
     <!-- Entity dialog -->
-    <EntityDialog
+    <ResolvedEntityDialog
       v-model:open="viewOpen"
       mode="edit"
       :item="viewingItem"
@@ -926,7 +926,7 @@
       @clear-selection="clearSelection" />
 
     <!-- View/Edit Dialog -->
-    <EntityDialog
+    <ResolvedEntityDialog
       v-model:open="viewOpen"
       mode="edit"
       :item="viewingItem"
