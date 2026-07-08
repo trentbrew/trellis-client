@@ -189,6 +189,7 @@ export function useChannels() {
         entityId: toEntityId(id),
         type: 'entity',
         data: {
+          type: 'channel',
           entityKind: 'channel',
           channelType: opts.type ?? 'public',
           title: opts.title,
