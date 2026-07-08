@@ -1,0 +1,584 @@
+<!DOCTYPE html>
+<!-- trellis-design: slug=browse_form_view parent=forms-browse -->
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Trellis — Browse Form View (forms-browse design mock)</title>
+  <style>
+    :root {
+      --background: #0a0a0c;
+      --surface: #141418;
+      --surface-muted: #1a1a21;
+      --text: #e8e8ec;
+      --text-muted: #888894;
+      --primary: #6366f1;
+      --border: #2a2a32;
+      --form-accent: #8b5cf6;
+      --success: #22c55e;
+      --radius-sm: 6px;
+      --radius-md: 10px;
+      --radius-lg: 14px;
+      --radius-pill: 9999px;
+      --font: "IBM Plex Sans", system-ui, -apple-system, sans-serif;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: var(--font);
+      font-size: 13px;
+      background: var(--background);
+      color: var(--text);
+      min-height: 100dvh;
+      display: flex;
+      flex-direction: column;
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      .progress-fill { transition: none !important; }
+    }
+
+    /* Design controls */
+    .design-bar {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      padding: 8px 16px;
+      background: #0d0d10;
+      border-bottom: 1px dashed var(--form-accent);
+      font-size: 11px;
+      color: var(--text-muted);
+      align-items: center;
+    }
+    .design-bar label { display: flex; align-items: center; gap: 6px; cursor: pointer; }
+    .design-bar select, .design-bar button {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      color: var(--text);
+      padding: 4px 8px;
+      border-radius: var(--radius-sm);
+      font-size: 11px;
+      cursor: pointer;
+    }
+    .design-bar button:hover { border-color: var(--primary); }
+
+    /* Page chrome */
+    .page-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 12px 20px;
+      border-bottom: 1px solid var(--border);
+      gap: 16px;
+      flex-wrap: wrap;
+    }
+    .page-title {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-weight: 600;
+      font-size: 15px;
+    }
+    .page-title .icon {
+      width: 32px; height: 32px;
+      border-radius: var(--radius-md);
+      background: color-mix(in oklch, var(--form-accent) 20%, transparent);
+      display: flex; align-items: center; justify-content: center;
+      color: var(--form-accent);
+      font-size: 16px;
+    }
+    .page-sub { font-size: 11px; color: var(--text-muted); font-weight: 400; }
+
+    .view-switcher {
+      display: flex;
+      gap: 2px;
+      background: var(--surface-muted);
+      padding: 3px;
+      border-radius: var(--radius-md);
+      border: 1px solid var(--border);
+    }
+    .view-btn {
+      padding: 6px 12px;
+      border: none;
+      background: transparent;
+      color: var(--text-muted);
+      border-radius: var(--radius-sm);
+      font-size: 12px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .view-btn:hover { color: var(--text); }
+    .view-btn.active {
+      background: var(--surface);
+      color: var(--text);
+      box-shadow: 0 1px 2px rgba(0,0,0,0.3);
+    }
+    .view-btn.form-tab.active {
+      color: var(--form-accent);
+      box-shadow: 0 0 0 1px color-mix(in oklch, var(--form-accent) 40%, transparent);
+    }
+
+    .search-mock {
+      padding: 6px 12px;
+      background: var(--surface-muted);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-pill);
+      color: var(--text-muted);
+      font-size: 12px;
+      min-width: 180px;
+    }
+
+    /* Form view toolbar */
+    .form-toolbar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 10px 20px;
+      border-bottom: 1px solid var(--border);
+      background: var(--surface-muted);
+      gap: 12px;
+      flex-wrap: wrap;
+    }
+    .chip {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 4px 10px;
+      border-radius: var(--radius-pill);
+      background: var(--surface);
+      border: 1px solid var(--border);
+      font-size: 11px;
+      font-weight: 500;
+      color: var(--text-muted);
+    }
+    .chip strong { color: var(--text); font-weight: 600; }
+    .toolbar-right { display: flex; gap: 8px; align-items: center; }
+    .btn-outline {
+      padding: 6px 12px;
+      border: 1px solid var(--border);
+      background: transparent;
+      color: var(--text-muted);
+      border-radius: var(--radius-sm);
+      font-size: 12px;
+      cursor: not-allowed;
+      opacity: 0.7;
+    }
+    .badge {
+      padding: 4px 8px;
+      border-radius: var(--radius-sm);
+      font-size: 10px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+      background: color-mix(in oklch, var(--form-accent) 15%, transparent);
+      color: var(--form-accent);
+      border: 1px solid color-mix(in oklch, var(--form-accent) 30%, transparent);
+    }
+
+    /* Main form area */
+    .form-main {
+      flex: 1;
+      display: flex;
+      justify-content: center;
+      padding: 32px 20px;
+      overflow-y: auto;
+    }
+    .form-card {
+      width: 100%;
+      max-width: 520px;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-lg);
+      padding: 28px;
+      box-shadow: 0 4px 24px rgba(0,0,0,0.25);
+    }
+    .form-card h2 {
+      font-size: 20px;
+      font-weight: 600;
+      margin-bottom: 6px;
+    }
+    .form-card .desc {
+      font-size: 13px;
+      color: var(--text-muted);
+      margin-bottom: 24px;
+      line-height: 1.5;
+    }
+
+    /* Stacked fields */
+    .field { margin-bottom: 20px; }
+    .field label {
+      display: block;
+      font-size: 13px;
+      font-weight: 500;
+      margin-bottom: 6px;
+    }
+    .field label .req { color: #ef4444; }
+    .field input, .field textarea, .field select {
+      width: 100%;
+      padding: 8px 12px;
+      background: var(--surface-muted);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      color: var(--text);
+      font-family: inherit;
+      font-size: 13px;
+    }
+    .field textarea { min-height: 80px; resize: vertical; }
+    .field-hint { font-size: 11px; color: var(--text-muted); margin-top: 4px; }
+
+    /* Survey step */
+    .step-meta {
+      display: flex;
+      justify-content: space-between;
+      font-size: 11px;
+      color: var(--text-muted);
+      margin-bottom: 8px;
+    }
+    .progress-track {
+      height: 6px;
+      background: var(--surface-muted);
+      border-radius: var(--radius-pill);
+      overflow: hidden;
+      margin-bottom: 28px;
+    }
+    .progress-fill {
+      height: 100%;
+      background: var(--primary);
+      border-radius: var(--radius-pill);
+      transition: width 0.3s ease;
+    }
+    .survey-question {
+      font-size: 18px;
+      font-weight: 500;
+      margin-bottom: 16px;
+    }
+
+  /* Multi-select pills */
+    .pill-group { display: flex; flex-wrap: wrap; gap: 8px; }
+    .pill {
+      padding: 6px 14px;
+      border-radius: var(--radius-pill);
+      border: 1px solid var(--border);
+      background: transparent;
+      color: var(--text-muted);
+      font-size: 12px;
+      cursor: pointer;
+    }
+    .pill.selected {
+      background: var(--primary);
+      border-color: var(--primary);
+      color: white;
+    }
+
+    .form-actions {
+      display: flex;
+      justify-content: space-between;
+      margin-top: 28px;
+      padding-top: 20px;
+      border-top: 1px solid var(--border);
+      gap: 12px;
+    }
+    .btn {
+      padding: 8px 16px;
+      border-radius: var(--radius-sm);
+      font-size: 13px;
+      font-weight: 500;
+      cursor: pointer;
+      border: none;
+    }
+    .btn-ghost { background: transparent; color: var(--text-muted); }
+    .btn-ghost:hover { color: var(--text); }
+    .btn-ghost:disabled { opacity: 0.4; cursor: not-allowed; }
+    .btn-primary { background: var(--primary); color: white; }
+    .btn-primary:hover { filter: brightness(1.1); }
+
+    /* Success state */
+    .success-panel {
+      text-align: center;
+      padding: 24px 0;
+    }
+    .success-icon {
+      width: 56px; height: 56px;
+      margin: 0 auto 16px;
+      border-radius: 50%;
+      background: color-mix(in oklch, var(--success) 15%, transparent);
+      color: var(--success);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 28px;
+    }
+    .success-panel h3 { font-size: 18px; margin-bottom: 8px; }
+    .success-panel p { color: var(--text-muted); font-size: 13px; margin-bottom: 24px; }
+    .success-actions { display: flex; gap: 12px; justify-content: center; flex-wrap: wrap; }
+
+    /* Empty state */
+    .empty-state {
+      text-align: center;
+      padding: 40px 20px;
+      color: var(--text-muted);
+    }
+    .empty-state .icon { font-size: 32px; margin-bottom: 12px; opacity: 0.4; }
+
+    .hidden { display: none !important; }
+
+    [data-design-note] { position: relative; }
+    [data-design-note]::after {
+      content: attr(data-design-note);
+      position: absolute;
+      top: -8px; right: -8px;
+      font-size: 9px;
+      background: var(--form-accent);
+      color: white;
+      padding: 1px 5px;
+      border-radius: 4px;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.15s;
+    }
+    [data-design-note]:hover::after { opacity: 1; }
+
+    /* Table view peek (hidden in mock — design note only) */
+    .table-peek {
+      padding: 20px;
+      color: var(--text-muted);
+      font-size: 12px;
+      text-align: center;
+      border: 1px dashed var(--border);
+      margin: 20px;
+      border-radius: var(--radius-md);
+    }
+  </style>
+</head>
+<body>
+  <div class="design-bar" data-design-note="Designer controls — not shipped">
+    <span>Mock controls:</span>
+    <label>
+      Presentation
+      <select id="presentation">
+        <option value="stacked">stacked</option>
+        <option value="survey" selected>survey</option>
+        <option value="wizard">wizard</option>
+      </select>
+    </label>
+    <label>
+      State
+      <select id="state">
+        <option value="idle" selected>idle (filling)</option>
+        <option value="success">success</option>
+        <option value="empty">empty schema</option>
+      </select>
+    </label>
+    <button type="button" id="btn-simulate-submit">Simulate submit</button>
+  </div>
+
+  <header class="page-header">
+    <div class="page-title">
+      <div class="icon">📋</div>
+      <div>
+        Feedback
+        <div class="page-sub">Custom Type · Workshop</div>
+      </div>
+    </div>
+    <div class="search-mock hidden" id="search-bar">Search feedback…</div>
+    <div class="view-switcher" data-design-note="Form tab — new browse mode">
+      <button type="button" class="view-btn">Table</button>
+      <button type="button" class="view-btn">Grid</button>
+      <button type="button" class="view-btn">Graph</button>
+      <button type="button" class="view-btn form-tab active">Form</button>
+    </div>
+  </header>
+
+  <div class="form-toolbar" id="form-toolbar" data-design-note="Hidden + New in form view">
+    <div class="chip">
+      <span>📊</span>
+      <span><strong id="response-count">12</strong> responses</span>
+    </div>
+    <div class="toolbar-right">
+      <span class="badge" id="presentation-badge">Survey</span>
+      <button type="button" class="btn-outline" title="Publishing coming soon">Copy link</button>
+    </div>
+  </div>
+
+  <main class="form-main">
+    <!-- Idle: stacked -->
+    <div class="form-card hidden" id="panel-stacked">
+      <h2>Product Feedback</h2>
+      <p class="desc">Share your experience with Trellis. All fields map from ontology schema.</p>
+      <div class="field">
+        <label>Title <span class="req">*</span></label>
+        <input type="text" placeholder="Short summary" value="" />
+      </div>
+      <div class="field">
+        <label>Rating <span class="req">*</span></label>
+        <select>
+          <option>Excellent</option>
+          <option>Good</option>
+          <option>Needs work</option>
+        </select>
+      </div>
+      <div class="field">
+        <label>Comments</label>
+        <textarea placeholder="Tell us more…"></textarea>
+      </div>
+      <div class="field">
+        <label style="display:flex;align-items:center;gap:8px;font-weight:400;">
+          <input type="checkbox" /> Would recommend
+        </label>
+      </div>
+      <div class="form-actions">
+        <span></span>
+        <button type="button" class="btn btn-primary">Submit</button>
+      </div>
+    </div>
+
+    <!-- Idle: survey -->
+    <div class="form-card" id="panel-survey">
+      <h2>Product Feedback</h2>
+      <div class="step-meta">
+        <span id="step-label">Step 2 of 4</span>
+        <span id="step-pct">50%</span>
+      </div>
+      <div class="progress-track" role="progressbar" aria-valuenow="50" aria-valuemin="0" aria-valuemax="100">
+        <div class="progress-fill" id="progress-fill" style="width: 50%"></div>
+      </div>
+      <div class="survey-question" id="survey-question">How would you rate your experience?</div>
+      <div class="field">
+        <div class="pill-group" id="rating-pills">
+          <button type="button" class="pill">Excellent</button>
+          <button type="button" class="pill selected">Good</button>
+          <button type="button" class="pill">Needs work</button>
+        </div>
+      </div>
+      <div class="form-actions">
+        <button type="button" class="btn btn-ghost">Back</button>
+        <button type="button" class="btn btn-primary" id="survey-next">Next</button>
+      </div>
+    </div>
+
+    <!-- Idle: wizard (grouped) -->
+    <div class="form-card hidden" id="panel-wizard">
+      <h2>Product Feedback</h2>
+      <div class="step-meta">
+        <span>Step 2 of 2 — Details</span>
+        <span>100%</span>
+      </div>
+      <div class="progress-track">
+        <div class="progress-fill" style="width: 100%"></div>
+      </div>
+      <p class="desc" style="margin-bottom:16px;">Grouped by <code>field.group</code></p>
+      <div class="field">
+        <label>Comments</label>
+        <textarea placeholder="Tell us more…"></textarea>
+      </div>
+      <div class="field">
+        <label style="display:flex;align-items:center;gap:8px;font-weight:400;">
+          <input type="checkbox" /> Would recommend
+        </label>
+      </div>
+      <div class="field">
+        <label>Contact email</label>
+        <input type="email" placeholder="you@example.com" />
+      </div>
+      <div class="form-actions">
+        <button type="button" class="btn btn-ghost">Back</button>
+        <button type="button" class="btn btn-primary">Submit</button>
+      </div>
+    </div>
+
+    <!-- Success -->
+    <div class="form-card hidden" id="panel-success">
+      <div class="success-panel">
+        <div class="success-icon">✓</div>
+        <h3>Response recorded</h3>
+        <p>Your feedback has been saved. You can submit another response or view all submissions in the table.</p>
+        <div class="success-actions">
+          <button type="button" class="btn btn-primary" id="btn-another">Submit another</button>
+          <button type="button" class="btn btn-ghost" id="btn-view-table">View responses</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Empty -->
+    <div class="form-card hidden" id="panel-empty">
+      <div class="empty-state">
+        <div class="icon">📝</div>
+        <h3 style="color:var(--text);margin-bottom:8px;">No fillable fields</h3>
+        <p style="margin-bottom:16px;">Add fields to this ontology's schema to enable form intake.</p>
+        <button type="button" class="btn btn-outline" style="cursor:pointer;opacity:1;">Edit schema</button>
+      </div>
+    </div>
+  </main>
+
+  <div class="table-peek hidden" id="table-peek">
+    Switched to <strong>Table</strong> view — same records, admin layout. (12 rows)
+  </div>
+
+  <script>
+    const presentation = document.getElementById('presentation');
+    const state = document.getElementById('state');
+    const panels = {
+      stacked: document.getElementById('panel-stacked'),
+      survey: document.getElementById('panel-survey'),
+      wizard: document.getElementById('panel-wizard'),
+      success: document.getElementById('panel-success'),
+      empty: document.getElementById('panel-empty'),
+    };
+    const badge = document.getElementById('presentation-badge');
+    const formToolbar = document.getElementById('form-toolbar');
+    const tablePeek = document.getElementById('table-peek');
+
+    function sync() {
+      const pres = presentation.value;
+      const st = state.value;
+      Object.values(panels).forEach((p) => p.classList.add('hidden'));
+      formToolbar.classList.toggle('hidden', st === 'empty');
+      tablePeek.classList.add('hidden');
+
+      if (st === 'success') {
+        panels.success.classList.remove('hidden');
+        return;
+      }
+      if (st === 'empty') {
+        panels.empty.classList.remove('hidden');
+        return;
+      }
+      panels[pres].classList.remove('hidden');
+      badge.textContent = pres.charAt(0).toUpperCase() + pres.slice(1);
+    }
+
+    presentation.addEventListener('change', sync);
+    state.addEventListener('change', sync);
+
+    document.getElementById('btn-simulate-submit').addEventListener('click', () => {
+      state.value = 'success';
+      sync();
+      const count = document.getElementById('response-count');
+      count.textContent = String(parseInt(count.textContent, 10) + 1);
+    });
+
+    document.getElementById('btn-another').addEventListener('click', () => {
+      state.value = 'idle';
+      sync();
+    });
+
+    document.getElementById('btn-view-table').addEventListener('click', () => {
+      document.querySelector('.form-main').classList.add('hidden');
+      formToolbar.classList.add('hidden');
+      tablePeek.classList.remove('hidden');
+      document.querySelector('.view-btn.form-tab').classList.remove('active');
+      document.querySelector('.view-switcher .view-btn').classList.add('active');
+    });
+
+    document.querySelectorAll('.pill').forEach((pill) => {
+      pill.addEventListener('click', () => {
+        document.querySelectorAll('.pill').forEach((p) => p.classList.remove('selected'));
+        pill.classList.add('selected');
+      });
+    });
+
+    sync();
+  </script>
+</body>
+</html>

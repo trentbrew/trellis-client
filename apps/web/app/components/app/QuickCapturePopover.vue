@@ -1,9 +1,16 @@
 <script lang="ts" setup>
   import { createDefaultNote } from '~/types/entity'
 
-  const props = withDefaults(defineProps<{ position?: 'left' | 'bottom' }>(), { position: 'left' })
+  const props = withDefaults(
+    defineProps<{
+      position?: 'left' | 'bottom'
+      variant?: 'rail' | 'menubar'
+    }>(),
+    { position: 'left', variant: 'rail' },
+  )
 
-  const isBottom = computed(() => props.position === 'bottom')
+  const isMenubar = computed(() => props.variant === 'menubar')
+  const isBottom = computed(() => props.variant === 'menubar' || props.position === 'bottom')
 
   const open = ref(false)
   const content = ref('')
@@ -19,6 +26,11 @@
 
   /** localStorage key for draft persistence — survives page refresh. */
   const DRAFT_KEY = 'trellis:quicknote:draft'
+  const MODE_KEY = 'trellis:quickcapture:mode'
+
+  type CaptureMode = 'text' | 'voice'
+  const captureMode = ref<CaptureMode>('text')
+  const voicePanelRef = ref<{ isRecording: { value: boolean }; isBusy: { value: boolean }; requestClose: () => Promise<boolean> } | null>(null)
 
   /** Selectors for floating overlays spawned by the editor (mentions, slash menu, etc.). */
   const FLOATING_SELECTORS = '.tippy-box, [data-tippy-root], [data-radix-popper-content-wrapper], [data-sonner-toaster]'
@@ -35,6 +47,19 @@
 
     // Effective panel height respects the CSS max-h cap.
     const effectiveH = Math.min(PANEL_H, vh - 80)
+
+    if (isMenubar.value) {
+      const top = rect.bottom + GAP
+      const maxTop = vh - effectiveH - VIEWPORT_PADDING
+      const clampedTop = Math.min(Math.max(top, VIEWPORT_PADDING), maxTop)
+      let left = rect.left + rect.width / 2 - PANEL_W / 2
+      left = Math.min(Math.max(left, VIEWPORT_PADDING), vw - PANEL_W - VIEWPORT_PADDING)
+      panelStyle.value = {
+        top: `${clampedTop}px`,
+        left: `${left}px`,
+      }
+      return
+    }
 
     // bottom = distance from viewport bottom to trigger top, minus gap
     let bottom = vh - rect.top + GAP
@@ -142,8 +167,54 @@
     open.value = false
   }
 
+  function loadCaptureMode() {
+    if (typeof window === 'undefined') return
+    try {
+      const saved = window.localStorage.getItem(MODE_KEY)
+      if (saved === 'voice' || saved === 'text') captureMode.value = saved
+    } catch {
+      /* noop */
+    }
+  }
+
+  function persistCaptureMode(mode: CaptureMode) {
+    if (typeof window === 'undefined') return
+    try {
+      window.localStorage.setItem(MODE_KEY, mode)
+    } catch {
+      /* noop */
+    }
+  }
+
+  async function setCaptureMode(mode: CaptureMode) {
+    if (mode === captureMode.value) return
+    if (captureMode.value === 'voice' && voicePanelRef.value) {
+      const ok = await voicePanelRef.value.requestClose()
+      if (!ok) return
+    }
+    captureMode.value = mode
+    persistCaptureMode(mode)
+    if (mode === 'text') nextTick(() => focusEditor())
+  }
+
+  async function closePanel() {
+    if (captureMode.value === 'voice' && voicePanelRef.value) {
+      const ok = await voicePanelRef.value.requestClose()
+      if (!ok) return
+    }
+    open.value = false
+  }
+
   function toggleOpen() {
     open.value = !open.value
+  }
+
+  function onVoiceSaved() {
+    saved.value = true
+    setTimeout(() => {
+      saved.value = false
+      open.value = false
+    }, 500)
   }
 
   /** Handle Cmd/Ctrl+Enter — intercept before TipTap. */
@@ -155,7 +226,7 @@
     }
     if (event.key === 'Escape') {
       event.preventDefault()
-      open.value = false
+      void closePanel()
     }
   }
 
@@ -204,7 +275,7 @@
     if (target.closest(FLOATING_SELECTORS)) return
     // Clicking the trigger toggles — let its own handler deal with it.
     if (triggerRef.value && (target === triggerRef.value || triggerRef.value.contains(target))) return
-    open.value = false
+    void closePanel()
   }
 
   function onWindowResize() {
@@ -227,6 +298,7 @@
   let unregister: (() => void) | null = null
   onMounted(() => {
     loadDraft()
+    loadCaptureMode()
     unregister = register('quick-capture', () => {
       toggleOpen()
       return undefined
@@ -245,13 +317,17 @@
       <button
         ref="triggerRef"
         :class="[
-          'flex items-center justify-center rounded-full transition-all duration-200 ease-out bg-card border',
-          'h-8 w-8',
+          'flex items-center justify-center rounded-full transition-all duration-200 ease-out',
+          isMenubar ? 'h-8 w-8' : 'h-8 w-8 bg-card border',
           saved
             ? 'bg-emerald-500/20 text-emerald-500'
             : open
-              ? 'bg-rail-foreground/15 text-foreground'
-              : 'text-rail-foreground/60 hover:bg-rail-foreground/10 hover:text-rail-foreground',
+              ? isMenubar
+                ? 'bg-muted/50 text-foreground'
+                : 'bg-rail-foreground/15 text-foreground'
+              : isMenubar
+                ? 'text-muted-foreground hover:bg-muted/50 hover:text-foreground'
+                : 'text-rail-foreground/60 hover:bg-rail-foreground/10 hover:text-rail-foreground',
         ]"
         :aria-label="open ? 'Close quick capture' : 'Quick capture'"
         :aria-expanded="open"
@@ -269,7 +345,7 @@
         </Transition>
       </button>
     </UiTooltipTrigger>
-    <UiTooltipContent :side="isBottom ? 'top' : 'right'" :side-offset="8">
+    <UiTooltipContent :side="isMenubar ? 'bottom' : isBottom ? 'top' : 'right'" :side-offset="8">
       Quick capture
       <kbd
         class="ml-1.5 inline-flex items-center gap-0.5 rounded border border-border/60 bg-muted/60 px-1 py-0.5 text-[10px] font-mono opacity-70 select-none">
@@ -295,11 +371,40 @@
         @focusout="onPanelFocusOut">
         <!-- Header -->
         <div class="flex items-center gap-2 px-4 py-3 border-b border-border/60 bg-muted/20 shrink-0">
-          <div class="flex items-center gap-1.5 flex-1 min-w-0">
-            <Icon name="lucide:pencil-line" class="h-3.5 w-3.5 text-muted-foreground shrink-0" />
-            <span class="text-xs font-medium text-muted-foreground">Quick Note</span>
+          <div
+            class="flex items-center gap-0.5 p-0.5 rounded-lg bg-muted/40 border border-border/40 flex-1 min-w-0 max-w-[180px]"
+            role="tablist"
+            aria-label="Capture mode">
+            <button
+              type="button"
+              role="tab"
+              :aria-selected="captureMode === 'text'"
+              :class="[
+                'flex-1 flex items-center justify-center gap-1 rounded-md px-2 py-1 text-[11px] font-medium transition-colors',
+                captureMode === 'text'
+                  ? 'bg-background text-foreground shadow-sm'
+                  : 'text-muted-foreground hover:text-foreground',
+              ]"
+              @click.stop="setCaptureMode('text')">
+              <Icon name="lucide:pencil-line" class="h-3 w-3" />
+              Text
+            </button>
+            <button
+              type="button"
+              role="tab"
+              :aria-selected="captureMode === 'voice'"
+              :class="[
+                'flex-1 flex items-center justify-center gap-1 rounded-md px-2 py-1 text-[11px] font-medium transition-colors',
+                captureMode === 'voice'
+                  ? 'bg-background text-foreground shadow-sm'
+                  : 'text-muted-foreground hover:text-foreground',
+              ]"
+              @click.stop="setCaptureMode('voice')">
+              <Icon name="lucide:mic" class="h-3 w-3" />
+              Voice
+            </button>
           </div>
-          <div class="flex items-center gap-1">
+          <div v-if="captureMode === 'text'" class="flex items-center gap-1">
             <kbd
               class="inline-flex items-center gap-0.5 rounded border border-border bg-muted/60 px-1.5 py-0.5 text-[10px] font-mono text-muted-foreground select-none">
               <span class="text-[11px]">⌘</span>
@@ -310,60 +415,68 @@
           <button
             class="ml-1 h-5 w-5 rounded flex items-center justify-center text-muted-foreground hover:bg-muted hover:text-foreground transition-colors"
             aria-label="Close"
-            @click.stop="open = false">
+            @click.stop="closePanel">
             <Icon name="lucide:x" class="h-3 w-3" />
           </button>
         </div>
 
-        <!-- Rich Text Editor (full-featured, matches Pages/Notes editor) -->
-        <div class="flex-1 min-h-0 px-4 py-4 overflow-y-auto">
-          <UiRichTextEditor
-            v-model="content"
-            :seamless="true"
-            :mentions="true"
-            :tasklist="true"
-            :images="true"
-            :embeds="true"
-            :tables="true"
-            :mathematics="true"
-            :draghandle="true"
-            :templates="true"
-            fill-height
-            placeholder="Start writing... / for commands, @ to mention"
-            class="text-sm h-full" />
-        </div>
+        <!-- Text mode -->
+        <template v-if="captureMode === 'text'">
+          <div class="flex-1 min-h-0 px-4 py-4 overflow-y-auto">
+            <UiRichTextEditor
+              v-model="content"
+              :seamless="true"
+              :mentions="true"
+              :tasklist="true"
+              :images="true"
+              :embeds="true"
+              :tables="true"
+              :mathematics="true"
+              :draghandle="true"
+              :templates="true"
+              fill-height
+              placeholder="Start writing... / for commands, @ to mention"
+              class="text-sm h-full" />
+          </div>
 
-        <!-- Footer -->
-        <div class="flex items-center justify-between px-4 py-3 border-t border-border/60 bg-muted/10 shrink-0">
-          <div class="flex items-center gap-2">
-            <div class="flex items-center gap-1.5">
-              <Icon name="lucide:tag" class="h-3 w-3 text-muted-foreground/40" />
-              <span class="text-[10px] text-muted-foreground/40 font-medium">quicknote</span>
+          <div class="flex items-center justify-between px-4 py-3 border-t border-border/60 bg-muted/10 shrink-0">
+            <div class="flex items-center gap-2">
+              <div class="flex items-center gap-1.5">
+                <Icon name="lucide:tag" class="h-3 w-3 text-muted-foreground/40" />
+                <span class="text-[10px] text-muted-foreground/40 font-medium">quicknote</span>
+              </div>
+              <NuxtLink
+                to="/workspace/notes"
+                class="text-[10px] text-muted-foreground/50 hover:text-muted-foreground transition-colors underline-offset-2 hover:underline"
+                @click.stop="open = false">
+                View all notes
+              </NuxtLink>
             </div>
-            <NuxtLink
-              to="/workspace/notes"
-              class="text-[10px] text-muted-foreground/50 hover:text-muted-foreground transition-colors underline-offset-2 hover:underline"
-              @click.stop="open = false">
-              View all notes
-            </NuxtLink>
+            <div class="flex items-center gap-2">
+              <button
+                class="text-[11px] text-muted-foreground hover:text-foreground transition-colors"
+                @click.stop="handleDiscard">
+                Discard
+              </button>
+              <UiButton
+                size="sm"
+                class="h-6 px-2.5 text-xs gap-1"
+                :disabled="!hasContent || isSaving"
+                @click.stop="handleSave">
+                <Icon v-if="isSaving" name="svg-spinners:ring-resize" class="h-3 w-3" />
+                <Icon v-else-if="saved" name="lucide:check" class="h-3 w-3" />
+                <span>{{ isSaving ? 'Saving…' : saved ? 'Saved!' : 'Save' }}</span>
+              </UiButton>
+            </div>
           </div>
-          <div class="flex items-center gap-2">
-            <button
-              class="text-[11px] text-muted-foreground hover:text-foreground transition-colors"
-              @click.stop="handleDiscard">
-              Discard
-            </button>
-            <UiButton
-              size="sm"
-              class="h-6 px-2.5 text-xs gap-1"
-              :disabled="!hasContent || isSaving"
-              @click.stop="handleSave">
-              <Icon v-if="isSaving" name="svg-spinners:ring-resize" class="h-3 w-3" />
-              <Icon v-else-if="saved" name="lucide:check" class="h-3 w-3" />
-              <span>{{ isSaving ? 'Saving…' : saved ? 'Saved!' : 'Save' }}</span>
-            </UiButton>
-          </div>
-        </div>
+        </template>
+
+        <!-- Voice mode -->
+        <VoiceCapturePanel
+          v-else
+          ref="voicePanelRef"
+          class="flex-1 min-h-0 flex flex-col"
+          @saved="onVoiceSaved" />
       </div>
     </Transition>
   </Teleport>

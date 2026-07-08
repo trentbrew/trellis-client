@@ -1,0 +1,23 @@
+node ok v24.13.1
+exit=0
+pw_exit=1
+core_exit=1
+Version 1.57.0
+test_cli_exit=0
+default -> 24 (-> v24.13.1 *)
+iojs -> N/A (default)
+node -> stable (-> v24.13.1 *) (default)
+stable -> 24.13 (-> v24.13.1 *) (default)
+unstable -> N/A (default)
+lts/* -> lts/krypton (-> N/A)
+lts/argon -> v4.9.1 *
+lts/boron -> v6.17.1 (-> N/A)
+lts/carbon -> v8.17.0 (-> N/A)
+lts/dubnium -> v10.24.1 *
+lts/erbium -> v12.22.12 *
+lts/fermium -> v14.21.3 (-> N/A)
+lts/gallium -> v16.20.2 (-> N/A)
+lts/hydrogen -> v18.20.8 *
+lts/iron -> v20.20.2 (-> N/A)
+lts/jod -> v22.23.1 *
+lts/krypton -> v24.18.0 (-> N/A)

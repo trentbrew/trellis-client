@@ -34,6 +34,63 @@
     }
   })
 
+  /** Derive a favicon URL from any raw URL string. */
+  function googleFaviconFor(raw: string, size = 64): string | null {
+    const trimmed = raw.trim()
+    if (!trimmed) return null
+    try {
+      const target = /^https?:\/\//i.test(trimmed) ? trimmed : `https://${trimmed}`
+      const host = new URL(target).hostname
+      return `https://www.google.com/s2/favicons?domain=${host}&sz=${size}`
+    } catch {
+      return null
+    }
+  }
+
+  /** When stored favicon 404s, fall back to Google's domain service. */
+  const faviconFallback = ref(false)
+  watch([url, () => item.value?.favicon], () => {
+    faviconFallback.value = false
+  })
+
+  const faviconSrc = computed(() => {
+    const raw = url.value || urlInput.value
+    const stored = !faviconFallback.value ? item.value?.favicon : undefined
+    if (stored) return stored
+    return googleFaviconFor(raw)
+  })
+
+  function onFaviconError() {
+    if (item.value?.favicon && !faviconFallback.value) {
+      faviconFallback.value = true
+    }
+  }
+
+  /** Backfill missing unfurl metadata (favicon, siteName, thumbnail) on open. */
+  async function ensureUnfurlMetadata() {
+    const target = url.value
+    if (!target || props.mode === 'create') return
+    if (item.value.favicon && item.value.siteName && item.value.thumbnail) return
+
+    try {
+      const meta = await $fetch<{
+        favicon: string
+        siteName: string
+        thumbnail: string
+        description: string
+      }>('/api/unfurl', { params: { url: target } })
+
+      if (!item.value.favicon && meta.favicon) item.value.favicon = meta.favicon
+      if (!item.value.siteName && meta.siteName) item.value.siteName = meta.siteName
+      if (!item.value.thumbnail && meta.thumbnail) item.value.thumbnail = meta.thumbnail
+      if (!item.value.excerpt && meta.description) item.value.excerpt = meta.description
+    } catch {
+      // Display fallback still works via googleFaviconFor
+    }
+  }
+
+  watch(url, () => void ensureUnfurlMetadata(), { immediate: true })
+
   // ── YouTube detection + transcript auto-fetch ────────────────────────
   // A bookmark whose URL resolves to a YouTube video gets special treatment:
   // a transcript sidebar synced to the player. The transcript is persisted
@@ -341,7 +398,13 @@
           <div class="relative">
             <div
               class="flex items-center gap-2 rounded-lg border border-border bg-card px-3 py-2.5 focus-within:ring-2 focus-within:ring-primary/30 focus-within:border-primary/50 transition-all">
-              <Icon v-if="!unfurling" name="lucide:globe" class="h-4 w-4 text-muted-foreground shrink-0" />
+              <img
+                v-if="faviconSrc"
+                :src="faviconSrc"
+                alt=""
+                class="h-4 w-4 shrink-0 rounded-sm"
+                @error="onFaviconError" />
+              <Icon v-else-if="!unfurling" name="lucide:globe" class="h-4 w-4 text-muted-foreground shrink-0" />
               <Icon v-else name="lucide:loader-2" class="h-4 w-4 text-muted-foreground shrink-0 animate-spin" />
               <input
                 v-model="urlInput"
@@ -370,11 +433,11 @@
       <!-- URL bar -->
       <div class="flex items-center gap-2 px-4 py-2 border-b border-border bg-muted/30 shrink-0">
         <img
-          v-if="item.favicon"
-          :src="item.favicon"
+          v-if="faviconSrc"
+          :src="faviconSrc"
           :alt="domain"
           class="h-4 w-4 shrink-0 rounded-sm"
-          @error="($event.target as HTMLImageElement).style.display = 'none'" />
+          @error="onFaviconError" />
         <Icon v-else name="lucide:globe" class="h-4 w-4 shrink-0 text-muted-foreground" />
         <span class="text-xs text-muted-foreground font-mono truncate flex-1">{{ url }}</span>
         <button
@@ -530,8 +593,14 @@
         <div v-if="item.thumbnail" class="w-full max-w-sm rounded-lg overflow-hidden border border-border shadow-sm">
           <img :src="item.thumbnail" :alt="item.title" class="w-full object-cover" />
         </div>
-        <div v-else class="w-16 h-16 rounded-full bg-muted/50 flex items-center justify-center">
-          <Icon name="lucide:globe" class="h-8 w-8 text-muted-foreground/50" />
+        <div v-else class="w-16 h-16 rounded-full bg-muted/50 flex items-center justify-center overflow-hidden">
+          <img
+            v-if="faviconSrc"
+            :src="faviconSrc"
+            alt=""
+            class="h-8 w-8 rounded-sm object-contain"
+            @error="onFaviconError" />
+          <Icon v-else name="lucide:globe" class="h-8 w-8 text-muted-foreground/50" />
         </div>
         <div class="space-y-1.5 max-w-md">
           <p class="text-sm font-medium">{{ item.title || 'Untitled bookmark' }}</p>
@@ -568,7 +637,13 @@
         <div class="relative">
           <div
             class="flex items-center gap-2 rounded-lg border border-border bg-card px-3 py-2.5 focus-within:ring-2 focus-within:ring-primary/30 focus-within:border-primary/50 transition-all">
-            <Icon v-if="!unfurling" name="lucide:globe" class="h-4 w-4 text-muted-foreground shrink-0" />
+            <img
+              v-if="faviconSrc"
+              :src="faviconSrc"
+              alt=""
+              class="h-4 w-4 shrink-0 rounded-sm"
+              @error="onFaviconError" />
+            <Icon v-else-if="!unfurling" name="lucide:globe" class="h-4 w-4 text-muted-foreground shrink-0" />
             <Icon v-else name="lucide:loader-2" class="h-4 w-4 text-muted-foreground shrink-0 animate-spin" />
             <input
               v-model="urlInput"

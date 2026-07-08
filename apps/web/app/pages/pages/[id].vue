@@ -1,6 +1,14 @@
 <script setup lang="ts">
   import type { Entity, EntityReference, Reference, PageItem, PageStatus } from '~/types/entity'
   import { getPresenceBg, getPresenceRing } from '~/utils/presenceColor'
+  import { isDocumentChromeType } from '~/lib/document-chrome'
+  import { entityId as toEntityId } from '~/lib/tql-namespace'
+  import { stripHtml } from '~/utils/stripHtml'
+  import {
+    MIN_SUMMARY_SOURCE_LENGTH,
+    resolveSummaryText,
+    useEntitySummary,
+  } from '~/composables/useEntitySummary'
 
   definePageMeta({
     layout: 'default',
@@ -55,7 +63,6 @@
 
   const pageViewers = computed(() => getViewers(pageId.value))
   const titlePeers = computed(() => pageViewers.value.filter((v) => v.editingField === 'title'))
-  const descPeers = computed(() => pageViewers.value.filter((v) => v.editingField === 'description'))
   const { displayActivity, addComment, addInlineComment, logActivity, loading: commentsLoading } = useComments(pageId)
 
   // Resolve current page — sidecar when imported, otherwise TQL kernel
@@ -90,7 +97,6 @@
 
   onBeforeUnmount(() => {
     if (_titleLogTimer) clearTimeout(_titleLogTimer)
-    if (_descLogTimer) clearTimeout(_descLogTimer)
     if (_contentLogTimer) clearTimeout(_contentLogTimer)
     livePageTitle.value = null
     if (pageId.value) {
@@ -109,18 +115,16 @@
 
   // ── Local state ───────────────────────────────────────────────────
   const localTitle = ref('')
-  const localDescription = ref('')
   const localContent = ref('')
 
   // Local refs are seeded via _seedFromPage defined below, after all refs are declared.
 
-  function onTitleInput(e: Event) {
+  function onTitleUpdate(val: string) {
     if (usingSidecarEditor.value && sidecarEditor) {
-      sidecarEditor.onTitleInput(e)
-      livePageTitle.value = { id: pageId.value, title: (e.target as HTMLInputElement).value }
+      sidecarEditor.localTitle.value = val
+      livePageTitle.value = { id: pageId.value, title: val }
       return
     }
-    const val = (e.target as HTMLInputElement).value
     localTitle.value = val
     livePageTitle.value = { id: pageId.value, title: val }
     if (_titleLogTimer) clearTimeout(_titleLogTimer)
@@ -136,26 +140,13 @@
     }
     publishField(pageId.value, 'title')
   }
+
   function onTitleBlur() {
     if (usingSidecarEditor.value && sidecarEditor) {
       sidecarEditor.onTitleBlur()
       return
     }
     publishField(pageId.value, undefined)
-  }
-  function onDescFocus() {
-    publishField(pageId.value, 'description')
-  }
-  function onDescBlur() {
-    publishField(pageId.value, undefined)
-  }
-
-  function onDescriptionUpdate(val: string) {
-    localDescription.value = val
-    if (_descLogTimer) clearTimeout(_descLogTimer)
-    _descLogTimer = setTimeout(() => {
-      logActivity('updated description', 'status_change')
-    }, 3000)
   }
 
   function onContentUpdate(val: string) {
@@ -187,6 +178,67 @@
   const displayContent = computed(() =>
     usingSidecarEditor.value && sidecarEditor ? sidecarEditor.localContent.value : localContent.value,
   )
+
+  const {
+    ensure: ensurePageSummary,
+    regenerate: regeneratePageSummaryFn,
+    isGenerating: isPageSummaryGenerating,
+  } = useEntitySummary()
+  const { fetchNode } = useTrellisGraph()
+
+  async function resolvePageContentForSummary(): Promise<string> {
+    const merged = displayContent.value || currentPage.value?.content || ''
+    if (!currentPage.value?.id || usingSidecarEditor.value) return merged
+    if (stripHtml(merged).trim().length >= MIN_SUMMARY_SOURCE_LENGTH) return merged
+
+    try {
+      const { node } = await fetchNode(toEntityId(pageId.value))
+      const content = (node?.content as string) || ''
+      if (content && !localContent.value) localContent.value = content
+      return content || merged
+    } catch {
+      return merged
+    }
+  }
+
+  const pageSummary = computed(() => (currentPage.value?.summary || '').trim())
+  const generatingPageSummary = computed(() =>
+    currentPage.value?.id ? isPageSummaryGenerating(currentPage.value.id) : false,
+  )
+  const pageContentLength = computed(() => {
+    const content = displayContent.value || currentPage.value?.content || ''
+    return stripHtml(content).trim().length
+  })
+
+  watch(
+    () =>
+      [
+        pageId.value,
+        displayContent.value,
+        currentPage.value?.id,
+        currentPage.value?.summarySourceHash,
+        usingSidecarEditor.value,
+      ] as const,
+    () => {
+      const page = currentPage.value
+      if (!page?.id || usingSidecarEditor.value) return
+      void (async () => {
+        const content = await resolvePageContentForSummary()
+        const entity = { ...page, content }
+        const source = resolveSummaryText(entity)
+        if (source.length < MIN_SUMMARY_SOURCE_LENGTH) return
+        void ensurePageSummary(entity)
+      })()
+    },
+    { immediate: true },
+  )
+
+  function handleRegeneratePageSummary() {
+    const page = currentPage.value
+    if (!page?.id) return
+    void regeneratePageSummaryFn({ ...page, content: displayContent.value })
+  }
+
   const { wp } = useWorkspacePath()
   const currentIndex = computed(() => pages.value.findIndex((p) => p.id === pageId.value))
   const canPrev = computed(() => currentIndex.value > 0)
@@ -266,7 +318,6 @@
 
   // ── Activity log timers (debounced to avoid flooding on keystrokes) ──
   let _titleLogTimer: ReturnType<typeof setTimeout> | null = null
-  let _descLogTimer: ReturnType<typeof setTimeout> | null = null
   let _contentLogTimer: ReturnType<typeof setTimeout> | null = null
 
   // ── Page icon ─────────────────────────────────────────────────────
@@ -304,34 +355,9 @@
   // localTags changes are picked up by useAutoSave via the editable reactive
 
   // ── Right sidebar ─────────────────────────────────────────────────
-  const showSidebar = ref(true)
-  const sidebarTab = ref<'references' | 'activity'>('references')
-  const sidebarW = ref(272)
-  const isResizingSidebar = ref(false)
-
-  function startSidebarResize(e: PointerEvent) {
-    e.preventDefault()
-    e.stopPropagation()
-    const el = e.currentTarget as HTMLElement
-    el.setPointerCapture(e.pointerId)
-    isResizingSidebar.value = true
-    const startX = e.clientX
-    const startW = sidebarW.value
-    document.body.style.cursor = 'ew-resize'
-    const onMove = (ev: PointerEvent) => {
-      const dx = ev.clientX - startX
-      sidebarW.value = Math.max(220, Math.min(480, startW - dx))
-    }
-    const onUp = () => {
-      isResizingSidebar.value = false
-      document.body.style.cursor = ''
-      el.releasePointerCapture(e.pointerId)
-      el.removeEventListener('pointermove', onMove)
-      el.removeEventListener('pointerup', onUp)
-    }
-    el.addEventListener('pointermove', onMove)
-    el.addEventListener('pointerup', onUp)
-  }
+  const rightSidebarCollapsed = ref(false)
+  const rightSidebarW = ref(272)
+  const { columnClass: documentColumnClass } = useDocumentReadingWidth()
 
   // ── Comments ──────────────────────────────────────────────────────
   const newComment = ref('')
@@ -343,7 +369,7 @@
 
   async function handleAddInlineComment(payload: { commentId: string; quotedText: string }) {
     await addInlineComment(payload.commentId, payload.quotedText)
-    showSidebar.value = true
+    rightSidebarCollapsed.value = false
   }
 
   function resolveInlineComment(commentId: string, activityItemId: string) {
@@ -370,7 +396,6 @@
 
   function _seedFromPage(page: PageItem) {
     localTitle.value = page.title ?? ''
-    localDescription.value = page.description ?? ''
     localContent.value = page.content ?? ''
     localIcon.value = page.icon || ''
     const s = page.status
@@ -413,12 +438,6 @@
     },
     set title(v: string) {
       localTitle.value = v
-    },
-    get description() {
-      return localDescription.value
-    },
-    set description(v: string) {
-      localDescription.value = v
     },
     get content() {
       return localContent.value
@@ -536,9 +555,9 @@
     <div v-else class="absolute inset-0 flex flex-col overflow-hidden">
       <!-- Header -->
       <div class="shrink-0 border-b border-border">
-        <div class="px-4 pt-4 pb-3">
+        <div class="p-3">
           <!-- Top row: type badge + tags + actions -->
-          <div class="flex items-center justify-between gap-3 mb-3">
+          <div class="flex items-center justify-between gap-3">
             <div class="flex items-center gap-2 min-w-0 flex-1 overflow-hidden">
               <span
                 class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-medium bg-primary/10 text-primary shrink-0">
@@ -581,6 +600,11 @@
                 <Icon name="lucide:chevron-down" class="h-4 w-4" />
               </UiButton>
 
+              <span class="mx-0.5 h-4 w-px shrink-0 bg-border/60" aria-hidden="true" />
+
+              <DocumentReadingWidthToggle />
+              <RightSidebarToggle v-model:collapsed="rightSidebarCollapsed" />
+
               <!-- Context menu -->
               <UiDropdownMenu>
                 <UiDropdownMenuTrigger as-child>
@@ -609,66 +633,6 @@
                 </UiDropdownMenuContent>
               </UiDropdownMenu>
             </div>
-          </div>
-
-          <!-- Title row: icon + input -->
-          <div class="flex items-center gap-0">
-            <!-- Page icon button -->
-            <button
-              type="button"
-              class="shrink-0 h-9 w-9 flex items-center justify-center rounded-lg hover:bg-muted/50 transition-colors text-muted-foreground/60 hover:text-muted-foreground group"
-              title="Change page icon"
-              @click="iconPickerOpen = true">
-              <Icon
-                :name="localIcon || 'lucide:file-text'"
-                class="h-5 w-5 group-hover:scale-110 transition-transform" />
-            </button>
-
-            <!-- Title input -->
-            <div class="relative flex-1 min-w-0">
-              <input
-                data-testid="page-title"
-                :value="displayTitle"
-                type="text"
-                placeholder="New page"
-                class="w-full text-2xl font-semibold bg-transparent border border-transparent outline-none placeholder:text-muted-foreground/50 focus:ring-0 hover:border-border hover:bg-muted/20 focus:border-border focus:bg-muted/20 rounded-md px-2 py-0 transition-all"
-                @input="onTitleInput"
-                @focus="onTitleFocus"
-                @blur="onTitleBlur" />
-              <!-- Peer cursors on title -->
-              <span
-                v-if="titlePeers.length"
-                class="absolute right-0 top-1/2 -translate-y-1/2 flex items-center -space-x-1 pr-1">
-                <span
-                  v-for="peer in titlePeers.slice(0, 3)"
-                  :key="peer.peerId"
-                  :title="peer.name + ' is editing title'"
-                  class="h-4 w-4 rounded-full flex items-center justify-center text-[8px] font-bold text-white ring-1 ring-background shadow-sm"
-                  :class="peer.color">
-                  {{ peer.initials[0] }}
-                </span>
-              </span>
-            </div>
-          </div>
-
-          <!-- Description -->
-          <div class="relative mt-2 px-1" @focusin="onDescFocus" @focusout="onDescBlur">
-            <UiRichTextEditor
-              :model-value="localDescription"
-              placeholder="Add a description..."
-              seamless
-              @update:model-value="onDescriptionUpdate" />
-            <!-- Peer cursors on description -->
-            <span v-if="descPeers.length" class="absolute right-0 top-0 flex items-center -space-x-1 pr-1 pt-0.5">
-              <span
-                v-for="peer in descPeers.slice(0, 3)"
-                :key="peer.peerId"
-                :title="peer.name + ' is editing description'"
-                class="h-4 w-4 rounded-full flex items-center justify-center text-[8px] font-bold text-white ring-1 ring-background shadow-sm"
-                :class="peer.color">
-                {{ peer.initials[0] }}
-              </span>
-            </span>
           </div>
         </div>
       </div>
@@ -836,114 +800,113 @@
             </span>
           </div>
 
-          <!-- Main editor -->
-          <div class="flex-1 min-h-0 flex flex-col" @focusin="onContentFocus" @focusout="onContentBlur">
-            <UiRichTextEditor
-              ref="editorRef"
-              data-testid="page-content-editor"
-              :model-value="displayContent"
-              placeholder="Write your note..."
-              class="flex-1 min-h-0 border-none! rounded-none!"
-              fill-height
-              draghandle
-              mentions
-              tasklist
-              images
-              embeds
-              tables
-              mathematics
-              templates
-              inline-comments
-              :entity-id="currentPage.id"
-              @update:model-value="onContentUpdate"
-              @add-inline-comment="handleAddInlineComment" />
+          <!-- Scrollable document column: title + editor -->
+          <div class="flex-1 min-h-0 overflow-y-auto">
+            <div :class="documentColumnClass">
+              <div class="flex items-start gap-0 pt-12 pb-4">
+                <button
+                  type="button"
+                  class="shrink-0 h-9 w-9 mt-1 flex items-center justify-center rounded-lg hover:bg-muted/50 transition-colors text-muted-foreground/60 hover:text-muted-foreground group"
+                  title="Change page icon"
+                  @click="iconPickerOpen = true">
+                  <Icon
+                    :name="localIcon || 'lucide:file-text'"
+                    class="h-5 w-5 group-hover:scale-110 transition-transform" />
+                </button>
+                <div class="relative flex-1 min-w-0">
+                  <DocumentTitleField
+                    :title="displayTitle"
+                    mode="edit"
+                    placeholder="Untitled"
+                    :peers="titlePeers"
+                    @update:title="onTitleUpdate"
+                    @focus="onTitleFocus"
+                    @blur="onTitleBlur" />
+                </div>
+              </div>
+
+              <div class="min-h-[50vh] flex flex-col" @focusin="onContentFocus" @focusout="onContentBlur">
+                <UiRichTextEditor
+                  ref="editorRef"
+                  data-testid="page-content-editor"
+                  :model-value="displayContent"
+                  placeholder="Type something..."
+                  class="flex-1 min-h-0 border-none! rounded-none!"
+                  fill-height
+                  draghandle
+                  mentions
+                  tasklist
+                  images
+                  embeds
+                  tables
+                  mathematics
+                  templates
+                  inline-comments
+                  :entity-id="currentPage.id"
+                  @update:model-value="onContentUpdate"
+                  @add-inline-comment="handleAddInlineComment" />
+              </div>
+            </div>
           </div>
         </div>
 
-        <!-- Right sidebar: collapsed strip -->
-        <Transition name="sidebar-slide">
-          <div
-            v-if="showSidebar === false"
-            class="shrink-0 border-l border-border flex flex-col items-center py-2 w-10 bg-card/50">
-            <button
-              class="h-7 w-7 rounded-md flex items-center justify-center hover:bg-muted text-muted-foreground hover:text-foreground transition-colors"
-              title="Expand sidebar"
-              @click="showSidebar = true">
-              <Icon name="lucide:panel-right-open" class="h-4 w-4" />
-            </button>
-          </div>
-        </Transition>
-
-        <!-- Right sidebar: expanded -->
-        <Transition name="sidebar-slide">
-          <aside
-            v-if="showSidebar"
-            class="shrink-0 border-l border-border flex flex-col overflow-hidden relative"
-            :class="isResizingSidebar ? 'select-none' : ''"
-            :style="{ width: sidebarW + 'px' }">
-            <!-- Resize handle -->
-            <div
-              class="absolute inset-y-0 left-0 w-1 cursor-ew-resize z-10 hover:bg-primary/20 transition-colors"
-              @pointerdown="startSidebarResize($event)" />
-
-            <!-- Tab bar -->
-            <div class="flex border-b border-border shrink-0">
-              <button
-                class="flex-1 px-3 py-3 text-[10.5px] font-medium uppercase tracking-wide transition-colors"
-                :class="
-                  sidebarTab === 'references'
-                    ? 'text-foreground border-b-2 border-primary'
-                    : 'text-muted-foreground hover:text-foreground'
-                "
-                @click="sidebarTab = 'references'">
-                References
-              </button>
-              <button
-                class="flex-1 px-3 py-2 text-[10px] font-medium uppercase tracking-wide transition-colors"
-                :class="
-                  sidebarTab === 'activity'
-                    ? 'text-foreground border-b-2 border-primary'
-                    : 'text-muted-foreground hover:text-foreground'
-                "
-                @click="sidebarTab = 'activity'">
-                Activity
-                <span v-if="displayActivity.length" class="ml-1 text-[9px] bg-muted rounded-full px-1.5 py-0.5">
-                  {{ displayActivity.length }}
-                </span>
-              </button>
-              <button
-                class="px-2 flex items-center justify-center text-muted-foreground hover:text-foreground transition-colors shrink-0"
-                title="Close sidebar"
-                @click="showSidebar = false">
-                <Icon name="lucide:panel-right-close" class="h-4 w-4" />
-              </button>
-            </div>
-
-            <!-- Tab content -->
-            <div class="flex-1 overflow-y-auto min-h-0">
-              <!-- References tab -->
-              <ReferencesSection
-                v-if="sidebarTab === 'references'"
-                v-model="editableItem.references"
-                @open-entity="handleOpenEntityRef"
-                @remove-ref="handleRemoveRef"
-                @add-entity="
-                  () => {
-                    entityPickerFilterType = undefined
-                    entityPickerOpen = true
-                  }
-                "
-                @create-entity="handleCreateEntityOfType"
-                @add-entity-of-type="
-                  (type) => {
-                    entityPickerFilterType = type
-                    entityPickerOpen = true
-                  }
-                " />
-
-              <!-- Activity tab -->
-              <div v-if="sidebarTab === 'activity'" class="p-3 pb-0 space-y-2 flex flex-col h-full">
-                <!-- Comment input -->
+        <ResizableRightPanel
+          v-model:collapsed="rightSidebarCollapsed"
+          v-model:width="rightSidebarW"
+          :min-width="220"
+          :max-width="480">
+          <EntityRightSidebar
+            v-model:collapsed="rightSidebarCollapsed"
+            :references="editableItem.references"
+            :is-view-mode="false"
+            :is-create-mode="false"
+            :display-activity="displayActivity"
+            v-model:new-comment="newComment"
+            :comments-loading="commentsLoading"
+            entity-label="page"
+            :updated-at="currentPage?.updatedAt"
+            :created-at="currentPage?.createdAt"
+            :item="editableItem"
+            :show-properties="true"
+            default-tab="properties"
+            :show-schema-footer="false"
+            @update:references="editableItem.references = $event"
+            @open-entity="handleOpenEntityRef"
+            @remove-ref="handleRemoveRef"
+            @add-entity="
+              () => {
+                entityPickerFilterType = undefined
+                entityPickerOpen = true
+              }
+            "
+            @add-entity-of-type="
+              (type) => {
+                entityPickerFilterType = type
+                entityPickerOpen = true
+              }
+            "
+            @create-entity="handleCreateEntityOfType"
+            @add-comment="handleAddComment">
+            <template #properties>
+              <DocumentPropertiesSummary
+                :summary="pageSummary"
+                :is-generating-summary="generatingPageSummary"
+                :content-length="pageContentLength"
+                :summary-generated-at="currentPage?.summaryGeneratedAt"
+                @regenerate-summary="handleRegeneratePageSummary" />
+              <div class="px-3 py-2 space-y-2 text-xs text-muted-foreground border-t border-border/50">
+                <div v-if="currentPage?.createdAt" class="flex items-center gap-2">
+                  <Icon name="lucide:calendar-plus" class="h-3.5 w-3.5 shrink-0" />
+                  <span>Created {{ new Date(currentPage.createdAt).toLocaleString() }}</span>
+                </div>
+                <div v-if="currentPage?.updatedAt || currentPage?.createdAt" class="flex items-center gap-2">
+                  <Icon name="lucide:history" class="h-3.5 w-3.5 shrink-0" />
+                  <span>Last edited {{ formatRelativeTime(currentPage.updatedAt || currentPage.createdAt!) }}</span>
+                </div>
+              </div>
+            </template>
+            <template #activity>
+              <div class="p-3 pb-0 space-y-2 flex flex-col h-full">
                 <div
                   class="flex items-center gap-2 pt-2 border border-border bg-card py-4 px-2 rounded-lg m-0! shrink-0">
                   <div class="w-5 h-5 rounded-full bg-muted/60 flex items-center justify-center shrink-0">
@@ -962,7 +925,6 @@
                     <Icon name="lucide:send" class="h-3 w-3" />
                   </button>
                 </div>
-                <!-- Activity items -->
                 <div class="flex-1 overflow-y-auto space-y-2 min-h-0 px-2 pt-4">
                   <div v-if="commentsLoading" class="flex items-center gap-2 py-2">
                     <Icon name="lucide:loader-2" class="h-3 w-3 animate-spin text-muted-foreground" />
@@ -1024,9 +986,9 @@
                   </div>
                 </div>
               </div>
-            </div>
-          </aside>
-        </Transition>
+            </template>
+          </EntityRightSidebar>
+        </ResizableRightPanel>
       </div>
     </div>
 

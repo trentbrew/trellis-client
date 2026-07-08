@@ -1,0 +1,108 @@
+
+> @trellis/web@ test:e2e /Users/trentbrew/TURTLE/Projects/Packages/trellis-client/apps/web
+> playwright test tests/e2e/campus-dock-resident.spec.ts
+
+
+Running 12 tests using 5 workers
+
+[1A[2K(node:31710) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+
+
+[1A[2K(node:31708) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+
+
+[1A[2K(node:31711) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+
+
+[1A[2K(node:31709) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+
+
+[1A[2K(node:31707) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+
+
+[1A[2K(node:31710) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+
+
+[1A[2K(node:31711) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+
+
+[1A[2K(node:31708) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+
+
+[1A[2K(node:31709) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+
+
+[1A[2K(node:31707) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+
+
+[1A[2K[1/12] [chromium] › tests/e2e/campus-dock-resident.spec.ts:54:3 › Campus dock resident cluster (Wedge B) › avatar opens resident menu
+[1A[2K[2/12] [firefox] › tests/e2e/campus-dock-resident.spec.ts:19:3 › Campus dock resident cluster (Wedge B) › menubar visible; bell and avatar in dock, not header
+[1A[2K[3/12] [chromium] › tests/e2e/campus-dock-resident.spec.ts:39:3 › Campus dock resident cluster (Wedge B) › bell opens notification dropdown
+[1A[2K[4/12] [chromium] › tests/e2e/campus-dock-resident.spec.ts:69:3 › Campus dock resident cluster (Wedge B) › quick create opens furnish menu from dock
+[1A[2K[5/12] [chromium] › tests/e2e/campus-dock-resident.spec.ts:19:3 › Campus dock resident cluster (Wedge B) › menubar visible; bell and avatar in dock, not header
+[1A[2K(node:32120) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+
+
+[1A[2K(node:32187) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+
+
+[1A[2K(node:32206) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+
+
+[1A[2K(node:32120) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+
+
+[1A[2K(node:32207) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+
+
+[1A[2K[6/12] [firefox] › tests/e2e/campus-dock-resident.spec.ts:39:3 › Campus dock resident cluster (Wedge B) › bell opens notification dropdown
+[1A[2K(node:32187) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+
+
+[1A[2K(node:32206) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+
+
+[1A[2K[7/12] [firefox] › tests/e2e/campus-dock-resident.spec.ts:69:3 › Campus dock resident cluster (Wedge B) › quick create opens furnish menu from dock
+[1A[2K(node:32207) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+
+
+[1A[2K[8/12] [firefox] › tests/e2e/campus-dock-resident.spec.ts:54:3 › Campus dock resident cluster (Wedge B) › avatar opens resident menu
+[1A[2K[9/12] [webkit] › tests/e2e/campus-dock-resident.spec.ts:19:3 › Campus dock resident cluster (Wedge B) › menubar visible; bell and avatar in dock, not header
+[1A[2K(node:32480) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+
+
+[1A[2K(node:32480) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+
+
+[1A[2K[10/12] [webkit] › tests/e2e/campus-dock-resident.spec.ts:39:3 › Campus dock resident cluster (Wedge B) › bell opens notification dropdown
+[1A[2K[11/12] [webkit] › tests/e2e/campus-dock-resident.spec.ts:54:3 › Campus dock resident cluster (Wedge B) › avatar opens resident menu
+[1A[2K(node:32877) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+
+
+[1A[2K(node:32877) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+
+
+[1A[2K[12/12] [webkit] › tests/e2e/campus-dock-resident.spec.ts:69:3 › Campus dock resident cluster (Wedge B) › quick create opens furnish menu from dock
+[1A[2K  12 passed (19.5s)

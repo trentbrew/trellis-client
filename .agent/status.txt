@@ -1,0 +1,7 @@
+## HEAD (no branch)
+?? .agent/git-branches-exit.txt
+?? .agent/git-catfile-exit.txt
+?? .agent/git-log-exit.txt
+?? .agent/plans/WU-ADR002-browse-live-proposal.md
+?? .agent/plans/WU-ADR002-browse-live-spec.md
+?? .agent/status.txt

@@ -1,4 +1,38 @@
 import type { DataMode } from '~/lib/data-adapter'
+import { useSSESubscribe } from '~/composables/useTrellisSSE'
+
+const _linkCount = ref<number | null>(null)
+const _isLinkCountLoading = ref(false)
+let _graphHealthStarted = false
+let _healthDebounce: ReturnType<typeof setTimeout> | null = null
+
+async function refreshLinkCount() {
+  if (!import.meta.client) return
+  _isLinkCountLoading.value = true
+  try {
+    const health = await $fetch<{ linkCount?: number }>('/api/graph/health')
+    _linkCount.value = typeof health.linkCount === 'number' ? health.linkCount : null
+  } catch {
+    _linkCount.value = null
+  } finally {
+    _isLinkCountLoading.value = false
+  }
+}
+
+function scheduleLinkCountRefresh() {
+  if (_healthDebounce) clearTimeout(_healthDebounce)
+  _healthDebounce = setTimeout(() => {
+    void refreshLinkCount()
+    _healthDebounce = null
+  }, 300)
+}
+
+function initGraphHealthStats() {
+  if (!import.meta.client || _graphHealthStarted) return
+  _graphHealthStarted = true
+  void refreshLinkCount()
+  useSSESubscribe('mutation', scheduleLinkCountRefresh)
+}
 
 /**
  * useStatusBar — reactive composable for the global status bar.
@@ -7,6 +41,8 @@ import type { DataMode } from '~/lib/data-adapter'
  * reactive interface consumed by the StatusBar component.
  */
 export function useStatusBar() {
+  initGraphHealthStats()
+
   const route = useRoute()
   const adapter = useAdapterStatus()
   const auth = useInstantAuth()
@@ -32,6 +68,8 @@ export function useStatusBar() {
   // ── Graph Stats ────────────────────────────────────────────────────
   const entityCount = computed(() => items.value.length)
   const isEntitiesLoading = computed(() => entitiesLoading.value)
+  const linkCount = computed(() => _linkCount.value)
+  const isLinkCountLoading = computed(() => _isLinkCountLoading.value)
 
   // ── Health ─────────────────────────────────────────────────────────
   const adapterError = computed(() => adapter.lastError.value)
@@ -59,6 +97,8 @@ export function useStatusBar() {
     // Graph
     entityCount,
     isEntitiesLoading,
+    linkCount,
+    isLinkCountLoading,
 
     // Health
     adapterError,

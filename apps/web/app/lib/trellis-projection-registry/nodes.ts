@@ -10,6 +10,7 @@ export const PROJECTION_REGISTRY_NODES: ProjectionRegistryNode[] = [
   { projectionType: 'card-grid', label: 'Card Grid', icon: 'lucide:layout-grid', order: 5 },
   { projectionType: 'timeline', label: 'Timeline', icon: 'lucide:calendar', order: 6, requirements: { schema: { fieldTypes: ['date'] } } },
   { projectionType: 'graph', label: 'Graph', icon: 'lucide:network', order: 7 },
+  { projectionType: 'form', label: 'Form', icon: 'lucide:clipboard-list', order: 12 },
   { projectionType: 'chart', label: 'Chart', icon: 'lucide:bar-chart-3', order: 8, requirements: { schema: { fieldTypes: ['number'] } } },
   { projectionType: 'moodboard', label: 'Moodboard', icon: 'lucide:layout-dashboard', order: 9 },
   { projectionType: 'slide-deck', label: 'Slide Deck', icon: 'lucide:presentation', order: 10 },

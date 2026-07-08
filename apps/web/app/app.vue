@@ -12,6 +12,7 @@
   const route = useRoute()
   const commandDialog = useCommandDialog()
   const { register } = useKeyboardShortcuts()
+  const sidebarCollapse = useSidebarCollapse()
   provideSheetStack()
 
   const { isDragging, currentDrop } = useEntityDropZone()
@@ -29,25 +30,34 @@
   const _hashRestoreEntityId = useState<string | null>('dialog:restoreEntityId', () => null)
 
   watch(
-    [entitiesLoading, allEntities],
+    () => route.hash,
+    (hash, prev) => {
+      if (hash !== prev) _hashRestored.value = false
+    },
+  )
+
+  watch(
+    [entitiesLoading, allEntities, () => route.hash],
     ([loading, items]) => {
-      if (loading || _hashRestored.value) return
+      if (loading) return
       const hash = route.hash
       if (!hash) return
+      // Skip only after the page consumed the restore signal; pending restoreId means
+      // browse mounted late or the entity row hydrated after the first pass.
+      if (_hashRestored.value && !_hashRestoreEntityId.value) return
 
-      _hashRestored.value = true
-
-      restoreDialogsFromHash(
+      const restored = restoreDialogsFromHash(
         hash,
         items as Entity[],
         (entityId: string, _item: Entity) => {
-          // Signal pages to open their dialog for this entity
           _hashRestoreEntityId.value = entityId
         },
         (entityId: string, entityType: EntityType, item: Entity) => {
           dialogStack.push(entityId, entityType, item)
         },
       )
+
+      if (restored) _hashRestored.value = true
     },
     { immediate: true },
   )
@@ -66,8 +76,9 @@
       return 'Settings'
     })
     const unregisterSidebar = register('toggle-sidebar', () => {
-      // Sidebar toggle — uses the sidebar provider's keyboard shortcut
-      document.querySelector<HTMLButtonElement>('[data-sidebar="trigger"]')?.click()
+      if (sidebarCollapse.isForcedCollapsed.value) return
+      sidebarCollapse.toggle()
+      return sidebarCollapse.isCollapsed.value ? 'Sidebar collapsed' : 'Sidebar expanded'
     })
 
     // Watch for route changes to handle browser back/forward navigation

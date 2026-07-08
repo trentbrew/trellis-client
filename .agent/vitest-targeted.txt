@@ -1,0 +1,169 @@
+
+ RUN  v3.2.4 /Users/trentbrew/TURTLE/Projects/Packages/trellis-client/apps/web
+
+ ✓ app/lib/trellis-projection-registry/browse-view-mode.test.ts (7 tests) 3ms
+ ✓ app/lib/createFormResponse.test.ts (5 tests) 19ms
+
+ Test Files  2 passed (2)
+      Tests  12 passed (12)
+     Errors  1 error
+   Start at  04:47:20
+   Duration  11.23s (transform 7.46s, setup 9.81s, collect 187ms, tests 23ms, environment 322ms, prepare 320ms)
+
+[warn] You seem to be using zod, but you have not installed @vee-validate/zod. Please install it to use zod with vee-validate.
+Duplicated imports "EnrichmentSuggestion", the one from "/Users/trentbrew/TURTLE/Projects/Packages/trellis-client/apps/web/app/composables/useContentEnrichment.ts" has been ignored and "/Users/trentbrew/TURTLE/Projects/Packages/trellis-client/apps/web/app/composables/useEmailEnrichment.ts" is used
+Duplicated imports "EnrichmentSuggestion", the one from "/Users/trentbrew/TURTLE/Projects/Packages/trellis-client/apps/web/app/composables/useEmailEnrichment.ts" has been ignored and "/Users/trentbrew/TURTLE/Projects/Packages/trellis-client/apps/web/app/composables/useEventEnrichment.ts" is used
+Duplicated imports "UploadResult", the one from "/Users/trentbrew/TURTLE/Projects/Packages/trellis-client/apps/web/app/composables/useFileUpload.ts" has been ignored and "/Users/trentbrew/TURTLE/Projects/Packages/trellis-client/apps/web/app/composables/useImageUpload.ts" is used
+[warn] [nuxt] Two component files resolving to the same name `Gantt`:
+
+ - /Users/trentbrew/TURTLE/Projects/Packages/trellis-client/apps/web/app/components/data/Gantt/index.vue
+ - /Users/trentbrew/TURTLE/Projects/Packages/trellis-client/apps/web/app/components/data/Gantt/Gantt.vue
+[warn] [nuxt] Two component files resolving to the same name `Card`:
+
+ - /Users/trentbrew/TURTLE/Projects/Packages/trellis-client/apps/web/app/components/gantt/Card.vue
+ - /Users/trentbrew/TURTLE/Projects/Packages/trellis-client/apps/web/app/components/data/Gantt/Card.vue
+[warn] [nuxt] Two component files resolving to the same name `ContextMenu`:
+
+ - /Users/trentbrew/TURTLE/Projects/Packages/trellis-client/apps/web/app/components/gantt/ContextMenu.vue
+ - /Users/trentbrew/TURTLE/Projects/Packages/trellis-client/apps/web/app/components/data/Gantt/ContextMenu.vue
+[warn] [nuxt] Two component files resolving to the same name `Gantt`:
+
+ - /Users/trentbrew/TURTLE/Projects/Packages/trellis-client/apps/web/app/components/gantt/Gantt.vue
+ - /Users/trentbrew/TURTLE/Projects/Packages/trellis-client/apps/web/app/components/data/Gantt/Gantt.vue
+[warn] [nuxt] Two component files resolving to the same name `GanttCreateMarkerTrigger`:
+
+ - /Users/trentbrew/TURTLE/Projects/Packages/trellis-client/apps/web/app/components/gantt/GanttCreateMarkerTrigger.vue
+ - /Users/trentbrew/TURTLE/Projects/Packages/trellis-client/apps/web/app/components/data/Gantt/GanttCreateMarkerTrigger.vue
+[warn] [nuxt] Two component files resolving to the same name `GanttFeatureItem`:
+
+ - /Users/trentbrew/TURTLE/Projects/Packages/trellis-client/apps/web/app/components/gantt/GanttFeatureItem.vue
+ - /Users/trentbrew/TURTLE/Projects/Packages/trellis-client/apps/web/app/components/data/Gantt/GanttFeatureItem.vue
+[warn] [nuxt] Two component files resolving to the same name `GanttFeatureList`:
+
+ - /Users/trentbrew/TURTLE/Projects/Packages/trellis-client/apps/web/app/components/gantt/GanttFeatureList.vue
+ - /Users/trentbrew/TURTLE/Projects/Packages/trellis-client/apps/web/app/components/data/Gantt/GanttFeatureList.vue
+[warn] [nuxt] Two component files resolving to the same name `GanttFeatureListGroup`:
+
+ - /Users/trentbrew/TURTLE/Projects/Packages/trellis-client/apps/web/app/components/gantt/GanttFeatureListGroup.vue
+ - /Users/trentbrew/TURTLE/Projects/Packages/trellis-client/apps/web/app/components/data/Gantt/GanttFeatureListGroup.vue
+[warn] [nuxt] Two component files resolving to the same name `GanttHeader`:
+
+ - /Users/trentbrew/TURTLE/Projects/Packages/trellis-client/apps/web/app/components/gantt/GanttHeader.vue
+ - /Users/trentbrew/TURTLE/Projects/Packages/trellis-client/apps/web/app/components/data/Gantt/GanttHeader.vue
+[warn] [nuxt] Two component files resolving to the same name `GanttMarker`:
+
+ - /Users/trentbrew/TURTLE/Projects/Packages/trellis-client/apps/web/app/components/gantt/GanttMarker.vue
+ - /Users/trentbrew/TURTLE/Projects/Packages/trellis-client/apps/web/app/components/data/Gantt/GanttMarker.vue
+[warn] [nuxt] Two component files resolving to the same name `GanttProvider`:
+
+ - /Users/trentbrew/TURTLE/Projects/Packages/trellis-client/apps/web/app/components/gantt/GanttProvider.vue
+ - /Users/trentbrew/TURTLE/Projects/Packages/trellis-client/apps/web/app/components/data/Gantt/GanttProvider.vue
+[warn] [nuxt] Two component files resolving to the same name `GanttSidebar`:
+
+ - /Users/trentbrew/TURTLE/Projects/Packages/trellis-client/apps/web/app/components/gantt/GanttSidebar.vue
+ - /Users/trentbrew/TURTLE/Projects/Packages/trellis-client/apps/web/app/components/data/Gantt/GanttSidebar.vue
+[warn] [nuxt] Two component files resolving to the same name `GanttSidebarGroup`:
+
+ - /Users/trentbrew/TURTLE/Projects/Packages/trellis-client/apps/web/app/components/gantt/GanttSidebarGroup.vue
+ - /Users/trentbrew/TURTLE/Projects/Packages/trellis-client/apps/web/app/components/data/Gantt/GanttSidebarGroup.vue
+[warn] [nuxt] Two component files resolving to the same name `GanttSidebarItem`:
+
+ - /Users/trentbrew/TURTLE/Projects/Packages/trellis-client/apps/web/app/components/gantt/GanttSidebarItem.vue
+ - /Users/trentbrew/TURTLE/Projects/Packages/trellis-client/apps/web/app/components/data/Gantt/GanttSidebarItem.vue
+[warn] [nuxt] Two component files resolving to the same name `GanttTimeline`:
+
+ - /Users/trentbrew/TURTLE/Projects/Packages/trellis-client/apps/web/app/components/gantt/GanttTimeline.vue
+ - /Users/trentbrew/TURTLE/Projects/Packages/trellis-client/apps/web/app/components/data/Gantt/GanttTimeline.vue
+[warn] [nuxt] Two component files resolving to the same name `GanttToday`:
+
+ - /Users/trentbrew/TURTLE/Projects/Packages/trellis-client/apps/web/app/components/gantt/GanttToday.vue
+ - /Users/trentbrew/TURTLE/Projects/Packages/trellis-client/apps/web/app/components/data/Gantt/GanttToday.vue
+[warn] [nuxt] Two component files resolving to the same name `GanttToolbar`:
+
+ - /Users/trentbrew/TURTLE/Projects/Packages/trellis-client/apps/web/app/components/gantt/GanttToolbar.vue
+ - /Users/trentbrew/TURTLE/Projects/Packages/trellis-client/apps/web/app/components/data/Gantt/GanttToolbar.vue
+[warn] [nuxt] Two component files resolving to the same name `Gantt`:
+
+ - /Users/trentbrew/TURTLE/Projects/Packages/trellis-client/apps/web/app/components/gantt/index.vue
+ - /Users/trentbrew/TURTLE/Projects/Packages/trellis-client/apps/web/app/components/data/Gantt/Gantt.vue
+[warn] [nuxt] Two component files resolving to the same name `SchemaEditor`:
+
+ - /Users/trentbrew/TURTLE/Projects/Packages/trellis-client/apps/web/app/components/ontology/SchemaEditor.vue
+ - /Users/trentbrew/TURTLE/Projects/Packages/trellis-client/apps/web/app/components/data/DataTable/SchemaEditor.vue
+Duplicated imports "EnrichmentSuggestion", the one from "/Users/trentbrew/TURTLE/Projects/Packages/trellis-client/apps/web/app/composables/useContentEnrichment.ts" has been ignored and "/Users/trentbrew/TURTLE/Projects/Packages/trellis-client/apps/web/app/composables/useEmailEnrichment.ts" is used
+Duplicated imports "EnrichmentSuggestion", the one from "/Users/trentbrew/TURTLE/Projects/Packages/trellis-client/apps/web/app/composables/useEmailEnrichment.ts" has been ignored and "/Users/trentbrew/TURTLE/Projects/Packages/trellis-client/apps/web/app/composables/useEventEnrichment.ts" is used
+Duplicated imports "UploadResult", the one from "/Users/trentbrew/TURTLE/Projects/Packages/trellis-client/apps/web/app/composables/useFileUpload.ts" has been ignored and "/Users/trentbrew/TURTLE/Projects/Packages/trellis-client/apps/web/app/composables/useImageUpload.ts" is used
+stderr | app/lib/createFormResponse.test.ts
+[instant.client] Could not init local storage dir: [POST] "/api/storage/init-local": 404 Cannot find any path matching /api/storage/init-local.
+
+stderr | app/lib/createFormResponse.test.ts
+[Vue warn]: Unhandled error during execution of watcher callback
+[Vue warn]: Unhandled error during execution of scheduler flush
+
+4:47:30 AM [vite] (client) warning: Duplicate key "id" in object literal
+23 |      references: [],
+24 |      ...payload,
+25 |      id,
+   |      ^
+26 |      type,
+27 |      title,
+
+  Plugin: vite:esbuild
+  File: /Users/trentbrew/TURTLE/Projects/Packages/trellis-client/apps/web/app/lib/entities-live/bridge-row-to-entity.ts
+4:47:30 AM [vite] (client) warning: Duplicate key "type" in object literal
+24 |      ...payload,
+25 |      id,
+26 |      type,
+   |      ^
+27 |      title,
+28 |      references: [],
+
+  Plugin: vite:esbuild
+  File: /Users/trentbrew/TURTLE/Projects/Packages/trellis-client/apps/web/app/lib/entities-live/bridge-row-to-entity.ts
+4:47:30 AM [vite] (client) warning: Duplicate key "title" in object literal
+25 |      id,
+26 |      type,
+27 |      title,
+   |      ^
+28 |      references: [],
+29 |    } as Entity
+
+  Plugin: vite:esbuild
+  File: /Users/trentbrew/TURTLE/Projects/Packages/trellis-client/apps/web/app/lib/entities-live/bridge-row-to-entity.ts
+4:47:30 AM [vite] (client) warning: Duplicate key "references" in object literal
+26 |      type,
+27 |      title,
+28 |      references: [],
+   |      ^
+29 |    } as Entity
+30 |  }
+
+  Plugin: vite:esbuild
+  File: /Users/trentbrew/TURTLE/Projects/Packages/trellis-client/apps/web/app/lib/entities-live/bridge-row-to-entity.ts
+⎯⎯⎯⎯⎯⎯ Unhandled Errors ⎯⎯⎯⎯⎯⎯
+
+Vitest caught 1 unhandled error during the test run.
+This might cause false positive tests. Resolve unhandled errors to make sure your tests are not affected.
+
+⎯⎯⎯⎯ Unhandled Rejection ⎯⎯⎯⎯⎯
+TypeError: helper.removeColorScheme is not a function
+ ❯ ../../node_modules/.pnpm/@nuxtjs+color-mode@3.5.2_magicast@0.5.2/node_modules/@nuxtjs/color-mode/dist/runtime/plugin.client.js:86:12
+     84|       window.document.head.appendChild(style);
+     85|     }
+     86|     helper.removeColorScheme(oldValue);
+       |            ^
+     87|     helper.addColorScheme(newValue);
+     88|     if (disableTransition) {
+ ❯ callWithErrorHandling ../../node_modules/.pnpm/@vue+runtime-core@3.5.32/node_modules/@vue/runtime-core/dist/runtime-core.cjs.js:200:19
+ ❯ callWithAsyncErrorHandling ../../node_modules/.pnpm/@vue+runtime-core@3.5.32/node_modules/@vue/runtime-core/dist/runtime-core.cjs.js:207:17
+ ❯ baseWatchOptions.call ../../node_modules/.pnpm/@vue+runtime-core@3.5.32/node_modules/@vue/runtime-core/dist/runtime-core.cjs.js:884:47
+ ❯ job ../../node_modules/.pnpm/@vue+reactivity@3.5.32/node_modules/@vue/reactivity/dist/reactivity.cjs.js:1902:18
+ ❯ callWithErrorHandling ../../node_modules/.pnpm/@vue+runtime-core@3.5.32/node_modules/@vue/runtime-core/dist/runtime-core.cjs.js:200:33
+ ❯ flushJobs ../../node_modules/.pnpm/@vue+runtime-core@3.5.32/node_modules/@vue/runtime-core/dist/runtime-core.cjs.js:405:9
+ ❯ processTicksAndRejections node:internal/process/task_queues:103:5
+
+This error originated in "app/lib/createFormResponse.test.ts" test file. It doesn't mean the error was thrown inside the file itself, but while it was running.
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯
+
+
+EXIT_CODE=1

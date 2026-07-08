@@ -1,0 +1,283 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<title>Trellis — Document Chrome (document-chrome design mock)</title>
+<style>
+  :root {
+    color-scheme: dark;
+    --background: #0a0a0c;
+    --surface: #141418;
+    --surface-2: #1a1a21;
+    --surface-3: #202028;
+    --text: #e8e8ec;
+    --text-muted: #888894;
+    --text-faint: #55555f;
+    --border: #2a2a32;
+    --primary: #6366f1;
+    --ai-accent: #a78bfa;
+    --note-badge: #f59e0b;
+    --page-badge: #8b5cf6;
+    --saved: #34d399;
+    --destructive: #ef4444;
+    --radius-sm: 6px;
+    --radius-md: 10px;
+    --radius-lg: 14px;
+    --radius-pill: 9999px;
+    --font: "IBM Plex Sans", ui-sans-serif, system-ui, sans-serif;
+    --mono: "IBM Plex Mono", ui-monospace, Menlo, monospace;
+    --doc-max: 720px;
+    --doc-px: 32px;
+    --title-size: clamp(28px, 4vw, 36px);
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--background); color: var(--text); font-family: var(--font); font-size: 14px; line-height: 1.6; }
+  .page { max-width: 1200px; margin: 0 auto; padding: 36px 20px 56px; }
+  .masthead { margin-bottom: 20px; max-width: 780px; }
+  .eyebrow { font-family: var(--mono); font-size: 11px; letter-spacing: 0.14em; text-transform: uppercase; color: var(--note-badge); margin: 0 0 8px; }
+  h1.page-title { margin: 0 0 8px; font-size: 26px; font-weight: 650; }
+  .sub { margin: 0; color: var(--text-muted); font-size: 13px; max-width: 68ch; }
+
+  .mode-toggle { display: flex; gap: 8px; flex-wrap: wrap; margin: 20px 0 16px; }
+  .mode-toggle button { appearance: none; border: 1px solid var(--border); background: var(--surface-2); color: var(--text-muted); font-family: var(--mono); font-size: 10px; letter-spacing: 0.06em; text-transform: uppercase; padding: 6px 12px; border-radius: var(--radius-pill); cursor: pointer; }
+  .mode-toggle button.on { border-color: var(--primary); color: var(--text); background: color-mix(in oklch, var(--primary) 12%, var(--surface)); }
+
+  .compare-toggle { display: inline-flex; border: 1px solid var(--border); border-radius: var(--radius-pill); overflow: hidden; margin-bottom: 16px; }
+  .compare-toggle button { appearance: none; border: none; background: var(--surface-2); color: var(--text-muted); font-family: var(--mono); font-size: 10px; padding: 6px 14px; cursor: pointer; }
+  .compare-toggle button.on { background: color-mix(in oklch, var(--destructive) 15%, var(--surface)); color: var(--text); }
+  .compare-toggle button.on.after { background: color-mix(in oklch, var(--saved) 15%, var(--surface)); }
+
+  .legend { font-family: var(--mono); font-size: 10px; color: var(--text-muted); padding: 10px 14px; border: 1px dashed var(--border); border-radius: var(--radius-sm); margin-bottom: 16px; line-height: 1.7; }
+  .legend b { color: var(--text); }
+
+  .frame { border: 1px solid var(--border); border-radius: var(--radius-lg); background: var(--surface); overflow: hidden; box-shadow: 0 20px 50px -28px rgba(0,0,0,0.75); display: flex; flex-direction: column; height: 580px; }
+  .chrome { flex-shrink: 0; border-bottom: 1px solid var(--border); padding: 10px 14px; display: flex; align-items: center; gap: 8px; background: var(--surface); }
+  .badge { display: inline-flex; align-items: center; gap: 5px; height: 22px; padding: 0 9px; border-radius: var(--radius-pill); font-size: 10px; font-weight: 500; border: 1px solid color-mix(in oklch, var(--note-badge) 40%, var(--border)); background: color-mix(in oklch, var(--note-badge) 10%, var(--surface)); color: var(--note-badge); }
+  .tag { display: inline-flex; align-items: center; gap: 4px; height: 22px; padding: 0 8px; border-radius: var(--radius-pill); font-size: 10px; background: var(--surface-2); color: var(--text-muted); border: 1px solid var(--border); }
+  .chrome-spacer { flex: 1; }
+  .icon-btn { width: 28px; height: 28px; border-radius: var(--radius-sm); border: none; background: transparent; color: var(--text-muted); cursor: pointer; display: inline-flex; align-items: center; justify-content: center; font-size: 14px; }
+  .icon-btn:hover { background: var(--surface-2); color: var(--text); }
+
+  .body-row { flex: 1; display: flex; min-height: 0; }
+  .scroll-col { flex: 1; overflow-y: auto; min-width: 0; }
+  .doc-col { max-width: var(--doc-max); margin: 0 auto; padding: 0 var(--doc-px) 32px; }
+
+  /* BEFORE styles */
+  .before .title-zone { border-bottom: 1px solid var(--border); padding: 20px 24px 16px; }
+  .before .doc-title-input {
+    width: 100%; font-size: 24px; font-weight: 600; background: transparent;
+    border: 1px solid transparent; border-radius: var(--radius-sm); outline: none;
+    color: var(--text); padding: 4px 8px; margin: 0 -8px;
+  }
+  .before .doc-title-input:hover { border-color: var(--border); background: color-mix(in oklch, var(--text) 4%, transparent); }
+  .before .desc-zone { margin-top: 12px; padding: 0 8px; font-size: 13px; color: var(--text-muted); opacity: 0.55; min-height: 24px; }
+  .before .desc-zone::before { content: "Add a description…"; font-style: italic; }
+  .before .body-zone { padding: 16px 24px; }
+
+  /* AFTER styles */
+  .after .title-zone { border-bottom: none; padding: 28px 0 16px; }
+  .after .doc-title-input {
+    width: 100%; font-size: var(--title-size); font-weight: 700; letter-spacing: -0.02em; line-height: 1.15;
+    background: transparent; border: none; outline: none; color: var(--text); padding: 0; margin: 0;
+  }
+  .after .doc-title-input:focus { box-shadow: 0 0 0 2px color-mix(in oklch, var(--primary) 35%, transparent); border-radius: 2px; }
+  .after .desc-zone { display: none; }
+  .after .body-zone { padding: 0; }
+
+  .body-zone h2 { font-size: 20px; font-weight: 600; margin: 24px 0 8px; line-height: 1.3; }
+  .body-zone p { margin: 0 0 12px; color: var(--text); font-size: 14px; }
+  .body-zone blockquote { margin: 12px 0; padding-left: 14px; border-left: 3px solid var(--border); color: var(--text-muted); font-style: italic; }
+
+  .sidebar { width: 280px; flex-shrink: 0; border-left: 1px solid var(--border); display: flex; flex-direction: column; background: var(--surface); }
+  .tabs { display: flex; border-bottom: 1px solid var(--border); }
+  .tab { flex: 1; text-align: center; padding: 10px 4px; font-family: var(--mono); font-size: 9px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--text-faint); border-bottom: 2px solid transparent; }
+  .tab.on { color: var(--text); border-bottom-color: var(--note-badge); }
+  .props { flex: 1; overflow-y: auto; padding: 8px 0; }
+  .prop-row { display: grid; grid-template-columns: 20px 1fr; gap: 8px; padding: 8px 14px; align-items: start; font-size: 12px; }
+  .prop-row .ico { color: var(--text-muted); font-size: 13px; margin-top: 2px; }
+  .prop-label { font-family: var(--mono); font-size: 9px; letter-spacing: 0.06em; text-transform: uppercase; color: var(--text-faint); display: block; margin-bottom: 3px; }
+  .prop-val { color: var(--text-muted); }
+  .prop-val strong { color: var(--text); font-weight: 500; }
+
+  .summary-block { border-left: 2px solid color-mix(in oklch, var(--ai-accent) 50%, transparent); padding-left: 10px; margin-top: 2px; }
+  .summary-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+  .summary-head .prop-label { color: var(--ai-accent); display: flex; align-items: center; gap: 4px; }
+  .regen { width: 22px; height: 22px; border: none; background: transparent; color: var(--text-muted); cursor: pointer; border-radius: var(--radius-sm); font-size: 12px; }
+  .regen:hover { background: var(--surface-2); color: var(--text); }
+  .summary-text { font-size: 12.5px; line-height: 1.5; color: var(--text-muted); margin: 4px 0 0; }
+  .summary-meta { font-family: var(--mono); font-size: 9px; color: var(--text-faint); margin-top: 6px; }
+
+  .before .summary-row { display: none; }
+  .after .summary-row { display: grid; }
+
+  .footer { flex-shrink: 0; border-top: 1px solid var(--border); padding: 10px 14px; display: flex; align-items: center; justify-content: space-between; font-size: 11px; color: var(--text-muted); background: color-mix(in oklch, var(--text) 2%, var(--surface)); }
+  .saved { color: var(--saved); display: inline-flex; align-items: center; gap: 4px; }
+
+  .callout { margin-top: 24px; padding: 14px 16px; border: 1px dashed var(--border); border-radius: var(--radius-md); font-family: var(--mono); font-size: 10px; color: var(--text-muted); line-height: 1.7; max-width: 780px; }
+  .callout strong { color: var(--text); }
+  .hidden { display: none !important; }
+
+  .anno { position: relative; }
+  .anno::after {
+    content: attr(data-design-note);
+    position: absolute; right: -8px; top: 50%; transform: translate(100%, -50%);
+    font-family: var(--mono); font-size: 9px; color: var(--ai-accent); white-space: nowrap;
+    padding: 2px 6px; border: 1px dashed color-mix(in oklch, var(--ai-accent) 40%, var(--border));
+    border-radius: 4px; pointer-events: none; opacity: 0; transition: opacity 0.15s;
+  }
+  .show-anno .anno:hover::after { opacity: 1; }
+
+  @media (max-width: 900px) {
+    .anno::after { display: none; }
+    .sidebar { width: 220px; }
+  }
+</style>
+</head>
+<body>
+<div class="page">
+  <header class="masthead">
+    <p class="eyebrow">Lab · Document chrome · document-chrome</p>
+    <h1 class="page-title">Seamless title + AI summary in properties</h1>
+    <p class="sub">Unifies the note/page reading column into one document surface. Machine summary moves to the properties sidebar — sourced from <code>content</code>, not hand-written <code>description</code>.</p>
+  </header>
+
+  <div class="mode-toggle" role="tablist" aria-label="Surface">
+    <button type="button" class="on" data-surface="note">Note dialog</button>
+    <button type="button" data-surface="page">Page route</button>
+    <button type="button" id="annoToggle">Annotations</button>
+  </div>
+
+  <div class="compare-toggle" role="group" aria-label="Before or after">
+    <button type="button" class="on" data-compare="before">Before (current)</button>
+    <button type="button" class="on after" data-compare="after">After (target)</button>
+  </div>
+
+  <div class="legend" id="legend">
+    <b>Before:</b> title uses form-input chrome + <code>border-b</code>; description slot between title and body.<br>
+    <b>After:</b> title at H1 scale, no divider, no inline description; <b>Summary</b> row in properties (AI, read-only, regenerate).
+  </div>
+
+  <div id="frame-root" class="frame before" data-design-note="EntityDialog note — document chrome target">
+    <div class="chrome">
+      <span class="badge" id="typeBadge">📝 Note</span>
+      <span class="tag">📌 Pin</span>
+      <span class="tag"># quicknote</span>
+      <span class="chrome-spacer"></span>
+      <button class="icon-btn" aria-label="Previous">↑</button>
+      <button class="icon-btn" aria-label="Next">↓</button>
+      <button class="icon-btn" aria-label="Close">×</button>
+    </div>
+    <div class="body-row">
+      <div class="scroll-col">
+        <div class="doc-col">
+          <div class="title-zone anno" data-design-note="DocumentTitleField — H1 scale, no hover border">
+            <input class="doc-title-input" type="text" value="The Architecture of Attention: What Industrial Disasters Teach Us About Interface Design" aria-label="Document title" />
+            <div class="desc-zone" data-design-note="REMOVED in after — description leaves reading column"></div>
+          </div>
+          <div class="body-zone">
+            <h2>Introduction</h2>
+            <p>On April 20, 2010, the Deepwater Horizon drilling rig exploded in the Gulf of Mexico. The immediate cause was a bubble of methane gas that shot up the drill column. But the proximate cause was something quieter: a dashboard with 62 active alarms.</p>
+            <blockquote>The operators weren't ignoring warnings. They were drowning in them.</blockquote>
+            <h2>The Birth of Alarm Discipline: EEMUA 191</h2>
+            <p>After Piper Alpha and Texaco Milford Haven, the UK industry developed EEMUA 191 — a standard that treats alarm floods as a design failure, not an operator failure.</p>
+          </div>
+        </div>
+      </div>
+      <aside class="sidebar" data-design-note="Properties sidebar — Summary row added in after">
+        <div class="tabs">
+          <div class="tab on">Properties</div>
+          <div class="tab">References</div>
+          <div class="tab">Activity</div>
+        </div>
+        <div class="props">
+          <div class="prop-row">
+            <span class="ico">👤</span>
+            <div><span class="prop-label">Owner</span><span class="prop-val">Owner</span></div>
+          </div>
+          <div class="prop-row">
+            <span class="ico">📁</span>
+            <div><span class="prop-label">Category</span><span class="prop-val"><strong>General</strong></span></div>
+          </div>
+          <div class="prop-row summary-row anno" data-design-note="DocumentPropertiesSummary — AI from content">
+            <span class="ico">✨</span>
+            <div>
+              <div class="summary-block">
+                <div class="summary-head">
+                  <span class="prop-label">✨ Summary</span>
+                  <button class="regen" type="button" aria-label="Regenerate summary" title="Regenerate">↻</button>
+                </div>
+                <p class="summary-text">Explores how industrial alarm discipline (EEMUA 191) and disaster case studies inform interface design — arguing that attention is an architectural problem, not an operator problem.</p>
+                <div class="summary-meta">Generated · 3m ago</div>
+              </div>
+            </div>
+          </div>
+          <div class="prop-row">
+            <span class="ico">📅</span>
+            <div><span class="prop-label">Created at</span><span class="prop-val">Jul 6, 2026, 3:40 AM</span></div>
+          </div>
+          <div class="prop-row">
+            <span class="ico">🕐</span>
+            <div><span class="prop-label">Last edited</span><span class="prop-val">Jul 6, 2026, 3:40 AM</span></div>
+          </div>
+        </div>
+      </aside>
+    </div>
+    <div class="footer">
+      <span style="font-family:var(--mono);font-size:10px;opacity:0.6">ID: 7c44fb92-1a9e-458b-a899-a…</span>
+      <span class="saved">✓ Last saved at 3:40 AM</span>
+    </div>
+  </div>
+
+  <div class="callout">
+    <strong>Architect notes:</strong> Share <code>DocumentTitleField</code> between <code>EntityBodyHeader</code> (variant=document) and <code>pages/[id].vue</code>.
+    Extend <code>useEntitySummary</code> to hash <code>content</code> for note/page types.
+    Page surface uses same column — badge becomes <span style="color:var(--page-badge)">Page</span> purple; optional icon left of title.
+  </div>
+</div>
+<script>
+(function () {
+  const root = document.getElementById('frame-root');
+  const legend = document.getElementById('legend');
+  const typeBadge = document.getElementById('typeBadge');
+  const compareBtns = document.querySelectorAll('[data-compare]');
+  const surfaceBtns = document.querySelectorAll('[data-surface]');
+  const annoToggle = document.getElementById('annoToggle');
+
+  function setCompare(mode) {
+    root.classList.remove('before', 'after');
+    root.classList.add(mode);
+    compareBtns.forEach(b => {
+      b.classList.toggle('on', b.dataset.compare === mode);
+    });
+    legend.innerHTML = mode === 'before'
+      ? '<b>Before:</b> title uses form-input chrome + <code>border-b</code>; description slot between title and body.'
+      : '<b>After:</b> title at H1 scale, no divider, no inline description; <b>Summary</b> row in properties (AI, read-only, regenerate).';
+  }
+
+  function setSurface(surface) {
+    surfaceBtns.forEach(b => b.classList.toggle('on', b.dataset.surface === surface));
+    if (surface === 'page') {
+      typeBadge.textContent = '📄 Page';
+      typeBadge.style.borderColor = 'color-mix(in oklch, #8b5cf6 40%, var(--border))';
+      typeBadge.style.background = 'color-mix(in oklch, #8b5cf6 10%, var(--surface))';
+      typeBadge.style.color = '#8b5cf6';
+    } else {
+      typeBadge.textContent = '📝 Note';
+      typeBadge.style.borderColor = '';
+      typeBadge.style.background = '';
+      typeBadge.style.color = '';
+    }
+  }
+
+  compareBtns.forEach(b => b.addEventListener('click', () => setCompare(b.dataset.compare)));
+  surfaceBtns.forEach(b => b.addEventListener('click', () => setSurface(b.dataset.surface)));
+  annoToggle.addEventListener('click', () => {
+    annoToggle.classList.toggle('on');
+    document.body.classList.toggle('show-anno');
+  });
+
+  setCompare('after');
+})();
+</script>
+</body>
+</html>

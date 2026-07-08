@@ -1,0 +1,75 @@
+---
+description: Trellis-client Playwright e2e — dev port, Node version, agent verification ladder
+globs: apps/web/tests/e2e/**,apps/web/playwright.config.ts,apps/web/scripts/test-e2e.mjs
+alwaysApply: false
+---
+
+# Trellis-client e2e (Playwright)
+
+**Dev port:** `localhost:$TRELLIS_PORT` (default **1414**) — not 9292 (threlte-skeleton).
+
+**Node:** use **22** (`nvm use` reads repo `.nvmrc`).
+
+## Who runs Playwright
+
+| Role | Playwright? |
+|------|-------------|
+| Executor | **No** — `pnpm check` only; hand off "ready for e2e" |
+| QA / Reviewer | **Yes** — one serialized run via wrapper |
+| Other tabs | **No** — do not invoke raw `playwright test` |
+
+Only **one** Playwright runner at a time. The wrapper acquires `.agent/playwright.lock` (waits up to 10m, then exits **75** `PLAYWRIGHT_BUSY`).
+
+## Dev server check
+
+Dev is usually already running (`just run` / `jr`). **Never restart a healthy stack.**
+
+```bash
+curl -sf "http://localhost:${TRELLIS_PORT:-1414}/api/graph/health"
+```
+
+## Playwright (always use wrapper)
+
+```bash
+# Preferred — dev up on :1414; lock + chromium-only + workers=1
+pnpm --filter @trellis/web test:e2e
+
+# Scoped spec (from AC)
+pnpm --filter @trellis/web test:e2e tests/e2e/navigation.spec.ts
+
+# Full browser matrix (human / CI only)
+PW_ALL_BROWSERS=1 pnpm --filter @trellis/web test:e2e:raw
+
+# Cold start (slow — avoid in agent loops)
+PW_COLD=1 pnpm --filter @trellis/web test:e2e
+
+# Bypass lock (human debugging only)
+pnpm --filter @trellis/web test:e2e:raw
+```
+
+Wrapper: `apps/web/scripts/test-e2e.mjs` · config: `apps/web/playwright.config.ts`
+
+Missing browsers: `pnpm --filter @trellis/web exec playwright install chromium`
+
+## Shell chrome invariant
+
+**`AccountRailCluster`** mounts in **`AppHeader.vue`** only (header right, after `AppMenubar`). **Never** on `IconRail` end zone. E2E: `campus-dock-resident.spec.ts` asserts header placement.
+
+## agent-browser pilot (exploratory QA)
+
+Optional CLI for ad-hoc agent verification — **not** a Playwright replacement.
+
+```bash
+# One-shot pilot (dev on :1414)
+./scripts/agent-browser-pilot.sh
+
+# Manual session
+export AGENT_BROWSER_SESSION=trellis-qa
+agent-browser open "http://localhost:1414/workspace/browse?type=note&testAuthBypass=true"
+agent-browser snapshot -i -c -d 4
+agent-browser find role button click --name "Lobby notifications"
+agent-browser screenshot .agent/qa.png
+agent-browser close
+```
+
+Project config: `agent-browser.json` · MCP: `.mcp.json` → `agent-browser` server (`agent-browser mcp`).

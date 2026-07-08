@@ -1,0 +1,46 @@
+
+Running 2 tests using 1 worker
+
+[1A[2K(node:41489) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+
+
+[1A[2K(node:41489) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+
+
+[1A[2K[1/2] [chromium] › tests/e2e/document-chrome.spec.ts:23:3 › Document chrome (document-chrome) › note dialog uses seamless title and properties summary
+[1A[2K  1) [chromium] › tests/e2e/document-chrome.spec.ts:23:3 › Document chrome (document-chrome) › note dialog uses seamless title and properties summary 
+
+    [31mTest timeout of 60000ms exceeded.[39m
+
+    Error: [2mexpect([22m[31mlocator[39m[2m).[22mtoBeVisible[2m([22m[2m)[22m failed
+
+    Locator: getByRole('heading', { name: 'Document Chrome E2E Note 1783340400492' })
+    Expected: visible
+    Error: element(s) not found
+
+    Call log:
+    [2m  - Expect "toBeVisible" with timeout 30000ms[22m
+    [2m  - waiting for getByRole('heading', { name: 'Document Chrome E2E Note 1783340400492' })[22m
+
+
+      39 |     const search = page.getByPlaceholder('Search...')
+      40 |     await search.fill(noteTitle)
+    > 41 |     await expect(page.getByRole('heading', { name: noteTitle })).toBeVisible({ timeout: 30_000 })
+         |                                                                  ^
+      42 |     await page.getByRole('heading', { name: noteTitle }).click()
+      43 |
+      44 |     const dialog = page.getByRole('dialog')
+        at /Users/trentbrew/TURTLE/Projects/Packages/trellis-client/apps/web/tests/e2e/document-chrome.spec.ts:41:66
+
+    Error Context: test-results/document-chrome-Document-c-295a1-itle-and-properties-summary-chromium/error-context.md
+
+
+[1A[2K[2/2] [chromium] › tests/e2e/document-chrome.spec.ts:59:3 › Document chrome (document-chrome) › page route uses document title in scroll column without description editor
+[1A[2K  1 failed
+    [chromium] › tests/e2e/document-chrome.spec.ts:23:3 › Document chrome (document-chrome) › note dialog uses seamless title and properties summary 
+  1 did not run
+
+---EXIT---
+1

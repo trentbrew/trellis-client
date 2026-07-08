@@ -47,4 +47,9 @@ export function useHashDialogRestore(
   watch(restoreId, () => {
     tryRestore()
   })
+
+  // Entity may hydrate after restoreId is set (SSE / query refresh lag).
+  watch(items, () => {
+    tryRestore()
+  })
 }

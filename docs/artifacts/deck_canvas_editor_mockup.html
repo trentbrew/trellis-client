@@ -1,0 +1,819 @@
+<!-- trellis-design-adopted: slug=deck_canvas_editor parent=deck-canvas-A source=derived from threlte-skeleton edit shell + deck_p1_3 -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Trellis — Deck Canvas Editor (deck-canvas-A design mock)</title>
+<style>
+  :root {
+    color-scheme: dark;
+    --background: #09090b;
+    --viewport: #0b0b0f;
+    --surface: #141418;
+    --surface-2: #1a1a21;
+    --surface-3: #202028;
+    --text: #e8e8ec;
+    --text-muted: #8b8b96;
+    --text-faint: #585862;
+    --border: #2a2a32;
+    --artboard: #0d0d11;
+    --grid-major: #24242b;
+    --grid-minor: #17171c;
+    --primary: #8b5cf6;
+    --selection: #a78bfa;
+    --query: #34d399;
+    --warning: #f59e0b;
+    --radius-sm: 6px;
+    --radius-md: 10px;
+    --radius-lg: 14px;
+    --radius-pill: 9999px;
+    --font: "IBM Plex Sans", ui-sans-serif, system-ui, sans-serif;
+    --mono: "IBM Plex Mono", ui-monospace, Menlo, monospace;
+  }
+
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: var(--background);
+    color: var(--text);
+    font-family: var(--font);
+    font-size: 14px;
+  }
+
+  .page {
+    max-width: 1240px;
+    margin: 0 auto;
+    padding: 34px 24px 56px;
+  }
+
+  .masthead {
+    max-width: 780px;
+    margin-bottom: 18px;
+  }
+
+  .eyebrow {
+    margin: 0 0 8px;
+    color: var(--primary);
+    font-family: var(--mono);
+    font-size: 10px;
+    letter-spacing: .14em;
+    text-transform: uppercase;
+  }
+
+  h1 {
+    margin: 0 0 8px;
+    font-size: 30px;
+    line-height: 1.08;
+    font-weight: 680;
+  }
+
+  .sub {
+    margin: 0;
+    max-width: 72ch;
+    color: var(--text-muted);
+    line-height: 1.55;
+  }
+
+  .demo-controls {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+    margin: 18px 0;
+  }
+
+  button {
+    font: inherit;
+  }
+
+  .demo-controls button,
+  .chip-button {
+    appearance: none;
+    border: 1px solid var(--border);
+    background: var(--surface-2);
+    color: var(--text-muted);
+    border-radius: var(--radius-pill);
+    padding: 6px 11px;
+    font-family: var(--mono);
+    font-size: 10px;
+    cursor: pointer;
+  }
+
+  .demo-controls button[aria-pressed="true"],
+  .chip-button.active {
+    border-color: var(--selection);
+    color: var(--text);
+    background: color-mix(in oklch, var(--selection) 13%, var(--surface-2));
+  }
+
+  .frame {
+    overflow: hidden;
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    background: var(--surface);
+    box-shadow: 0 24px 80px -40px rgb(0 0 0 / .9);
+  }
+
+  .topbar {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    height: 42px;
+    padding: 0 14px;
+    border-bottom: 1px solid var(--border);
+    background: var(--surface-2);
+    font-size: 12px;
+  }
+
+  .crumb {
+    min-width: 0;
+    flex: 1;
+    color: var(--text-muted);
+  }
+
+  .crumb b { color: var(--text); }
+  .sep { opacity: .38; padding: 0 4px; }
+
+  .badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    height: 23px;
+    padding: 0 9px;
+    border: 1px solid color-mix(in oklch, var(--primary) 42%, var(--border));
+    border-radius: var(--radius-pill);
+    color: var(--text);
+    background: color-mix(in oklch, var(--primary) 12%, var(--surface-2));
+    font-family: var(--mono);
+    font-size: 10px;
+    letter-spacing: .06em;
+  }
+
+  .dot {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: var(--primary);
+  }
+
+  .editor {
+    display: grid;
+    grid-template-columns: 158px minmax(0, 1fr) 260px;
+    min-height: 590px;
+  }
+
+  .thumbs {
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
+    border-right: 1px solid var(--border);
+    background: var(--surface-2);
+  }
+
+  .thumb-list {
+    flex: 1;
+    min-height: 0;
+    overflow: auto;
+    padding: 10px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .thumb {
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    overflow: hidden;
+    background: var(--surface);
+    cursor: pointer;
+  }
+
+  .thumb.active {
+    border-color: var(--primary);
+    box-shadow: 0 0 0 1px var(--primary);
+  }
+
+  .mini {
+    aspect-ratio: 16 / 9;
+    padding: 8px;
+    background: var(--artboard);
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    gap: 4px;
+  }
+
+  .mini i {
+    display: block;
+    height: 4px;
+    border-radius: 2px;
+    background: var(--surface-3);
+  }
+
+  .mini .title-line {
+    width: 68%;
+    height: 7px;
+    background: var(--text-faint);
+  }
+
+  .thumb-label {
+    display: block;
+    padding: 5px 8px;
+    border-top: 1px solid var(--border);
+    color: var(--text-faint);
+    font-family: var(--mono);
+    font-size: 9px;
+  }
+
+  .new-slide {
+    padding: 10px;
+    border-top: 1px solid var(--border);
+  }
+
+  .new-slide button {
+    width: 100%;
+    border: 1px solid var(--border);
+    border-radius: var(--radius-md);
+    background: var(--surface);
+    color: var(--text);
+    padding: 7px 8px;
+    font-size: 12px;
+    cursor: pointer;
+  }
+
+  .workspace {
+    position: relative;
+    overflow: hidden;
+    min-width: 0;
+    background:
+      linear-gradient(var(--grid-major) 1px, transparent 1px),
+      linear-gradient(90deg, var(--grid-major) 1px, transparent 1px),
+      linear-gradient(var(--grid-minor) 1px, transparent 1px),
+      linear-gradient(90deg, var(--grid-minor) 1px, transparent 1px),
+      radial-gradient(circle at 50% 12%, color-mix(in oklch, var(--primary) 10%, transparent), transparent 36%),
+      var(--viewport);
+    background-size: 80px 80px, 80px 80px, 20px 20px, 20px 20px, auto, auto;
+  }
+
+  .viewport-chip {
+    position: absolute;
+    left: 16px;
+    top: 14px;
+    z-index: 3;
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+    padding: 6px 10px;
+    border: 1px solid color-mix(in oklch, var(--border) 75%, transparent);
+    border-radius: var(--radius-pill);
+    background: color-mix(in oklch, var(--surface) 90%, transparent);
+    backdrop-filter: blur(12px);
+    color: var(--text-muted);
+    font-family: var(--mono);
+    font-size: 10px;
+  }
+
+  .stage-wrap {
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    width: min(82%, 820px);
+    aspect-ratio: 16 / 9;
+    transform: translate(-50%, -50%) scale(var(--zoom, .84)) translate(var(--pan-x, 0), var(--pan-y, 0));
+    transform-origin: center;
+    transition: transform 220ms ease;
+  }
+
+  .zoomed .stage-wrap {
+    --zoom: 1.18;
+    --pan-x: -34px;
+    --pan-y: 20px;
+  }
+
+  .artboard {
+    position: relative;
+    width: 100%;
+    height: 100%;
+    overflow: hidden;
+    border: 1px solid var(--border);
+    border-radius: var(--radius-md);
+    background: var(--artboard);
+    box-shadow: 0 18px 56px -24px rgb(0 0 0 / .95);
+  }
+
+  .region {
+    position: absolute;
+    border: 1px solid transparent;
+    border-radius: var(--radius-sm);
+    outline: none;
+    cursor: pointer;
+  }
+
+  .region:hover {
+    border-color: color-mix(in oklch, var(--selection) 50%, transparent);
+  }
+
+  .region.selected {
+    border-color: var(--selection);
+    box-shadow: 0 0 0 1px var(--selection), 0 0 0 6px color-mix(in oklch, var(--selection) 13%, transparent);
+  }
+
+  .handle {
+    position: absolute;
+    width: 7px;
+    height: 7px;
+    border: 1px solid #09090b;
+    border-radius: 50%;
+    background: var(--selection);
+  }
+
+  .handle:nth-child(1) { left: -4px; top: -4px; }
+  .handle:nth-child(2) { right: -4px; top: -4px; }
+  .handle:nth-child(3) { right: -4px; bottom: -4px; }
+  .handle:nth-child(4) { left: -4px; bottom: -4px; }
+
+  .region-title {
+    left: 12%;
+    top: 11%;
+    width: 76%;
+    min-height: 74px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 6px 10px;
+  }
+
+  .region-title h2 {
+    margin: 0;
+    text-align: center;
+    font-size: clamp(22px, 4.2vw, 44px);
+    line-height: 1.1;
+    font-weight: 680;
+  }
+
+  .region-body {
+    left: 13%;
+    top: 42%;
+    width: 34%;
+    min-height: 92px;
+    padding: 12px;
+    color: var(--text-muted);
+    line-height: 1.45;
+  }
+
+  .region-query {
+    right: 10%;
+    top: 38%;
+    width: 38%;
+    min-height: 132px;
+    padding: 10px;
+  }
+
+  .query-card {
+    height: 100%;
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    background: color-mix(in oklch, var(--surface) 75%, transparent);
+  }
+
+  .query-head {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 7px 9px;
+    border-bottom: 1px solid var(--border);
+    color: var(--text-muted);
+    font-family: var(--mono);
+    font-size: 9px;
+  }
+
+  .live {
+    color: var(--query);
+  }
+
+  .bars {
+    display: grid;
+    grid-template-columns: repeat(5, 1fr);
+    gap: 6px;
+    align-items: end;
+    height: 70px;
+    padding: 11px;
+  }
+
+  .bars i {
+    display: block;
+    min-height: 18px;
+    border-radius: 3px 3px 0 0;
+    background: linear-gradient(180deg, #6d5dfc, #4137b3);
+  }
+
+  .bars i:nth-child(1) { height: 26px; }
+  .bars i:nth-child(2) { height: 34px; }
+  .bars i:nth-child(3) { height: 44px; }
+  .bars i:nth-child(4) { height: 50px; }
+  .bars i:nth-child(5) { height: 60px; }
+
+  .region-eyebrow {
+    left: 9%;
+    top: 8%;
+    padding: 4px 8px;
+    color: var(--primary);
+    font-family: var(--mono);
+    font-size: 10px;
+    letter-spacing: .14em;
+    text-transform: uppercase;
+  }
+
+  .slide-footer {
+    position: absolute;
+    bottom: 10px;
+    left: 0;
+    right: 0;
+    text-align: center;
+    color: var(--text-faint);
+    font-family: var(--mono);
+    font-size: 9px;
+    letter-spacing: .08em;
+    text-transform: uppercase;
+  }
+
+  .viewport-controls {
+    position: absolute;
+    left: 16px;
+    bottom: 16px;
+    z-index: 3;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    padding: 5px;
+    border: 1px solid var(--border);
+    border-radius: var(--radius-pill);
+    background: color-mix(in oklch, var(--surface) 92%, transparent);
+    backdrop-filter: blur(12px);
+  }
+
+  .viewport-controls button {
+    min-width: 28px;
+    height: 28px;
+    border: 0;
+    border-radius: var(--radius-pill);
+    background: transparent;
+    color: var(--text-muted);
+    cursor: pointer;
+    font-family: var(--mono);
+    font-size: 11px;
+  }
+
+  .viewport-controls button:hover {
+    background: var(--surface-3);
+    color: var(--text);
+  }
+
+  .notes {
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    height: 32px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 0 16px;
+    border-top: 1px solid var(--border);
+    background: color-mix(in oklch, var(--surface) 94%, transparent);
+    color: var(--text-muted);
+    font-family: var(--mono);
+    font-size: 10px;
+  }
+
+  .inspector {
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+    min-height: 0;
+    border-left: 1px solid var(--border);
+    background: color-mix(in oklch, var(--surface) 94%, var(--surface-2));
+  }
+
+  .inspector-head {
+    flex-shrink: 0;
+    padding: 12px;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .inspector-title {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 8px;
+  }
+
+  .inspector-title b {
+    min-width: 0;
+    flex: 1;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .kind {
+    border: 1px solid color-mix(in oklch, var(--selection) 55%, var(--border));
+    border-radius: var(--radius-pill);
+    padding: 2px 7px;
+    color: var(--selection);
+    font-family: var(--mono);
+    font-size: 9px;
+    text-transform: uppercase;
+  }
+
+  .tabs {
+    display: flex;
+    gap: 3px;
+  }
+
+  .tabs button {
+    flex: 1;
+    border: 0;
+    border-bottom: 2px solid transparent;
+    background: transparent;
+    color: var(--text-muted);
+    padding: 7px 3px;
+    font-family: var(--mono);
+    font-size: 9px;
+    cursor: pointer;
+  }
+
+  .tabs button.active {
+    border-bottom-color: var(--selection);
+    color: var(--text);
+  }
+
+  .inspector-body {
+    flex: 1;
+    min-height: 0;
+    overflow: auto;
+    padding: 12px;
+  }
+
+  .field-group {
+    margin-bottom: 16px;
+  }
+
+  .field-group h5 {
+    margin: 0 0 8px;
+    color: var(--text-faint);
+    font-family: var(--mono);
+    font-size: 10px;
+    letter-spacing: .08em;
+    text-transform: uppercase;
+  }
+
+  .field {
+    margin-bottom: 9px;
+  }
+
+  .field label {
+    display: block;
+    margin-bottom: 4px;
+    color: var(--text-muted);
+    font-size: 11px;
+  }
+
+  .field input,
+  .field textarea,
+  .field select {
+    width: 100%;
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    background: var(--surface);
+    color: var(--text);
+    padding: 7px 8px;
+    font-family: var(--mono);
+    font-size: 11px;
+  }
+
+  .field textarea {
+    min-height: 76px;
+    resize: vertical;
+  }
+
+  .two {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+  }
+
+  .hint {
+    color: var(--text-faint);
+    font-size: 11px;
+    line-height: 1.45;
+  }
+
+  .sr {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    clip: rect(0 0 0 0);
+    overflow: hidden;
+    white-space: nowrap;
+  }
+
+  @media (max-width: 920px) {
+    .editor { grid-template-columns: 96px minmax(0, 1fr); }
+    .inspector { grid-column: 1 / -1; border-left: 0; border-top: 1px solid var(--border); max-height: 260px; }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .stage-wrap { transition: none; }
+  }
+</style>
+</head>
+<body>
+  <main class="page">
+    <header class="masthead">
+      <p class="eyebrow">Deck canvas editor · Pathway A</p>
+      <h1>Slides become objects on a spatial artboard.</h1>
+      <p class="sub">Click a region to select it, keep inline editing for text, and let the right pane expose the selected object’s properties. The viewport pans and zooms around a fixed 16:9 slide.</p>
+    </header>
+
+    <div class="demo-controls" aria-label="Mock controls">
+      <button type="button" aria-pressed="true" data-select="title">Select title</button>
+      <button type="button" aria-pressed="false" data-select="body">Select body</button>
+      <button type="button" aria-pressed="false" data-select="query">Select query</button>
+      <button type="button" aria-pressed="false" data-select="slide">Select slide</button>
+      <button type="button" aria-pressed="false" data-zoom>Toggle zoom/pan</button>
+    </div>
+
+    <section class="frame" aria-label="Deck canvas editor mock">
+      <div class="topbar">
+        <div class="crumb"><b>YC S26 Pitch</b><span class="sep">/</span>Slide 3<span class="sep">/</span><span id="crumb-selection">Title</span></div>
+        <span class="badge"><span class="dot"></span> CANVAS</span>
+      </div>
+
+      <div class="editor" id="editor">
+        <aside class="thumbs" aria-label="Slide thumbnails">
+          <div class="thumb-list">
+            <button class="thumb" type="button">
+              <span class="mini"><i class="title-line"></i><i></i><i></i></span>
+              <span class="thumb-label">1. Title</span>
+            </button>
+            <button class="thumb" type="button">
+              <span class="mini"><i class="title-line"></i><i></i><i></i></span>
+              <span class="thumb-label">2. Problem</span>
+            </button>
+            <button class="thumb active" type="button">
+              <span class="mini"><i class="title-line"></i><i></i><i></i></span>
+              <span class="thumb-label">3. Traction</span>
+            </button>
+          </div>
+          <div class="new-slide"><button type="button">+ New slide</button></div>
+        </aside>
+
+        <section class="workspace" role="region" aria-label="Deck canvas" id="workspace" data-design-note="Viewport owns pan and zoom; artboard remains 16:9.">
+          <div class="viewport-chip" id="viewport-chip">Slide · 3 / 7 / Title</div>
+
+          <div class="stage-wrap" id="stage-wrap">
+            <article class="artboard" aria-label="16 by 9 slide artboard">
+              <button class="region region-eyebrow" data-region="eyebrow" type="button" aria-label="Eyebrow object">Turtle Labs</button>
+              <button class="region region-title selected" data-region="title" type="button" aria-label="Title object">
+                <span class="handle"></span><span class="handle"></span><span class="handle"></span><span class="handle"></span>
+                <h2>Raster.tv pays the bills while Trellis compounds</h2>
+              </button>
+              <button class="region region-body" data-region="body" type="button" aria-label="Body object">
+                Existing traction narrative lives inline here. Double-click opens TipTap; inspector mirrors the same content.
+              </button>
+              <button class="region region-query" data-region="query" type="button" aria-label="Query view object">
+                <div class="query-card">
+                  <div class="query-head"><span class="live">LIVE</span><span>traction metrics</span></div>
+                  <div class="bars"><i></i><i></i><i></i><i></i><i></i></div>
+                </div>
+              </button>
+              <div class="slide-footer">YC S26 Pitch · 3 / 7</div>
+            </article>
+          </div>
+
+          <div class="viewport-controls" aria-label="Viewport controls">
+            <button type="button" title="Zoom out">−</button>
+            <button type="button" title="Zoom percent" id="zoom-label">72%</button>
+            <button type="button" title="Zoom in">+</button>
+            <button type="button" title="Fit slide">Fit</button>
+          </div>
+
+          <div class="notes"><span>Speaker notes</span><span>Lead with Raster credibility, then show Trellis compounding.</span></div>
+          <span class="sr" aria-live="polite" id="selection-live">Selected title on slide 3.</span>
+        </section>
+
+        <aside class="inspector" aria-label="Object inspector" data-design-note="Inspector swaps based on selected canvas object.">
+          <div class="inspector-head">
+            <div class="inspector-title">
+              <b id="inspector-title">Title</b>
+              <span class="kind" id="inspector-kind">object</span>
+            </div>
+            <div class="tabs" role="tablist" aria-label="Inspector views">
+              <button class="active" type="button">Props</button>
+              <button type="button">Slide</button>
+              <button type="button">Query</button>
+              <button type="button">Graph</button>
+            </div>
+          </div>
+          <div class="inspector-body" id="inspector-body"></div>
+        </aside>
+      </div>
+    </section>
+  </main>
+
+<script>
+  const regions = [...document.querySelectorAll('[data-region]')];
+  const buttons = [...document.querySelectorAll('[data-select]')];
+  const workspace = document.getElementById('workspace');
+  const zoomToggle = document.querySelector('[data-zoom]');
+  const chip = document.getElementById('viewport-chip');
+  const crumb = document.getElementById('crumb-selection');
+  const live = document.getElementById('selection-live');
+  const inspectorTitle = document.getElementById('inspector-title');
+  const inspectorKind = document.getElementById('inspector-kind');
+  const inspectorBody = document.getElementById('inspector-body');
+  const zoomLabel = document.getElementById('zoom-label');
+
+  const labels = {
+    slide: 'Slide',
+    title: 'Title',
+    body: 'Body',
+    query: 'Query view',
+    eyebrow: 'Eyebrow'
+  };
+
+  const panels = {
+    slide: `
+      <div class="field-group">
+        <h5>Slide</h5>
+        <div class="field"><label>Layout</label><select><option>Live data</option><option>Title</option><option>Content</option><option>Two column</option></select></div>
+        <div class="two"><div class="field"><label>Width</label><input value="16" /></div><div class="field"><label>Height</label><input value="9" /></div></div>
+        <p class="hint">Slide selection shows artboard-level properties. Region selection narrows this pane.</p>
+      </div>
+      <div class="field-group"><h5>Vantage</h5><button class="chip-button active">Editor</button> <button class="chip-button">Present</button></div>
+    `,
+    title: `
+      <div class="field-group">
+        <h5>Title text</h5>
+        <div class="field"><label>Content</label><textarea>Raster.tv pays the bills while Trellis compounds</textarea></div>
+        <div class="two"><div class="field"><label>Align</label><select><option>Center</option><option>Left</option></select></div><div class="field"><label>Size</label><select><option>Hero</option><option>Heading</option></select></div></div>
+        <p class="hint">Inline TipTap and this field save through the same <code>regions.title</code> path.</p>
+      </div>
+    `,
+    body: `
+      <div class="field-group">
+        <h5>Body text</h5>
+        <div class="field"><label>Content</label><textarea>Existing traction narrative lives inline here.</textarea></div>
+        <div class="two"><div class="field"><label>Align</label><select><option>Left</option><option>Center</option></select></div><div class="field"><label>Column</label><select><option>A</option><option>B</option></select></div></div>
+      </div>
+    `,
+    query: `
+      <div class="field-group">
+        <h5>Query view</h5>
+        <div class="field"><label>Title</label><input value="Traction metrics" /></div>
+        <div class="field"><label>EQL-S query</label><textarea>FIND entity AS ?m WHERE ?m.type = "metric"</textarea></div>
+        <div class="field"><label>Visualization</label><select><option>Chart + tiles</option><option>Chart</option><option>Tiles</option></select></div>
+        <p class="hint">Selecting queryView opens query fields immediately; the canvas object remains live-preview.</p>
+      </div>
+    `,
+    eyebrow: `
+      <div class="field-group">
+        <h5>Eyebrow</h5>
+        <div class="field"><label>Text</label><input value="Turtle Labs" /></div>
+        <div class="field"><label>Visibility</label><select><option>Visible</option><option>Hidden</option></select></div>
+      </div>
+    `
+  };
+
+  function setSelection(id) {
+    regions.forEach((el) => {
+      el.classList.toggle('selected', el.dataset.region === id);
+      if (el.dataset.region === id && !el.querySelector('.handle')) {
+        el.insertAdjacentHTML('afterbegin', '<span class="handle"></span><span class="handle"></span><span class="handle"></span><span class="handle"></span>');
+      }
+      if (el.dataset.region !== id) el.querySelectorAll('.handle').forEach((h) => h.remove());
+    });
+    buttons.forEach((btn) => btn.setAttribute('aria-pressed', btn.dataset.select === id ? 'true' : 'false'));
+    const label = labels[id] || 'Slide';
+    chip.textContent = id === 'slide' ? 'Slide · 3 / 7' : `Slide · 3 / 7 / ${label}`;
+    crumb.textContent = label;
+    live.textContent = `Selected ${label.toLowerCase()} on slide 3.`;
+    inspectorTitle.textContent = label;
+    inspectorKind.textContent = id === 'slide' ? 'slide' : 'object';
+    inspectorBody.innerHTML = panels[id] || panels.slide;
+  }
+
+  regions.forEach((el) => el.addEventListener('click', () => setSelection(el.dataset.region)));
+  buttons.forEach((btn) => btn.addEventListener('click', () => setSelection(btn.dataset.select)));
+  zoomToggle.addEventListener('click', () => {
+    workspace.classList.toggle('zoomed');
+    const zoomed = workspace.classList.contains('zoomed');
+    zoomToggle.setAttribute('aria-pressed', zoomed ? 'true' : 'false');
+    zoomLabel.textContent = zoomed ? '118%' : '72%';
+  });
+
+  setSelection('title');
+</script>
+</body>
+</html>

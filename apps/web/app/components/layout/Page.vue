@@ -122,6 +122,8 @@
     hideHeader?: boolean
     /** Hide the tabs bar */
     hideTabs?: boolean
+    /** Hide the search input in browse toolbar (e.g. Form view) */
+    hideSearch?: boolean
     /** Enable secondary (right) sidebar slot */
     secondarySidebar?: boolean
     /** Enable left sub-sidebar slot */
@@ -269,7 +271,7 @@
       showToolbar: false,
     },
     sidebar: { showHeader: false, showTabs: false, contentPadding: 'p-0', maxWidth: '', showToolbar: false },
-    browse: { showHeader: true, showTabs: false, contentPadding: 'px-8 py-6 pt-0', maxWidth: '', showToolbar: true },
+    browse: { showHeader: true, showTabs: false, contentPadding: 'px-4 py-4 pt-0', maxWidth: '', showToolbar: true },
     filesystem: { showHeader: false, showTabs: false, contentPadding: 'p-0', maxWidth: '', showToolbar: false },
     folders: { showHeader: true, showTabs: false, contentPadding: 'p-0', maxWidth: '', showToolbar: false },
     calendar: { showHeader: false, showTabs: false, contentPadding: 'p-0', maxWidth: '', showToolbar: false },
@@ -304,6 +306,10 @@
   )
 
   const isSpreadsheetBrowseView = computed(() => props.browse?.viewMode.value === 'table')
+  const isKanbanBrowseView = computed(() => props.browse?.viewMode.value === 'kanban')
+  const isOverflowConstrainedBrowseView = computed(
+    () => isSpreadsheetBrowseView.value || isKanbanBrowseView.value,
+  )
 
   // Resolved display states (props override variant defaults)
   const effectiveSearchPlaceholder = computed(() => {
@@ -405,7 +411,7 @@
   const contentWrapperClass = computed(() => {
     if (!effectiveFillHeight.value) return 'w-full'
     const overflow =
-      isFilesystem.value || isSpreadsheetBrowseView.value ? 'overflow-hidden' : 'overflow-y-auto'
+      isFilesystem.value || isOverflowConstrainedBrowseView.value ? 'overflow-hidden' : 'overflow-y-auto'
     return clsx('w-full flex h-full flex-col', overflow)
   })
 
@@ -417,6 +423,7 @@
       variantConfig.value.maxWidth,
       effectiveFillHeight.value && ['min-h-0', 'flex-1'],
       isSpreadsheetBrowseView.value && ['flex', 'flex-col', 'overflow-hidden'],
+      isKanbanBrowseView.value && ['flex', 'flex-col', 'overflow-hidden'],
     ),
   )
 
@@ -503,11 +510,17 @@
 
   const effectiveViewModeOptions = computed(() => {
     const options = props.viewModeOptions?.length ? props.viewModeOptions : defaultViewModeOptions.value
-    return options.filter((option) => option.visible !== false)
+    return options.filter((option) => option.visible !== false && !option.disabled)
   })
 
-  const setViewMode = (mode: BrowseViewMode, disabled?: boolean) => {
-    if (disabled) return
+  const hasCustomSort = computed(() => {
+    const browse = props.browse
+    if (!browse?.sortOptions.length) return false
+    const defaultSort = browse.sortOptions[0]?.value
+    return browse.sortBy.value !== defaultSort || browse.sortDirection.value !== 'asc'
+  })
+
+  const setViewMode = (mode: BrowseViewMode) => {
     props.browse?.setViewMode(mode)
   }
 
@@ -522,7 +535,7 @@
       const isValid = options.some((option) => option.mode === current && option.visible !== false)
       if (isValid) return
 
-      const fallback = options.find((option) => !option.disabled)?.mode ?? options[0]?.mode
+      const fallback = options[0]?.mode
       if (fallback) browse.setViewMode(fallback)
     },
     { immediate: true },
@@ -581,41 +594,6 @@
     }
   })
 
-  function _exportToCsv() {
-    if (!props.browse?.filteredItems?.value) return
-    const items = props.browse.filteredItems.value
-    if (items.length === 0) return
-
-    // Get all keys from the first item as columns
-    const firstItem = items[0]
-    if (!firstItem || typeof firstItem !== 'object') return
-    const keys = Object.keys(firstItem as Record<string, unknown>)
-    const csvContent = [
-      keys.join(','),
-      ...items.map((item) => {
-        const record = item as Record<string, unknown>
-        return keys
-          .map((key) => {
-            const val = record[key]
-            if (val === null || val === undefined) return ''
-            const str = String(val).replace(/"/g, '""')
-            return str.includes(',') || str.includes('"') || str.includes('\n') ? `"${str}"` : str
-          })
-          .join(',')
-      }),
-    ].join('\n')
-
-    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' })
-    const link = document.createElement('a')
-    const url = URL.createObjectURL(blob)
-    link.setAttribute('href', url)
-    link.setAttribute('download', `${props.title || 'export'}.csv`)
-    link.style.visibility = 'hidden'
-    document.body.appendChild(link)
-    link.click()
-    document.body.removeChild(link)
-  }
-
   // Expose for parent components
   defineExpose({ activeHash, isSectionHighlighted })
 </script>
@@ -672,9 +650,12 @@
                 </div>
 
                 <!-- Title -->
-                <h1 v-if="title || $slots.title" class="text-foreground text-3xl font-semibold my-2">
-                  <slot name="title">{{ title }}</slot>
-                </h1>
+                <div v-if="title || $slots.title" class="flex items-center gap-2 my-2">
+                  <h1 class="text-foreground text-3xl font-semibold">
+                    <slot name="title">{{ title }}</slot>
+                  </h1>
+                  <slot name="titleActions" />
+                </div>
 
                 <!-- Description -->
                 <p v-if="description || $slots.description" class="max-w-2xl text-sm text-muted-foreground">
@@ -824,15 +805,13 @@
         <div
           v-if="variantConfig.showToolbar"
           ref="stickyRef"
-          class="sticky -top-px z-40 transition-all duration-50"
+          class="sticky -top-px z-40 transition-all duration-50 bg-transparent backdrop-blur-2xl"
           :class="[
             !isSpreadsheetBrowseView && 'rounded-t-lg',
-            isStuck
-              ? 'border-b! border-border bg-background/25 backdrop-blur-3xl'
-              : 'bg-transparent border-b-transparent',
+            isStuck && 'border-b border-border/60 bg-card/50',
             transparent ? 'bg-transparent backdrop-blur-none' : '',
           ]">
-          <div :class="isFeed ? 'mx-4' : 'mx-8'" class="py-4">
+          <div :class="isFeed ? 'mx-4' : 'mx-4'" class="py-4">
             <div class="flex justify-between items-center gap-3 w-full">
               <!-- View Mode Switcher (hidden for feed variant) -->
               <div
@@ -843,22 +822,17 @@
                     v-for="option in effectiveViewModeOptions"
                     :key="option.mode"
                     type="button"
-                    class="relative flex h-8 items-center justify-center gap-1.5 rounded-md px-3 text-sm font-medium transition-colors"
-                    :class="[
+                    class="relative flex h-8 w-8 items-center justify-center rounded-md text-sm font-medium transition-colors"
+                    :class="
                       browse?.viewMode.value === option.mode
                         ? 'bg-foreground/8 text-foreground hover:bg-sidebar-background/15 '
-                        : 'text-muted-foreground/50 hover:bg-transparent hover:text-foreground',
-                      option.disabled
-                        ? 'cursor-not-allowed opacity-50 hover:bg-transparent hover:text-muted-foreground'
-                        : '',
-                    ]"
+                        : 'text-muted-foreground/50 hover:bg-transparent hover:text-foreground'
+                    "
                     :title="option.reason || option.tooltip || `${option.label} view`"
-                    :disabled="option.disabled"
-                    @click="setViewMode(option.mode, option.disabled)">
+                    :aria-label="option.reason || option.tooltip || `${option.label} view`"
+                    :aria-current="browse?.viewMode.value === option.mode ? 'true' : undefined"
+                    @click="setViewMode(option.mode)">
                     <Icon :name="option.icon" class="h-4 w-4" />
-                    <span v-if="browse?.viewMode.value === option.mode" class="hidden sm:inline">
-                      {{ option.label }}
-                    </span>
                     <span
                       v-if="option.suggested && browse?.viewMode.value !== option.mode"
                       class="h-1.5 w-1.5 rounded-full bg-primary/60 absolute -top-0.5 -right-0.5" />
@@ -866,8 +840,11 @@
                 </slot>
               </div>
 
+              <!-- Optional controls immediately before search (e.g. grid column count) -->
+              <slot name="beforeSearch" />
+
               <!-- Search Input -->
-              <div class="relative flex-1 w-full rounded-lg bg-card/0 backdrop-blur-xl">
+              <div v-if="!hideSearch" class="relative flex-1 w-full rounded-lg bg-card/0 backdrop-blur-xl">
                 <Icon
                   name="lucide:search"
                   class="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground pointer-events-none" />
@@ -888,46 +865,59 @@
 
               <!-- Filters -->
               <div class="flex items-center gap-2 shrink-0">
-                <slot name="filters">
-                  <!-- Advanced Filters (Notion-style) -->
-                  <UiPopover v-if="advancedFilters">
-                    <UiPopoverTrigger as-child>
-                      <UiButton
-                        variant="outline"
-                        size="sm"
-                        class="gap-1.5 bg-card/0 backdrop-blur max-w-[480px]"
-                        :class="advancedFilters.hasActiveFilters.value ? 'border-primary/50 text-primary' : ''">
-                        <Icon name="lucide:filter" class="h-4 w-4 shrink-0" />
-                        <template v-if="advancedFilters.hasActiveFilters.value">
-                          <span
-                            v-for="(pill, pIdx) in advancedFilters.activeFilterSummary.value.slice(0, 3)"
-                            :key="pIdx"
-                            class="inline-flex items-center gap-1 rounded-sm bg-primary/10 px-1.5 py-0.5 text-[11px] font-medium leading-none whitespace-nowrap">
-                            <span class="text-primary/70">{{ pill.fieldLabel }}</span>
-                            <span v-if="pill.displayValue" class="text-primary">{{ pill.displayValue }}</span>
-                          </span>
-                          <span
-                            v-if="advancedFilters.activeFilterSummary.value.length > 3"
-                            class="text-[11px] text-primary/60 whitespace-nowrap">
-                            +{{ advancedFilters.activeFilterSummary.value.length - 3 }}
-                          </span>
-                        </template>
-                        <span v-else>Filter</span>
-                      </UiButton>
-                    </UiPopoverTrigger>
-                    <UiPopoverContent align="start" :side-offset="8" class="w-auto p-3">
-                      <FilterBuilder :filters="advancedFilters" />
-                    </UiPopoverContent>
-                  </UiPopover>
+                <!-- Advanced Filters (outside slot so pages can extend #filters without losing this) -->
+                <UiPopover v-if="advancedFilters">
+                  <UiPopoverTrigger as-child>
+                    <UiButton
+                      variant="outline"
+                      size="sm"
+                      class="bg-card/0 backdrop-blur max-w-[480px]"
+                      :class="[
+                        advancedFilters.hasActiveFilters.value ? 'gap-1.5 border-primary/50 text-primary' : 'px-2',
+                      ]"
+                      aria-label="Filter"
+                      :title="advancedFilters.hasActiveFilters.value ? undefined : 'Filter'">
+                      <Icon name="lucide:filter" class="h-4 w-4 shrink-0" />
+                      <template v-if="advancedFilters.hasActiveFilters.value">
+                        <span
+                          v-for="(pill, pIdx) in advancedFilters.activeFilterSummary.value.slice(0, 3)"
+                          :key="pIdx"
+                          class="inline-flex items-center gap-1 rounded-sm bg-primary/10 px-1.5 py-0.5 text-[11px] font-medium leading-none whitespace-nowrap">
+                          <span class="text-primary/70">{{ pill.fieldLabel }}</span>
+                          <span v-if="pill.displayValue" class="text-primary">{{ pill.displayValue }}</span>
+                        </span>
+                        <span
+                          v-if="advancedFilters.activeFilterSummary.value.length > 3"
+                          class="text-[11px] text-primary/60 whitespace-nowrap">
+                          +{{ advancedFilters.activeFilterSummary.value.length - 3 }}
+                        </span>
+                      </template>
+                    </UiButton>
+                  </UiPopoverTrigger>
+                  <UiPopoverContent align="start" :side-offset="8" class="w-auto p-3">
+                    <FilterBuilder :filters="advancedFilters" />
+                  </UiPopoverContent>
+                </UiPopover>
 
+                <slot name="filters">
                   <!-- Simple dropdown filters (only shown when no advanced filters) -->
                   <template v-if="browse?.filters?.length && !advancedFilters">
                     <UiDropdownMenu v-for="filter in browse.filters" :key="filter.id">
                       <UiDropdownMenuTrigger as-child>
-                        <UiButton variant="outline" size="sm" class="gap-2 bg-card/0">
+                        <UiButton
+                          variant="outline"
+                          size="sm"
+                          class="bg-card/0"
+                          :class="
+                            filter.currentValue.value !== filter.options[0]?.value ? 'gap-2' : 'px-2'
+                          "
+                          :aria-label="filter.label"
+                          :title="filter.currentValue.value === filter.options[0]?.value ? filter.label : undefined">
                           <Icon v-if="filter.icon" :name="filter.icon" class="h-4 w-4" />
-                          <span>{{ filter.label }}</span>
-                          <Icon name="lucide:chevron-down" class="h-3 w-3 opacity-50" />
+                          <template v-if="filter.currentValue.value !== filter.options[0]?.value">
+                            <span>{{ filter.label }}</span>
+                            <Icon name="lucide:chevron-down" class="h-3 w-3 opacity-50" />
+                          </template>
                         </UiButton>
                       </UiDropdownMenuTrigger>
                       <UiDropdownMenuContent align="start" class="w-48">
@@ -950,10 +940,18 @@
                 <template v-if="browse && browse.sortOptions.length > 0">
                   <UiDropdownMenu>
                     <UiDropdownMenuTrigger as-child>
-                      <UiButton variant="outline" size="sm" class="gap-2 bg-card">
+                      <UiButton
+                        variant="outline"
+                        size="sm"
+                        class="bg-card"
+                        :class="hasCustomSort ? 'gap-2' : 'px-2'"
+                        aria-label="Sort"
+                        :title="hasCustomSort ? undefined : 'Sort'">
                         <Icon name="lucide:arrow-up-down" class="h-4 w-4" />
-                        <span>{{ browse.currentSortLabel.value }}</span>
-                        <Icon name="lucide:chevron-down" class="h-3 w-3 opacity-50" />
+                        <template v-if="hasCustomSort">
+                          <span>{{ browse.currentSortLabel.value }}</span>
+                          <Icon name="lucide:chevron-down" class="h-3 w-3 opacity-50" />
+                        </template>
                       </UiButton>
                     </UiDropdownMenuTrigger>
                     <UiDropdownMenuContent align="end" class="w-48">
@@ -1239,7 +1237,9 @@
               :class="
                 isSpreadsheetBrowseView
                   ? 'flex h-full min-h-0 w-full flex-1 flex-col overflow-hidden border-t'
-                  : 'h-full w-full'
+                  : isKanbanBrowseView
+                    ? 'flex h-full min-h-0 w-full flex-1 flex-col overflow-hidden'
+                    : 'h-full w-full'
               ">
               <slot
                 :is-full-width="isFullWidth"

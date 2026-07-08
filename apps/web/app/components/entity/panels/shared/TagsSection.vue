@@ -33,8 +33,8 @@
 </script>
 
 <template>
-  <!-- Inline mode: no wrapper padding or heading -->
-  <div v-if="inline && (tags.length || !readonly)" class="flex flex-wrap items-center gap-1.5 text-xs">
+  <!-- Inline mode: no wrapper padding or heading — fills header row when nested -->
+  <div v-if="inline && (tags.length || !readonly)" class="flex flex-wrap items-center gap-1.5 text-xs min-w-0 w-full">
     <Icon name="lucide:hash" class="h-3 w-3 text-muted-foreground shrink-0" />
     <span
       v-for="tag in tags"
@@ -50,7 +50,7 @@
       v-model="tagInput"
       type="text"
       placeholder="Add tag..."
-      class="bg-transparent text-xs outline-none w-24 placeholder:text-muted-foreground/50"
+      class="bg-transparent text-xs outline-none flex-1 min-w-[5rem] placeholder:text-muted-foreground/50"
       @keydown.enter.prevent="addTag" />
   </div>
 

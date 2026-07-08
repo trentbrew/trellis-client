@@ -330,7 +330,9 @@ export type ProjectionType =
   | 'dashboard'
   | 'chart'
   | 'slide-deck'
+  | 'canvas'
   | 'moodboard'
+  | 'form'
   | 'entity-detail'
 
 export type ChartType =
@@ -376,6 +378,12 @@ export interface ProjectionConfig {
 
   // Card-grid specific
   cardTemplate?: string // Handlebars-like template
+  /** Ordered ontology/builtin keys shown on card faces */
+  cardProperties?: string[]
+  /** Show placeholder text for empty card properties */
+  cardShowEmpty?: boolean
+  /** P2: unified view field config (table + card visibility) */
+  viewFields?: { key: string; showInCard?: boolean; showInTable?: boolean; order?: number }[]
   columns?: number
   spacing?: 'compact' | 'comfortable' | 'spacious'
 

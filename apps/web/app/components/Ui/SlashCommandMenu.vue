@@ -86,8 +86,10 @@
         <button
           v-for="item in group.items"
           :key="item.id"
+          type="button"
           class="slash-command-item"
           :class="{ 'is-selected': items.indexOf(item) === selectedIndex }"
+          :aria-label="item.label"
           @click="selectItem(items.indexOf(item))"
           @mouseenter="selectedIndex = items.indexOf(item)">
           <div class="slash-command-icon">

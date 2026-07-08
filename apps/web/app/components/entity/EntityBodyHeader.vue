@@ -5,6 +5,7 @@
    * EntityDialogShell's stripped chrome (badges/nav/close only).
    */
 
+
   const props = withDefaults(
     defineProps<{
       title: string
@@ -15,6 +16,9 @@
       isGeneratingSummary?: boolean
       entityId?: string
       aiOnly?: boolean
+      variant?: 'default' | 'document'
+      /** Tighter horizontal padding for narrow inset panels. */
+      density?: 'default' | 'inset'
     }>(),
     {
       mode: 'edit',
@@ -22,6 +26,8 @@
       summary: '',
       isGeneratingSummary: false,
       aiOnly: false,
+      variant: 'default',
+      density: 'default',
     },
   )
 
@@ -32,22 +38,53 @@
   }>()
 
   const isViewMode = computed(() => props.mode === 'view')
+  const isDocumentVariant = computed(() => props.variant === 'document')
+  const resolvedTitlePlaceholder = computed(() => {
+    if (!isDocumentVariant.value) return props.titlePlaceholder
+    if (!props.titlePlaceholder || props.titlePlaceholder === 'Item name...') return 'Untitled'
+    return props.titlePlaceholder
+  })
+
+  const shellClass = computed(() => {
+    const inset = props.density === 'inset'
+    if (isDocumentVariant.value) {
+      return inset ? 'px-4 pt-6 pb-3' : 'pt-12 pb-5'
+    }
+    return inset ? 'px-4 pt-4 pb-3' : 'px-6 pt-6 pb-4'
+  })
+
+  const titleClass = computed(() =>
+    props.density === 'inset' ? 'text-xl' : 'text-2xl',
+  )
 </script>
 
 <template>
-  <div class="border-b border-border">
-    <div class="px-6 pt-6 pb-4">
-      <input
-        v-if="!isViewMode"
-        :value="title"
-        type="text"
-        :placeholder="titlePlaceholder"
-        spellcheck="false"
-        class="w-full text-2xl font-semibold bg-transparent border border-transparent outline-none placeholder:text-muted-foreground/40 focus:ring-0 hover:border-border hover:bg-muted/20 focus:border-border focus:bg-muted/20 rounded-md px-2 py-1 -mx-2 transition-all"
-        @input="emit('update:title', ($event.target as HTMLInputElement).value)" />
-      <h1 v-else class="text-2xl font-semibold px-2">{{ title }}</h1>
+  <div :class="isDocumentVariant ? '' : 'border-b border-border'">
+    <div :class="shellClass">
+      <DocumentTitleField
+        v-if="isDocumentVariant"
+        :title="title"
+        :mode="mode"
+        :placeholder="resolvedTitlePlaceholder"
+        @update:title="emit('update:title', $event)" />
+      <template v-else>
+        <textarea
+          v-if="!isViewMode"
+          :value="title"
+          rows="1"
+          :placeholder="titlePlaceholder"
+          spellcheck="false"
+          :class="[
+            titleClass,
+            'w-full min-h-0 resize-none overflow-hidden field-sizing-content font-semibold bg-transparent border border-transparent outline-none placeholder:text-muted-foreground/40 focus:ring-0 hover:border-border hover:bg-muted/20 focus:border-border focus:bg-muted/20 rounded-md px-2 py-1 -mx-2 transition-all break-words whitespace-pre-wrap leading-snug',
+          ]"
+          @input="emit('update:title', ($event.target as HTMLTextAreaElement).value)" />
+        <h1 v-else :class="[titleClass, 'font-semibold px-2 break-words whitespace-pre-wrap leading-snug']">
+          {{ title }}
+        </h1>
+      </template>
 
-      <div class="mt-3 px-2">
+      <div v-if="!isDocumentVariant" class="mt-3 px-2">
         <EntityDescriptionBlock
           :description="description"
           :summary="summary"

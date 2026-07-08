@@ -1,0 +1,304 @@
+<!-- trellis-design-adopted: slug=deck_p1_3 parent=TRL-307 source=derived from deck_p1_2_mockup.html + sheets_decks_mockup.html#deck -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<title>Trellis — Deck P1.3 (TRL-308 design mock)</title>
+<style>
+  :root {
+    color-scheme: dark;
+    --background: #0a0a0c;
+    --surface: #141418;
+    --surface-2: #1a1a21;
+    --surface-3: #202028;
+    --text: #e8e8ec;
+    --text-muted: #888894;
+    --text-faint: #55555f;
+    --border: #2a2a32;
+    --zone-showroom: #8b5cf6;
+    --live: #34d399;
+    --live-pulse: #6ee7b7;
+    --series: #6366f1;
+    --presence-self: #8b5cf6;
+    --presence-remote: #f59e0b;
+    --cursor-remote: #fbbf24;
+    --radius-sm: 6px;
+    --radius-md: 10px;
+    --radius-lg: 14px;
+    --radius-pill: 9999px;
+    --font: "IBM Plex Sans", ui-sans-serif, system-ui, sans-serif;
+    --mono: "IBM Plex Mono", ui-monospace, Menlo, monospace;
+    --zone: var(--zone-showroom);
+    --vantage-route: 220ms;
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--background); color: var(--text); font-family: var(--font); font-size: 14px; line-height: 1.55; }
+  .page { max-width: 1180px; margin: 0 auto; padding: 40px 24px 64px; }
+  .masthead { margin-bottom: 20px; max-width: 760px; }
+  .eyebrow { font-family: var(--mono); font-size: 11px; letter-spacing: 0.14em; text-transform: uppercase; color: var(--zone); margin: 0 0 8px; }
+  h1 { margin: 0 0 8px; font-size: 28px; font-weight: 650; }
+  .sub { margin: 0 0 16px; color: var(--text-muted); font-size: 14px; max-width: 72ch; }
+  .tag { display: inline-block; margin-top: 8px; padding: 4px 10px; border-radius: var(--radius-pill); border: 1px solid var(--presence-remote); font-family: var(--mono); font-size: 10px; color: var(--presence-remote); }
+  .mode-toggle { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 16px; }
+  .mode-toggle button { appearance: none; border: 1px solid var(--border); background: var(--surface-2); color: var(--text-muted); font-family: var(--mono); font-size: 10px; letter-spacing: 0.06em; text-transform: uppercase; padding: 6px 12px; border-radius: var(--radius-pill); cursor: pointer; transition: border-color var(--vantage-route), background var(--vantage-route); }
+  .mode-toggle button.on { border-color: var(--zone); color: var(--text); background: color-mix(in oklch, var(--zone) 12%, var(--surface)); }
+  .demo-bar { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 20px; }
+  .demo-bar button { appearance: none; border: 1px solid var(--border); background: var(--surface-2); color: var(--text-muted); font-family: var(--mono); font-size: 9.5px; padding: 5px 10px; border-radius: var(--radius-sm); cursor: pointer; }
+  .demo-bar button:hover { border-color: var(--zone); color: var(--text); }
+  .frame { border: 1px solid var(--border); border-radius: var(--radius-lg); background: var(--surface); overflow: hidden; box-shadow: 0 24px 60px -30px rgba(0,0,0,0.8); transition: opacity var(--vantage-route) ease; }
+  .frame-bar { display: flex; align-items: center; gap: 12px; height: 46px; padding: 0 14px; border-bottom: 1px solid var(--border); background: var(--surface-2); font-size: 12px; }
+  .crumb { color: var(--text-muted); }
+  .crumb b { color: var(--text); }
+  .crumb .sep { opacity: 0.35; padding: 0 4px; }
+  .bar-spacer { flex: 1; }
+  .badge { display: inline-flex; align-items: center; gap: 6px; height: 24px; padding: 0 9px; border-radius: var(--radius-pill); font-family: var(--mono); font-size: 10.5px; letter-spacing: 0.06em; border: 1px solid color-mix(in oklch, var(--zone) 40%, var(--border)); background: color-mix(in oklch, var(--zone) 10%, var(--surface)); }
+  .badge .dot { width: 6px; height: 6px; border-radius: 50%; background: var(--zone); }
+  .avatars { display: flex; align-items: center; }
+  .av { width: 24px; height: 24px; border-radius: 50%; border: 2px solid var(--surface-2); margin-left: -8px; font-family: var(--mono); font-size: 8px; display: flex; align-items: center; justify-content: center; font-weight: 600; }
+  .av:first-child { margin-left: 0; }
+  .av.self { background: var(--presence-self); color: #fff; }
+  .av.remote { background: var(--presence-remote); color: #111; }
+  .shell { min-height: 520px; }
+  /* Editor grid */
+  .deck-shell-editor { display: grid; grid-template-columns: 148px 1fr 220px; min-height: 480px; }
+  /* Sorter */
+  .deck-shell-sorter { display: grid; grid-template-rows: auto 1fr auto; grid-template-columns: 1fr 220px; min-height: 480px; }
+  .filmstrip { grid-column: 1 / 3; border-bottom: 1px solid var(--border); padding: 14px 16px; background: var(--surface-2); display: flex; gap: 12px; overflow-x: auto; }
+  .filmstrip .thumb { flex: 0 0 128px; }
+  .filmstrip .thumb .mini { aspect-ratio: 16/9; }
+  /* Thumb vantage */
+  .deck-shell-thumb { display: grid; grid-template-columns: 96px 1fr 220px; min-height: 480px; }
+  .narrow-rail { border-right: 1px solid var(--border); padding: 10px 8px; display: flex; flex-direction: column; gap: 8px; background: var(--surface-2); }
+  .narrow-rail .thumb { width: 100%; }
+  .narrow-rail .thumb .mini { aspect-ratio: 16/9; padding: 6px; }
+  .thumb-preview-wrap { padding: 20px; display: flex; align-items: center; justify-content: center; background: #0a0a0e; }
+  .thumb-preview { width: min(100%, 640px); aspect-ratio: 16/9; border: 1px solid var(--border); border-radius: var(--radius-md); background: #0d0d11; padding: 24px; display: flex; flex-direction: column; justify-content: center; gap: 10px; position: relative; transform: scale(0.92); transform-origin: center; }
+  .sorter-stage { padding: 16px; grid-column: 1; }
+  .sorter-mini { aspect-ratio: 16/9; max-width: 480px; margin: 0 auto; border: 1px solid var(--border); border-radius: var(--radius-md); background: #0d0d11; padding: 20px; position: relative; }
+  .sorter .inspector { grid-row: 2 / 4; grid-column: 2; }
+  .thumb .inspector { grid-column: 3; }
+  .editor .inspector, .sorter .inspector, .thumb .inspector { border-left: 1px solid var(--border); padding: 14px 12px; display: flex; flex-direction: column; gap: 14px; background: color-mix(in oklch, var(--surface) 92%, var(--surface-2)); }
+  .sorter .notes-strip { grid-column: 1; border-top: 1px solid var(--border); padding: 8px 16px; font-family: var(--mono); font-size: 10px; color: var(--text-muted); }
+  .sorter .notes-strip .k { color: var(--text-faint); margin-right: 8px; }
+  .sorter-rail { border-right: 1px solid var(--border); }
+  .stage { padding: 22px; display: flex; flex-direction: column; gap: 14px; min-width: 0; }
+  .canvas { aspect-ratio: 16/9; border: 1px solid var(--border); border-radius: var(--radius-md); background: #0d0d11; padding: clamp(14px, 3.5%, 28px); display: flex; flex-direction: column; justify-content: center; gap: 10px; position: relative; overflow: hidden; }
+  .canvas .ey { font-size: 10.5px; letter-spacing: 0.14em; text-transform: uppercase; color: var(--zone); }
+  .canvas h2 { margin: 0; text-align: center; font-size: clamp(18px, 2.8vw, 26px); font-weight: 650; }
+  .canvas .body { text-align: center; color: var(--text-muted); font-size: 13px; max-width: 36ch; margin: 0 auto; }
+  .canvas .qv { border: 1px solid var(--border); border-radius: var(--radius-sm); overflow: hidden; margin-top: 8px; }
+  .canvas .qv-head { display: flex; gap: 8px; align-items: center; padding: 6px 10px; border-bottom: 1px solid var(--border); font-family: var(--mono); font-size: 9px; color: var(--text-muted); }
+  .canvas .qv-head .live { color: var(--live); border: 1px solid color-mix(in oklch, var(--live) 40%, var(--border)); padding: 2px 6px; border-radius: var(--radius-pill); }
+  .canvas .qv-tiles { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; padding: 10px; }
+  .canvas .qv-tiles div { background: var(--surface-3); border-radius: 4px; padding: 8px; text-align: center; font-size: 12px; }
+  .remote-cursor { position: absolute; pointer-events: none; z-index: 20; transition: left 120ms ease, top 120ms ease; }
+  .remote-cursor svg { width: 14px; height: 14px; fill: var(--cursor-remote); filter: drop-shadow(0 1px 2px rgba(0,0,0,0.5)); }
+  .remote-cursor span { position: absolute; left: 14px; top: 10px; background: var(--cursor-remote); color: #111; font-family: var(--mono); font-size: 8px; padding: 2px 6px; border-radius: var(--radius-pill); white-space: nowrap; }
+  .notes-strip { border-top: 1px solid var(--border); padding: 10px 16px; font-family: var(--mono); font-size: 10px; color: var(--text-muted); }
+  .notes-strip .k { color: var(--text-faint); margin-right: 8px; }
+  .sorter { border-right: 1px solid var(--border); padding: 12px 10px; display: flex; flex-direction: column; gap: 10px; background: var(--surface-2); }
+  .thumb { appearance: none; border: 1px solid var(--border); border-radius: var(--radius-sm); background: var(--surface); padding: 0; cursor: pointer; text-align: left; overflow: hidden; display: block; width: 100%; }
+  .thumb[aria-current="true"] { border-color: var(--zone); box-shadow: 0 0 0 1px var(--zone); }
+  .thumb .mini { padding: 8px; display: flex; flex-direction: column; gap: 4px; justify-content: center; }
+  .thumb .mini i { display: block; height: 4px; border-radius: 2px; background: var(--surface-3); }
+  .thumb .mini i.t { height: 6px; background: var(--text-faint); width: 70%; }
+  .thumb .label { display: block; padding: 4px 8px; border-top: 1px solid var(--border); font-family: var(--mono); font-size: 9.5px; color: var(--text-faint); }
+  .thumb[aria-current="true"] .label { color: var(--zone); }
+  .inspector h5 { margin: 0 0 8px; font-family: var(--mono); font-size: 10px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--text-faint); }
+  .layout-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
+  .layout-opt { border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 6px; min-height: 52px; cursor: pointer; display: flex; flex-direction: column; gap: 4px; }
+  .layout-opt.sel { border-color: var(--zone); background: color-mix(in oklch, var(--zone) 10%, var(--surface)); }
+  .layout-opt i { display: block; height: 4px; border-radius: 2px; background: var(--surface-3); }
+  .layout-opt i.t { height: 6px; width: 60%; background: var(--text-faint); }
+  .layout-opt i.live { height: 12px; background: color-mix(in oklch, var(--live) 30%, var(--surface-3)); border-radius: 3px; }
+  .lo-label { font-family: var(--mono); font-size: 8.5px; text-transform: uppercase; color: var(--text-faint); margin-top: auto; }
+  .vantage { display: flex; flex-wrap: wrap; gap: 4px; }
+  .vantage span, .vantage a { font-family: var(--mono); font-size: 9.5px; text-transform: uppercase; padding: 4px 8px; border-radius: var(--radius-pill); border: 1px solid var(--border); color: var(--text-muted); cursor: pointer; text-decoration: none; }
+  .vantage span.on, .vantage a.on { border-color: var(--zone); color: var(--zone); background: color-mix(in oklch, var(--zone) 12%, transparent); }
+  .query-builder { border: 1px solid var(--border); border-radius: var(--radius-sm); background: var(--surface-2); padding: 10px; display: flex; flex-direction: column; gap: 8px; }
+  .query-builder textarea { width: 100%; min-height: 72px; background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-sm); color: var(--text); font-family: var(--mono); font-size: 11px; padding: 8px; resize: vertical; }
+  .query-builder select, .query-builder input { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-sm); color: var(--text); font-family: var(--mono); font-size: 10px; padding: 6px 8px; }
+  .query-builder .actions { display: flex; gap: 6px; }
+  .query-builder button { appearance: none; border: 1px solid var(--border); background: var(--surface); color: var(--text-muted); font-family: var(--mono); font-size: 9px; padding: 5px 10px; border-radius: var(--radius-sm); cursor: pointer; }
+  .query-builder button.primary { border-color: var(--zone); color: var(--zone); }
+  .present-btn { margin-top: auto; appearance: none; border: 1px solid var(--zone); background: color-mix(in oklch, var(--zone) 15%, var(--surface)); color: var(--text); font-family: var(--mono); font-size: 11px; padding: 10px; border-radius: var(--radius-sm); cursor: pointer; width: 100%; }
+  .legend { margin-top: 20px; padding: 14px 16px; border: 1px dashed var(--border); border-radius: var(--radius-md); font-size: 12px; color: var(--text-muted); line-height: 1.6; }
+  .legend code { font-family: var(--mono); font-size: 10px; color: var(--series); }
+  .hidden { display: none !important; }
+  @media (prefers-reduced-motion: reduce) { :root { --vantage-route: 0ms; } .remote-cursor { transition: none; } }
+  @media (max-width: 900px) { .deck-shell-editor, .deck-shell-sorter, .deck-shell-thumb { grid-template-columns: 1fr; } }
+</style>
+</head>
+<body>
+<div class="page">
+  <header class="masthead">
+    <p class="eyebrow">P1.3 · Showroom · Fractal vantages</p>
+    <h1>Deck projection — sorter &amp; thumb routes, query builder, presence</h1>
+    <p class="sub">Extends P1.2 with <strong>navigable thumb/sorter vantages</strong>, <strong>query builder</strong> for live-data slides, <strong>Alt+↑/↓ keyboard reorder</strong>, and <strong>lightweight presence</strong> (avatars + cursor ghosts). Baseline: <a href="./deck_p1_2_mockup.html">deck_p1_2_mockup.html</a></p>
+    <span class="tag">P1.3 · four vantages as routes</span>
+  </header>
+
+  <div class="mode-toggle" role="tablist" aria-label="Vantage preview">
+    <button type="button" class="on" data-vantage="editor" id="btnEditor">Editor route</button>
+    <button type="button" data-vantage="sorter" id="btnSorter">Sorter route</button>
+    <button type="button" data-vantage="thumb" id="btnThumb">Thumb route</button>
+    <button type="button" data-vantage="present" id="btnPresent">Present (P1.2)</button>
+  </div>
+
+  <div class="demo-bar" aria-label="Demo controls">
+    <button type="button" id="btnSlide0">Slide 1 · title</button>
+    <button type="button" id="btnSlide1">Slide 2 · problem</button>
+    <button type="button" id="btnSlide2">Slide 3 · traction</button>
+    <button type="button" id="btnCursor">Toggle remote cursor</button>
+    <button type="button" id="btnKb">Simulate Alt+↓ reorder</button>
+  </div>
+
+  <div class="shell" id="shell">
+    <!-- EDITOR -->
+    <div class="frame editor" id="viewEditor" data-design-note="DeckProjectionFrame — /decks/[slug]">
+      <div class="frame-bar">
+        <div class="crumb">showroom <span class="sep">▸</span> <b>yc-s26</b> <span class="sep">·</span> editor</div>
+        <span class="badge"><span class="dot"></span>PROJECTION</span>
+        <div class="bar-spacer"></div>
+        <div class="avatars" aria-label="Collaborators viewing deck" data-design-note="PresenceLayer — avatar stack">
+          <span class="av self">TB</span>
+          <span class="av remote">AG</span>
+        </div>
+      </div>
+      <div class="deck-shell-editor">
+        <div class="sorter" role="tablist" aria-label="Slides" aria-keyshortcuts="Alt+ArrowUp Alt+ArrowDown" id="editorRail"></div>
+        <div class="stage">
+          <div class="canvas" id="editorCanvas"></div>
+          <div class="notes-strip"><span class="k">SPEAKER NOTES</span><span id="editorNotes"></span></div>
+        </div>
+        <aside class="inspector" id="editorInspector"></aside>
+      </div>
+    </div>
+
+    <!-- SORTER -->
+    <div class="frame sorter hidden" id="viewSorter" data-design-note="DeckSorterShell — /decks/[slug]/sorter">
+      <div class="frame-bar">
+        <div class="crumb">showroom <span class="sep">▸</span> <b>yc-s26</b> <span class="sep">·</span> sorter</div>
+        <span class="badge"><span class="dot"></span>FILMSTRIP</span>
+        <div class="bar-spacer"></div>
+        <div class="avatars"><span class="av self">TB</span><span class="av remote">AG</span></div>
+      </div>
+      <div class="deck-shell-sorter">
+        <div class="filmstrip" role="tablist" aria-label="Slide filmstrip" id="filmstrip"></div>
+        <div class="sorter-stage">
+          <div class="sorter-mini" id="sorterMini"></div>
+        </div>
+        <div class="notes-strip"><span class="k">NOTES</span><span id="sorterNotes"></span></div>
+        <aside class="inspector" id="sorterInspector"></aside>
+      </div>
+    </div>
+
+    <!-- THUMB -->
+    <div class="frame thumb hidden" id="viewThumb" data-design-note="DeckThumbShell — /decks/[slug]/thumb">
+      <div class="frame-bar">
+        <div class="crumb">showroom <span class="sep">▸</span> <b>yc-s26</b> <span class="sep">·</span> thumb</div>
+        <span class="badge"><span class="dot"></span>THUMB</span>
+        <div class="bar-spacer"></div>
+        <div class="avatars"><span class="av self">TB</span></div>
+      </div>
+      <div class="deck-shell-thumb">
+        <div class="narrow-rail" role="tablist" aria-label="Slide thumbs" id="narrowRail"></div>
+        <div class="thumb-preview-wrap">
+          <div class="thumb-preview" id="thumbPreview"></div>
+        </div>
+        <aside class="inspector" id="thumbInspector"></aside>
+      </div>
+    </div>
+  </div>
+
+  <div class="legend" id="liveAnnouncer" aria-live="polite">
+    <b>P1.3 notes:</b> Vantage chips navigate routes · Query builder saves <code>regions.queryView</code> · <code>Alt+↑/↓</code> reorders active slide · Remote cursor is session-stub only (no Yjs) · Present unchanged from P1.2.
+  </div>
+</div>
+
+<script>
+  const slides = [
+    { key: 'title', layoutId: 'title', notes: 'Lead with the substrate story.', eyebrow: 'Turtle Labs', title: 'Trellis', body: 'The local-first graph OS.' },
+    { key: 'problem', layoutId: 'content', notes: 'Land the blob line.', eyebrow: 'Problem', title: "Your tools don't share a brain", body: 'Files are blobs; every app rebuilds the same graph.' },
+    { key: 'traction', layoutId: 'live-data', notes: 'MRR is small but real.', eyebrow: 'Traction', title: 'Raster.tv pays the bills while Trellis compounds', query: 'find revenue where product = "raster" group by month', viz: 'both' },
+  ];
+  let idx = 2;
+  let vantage = 'editor';
+  let showCursor = true;
+  let cursorX = 62, cursorY = 48;
+
+  function canvasHtml(s) {
+    let inner = `<div class="ey">${s.eyebrow}</div><h2>${s.title}</h2>`;
+    if (s.layoutId === 'content') inner += `<div class="body">${s.body}</div>`;
+    if (s.layoutId === 'live-data') inner += `<div class="qv"><div class="qv-head"><span class="live">LIVE · queryView</span><span style="flex:1;overflow:hidden;text-overflow:ellipsis">${s.query}</span></div><div class="qv-tiles"><div><b>2.4k</b><br>MRR</div><div><b>4</b><br>stations</div><div><b>12</b><br>slides</div></div></div>`;
+    if (showCursor && vantage === 'editor') inner += `<div class="remote-cursor" style="left:${cursorX}%;top:${cursorY}%"><svg viewBox="0 0 24 24"><path d="M5 3l14 9-6 1-3 7z"/></svg><span>agent</span></div>`;
+    return inner;
+  }
+
+  function inspectorHtml(activeVantage) {
+    const s = slides[idx];
+    const showBuilder = s.layoutId === 'live-data';
+    const chips = ['thumb','sorter','editor','present'].map(v =>
+      `<span class="${v === activeVantage ? 'on' : ''}" data-chip="${v}">${v}</span>`).join('');
+    return `
+      <div><h5>Slide layout</h5><div class="layout-grid">${['title','content','two-col','live data'].map(l =>
+        `<div class="layout-opt ${l.replace(' ','-') === s.layoutId || (l==='live data'&&s.layoutId==='live-data') ? 'sel' : ''}"><i class="t"></i>${l==='live data'?'<i class="live"></i>':'<i></i>'}<span class="lo-label">${l}</span></div>`).join('')}</div></div>
+      ${showBuilder ? `<div data-design-note="QueryBuilderPanel"><h5>Query builder</h5><div class="query-builder"><textarea aria-label="EQL-S query">${s.query}</textarea><select aria-label="Visualization"><option ${s.viz==='both'?'selected':''}>both</option><option>tiles</option><option>chart</option></select><input type="text" placeholder="Chart title" value="Raster.tv MRR" /><div class="actions"><button type="button">Run preview</button><button type="button" class="primary">Save to slide</button></div></div></div>` : ''}
+      <div><h5>Vantage</h5><div class="vantage" role="tablist" aria-label="Deck vantage">${chips}</div></div>
+      <button class="present-btn" type="button">▶ Present</button>`;
+  }
+
+  function renderThumbs(container, compact) {
+    container.innerHTML = slides.map((s, i) => `
+      <button class="thumb" type="button" role="tab" aria-current="${i===idx}" data-i="${i}">
+        <span class="mini"><i class="t"></i></span>
+        <span class="label">${i+1} · ${s.key}</span>
+      </button>`).join('');
+    container.querySelectorAll('.thumb').forEach(t => t.addEventListener('click', () => { idx = Number(t.dataset.i); renderAll(); }));
+  }
+
+  function renderAll() {
+    document.querySelectorAll('.mode-toggle button').forEach(b => b.classList.toggle('on', b.dataset.vantage === vantage));
+    ['Editor','Sorter','Thumb'].forEach(v => document.getElementById('view'+v).classList.toggle('hidden', vantage !== v.toLowerCase()));
+    if (vantage === 'present') { alert('Present route unchanged from P1.2 — /decks/yc-s26/present?slide=' + (idx+1)); vantage = 'editor'; }
+
+    renderThumbs(document.getElementById('editorRail'));
+    renderThumbs(document.getElementById('filmstrip'));
+    renderThumbs(document.getElementById('narrowRail'));
+
+    const html = canvasHtml(slides[idx]);
+    document.getElementById('editorCanvas').innerHTML = html;
+    document.getElementById('sorterMini').innerHTML = html;
+    document.getElementById('thumbPreview').innerHTML = html;
+    document.getElementById('editorNotes').textContent = slides[idx].notes;
+    document.getElementById('sorterNotes').textContent = slides[idx].notes;
+
+    document.getElementById('editorInspector').innerHTML = inspectorHtml(vantage === 'editor' ? 'editor' : '');
+    document.getElementById('sorterInspector').innerHTML = inspectorHtml('sorter');
+    document.getElementById('thumbInspector').innerHTML = inspectorHtml('thumb');
+
+    document.querySelectorAll('.vantage [data-chip]').forEach(chip => {
+      chip.addEventListener('click', () => {
+        const v = chip.dataset.chip;
+        if (v === 'present') { alert('/decks/yc-s26/present?slide=' + (idx+1)); return; }
+        vantage = v;
+        renderAll();
+      });
+    });
+  }
+
+  document.querySelectorAll('.mode-toggle button').forEach(b => b.addEventListener('click', () => { vantage = b.dataset.vantage; if (vantage !== 'present') renderAll(); else { alert('Present — P1.2 crossfade route'); vantage = 'editor'; renderAll(); } }));
+  document.getElementById('btnSlide0').onclick = () => { idx = 0; renderAll(); };
+  document.getElementById('btnSlide1').onclick = () => { idx = 1; renderAll(); };
+  document.getElementById('btnSlide2').onclick = () => { idx = 2; renderAll(); };
+  document.getElementById('btnCursor').onclick = () => { showCursor = !showCursor; if (showCursor) { cursorX = 30 + Math.random()*40; cursorY = 30 + Math.random()*30; } renderAll(); };
+  document.getElementById('btnKb').onclick = () => {
+    if (idx < slides.length - 1) { const t = slides.splice(idx, 1)[0]; slides.splice(idx+1, 0, t); idx++; document.getElementById('liveAnnouncer').appendChild(Object.assign(document.createElement('span'), { className: 'sr', textContent: ' Slide moved to position ' + (idx+1) })); renderAll(); }
+  };
+
+  setInterval(() => { if (showCursor && vantage === 'editor') { cursorX += (Math.random()-0.5)*4; cursorY += (Math.random()-0.5)*3; cursorX = Math.max(10, Math.min(85, cursorX)); cursorY = Math.max(15, Math.min(75, cursorY)); renderAll(); } }, 2000);
+
+  renderAll();
+</script>
+</body>
+</html>

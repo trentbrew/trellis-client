@@ -78,7 +78,7 @@
 </script>
 
 <template>
-  <Page variant="canvas" :hide-sidebar="true" :fill-height="true">
+  <Page variant="canvas" :fill-height="true">
     <div class="relative flex h-full w-full flex-col bg-background">
       <!-- Top bar -->
       <header

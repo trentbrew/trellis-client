@@ -15,16 +15,12 @@ export function bridgeRowToEntity(row: SidecarKernelBrowseRow): Entity {
   const title = typeof payload.title === 'string' ? payload.title : row.title
 
   return {
+    ...payload,
     id,
     type,
     title,
     tags: Array.isArray(payload.tags) ? (payload.tags as string[]) : [],
     involved: Array.isArray(payload.involved) ? (payload.involved as string[]) : [],
-    references: [],
-    ...payload,
-    id,
-    type,
-    title,
     references: [],
   } as Entity
 }

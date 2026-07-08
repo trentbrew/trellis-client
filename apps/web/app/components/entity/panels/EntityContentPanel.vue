@@ -29,8 +29,13 @@
     note: defineAsyncComponent(() => import('./document/NoteContent.vue')),
     file: defineAsyncComponent(() => import('./document/FileContent.vue')),
     bookmark: defineAsyncComponent(() => import('./document/BookmarkContent.vue')),
+    canvas: defineAsyncComponent(() => import('./document/CanvasContent.vue')),
     diagram: defineAsyncComponent(() => import('~/components/editor-blocks/DiagramContent.vue')),
     email: defineAsyncComponent(() => import('./document/EmailContent.vue')),
+    person: defineAsyncComponent(() => import('./actor/ActorBodyContent.vue')),
+    contact: defineAsyncComponent(() => import('./actor/ActorBodyContent.vue')),
+    vendor: defineAsyncComponent(() => import('./actor/ActorBodyContent.vue')),
+    organization: defineAsyncComponent(() => import('./actor/ActorBodyContent.vue')),
     goal: defineAsyncComponent(() => import('./container/GoalContent.vue')),
     project: defineAsyncComponent(() => import('./container/ProjectContent.vue')),
   }

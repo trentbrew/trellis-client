@@ -309,9 +309,11 @@
   <div class="relative group" :class="{ 'opacity-50': isLoading }">
 
     <!-- ── Formula (read-only) ──────────────────────────────────────────── -->
-    <div v-if="field.type === 'formula'" class="flex items-center gap-2 min-h-8 px-1">
-      <Icon name="lucide:zap" class="h-3 w-3 text-amber-500 shrink-0" />
-      <span class="truncate italic text-muted-foreground text-sm">
+    <div
+      v-if="field.type === 'formula'"
+      class="sheet-cell-derived flex min-h-8 items-center gap-2 px-1 font-data text-sm">
+      <Icon name="lucide:function-square" class="h-3 w-3 shrink-0 text-warning" />
+      <span class="truncate italic text-warning">
         {{ computedFormulaValue ?? '-' }}
       </span>
     </div>

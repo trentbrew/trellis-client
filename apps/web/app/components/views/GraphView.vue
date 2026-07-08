@@ -21,6 +21,7 @@
   import { zoom as d3Zoom, zoomIdentity, type ZoomTransform } from 'd3-zoom'
   import { loadIcon } from '@iconify/vue'
   import { mountGraphWebGL, type WebGLNode, type WebGLLink } from './graph-webgl'
+  import { useGraphTypesSidebar } from '~/composables/useGraphTypesSidebar'
 
   import '@vue-flow/core/dist/style.css'
 
@@ -88,6 +89,10 @@
     /** Browse mode: an array of entities to visualise. When provided, takes
      *  precedence over modelValue/schema and switches to browse behaviour. */
     entities?: Entity[]
+    /** Hide the built-in type legend and read visibility from AppSidebarGraphTypes. */
+    hideTypeLegend?: boolean
+    /** When set, auto-select 3D on first load if entity count meets threshold. User toggle wins. */
+    webglAutoThreshold?: number
   }>()
 
   const emit = defineEmits<{
@@ -108,7 +113,15 @@
   // ── View mode toggle ─────────────────────────────────────────────────
 
   type GraphMode = 'flow' | 'force' | 'webgl'
-  const graphMode = ref<GraphMode>('force')
+  const graphMode = ref<GraphMode>('webgl')
+  /** True once the user picks a mode — blocks auto-3D re-apply on SSE refresh. */
+  const graphModeLocked = ref(false)
+
+  function setGraphMode(mode: GraphMode) {
+    graphModeLocked.value = true
+    graphMode.value = mode
+  }
+
   const webglContainer = ref<HTMLElement | null>(null)
   let webglHandle: { stop: () => void; focus: (id: string | null) => void; setHoveredId: (id: string | null) => void } | null = null
 
@@ -290,8 +303,23 @@
     })
   })
 
+  // Global graph: default to 3D when node count exceeds threshold (GPU path).
+  watch(
+    () => recordNodes.value.length,
+    (count) => {
+      if (graphModeLocked.value) return
+      const threshold = props.webglAutoThreshold
+      // Threshold prop can force 2D default for small graphs when explicitly set low.
+      if (threshold != null && count < threshold) {
+        graphMode.value = 'force'
+      }
+    },
+    { immediate: true },
+  )
+
   // ── Type filtering (legend panel) ────────────────────────────────────
 
+  const graphTypesSidebar = props.hideTypeLegend ? useGraphTypesSidebar() : null
   const typeVisibility = ref<Map<string, boolean>>(new Map())
 
   /** List of unique types present in the graph with their ontology metadata. */
@@ -326,6 +354,7 @@
   watch(
     typesInGraph,
     (types) => {
+      if (props.hideTypeLegend) return
       let changed = false
       const next = new Map(typeVisibility.value)
       for (const { type } of types) {
@@ -339,7 +368,12 @@
     { immediate: true },
   )
 
-  const isTypeVisible = (type: string) => typeVisibility.value.get(type) ?? true
+  const isTypeVisible = (type: string) => {
+    if (props.hideTypeLegend && graphTypesSidebar) {
+      return graphTypesSidebar.isVisible(type)
+    }
+    return typeVisibility.value.get(type) ?? true
+  }
 
   const toggleType = (type: string) => {
     const next = new Map(typeVisibility.value)
@@ -357,7 +391,13 @@
   }
 
   /** Nodes actually rendered — respects type visibility. */
-  const visibleNodes = computed(() => recordNodes.value.filter((n) => isTypeVisible(getNodeType(n))))
+  const visibleNodes = computed(() => {
+    if (props.hideTypeLegend && graphTypesSidebar) {
+      // Subscribe to sidebar visibility toggles.
+      graphTypesSidebar.state.value.visibility
+    }
+    return recordNodes.value.filter((n) => isTypeVisible(getNodeType(n)))
+  })
 
   const visibleNodeIds = computed(() => new Set(visibleNodes.value.map(getNodeId).filter(Boolean)))
 
@@ -442,7 +482,14 @@
 
   const computedEdges = computed<GraphEdge[]>(() => {
     const edges: GraphEdge[] = []
+    const edgeIds = new Set<string>()
     const idSet = new Set(recordNodes.value.map(getNodeId).filter(Boolean))
+
+    const pushEdge = (edge: GraphEdge) => {
+      if (edgeIds.has(edge.id)) return
+      edgeIds.add(edge.id)
+      edges.push(edge)
+    }
 
     for (const node of recordNodes.value) {
       const sourceId = getNodeId(node)
@@ -455,7 +502,7 @@
         for (const target of targets) {
           const targetId = typeof target === 'string' ? target : ((target as any)?.['@id'] ?? (target as any)?.id)
           if (typeof targetId === 'string' && idSet.has(targetId)) {
-            edges.push({
+            pushEdge({
               id: `${sourceId}-${field.id}-${targetId}`,
               source: sourceId,
               target: targetId,
@@ -466,13 +513,15 @@
         }
       }
 
-      for (const [key, val] of Object.entries(node)) {
-        if (key.startsWith('@') || key === 'id' || key === 'type') continue
-        if (typeof val === 'string' && idSet.has(val) && val !== sourceId) {
-          const edgeId = `${sourceId}-${key}-${val}`
-          if (!edges.some((e) => e.id === edgeId)) {
-            edges.push({
-              id: edgeId,
+      // Heuristic string-ref scan is for collection JSON-LD docs only. Browse /
+      // global graph entities carry full EAV payloads — scanning every property
+      // triples edge count and stalls the force sim (zoneId, facilityId, etc.).
+      if (!isBrowseMode.value) {
+        for (const [key, val] of Object.entries(node)) {
+          if (key.startsWith('@') || key === 'id' || key === 'type') continue
+          if (typeof val === 'string' && idSet.has(val) && val !== sourceId) {
+            pushEdge({
+              id: `${sourceId}-${key}-${val}`,
               source: sourceId,
               target: val,
               label: key.replace('user:', ''),
@@ -497,15 +546,13 @@
           const refId: string = typeof ref.id === 'string' ? ref.id : ''
           const relationLabel = refId.startsWith('ref-') ? refId.slice(4).split('-')[0] || 'references' : 'references'
           const edgeId = `${sourceId}-${relationLabel}-${targetId}`
-          if (!edges.some((e) => e.id === edgeId)) {
-            edges.push({
-              id: edgeId,
-              source: sourceId,
-              target: targetId,
-              label: relationLabel,
-              dashed: false,
-            })
-          }
+          pushEdge({
+            id: edgeId,
+            source: sourceId,
+            target: targetId,
+            label: relationLabel,
+            dashed: false,
+          })
         }
       }
     }
@@ -644,6 +691,14 @@
     const height = container.clientHeight || 600
     svgSize.value = { w: width, h: height }
 
+    const nodeCount = visibleNodes.value.length
+    const dense = nodeCount >= 500
+    const ultra = nodeCount >= 1200
+    const showEdgeLabels = !dense
+    const showNodeIcons = !ultra
+    const showNodeTitles = !ultra
+    const NODE_RADIUS = ultra ? 10 : dense ? 14 : 26
+
     // Build d3 data from visible nodes (type filter applied).
     // Each node pulls its brand icon + color straight from the ontology
     // registry so the graph visually matches the rest of the UI.
@@ -745,22 +800,24 @@
       .attr('stroke-width', (d: D3Link) => (d.dashed ? 1 : 1.5))
       .attr('stroke-dasharray', (d: D3Link) => (d.dashed ? '4 2' : null))
 
-    // Edge labels
-    const linkLabel = g
-      .append('g')
-      .attr('class', 'gv-edge-labels')
-      .selectAll<SVGTextElement, D3Link>('text')
-      .data(links)
-      .join('text')
-      .text((d: D3Link) => d.label)
-      .attr('font-size', '9px')
-      .attr('fill', 'var(--muted-foreground)')
-      .attr('text-anchor', 'middle')
-      .attr('dy', -4)
-      .attr('opacity', 0.6)
+    // Edge labels (hidden at scale — 6k+ text nodes kill layout)
+    let linkLabel: ReturnType<typeof g.selectAll<SVGTextElement, D3Link>> | null = null
+    if (showEdgeLabels) {
+      linkLabel = g
+        .append('g')
+        .attr('class', 'gv-edge-labels')
+        .selectAll<SVGTextElement, D3Link>('text')
+        .data(links)
+        .join('text')
+        .text((d: D3Link) => d.label)
+        .attr('font-size', '9px')
+        .attr('fill', 'var(--muted-foreground)')
+        .attr('text-anchor', 'middle')
+        .attr('dy', -4)
+        .attr('opacity', 0.6)
+    }
 
     // Node groups
-    const NODE_RADIUS = 26
     const nodeGroup = g
       .append('g')
       .attr('class', 'gv-nodes')
@@ -776,52 +833,55 @@
       .attr('fill', (d: D3Node) => d.color)
       .attr('fill-opacity', 0.12)
       .attr('stroke', (d: D3Node) => d.color)
-      .attr('stroke-width', 2)
-      .style('filter', 'drop-shadow(0 1px 3px rgb(0 0 0 / 0.1))')
+      .attr('stroke-width', dense ? 1.5 : 2)
+      .style('filter', dense ? null : 'drop-shadow(0 1px 3px rgb(0 0 0 / 0.1))')
 
-    // Icon placeholder — an inner <svg> group we fill asynchronously once
-    // the iconify data has loaded. Size is 20x20 centered on the node.
+    // Icon placeholder — skip at ultra scale (1750 nested SVGs is brutal).
     const ICON_SIZE = 22
-    const iconHolder = nodeGroup
-      .append<SVGSVGElement>('svg')
-      .attr('width', ICON_SIZE)
-      .attr('height', ICON_SIZE)
-      .attr('x', -ICON_SIZE / 2)
-      .attr('y', -ICON_SIZE / 2)
-      .attr('viewBox', '0 0 24 24')
-      .attr('fill', 'none')
-      .attr('stroke', (d: D3Node) => d.color)
-      .attr('stroke-width', 2)
-      .attr('stroke-linecap', 'round')
-      .attr('stroke-linejoin', 'round')
-      .attr('pointer-events', 'none')
-      .style('overflow', 'visible')
+    const iconHolder = showNodeIcons
+      ? nodeGroup
+          .append<SVGSVGElement>('svg')
+          .attr('width', ICON_SIZE)
+          .attr('height', ICON_SIZE)
+          .attr('x', -ICON_SIZE / 2)
+          .attr('y', -ICON_SIZE / 2)
+          .attr('viewBox', '0 0 24 24')
+          .attr('fill', 'none')
+          .attr('stroke', (d: D3Node) => d.color)
+          .attr('stroke-width', 2)
+          .attr('stroke-linecap', 'round')
+          .attr('stroke-linejoin', 'round')
+          .attr('pointer-events', 'none')
+          .style('overflow', 'visible')
+      : null
 
-    // Load each unique icon once, then stamp its body into every matching holder.
-    const uniqueIcons = Array.from(new Set(nodes.map((n) => n.icon)))
-    for (const iconName of uniqueIcons) {
-      getIconData(iconName).then((data) => {
-        if (!data) return
-        iconHolder
-          .filter((d: D3Node) => d.icon === iconName)
-          .attr('viewBox', `0 0 ${data.width} ${data.height}`)
-          .html(data.body)
-      })
+    if (iconHolder) {
+      const uniqueIcons = Array.from(new Set(nodes.map((n) => n.icon)))
+      for (const iconName of uniqueIcons) {
+        getIconData(iconName).then((data) => {
+          if (!data) return
+          iconHolder
+            .filter((d: D3Node) => d.icon === iconName)
+            .attr('viewBox', `0 0 ${data.width} ${data.height}`)
+            .html(data.body)
+        })
+      }
     }
 
-    // Title label below the circle
-    nodeGroup
-      .append('text')
-      .text((d: D3Node) => {
-        const max = 16
-        return d.title.length > max ? d.title.slice(0, max) + '…' : d.title
-      })
-      .attr('text-anchor', 'middle')
-      .attr('dy', NODE_RADIUS + 14)
-      .attr('font-size', '10px')
-      .attr('font-weight', '500')
-      .attr('fill', 'var(--card-foreground)')
-      .attr('pointer-events', 'none')
+    if (showNodeTitles) {
+      nodeGroup
+        .append('text')
+        .text((d: D3Node) => {
+          const max = 16
+          return d.title.length > max ? d.title.slice(0, max) + '…' : d.title
+        })
+        .attr('text-anchor', 'middle')
+        .attr('dy', NODE_RADIUS + 14)
+        .attr('font-size', '10px')
+        .attr('font-weight', '500')
+        .attr('fill', 'var(--card-foreground)')
+        .attr('pointer-events', 'none')
+    }
 
     // Plain-text tooltip fallback (also hoverable via our preview popup)
     nodeGroup.append('title').text((d: D3Node) => d.title)
@@ -831,7 +891,7 @@
       if (!activeId) {
         nodeGroup.attr('opacity', 1)
         link.attr('stroke-opacity', 0.4).attr('stroke-width', (d: D3Link) => (d.dashed ? 1 : 1.5))
-        linkLabel.attr('opacity', 0.6)
+        linkLabel?.attr('opacity', 0.6)
         return
       }
       const active = neighbors.get(activeId) || new Set<string>()
@@ -845,7 +905,7 @@
           const connected = (d.source as any).id === activeId || (d.target as any).id === activeId
           return connected ? 2.5 : d.dashed ? 1 : 1.5
         })
-      linkLabel.attr('opacity', (d: D3Link) => {
+      linkLabel?.attr('opacity', (d: D3Link) => {
         const connected = (d.source as any).id === activeId || (d.target as any).id === activeId
         return connected ? 1 : 0.15
       })
@@ -954,21 +1014,25 @@
 
     // Simulation. Force parameters shift when clustering is on so the
     // explicit-link graph doesn't cancel out the semantic pulls.
-    const chargeStrength = clustering ? -80 : -300
-    const centerStrength = clustering ? 0.02 : 1
-    const explicitLinkStrength = clustering ? 0.2 : 1
+    const chargeStrength = clustering ? -80 : ultra ? -130 : dense ? -200 : -300
+    const centerStrength = clustering ? 0.02 : ultra ? 0.15 : 1
+    const explicitLinkStrength = clustering ? 0.2 : ultra ? 0.35 : dense ? 0.55 : 1
+    const linkDistance = ultra ? 60 : dense ? 90 : 120
+    const collideRadius = NODE_RADIUS + (ultra ? 4 : dense ? 6 : 10)
+    const alphaDecay = ultra ? 0.09 : dense ? 0.07 : 0.0228
 
     simulation = forceSimulation<D3Node>(nodes)
+      .alphaDecay(alphaDecay)
       .force(
         'link',
         forceLink<D3Node, D3Link>(links)
           .id((d) => d.id)
-          .distance(120)
+          .distance(linkDistance)
           .strength(explicitLinkStrength),
       )
       .force('charge', forceManyBody().strength(chargeStrength))
       .force('center', forceCenter(width / 2, height / 2).strength(centerStrength))
-      .force('collide', forceCollide(NODE_RADIUS + 10))
+      .force('collide', forceCollide(collideRadius))
       .force(
         'similarity',
         clustering
@@ -990,35 +1054,48 @@
           .attr('y2', (d: any) => d.target.y)
 
         linkLabel
-          .attr('x', (d: any) => (d.source.x + d.target.x) / 2)
+          ?.attr('x', (d: any) => (d.source.x + d.target.x) / 2)
           .attr('y', (d: any) => (d.source.y + d.target.y) / 2)
 
         nodeGroup.attr('transform', (d: D3Node) => `translate(${d.x},${d.y})`)
-
-        // Sync minimap state (throttled implicitly by simulation tick rate)
-        let minX = Infinity,
-          minY = Infinity,
-          maxX = -Infinity,
-          maxY = -Infinity
-        const miniData: MiniNode[] = []
-        for (const n of nodes) {
-          const x = n.x ?? 0
-          const y = n.y ?? 0
-          if (x < minX) minX = x
-          if (y < minY) minY = y
-          if (x > maxX) maxX = x
-          if (y > maxY) maxY = y
-          miniData.push({ id: n.id, x, y, color: n.color })
-        }
-        if (!isFinite(minX)) {
-          minX = 0
-          minY = 0
-          maxX = width
-          maxY = height
-        }
-        minimapBounds.value = { minX, minY, maxX, maxY }
-        minimapNodes.value = miniData
       })
+
+    let minimapTick = 0
+    const syncMinimap = () => {
+      let minX = Infinity,
+        minY = Infinity,
+        maxX = -Infinity,
+        maxY = -Infinity
+      const miniData: MiniNode[] = []
+      for (const n of nodes) {
+        const x = n.x ?? 0
+        const y = n.y ?? 0
+        if (x < minX) minX = x
+        if (y < minY) minY = y
+        if (x > maxX) maxX = x
+        if (y > maxY) maxY = y
+        miniData.push({ id: n.id, x, y, color: n.color })
+      }
+      if (!isFinite(minX)) {
+        minX = 0
+        minY = 0
+        maxX = width
+        maxY = height
+      }
+      minimapBounds.value = { minX, minY, maxX, maxY }
+      minimapNodes.value = miniData
+    }
+
+    simulation.on('tick.minimap', () => {
+      // Never push 1750-node arrays into Vue reactivity at 60Hz — throttle
+      // minimap sync and skip entirely on ultra-dense graphs.
+      if (ultra) return
+      minimapTick++
+      if (minimapTick % 12 !== 0) return
+      syncMinimap()
+    })
+    simulation.on('end.minimap', syncMinimap)
+    syncMinimap()
   }
 
   // ── WebGL (3D) renderer ──────────────────────────────────────────────
@@ -1103,6 +1180,16 @@
       },
       onHover: (n) => {
         hoveredNodeId.value = n?.id ?? null
+        if (n && webglContainer.value) {
+          if (!hoverPopupPos.value) {
+            hoverPopupPos.value = {
+              x: webglContainer.value.clientWidth * 0.5,
+              y: webglContainer.value.clientHeight * 0.45,
+            }
+          }
+        } else {
+          hoverPopupPos.value = null
+        }
       },
       onDeselect: () => {
         hoveredNodeId.value = null
@@ -1189,13 +1276,33 @@
 
   const miniNodeColor = (color: string) => color || 'var(--muted-foreground)'
 
+  function onWebGLPointerMove(event: PointerEvent) {
+    if (graphMode.value !== 'webgl' || !webglContainer.value) return
+    const rect = webglContainer.value.getBoundingClientRect()
+    hoverPopupPos.value = {
+      x: event.clientX - rect.left,
+      y: event.clientY - rect.top,
+    }
+  }
+
+  function clearWebGLHoverPopup() {
+    hoverPopupPos.value = null
+  }
+
   // ── Hover preview position (SSR-safe) ────────────────────────────────
   // Guard window access behind import.meta.client so SSR/hydration doesn't
   // throw. Returns null until the popup has everything it needs.
   const hoverPopupStyle = computed<{ left: string; top: string } | null>(() => {
     if (!import.meta.client) return null
-    if (!hoverPopupPos.value || !d3Container.value) return null
-    const rect = d3Container.value.getBoundingClientRect()
+    if (!hoverPopupPos.value) return null
+    const el =
+      graphMode.value === 'webgl'
+        ? webglContainer.value
+        : graphMode.value === 'force'
+          ? d3Container.value
+          : null
+    if (!el) return null
+    const rect = el.getBoundingClientRect()
     const w = window.innerWidth
     const h = window.innerHeight
     const left = Math.max(12, Math.min(w - 300, rect.left + hoverPopupPos.value.x + 20))
@@ -1221,21 +1328,21 @@
         <button
           class="flex items-center gap-1.5 px-2.5 py-1.5 rounded-md text-xs font-medium transition-colors"
           :class="graphMode === 'force' ? 'bg-accent text-foreground' : 'text-muted-foreground hover:text-foreground'"
-          @click="graphMode = 'force'">
+          @click="setGraphMode('force')">
           <Icon name="lucide:atom" class="h-3.5 w-3.5" />
           Force
         </button>
         <button
           class="flex items-center gap-1.5 px-2.5 py-1.5 rounded-md text-xs font-medium transition-colors"
           :class="graphMode === 'flow' ? 'bg-accent text-foreground' : 'text-muted-foreground hover:text-foreground'"
-          @click="graphMode = 'flow'">
+          @click="setGraphMode('flow')">
           <Icon name="lucide:workflow" class="h-3.5 w-3.5" />
           Flow
         </button>
         <button
           class="flex items-center gap-1.5 px-2.5 py-1.5 rounded-md text-xs font-medium transition-colors"
           :class="graphMode === 'webgl' ? 'bg-accent text-foreground' : 'text-muted-foreground hover:text-foreground'"
-          @click="graphMode = 'webgl'">
+          @click="setGraphMode('webgl')">
           <Icon name="lucide:box" class="h-3.5 w-3.5" />
           3D
         </button>
@@ -1262,7 +1369,7 @@
 
       <!-- Type legend (top-right) — doubles as a filter panel -->
       <div
-        v-if="typesInGraph.length > 0"
+        v-if="!hideTypeLegend && typesInGraph.length > 0"
         class="absolute top-3 right-3 z-20 w-56 max-h-[60vh] overflow-hidden bg-card/95 backdrop-blur-sm border border-border rounded-lg shadow-sm flex flex-col">
         <div class="flex items-center justify-between px-3 py-2 border-b border-border/60">
           <p class="text-[11px] font-medium text-muted-foreground uppercase tracking-wide">Types</p>
@@ -1296,7 +1403,12 @@
       <!-- D3 Force-directed view -->
       <div v-show="graphMode === 'force'" ref="d3Container" class="h-full w-full" />
 
-      <div v-show="graphMode === 'webgl'" ref="webglContainer" class="h-full w-full relative" />
+      <div
+        v-show="graphMode === 'webgl'"
+        ref="webglContainer"
+        class="h-full w-full relative"
+        @pointermove="onWebGLPointerMove"
+        @pointerleave="clearWebGLHoverPopup" />
 
       <!-- Vue Flow structured view -->
       <ClientOnly>
@@ -1383,11 +1495,12 @@
       <!-- Hover preview popup (positioned near the hovered node) -->
       <Teleport to="body">
         <div
-          v-if="hoveredEntity && hoverPopupStyle && graphMode === 'force'"
+          v-if="hoveredEntity && hoverPopupStyle && (graphMode === 'force' || graphMode === 'webgl')"
           class="fixed z-50 pointer-events-none transition-opacity"
           :style="hoverPopupStyle">
           <div class="w-72 rounded-lg border border-border bg-popover shadow-lg overflow-hidden">
             <EntityPreviewCard
+              :entity="hoveredEntity"
               :entity-id="hoveredEntity['@id'] || hoveredEntity.id"
               :entity-type="hoveredEntity['@type'] || hoveredEntity.type" />
           </div>
@@ -1412,5 +1525,23 @@
 <style>
   .vue-flow__node-default {
     font-family: inherit;
+  }
+
+  :global(.gv-webgl-label) {
+    padding: 2px 8px;
+    border-radius: 999px;
+    background: color-mix(in srgb, var(--card) 82%, transparent);
+    border: 1px solid color-mix(in srgb, var(--border) 55%, transparent);
+    color: var(--foreground);
+    font-size: 10px;
+    font-weight: 500;
+    line-height: 1.3;
+    white-space: nowrap;
+    max-width: 180px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    pointer-events: none;
+    backdrop-filter: blur(6px);
+    box-shadow: 0 0 12px color-mix(in srgb, var(--primary) 25%, transparent);
   }
 </style>

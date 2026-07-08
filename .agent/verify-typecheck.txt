@@ -1,0 +1,2 @@
+$ tsgo -b
+TYPECHECK_EXIT=0

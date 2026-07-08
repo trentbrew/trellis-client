@@ -57,12 +57,23 @@ export default defineNuxtConfig({
     trellisVcsRoot: process.env.TRELLIS_VCS_ROOT ?? '',
     trellisUrl: process.env.TRELLIS_URL ?? 'http://localhost:8230',
     trellisApiKey: process.env.TRELLIS_API_KEY ?? '',
+    googleClientSecret: process.env.GOOGLE_CLIENT_SECRET ?? '',
+    googleCalendarRedirectUri:
+      process.env.GOOGLE_CALENDAR_REDIRECT_URI ??
+      `http://localhost:${DEV_PORT}/api/integrations/google-calendar/callback`,
+    googleCalendarWebhookSecret: process.env.GOOGLE_CALENDAR_WEBHOOK_SECRET ?? '',
+    gmailRedirectUri:
+      process.env.GMAIL_REDIRECT_URI ??
+      process.env.GOOGLE_GMAIL_REDIRECT_URI ??
+      `http://localhost:${DEV_PORT}/api/integrations/gmail/callback`,
+    gmailWebhookSecret: process.env.GMAIL_WEBHOOK_SECRET ?? '',
     public: {
       dataMode: 'local' as const,
       trellisPort: DEV_PORT,
       trellisSidecar: process.env.TRELLIS_SIDECAR === '1',
       trellisWsUrl: process.env.TRELLIS_URL ?? 'http://localhost:8230',
       trellisApiKey: process.env.TRELLIS_API_KEY ?? '',
+      googleClientId: process.env.GOOGLE_CLIENT_ID ?? '',
     },
   },
 
@@ -126,6 +137,7 @@ export default defineNuxtConfig({
 
   css: [
     '~/assets/css/tailwind.css',
+    '~/assets/css/deck-vantage.css',
     '~/assets/css/table-node.scss',
     'katex/dist/katex.min.css',
     '@vue-flow/core/dist/style.css',
@@ -175,6 +187,10 @@ export default defineNuxtConfig({
           rel: 'icon',
           type: 'image/svg+xml',
           href: '/favicon.svg',
+        },
+        {
+          rel: 'stylesheet',
+          href: 'https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&display=swap',
         },
         {
           rel: 'stylesheet',

@@ -74,6 +74,16 @@
     },
   })
 
+  const colorMode = useColorMode()
+  const isDark = computed(() => colorMode.value === 'dark')
+  const selectedRepeat = ref('none')
+  const emptyScheduleDescription = {
+    scheduleText: '',
+    statusText: '',
+    isOverdue: false,
+    isRecurring: false,
+  }
+
   // ── Organization-specific UI state ───────────────────────────────
   const categoryOpen = ref(false)
   const ownerOpen = ref(false)
@@ -133,6 +143,9 @@
     @navigate-prev="emit('navigatePrev')"
     @navigate-next="emit('navigateNext')"
     @regenerate-summary="regenerateSummary">
+    <template #header-actions>
+      <RightSidebarToggle v-model:collapsed="rightSidebarCollapsed" />
+    </template>
     <!-- Tags next to Organization badge -->
     <template v-if="hasField('tags')" #header-badges>
       <TagsSection v-model="editableItem.tags" :readonly="isViewMode" inline />
@@ -488,32 +501,14 @@
     <div class="flex flex-1 min-h-0 overflow-hidden">
       <!-- Center Content -->
       <div class="flex-1 overflow-y-auto min-w-0">
-        <div class="p-4 space-y-3">
-          <div class="min-h-[120px]">
-            <textarea
-              v-if="!isViewMode"
-              v-model="editableItem.description"
-              placeholder="Add notes about this organization..."
-              class="w-full h-full min-h-[120px] text-sm bg-transparent outline-none resize-none placeholder:text-muted-foreground/40 leading-relaxed" />
-            <p
-              v-else-if="editableItem.description"
-              class="text-sm text-foreground/80 leading-relaxed whitespace-pre-wrap">
-              {{ editableItem.description }}
-            </p>
-            <p v-else class="text-sm text-muted-foreground/40 italic">No notes</p>
-          </div>
-        </div>
+        <ActorBodyContent v-model="editableItem" :mode="mode" placeholder="About this organization…" />
       </div>
 
       <!-- Right Sidebar -->
-      <aside
-        class="shrink-0 border-l border-border overflow-hidden md:flex hidden flex-col relative transition-[width] duration-150"
-        :class="isResizingSidebar ? 'select-none' : ''"
-        :style="{ width: rightSidebarCollapsed ? '40px' : rightSidebarW + 'px' }">
-        <div
-          v-if="!rightSidebarCollapsed"
-          class="absolute inset-y-0 left-0 w-1 cursor-ew-resize z-10 hover:bg-primary/20 transition-colors"
-          @pointerdown="startRightSidebarResize($event)" />
+      <ResizableRightPanel
+        v-model:collapsed="rightSidebarCollapsed"
+        v-model:width="rightSidebarW"
+        class="hidden md:block">
         <EntityRightSidebar
           v-model:collapsed="rightSidebarCollapsed"
           :references="editableItem.references"
@@ -542,8 +537,20 @@
             }
           "
           @create-entity="handleCreateEntityOfType"
-          @add-comment="handleAddComment" />
-      </aside>
+          @add-comment="handleAddComment">
+          <template #properties>
+            <OntologyPropertiesTab
+              v-model:editable-item="editableItem"
+              v-model:selected-repeat="selectedRepeat"
+              :has-field="hasField"
+              :is-view-mode="isViewMode"
+              :is-dark="isDark"
+              :owners="owners"
+              :folders="[]"
+              :schedule-description="emptyScheduleDescription" />
+          </template>
+        </EntityRightSidebar>
+      </ResizableRightPanel>
     </div>
 
     <!-- Footer -->

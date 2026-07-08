@@ -1,0 +1,1468 @@
+[warn] You seem to be using zod, but you have not installed @vee-validate/zod. Please install it to use zod with vee-validate.
+Duplicated imports "EnrichmentSuggestion", the one from "/Users/trentbrew/TURTLE/Projects/Packages/trellis-client/apps/web/app/composables/useContentEnrichment.ts" has been ignored and "/Users/trentbrew/TURTLE/Projects/Packages/trellis-client/apps/web/app/composables/useEmailEnrichment.ts" is used
+Duplicated imports "EnrichmentSuggestion", the one from "/Users/trentbrew/TURTLE/Projects/Packages/trellis-client/apps/web/app/composables/useEmailEnrichment.ts" has been ignored and "/Users/trentbrew/TURTLE/Projects/Packages/trellis-client/apps/web/app/composables/useEventEnrichment.ts" is used
+Duplicated imports "UploadResult", the one from "/Users/trentbrew/TURTLE/Projects/Packages/trellis-client/apps/web/app/composables/useFileUpload.ts" has been ignored and "/Users/trentbrew/TURTLE/Projects/Packages/trellis-client/apps/web/app/composables/useImageUpload.ts" is used
+[warn] [nuxt] Two component files resolving to the same name `Gantt`:
+
+ - /Users/trentbrew/TURTLE/Projects/Packages/trellis-client/apps/web/app/components/data/Gantt/index.vue
+ - /Users/trentbrew/TURTLE/Projects/Packages/trellis-client/apps/web/app/components/data/Gantt/Gantt.vue
+[warn] [nuxt] Two component files resolving to the same name `Card`:
+
+ - /Users/trentbrew/TURTLE/Projects/Packages/trellis-client/apps/web/app/components/gantt/Card.vue
+ - /Users/trentbrew/TURTLE/Projects/Packages/trellis-client/apps/web/app/components/data/Gantt/Card.vue
+[warn] [nuxt] Two component files resolving to the same name `ContextMenu`:
+
+ - /Users/trentbrew/TURTLE/Projects/Packages/trellis-client/apps/web/app/components/gantt/ContextMenu.vue
+ - /Users/trentbrew/TURTLE/Projects/Packages/trellis-client/apps/web/app/components/data/Gantt/ContextMenu.vue
+[warn] [nuxt] Two component files resolving to the same name `Gantt`:
+
+ - /Users/trentbrew/TURTLE/Projects/Packages/trellis-client/apps/web/app/components/gantt/Gantt.vue
+ - /Users/trentbrew/TURTLE/Projects/Packages/trellis-client/apps/web/app/components/data/Gantt/Gantt.vue
+[warn] [nuxt] Two component files resolving to the same name `GanttCreateMarkerTrigger`:
+
+ - /Users/trentbrew/TURTLE/Projects/Packages/trellis-client/apps/web/app/components/gantt/GanttCreateMarkerTrigger.vue
+ - /Users/trentbrew/TURTLE/Projects/Packages/trellis-client/apps/web/app/components/data/Gantt/GanttCreateMarkerTrigger.vue
+[warn] [nuxt] Two component files resolving to the same name `GanttFeatureItem`:
+
+ - /Users/trentbrew/TURTLE/Projects/Packages/trellis-client/apps/web/app/components/gantt/GanttFeatureItem.vue
+ - /Users/trentbrew/TURTLE/Projects/Packages/trellis-client/apps/web/app/components/data/Gantt/GanttFeatureItem.vue
+[warn] [nuxt] Two component files resolving to the same name `GanttFeatureList`:
+
+ - /Users/trentbrew/TURTLE/Projects/Packages/trellis-client/apps/web/app/components/gantt/GanttFeatureList.vue
+ - /Users/trentbrew/TURTLE/Projects/Packages/trellis-client/apps/web/app/components/data/Gantt/GanttFeatureList.vue
+[warn] [nuxt] Two component files resolving to the same name `GanttFeatureListGroup`:
+
+ - /Users/trentbrew/TURTLE/Projects/Packages/trellis-client/apps/web/app/components/gantt/GanttFeatureListGroup.vue
+ - /Users/trentbrew/TURTLE/Projects/Packages/trellis-client/apps/web/app/components/data/Gantt/GanttFeatureListGroup.vue
+[warn] [nuxt] Two component files resolving to the same name `GanttHeader`:
+
+ - /Users/trentbrew/TURTLE/Projects/Packages/trellis-client/apps/web/app/components/gantt/GanttHeader.vue
+ - /Users/trentbrew/TURTLE/Projects/Packages/trellis-client/apps/web/app/components/data/Gantt/GanttHeader.vue
+[warn] [nuxt] Two component files resolving to the same name `GanttMarker`:
+
+ - /Users/trentbrew/TURTLE/Projects/Packages/trellis-client/apps/web/app/components/gantt/GanttMarker.vue
+ - /Users/trentbrew/TURTLE/Projects/Packages/trellis-client/apps/web/app/components/data/Gantt/GanttMarker.vue
+[warn] [nuxt] Two component files resolving to the same name `GanttProvider`:
+
+ - /Users/trentbrew/TURTLE/Projects/Packages/trellis-client/apps/web/app/components/gantt/GanttProvider.vue
+ - /Users/trentbrew/TURTLE/Projects/Packages/trellis-client/apps/web/app/components/data/Gantt/GanttProvider.vue
+[warn] [nuxt] Two component files resolving to the same name `GanttSidebar`:
+
+ - /Users/trentbrew/TURTLE/Projects/Packages/trellis-client/apps/web/app/components/gantt/GanttSidebar.vue
+ - /Users/trentbrew/TURTLE/Projects/Packages/trellis-client/apps/web/app/components/data/Gantt/GanttSidebar.vue
+[warn] [nuxt] Two component files resolving to the same name `GanttSidebarGroup`:
+
+ - /Users/trentbrew/TURTLE/Projects/Packages/trellis-client/apps/web/app/components/gantt/GanttSidebarGroup.vue
+ - /Users/trentbrew/TURTLE/Projects/Packages/trellis-client/apps/web/app/components/data/Gantt/GanttSidebarGroup.vue
+[warn] [nuxt] Two component files resolving to the same name `GanttSidebarItem`:
+
+ - /Users/trentbrew/TURTLE/Projects/Packages/trellis-client/apps/web/app/components/gantt/GanttSidebarItem.vue
+ - /Users/trentbrew/TURTLE/Projects/Packages/trellis-client/apps/web/app/components/data/Gantt/GanttSidebarItem.vue
+[warn] [nuxt] Two component files resolving to the same name `GanttTimeline`:
+
+ - /Users/trentbrew/TURTLE/Projects/Packages/trellis-client/apps/web/app/components/gantt/GanttTimeline.vue
+ - /Users/trentbrew/TURTLE/Projects/Packages/trellis-client/apps/web/app/components/data/Gantt/GanttTimeline.vue
+[warn] [nuxt] Two component files resolving to the same name `GanttToday`:
+
+ - /Users/trentbrew/TURTLE/Projects/Packages/trellis-client/apps/web/app/components/gantt/GanttToday.vue
+ - /Users/trentbrew/TURTLE/Projects/Packages/trellis-client/apps/web/app/components/data/Gantt/GanttToday.vue
+[warn] [nuxt] Two component files resolving to the same name `GanttToolbar`:
+
+ - /Users/trentbrew/TURTLE/Projects/Packages/trellis-client/apps/web/app/components/gantt/GanttToolbar.vue
+ - /Users/trentbrew/TURTLE/Projects/Packages/trellis-client/apps/web/app/components/data/Gantt/GanttToolbar.vue
+[warn] [nuxt] Two component files resolving to the same name `Gantt`:
+
+ - /Users/trentbrew/TURTLE/Projects/Packages/trellis-client/apps/web/app/components/gantt/index.vue
+ - /Users/trentbrew/TURTLE/Projects/Packages/trellis-client/apps/web/app/components/data/Gantt/Gantt.vue
+[warn] [nuxt] Two component files resolving to the same name `SchemaEditor`:
+
+ - /Users/trentbrew/TURTLE/Projects/Packages/trellis-client/apps/web/app/components/ontology/SchemaEditor.vue
+ - /Users/trentbrew/TURTLE/Projects/Packages/trellis-client/apps/web/app/components/data/DataTable/SchemaEditor.vue
+Duplicated imports "EnrichmentSuggestion", the one from "/Users/trentbrew/TURTLE/Projects/Packages/trellis-client/apps/web/app/composables/useContentEnrichment.ts" has been ignored and "/Users/trentbrew/TURTLE/Projects/Packages/trellis-client/apps/web/app/composables/useEmailEnrichment.ts" is used
+Duplicated imports "EnrichmentSuggestion", the one from "/Users/trentbrew/TURTLE/Projects/Packages/trellis-client/apps/web/app/composables/useEmailEnrichment.ts" has been ignored and "/Users/trentbrew/TURTLE/Projects/Packages/trellis-client/apps/web/app/composables/useEventEnrichment.ts" is used
+Duplicated imports "UploadResult", the one from "/Users/trentbrew/TURTLE/Projects/Packages/trellis-client/apps/web/app/composables/useFileUpload.ts" has been ignored and "/Users/trentbrew/TURTLE/Projects/Packages/trellis-client/apps/web/app/composables/useImageUpload.ts" is used
+
+ RUN  v3.2.4 /Users/trentbrew/TURTLE/Projects/Packages/trellis-client/apps/web
+
+stderr | app/lib/vcs-issue-filters.test.ts
+[instant.client] Could not init local storage dir: [POST] "/api/storage/init-local": 404 Cannot find any path matching /api/storage/init-local.
+
+stderr | app/composables/useChat.notify.test.ts
+[instant.client] Could not init local storage dir: [POST] "/api/storage/init-local": 404 Cannot find any path matching /api/storage/init-local.
+
+stderr | app/composables/useChat.notify.test.ts
+[Vue warn]: Unhandled error during execution of watcher callback
+[Vue warn]: Unhandled error during execution of scheduler flush
+
+stderr | app/composables/useCollectionFormulas.test.ts
+[instant.client] Could not init local storage dir: [POST] "/api/storage/init-local": 404 Cannot find any path matching /api/storage/init-local.
+
+stderr | app/lib/workshop-create.test.ts
+[instant.client] Could not init local storage dir: [POST] "/api/storage/init-local": 404 Cannot find any path matching /api/storage/init-local.
+
+stderr | app/components/Counter.test.ts
+[instant.client] Could not init local storage dir: [POST] "/api/storage/init-local": 404 Cannot find any path matching /api/storage/init-local.
+
+stderr | app/composables/useEntityReferences.test.ts
+[instant.client] Could not init local storage dir: [POST] "/api/storage/init-local": 404 Cannot find any path matching /api/storage/init-local.
+
+stderr | app/composables/useCollectionFormulas.test.ts
+[Vue warn]: Unhandled error during execution of watcher callback
+[Vue warn]: Unhandled error during execution of scheduler flush
+
+stderr | app/lib/vcs-issue-filters.test.ts
+[Vue warn]: Unhandled error during execution of watcher callback
+[Vue warn]: Unhandled error during execution of scheduler flush
+
+stderr | app/components/schema/SchemaEditor.test.ts
+[instant.client] Could not init local storage dir: [POST] "/api/storage/init-local": 404 Cannot find any path matching /api/storage/init-local.
+
+stderr | app/composables/useEntityReferences.test.ts
+[Vue warn]: Unhandled error during execution of watcher callback
+[Vue warn]: Unhandled error during execution of scheduler flush
+
+stderr | app/lib/workshop-create.test.ts
+[Vue warn]: Unhandled error during execution of watcher callback
+[Vue warn]: Unhandled error during execution of scheduler flush
+
+stderr | app/composables/useAutoSave.test.ts
+[instant.client] Could not init local storage dir: [POST] "/api/storage/init-local": 404 Cannot find any path matching /api/storage/init-local.
+
+stderr | app/components/Counter.test.ts
+[Vue warn]: Unhandled error during execution of watcher callback
+[Vue warn]: Unhandled error during execution of scheduler flush
+
+stderr | server/utils/fileEnrichment.test.ts
+[instant.client] Could not init local storage dir: [POST] "/api/storage/init-local": 404 Cannot find any path matching /api/storage/init-local.
+
+stderr | app/composables/useAutoSave.test.ts
+[Vue warn]: Unhandled error during execution of watcher callback
+[Vue warn]: Unhandled error during execution of scheduler flush
+
+stderr | app/components/schema/SchemaEditor.test.ts
+[Vue warn]: Unhandled error during execution of watcher callback
+[Vue warn]: Unhandled error during execution of scheduler flush
+
+stderr | server/utils/fileEnrichment.test.ts
+[Vue warn]: Unhandled error during execution of watcher callback
+[Vue warn]: Unhandled error during execution of scheduler flush
+
+4:01:32 AM [vite] (client) warning: Duplicate key "id" in object literal
+23 |      references: [],
+24 |      ...payload,
+25 |      id,
+   |      ^
+26 |      type,
+27 |      title,
+
+  Plugin: vite:esbuild
+  File: /Users/trentbrew/TURTLE/Projects/Packages/trellis-client/apps/web/app/lib/entities-live/bridge-row-to-entity.ts
+4:01:32 AM [vite] (client) warning: Duplicate key "type" in object literal
+24 |      ...payload,
+25 |      id,
+26 |      type,
+   |      ^
+27 |      title,
+28 |      references: [],
+
+  Plugin: vite:esbuild
+  File: /Users/trentbrew/TURTLE/Projects/Packages/trellis-client/apps/web/app/lib/entities-live/bridge-row-to-entity.ts
+4:01:32 AM [vite] (client) warning: Duplicate key "title" in object literal
+25 |      id,
+26 |      type,
+27 |      title,
+   |      ^
+28 |      references: [],
+29 |    } as Entity
+
+  Plugin: vite:esbuild
+  File: /Users/trentbrew/TURTLE/Projects/Packages/trellis-client/apps/web/app/lib/entities-live/bridge-row-to-entity.ts
+4:01:32 AM [vite] (client) warning: Duplicate key "references" in object literal
+26 |      type,
+27 |      title,
+28 |      references: [],
+   |      ^
+29 |    } as Entity
+30 |  }
+
+  Plugin: vite:esbuild
+  File: /Users/trentbrew/TURTLE/Projects/Packages/trellis-client/apps/web/app/lib/entities-live/bridge-row-to-entity.ts
+ ✓ server/utils/fileEnrichment.test.ts (23 tests) 5ms
+stderr | app/composables/useCollectionFormulas.test.ts > useCollectionFormulas > Helper Functions - Array Operations > $sum should add numbers correctly
+[Vue warn]: onMounted is called when there is no active component instance to be associated with. Lifecycle injection APIs can only be used during execution of setup(). If you are using async setup(), make sure to register lifecycle hooks before the first await statement.
+
+stderr | app/composables/useCollectionFormulas.test.ts > useCollectionFormulas > Helper Functions - Array Operations > $sum should work with spread operator
+[Vue warn]: onMounted is called when there is no active component instance to be associated with. Lifecycle injection APIs can only be used during execution of setup(). If you are using async setup(), make sure to register lifecycle hooks before the first await statement.
+
+stderr | app/composables/useAutoSave.test.ts > useAutoSave > transitions to error status on save failure
+[useAutoSave] save failed: Error: Network error
+    at /Users/trentbrew/TURTLE/Projects/Packages/trellis-client/apps/web/app/composables/useAutoSave.test.ts:82:38
+    at file:///Users/trentbrew/TURTLE/Projects/Packages/trellis-client/node_modules/.pnpm/@vitest+runner@3.2.4/node_modules/@vitest/runner/dist/chunk-hooks.js:155:11
+    at file:///Users/trentbrew/TURTLE/Projects/Packages/trellis-client/node_modules/.pnpm/@vitest+runner@3.2.4/node_modules/@vitest/runner/dist/chunk-hooks.js:752:26
+    at file:///Users/trentbrew/TURTLE/Projects/Packages/trellis-client/node_modules/.pnpm/@vitest+runner@3.2.4/node_modules/@vitest/runner/dist/chunk-hooks.js:1897:20
+    at new Promise (<anonymous>)
+    at runWithTimeout (file:///Users/trentbrew/TURTLE/Projects/Packages/trellis-client/node_modules/.pnpm/@vitest+runner@3.2.4/node_modules/@vitest/runner/dist/chunk-hooks.js:1863:10)
+    at runTest (file:///Users/trentbrew/TURTLE/Projects/Packages/trellis-client/node_modules/.pnpm/@vitest+runner@3.2.4/node_modules/@vitest/runner/dist/chunk-hooks.js:1574:12)
+    at processTicksAndRejections (node:internal/process/task_queues:103:5)
+    at runSuite (file:///Users/trentbrew/TURTLE/Projects/Packages/trellis-client/node_modules/.pnpm/@vitest+runner@3.2.4/node_modules/@vitest/runner/dist/chunk-hooks.js:1729:8)
+    at runSuite (file:///Users/trentbrew/TURTLE/Projects/Packages/trellis-client/node_modules/.pnpm/@vitest+runner@3.2.4/node_modules/@vitest/runner/dist/chunk-hooks.js:1729:8)
+
+stderr | app/composables/useCollectionFormulas.test.ts > useCollectionFormulas > Helper Functions - Array Operations > $avg should calculate average correctly
+[Vue warn]: onMounted is called when there is no active component instance to be associated with. Lifecycle injection APIs can only be used during execution of setup(). If you are using async setup(), make sure to register lifecycle hooks before the first await statement.
+
+stderr | app/composables/useCollectionFormulas.test.ts > useCollectionFormulas > Helper Functions - Array Operations > $avg should handle empty arrays
+[Vue warn]: onMounted is called when there is no active component instance to be associated with. Lifecycle injection APIs can only be used during execution of setup(). If you are using async setup(), make sure to register lifecycle hooks before the first await statement.
+
+stderr | app/composables/useCollectionFormulas.test.ts > useCollectionFormulas > Helper Functions - Array Operations > $min should find minimum value
+[Vue warn]: onMounted is called when there is no active component instance to be associated with. Lifecycle injection APIs can only be used during execution of setup(). If you are using async setup(), make sure to register lifecycle hooks before the first await statement.
+
+ ✓ app/composables/useAutoSave.test.ts (7 tests) 7ms
+stderr | app/composables/useCollectionFormulas.test.ts > useCollectionFormulas > Helper Functions - Array Operations > $max should find maximum value
+[Vue warn]: onMounted is called when there is no active component instance to be associated with. Lifecycle injection APIs can only be used during execution of setup(). If you are using async setup(), make sure to register lifecycle hooks before the first await statement.
+
+stderr | app/composables/useCollectionFormulas.test.ts > useCollectionFormulas > Helper Functions - Array Operations > $count should count array items
+[Vue warn]: onMounted is called when there is no active component instance to be associated with. Lifecycle injection APIs can only be used during execution of setup(). If you are using async setup(), make sure to register lifecycle hooks before the first await statement.
+
+stderr | app/composables/useCollectionFormulas.test.ts > useCollectionFormulas > Helper Functions - Array Operations > $count should return 0 for non-arrays
+[Vue warn]: onMounted is called when there is no active component instance to be associated with. Lifecycle injection APIs can only be used during execution of setup(). If you are using async setup(), make sure to register lifecycle hooks before the first await statement.
+
+stderr | app/composables/useCollectionFormulas.test.ts > useCollectionFormulas > Helper Functions - Formatting > $currency should format numbers as USD currency
+[Vue warn]: onMounted is called when there is no active component instance to be associated with. Lifecycle injection APIs can only be used during execution of setup(). If you are using async setup(), make sure to register lifecycle hooks before the first await statement.
+
+stderr | app/composables/useCollectionFormulas.test.ts > useCollectionFormulas > Helper Functions - Formatting > $currency should handle zero
+[Vue warn]: onMounted is called when there is no active component instance to be associated with. Lifecycle injection APIs can only be used during execution of setup(). If you are using async setup(), make sure to register lifecycle hooks before the first await statement.
+
+stderr | app/composables/useCollectionFormulas.test.ts > useCollectionFormulas > Helper Functions - Formatting > $percent should format decimals as percentages
+[Vue warn]: onMounted is called when there is no active component instance to be associated with. Lifecycle injection APIs can only be used during execution of setup(). If you are using async setup(), make sure to register lifecycle hooks before the first await statement.
+
+stderr | app/composables/useCollectionFormulas.test.ts > useCollectionFormulas > Helper Functions - Formatting > $percent should respect decimal places
+[Vue warn]: onMounted is called when there is no active component instance to be associated with. Lifecycle injection APIs can only be used during execution of setup(). If you are using async setup(), make sure to register lifecycle hooks before the first await statement.
+
+stderr | app/composables/useCollectionFormulas.test.ts > useCollectionFormulas > Helper Functions - Formatting > $round should round to specified decimals
+[Vue warn]: onMounted is called when there is no active component instance to be associated with. Lifecycle injection APIs can only be used during execution of setup(). If you are using async setup(), make sure to register lifecycle hooks before the first await statement.
+
+stderr | app/composables/useCollectionFormulas.test.ts > useCollectionFormulas > Helper Functions - Formatting > $round should default to 0 decimals
+[Vue warn]: onMounted is called when there is no active component instance to be associated with. Lifecycle injection APIs can only be used during execution of setup(). If you are using async setup(), make sure to register lifecycle hooks before the first await statement.
+
+stderr | app/composables/useCollectionFormulas.test.ts > useCollectionFormulas > Helper Functions - Formatting > $floor should round down
+[Vue warn]: onMounted is called when there is no active component instance to be associated with. Lifecycle injection APIs can only be used during execution of setup(). If you are using async setup(), make sure to register lifecycle hooks before the first await statement.
+
+stderr | app/composables/useCollectionFormulas.test.ts > useCollectionFormulas > Helper Functions - Formatting > $ceil should round up
+[Vue warn]: onMounted is called when there is no active component instance to be associated with. Lifecycle injection APIs can only be used during execution of setup(). If you are using async setup(), make sure to register lifecycle hooks before the first await statement.
+
+stderr | app/composables/useCollectionFormulas.test.ts > useCollectionFormulas > Helper Functions - Formatting > $abs should return absolute value
+[Vue warn]: onMounted is called when there is no active component instance to be associated with. Lifecycle injection APIs can only be used during execution of setup(). If you are using async setup(), make sure to register lifecycle hooks before the first await statement.
+
+stderr | app/composables/useCollectionFormulas.test.ts > useCollectionFormulas > Helper Functions - String Operations > $concat should concatenate strings
+[Vue warn]: onMounted is called when there is no active component instance to be associated with. Lifecycle injection APIs can only be used during execution of setup(). If you are using async setup(), make sure to register lifecycle hooks before the first await statement.
+
+stderr | app/composables/useCollectionFormulas.test.ts > useCollectionFormulas > Helper Functions - String Operations > $upper should uppercase strings
+[Vue warn]: onMounted is called when there is no active component instance to be associated with. Lifecycle injection APIs can only be used during execution of setup(). If you are using async setup(), make sure to register lifecycle hooks before the first await statement.
+
+stderr | app/composables/useCollectionFormulas.test.ts > useCollectionFormulas > Helper Functions - String Operations > $lower should lowercase strings
+[Vue warn]: onMounted is called when there is no active component instance to be associated with. Lifecycle injection APIs can only be used during execution of setup(). If you are using async setup(), make sure to register lifecycle hooks before the first await statement.
+
+stderr | app/composables/useCollectionFormulas.test.ts > useCollectionFormulas > Helper Functions - String Operations > $trim should remove whitespace
+[Vue warn]: onMounted is called when there is no active component instance to be associated with. Lifecycle injection APIs can only be used during execution of setup(). If you are using async setup(), make sure to register lifecycle hooks before the first await statement.
+
+stderr | app/composables/useCollectionFormulas.test.ts > useCollectionFormulas > Helper Functions - Conditional > $if should return true value when condition is true
+[Vue warn]: onMounted is called when there is no active component instance to be associated with. Lifecycle injection APIs can only be used during execution of setup(). If you are using async setup(), make sure to register lifecycle hooks before the first await statement.
+
+stderr | app/composables/useCollectionFormulas.test.ts > useCollectionFormulas > Helper Functions - Conditional > $if should return false value when condition is false
+[Vue warn]: onMounted is called when there is no active component instance to be associated with. Lifecycle injection APIs can only be used during execution of setup(). If you are using async setup(), make sure to register lifecycle hooks before the first await statement.
+
+stderr | app/composables/useCollectionFormulas.test.ts > useCollectionFormulas > Helper Functions - Conditional > $if should evaluate expressions
+[Vue warn]: onMounted is called when there is no active component instance to be associated with. Lifecycle injection APIs can only be used during execution of setup(). If you are using async setup(), make sure to register lifecycle hooks before the first await statement.
+
+stderr | app/composables/useCollectionFormulas.test.ts > useCollectionFormulas > Helper Functions - Conditional > $switch should match cases
+[Vue warn]: onMounted is called when there is no active component instance to be associated with. Lifecycle injection APIs can only be used during execution of setup(). If you are using async setup(), make sure to register lifecycle hooks before the first await statement.
+
+stderr | app/composables/useCollectionFormulas.test.ts > useCollectionFormulas > Helper Functions - Conditional > $switch should return default for no match
+[Vue warn]: onMounted is called when there is no active component instance to be associated with. Lifecycle injection APIs can only be used during execution of setup(). If you are using async setup(), make sure to register lifecycle hooks before the first await statement.
+
+stderr | app/composables/useCollectionFormulas.test.ts > useCollectionFormulas > Helper Functions - Collection Queries > $filter should filter array by predicate
+[Vue warn]: onMounted is called when there is no active component instance to be associated with. Lifecycle injection APIs can only be used during execution of setup(). If you are using async setup(), make sure to register lifecycle hooks before the first await statement.
+
+stderr | app/composables/useCollectionFormulas.test.ts > useCollectionFormulas > Helper Functions - Collection Queries > $find should find first matching item
+[Vue warn]: onMounted is called when there is no active component instance to be associated with. Lifecycle injection APIs can only be used during execution of setup(). If you are using async setup(), make sure to register lifecycle hooks before the first await statement.
+
+stderr | app/composables/useCollectionFormulas.test.ts > useCollectionFormulas > Helper Functions - Collection Queries > $map should transform array
+[Vue warn]: onMounted is called when there is no active component instance to be associated with. Lifecycle injection APIs can only be used during execution of setup(). If you are using async setup(), make sure to register lifecycle hooks before the first await statement.
+
+stderr | app/composables/useCollectionFormulas.test.ts > useCollectionFormulas > Helper Functions - Collection Queries > $reduce should aggregate values
+[Vue warn]: onMounted is called when there is no active component instance to be associated with. Lifecycle injection APIs can only be used during execution of setup(). If you are using async setup(), make sure to register lifecycle hooks before the first await statement.
+
+stderr | app/composables/useCollectionFormulas.test.ts > useCollectionFormulas > Real-World Budget Formulas > should calculate total budgeted amount
+[Vue warn]: onMounted is called when there is no active component instance to be associated with. Lifecycle injection APIs can only be used during execution of setup(). If you are using async setup(), make sure to register lifecycle hooks before the first await statement.
+
+stderr | app/composables/useCollectionFormulas.test.ts > useCollectionFormulas > Real-World Budget Formulas > should calculate total budgeted with helper
+[Vue warn]: onMounted is called when there is no active component instance to be associated with. Lifecycle injection APIs can only be used during execution of setup(). If you are using async setup(), make sure to register lifecycle hooks before the first await statement.
+
+stderr | app/composables/useCollectionFormulas.test.ts > useCollectionFormulas > Real-World Budget Formulas > should calculate total spent
+[Vue warn]: onMounted is called when there is no active component instance to be associated with. Lifecycle injection APIs can only be used during execution of setup(). If you are using async setup(), make sure to register lifecycle hooks before the first await statement.
+
+stderr | app/composables/useCollectionFormulas.test.ts > useCollectionFormulas > Real-World Budget Formulas > should calculate remaining budget
+[Vue warn]: onMounted is called when there is no active component instance to be associated with. Lifecycle injection APIs can only be used during execution of setup(). If you are using async setup(), make sure to register lifecycle hooks before the first await statement.
+
+stderr | app/composables/useCollectionFormulas.test.ts > useCollectionFormulas > Real-World Budget Formulas > should format total as currency
+[Vue warn]: onMounted is called when there is no active component instance to be associated with. Lifecycle injection APIs can only be used during execution of setup(). If you are using async setup(), make sure to register lifecycle hooks before the first await statement.
+
+stderr | app/composables/useCollectionFormulas.test.ts > useCollectionFormulas > Real-World Budget Formulas > should calculate budget utilization percentage
+[Vue warn]: onMounted is called when there is no active component instance to be associated with. Lifecycle injection APIs can only be used during execution of setup(). If you are using async setup(), make sure to register lifecycle hooks before the first await statement.
+
+stderr | app/composables/useCollectionFormulas.test.ts > useCollectionFormulas > Real-World Budget Formulas > should count categories over budget
+[Vue warn]: onMounted is called when there is no active component instance to be associated with. Lifecycle injection APIs can only be used during execution of setup(). If you are using async setup(), make sure to register lifecycle hooks before the first await statement.
+
+stderr | app/composables/useCollectionFormulas.test.ts > useCollectionFormulas > Real-World Budget Formulas > should find highest budget category
+[Vue warn]: onMounted is called when there is no active component instance to be associated with. Lifecycle injection APIs can only be used during execution of setup(). If you are using async setup(), make sure to register lifecycle hooks before the first await statement.
+
+stderr | app/composables/useCollectionFormulas.test.ts > useCollectionFormulas > Real-World Budget Formulas > should determine budget status
+[Vue warn]: onMounted is called when there is no active component instance to be associated with. Lifecycle injection APIs can only be used during execution of setup(). If you are using async setup(), make sure to register lifecycle hooks before the first await statement.
+
+stderr | app/composables/useCollectionFormulas.test.ts > useCollectionFormulas > JSON-LD @expr Wrapper Support > should parse @expr with double quotes
+[Vue warn]: onMounted is called when there is no active component instance to be associated with. Lifecycle injection APIs can only be used during execution of setup(). If you are using async setup(), make sure to register lifecycle hooks before the first await statement.
+
+stderr | app/composables/useCollectionFormulas.test.ts > useCollectionFormulas > JSON-LD @expr Wrapper Support > should parse @expr with single quotes
+[Vue warn]: onMounted is called when there is no active component instance to be associated with. Lifecycle injection APIs can only be used during execution of setup(). If you are using async setup(), make sure to register lifecycle hooks before the first await statement.
+
+stderr | app/composables/useCollectionFormulas.test.ts > useCollectionFormulas > JSON-LD @expr Wrapper Support > should parse @expr without wrapper quotes
+[Vue warn]: onMounted is called when there is no active component instance to be associated with. Lifecycle injection APIs can only be used during execution of setup(). If you are using async setup(), make sure to register lifecycle hooks before the first await statement.
+
+stderr | app/composables/useCollectionFormulas.test.ts > useCollectionFormulas > JSON-LD @expr Wrapper Support > should handle complex expressions with @expr
+[Vue warn]: onMounted is called when there is no active component instance to be associated with. Lifecycle injection APIs can only be used during execution of setup(). If you are using async setup(), make sure to register lifecycle hooks before the first await statement.
+
+stderr | app/composables/useCollectionFormulas.test.ts > useCollectionFormulas > Error Handling > should return null for invalid syntax and log error
+[Vue warn]: onMounted is called when there is no active component instance to be associated with. Lifecycle injection APIs can only be used during execution of setup(). If you are using async setup(), make sure to register lifecycle hooks before the first await statement.
+
+stderr | app/composables/useCollectionFormulas.test.ts > useCollectionFormulas > Error Handling > should return null for invalid syntax and log error
+Formula evaluation error in field "temp": SyntaxError: Unexpected identifier 'javascript'
+    at new Function (<anonymous>)
+    at evaluateFormula (/Users/trentbrew/TURTLE/Projects/Packages/trellis-client/apps/web/app/composables/useCollectionFormulas.ts:470:18)
+    at evaluateSingleFormula (/Users/trentbrew/TURTLE/Projects/Packages/trellis-client/apps/web/app/composables/useCollectionFormulas.ts:635:12)
+    at /Users/trentbrew/TURTLE/Projects/Packages/trellis-client/apps/web/app/composables/useCollectionFormulas.test.ts:270:22
+    at file:///Users/trentbrew/TURTLE/Projects/Packages/trellis-client/node_modules/.pnpm/@vitest+runner@3.2.4/node_modules/@vitest/runner/dist/chunk-hooks.js:155:11
+    at file:///Users/trentbrew/TURTLE/Projects/Packages/trellis-client/node_modules/.pnpm/@vitest+runner@3.2.4/node_modules/@vitest/runner/dist/chunk-hooks.js:752:26
+    at file:///Users/trentbrew/TURTLE/Projects/Packages/trellis-client/node_modules/.pnpm/@vitest+runner@3.2.4/node_modules/@vitest/runner/dist/chunk-hooks.js:1897:20
+    at new Promise (<anonymous>)
+    at runWithTimeout (file:///Users/trentbrew/TURTLE/Projects/Packages/trellis-client/node_modules/.pnpm/@vitest+runner@3.2.4/node_modules/@vitest/runner/dist/chunk-hooks.js:1863:10)
+    at runTest (file:///Users/trentbrew/TURTLE/Projects/Packages/trellis-client/node_modules/.pnpm/@vitest+runner@3.2.4/node_modules/@vitest/runner/dist/chunk-hooks.js:1574:12)
+
+stderr | app/composables/useCollectionFormulas.test.ts > useCollectionFormulas > Error Handling > should return null for undefined variables and log error
+[Vue warn]: onMounted is called when there is no active component instance to be associated with. Lifecycle injection APIs can only be used during execution of setup(). If you are using async setup(), make sure to register lifecycle hooks before the first await statement.
+
+stderr | app/composables/useCollectionFormulas.test.ts > useCollectionFormulas > Error Handling > should return null for undefined variables and log error
+Formula evaluation error in field "temp": ReferenceError: undefinedVariable is not defined
+    at eval (eval at evaluateFormula (/Users/trentbrew/TURTLE/Projects/Packages/trellis-client/apps/web/app/composables/useCollectionFormulas.ts:470:18), <anonymous>:3:15)
+    at evaluateFormula (/Users/trentbrew/TURTLE/Projects/Packages/trellis-client/apps/web/app/composables/useCollectionFormulas.ts:471:22)
+    at evaluateSingleFormula (/Users/trentbrew/TURTLE/Projects/Packages/trellis-client/apps/web/app/composables/useCollectionFormulas.ts:635:12)
+    at /Users/trentbrew/TURTLE/Projects/Packages/trellis-client/apps/web/app/composables/useCollectionFormulas.test.ts:276:22
+    at file:///Users/trentbrew/TURTLE/Projects/Packages/trellis-client/node_modules/.pnpm/@vitest+runner@3.2.4/node_modules/@vitest/runner/dist/chunk-hooks.js:155:11
+    at file:///Users/trentbrew/TURTLE/Projects/Packages/trellis-client/node_modules/.pnpm/@vitest+runner@3.2.4/node_modules/@vitest/runner/dist/chunk-hooks.js:752:26
+    at file:///Users/trentbrew/TURTLE/Projects/Packages/trellis-client/node_modules/.pnpm/@vitest+runner@3.2.4/node_modules/@vitest/runner/dist/chunk-hooks.js:1897:20
+    at new Promise (<anonymous>)
+    at runWithTimeout (file:///Users/trentbrew/TURTLE/Projects/Packages/trellis-client/node_modules/.pnpm/@vitest+runner@3.2.4/node_modules/@vitest/runner/dist/chunk-hooks.js:1863:10)
+    at runTest (file:///Users/trentbrew/TURTLE/Projects/Packages/trellis-client/node_modules/.pnpm/@vitest+runner@3.2.4/node_modules/@vitest/runner/dist/chunk-hooks.js:1574:12)
+
+stderr | app/composables/useCollectionFormulas.test.ts > useCollectionFormulas > Error Handling > should handle division by zero
+[Vue warn]: onMounted is called when there is no active component instance to be associated with. Lifecycle injection APIs can only be used during execution of setup(). If you are using async setup(), make sure to register lifecycle hooks before the first await statement.
+
+stderr | app/composables/useCollectionFormulas.test.ts > useCollectionFormulas > Error Handling > should handle null values in calculations
+[Vue warn]: onMounted is called when there is no active component instance to be associated with. Lifecycle injection APIs can only be used during execution of setup(). If you are using async setup(), make sure to register lifecycle hooks before the first await statement.
+
+stderr | app/composables/useCollectionFormulas.test.ts > useCollectionFormulas > Type Coercion > should coerce to number when formulaReturnType is number
+[Vue warn]: onMounted is called when there is no active component instance to be associated with. Lifecycle injection APIs can only be used during execution of setup(). If you are using async setup(), make sure to register lifecycle hooks before the first await statement.
+
+stderr | app/composables/useCollectionFormulas.test.ts > useCollectionFormulas > Type Coercion > should handle boolean results
+[Vue warn]: onMounted is called when there is no active component instance to be associated with. Lifecycle injection APIs can only be used during execution of setup(). If you are using async setup(), make sure to register lifecycle hooks before the first await statement.
+
+stderr | app/composables/useCollectionFormulas.test.ts > useCollectionFormulas > Type Coercion > should handle date objects
+[Vue warn]: onMounted is called when there is no active component instance to be associated with. Lifecycle injection APIs can only be used during execution of setup(). If you are using async setup(), make sure to register lifecycle hooks before the first await statement.
+
+stderr | app/composables/useCollectionFormulas.test.ts > useCollectionFormulas > Edge Cases > should handle empty formula
+[Vue warn]: onMounted is called when there is no active component instance to be associated with. Lifecycle injection APIs can only be used during execution of setup(). If you are using async setup(), make sure to register lifecycle hooks before the first await statement.
+
+stderr | app/composables/useCollectionFormulas.test.ts > useCollectionFormulas > Edge Cases > should return null for whitespace-only formula
+[Vue warn]: onMounted is called when there is no active component instance to be associated with. Lifecycle injection APIs can only be used during execution of setup(). If you are using async setup(), make sure to register lifecycle hooks before the first await statement.
+
+stderr | app/composables/useCollectionFormulas.test.ts > useCollectionFormulas > Edge Cases > should return null for whitespace-only formula
+Formula evaluation error in field "temp": SyntaxError: Unexpected token ')'
+    at new Function (<anonymous>)
+    at evaluateFormula (/Users/trentbrew/TURTLE/Projects/Packages/trellis-client/apps/web/app/composables/useCollectionFormulas.ts:470:18)
+    at evaluateSingleFormula (/Users/trentbrew/TURTLE/Projects/Packages/trellis-client/apps/web/app/composables/useCollectionFormulas.ts:635:12)
+    at /Users/trentbrew/TURTLE/Projects/Packages/trellis-client/apps/web/app/composables/useCollectionFormulas.test.ts:319:22
+    at file:///Users/trentbrew/TURTLE/Projects/Packages/trellis-client/node_modules/.pnpm/@vitest+runner@3.2.4/node_modules/@vitest/runner/dist/chunk-hooks.js:155:11
+    at file:///Users/trentbrew/TURTLE/Projects/Packages/trellis-client/node_modules/.pnpm/@vitest+runner@3.2.4/node_modules/@vitest/runner/dist/chunk-hooks.js:752:26
+    at file:///Users/trentbrew/TURTLE/Projects/Packages/trellis-client/node_modules/.pnpm/@vitest+runner@3.2.4/node_modules/@vitest/runner/dist/chunk-hooks.js:1897:20
+    at new Promise (<anonymous>)
+    at runWithTimeout (file:///Users/trentbrew/TURTLE/Projects/Packages/trellis-client/node_modules/.pnpm/@vitest+runner@3.2.4/node_modules/@vitest/runner/dist/chunk-hooks.js:1863:10)
+    at runTest (file:///Users/trentbrew/TURTLE/Projects/Packages/trellis-client/node_modules/.pnpm/@vitest+runner@3.2.4/node_modules/@vitest/runner/dist/chunk-hooks.js:1574:12)
+
+stderr | app/composables/useCollectionFormulas.test.ts > useCollectionFormulas > Edge Cases > should handle very long formulas
+[Vue warn]: onMounted is called when there is no active component instance to be associated with. Lifecycle injection APIs can only be used during execution of setup(). If you are using async setup(), make sure to register lifecycle hooks before the first await statement.
+
+stderr | app/composables/useCollectionFormulas.test.ts > useCollectionFormulas > Edge Cases > should handle nested function calls
+[Vue warn]: onMounted is called when there is no active component instance to be associated with. Lifecycle injection APIs can only be used during execution of setup(). If you are using async setup(), make sure to register lifecycle hooks before the first await statement.
+
+stderr | app/composables/useCollectionFormulas.test.ts > useCollectionFormulas > Edge Cases > should handle array methods chaining
+[Vue warn]: onMounted is called when there is no active component instance to be associated with. Lifecycle injection APIs can only be used during execution of setup(). If you are using async setup(), make sure to register lifecycle hooks before the first await statement.
+
+stderr | app/composables/useCollectionFormulas.test.ts > useCollectionFormulas > Edge Cases > should handle object destructuring in context
+[Vue warn]: onMounted is called when there is no active component instance to be associated with. Lifecycle injection APIs can only be used during execution of setup(). If you are using async setup(), make sure to register lifecycle hooks before the first await statement.
+
+stderr | app/composables/useCollectionFormulas.test.ts > useCollectionFormulas > Edge Cases > should handle template literals (backticks not allowed in Function constructor)
+[Vue warn]: onMounted is called when there is no active component instance to be associated with. Lifecycle injection APIs can only be used during execution of setup(). If you are using async setup(), make sure to register lifecycle hooks before the first await statement.
+
+stderr | app/composables/useCollectionFormulas.test.ts > useCollectionFormulas > Context Access > should access record fields from context
+[Vue warn]: onMounted is called when there is no active component instance to be associated with. Lifecycle injection APIs can only be used during execution of setup(). If you are using async setup(), make sure to register lifecycle hooks before the first await statement.
+
+stderr | app/composables/useCollectionFormulas.test.ts > useCollectionFormulas > Context Access > should access nested object properties
+[Vue warn]: onMounted is called when there is no active component instance to be associated with. Lifecycle injection APIs can only be used during execution of setup(). If you are using async setup(), make sure to register lifecycle hooks before the first await statement.
+
+stderr | app/composables/useCollectionFormulas.test.ts > useCollectionFormulas > Context Access > should access array properties
+[Vue warn]: onMounted is called when there is no active component instance to be associated with. Lifecycle injection APIs can only be used during execution of setup(). If you are using async setup(), make sure to register lifecycle hooks before the first await statement.
+
+stderr | app/composables/useCollectionFormulas.test.ts > useCollectionFormulas > Performance > should handle large arrays efficiently
+[Vue warn]: onMounted is called when there is no active component instance to be associated with. Lifecycle injection APIs can only be used during execution of setup(). If you are using async setup(), make sure to register lifecycle hooks before the first await statement.
+
+stderr | app/composables/useCollectionFormulas.test.ts > useCollectionFormulas > Graph Traversal Functions > $related > should find related nodes in both directions
+[Vue warn]: onMounted is called when there is no active component instance to be associated with. Lifecycle injection APIs can only be used during execution of setup(). If you are using async setup(), make sure to register lifecycle hooks before the first await statement.
+
+stderr | app/composables/useCollectionFormulas.test.ts > useCollectionFormulas > Graph Traversal Functions > $related > should filter by relation type
+[Vue warn]: onMounted is called when there is no active component instance to be associated with. Lifecycle injection APIs can only be used during execution of setup(). If you are using async setup(), make sure to register lifecycle hooks before the first await statement.
+
+stderr | app/composables/useCollectionFormulas.test.ts > useCollectionFormulas > Graph Traversal Functions > $related > should filter by relation type and direction
+[Vue warn]: onMounted is called when there is no active component instance to be associated with. Lifecycle injection APIs can only be used during execution of setup(). If you are using async setup(), make sure to register lifecycle hooks before the first await statement.
+
+stderr | app/composables/useCollectionFormulas.test.ts > useCollectionFormulas > Graph Traversal Functions > $related > should filter by direction
+[Vue warn]: onMounted is called when there is no active component instance to be associated with. Lifecycle injection APIs can only be used during execution of setup(). If you are using async setup(), make sure to register lifecycle hooks before the first await statement.
+
+stderr | app/composables/useCollectionFormulas.test.ts > useCollectionFormulas > Graph Traversal Functions > $related > should return empty for unconnected node
+[Vue warn]: onMounted is called when there is no active component instance to be associated with. Lifecycle injection APIs can only be used during execution of setup(). If you are using async setup(), make sure to register lifecycle hooks before the first await statement.
+
+stderr | app/composables/useCollectionFormulas.test.ts > useCollectionFormulas > Graph Traversal Functions > $descendants > should find all descendants
+[Vue warn]: onMounted is called when there is no active component instance to be associated with. Lifecycle injection APIs can only be used during execution of setup(). If you are using async setup(), make sure to register lifecycle hooks before the first await statement.
+
+stderr | app/composables/useCollectionFormulas.test.ts > useCollectionFormulas > Graph Traversal Functions > $descendants > should respect depth limit
+[Vue warn]: onMounted is called when there is no active component instance to be associated with. Lifecycle injection APIs can only be used during execution of setup(). If you are using async setup(), make sure to register lifecycle hooks before the first await statement.
+
+stderr | app/composables/useCollectionFormulas.test.ts > useCollectionFormulas > Graph Traversal Functions > $descendants > should filter by relation type
+[Vue warn]: onMounted is called when there is no active component instance to be associated with. Lifecycle injection APIs can only be used during execution of setup(). If you are using async setup(), make sure to register lifecycle hooks before the first await statement.
+
+stderr | app/composables/useCollectionFormulas.test.ts > useCollectionFormulas > Graph Traversal Functions > $descendants > should return empty for leaf node
+[Vue warn]: onMounted is called when there is no active component instance to be associated with. Lifecycle injection APIs can only be used during execution of setup(). If you are using async setup(), make sure to register lifecycle hooks before the first await statement.
+
+stderr | app/composables/useCollectionFormulas.test.ts > useCollectionFormulas > Graph Traversal Functions > $ancestors > should find all ancestors
+[Vue warn]: onMounted is called when there is no active component instance to be associated with. Lifecycle injection APIs can only be used during execution of setup(). If you are using async setup(), make sure to register lifecycle hooks before the first await statement.
+
+stderr | app/composables/useCollectionFormulas.test.ts > useCollectionFormulas > Graph Traversal Functions > $ancestors > should respect depth limit
+[Vue warn]: onMounted is called when there is no active component instance to be associated with. Lifecycle injection APIs can only be used during execution of setup(). If you are using async setup(), make sure to register lifecycle hooks before the first await statement.
+
+stderr | app/composables/useCollectionFormulas.test.ts > useCollectionFormulas > Graph Traversal Functions > $ancestors > should return empty for root node
+[Vue warn]: onMounted is called when there is no active component instance to be associated with. Lifecycle injection APIs can only be used during execution of setup(). If you are using async setup(), make sure to register lifecycle hooks before the first await statement.
+
+stderr | app/composables/useCollectionFormulas.test.ts > useCollectionFormulas > Graph Traversal Functions > $siblings > should find sibling nodes
+[Vue warn]: onMounted is called when there is no active component instance to be associated with. Lifecycle injection APIs can only be used during execution of setup(). If you are using async setup(), make sure to register lifecycle hooks before the first await statement.
+
+stderr | app/composables/useCollectionFormulas.test.ts > useCollectionFormulas > Graph Traversal Functions > $siblings > should filter siblings by relation type
+[Vue warn]: onMounted is called when there is no active component instance to be associated with. Lifecycle injection APIs can only be used during execution of setup(). If you are using async setup(), make sure to register lifecycle hooks before the first await statement.
+
+stderr | app/composables/useCollectionFormulas.test.ts > useCollectionFormulas > Graph Traversal Functions > $siblings > should return empty for node without siblings
+[Vue warn]: onMounted is called when there is no active component instance to be associated with. Lifecycle injection APIs can only be used during execution of setup(). If you are using async setup(), make sure to register lifecycle hooks before the first await statement.
+
+stderr | app/composables/useCollectionFormulas.test.ts > useCollectionFormulas > Graph Traversal Functions > $path > should find path between connected nodes
+[Vue warn]: onMounted is called when there is no active component instance to be associated with. Lifecycle injection APIs can only be used during execution of setup(). If you are using async setup(), make sure to register lifecycle hooks before the first await statement.
+
+stderr | app/composables/useCollectionFormulas.test.ts > useCollectionFormulas > Graph Traversal Functions > $path > should return false for unconnected nodes
+[Vue warn]: onMounted is called when there is no active component instance to be associated with. Lifecycle injection APIs can only be used during execution of setup(). If you are using async setup(), make sure to register lifecycle hooks before the first await statement.
+
+stderr | app/composables/useCollectionFormulas.test.ts > useCollectionFormulas > Graph Traversal Functions > $nodeEdges > should get all edges for a node
+[Vue warn]: onMounted is called when there is no active component instance to be associated with. Lifecycle injection APIs can only be used during execution of setup(). If you are using async setup(), make sure to register lifecycle hooks before the first await statement.
+
+stderr | app/composables/useCollectionFormulas.test.ts > useCollectionFormulas > Graph Traversal Functions > $nodeEdges > should filter by direction
+[Vue warn]: onMounted is called when there is no active component instance to be associated with. Lifecycle injection APIs can only be used during execution of setup(). If you are using async setup(), make sure to register lifecycle hooks before the first await statement.
+
+stderr | app/composables/useCollectionFormulas.test.ts > useCollectionFormulas > Graph Traversal Functions > Graph Formula Combinations > should sum descendant values
+[Vue warn]: onMounted is called when there is no active component instance to be associated with. Lifecycle injection APIs can only be used during execution of setup(). If you are using async setup(), make sure to register lifecycle hooks before the first await statement.
+
+stderr | app/composables/useCollectionFormulas.test.ts > useCollectionFormulas > Graph Traversal Functions > Graph Formula Combinations > should count descendants conditionally
+[Vue warn]: onMounted is called when there is no active component instance to be associated with. Lifecycle injection APIs can only be used during execution of setup(). If you are using async setup(), make sure to register lifecycle hooks before the first await statement.
+
+stderr | app/composables/useCollectionFormulas.test.ts > useCollectionFormulas > Graph Traversal Functions > Graph Formula Combinations > should calculate average of related values
+[Vue warn]: onMounted is called when there is no active component instance to be associated with. Lifecycle injection APIs can only be used during execution of setup(). If you are using async setup(), make sure to register lifecycle hooks before the first await statement.
+
+stderr | app/composables/useChat.notify.test.ts > useChat — @mention notifications > fires /api/notify with type:mention for a mentioned user
+[Vue warn] onScopeDispose() is called when there is no active effect scope to be associated with.
+
+stderr | app/composables/useChat.notify.test.ts > useChat — @mention notifications > skips self-mentions (author === mentioned user)
+[Vue warn] onScopeDispose() is called when there is no active effect scope to be associated with.
+
+stderr | app/composables/useChat.notify.test.ts > useChat — @mention notifications > passes skipUserIds to notify-message for mentioned users
+[Vue warn] onScopeDispose() is called when there is no active effect scope to be associated with.
+
+stderr | app/composables/useChat.notify.test.ts > useChat — @mention notifications > fires one /api/notify per distinct mentioned user
+[Vue warn] onScopeDispose() is called when there is no active effect scope to be associated with.
+
+stderr | app/composables/useChat.notify.test.ts > useChat — @mention notifications > deduplicates repeated mentions of the same user
+[Vue warn] onScopeDispose() is called when there is no active effect scope to be associated with.
+
+stderr | app/composables/useChat.notify.test.ts > useChat — @mention notifications > does not fire /api/notify when no mentions present
+[Vue warn] onScopeDispose() is called when there is no active effect scope to be associated with.
+
+stderr | app/composables/useChat.notify.test.ts > useChat — @mention notifications > does not fire notifications when orgId context is missing
+[Vue warn] onScopeDispose() is called when there is no active effect scope to be associated with.
+
+ ✓ app/composables/useCollectionFormulas.test.ts (83 tests) 17ms
+ ✓ app/composables/useChat.notify.test.ts (7 tests) 8ms
+ ✓ app/lib/vcs-issue-filters.test.ts (11 tests) 6ms
+ ✓ app/composables/useEntityReferences.test.ts (11 tests) 6ms
+stderr | app/components/schema/SchemaEditor.test.ts > SchemaEditor > Formula Field UI > should insert helper code when button is clicked
+[Vue warn]: onMounted is called when there is no active component instance to be associated with. Lifecycle injection APIs can only be used during execution of setup(). If you are using async setup(), make sure to register lifecycle hooks before the first await statement.
+Formula evaluation error in field "temp": SyntaxError: Unexpected identifier '$sum'
+    at new Function (<anonymous>)
+    at evaluateFormula (/Users/trentbrew/TURTLE/Projects/Packages/trellis-client/apps/web/app/composables/useCollectionFormulas.ts:470:18)
+    at evaluateSingleFormula (/Users/trentbrew/TURTLE/Projects/Packages/trellis-client/apps/web/app/composables/useCollectionFormulas.ts:635:12)
+    at validateFormula (/Users/trentbrew/TURTLE/Projects/Packages/trellis-client/apps/web/app/components/data/DataTable/SchemaEditor.vue:58:7)
+    at /Users/trentbrew/TURTLE/Projects/Packages/trellis-client/apps/web/app/components/data/DataTable/SchemaEditor.vue:245:17
+    at processTicksAndRejections (node:internal/process/task_queues:103:5)
+
+stderr | app/components/Counter.test.ts
+Warning: KaTeX doesn't work in quirks mode. Make sure your website has a suitable doctype.
+
+ ✓ app/components/schema/SchemaEditor.test.ts (11 tests) 1403ms
+stderr | app/utils/fileMetadata.test.ts
+[instant.client] Could not init local storage dir: [POST] "/api/storage/init-local": 404 Cannot find any path matching /api/storage/init-local.
+
+stderr | app/lib/normalizeDatabaseSchema.test.ts
+[instant.client] Could not init local storage dir: [POST] "/api/storage/init-local": 404 Cannot find any path matching /api/storage/init-local.
+
+stderr | app/utils/fileMetadata.test.ts
+[Vue warn]: Unhandled error during execution of watcher callback
+[Vue warn]: Unhandled error during execution of scheduler flush
+
+stderr | server/utils/localStorageRoutes.test.ts
+[instant.client] Could not init local storage dir: [POST] "/api/storage/init-local": 404 Cannot find any path matching /api/storage/init-local.
+
+stderr | server/utils/localStorageRoutes.test.ts
+[Vue warn]: Unhandled error during execution of watcher callback
+[Vue warn]: Unhandled error during execution of scheduler flush
+
+stderr | app/lib/normalizeDatabaseSchema.test.ts
+[Vue warn]: Unhandled error during execution of watcher callback
+[Vue warn]: Unhandled error during execution of scheduler flush
+
+stderr | app/composables/useFileUpload.test.ts
+[instant.client] Could not init local storage dir: [POST] "/api/storage/init-local": 404 Cannot find any path matching /api/storage/init-local.
+
+stderr | app/composables/useFileUpload.test.ts
+[Vue warn]: Unhandled error during execution of watcher callback
+[Vue warn]: Unhandled error during execution of scheduler flush
+
+stderr | app/utils/fileClassification.test.ts
+[instant.client] Could not init local storage dir: [POST] "/api/storage/init-local": 404 Cannot find any path matching /api/storage/init-local.
+
+stderr | app/utils/fileClassification.test.ts
+[Vue warn]: Unhandled error during execution of watcher callback
+[Vue warn]: Unhandled error during execution of scheduler flush
+
+stderr | app/components/data/TrellisBlocksProjection.test.ts
+[instant.client] Could not init local storage dir: [POST] "/api/storage/init-local": 404 Cannot find any path matching /api/storage/init-local.
+
+stderr | app/components/data/TrellisBlocksProjection.test.ts
+[Vue warn]: Unhandled error during execution of watcher callback
+[Vue warn]: Unhandled error during execution of scheduler flush
+
+stderr | app/composables/useComments.notify.test.ts
+[instant.client] Could not init local storage dir: [POST] "/api/storage/init-local": 404 Cannot find any path matching /api/storage/init-local.
+
+stderr | app/composables/useComments.notify.test.ts
+[Vue warn]: Unhandled error during execution of watcher callback
+[Vue warn]: Unhandled error during execution of scheduler flush
+
+ ✓ server/utils/localStorageRoutes.test.ts (28 tests) 9ms
+ ✓ app/utils/fileMetadata.test.ts (29 tests) 6ms
+ ✓ app/utils/fileClassification.test.ts (63 tests) 6ms
+ ✓ app/composables/useFileUpload.test.ts (15 tests) 4ms
+ ✓ app/lib/normalizeDatabaseSchema.test.ts (7 tests) 3ms
+ ✓ app/components/data/TrellisBlocksProjection.test.ts (18 tests) 7ms
+stderr | app/composables/useComments.notify.test.ts > useComments — comment notifications > fires /api/notify with type:comment to entity owner after addComment
+[Vue warn] onScopeDispose() is called when there is no active effect scope to be associated with.
+
+stderr | app/composables/useComments.notify.test.ts > useComments — comment notifications > does NOT notify when commenter is the entity owner (self-comment)
+[Vue warn] onScopeDispose() is called when there is no active effect scope to be associated with.
+
+stderr | app/composables/useComments.notify.test.ts > useComments — comment notifications > does NOT notify for activity log entries (type !== comment)
+[Vue warn] onScopeDispose() is called when there is no active effect scope to be associated with.
+
+stderr | app/composables/useComments.notify.test.ts > useComments — comment notifications > does NOT notify when context is not provided
+[Vue warn] onScopeDispose() is called when there is no active effect scope to be associated with.
+
+stderr | app/composables/useComments.notify.test.ts > useComments — comment notifications > truncates long comment content in the notification message
+[Vue warn] onScopeDispose() is called when there is no active effect scope to be associated with.
+
+ ✓ app/composables/useComments.notify.test.ts (6 tests) 8ms
+stderr | app/lib/ontology-registry/schemas-to-server-types.test.ts
+[instant.client] Could not init local storage dir: [POST] "/api/storage/init-local": 404 Cannot find any path matching /api/storage/init-local.
+
+stderr | app/lib/ontology-registry/schemas-to-server-types.test.ts
+[Vue warn]: Unhandled error during execution of watcher callback
+[Vue warn]: Unhandled error during execution of scheduler flush
+
+ ✓ app/lib/ontology-registry/schemas-to-server-types.test.ts (3 tests) 3ms
+stderr | app/composables/useEditorLease.test.ts
+[instant.client] Could not init local storage dir: [POST] "/api/storage/init-local": 404 Cannot find any path matching /api/storage/init-local.
+
+stderr | app/composables/useEditorLease.test.ts
+[Vue warn]: Unhandled error during execution of watcher callback
+[Vue warn]: Unhandled error during execution of scheduler flush
+
+stderr | app/composables/useSheetClipboard.test.ts
+[instant.client] Could not init local storage dir: [POST] "/api/storage/init-local": 404 Cannot find any path matching /api/storage/init-local.
+
+stderr | app/composables/useSheetClipboard.test.ts
+[Vue warn]: Unhandled error during execution of watcher callback
+[Vue warn]: Unhandled error during execution of scheduler flush
+
+stderr | app/lib/ontology-form-spec.test.ts
+[instant.client] Could not init local storage dir: [POST] "/api/storage/init-local": 404 Cannot find any path matching /api/storage/init-local.
+
+stderr | app/lib/instantDataMigrations.test.ts
+[instant.client] Could not init local storage dir: [POST] "/api/storage/init-local": 404 Cannot find any path matching /api/storage/init-local.
+
+stderr | app/composables/useSheetSelection.test.ts
+[instant.client] Could not init local storage dir: [POST] "/api/storage/init-local": 404 Cannot find any path matching /api/storage/init-local.
+
+stderr | app/lib/ontology-form-spec.test.ts
+[Vue warn]: Unhandled error during execution of watcher callback
+[Vue warn]: Unhandled error during execution of scheduler flush
+
+stderr | app/lib/instantDataMigrations.test.ts
+[Vue warn]: Unhandled error during execution of watcher callback
+[Vue warn]: Unhandled error during execution of scheduler flush
+
+stderr | app/composables/useSheetSelection.test.ts
+[Vue warn]: Unhandled error during execution of watcher callback
+[Vue warn]: Unhandled error during execution of scheduler flush
+
+stderr | app/composables/useColumnReorder.test.ts
+[instant.client] Could not init local storage dir: [POST] "/api/storage/init-local": 404 Cannot find any path matching /api/storage/init-local.
+
+stderr | app/composables/useColumnReorder.test.ts
+[Vue warn]: Unhandled error during execution of watcher callback
+[Vue warn]: Unhandled error during execution of scheduler flush
+
+stderr | app/lib/ontology-field-widget.test.ts
+[instant.client] Could not init local storage dir: [POST] "/api/storage/init-local": 404 Cannot find any path matching /api/storage/init-local.
+
+stderr | app/lib/ontology-field-widget.test.ts
+[Vue warn]: Unhandled error during execution of watcher callback
+[Vue warn]: Unhandled error during execution of scheduler flush
+
+ ✓ app/composables/useEditorLease.test.ts (4 tests) 6ms
+ ✓ app/composables/useSheetClipboard.test.ts (2 tests) 4ms
+ ✓ app/lib/ontology-form-spec.test.ts (6 tests) 3ms
+ ✓ app/lib/instantDataMigrations.test.ts (2 tests) 2ms
+ ✓ app/composables/useSheetSelection.test.ts (3 tests) 2ms
+ ✓ app/components/Counter.test.ts (3 tests) 205ms
+ ✓ app/composables/useColumnReorder.test.ts (2 tests) 3ms
+ ✓ app/lib/ontology-field-widget.test.ts (4 tests) 4ms
+stderr | app/lib/sheet-a1.test.ts
+[instant.client] Could not init local storage dir: [POST] "/api/storage/init-local": 404 Cannot find any path matching /api/storage/init-local.
+
+stderr | app/lib/sheet-a1.test.ts
+[Vue warn]: Unhandled error during execution of watcher callback
+[Vue warn]: Unhandled error during execution of scheduler flush
+
+stderr | app/lib/entity-mutation-sse.test.ts
+[instant.client] Could not init local storage dir: [POST] "/api/storage/init-local": 404 Cannot find any path matching /api/storage/init-local.
+
+stderr | app/lib/sheet-cell-key.test.ts
+[instant.client] Could not init local storage dir: [POST] "/api/storage/init-local": 404 Cannot find any path matching /api/storage/init-local.
+
+stderr | app/lib/sheet-cell-key.test.ts
+[Vue warn]: Unhandled error during execution of watcher callback
+[Vue warn]: Unhandled error during execution of scheduler flush
+
+stderr | app/lib/entity-mutation-sse.test.ts
+[Vue warn]: Unhandled error during execution of watcher callback
+[Vue warn]: Unhandled error during execution of scheduler flush
+
+ ✓ app/lib/sheet-a1.test.ts (4 tests) 3ms
+stderr | app/composables/useEntitySummary.test.ts
+[instant.client] Could not init local storage dir: [POST] "/api/storage/init-local": 404 Cannot find any path matching /api/storage/init-local.
+
+stderr | app/composables/useEntitySummary.test.ts
+[Vue warn]: Unhandled error during execution of watcher callback
+[Vue warn]: Unhandled error during execution of scheduler flush
+
+stderr | app/lib/pickOrgAndApp.test.ts
+[instant.client] Could not init local storage dir: [POST] "/api/storage/init-local": 404 Cannot find any path matching /api/storage/init-local.
+
+stderr | app/lib/pickOrgAndApp.test.ts
+[Vue warn]: Unhandled error during execution of watcher callback
+[Vue warn]: Unhandled error during execution of scheduler flush
+
+stderr | app/lib/slide-region-key.test.ts
+[instant.client] Could not init local storage dir: [POST] "/api/storage/init-local": 404 Cannot find any path matching /api/storage/init-local.
+
+stderr | app/lib/slide-region-key.test.ts
+[Vue warn]: Unhandled error during execution of watcher callback
+[Vue warn]: Unhandled error during execution of scheduler flush
+
+stderr | app/lib/sheet-query-infer.test.ts
+[instant.client] Could not init local storage dir: [POST] "/api/storage/init-local": 404 Cannot find any path matching /api/storage/init-local.
+
+stderr | app/lib/agent-mutation-toast.test.ts
+[instant.client] Could not init local storage dir: [POST] "/api/storage/init-local": 404 Cannot find any path matching /api/storage/init-local.
+
+stderr | app/lib/sheet-query-infer.test.ts
+[Vue warn]: Unhandled error during execution of watcher callback
+[Vue warn]: Unhandled error during execution of scheduler flush
+
+stderr | app/lib/campus-zones.test.ts
+[instant.client] Could not init local storage dir: [POST] "/api/storage/init-local": 404 Cannot find any path matching /api/storage/init-local.
+
+stderr | app/lib/agent-mutation-toast.test.ts
+[Vue warn]: Unhandled error during execution of watcher callback
+[Vue warn]: Unhandled error during execution of scheduler flush
+
+stderr | app/lib/campus-zones.test.ts
+[Vue warn]: Unhandled error during execution of watcher callback
+[Vue warn]: Unhandled error during execution of scheduler flush
+
+ ✓ app/lib/sheet-cell-key.test.ts (2 tests) 2ms
+ ✓ app/lib/entity-mutation-sse.test.ts (5 tests) 2ms
+ ✓ app/lib/slide-region-key.test.ts (2 tests) 2ms
+ ✓ app/lib/pickOrgAndApp.test.ts (4 tests) 2ms
+ ✓ app/lib/sheet-query-infer.test.ts (3 tests) 6ms
+ ✓ app/composables/useEntitySummary.test.ts (5 tests) 5ms
+ ✓ app/lib/agent-mutation-toast.test.ts (2 tests) 2ms
+ ✓ app/lib/campus-zones.test.ts (3 tests) 13ms
+ ✓ server/utils/agent-routing.test.ts (54 tests) 7ms
+ ✓ server/utils/vcs-root.test.ts (3 tests) 4ms
+ ✓ app/lib/trellis-sidecar/offline-realtime.test.ts (1 test) 55ms
+ ✓ app/lib/trellis-kernel-bridge/sse-realtime.test.ts (4 tests) 416ms
+ ✓ server/lib/trellis/entities-server.test.ts (4 tests) 9ms
+stdout | server/lib/trellis-kernel-adapter/npm-sqlite-backend.test.ts > createNpmSqliteKernelBackend > boots TrellisKernel on a fresh db via npm trellis/core backend
+[trellis-kernel] using npm trellis/core SQLite backend
+
+stdout | server/lib/trellis-kernel-adapter/npm-sqlite-backend.test.ts > createNpmSqliteKernelBackend > countOpsAfter tracks ops on fresh npm backend
+[trellis-kernel] using npm trellis/core SQLite backend
+
+stdout | server/lib/trellis-kernel-adapter/npm-sqlite-backend.test.ts > createNpmSqliteKernelBackend > uses embedded backend when legacy schema is present
+[trellis-kernel] legacy SQLite ops schema detected — using embedded BetterSqliteBackend
+
+ ✓ server/utils/workflow-api-schemas.test.ts (5 tests) 7ms
+ ✓ server/lib/trellis-kernel-adapter/npm-sqlite-backend.test.ts (6 tests) 91ms
+stderr | app/composables/useVoiceRecorder.test.ts
+[instant.client] Could not init local storage dir: [POST] "/api/storage/init-local": 404 Cannot find any path matching /api/storage/init-local.
+
+stderr | app/composables/useVoiceRecorder.test.ts
+[Vue warn]: Unhandled error during execution of watcher callback
+[Vue warn]: Unhandled error during execution of scheduler flush
+
+ ✓ server/lib/kernel-bridge/map-app-config-rows.test.ts (2 tests) 2ms
+ ✓ server/lib/app-config-snapshot.test.ts (2 tests) 130ms
+ ✓ server/utils/campus-substrate.test.ts (35 tests) 5ms
+ ✓ server/lib/ontology-registry/graph-schema-registry.test.ts (4 tests) 422ms
+ ✓ app/lib/instant-local/instant-sync.test.ts (20 tests) 5ms
+ ✓ server/utils/graph-api-schemas.test.ts (8 tests) 7ms
+ ✓ server/utils/platform-api-schemas.test.ts (5 tests) 8ms
+ ✓ server/utils/api-validation.test.ts (5 tests) 12ms
+ ✓ app/lib/presence/zone-presence.test.ts (2 tests) 2ms
+ ✓ app/lib/data-adapter/data-adapter.test.ts (14 tests) 4ms
+ ✓ app/lib/app-config-live/assemble-config.test.ts (2 tests) 1ms
+ ✓ app/composables/useTrellisConfig.fallback.test.ts (3 tests) 3ms
+ ✓ server/lib/seed-app-config.test.ts (2 tests) 1206ms
+   ✓ seedAppConfigFromModules > is idempotent — second seed does not multiply app_route entities  1063ms
+ ✓ app/lib/entities-live/mode.test.ts (4 tests) 1ms
+ ✓ app/lib/locations/extract-pins.test.ts (8 tests) 4ms
+ ✓ app/lib/trellis-sidecar/sidecar-probe.test.ts (3 tests) 9ms
+ ✓ server/utils/vcs-issue-parser.test.ts (3 tests) 3ms
+stderr | server/utils/notification-policy.test.ts > admitNotification rate limit > downgrades second interrupt in same window
+[notification-policy] rate-limited interrupt → passive (graph)
+
+ ✓ server/utils/notification-policy.test.ts (9 tests) 4ms
+ ✓ app/composables/useVoiceRecorder.test.ts (3 tests) 1ms
+ ✓ server/lib/locations/geocode-server.test.ts (4 tests) 18ms
+ ✓ server/utils/connection-auth.test.ts (6 tests) 2ms
+ ✓ server/lib/kernel-bridge/map-kernel-entity-rows.test.ts (4 tests) 8ms
+ ✓ app/lib/trellis-projection-registry/browse-view-mode.test.ts (7 tests) 3ms
+ ✓ server/utils/kernel-checkpoint.test.ts (7 tests) 2ms
+ ✓ scripts/lib/app-config-import-tasks.test.ts (5 tests) 37ms
+ ✓ app/lib/app-config-live/sse-teardown.test.ts (2 tests) 11ms
+ ✓ app/lib/app-config-sse.test.ts (3 tests) 1ms
+ ✓ app/lib/app-config-live/mode.test.ts (4 tests) 2ms
+ ✓ server/lib/trellis/sidecar-enabled.test.ts (2 tests) 1ms
+
+⎯⎯⎯⎯⎯⎯ Failed Suites 1 ⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  app/lib/workshop-create.test.ts [ app/lib/workshop-create.test.ts ]
+Error: Module "bun:test" has been externalized for browser compatibility. Cannot access "bun:test.describe" in client code.  See https://vite.dev/guide/troubleshooting.html#module-externalized-for-browser-compatibility for more details.
+ ❯ Object.get bun:test:4:13
+ ❯ app/lib/workshop-create.test.ts:1:40
+      1| import { describe, expect, test } from 'bun:test'
+       |                                        ^
+      2| import { uniqueWorkshopSlug } from './workshop-create'
+      3| 
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/1]⎯
+
+⎯⎯⎯⎯⎯⎯ Unhandled Errors ⎯⎯⎯⎯⎯⎯
+
+Vitest caught 34 unhandled errors during the test run.
+This might cause false positive tests. Resolve unhandled errors to make sure your tests are not affected.
+
+⎯⎯⎯⎯ Unhandled Rejection ⎯⎯⎯⎯⎯
+TypeError: helper.removeColorScheme is not a function
+ ❯ ../../node_modules/.pnpm/@nuxtjs+color-mode@3.5.2_magicast@0.5.2/node_modules/@nuxtjs/color-mode/dist/runtime/plugin.client.js:86:12
+     84|       window.document.head.appendChild(style);
+     85|     }
+     86|     helper.removeColorScheme(oldValue);
+       |            ^
+     87|     helper.addColorScheme(newValue);
+     88|     if (disableTransition) {
+ ❯ callWithErrorHandling ../../node_modules/.pnpm/@vue+runtime-core@3.5.32/node_modules/@vue/runtime-core/dist/runtime-core.cjs.js:200:19
+ ❯ callWithAsyncErrorHandling ../../node_modules/.pnpm/@vue+runtime-core@3.5.32/node_modules/@vue/runtime-core/dist/runtime-core.cjs.js:207:17
+ ❯ baseWatchOptions.call ../../node_modules/.pnpm/@vue+runtime-core@3.5.32/node_modules/@vue/runtime-core/dist/runtime-core.cjs.js:884:47
+ ❯ job ../../node_modules/.pnpm/@vue+reactivity@3.5.32/node_modules/@vue/reactivity/dist/reactivity.cjs.js:1902:18
+ ❯ callWithErrorHandling ../../node_modules/.pnpm/@vue+runtime-core@3.5.32/node_modules/@vue/runtime-core/dist/runtime-core.cjs.js:200:33
+ ❯ flushJobs ../../node_modules/.pnpm/@vue+runtime-core@3.5.32/node_modules/@vue/runtime-core/dist/runtime-core.cjs.js:405:9
+ ❯ processTicksAndRejections node:internal/process/task_queues:103:5
+
+This error originated in "app/composables/useCollectionFormulas.test.ts" test file. It doesn't mean the error was thrown inside the file itself, but while it was running.
+
+⎯⎯⎯⎯ Unhandled Rejection ⎯⎯⎯⎯⎯
+TypeError: helper.removeColorScheme is not a function
+ ❯ ../../node_modules/.pnpm/@nuxtjs+color-mode@3.5.2_magicast@0.5.2/node_modules/@nuxtjs/color-mode/dist/runtime/plugin.client.js:86:12
+     84|       window.document.head.appendChild(style);
+     85|     }
+     86|     helper.removeColorScheme(oldValue);
+       |            ^
+     87|     helper.addColorScheme(newValue);
+     88|     if (disableTransition) {
+ ❯ callWithErrorHandling ../../node_modules/.pnpm/@vue+runtime-core@3.5.32/node_modules/@vue/runtime-core/dist/runtime-core.cjs.js:200:19
+ ❯ callWithAsyncErrorHandling ../../node_modules/.pnpm/@vue+runtime-core@3.5.32/node_modules/@vue/runtime-core/dist/runtime-core.cjs.js:207:17
+ ❯ baseWatchOptions.call ../../node_modules/.pnpm/@vue+runtime-core@3.5.32/node_modules/@vue/runtime-core/dist/runtime-core.cjs.js:884:47
+ ❯ job ../../node_modules/.pnpm/@vue+reactivity@3.5.32/node_modules/@vue/reactivity/dist/reactivity.cjs.js:1902:18
+ ❯ callWithErrorHandling ../../node_modules/.pnpm/@vue+runtime-core@3.5.32/node_modules/@vue/runtime-core/dist/runtime-core.cjs.js:200:33
+ ❯ flushJobs ../../node_modules/.pnpm/@vue+runtime-core@3.5.32/node_modules/@vue/runtime-core/dist/runtime-core.cjs.js:405:9
+ ❯ processTicksAndRejections node:internal/process/task_queues:103:5
+
+This error originated in "app/lib/vcs-issue-filters.test.ts" test file. It doesn't mean the error was thrown inside the file itself, but while it was running.
+
+⎯⎯⎯⎯ Unhandled Rejection ⎯⎯⎯⎯⎯
+TypeError: helper.removeColorScheme is not a function
+ ❯ ../../node_modules/.pnpm/@nuxtjs+color-mode@3.5.2_magicast@0.5.2/node_modules/@nuxtjs/color-mode/dist/runtime/plugin.client.js:86:12
+     84|       window.document.head.appendChild(style);
+     85|     }
+     86|     helper.removeColorScheme(oldValue);
+       |            ^
+     87|     helper.addColorScheme(newValue);
+     88|     if (disableTransition) {
+ ❯ callWithErrorHandling ../../node_modules/.pnpm/@vue+runtime-core@3.5.32/node_modules/@vue/runtime-core/dist/runtime-core.cjs.js:200:19
+ ❯ callWithAsyncErrorHandling ../../node_modules/.pnpm/@vue+runtime-core@3.5.32/node_modules/@vue/runtime-core/dist/runtime-core.cjs.js:207:17
+ ❯ baseWatchOptions.call ../../node_modules/.pnpm/@vue+runtime-core@3.5.32/node_modules/@vue/runtime-core/dist/runtime-core.cjs.js:884:47
+ ❯ job ../../node_modules/.pnpm/@vue+reactivity@3.5.32/node_modules/@vue/reactivity/dist/reactivity.cjs.js:1902:18
+ ❯ callWithErrorHandling ../../node_modules/.pnpm/@vue+runtime-core@3.5.32/node_modules/@vue/runtime-core/dist/runtime-core.cjs.js:200:33
+ ❯ flushJobs ../../node_modules/.pnpm/@vue+runtime-core@3.5.32/node_modules/@vue/runtime-core/dist/runtime-core.cjs.js:405:9
+ ❯ processTicksAndRejections node:internal/process/task_queues:103:5
+
+This error originated in "app/lib/workshop-create.test.ts" test file. It doesn't mean the error was thrown inside the file itself, but while it was running.
+
+⎯⎯⎯⎯ Unhandled Rejection ⎯⎯⎯⎯⎯
+TypeError: helper.removeColorScheme is not a function
+ ❯ ../../node_modules/.pnpm/@nuxtjs+color-mode@3.5.2_magicast@0.5.2/node_modules/@nuxtjs/color-mode/dist/runtime/plugin.client.js:86:12
+     84|       window.document.head.appendChild(style);
+     85|     }
+     86|     helper.removeColorScheme(oldValue);
+       |            ^
+     87|     helper.addColorScheme(newValue);
+     88|     if (disableTransition) {
+ ❯ callWithErrorHandling ../../node_modules/.pnpm/@vue+runtime-core@3.5.32/node_modules/@vue/runtime-core/dist/runtime-core.cjs.js:200:19
+ ❯ callWithAsyncErrorHandling ../../node_modules/.pnpm/@vue+runtime-core@3.5.32/node_modules/@vue/runtime-core/dist/runtime-core.cjs.js:207:17
+ ❯ baseWatchOptions.call ../../node_modules/.pnpm/@vue+runtime-core@3.5.32/node_modules/@vue/runtime-core/dist/runtime-core.cjs.js:884:47
+ ❯ job ../../node_modules/.pnpm/@vue+reactivity@3.5.32/node_modules/@vue/reactivity/dist/reactivity.cjs.js:1902:18
+ ❯ callWithErrorHandling ../../node_modules/.pnpm/@vue+runtime-core@3.5.32/node_modules/@vue/runtime-core/dist/runtime-core.cjs.js:200:33
+ ❯ flushJobs ../../node_modules/.pnpm/@vue+runtime-core@3.5.32/node_modules/@vue/runtime-core/dist/runtime-core.cjs.js:405:9
+ ❯ processTicksAndRejections node:internal/process/task_queues:103:5
+
+This error originated in "app/composables/useEntityReferences.test.ts" test file. It doesn't mean the error was thrown inside the file itself, but while it was running.
+
+⎯⎯⎯⎯ Unhandled Rejection ⎯⎯⎯⎯⎯
+TypeError: helper.removeColorScheme is not a function
+ ❯ ../../node_modules/.pnpm/@nuxtjs+color-mode@3.5.2_magicast@0.5.2/node_modules/@nuxtjs/color-mode/dist/runtime/plugin.client.js:86:12
+     84|       window.document.head.appendChild(style);
+     85|     }
+     86|     helper.removeColorScheme(oldValue);
+       |            ^
+     87|     helper.addColorScheme(newValue);
+     88|     if (disableTransition) {
+ ❯ callWithErrorHandling ../../node_modules/.pnpm/@vue+runtime-core@3.5.32/node_modules/@vue/runtime-core/dist/runtime-core.cjs.js:200:19
+ ❯ callWithAsyncErrorHandling ../../node_modules/.pnpm/@vue+runtime-core@3.5.32/node_modules/@vue/runtime-core/dist/runtime-core.cjs.js:207:17
+ ❯ baseWatchOptions.call ../../node_modules/.pnpm/@vue+runtime-core@3.5.32/node_modules/@vue/runtime-core/dist/runtime-core.cjs.js:884:47
+ ❯ job ../../node_modules/.pnpm/@vue+reactivity@3.5.32/node_modules/@vue/reactivity/dist/reactivity.cjs.js:1902:18
+ ❯ callWithErrorHandling ../../node_modules/.pnpm/@vue+runtime-core@3.5.32/node_modules/@vue/runtime-core/dist/runtime-core.cjs.js:200:33
+ ❯ flushJobs ../../node_modules/.pnpm/@vue+runtime-core@3.5.32/node_modules/@vue/runtime-core/dist/runtime-core.cjs.js:405:9
+ ❯ processTicksAndRejections node:internal/process/task_queues:103:5
+
+This error originated in "app/components/Counter.test.ts" test file. It doesn't mean the error was thrown inside the file itself, but while it was running.
+
+⎯⎯⎯⎯ Unhandled Rejection ⎯⎯⎯⎯⎯
+TypeError: helper.removeColorScheme is not a function
+ ❯ ../../node_modules/.pnpm/@nuxtjs+color-mode@3.5.2_magicast@0.5.2/node_modules/@nuxtjs/color-mode/dist/runtime/plugin.client.js:86:12
+     84|       window.document.head.appendChild(style);
+     85|     }
+     86|     helper.removeColorScheme(oldValue);
+       |            ^
+     87|     helper.addColorScheme(newValue);
+     88|     if (disableTransition) {
+ ❯ callWithErrorHandling ../../node_modules/.pnpm/@vue+runtime-core@3.5.32/node_modules/@vue/runtime-core/dist/runtime-core.cjs.js:200:19
+ ❯ callWithAsyncErrorHandling ../../node_modules/.pnpm/@vue+runtime-core@3.5.32/node_modules/@vue/runtime-core/dist/runtime-core.cjs.js:207:17
+ ❯ baseWatchOptions.call ../../node_modules/.pnpm/@vue+runtime-core@3.5.32/node_modules/@vue/runtime-core/dist/runtime-core.cjs.js:884:47
+ ❯ job ../../node_modules/.pnpm/@vue+reactivity@3.5.32/node_modules/@vue/reactivity/dist/reactivity.cjs.js:1902:18
+ ❯ callWithErrorHandling ../../node_modules/.pnpm/@vue+runtime-core@3.5.32/node_modules/@vue/runtime-core/dist/runtime-core.cjs.js:200:33
+ ❯ flushJobs ../../node_modules/.pnpm/@vue+runtime-core@3.5.32/node_modules/@vue/runtime-core/dist/runtime-core.cjs.js:405:9
+ ❯ processTicksAndRejections node:internal/process/task_queues:103:5
+
+This error originated in "app/composables/useAutoSave.test.ts" test file. It doesn't mean the error was thrown inside the file itself, but while it was running.
+
+⎯⎯⎯⎯ Unhandled Rejection ⎯⎯⎯⎯⎯
+TypeError: helper.removeColorScheme is not a function
+ ❯ ../../node_modules/.pnpm/@nuxtjs+color-mode@3.5.2_magicast@0.5.2/node_modules/@nuxtjs/color-mode/dist/runtime/plugin.client.js:86:12
+     84|       window.document.head.appendChild(style);
+     85|     }
+     86|     helper.removeColorScheme(oldValue);
+       |            ^
+     87|     helper.addColorScheme(newValue);
+     88|     if (disableTransition) {
+ ❯ callWithErrorHandling ../../node_modules/.pnpm/@vue+runtime-core@3.5.32/node_modules/@vue/runtime-core/dist/runtime-core.cjs.js:200:19
+ ❯ callWithAsyncErrorHandling ../../node_modules/.pnpm/@vue+runtime-core@3.5.32/node_modules/@vue/runtime-core/dist/runtime-core.cjs.js:207:17
+ ❯ baseWatchOptions.call ../../node_modules/.pnpm/@vue+runtime-core@3.5.32/node_modules/@vue/runtime-core/dist/runtime-core.cjs.js:884:47
+ ❯ job ../../node_modules/.pnpm/@vue+reactivity@3.5.32/node_modules/@vue/reactivity/dist/reactivity.cjs.js:1902:18
+ ❯ callWithErrorHandling ../../node_modules/.pnpm/@vue+runtime-core@3.5.32/node_modules/@vue/runtime-core/dist/runtime-core.cjs.js:200:33
+ ❯ flushJobs ../../node_modules/.pnpm/@vue+runtime-core@3.5.32/node_modules/@vue/runtime-core/dist/runtime-core.cjs.js:405:9
+ ❯ processTicksAndRejections node:internal/process/task_queues:103:5
+
+This error originated in "app/components/schema/SchemaEditor.test.ts" test file. It doesn't mean the error was thrown inside the file itself, but while it was running.
+
+⎯⎯⎯⎯ Unhandled Rejection ⎯⎯⎯⎯⎯
+TypeError: helper.removeColorScheme is not a function
+ ❯ ../../node_modules/.pnpm/@nuxtjs+color-mode@3.5.2_magicast@0.5.2/node_modules/@nuxtjs/color-mode/dist/runtime/plugin.client.js:86:12
+     84|       window.document.head.appendChild(style);
+     85|     }
+     86|     helper.removeColorScheme(oldValue);
+       |            ^
+     87|     helper.addColorScheme(newValue);
+     88|     if (disableTransition) {
+ ❯ callWithErrorHandling ../../node_modules/.pnpm/@vue+runtime-core@3.5.32/node_modules/@vue/runtime-core/dist/runtime-core.cjs.js:200:19
+ ❯ callWithAsyncErrorHandling ../../node_modules/.pnpm/@vue+runtime-core@3.5.32/node_modules/@vue/runtime-core/dist/runtime-core.cjs.js:207:17
+ ❯ baseWatchOptions.call ../../node_modules/.pnpm/@vue+runtime-core@3.5.32/node_modules/@vue/runtime-core/dist/runtime-core.cjs.js:884:47
+ ❯ job ../../node_modules/.pnpm/@vue+reactivity@3.5.32/node_modules/@vue/reactivity/dist/reactivity.cjs.js:1902:18
+ ❯ callWithErrorHandling ../../node_modules/.pnpm/@vue+runtime-core@3.5.32/node_modules/@vue/runtime-core/dist/runtime-core.cjs.js:200:33
+ ❯ flushJobs ../../node_modules/.pnpm/@vue+runtime-core@3.5.32/node_modules/@vue/runtime-core/dist/runtime-core.cjs.js:405:9
+ ❯ processTicksAndRejections node:internal/process/task_queues:103:5
+
+This error originated in "app/composables/useChat.notify.test.ts" test file. It doesn't mean the error was thrown inside the file itself, but while it was running.
+
+⎯⎯⎯⎯ Unhandled Rejection ⎯⎯⎯⎯⎯
+TypeError: helper.removeColorScheme is not a function
+ ❯ ../../node_modules/.pnpm/@nuxtjs+color-mode@3.5.2_magicast@0.5.2/node_modules/@nuxtjs/color-mode/dist/runtime/plugin.client.js:86:12
+     84|       window.document.head.appendChild(style);
+     85|     }
+     86|     helper.removeColorScheme(oldValue);
+       |            ^
+     87|     helper.addColorScheme(newValue);
+     88|     if (disableTransition) {
+ ❯ callWithErrorHandling ../../node_modules/.pnpm/@vue+runtime-core@3.5.32/node_modules/@vue/runtime-core/dist/runtime-core.cjs.js:200:19
+ ❯ callWithAsyncErrorHandling ../../node_modules/.pnpm/@vue+runtime-core@3.5.32/node_modules/@vue/runtime-core/dist/runtime-core.cjs.js:207:17
+ ❯ baseWatchOptions.call ../../node_modules/.pnpm/@vue+runtime-core@3.5.32/node_modules/@vue/runtime-core/dist/runtime-core.cjs.js:884:47
+ ❯ job ../../node_modules/.pnpm/@vue+reactivity@3.5.32/node_modules/@vue/reactivity/dist/reactivity.cjs.js:1902:18
+ ❯ callWithErrorHandling ../../node_modules/.pnpm/@vue+runtime-core@3.5.32/node_modules/@vue/runtime-core/dist/runtime-core.cjs.js:200:33
+ ❯ flushJobs ../../node_modules/.pnpm/@vue+runtime-core@3.5.32/node_modules/@vue/runtime-core/dist/runtime-core.cjs.js:405:9
+ ❯ processTicksAndRejections node:internal/process/task_queues:103:5
+
+This error originated in "server/utils/fileEnrichment.test.ts" test file. It doesn't mean the error was thrown inside the file itself, but while it was running.
+
+⎯⎯⎯⎯ Unhandled Rejection ⎯⎯⎯⎯⎯
+TypeError: helper.removeColorScheme is not a function
+ ❯ ../../node_modules/.pnpm/@nuxtjs+color-mode@3.5.2_magicast@0.5.2/node_modules/@nuxtjs/color-mode/dist/runtime/plugin.client.js:86:12
+     84|       window.document.head.appendChild(style);
+     85|     }
+     86|     helper.removeColorScheme(oldValue);
+       |            ^
+     87|     helper.addColorScheme(newValue);
+     88|     if (disableTransition) {
+ ❯ callWithErrorHandling ../../node_modules/.pnpm/@vue+runtime-core@3.5.32/node_modules/@vue/runtime-core/dist/runtime-core.cjs.js:200:19
+ ❯ callWithAsyncErrorHandling ../../node_modules/.pnpm/@vue+runtime-core@3.5.32/node_modules/@vue/runtime-core/dist/runtime-core.cjs.js:207:17
+ ❯ baseWatchOptions.call ../../node_modules/.pnpm/@vue+runtime-core@3.5.32/node_modules/@vue/runtime-core/dist/runtime-core.cjs.js:884:47
+ ❯ job ../../node_modules/.pnpm/@vue+reactivity@3.5.32/node_modules/@vue/reactivity/dist/reactivity.cjs.js:1902:18
+ ❯ callWithErrorHandling ../../node_modules/.pnpm/@vue+runtime-core@3.5.32/node_modules/@vue/runtime-core/dist/runtime-core.cjs.js:200:33
+ ❯ flushJobs ../../node_modules/.pnpm/@vue+runtime-core@3.5.32/node_modules/@vue/runtime-core/dist/runtime-core.cjs.js:405:9
+ ❯ processTicksAndRejections node:internal/process/task_queues:103:5
+
+This error originated in "app/utils/fileMetadata.test.ts" test file. It doesn't mean the error was thrown inside the file itself, but while it was running.
+
+⎯⎯⎯⎯ Unhandled Rejection ⎯⎯⎯⎯⎯
+TypeError: helper.removeColorScheme is not a function
+ ❯ ../../node_modules/.pnpm/@nuxtjs+color-mode@3.5.2_magicast@0.5.2/node_modules/@nuxtjs/color-mode/dist/runtime/plugin.client.js:86:12
+     84|       window.document.head.appendChild(style);
+     85|     }
+     86|     helper.removeColorScheme(oldValue);
+       |            ^
+     87|     helper.addColorScheme(newValue);
+     88|     if (disableTransition) {
+ ❯ callWithErrorHandling ../../node_modules/.pnpm/@vue+runtime-core@3.5.32/node_modules/@vue/runtime-core/dist/runtime-core.cjs.js:200:19
+ ❯ callWithAsyncErrorHandling ../../node_modules/.pnpm/@vue+runtime-core@3.5.32/node_modules/@vue/runtime-core/dist/runtime-core.cjs.js:207:17
+ ❯ baseWatchOptions.call ../../node_modules/.pnpm/@vue+runtime-core@3.5.32/node_modules/@vue/runtime-core/dist/runtime-core.cjs.js:884:47
+ ❯ job ../../node_modules/.pnpm/@vue+reactivity@3.5.32/node_modules/@vue/reactivity/dist/reactivity.cjs.js:1902:18
+ ❯ callWithErrorHandling ../../node_modules/.pnpm/@vue+runtime-core@3.5.32/node_modules/@vue/runtime-core/dist/runtime-core.cjs.js:200:33
+ ❯ flushJobs ../../node_modules/.pnpm/@vue+runtime-core@3.5.32/node_modules/@vue/runtime-core/dist/runtime-core.cjs.js:405:9
+ ❯ processTicksAndRejections node:internal/process/task_queues:103:5
+
+This error originated in "server/utils/localStorageRoutes.test.ts" test file. It doesn't mean the error was thrown inside the file itself, but while it was running.
+
+⎯⎯⎯⎯ Unhandled Rejection ⎯⎯⎯⎯⎯
+TypeError: helper.removeColorScheme is not a function
+ ❯ ../../node_modules/.pnpm/@nuxtjs+color-mode@3.5.2_magicast@0.5.2/node_modules/@nuxtjs/color-mode/dist/runtime/plugin.client.js:86:12
+     84|       window.document.head.appendChild(style);
+     85|     }
+     86|     helper.removeColorScheme(oldValue);
+       |            ^
+     87|     helper.addColorScheme(newValue);
+     88|     if (disableTransition) {
+ ❯ callWithErrorHandling ../../node_modules/.pnpm/@vue+runtime-core@3.5.32/node_modules/@vue/runtime-core/dist/runtime-core.cjs.js:200:19
+ ❯ callWithAsyncErrorHandling ../../node_modules/.pnpm/@vue+runtime-core@3.5.32/node_modules/@vue/runtime-core/dist/runtime-core.cjs.js:207:17
+ ❯ baseWatchOptions.call ../../node_modules/.pnpm/@vue+runtime-core@3.5.32/node_modules/@vue/runtime-core/dist/runtime-core.cjs.js:884:47
+ ❯ job ../../node_modules/.pnpm/@vue+reactivity@3.5.32/node_modules/@vue/reactivity/dist/reactivity.cjs.js:1902:18
+ ❯ callWithErrorHandling ../../node_modules/.pnpm/@vue+runtime-core@3.5.32/node_modules/@vue/runtime-core/dist/runtime-core.cjs.js:200:33
+ ❯ flushJobs ../../node_modules/.pnpm/@vue+runtime-core@3.5.32/node_modules/@vue/runtime-core/dist/runtime-core.cjs.js:405:9
+ ❯ processTicksAndRejections node:internal/process/task_queues:103:5
+
+This error originated in "app/lib/normalizeDatabaseSchema.test.ts" test file. It doesn't mean the error was thrown inside the file itself, but while it was running.
+
+⎯⎯⎯⎯ Unhandled Rejection ⎯⎯⎯⎯⎯
+TypeError: helper.removeColorScheme is not a function
+ ❯ ../../node_modules/.pnpm/@nuxtjs+color-mode@3.5.2_magicast@0.5.2/node_modules/@nuxtjs/color-mode/dist/runtime/plugin.client.js:86:12
+     84|       window.document.head.appendChild(style);
+     85|     }
+     86|     helper.removeColorScheme(oldValue);
+       |            ^
+     87|     helper.addColorScheme(newValue);
+     88|     if (disableTransition) {
+ ❯ callWithErrorHandling ../../node_modules/.pnpm/@vue+runtime-core@3.5.32/node_modules/@vue/runtime-core/dist/runtime-core.cjs.js:200:19
+ ❯ callWithAsyncErrorHandling ../../node_modules/.pnpm/@vue+runtime-core@3.5.32/node_modules/@vue/runtime-core/dist/runtime-core.cjs.js:207:17
+ ❯ baseWatchOptions.call ../../node_modules/.pnpm/@vue+runtime-core@3.5.32/node_modules/@vue/runtime-core/dist/runtime-core.cjs.js:884:47
+ ❯ job ../../node_modules/.pnpm/@vue+reactivity@3.5.32/node_modules/@vue/reactivity/dist/reactivity.cjs.js:1902:18
+ ❯ callWithErrorHandling ../../node_modules/.pnpm/@vue+runtime-core@3.5.32/node_modules/@vue/runtime-core/dist/runtime-core.cjs.js:200:33
+ ❯ flushJobs ../../node_modules/.pnpm/@vue+runtime-core@3.5.32/node_modules/@vue/runtime-core/dist/runtime-core.cjs.js:405:9
+ ❯ processTicksAndRejections node:internal/process/task_queues:103:5
+
+This error originated in "app/composables/useFileUpload.test.ts" test file. It doesn't mean the error was thrown inside the file itself, but while it was running.
+
+⎯⎯⎯⎯ Unhandled Rejection ⎯⎯⎯⎯⎯
+TypeError: helper.removeColorScheme is not a function
+ ❯ ../../node_modules/.pnpm/@nuxtjs+color-mode@3.5.2_magicast@0.5.2/node_modules/@nuxtjs/color-mode/dist/runtime/plugin.client.js:86:12
+     84|       window.document.head.appendChild(style);
+     85|     }
+     86|     helper.removeColorScheme(oldValue);
+       |            ^
+     87|     helper.addColorScheme(newValue);
+     88|     if (disableTransition) {
+ ❯ callWithErrorHandling ../../node_modules/.pnpm/@vue+runtime-core@3.5.32/node_modules/@vue/runtime-core/dist/runtime-core.cjs.js:200:19
+ ❯ callWithAsyncErrorHandling ../../node_modules/.pnpm/@vue+runtime-core@3.5.32/node_modules/@vue/runtime-core/dist/runtime-core.cjs.js:207:17
+ ❯ baseWatchOptions.call ../../node_modules/.pnpm/@vue+runtime-core@3.5.32/node_modules/@vue/runtime-core/dist/runtime-core.cjs.js:884:47
+ ❯ job ../../node_modules/.pnpm/@vue+reactivity@3.5.32/node_modules/@vue/reactivity/dist/reactivity.cjs.js:1902:18
+ ❯ callWithErrorHandling ../../node_modules/.pnpm/@vue+runtime-core@3.5.32/node_modules/@vue/runtime-core/dist/runtime-core.cjs.js:200:33
+ ❯ flushJobs ../../node_modules/.pnpm/@vue+runtime-core@3.5.32/node_modules/@vue/runtime-core/dist/runtime-core.cjs.js:405:9
+ ❯ processTicksAndRejections node:internal/process/task_queues:103:5
+
+This error originated in "app/utils/fileClassification.test.ts" test file. It doesn't mean the error was thrown inside the file itself, but while it was running.
+
+⎯⎯⎯⎯ Unhandled Rejection ⎯⎯⎯⎯⎯
+TypeError: helper.removeColorScheme is not a function
+ ❯ ../../node_modules/.pnpm/@nuxtjs+color-mode@3.5.2_magicast@0.5.2/node_modules/@nuxtjs/color-mode/dist/runtime/plugin.client.js:86:12
+     84|       window.document.head.appendChild(style);
+     85|     }
+     86|     helper.removeColorScheme(oldValue);
+       |            ^
+     87|     helper.addColorScheme(newValue);
+     88|     if (disableTransition) {
+ ❯ callWithErrorHandling ../../node_modules/.pnpm/@vue+runtime-core@3.5.32/node_modules/@vue/runtime-core/dist/runtime-core.cjs.js:200:19
+ ❯ callWithAsyncErrorHandling ../../node_modules/.pnpm/@vue+runtime-core@3.5.32/node_modules/@vue/runtime-core/dist/runtime-core.cjs.js:207:17
+ ❯ baseWatchOptions.call ../../node_modules/.pnpm/@vue+runtime-core@3.5.32/node_modules/@vue/runtime-core/dist/runtime-core.cjs.js:884:47
+ ❯ job ../../node_modules/.pnpm/@vue+reactivity@3.5.32/node_modules/@vue/reactivity/dist/reactivity.cjs.js:1902:18
+ ❯ callWithErrorHandling ../../node_modules/.pnpm/@vue+runtime-core@3.5.32/node_modules/@vue/runtime-core/dist/runtime-core.cjs.js:200:33
+ ❯ flushJobs ../../node_modules/.pnpm/@vue+runtime-core@3.5.32/node_modules/@vue/runtime-core/dist/runtime-core.cjs.js:405:9
+ ❯ processTicksAndRejections node:internal/process/task_queues:103:5
+
+This error originated in "app/components/data/TrellisBlocksProjection.test.ts" test file. It doesn't mean the error was thrown inside the file itself, but while it was running.
+
+⎯⎯⎯⎯ Unhandled Rejection ⎯⎯⎯⎯⎯
+TypeError: helper.removeColorScheme is not a function
+ ❯ ../../node_modules/.pnpm/@nuxtjs+color-mode@3.5.2_magicast@0.5.2/node_modules/@nuxtjs/color-mode/dist/runtime/plugin.client.js:86:12
+     84|       window.document.head.appendChild(style);
+     85|     }
+     86|     helper.removeColorScheme(oldValue);
+       |            ^
+     87|     helper.addColorScheme(newValue);
+     88|     if (disableTransition) {
+ ❯ callWithErrorHandling ../../node_modules/.pnpm/@vue+runtime-core@3.5.32/node_modules/@vue/runtime-core/dist/runtime-core.cjs.js:200:19
+ ❯ callWithAsyncErrorHandling ../../node_modules/.pnpm/@vue+runtime-core@3.5.32/node_modules/@vue/runtime-core/dist/runtime-core.cjs.js:207:17
+ ❯ baseWatchOptions.call ../../node_modules/.pnpm/@vue+runtime-core@3.5.32/node_modules/@vue/runtime-core/dist/runtime-core.cjs.js:884:47
+ ❯ job ../../node_modules/.pnpm/@vue+reactivity@3.5.32/node_modules/@vue/reactivity/dist/reactivity.cjs.js:1902:18
+ ❯ callWithErrorHandling ../../node_modules/.pnpm/@vue+runtime-core@3.5.32/node_modules/@vue/runtime-core/dist/runtime-core.cjs.js:200:33
+ ❯ flushJobs ../../node_modules/.pnpm/@vue+runtime-core@3.5.32/node_modules/@vue/runtime-core/dist/runtime-core.cjs.js:405:9
+ ❯ processTicksAndRejections node:internal/process/task_queues:103:5
+
+This error originated in "app/composables/useComments.notify.test.ts" test file. It doesn't mean the error was thrown inside the file itself, but while it was running.
+
+⎯⎯⎯⎯ Unhandled Rejection ⎯⎯⎯⎯⎯
+TypeError: helper.removeColorScheme is not a function
+ ❯ ../../node_modules/.pnpm/@nuxtjs+color-mode@3.5.2_magicast@0.5.2/node_modules/@nuxtjs/color-mode/dist/runtime/plugin.client.js:86:12
+     84|       window.document.head.appendChild(style);
+     85|     }
+     86|     helper.removeColorScheme(oldValue);
+       |            ^
+     87|     helper.addColorScheme(newValue);
+     88|     if (disableTransition) {
+ ❯ callWithErrorHandling ../../node_modules/.pnpm/@vue+runtime-core@3.5.32/node_modules/@vue/runtime-core/dist/runtime-core.cjs.js:200:19
+ ❯ callWithAsyncErrorHandling ../../node_modules/.pnpm/@vue+runtime-core@3.5.32/node_modules/@vue/runtime-core/dist/runtime-core.cjs.js:207:17
+ ❯ baseWatchOptions.call ../../node_modules/.pnpm/@vue+runtime-core@3.5.32/node_modules/@vue/runtime-core/dist/runtime-core.cjs.js:884:47
+ ❯ job ../../node_modules/.pnpm/@vue+reactivity@3.5.32/node_modules/@vue/reactivity/dist/reactivity.cjs.js:1902:18
+ ❯ callWithErrorHandling ../../node_modules/.pnpm/@vue+runtime-core@3.5.32/node_modules/@vue/runtime-core/dist/runtime-core.cjs.js:200:33
+ ❯ flushJobs ../../node_modules/.pnpm/@vue+runtime-core@3.5.32/node_modules/@vue/runtime-core/dist/runtime-core.cjs.js:405:9
+ ❯ processTicksAndRejections node:internal/process/task_queues:103:5
+
+This error originated in "app/lib/ontology-registry/schemas-to-server-types.test.ts" test file. It doesn't mean the error was thrown inside the file itself, but while it was running.
+
+⎯⎯⎯⎯ Unhandled Rejection ⎯⎯⎯⎯⎯
+TypeError: helper.removeColorScheme is not a function
+ ❯ ../../node_modules/.pnpm/@nuxtjs+color-mode@3.5.2_magicast@0.5.2/node_modules/@nuxtjs/color-mode/dist/runtime/plugin.client.js:86:12
+     84|       window.document.head.appendChild(style);
+     85|     }
+     86|     helper.removeColorScheme(oldValue);
+       |            ^
+     87|     helper.addColorScheme(newValue);
+     88|     if (disableTransition) {
+ ❯ callWithErrorHandling ../../node_modules/.pnpm/@vue+runtime-core@3.5.32/node_modules/@vue/runtime-core/dist/runtime-core.cjs.js:200:19
+ ❯ callWithAsyncErrorHandling ../../node_modules/.pnpm/@vue+runtime-core@3.5.32/node_modules/@vue/runtime-core/dist/runtime-core.cjs.js:207:17
+ ❯ baseWatchOptions.call ../../node_modules/.pnpm/@vue+runtime-core@3.5.32/node_modules/@vue/runtime-core/dist/runtime-core.cjs.js:884:47
+ ❯ job ../../node_modules/.pnpm/@vue+reactivity@3.5.32/node_modules/@vue/reactivity/dist/reactivity.cjs.js:1902:18
+ ❯ callWithErrorHandling ../../node_modules/.pnpm/@vue+runtime-core@3.5.32/node_modules/@vue/runtime-core/dist/runtime-core.cjs.js:200:33
+ ❯ flushJobs ../../node_modules/.pnpm/@vue+runtime-core@3.5.32/node_modules/@vue/runtime-core/dist/runtime-core.cjs.js:405:9
+ ❯ processTicksAndRejections node:internal/process/task_queues:103:5
+
+This error originated in "app/composables/useEditorLease.test.ts" test file. It doesn't mean the error was thrown inside the file itself, but while it was running.
+
+⎯⎯⎯⎯ Unhandled Rejection ⎯⎯⎯⎯⎯
+TypeError: helper.removeColorScheme is not a function
+ ❯ ../../node_modules/.pnpm/@nuxtjs+color-mode@3.5.2_magicast@0.5.2/node_modules/@nuxtjs/color-mode/dist/runtime/plugin.client.js:86:12
+     84|       window.document.head.appendChild(style);
+     85|     }
+     86|     helper.removeColorScheme(oldValue);
+       |            ^
+     87|     helper.addColorScheme(newValue);
+     88|     if (disableTransition) {
+ ❯ callWithErrorHandling ../../node_modules/.pnpm/@vue+runtime-core@3.5.32/node_modules/@vue/runtime-core/dist/runtime-core.cjs.js:200:19
+ ❯ callWithAsyncErrorHandling ../../node_modules/.pnpm/@vue+runtime-core@3.5.32/node_modules/@vue/runtime-core/dist/runtime-core.cjs.js:207:17
+ ❯ baseWatchOptions.call ../../node_modules/.pnpm/@vue+runtime-core@3.5.32/node_modules/@vue/runtime-core/dist/runtime-core.cjs.js:884:47
+ ❯ job ../../node_modules/.pnpm/@vue+reactivity@3.5.32/node_modules/@vue/reactivity/dist/reactivity.cjs.js:1902:18
+ ❯ callWithErrorHandling ../../node_modules/.pnpm/@vue+runtime-core@3.5.32/node_modules/@vue/runtime-core/dist/runtime-core.cjs.js:200:33
+ ❯ flushJobs ../../node_modules/.pnpm/@vue+runtime-core@3.5.32/node_modules/@vue/runtime-core/dist/runtime-core.cjs.js:405:9
+ ❯ processTicksAndRejections node:internal/process/task_queues:103:5
+
+This error originated in "app/composables/useSheetClipboard.test.ts" test file. It doesn't mean the error was thrown inside the file itself, but while it was running.
+
+⎯⎯⎯⎯ Unhandled Rejection ⎯⎯⎯⎯⎯
+TypeError: helper.removeColorScheme is not a function
+ ❯ ../../node_modules/.pnpm/@nuxtjs+color-mode@3.5.2_magicast@0.5.2/node_modules/@nuxtjs/color-mode/dist/runtime/plugin.client.js:86:12
+     84|       window.document.head.appendChild(style);
+     85|     }
+     86|     helper.removeColorScheme(oldValue);
+       |            ^
+     87|     helper.addColorScheme(newValue);
+     88|     if (disableTransition) {
+ ❯ callWithErrorHandling ../../node_modules/.pnpm/@vue+runtime-core@3.5.32/node_modules/@vue/runtime-core/dist/runtime-core.cjs.js:200:19
+ ❯ callWithAsyncErrorHandling ../../node_modules/.pnpm/@vue+runtime-core@3.5.32/node_modules/@vue/runtime-core/dist/runtime-core.cjs.js:207:17
+ ❯ baseWatchOptions.call ../../node_modules/.pnpm/@vue+runtime-core@3.5.32/node_modules/@vue/runtime-core/dist/runtime-core.cjs.js:884:47
+ ❯ job ../../node_modules/.pnpm/@vue+reactivity@3.5.32/node_modules/@vue/reactivity/dist/reactivity.cjs.js:1902:18
+ ❯ callWithErrorHandling ../../node_modules/.pnpm/@vue+runtime-core@3.5.32/node_modules/@vue/runtime-core/dist/runtime-core.cjs.js:200:33
+ ❯ flushJobs ../../node_modules/.pnpm/@vue+runtime-core@3.5.32/node_modules/@vue/runtime-core/dist/runtime-core.cjs.js:405:9
+ ❯ processTicksAndRejections node:internal/process/task_queues:103:5
+
+This error originated in "app/lib/ontology-form-spec.test.ts" test file. It doesn't mean the error was thrown inside the file itself, but while it was running.
+
+⎯⎯⎯⎯ Unhandled Rejection ⎯⎯⎯⎯⎯
+TypeError: helper.removeColorScheme is not a function
+ ❯ ../../node_modules/.pnpm/@nuxtjs+color-mode@3.5.2_magicast@0.5.2/node_modules/@nuxtjs/color-mode/dist/runtime/plugin.client.js:86:12
+     84|       window.document.head.appendChild(style);
+     85|     }
+     86|     helper.removeColorScheme(oldValue);
+       |            ^
+     87|     helper.addColorScheme(newValue);
+     88|     if (disableTransition) {
+ ❯ callWithErrorHandling ../../node_modules/.pnpm/@vue+runtime-core@3.5.32/node_modules/@vue/runtime-core/dist/runtime-core.cjs.js:200:19
+ ❯ callWithAsyncErrorHandling ../../node_modules/.pnpm/@vue+runtime-core@3.5.32/node_modules/@vue/runtime-core/dist/runtime-core.cjs.js:207:17
+ ❯ baseWatchOptions.call ../../node_modules/.pnpm/@vue+runtime-core@3.5.32/node_modules/@vue/runtime-core/dist/runtime-core.cjs.js:884:47
+ ❯ job ../../node_modules/.pnpm/@vue+reactivity@3.5.32/node_modules/@vue/reactivity/dist/reactivity.cjs.js:1902:18
+ ❯ callWithErrorHandling ../../node_modules/.pnpm/@vue+runtime-core@3.5.32/node_modules/@vue/runtime-core/dist/runtime-core.cjs.js:200:33
+ ❯ flushJobs ../../node_modules/.pnpm/@vue+runtime-core@3.5.32/node_modules/@vue/runtime-core/dist/runtime-core.cjs.js:405:9
+ ❯ processTicksAndRejections node:internal/process/task_queues:103:5
+
+This error originated in "app/composables/useSheetSelection.test.ts" test file. It doesn't mean the error was thrown inside the file itself, but while it was running.
+
+⎯⎯⎯⎯ Unhandled Rejection ⎯⎯⎯⎯⎯
+TypeError: helper.removeColorScheme is not a function
+ ❯ ../../node_modules/.pnpm/@nuxtjs+color-mode@3.5.2_magicast@0.5.2/node_modules/@nuxtjs/color-mode/dist/runtime/plugin.client.js:86:12
+     84|       window.document.head.appendChild(style);
+     85|     }
+     86|     helper.removeColorScheme(oldValue);
+       |            ^
+     87|     helper.addColorScheme(newValue);
+     88|     if (disableTransition) {
+ ❯ callWithErrorHandling ../../node_modules/.pnpm/@vue+runtime-core@3.5.32/node_modules/@vue/runtime-core/dist/runtime-core.cjs.js:200:19
+ ❯ callWithAsyncErrorHandling ../../node_modules/.pnpm/@vue+runtime-core@3.5.32/node_modules/@vue/runtime-core/dist/runtime-core.cjs.js:207:17
+ ❯ baseWatchOptions.call ../../node_modules/.pnpm/@vue+runtime-core@3.5.32/node_modules/@vue/runtime-core/dist/runtime-core.cjs.js:884:47
+ ❯ job ../../node_modules/.pnpm/@vue+reactivity@3.5.32/node_modules/@vue/reactivity/dist/reactivity.cjs.js:1902:18
+ ❯ callWithErrorHandling ../../node_modules/.pnpm/@vue+runtime-core@3.5.32/node_modules/@vue/runtime-core/dist/runtime-core.cjs.js:200:33
+ ❯ flushJobs ../../node_modules/.pnpm/@vue+runtime-core@3.5.32/node_modules/@vue/runtime-core/dist/runtime-core.cjs.js:405:9
+ ❯ processTicksAndRejections node:internal/process/task_queues:103:5
+
+This error originated in "app/lib/instantDataMigrations.test.ts" test file. It doesn't mean the error was thrown inside the file itself, but while it was running.
+
+⎯⎯⎯⎯ Unhandled Rejection ⎯⎯⎯⎯⎯
+TypeError: helper.removeColorScheme is not a function
+ ❯ ../../node_modules/.pnpm/@nuxtjs+color-mode@3.5.2_magicast@0.5.2/node_modules/@nuxtjs/color-mode/dist/runtime/plugin.client.js:86:12
+     84|       window.document.head.appendChild(style);
+     85|     }
+     86|     helper.removeColorScheme(oldValue);
+       |            ^
+     87|     helper.addColorScheme(newValue);
+     88|     if (disableTransition) {
+ ❯ callWithErrorHandling ../../node_modules/.pnpm/@vue+runtime-core@3.5.32/node_modules/@vue/runtime-core/dist/runtime-core.cjs.js:200:19
+ ❯ callWithAsyncErrorHandling ../../node_modules/.pnpm/@vue+runtime-core@3.5.32/node_modules/@vue/runtime-core/dist/runtime-core.cjs.js:207:17
+ ❯ baseWatchOptions.call ../../node_modules/.pnpm/@vue+runtime-core@3.5.32/node_modules/@vue/runtime-core/dist/runtime-core.cjs.js:884:47
+ ❯ job ../../node_modules/.pnpm/@vue+reactivity@3.5.32/node_modules/@vue/reactivity/dist/reactivity.cjs.js:1902:18
+ ❯ callWithErrorHandling ../../node_modules/.pnpm/@vue+runtime-core@3.5.32/node_modules/@vue/runtime-core/dist/runtime-core.cjs.js:200:33
+ ❯ flushJobs ../../node_modules/.pnpm/@vue+runtime-core@3.5.32/node_modules/@vue/runtime-core/dist/runtime-core.cjs.js:405:9
+ ❯ processTicksAndRejections node:internal/process/task_queues:103:5
+
+This error originated in "app/composables/useColumnReorder.test.ts" test file. It doesn't mean the error was thrown inside the file itself, but while it was running.
+
+⎯⎯⎯⎯ Unhandled Rejection ⎯⎯⎯⎯⎯
+TypeError: helper.removeColorScheme is not a function
+ ❯ ../../node_modules/.pnpm/@nuxtjs+color-mode@3.5.2_magicast@0.5.2/node_modules/@nuxtjs/color-mode/dist/runtime/plugin.client.js:86:12
+     84|       window.document.head.appendChild(style);
+     85|     }
+     86|     helper.removeColorScheme(oldValue);
+       |            ^
+     87|     helper.addColorScheme(newValue);
+     88|     if (disableTransition) {
+ ❯ callWithErrorHandling ../../node_modules/.pnpm/@vue+runtime-core@3.5.32/node_modules/@vue/runtime-core/dist/runtime-core.cjs.js:200:19
+ ❯ callWithAsyncErrorHandling ../../node_modules/.pnpm/@vue+runtime-core@3.5.32/node_modules/@vue/runtime-core/dist/runtime-core.cjs.js:207:17
+ ❯ baseWatchOptions.call ../../node_modules/.pnpm/@vue+runtime-core@3.5.32/node_modules/@vue/runtime-core/dist/runtime-core.cjs.js:884:47
+ ❯ job ../../node_modules/.pnpm/@vue+reactivity@3.5.32/node_modules/@vue/reactivity/dist/reactivity.cjs.js:1902:18
+ ❯ callWithErrorHandling ../../node_modules/.pnpm/@vue+runtime-core@3.5.32/node_modules/@vue/runtime-core/dist/runtime-core.cjs.js:200:33
+ ❯ flushJobs ../../node_modules/.pnpm/@vue+runtime-core@3.5.32/node_modules/@vue/runtime-core/dist/runtime-core.cjs.js:405:9
+ ❯ processTicksAndRejections node:internal/process/task_queues:103:5
+
+This error originated in "app/lib/ontology-field-widget.test.ts" test file. It doesn't mean the error was thrown inside the file itself, but while it was running.
+
+⎯⎯⎯⎯ Unhandled Rejection ⎯⎯⎯⎯⎯
+TypeError: helper.removeColorScheme is not a function
+ ❯ ../../node_modules/.pnpm/@nuxtjs+color-mode@3.5.2_magicast@0.5.2/node_modules/@nuxtjs/color-mode/dist/runtime/plugin.client.js:86:12
+     84|       window.document.head.appendChild(style);
+     85|     }
+     86|     helper.removeColorScheme(oldValue);
+       |            ^
+     87|     helper.addColorScheme(newValue);
+     88|     if (disableTransition) {
+ ❯ callWithErrorHandling ../../node_modules/.pnpm/@vue+runtime-core@3.5.32/node_modules/@vue/runtime-core/dist/runtime-core.cjs.js:200:19
+ ❯ callWithAsyncErrorHandling ../../node_modules/.pnpm/@vue+runtime-core@3.5.32/node_modules/@vue/runtime-core/dist/runtime-core.cjs.js:207:17
+ ❯ baseWatchOptions.call ../../node_modules/.pnpm/@vue+runtime-core@3.5.32/node_modules/@vue/runtime-core/dist/runtime-core.cjs.js:884:47
+ ❯ job ../../node_modules/.pnpm/@vue+reactivity@3.5.32/node_modules/@vue/reactivity/dist/reactivity.cjs.js:1902:18
+ ❯ callWithErrorHandling ../../node_modules/.pnpm/@vue+runtime-core@3.5.32/node_modules/@vue/runtime-core/dist/runtime-core.cjs.js:200:33
+ ❯ flushJobs ../../node_modules/.pnpm/@vue+runtime-core@3.5.32/node_modules/@vue/runtime-core/dist/runtime-core.cjs.js:405:9
+ ❯ processTicksAndRejections node:internal/process/task_queues:103:5
+
+This error originated in "app/lib/sheet-a1.test.ts" test file. It doesn't mean the error was thrown inside the file itself, but while it was running.
+
+⎯⎯⎯⎯ Unhandled Rejection ⎯⎯⎯⎯⎯
+TypeError: helper.removeColorScheme is not a function
+ ❯ ../../node_modules/.pnpm/@nuxtjs+color-mode@3.5.2_magicast@0.5.2/node_modules/@nuxtjs/color-mode/dist/runtime/plugin.client.js:86:12
+     84|       window.document.head.appendChild(style);
+     85|     }
+     86|     helper.removeColorScheme(oldValue);
+       |            ^
+     87|     helper.addColorScheme(newValue);
+     88|     if (disableTransition) {
+ ❯ callWithErrorHandling ../../node_modules/.pnpm/@vue+runtime-core@3.5.32/node_modules/@vue/runtime-core/dist/runtime-core.cjs.js:200:19
+ ❯ callWithAsyncErrorHandling ../../node_modules/.pnpm/@vue+runtime-core@3.5.32/node_modules/@vue/runtime-core/dist/runtime-core.cjs.js:207:17
+ ❯ baseWatchOptions.call ../../node_modules/.pnpm/@vue+runtime-core@3.5.32/node_modules/@vue/runtime-core/dist/runtime-core.cjs.js:884:47
+ ❯ job ../../node_modules/.pnpm/@vue+reactivity@3.5.32/node_modules/@vue/reactivity/dist/reactivity.cjs.js:1902:18
+ ❯ callWithErrorHandling ../../node_modules/.pnpm/@vue+runtime-core@3.5.32/node_modules/@vue/runtime-core/dist/runtime-core.cjs.js:200:33
+ ❯ flushJobs ../../node_modules/.pnpm/@vue+runtime-core@3.5.32/node_modules/@vue/runtime-core/dist/runtime-core.cjs.js:405:9
+ ❯ processTicksAndRejections node:internal/process/task_queues:103:5
+
+This error originated in "app/lib/entity-mutation-sse.test.ts" test file. It doesn't mean the error was thrown inside the file itself, but while it was running.
+
+⎯⎯⎯⎯ Unhandled Rejection ⎯⎯⎯⎯⎯
+TypeError: helper.removeColorScheme is not a function
+ ❯ ../../node_modules/.pnpm/@nuxtjs+color-mode@3.5.2_magicast@0.5.2/node_modules/@nuxtjs/color-mode/dist/runtime/plugin.client.js:86:12
+     84|       window.document.head.appendChild(style);
+     85|     }
+     86|     helper.removeColorScheme(oldValue);
+       |            ^
+     87|     helper.addColorScheme(newValue);
+     88|     if (disableTransition) {
+ ❯ callWithErrorHandling ../../node_modules/.pnpm/@vue+runtime-core@3.5.32/node_modules/@vue/runtime-core/dist/runtime-core.cjs.js:200:19
+ ❯ callWithAsyncErrorHandling ../../node_modules/.pnpm/@vue+runtime-core@3.5.32/node_modules/@vue/runtime-core/dist/runtime-core.cjs.js:207:17
+ ❯ baseWatchOptions.call ../../node_modules/.pnpm/@vue+runtime-core@3.5.32/node_modules/@vue/runtime-core/dist/runtime-core.cjs.js:884:47
+ ❯ job ../../node_modules/.pnpm/@vue+reactivity@3.5.32/node_modules/@vue/reactivity/dist/reactivity.cjs.js:1902:18
+ ❯ callWithErrorHandling ../../node_modules/.pnpm/@vue+runtime-core@3.5.32/node_modules/@vue/runtime-core/dist/runtime-core.cjs.js:200:33
+ ❯ flushJobs ../../node_modules/.pnpm/@vue+runtime-core@3.5.32/node_modules/@vue/runtime-core/dist/runtime-core.cjs.js:405:9
+ ❯ processTicksAndRejections node:internal/process/task_queues:103:5
+
+This error originated in "app/lib/sheet-cell-key.test.ts" test file. It doesn't mean the error was thrown inside the file itself, but while it was running.
+
+⎯⎯⎯⎯ Unhandled Rejection ⎯⎯⎯⎯⎯
+TypeError: helper.removeColorScheme is not a function
+ ❯ ../../node_modules/.pnpm/@nuxtjs+color-mode@3.5.2_magicast@0.5.2/node_modules/@nuxtjs/color-mode/dist/runtime/plugin.client.js:86:12
+     84|       window.document.head.appendChild(style);
+     85|     }
+     86|     helper.removeColorScheme(oldValue);
+       |            ^
+     87|     helper.addColorScheme(newValue);
+     88|     if (disableTransition) {
+ ❯ callWithErrorHandling ../../node_modules/.pnpm/@vue+runtime-core@3.5.32/node_modules/@vue/runtime-core/dist/runtime-core.cjs.js:200:19
+ ❯ callWithAsyncErrorHandling ../../node_modules/.pnpm/@vue+runtime-core@3.5.32/node_modules/@vue/runtime-core/dist/runtime-core.cjs.js:207:17
+ ❯ baseWatchOptions.call ../../node_modules/.pnpm/@vue+runtime-core@3.5.32/node_modules/@vue/runtime-core/dist/runtime-core.cjs.js:884:47
+ ❯ job ../../node_modules/.pnpm/@vue+reactivity@3.5.32/node_modules/@vue/reactivity/dist/reactivity.cjs.js:1902:18
+ ❯ callWithErrorHandling ../../node_modules/.pnpm/@vue+runtime-core@3.5.32/node_modules/@vue/runtime-core/dist/runtime-core.cjs.js:200:33
+ ❯ flushJobs ../../node_modules/.pnpm/@vue+runtime-core@3.5.32/node_modules/@vue/runtime-core/dist/runtime-core.cjs.js:405:9
+ ❯ processTicksAndRejections node:internal/process/task_queues:103:5
+
+This error originated in "app/composables/useEntitySummary.test.ts" test file. It doesn't mean the error was thrown inside the file itself, but while it was running.
+
+⎯⎯⎯⎯ Unhandled Rejection ⎯⎯⎯⎯⎯
+TypeError: helper.removeColorScheme is not a function
+ ❯ ../../node_modules/.pnpm/@nuxtjs+color-mode@3.5.2_magicast@0.5.2/node_modules/@nuxtjs/color-mode/dist/runtime/plugin.client.js:86:12
+     84|       window.document.head.appendChild(style);
+     85|     }
+     86|     helper.removeColorScheme(oldValue);
+       |            ^
+     87|     helper.addColorScheme(newValue);
+     88|     if (disableTransition) {
+ ❯ callWithErrorHandling ../../node_modules/.pnpm/@vue+runtime-core@3.5.32/node_modules/@vue/runtime-core/dist/runtime-core.cjs.js:200:19
+ ❯ callWithAsyncErrorHandling ../../node_modules/.pnpm/@vue+runtime-core@3.5.32/node_modules/@vue/runtime-core/dist/runtime-core.cjs.js:207:17
+ ❯ baseWatchOptions.call ../../node_modules/.pnpm/@vue+runtime-core@3.5.32/node_modules/@vue/runtime-core/dist/runtime-core.cjs.js:884:47
+ ❯ job ../../node_modules/.pnpm/@vue+reactivity@3.5.32/node_modules/@vue/reactivity/dist/reactivity.cjs.js:1902:18
+ ❯ callWithErrorHandling ../../node_modules/.pnpm/@vue+runtime-core@3.5.32/node_modules/@vue/runtime-core/dist/runtime-core.cjs.js:200:33
+ ❯ flushJobs ../../node_modules/.pnpm/@vue+runtime-core@3.5.32/node_modules/@vue/runtime-core/dist/runtime-core.cjs.js:405:9
+ ❯ processTicksAndRejections node:internal/process/task_queues:103:5
+
+This error originated in "app/lib/pickOrgAndApp.test.ts" test file. It doesn't mean the error was thrown inside the file itself, but while it was running.
+
+⎯⎯⎯⎯ Unhandled Rejection ⎯⎯⎯⎯⎯
+TypeError: helper.removeColorScheme is not a function
+ ❯ ../../node_modules/.pnpm/@nuxtjs+color-mode@3.5.2_magicast@0.5.2/node_modules/@nuxtjs/color-mode/dist/runtime/plugin.client.js:86:12
+     84|       window.document.head.appendChild(style);
+     85|     }
+     86|     helper.removeColorScheme(oldValue);
+       |            ^
+     87|     helper.addColorScheme(newValue);
+     88|     if (disableTransition) {
+ ❯ callWithErrorHandling ../../node_modules/.pnpm/@vue+runtime-core@3.5.32/node_modules/@vue/runtime-core/dist/runtime-core.cjs.js:200:19
+ ❯ callWithAsyncErrorHandling ../../node_modules/.pnpm/@vue+runtime-core@3.5.32/node_modules/@vue/runtime-core/dist/runtime-core.cjs.js:207:17
+ ❯ baseWatchOptions.call ../../node_modules/.pnpm/@vue+runtime-core@3.5.32/node_modules/@vue/runtime-core/dist/runtime-core.cjs.js:884:47
+ ❯ job ../../node_modules/.pnpm/@vue+reactivity@3.5.32/node_modules/@vue/reactivity/dist/reactivity.cjs.js:1902:18
+ ❯ callWithErrorHandling ../../node_modules/.pnpm/@vue+runtime-core@3.5.32/node_modules/@vue/runtime-core/dist/runtime-core.cjs.js:200:33
+ ❯ flushJobs ../../node_modules/.pnpm/@vue+runtime-core@3.5.32/node_modules/@vue/runtime-core/dist/runtime-core.cjs.js:405:9
+ ❯ processTicksAndRejections node:internal/process/task_queues:103:5
+
+This error originated in "app/lib/slide-region-key.test.ts" test file. It doesn't mean the error was thrown inside the file itself, but while it was running.
+
+⎯⎯⎯⎯ Unhandled Rejection ⎯⎯⎯⎯⎯
+TypeError: helper.removeColorScheme is not a function
+ ❯ ../../node_modules/.pnpm/@nuxtjs+color-mode@3.5.2_magicast@0.5.2/node_modules/@nuxtjs/color-mode/dist/runtime/plugin.client.js:86:12
+     84|       window.document.head.appendChild(style);
+     85|     }
+     86|     helper.removeColorScheme(oldValue);
+       |            ^
+     87|     helper.addColorScheme(newValue);
+     88|     if (disableTransition) {
+ ❯ callWithErrorHandling ../../node_modules/.pnpm/@vue+runtime-core@3.5.32/node_modules/@vue/runtime-core/dist/runtime-core.cjs.js:200:19
+ ❯ callWithAsyncErrorHandling ../../node_modules/.pnpm/@vue+runtime-core@3.5.32/node_modules/@vue/runtime-core/dist/runtime-core.cjs.js:207:17
+ ❯ baseWatchOptions.call ../../node_modules/.pnpm/@vue+runtime-core@3.5.32/node_modules/@vue/runtime-core/dist/runtime-core.cjs.js:884:47
+ ❯ job ../../node_modules/.pnpm/@vue+reactivity@3.5.32/node_modules/@vue/reactivity/dist/reactivity.cjs.js:1902:18
+ ❯ callWithErrorHandling ../../node_modules/.pnpm/@vue+runtime-core@3.5.32/node_modules/@vue/runtime-core/dist/runtime-core.cjs.js:200:33
+ ❯ flushJobs ../../node_modules/.pnpm/@vue+runtime-core@3.5.32/node_modules/@vue/runtime-core/dist/runtime-core.cjs.js:405:9
+ ❯ processTicksAndRejections node:internal/process/task_queues:103:5
+
+This error originated in "app/lib/sheet-query-infer.test.ts" test file. It doesn't mean the error was thrown inside the file itself, but while it was running.
+
+⎯⎯⎯⎯ Unhandled Rejection ⎯⎯⎯⎯⎯
+TypeError: helper.removeColorScheme is not a function
+ ❯ ../../node_modules/.pnpm/@nuxtjs+color-mode@3.5.2_magicast@0.5.2/node_modules/@nuxtjs/color-mode/dist/runtime/plugin.client.js:86:12
+     84|       window.document.head.appendChild(style);
+     85|     }
+     86|     helper.removeColorScheme(oldValue);
+       |            ^
+     87|     helper.addColorScheme(newValue);
+     88|     if (disableTransition) {
+ ❯ callWithErrorHandling ../../node_modules/.pnpm/@vue+runtime-core@3.5.32/node_modules/@vue/runtime-core/dist/runtime-core.cjs.js:200:19
+ ❯ callWithAsyncErrorHandling ../../node_modules/.pnpm/@vue+runtime-core@3.5.32/node_modules/@vue/runtime-core/dist/runtime-core.cjs.js:207:17
+ ❯ baseWatchOptions.call ../../node_modules/.pnpm/@vue+runtime-core@3.5.32/node_modules/@vue/runtime-core/dist/runtime-core.cjs.js:884:47
+ ❯ job ../../node_modules/.pnpm/@vue+reactivity@3.5.32/node_modules/@vue/reactivity/dist/reactivity.cjs.js:1902:18
+ ❯ callWithErrorHandling ../../node_modules/.pnpm/@vue+runtime-core@3.5.32/node_modules/@vue/runtime-core/dist/runtime-core.cjs.js:200:33
+ ❯ flushJobs ../../node_modules/.pnpm/@vue+runtime-core@3.5.32/node_modules/@vue/runtime-core/dist/runtime-core.cjs.js:405:9
+ ❯ processTicksAndRejections node:internal/process/task_queues:103:5
+
+This error originated in "app/lib/campus-zones.test.ts" test file. It doesn't mean the error was thrown inside the file itself, but while it was running.
+
+⎯⎯⎯⎯ Unhandled Rejection ⎯⎯⎯⎯⎯
+TypeError: helper.removeColorScheme is not a function
+ ❯ ../../node_modules/.pnpm/@nuxtjs+color-mode@3.5.2_magicast@0.5.2/node_modules/@nuxtjs/color-mode/dist/runtime/plugin.client.js:86:12
+     84|       window.document.head.appendChild(style);
+     85|     }
+     86|     helper.removeColorScheme(oldValue);
+       |            ^
+     87|     helper.addColorScheme(newValue);
+     88|     if (disableTransition) {
+ ❯ callWithErrorHandling ../../node_modules/.pnpm/@vue+runtime-core@3.5.32/node_modules/@vue/runtime-core/dist/runtime-core.cjs.js:200:19
+ ❯ callWithAsyncErrorHandling ../../node_modules/.pnpm/@vue+runtime-core@3.5.32/node_modules/@vue/runtime-core/dist/runtime-core.cjs.js:207:17
+ ❯ baseWatchOptions.call ../../node_modules/.pnpm/@vue+runtime-core@3.5.32/node_modules/@vue/runtime-core/dist/runtime-core.cjs.js:884:47
+ ❯ job ../../node_modules/.pnpm/@vue+reactivity@3.5.32/node_modules/@vue/reactivity/dist/reactivity.cjs.js:1902:18
+ ❯ callWithErrorHandling ../../node_modules/.pnpm/@vue+runtime-core@3.5.32/node_modules/@vue/runtime-core/dist/runtime-core.cjs.js:200:33
+ ❯ flushJobs ../../node_modules/.pnpm/@vue+runtime-core@3.5.32/node_modules/@vue/runtime-core/dist/runtime-core.cjs.js:405:9
+ ❯ processTicksAndRejections node:internal/process/task_queues:103:5
+
+This error originated in "app/lib/agent-mutation-toast.test.ts" test file. It doesn't mean the error was thrown inside the file itself, but while it was running.
+
+⎯⎯⎯⎯ Unhandled Rejection ⎯⎯⎯⎯⎯
+TypeError: helper.removeColorScheme is not a function
+ ❯ ../../node_modules/.pnpm/@nuxtjs+color-mode@3.5.2_magicast@0.5.2/node_modules/@nuxtjs/color-mode/dist/runtime/plugin.client.js:86:12
+     84|       window.document.head.appendChild(style);
+     85|     }
+     86|     helper.removeColorScheme(oldValue);
+       |            ^
+     87|     helper.addColorScheme(newValue);
+     88|     if (disableTransition) {
+ ❯ callWithErrorHandling ../../node_modules/.pnpm/@vue+runtime-core@3.5.32/node_modules/@vue/runtime-core/dist/runtime-core.cjs.js:200:19
+ ❯ callWithAsyncErrorHandling ../../node_modules/.pnpm/@vue+runtime-core@3.5.32/node_modules/@vue/runtime-core/dist/runtime-core.cjs.js:207:17
+ ❯ baseWatchOptions.call ../../node_modules/.pnpm/@vue+runtime-core@3.5.32/node_modules/@vue/runtime-core/dist/runtime-core.cjs.js:884:47
+ ❯ job ../../node_modules/.pnpm/@vue+reactivity@3.5.32/node_modules/@vue/reactivity/dist/reactivity.cjs.js:1902:18
+ ❯ callWithErrorHandling ../../node_modules/.pnpm/@vue+runtime-core@3.5.32/node_modules/@vue/runtime-core/dist/runtime-core.cjs.js:200:33
+ ❯ flushJobs ../../node_modules/.pnpm/@vue+runtime-core@3.5.32/node_modules/@vue/runtime-core/dist/runtime-core.cjs.js:405:9
+ ❯ processTicksAndRejections node:internal/process/task_queues:103:5
+
+This error originated in "app/composables/useVoiceRecorder.test.ts" test file. It doesn't mean the error was thrown inside the file itself, but while it was running.
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯
+
+
+ Test Files  1 failed | 68 passed (69)
+      Tests  633 passed (633)
+     Errors  34 errors
+   Start at  04:01:24
+   Duration  25.48s (transform 14.01s, setup 148.00s, collect 19.11s, tests 4.27s, environment 17.99s, prepare 14.20s)
+

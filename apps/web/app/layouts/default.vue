@@ -163,19 +163,17 @@
     :style="{ '--right-sidebar-width': rightSidebarCssWidth }">
     <!-- App body: icon rail + sidebar + content + right sidebar -->
     <div class="flex flex-1 min-h-0 overflow-hidden">
-      <!-- Global omnibox lives inside AppHeader via <AppOmnibox />. -->
+      <!-- Sky menubar + Omnibox overlay live in AppHeader via AppMenubar. Resident cluster in IconRail. -->
 
       <!-- Layout Mode A: Header above sidebar (spans sidebar + content) -->
       <template v-if="headerAboveSidebar">
         <div class="flex flex-1 flex-col min-w-0 overflow-hidden">
           <AppHeader :above-sidebar="true" />
           <div class="flex flex-1 min-h-0 overflow-hidden rounded-xl bg-transparent pt-0 p-2.5">
+            <div v-if="showIconRail && !railAtBottom" class="pr-2.5 shrink-0 flex self-stretch">
+              <IconRail position="left" />
+            </div>
             <div class="flex flex-1 min-h-0 overflow-hidden rounded-xl border bg-card/50">
-              <!-- Left rail (default) -->
-              <IconRail
-                v-if="showIconRail && !railAtBottom"
-                position="left"
-                class="bg-transparent mr-0 border-l border-b border-t rounded-l-xl rounded-lg !rounded-r-none border-r-none!" />
               <div class="bg-transparent flex flex-1 min-w-0 overflow-hidden rounded-md! flex-col">
                 <div class="flex flex-1 min-h-0 overflow-hidden">
                   <AppSidebar v-if="showSidebar" :header-above="true" class="bg-transparent rounded-xl" />
@@ -194,19 +192,17 @@
             </div>
           </div>
           <!-- Bottom rail -->
-          <div class="p-2.5 pt-0">
-            <IconRail
-              v-if="showIconRail && railAtBottom"
-              position="bottom"
-              class="bg-transparent border border-border/0 rounded-xl shrink-0" />
+          <div class="px-2.5 pb-2.5 pt-0">
+            <IconRail v-if="showIconRail && railAtBottom" position="bottom" class="w-full shrink-0" />
           </div>
         </div>
       </template>
 
       <!-- Layout Mode B: Default (header inside content column only) -->
       <template v-else>
-        <!-- Left rail (default) -->
-        <IconRail v-if="showIconRail && !railAtBottom" position="left" />
+        <div v-if="showIconRail && !railAtBottom" class="pl-2.5 pt-2.5 pb-2.5 shrink-0 flex self-stretch">
+          <IconRail position="left" />
+        </div>
         <AppSidebar v-if="showSidebar" :header-above="false" />
         <!-- Gap when sidebar is hidden (forced-collapsed or page-disabled) -->
         <div v-if="!showSidebar" class="w-2.5 shrink-0" />
@@ -221,7 +217,9 @@
             </main>
           </div>
           <!-- Bottom rail -->
-          <IconRail v-if="showIconRail && railAtBottom" position="bottom" class="bg-card mt-2.5 rounded-xl shrink-0" />
+          <div class="px-2.5 pb-2.5">
+            <IconRail v-if="showIconRail && railAtBottom" position="bottom" class="w-full shrink-0" />
+          </div>
         </div>
       </template>
 

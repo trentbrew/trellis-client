@@ -38,6 +38,12 @@ export const WORKSHOP_BROWSE_LINKS: RouteConfig[] = [
     icon: 'lucide:presentation',
     tint: 'text-violet-400',
   },
+  {
+    path: '/canvases',
+    label: 'All canvases',
+    icon: 'lucide:layout-dashboard',
+    tint: 'text-cyan-400',
+  },
 ]
 
 export function resolveWorkshopSidebarItems(
@@ -55,7 +61,8 @@ export function resolveWorkshopSidebarItems(
 export const ROUTE_SIDEBAR_PANELS = [
   { pathPrefix: '/calendar', component: 'CalendarSidebarPanel' },
   { pathPrefix: '/locations', component: 'LocationsSidebarPanel' },
+  { pathPrefix: '/home', component: 'AgentConversationList' },
   { pathPrefix: '/messages', component: 'ChatSidebar' },
   { pathPrefix: '/pages', component: 'PagesSidebar' },
-  { pathPrefix: '/decks', component: 'DecksSidebar' },
+  { pathPrefix: '/canvases', component: 'CanvasesSidebar' },
 ] as const

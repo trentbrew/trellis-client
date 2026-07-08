@@ -3,13 +3,16 @@ import { motion } from 'motion-v'
 
 interface Props {
   size?: number
+  /** When true, animates hamburger lines to an X (e.g. sidebar collapsed). */
+  open?: boolean
 }
 
 const props = withDefaults(defineProps<Props>(), {
   size: 28,
+  open: false,
 })
 
-const animateState = ref<'normal' | 'animate'>('normal')
+const animateState = computed<'normal' | 'animate'>(() => (props.open ? 'animate' : 'normal'))
 
 const line1Variants = {
   normal: { rotate: 0, y: 0, opacity: 1 },
@@ -24,10 +27,6 @@ const line3Variants = {
   animate: { rotate: -45, y: -6, opacity: 1, transition: { type: 'spring', stiffness: 260, damping: 20 } },
 }
 
-const startAnimation = () => { animateState.value = 'animate' }
-const stopAnimation = () => { animateState.value = 'normal' }
-
-defineExpose({ startAnimation, stopAnimation })
 </script>
 
 <template>

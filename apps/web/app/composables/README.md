@@ -69,7 +69,10 @@
 | `useTheme`             | Theme preset access                             |
 | `useBranding`          | HSL-based branding system                       |
 | `useLayoutPreferences` | Header layout toggle (above sidebar vs. inline) |
-| `useSidebarCollapse`   | Sidebar section collapse state                  |
+| `useSidebarCollapse`   | AppSidebar open/collapsed + route force-collapse — see [SIDEBAR_BEHAVIOR.md](../../../../docs/architecture/SIDEBAR_BEHAVIOR.md) |
+| `usePageShell`         | Page-level AppSidebar disable (`hide-sidebar` prop) |
+| `usePageSidebar`       | Inject browse type filter into AppSidebar |
+| `useRightSidebarWidth` | Global Agent panel (right, teleported) |
 | `useSidebarOrder`      | Sidebar item ordering                           |
 | `useSidebarTree`       | Recursive sidebar tree CRUD                     |
 | `useKeyboardShortcuts` | Registry-driven keyboard shortcut system        |

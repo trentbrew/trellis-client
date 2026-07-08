@@ -10,7 +10,7 @@ const API_BASE = '/api/graph'
 
 // Module-level singleton state (survives component unmounts)
 let _eventSource: EventSource | null = null
-let _connected = false
+const _connectedRef = ref(false)
 let _retryMs = 1000
 const _listeners = new Map<string, Set<(_event: MessageEvent) => void>>()
 
@@ -46,7 +46,13 @@ export function useSSESubscribe(eventType: string, callback: (_event: MessageEve
  * Get the current connection status.
  */
 export function useSSEStatus() {
-  return readonly(ref(_connected))
+  return readonly(_connectedRef)
+}
+
+/** Dev/test only — force stale UI without killing server (TRL-319). */
+export function __setSSEConnectedForTests(connected: boolean) {
+  if (!import.meta.dev) return
+  _connectedRef.value = connected
 }
 
 /**
@@ -59,7 +65,7 @@ function _initConnection() {
     _eventSource = new EventSource(`${API_BASE}/events`)
 
     _eventSource.addEventListener('connected', () => {
-      _connected = true
+      _connectedRef.value = true
       _retryMs = 1000 // Reset backoff
       console.debug('[SSE] Connected to graph events')
     })
@@ -73,7 +79,7 @@ function _initConnection() {
     })
 
     _eventSource.onerror = () => {
-      _connected = false
+      _connectedRef.value = false
       _eventSource?.close()
       _eventSource = null
 
@@ -109,6 +115,6 @@ function _dispatchToListeners(eventType: string, event: MessageEvent) {
 export function closeSSEConnection() {
   _eventSource?.close()
   _eventSource = null
-  _connected = false
+  _connectedRef.value = false
   _listeners.clear()
 }

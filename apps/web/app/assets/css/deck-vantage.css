@@ -1,0 +1,28 @@
+:root {
+  --vantage-duration: 280ms;
+  --vantage-route-duration: 220ms;
+  --editor-opacity: 1;
+  --present-opacity: 0;
+}
+
+html[data-deck-vantage='present'] {
+  --editor-opacity: 0;
+  --present-opacity: 1;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  :root {
+    --vantage-duration: 0ms;
+    --vantage-route-duration: 0ms;
+  }
+}
+
+.deck-vantage-enter-active,
+.deck-vantage-leave-active {
+  transition: opacity var(--vantage-route-duration) ease;
+}
+
+.deck-vantage-enter-from,
+.deck-vantage-leave-to {
+  opacity: 0;
+}

@@ -53,6 +53,8 @@ export interface RouteConfig {
     showBackButton?: boolean
     /** Full width page */
     fullWidth?: boolean
+    /** Show sidebar collapse toggle (user can hide/show sidebar) */
+    sidebarCollapsible?: boolean
     /** Hide sidebar for this page */
     hideSidebar?: boolean
     /** Hide header for this page */
@@ -550,10 +552,50 @@ interface ParsedPath {
   facility: string | null
 }
 
+/** First path segment names for flat Trellis shell routes (also used to parse /[ws]/[app]/… URLs). */
+export const KNOWN_TOP_LEVEL_ROUTE_SEGMENTS = [
+  'docs',
+  'settings',
+  'admin',
+  'database',
+  'ontologies',
+  'collections',
+  'help',
+  'workspace',
+  'permits',
+  'types',
+  'apptool',
+  'playground',
+  'components',
+  'embed',
+  'archive',
+  'learn',
+  'graph',
+  'locations',
+  'calendar',
+  'contacts',
+  'documents',
+  'messages',
+  'pages',
+  'sheets',
+  'decks',
+  'mail',
+  'home',
+  'agent',
+  'query',
+  'notifications',
+  'activity',
+  'w',
+] as const
+
 export function buildNavPath(cleanPath: string, workspace: string | null, app: string | null): string {
-  if (workspace && app && cleanPath.startsWith('/app')) {
-    const subPath = cleanPath.replace(/^\/app/, '')
-    return `/${workspace}/${app}${subPath}`
+  if (workspace && app) {
+    if (cleanPath.startsWith('/app')) {
+      const subPath = cleanPath.replace(/^\/app/, '')
+      return `/${workspace}/${app}${subPath}`
+    }
+    // Flat shell route → re-insert workspace/app prefix for contextual URLs
+    return `/${workspace}/${app}${cleanPath}`
   }
   return cleanPath
 }
@@ -577,39 +619,20 @@ export function parseFullPath(path: string): ParsedPath {
 
   const segments = path.split('/').filter(Boolean)
 
-  // Check for [workspace]/[app]/... pattern (2+ segments where first is not a known top-level route)
-  const knownTopLevelRoutes = [
-    'docs',
-    'settings',
-    'admin',
-    'database',
-    'collections',
-    'help',
-    'workspace',
-    'permits',
-    'types',
-    'apptool',
-    'playground',
-    'components',
-    'embed',
-    'archive',
-    'learn',
-    'graph',
-    'locations',
-    'calendar',
-    'contacts',
-    'documents',
-    'messages',
-    'pages',
-    'w',
-  ]
-
-  if (segments.length >= 2 && segments[0] && !knownTopLevelRoutes.includes(segments[0])) {
-    // It's a workspace/app route: /[workspace]/[app]/path...
-    // Map it back to /app/path...
+  if (segments.length >= 2 && segments[0] && !KNOWN_TOP_LEVEL_ROUTE_SEGMENTS.includes(segments[0])) {
+    // Workspace/app scoped URL: /[workspace]/[app]/path...
+    // Trellis shell routes are flat (/mail, /workspace, …); legacy sandbox routes use /app/*.
     const workspace = segments[0]
     const app = segments[1] ?? null
-    const cleanPath = segments.length > 2 ? '/app/' + segments.slice(2).join('/') : '/app'
+    const rest = segments.slice(2)
+    let cleanPath: string
+    if (rest.length === 0) {
+      cleanPath = '/app'
+    } else if (KNOWN_TOP_LEVEL_ROUTE_SEGMENTS.includes(rest[0]!)) {
+      cleanPath = '/' + rest.join('/')
+    } else {
+      cleanPath = '/app/' + rest.join('/')
+    }
     return {
       workspace,
       app,

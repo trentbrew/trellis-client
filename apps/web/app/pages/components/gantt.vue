@@ -16,7 +16,7 @@
     ContextMenuContent,
     ContextMenuItem,
     ContextMenuTrigger,
-  } from '~/components/data/Gantt/index.vue'
+  } from '~/components/data/Gantt/index'
   import type { GanttFeature, GanttStatus, GanttMode, GanttScheduleItemChange } from '~/components/data/Gantt/ganttContext'
 
   definePageMeta({

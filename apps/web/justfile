@@ -8,10 +8,14 @@ port := `printf "%s" "${TRELLIS_PORT:-1414}"`
 # Option B sidecar port
 sidecar-port := "8230"
 
-# Clear Nuxt cache and stale dev/sidecar ports
+# Kill stale dev/sidecar ports (fast — preserves .nuxt for quicker restarts)
 clear:
     -lsof -ti:{{port}} | xargs kill -9 2>/dev/null || true
     -lsof -ti:{{sidecar-port}} | xargs kill -9 2>/dev/null || true
+
+# Full Nuxt cache wipe — use before build/validate or when dev artifacts are corrupt
+clear-nuxt:
+    @just clear
     rm -rf .nuxt
 
 # ── Option B: published trellis sidecar (:8230) ───────────────────────
@@ -64,7 +68,7 @@ run:
 
 # Validate deployment (lint, tests, route validation, build)
 validate:
-    @just clear
+    @just clear-nuxt
     pnpm lint
     pnpm test
     pnpm validate:routes
@@ -72,7 +76,7 @@ validate:
 
 # Build the app for production
 build:
-    @just clear
+    @just clear-nuxt
     pnpm build
 
 # Deploy to Firebase Hosting (Trellis web app)

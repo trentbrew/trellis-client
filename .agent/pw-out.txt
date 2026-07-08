@@ -1,0 +1,40 @@
+
+Running 4 tests using 4 workers
+
+[1A[2K(node:81667) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+
+
+[1A[2K(node:81668) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+
+
+[1A[2K(node:81670) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+
+
+[1A[2K(node:81669) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+
+
+[1A[2K(node:81667) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+
+
+[1A[2K(node:81670) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+
+
+[1A[2K(node:81669) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+
+
+[1A[2K(node:81668) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+
+
+[1A[2K[1/4] [chromium] › tests/e2e/campus-dock-resident.spec.ts:19:3 › Campus dock resident cluster (Wedge B) › menubar visible; bell and avatar in dock, not header
+[1A[2K[2/4] [chromium] › tests/e2e/campus-dock-resident.spec.ts:48:3 › Campus dock resident cluster (Wedge B) › bell opens notification dropdown
+[1A[2K[3/4] [chromium] › tests/e2e/campus-dock-resident.spec.ts:63:3 › Campus dock resident cluster (Wedge B) › avatar opens resident menu
+[1A[2K[4/4] [chromium] › tests/e2e/campus-dock-resident.spec.ts:78:3 › Campus dock resident cluster (Wedge B) › quick create opens furnish menu from dock
+[1A[2K  4 passed (6.5s)

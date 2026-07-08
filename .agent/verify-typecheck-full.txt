@@ -1,0 +1,161 @@
+
+> @trellis/web@ typecheck /Users/trentbrew/TURTLE/Projects/Packages/trellis-client/apps/web
+> nuxi typecheck
+
+
+ WARN  You seem to be using zod, but you have not installed @vee-validate/zod. Please install it to use zod with vee-validate.
+
+
+ WARN  Duplicated imports "EnrichmentSuggestion", the one from "/Users/trentbrew/TURTLE/Projects/Packages/trellis-client/apps/web/app/composables/useContentEnrichment.ts" has been ignored and "/Users/trentbrew/TURTLE/Projects/Packages/trellis-client/apps/web/app/composables/useEmailEnrichment.ts" is used
+
+
+ WARN  Duplicated imports "EnrichmentSuggestion", the one from "/Users/trentbrew/TURTLE/Projects/Packages/trellis-client/apps/web/app/composables/useEmailEnrichment.ts" has been ignored and "/Users/trentbrew/TURTLE/Projects/Packages/trellis-client/apps/web/app/composables/useEventEnrichment.ts" is used
+
+
+ WARN  Duplicated imports "UploadResult", the one from "/Users/trentbrew/TURTLE/Projects/Packages/trellis-client/apps/web/app/composables/useFileUpload.ts" has been ignored and "/Users/trentbrew/TURTLE/Projects/Packages/trellis-client/apps/web/app/composables/useImageUpload.ts" is used
+
+
+[nuxt]  WARN  Two component files resolving to the same name Gantt:
+
+ - /Users/trentbrew/TURTLE/Projects/Packages/trellis-client/apps/web/app/components/data/Gantt/index.vue
+ - /Users/trentbrew/TURTLE/Projects/Packages/trellis-client/apps/web/app/components/data/Gantt/Gantt.vue
+
+
+[nuxt]  WARN  Two component files resolving to the same name Card:
+
+ - /Users/trentbrew/TURTLE/Projects/Packages/trellis-client/apps/web/app/components/gantt/Card.vue
+ - /Users/trentbrew/TURTLE/Projects/Packages/trellis-client/apps/web/app/components/data/Gantt/Card.vue
+
+
+[nuxt]  WARN  Two component files resolving to the same name ContextMenu:
+
+ - /Users/trentbrew/TURTLE/Projects/Packages/trellis-client/apps/web/app/components/gantt/ContextMenu.vue
+ - /Users/trentbrew/TURTLE/Projects/Packages/trellis-client/apps/web/app/components/data/Gantt/ContextMenu.vue
+
+
+[nuxt]  WARN  Two component files resolving to the same name Gantt:
+
+ - /Users/trentbrew/TURTLE/Projects/Packages/trellis-client/apps/web/app/components/gantt/Gantt.vue
+ - /Users/trentbrew/TURTLE/Projects/Packages/trellis-client/apps/web/app/components/data/Gantt/Gantt.vue
+
+
+[nuxt]  WARN  Two component files resolving to the same name GanttCreateMarkerTrigger:
+
+ - /Users/trentbrew/TURTLE/Projects/Packages/trellis-client/apps/web/app/components/gantt/GanttCreateMarkerTrigger.vue
+ - /Users/trentbrew/TURTLE/Projects/Packages/trellis-client/apps/web/app/components/data/Gantt/GanttCreateMarkerTrigger.vue
+
+
+[nuxt]  WARN  Two component files resolving to the same name GanttFeatureItem:
+
+ - /Users/trentbrew/TURTLE/Projects/Packages/trellis-client/apps/web/app/components/gantt/GanttFeatureItem.vue
+ - /Users/trentbrew/TURTLE/Projects/Packages/trellis-client/apps/web/app/components/data/Gantt/GanttFeatureItem.vue
+
+
+[nuxt]  WARN  Two component files resolving to the same name GanttFeatureList:
+
+ - /Users/trentbrew/TURTLE/Projects/Packages/trellis-client/apps/web/app/components/gantt/GanttFeatureList.vue
+ - /Users/trentbrew/TURTLE/Projects/Packages/trellis-client/apps/web/app/components/data/Gantt/GanttFeatureList.vue
+
+
+[nuxt]  WARN  Two component files resolving to the same name GanttFeatureListGroup:
+
+ - /Users/trentbrew/TURTLE/Projects/Packages/trellis-client/apps/web/app/components/gantt/GanttFeatureListGroup.vue
+ - /Users/trentbrew/TURTLE/Projects/Packages/trellis-client/apps/web/app/components/data/Gantt/GanttFeatureListGroup.vue
+
+
+[nuxt]  WARN  Two component files resolving to the same name GanttHeader:
+
+ - /Users/trentbrew/TURTLE/Projects/Packages/trellis-client/apps/web/app/components/gantt/GanttHeader.vue
+ - /Users/trentbrew/TURTLE/Projects/Packages/trellis-client/apps/web/app/components/data/Gantt/GanttHeader.vue
+
+
+[nuxt]  WARN  Two component files resolving to the same name GanttMarker:
+
+ - /Users/trentbrew/TURTLE/Projects/Packages/trellis-client/apps/web/app/components/gantt/GanttMarker.vue
+ - /Users/trentbrew/TURTLE/Projects/Packages/trellis-client/apps/web/app/components/data/Gantt/GanttMarker.vue
+
+
+[nuxt]  WARN  Two component files resolving to the same name GanttProvider:
+
+ - /Users/trentbrew/TURTLE/Projects/Packages/trellis-client/apps/web/app/components/gantt/GanttProvider.vue
+ - /Users/trentbrew/TURTLE/Projects/Packages/trellis-client/apps/web/app/components/data/Gantt/GanttProvider.vue
+
+
+[nuxt]  WARN  Two component files resolving to the same name GanttSidebar:
+
+ - /Users/trentbrew/TURTLE/Projects/Packages/trellis-client/apps/web/app/components/gantt/GanttSidebar.vue
+ - /Users/trentbrew/TURTLE/Projects/Packages/trellis-client/apps/web/app/components/data/Gantt/GanttSidebar.vue
+
+
+[nuxt]  WARN  Two component files resolving to the same name GanttSidebarGroup:
+
+ - /Users/trentbrew/TURTLE/Projects/Packages/trellis-client/apps/web/app/components/gantt/GanttSidebarGroup.vue
+ - /Users/trentbrew/TURTLE/Projects/Packages/trellis-client/apps/web/app/components/data/Gantt/GanttSidebarGroup.vue
+
+
+[nuxt]  WARN  Two component files resolving to the same name GanttSidebarItem:
+
+ - /Users/trentbrew/TURTLE/Projects/Packages/trellis-client/apps/web/app/components/gantt/GanttSidebarItem.vue
+ - /Users/trentbrew/TURTLE/Projects/Packages/trellis-client/apps/web/app/components/data/Gantt/GanttSidebarItem.vue
+
+
+[nuxt]  WARN  Two component files resolving to the same name GanttTimeline:
+
+ - /Users/trentbrew/TURTLE/Projects/Packages/trellis-client/apps/web/app/components/gantt/GanttTimeline.vue
+ - /Users/trentbrew/TURTLE/Projects/Packages/trellis-client/apps/web/app/components/data/Gantt/GanttTimeline.vue
+
+
+[nuxt]  WARN  Two component files resolving to the same name GanttToday:
+
+ - /Users/trentbrew/TURTLE/Projects/Packages/trellis-client/apps/web/app/components/gantt/GanttToday.vue
+ - /Users/trentbrew/TURTLE/Projects/Packages/trellis-client/apps/web/app/components/data/Gantt/GanttToday.vue
+
+
+[nuxt]  WARN  Two component files resolving to the same name GanttToolbar:
+
+ - /Users/trentbrew/TURTLE/Projects/Packages/trellis-client/apps/web/app/components/gantt/GanttToolbar.vue
+ - /Users/trentbrew/TURTLE/Projects/Packages/trellis-client/apps/web/app/components/data/Gantt/GanttToolbar.vue
+
+
+[nuxt]  WARN  Two component files resolving to the same name Gantt:
+
+ - /Users/trentbrew/TURTLE/Projects/Packages/trellis-client/apps/web/app/components/gantt/index.vue
+ - /Users/trentbrew/TURTLE/Projects/Packages/trellis-client/apps/web/app/components/data/Gantt/Gantt.vue
+
+
+[nuxt]  WARN  Two component files resolving to the same name SchemaEditor:
+
+ - /Users/trentbrew/TURTLE/Projects/Packages/trellis-client/apps/web/app/components/ontology/SchemaEditor.vue
+ - /Users/trentbrew/TURTLE/Projects/Packages/trellis-client/apps/web/app/components/data/DataTable/SchemaEditor.vue
+
+ℹ Nuxt Icon client bundle consist of 313 icons with 91.79KB(uncompressed) in size
+[nuxt] ℹ Compiled nuxt-icon-client-bundle.mjs in 759.02ms
+
+ WARN  Duplicated imports "EnrichmentSuggestion", the one from "/Users/trentbrew/TURTLE/Projects/Packages/trellis-client/apps/web/app/composables/useContentEnrichment.ts" has been ignored and "/Users/trentbrew/TURTLE/Projects/Packages/trellis-client/apps/web/app/composables/useEmailEnrichment.ts" is used
+
+
+ WARN  Duplicated imports "EnrichmentSuggestion", the one from "/Users/trentbrew/TURTLE/Projects/Packages/trellis-client/apps/web/app/composables/useEmailEnrichment.ts" has been ignored and "/Users/trentbrew/TURTLE/Projects/Packages/trellis-client/apps/web/app/composables/useEventEnrichment.ts" is used
+
+
+ WARN  Duplicated imports "UploadResult", the one from "/Users/trentbrew/TURTLE/Projects/Packages/trellis-client/apps/web/app/composables/useFileUpload.ts" has been ignored and "/Users/trentbrew/TURTLE/Projects/Packages/trellis-client/apps/web/app/composables/useImageUpload.ts" is used
+
+npm warn Unknown env config "verify-deps-before-run". This will stop working in the next major version of npm.
+npm warn Unknown env config "_tiptap-pro-registry". This will stop working in the next major version of npm.
+npm warn Unknown env config "scripts-prepend-node-path". This will stop working in the next major version of npm.
+npm warn Unknown env config "store-dir". This will stop working in the next major version of npm.
+npm warn Unknown env config "unsafe-perm". This will stop working in the next major version of npm.
+npm warn config ignoring workspace config at /Users/trentbrew/TURTLE/Projects/Packages/trellis-client/apps/web/.npmrc
+npm error Override without name: @turtle.tech/ui>vite
+npm error A complete log of this run can be found in: /Users/trentbrew/.npm/_logs/2026-07-06T11_02_04_589Z-debug-0.log
+
+ ERROR  Process exited with non-zero status (1)
+
+    at V._waitForOutput (/Users/trentbrew/TURTLE/Projects/Packages/trellis-client/node_modules/.pnpm/tinyexec@1.1.1/node_modules/tinyexec/dist/main.mjs:584:92)
+    at process.processTicksAndRejections (node:internal/process/task_queues:103:5)
+    at async Object.run (/Users/trentbrew/TURTLE/Projects/Packages/trellis-client/node_modules/.pnpm/@nuxt+cli@3.34.0_@nuxt+schema@4.1.2_cac@6.7.14_commander@13.1.0_magicast@0.5.2/node_modules/@nuxt/cli/dist/typecheck-DzNAMeid.mjs:66:3)
+    at async runCommand (/Users/trentbrew/TURTLE/Projects/Packages/trellis-client/node_modules/.pnpm/citty@0.2.2/node_modules/citty/dist/index.mjs:228:47)
+    at async runCommand (/Users/trentbrew/TURTLE/Projects/Packages/trellis-client/node_modules/.pnpm/citty@0.2.2/node_modules/citty/dist/index.mjs:217:5)
+    at async runMain (/Users/trentbrew/TURTLE/Projects/Packages/trellis-client/node_modules/.pnpm/citty@0.2.2/node_modules/citty/dist/index.mjs:394:10) 
+
+
+ ELIFECYCLE  Command failed with exit code 1.

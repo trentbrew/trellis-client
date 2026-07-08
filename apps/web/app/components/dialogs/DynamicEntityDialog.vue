@@ -12,6 +12,7 @@
   import { createSmartDefaultItem } from '~/utils/dynamicDefaults'
   import type { DynamicEntityTypeConfig } from '~/composables/useOntologyRegistry'
   import { useComments } from '~/composables/useComments'
+  import { PROPERTY_FIELD_VALUE_TYPES, resolveOntologyFieldWidget } from '~/lib/ontology-field-widget'
 
   const props = withDefaults(
     defineProps<{
@@ -162,35 +163,6 @@
   const rightSidebarTab = ref<'references' | 'activity'>('references')
   const rightSidebarW = ref(360)
   const rightSidebarCollapsed = ref(false)
-  const isResizingSidebar = ref(false)
-
-  const toggleSidebar = () => {
-    rightSidebarCollapsed.value = !rightSidebarCollapsed.value
-  }
-
-  const startSidebarResize = (e: PointerEvent) => {
-    e.preventDefault()
-    e.stopPropagation()
-    const el = e.currentTarget as HTMLElement
-    el.setPointerCapture(e.pointerId)
-    isResizingSidebar.value = true
-    const startX = e.clientX
-    const startW = rightSidebarW.value
-    document.body.style.cursor = 'ew-resize'
-    const onMove = (ev: PointerEvent) => {
-      const dx = ev.clientX - startX
-      rightSidebarW.value = Math.max(200, Math.min(480, startW - dx))
-    }
-    const onUp = () => {
-      isResizingSidebar.value = false
-      document.body.style.cursor = ''
-      el.releasePointerCapture(e.pointerId)
-      el.removeEventListener('pointermove', onMove)
-      el.removeEventListener('pointerup', onUp)
-    }
-    el.addEventListener('pointermove', onMove)
-    el.addEventListener('pointerup', onUp)
-  }
 
   // ── Schema field parsing ────────────────────────────────────────────
 
@@ -224,6 +196,8 @@
     relation: 'lucide:git-branch',
   }
 
+  /** @deprecated Use resolveOntologyFieldWidget — kept for template compatibility */
+
   /** Full schema field metadata (preserving selectOptions) */
   const schemaFields = computed<SchemaFieldSource[]>(() => {
     if (!props.typeConfig?.fields) return []
@@ -249,19 +223,16 @@
   })
 
   function getFieldIcon(valueType: string): string {
-    return VALUE_TYPE_ICONS[valueType] || 'lucide:circle'
+    return resolveOntologyFieldWidget({ name: '', valueType }).icon || VALUE_TYPE_ICONS[valueType] || 'lucide:circle'
   }
 
   // User-tier: allow inline field CRUD. system/core tiers are always explicitly set.
   // Treat null/undefined tier as 'user' (dynamic ontologies without explicit tier).
   const isUserTier = computed(() => !props.typeConfig?.tier || props.typeConfig.tier === 'user')
 
-  // Split into property fields (inline row) and content fields (main area)
-  const PROPERTY_VALUE_TYPES = new Set(['select', 'multi_select', 'status', 'date', 'checkbox', 'people', 'number'])
+  const propertyFields = computed(() => schemaFields.value.filter((f) => PROPERTY_FIELD_VALUE_TYPES.has(f.valueType)))
 
-  const propertyFields = computed(() => schemaFields.value.filter((f) => PROPERTY_VALUE_TYPES.has(f.valueType)))
-
-  const bodyFields = computed(() => schemaFields.value.filter((f) => !PROPERTY_VALUE_TYPES.has(f.valueType)))
+  const bodyFields = computed(() => schemaFields.value.filter((f) => !PROPERTY_FIELD_VALUE_TYPES.has(f.valueType)))
 
   // ── Popover state per property field (keyed by field name) ──────────
 
@@ -387,6 +358,9 @@
     @navigate-prev="emit('navigatePrev')"
     @navigate-next="emit('navigateNext')"
     @regenerate-summary="regenerateSummary">
+    <template #header-actions>
+      <RightSidebarToggle v-model:collapsed="rightSidebarCollapsed" />
+    </template>
     <!-- Header badges: Tags -->
     <template #header-badges>
       <template v-if="editableItem.tags">
@@ -866,29 +840,8 @@
       </div>
 
       <!-- Right sidebar: references + activity (collapsible) -->
-      <!-- Collapsed strip -->
-      <div
-        v-if="rightSidebarCollapsed"
-        class="shrink-0 border-l border-border flex flex-col items-center py-2 w-10 bg-card/50">
-        <button
-          class="h-7 w-7 rounded-md flex items-center justify-center hover:bg-muted text-muted-foreground hover:text-foreground transition-colors"
-          title="Expand sidebar"
-          @click="toggleSidebar">
-          <Icon name="lucide:panel-right-open" class="h-4 w-4" />
-        </button>
-      </div>
-
-      <!-- Expanded sidebar -->
-      <aside
-        v-else
-        data-slot="right-sidebar"
-        class="shrink-0 border-l border-border overflow-hidden flex flex-col relative transition-[width] duration-200 ease-out"
-        :class="isResizingSidebar ? 'select-none' : ''"
-        :style="{ width: rightSidebarW + 'px' }">
-        <!-- Resize handle -->
-        <div
-          class="absolute inset-y-0 left-0 w-1 cursor-ew-resize z-10 hover:bg-primary/20 transition-colors"
-          @pointerdown="startSidebarResize($event)" />
+      <ResizableRightPanel v-model:collapsed="rightSidebarCollapsed" v-model:width="rightSidebarW">
+        <div class="flex h-full flex-col overflow-hidden">
         <!-- Tab bar -->
         <div class="flex border-b border-border shrink-0">
           <button
@@ -914,13 +867,6 @@
             <span v-if="displayActivity.length" class="ml-1 text-[9px] bg-muted rounded-full px-1.5 py-0.5">
               {{ displayActivity.length }}
             </span>
-          </button>
-          <!-- Collapse button -->
-          <button
-            class="px-2 py-2 text-muted-foreground hover:text-foreground transition-colors shrink-0"
-            title="Collapse sidebar"
-            @click="toggleSidebar">
-            <Icon name="lucide:panel-right-close" class="h-3.5 w-3.5" />
           </button>
         </div>
         <!-- Tab content -->
@@ -998,7 +944,8 @@
             </div>
           </div>
         </div>
-      </aside>
+        </div>
+      </ResizableRightPanel>
     </div>
 
     <!-- Footer -->

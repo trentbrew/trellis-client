@@ -17,15 +17,37 @@
     defineProps<{
       entityId: string
       entityType?: string
+      /** Inline entity data when the record isn't in the reactive store (e.g. global graph). */
+      entity?: Entity | Record<string, unknown> | null
     }>(),
     {
       entityType: undefined,
+      entity: null,
     },
   )
 
   const { items } = useEntities()
 
   const entity = computed<Entity | null>(() => {
+    if (props.entity && typeof props.entity === 'object') {
+      const e = props.entity as Record<string, unknown>
+      const id = String(e.id || e['@id'] || props.entityId || '')
+      if (!id) return null
+      return {
+        id,
+        type: String(e.type || e['@type'] || props.entityType || 'entity'),
+        title: String(e.title || 'Untitled'),
+        status: e.status ? String(e.status) : undefined,
+        content: e.content ? String(e.content) : undefined,
+        description: e.description ? String(e.description) : undefined,
+        excerpt: e.excerpt ? String(e.excerpt) : undefined,
+        tags: Array.isArray(e.tags) ? (e.tags as string[]) : undefined,
+        startDate: e.startDate as string | undefined,
+        createdAt: e.createdAt as string | number | undefined,
+        taskStatus: e.taskStatus as string | undefined,
+        tripStatus: e.tripStatus as string | undefined,
+      } as Entity
+    }
     if (!props.entityId) return null
     return items.value.find((e: Entity) => e.id === props.entityId) ?? null
   })

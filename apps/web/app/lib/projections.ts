@@ -49,6 +49,7 @@ const projectionIcons: Record<ProjectionType, string> = {
   dashboard: 'lucide:layout-dashboard',
   chart: 'lucide:bar-chart-3',
   'slide-deck': 'lucide:presentation',
+  canvas: 'lucide:layout-dashboard',
   moodboard: 'lucide:layout-dashboard',
 }
 
@@ -68,6 +69,7 @@ const projectionLabels: Record<ProjectionType, string> = {
   dashboard: 'Dashboard',
   chart: 'Chart',
   'slide-deck': 'Slide Deck',
+  canvas: 'Canvas',
   moodboard: 'Moodboard',
 }
 
@@ -307,6 +309,8 @@ const defaultBrowseModeLabels: Record<BrowseViewMode, string> = {
   week: 'Week',
   agenda: 'Agenda',
   moodboard: 'Moodboard',
+  graph: 'Graph',
+  form: 'Form',
 }
 
 /**
@@ -325,6 +329,8 @@ const defaultBrowseModeIcons: Record<BrowseViewMode, string> = {
   week: 'lucide:calendar-days',
   agenda: 'lucide:list-todo',
   moodboard: 'lucide:layout-dashboard',
+  graph: 'lucide:git-fork',
+  form: 'lucide:clipboard-list',
 }
 
 /**

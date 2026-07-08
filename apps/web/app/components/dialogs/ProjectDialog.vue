@@ -154,6 +154,9 @@
     @navigate-prev="emit('navigatePrev')"
     @navigate-next="emit('navigateNext')"
     @regenerate-summary="regenerateSummary">
+    <template #header-actions>
+      <RightSidebarToggle v-model:collapsed="rightSidebarCollapsed" />
+    </template>
     <!-- Properties Row -->
     <template #properties>
       <!-- Status -->
@@ -339,14 +342,10 @@
       </div>
 
       <!-- Right Sidebar -->
-      <aside
-        class="shrink-0 border-l border-border overflow-hidden md:flex hidden flex-col relative transition-[width] duration-150"
-        :class="isResizingSidebar ? 'select-none' : ''"
-        :style="{ width: rightSidebarCollapsed ? '40px' : rightSidebarW + 'px' }">
-        <div
-          v-if="!rightSidebarCollapsed"
-          class="absolute inset-y-0 left-0 w-1 cursor-ew-resize z-10 hover:bg-primary/20 transition-colors"
-          @pointerdown="startRightSidebarResize($event)" />
+      <ResizableRightPanel
+        v-model:collapsed="rightSidebarCollapsed"
+        v-model:width="rightSidebarW"
+        class="hidden md:block">
         <EntityRightSidebar
           v-model:collapsed="rightSidebarCollapsed"
           :references="editableItem.references"
@@ -376,7 +375,7 @@
           "
           @create-entity="handleCreateEntityOfType"
           @add-comment="handleAddComment" />
-      </aside>
+      </ResizableRightPanel>
     </div>
 
     <!-- Footer -->

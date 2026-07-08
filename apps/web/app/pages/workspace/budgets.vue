@@ -1,5 +1,5 @@
 <script setup lang="ts">
   definePageMeta({ layout: 'default' })
-  navigateTo('/workspace/browse?type=budget', { replace: true })
+  navigateTo('/sheets', { replace: true })
 </script>
 <template><div /></template>

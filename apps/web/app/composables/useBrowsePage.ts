@@ -1,5 +1,6 @@
 import type { Entity, EntityType } from '~/types/entity'
 import { createDefaultItem } from '~/types/entity'
+import type { FormPresentation } from '~/lib/ontology-form-spec'
 import { useBrowse, type BrowseState, type BrowseViewMode, type BrowseSortOption } from '~/composables/useBrowse'
 import { useDialogUrl } from '~/composables/useDialogUrl'
 import { useHashDialogRestore } from '~/composables/useHashDialogRestore'
@@ -29,8 +30,12 @@ export interface UseBrowsePageOptions {
   sortOptions?: BrowseSortOption[]
   /** Filter definitions for the browse toolbar */
   filters?: BrowsePageFilterDef[]
-  /** Optional custom item filter applied after type filtering (e.g. exclude files without mimeType). */
+  /** Optional custom item filter applied after type filtering (e.g. file category facet). */
   itemFilter?: (_item: Entity) => boolean
+  /** Reactive key — when it changes, `itemFilter` is re-applied (e.g. route category param). */
+  itemFilterKey?: Ref<unknown>
+  /** When set, non-dialog presentations route + New to Form view instead of empty-entity create. */
+  formPresentation?: Ref<FormPresentation | undefined>
 }
 
 export interface UseBrowsePageReturn {
@@ -91,6 +96,8 @@ export function useBrowsePage(options: UseBrowsePageOptions): UseBrowsePageRetur
     ],
     filters = [],
     itemFilter,
+    itemFilterKey,
+    formPresentation,
   } = options
 
   // Normalise entityType into a reactive Set<string>
@@ -115,6 +122,7 @@ export function useBrowsePage(options: UseBrowsePageOptions): UseBrowsePageRetur
   const { items: allItems, create: createItem, update: updateItem, remove: removeItem } = useEntities()
 
   const items = computed<Entity[]>(() => {
+    if (itemFilterKey) void itemFilterKey.value
     const typeSet = resolvedTypes.value
     let result = allItems.value.filter((i) => typeSet.has(i.type))
     if (itemFilter) result = result.filter(itemFilter)
@@ -159,8 +167,9 @@ export function useBrowsePage(options: UseBrowsePageOptions): UseBrowsePageRetur
     setOriginHash(item.id)
   }
 
-  // Restore dialog from URL hash on page mount (deep-link support)
-  useHashDialogRestore(items, (entityId, item) => {
+  // Restore dialog from URL hash on page mount (deep-link support).
+  // Use the full entity store — filtered browse items may lag behind hydration.
+  useHashDialogRestore(allItems as Ref<Entity[]>, (entityId, item) => {
     _viewingItemId.value = entityId
     _pendingNewItem.value = item
     viewOpen.value = true
@@ -216,6 +225,12 @@ export function useBrowsePage(options: UseBrowsePageOptions): UseBrowsePageRetur
    */
   async function handleNewItem(typeOverride?: string) {
     const { $toast } = useNuxtApp()
+
+    const presentation = formPresentation?.value ?? 'entity-dialog'
+    if (presentation !== 'entity-dialog') {
+      browseState.setViewMode('form')
+      return
+    }
 
     try {
       const type = (typeOverride || activeType.value) as EntityType

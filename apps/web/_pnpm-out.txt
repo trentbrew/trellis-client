@@ -1,0 +1,5 @@
++(eval):1> cd /Users/trentbrew/TURTLE/Projects/Packages/trellis-client/apps/web
++cd:1> [ /Users/trentbrew/TURTLE/Projects/Packages/trellis-client/apps/web '=' .. ']'
++cd:6> [ 1 -eq 0 ']'
++cd:11> cd /Users/trentbrew/TURTLE/Projects/Packages/trellis-client/apps/web
++cd:11> clear

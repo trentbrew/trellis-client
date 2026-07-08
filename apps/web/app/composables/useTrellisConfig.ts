@@ -30,7 +30,7 @@ const _loading = ref(false)
 const _error = ref<string | null>(null)
 const _initialized = ref(false)
 
-async function fetchConfig(): Promise<void> {
+async function fetchConfig(attempt = 0): Promise<void> {
   _loading.value = true
   _error.value = null
 
@@ -38,7 +38,13 @@ async function fetchConfig(): Promise<void> {
     const data = await $fetch<ServerConfig>('/api/graph/config')
     _config.value = data
   } catch (err: unknown) {
+    const status = (err as { statusCode?: number; response?: { status?: number } })?.statusCode
+      ?? (err as { response?: { status?: number } })?.response?.status
     const message = err instanceof Error ? err.message : 'Failed to fetch app config'
+    if (attempt < 4 && (status === 503 || message.includes('503'))) {
+      await new Promise((resolve) => setTimeout(resolve, 250 * (attempt + 1)))
+      return fetchConfig(attempt + 1)
+    }
     _error.value = message
     console.error('[useAppConfig] Failed to fetch:', err)
   } finally {

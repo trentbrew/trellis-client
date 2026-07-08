@@ -1,13 +1,14 @@
 <script setup lang="ts">
-  import type { Entity, EntityType } from '~/types/entity'
+  import type { Entity, EntityType, PropertyFieldId } from '~/types/entity'
   import { getEntityTypeConfig } from '~/config/entityRegistry'
-  import { resolvePropertyKey } from '~/lib/fieldEditorConfig'
+  import { schemaFieldToPropertyFieldId, TABLE_SKIP_FIELD_NAMES } from '~/lib/ontology-sidebar-fields'
+  import { formatFieldValue } from '~/utils/fieldFormatters'
   import { useVirtualRows } from '~/composables/useVirtualRows'
   import { useColumnWidths } from '~/composables/useColumnWidths'
+  import { useOntologyRegistry } from '~/composables/useOntologyRegistry'
   import ColumnResizeHandle from '~/components/data/DataGrid/ColumnResizeHandle.vue'
   import EntityFieldEditor from '~/components/entity/EntityFieldEditor.vue'
   import BrowseSpreadsheetDateCell from '~/components/views/BrowseSpreadsheetDateCell.vue'
-  import { extractYmd } from '~/utils/date'
 
   const ROW_HEIGHT = 42
   const HEADER_HEIGHT = 36
@@ -19,16 +20,23 @@
   const COL_MIN = 80
   const COL_MAX = 480
 
-  const COLUMNS = [
-    { key: 'title', label: 'Title', defaultWidth: 280, editable: true },
-    { key: 'type', label: 'Type', defaultWidth: 120, editable: false },
-    { key: 'status', label: 'Status', defaultWidth: 120, editable: true },
-    { key: 'date', label: 'Date', defaultWidth: 148, editable: true },
-  ] as const
+  const SKIP_TABLE_FIELDS = TABLE_SKIP_FIELD_NAMES
 
-  type ColumnKey = (typeof COLUMNS)[number]['key']
+  interface SpreadsheetColumn {
+    key: string
+    label: string
+    defaultWidth: number
+    editable: boolean
+    valueType: string
+    isTitle: boolean
+  }
 
-  const EDITABLE_COLUMNS: ColumnKey[] = ['title', 'status', 'date']
+  const FALLBACK_COLUMNS: SpreadsheetColumn[] = [
+    { key: 'title', label: 'Title', defaultWidth: 280, editable: true, valueType: 'title', isTitle: true },
+    { key: 'type', label: 'Type', defaultWidth: 120, editable: false, valueType: 'select', isTitle: false },
+    { key: 'category', label: 'Category', defaultWidth: 120, editable: true, valueType: 'select', isTitle: false },
+    { key: 'startDate', label: 'Date', defaultWidth: 148, editable: true, valueType: 'date', isTitle: false },
+  ]
 
   /** Opaque header surface — blocks scroll bleed-through. */
   const HEADER_SURFACE = 'bg-card'
@@ -39,16 +47,54 @@
 
   const props = defineProps<{
     items: Entity[]
-    isSelected: (id: string) => boolean
+    isSelected: (_id: string) => boolean
     storageKey?: string
+    /** Single entity type slug — drives ontology-backed columns. Omit for "all" browse. */
+    entityType?: string
   }>()
 
   const emit = defineEmits<{
     'toggle-select': [id: string, event?: MouseEvent]
     'toggle-select-all': []
     'open-detail': [item: Entity]
-    'cell-update': [item: Entity, column: ColumnKey, value: unknown]
+    'cell-update': [item: Entity, column: string, value: unknown]
   }>()
+
+  const { getBrowseConfig, serverTypes } = useOntologyRegistry()
+
+  const columns = computed<SpreadsheetColumn[]>(() => {
+    if (!props.entityType || props.entityType === 'all') return FALLBACK_COLUMNS
+
+    // Recompute when server ontologies finish loading
+    void serverTypes.value.length
+
+    const tableCols = getBrowseConfig(props.entityType).tableColumns.filter(
+      (col) => !SKIP_TABLE_FIELDS.has(col.key),
+    )
+    if (!tableCols.length) return FALLBACK_COLUMNS
+
+    return tableCols.map((col) => ({
+      key: col.key,
+      label: col.label,
+      valueType: col.valueType,
+      isTitle: col.isTitle,
+      defaultWidth: col.isTitle
+        ? 280
+        : col.key === 'startDate' || col.valueType === 'date'
+          ? 148
+          : col.valueType === 'number'
+            ? 100
+            : 140,
+      editable:
+        col.isTitle ||
+        !!schemaFieldToPropertyFieldId(col.key) ||
+        ['date', 'email', 'url', 'phone_number', 'number', 'checkbox'].includes(col.valueType),
+    }))
+  })
+
+  const editableColumnKeys = computed(() =>
+    columns.value.filter((col) => col.editable && col.key !== 'startDate').map((col) => col.key),
+  )
 
   const { widths, setColumnWidth, resetColumnWidth } = useColumnWidths(
     props.storageKey ?? 'browse:spreadsheet:columns',
@@ -56,10 +102,10 @@
   )
 
   const colWidth = (key: string) =>
-    widths.value[key] ?? COLUMNS.find((c) => c.key === key)?.defaultWidth ?? DEFAULT_COL_WIDTH
+    widths.value[key] ?? columns.value.find((c) => c.key === key)?.defaultWidth ?? DEFAULT_COL_WIDTH
 
   const gridTemplate = computed(() => {
-    const cols = COLUMNS.map((c) => `${colWidth(c.key)}px`).join(' ')
+    const cols = columns.value.map((c) => `${colWidth(c.key)}px`).join(' ')
     return `${CHECK_WIDTH}px ${INDEX_WIDTH}px ${cols} ${ACTION_WIDTH}px`
   })
 
@@ -68,7 +114,7 @@
       CHECK_WIDTH +
       INDEX_WIDTH +
       ACTION_WIDTH +
-      COLUMNS.reduce((sum, c) => sum + colWidth(c.key), 0),
+      columns.value.reduce((sum, c) => sum + colWidth(c.key), 0),
   )
 
   const rowCount = computed(() => props.items.length)
@@ -87,36 +133,31 @@
     () => props.items.length > 0 && props.items.every((item) => props.isSelected(item.id)),
   )
 
-  const getStatusValue = (item: Entity) => {
-    const key = resolvePropertyKey('status', item.type as EntityType)
-    return (item as any)[key] ?? (item as any).status ?? ''
+  function propertyFieldId(columnKey: string): PropertyFieldId | null {
+    return schemaFieldToPropertyFieldId(columnKey)
   }
 
-  const getDateValue = (item: Entity) => extractYmd((item as any).startDate)
-
-  const cellValue = (item: Entity, key: ColumnKey) => {
-    if (key === 'title') return item.title || 'Untitled'
-    if (key === 'type') return getEntityTypeConfig(item.type as EntityType)?.label ?? item.type
-    if (key === 'status') return getStatusValue(item) || '—'
-    const d = getDateValue(item)
-    if (!d) return '—'
-    return new Date(`${d}T00:00:00`).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
+  function cellDisplay(item: Entity, column: SpreadsheetColumn): string {
+    if (column.key === 'type') {
+      return getEntityTypeConfig(item.type as EntityType)?.label ?? item.type
+    }
+    const raw = (item as unknown as Record<string, unknown>)[column.key]
+    const formatted = formatFieldValue(raw, column.valueType)
+    return formatted || '—'
   }
 
-  const getCellRawValue = (item: Entity, key: ColumnKey): unknown => {
-    if (key === 'title') return item.title ?? ''
-    if (key === 'status') return getStatusValue(item)
-    if (key === 'date') return getDateValue(item)
-    return ''
+  function cellRawValue(item: Entity, column: SpreadsheetColumn): unknown {
+    if (column.key === 'type') return item.type
+    return (item as unknown as Record<string, unknown>)[column.key]
   }
 
   // --- Inline title editing + keyboard grid navigation ---
 
-  const editing = ref<{ itemId: string; key: ColumnKey } | null>(null)
+  const editing = ref<{ itemId: string; key: string } | null>(null)
   const draft = ref('')
   const editInput = ref<HTMLInputElement | null>(null)
 
-  const isEditing = (item: Entity, key: ColumnKey) =>
+  const isEditing = (item: Entity, key: string) =>
     editing.value?.itemId === item.id && editing.value.key === key
 
   const clearEdit = () => {
@@ -124,20 +165,19 @@
     draft.value = ''
   }
 
-  const beginEdit = (item: Entity, key: ColumnKey) => {
-    if (!EDITABLE_COLUMNS.includes(key)) return
-    if (key === 'status' || key === 'date') return
-    editing.value = { itemId: item.id, key }
-    draft.value = String(getCellRawValue(item, key) ?? '')
+  const beginEdit = (item: Entity, column: SpreadsheetColumn) => {
+    if (!column.editable || column.key !== 'title') return
+    editing.value = { itemId: item.id, key: column.key }
+    draft.value = String(cellRawValue(item, column) ?? '')
     nextTick(() => {
       editInput.value?.focus()
       editInput.value?.select()
     })
   }
 
-  const commitEdit = (item: Entity, key: ColumnKey): boolean => {
-    if (!isEditing(item, key)) return true
-    emit('cell-update', item, key, draft.value)
+  const commitEdit = (item: Entity, column: SpreadsheetColumn): boolean => {
+    if (!isEditing(item, column.key)) return true
+    emit('cell-update', item, column.key, draft.value)
     clearEdit()
     return true
   }
@@ -153,47 +193,50 @@
     measure()
   }
 
-  const focusNext = (item: Entity, key: ColumnKey, direction: 'down' | 'next' | 'prev') => {
+  const focusNext = (item: Entity, key: string, direction: 'down' | 'next' | 'prev') => {
     const pos = props.items.findIndex((row) => row.id === item.id)
     if (pos < 0) return
 
     if (direction === 'down') {
       const nextItem = props.items[pos + 1]
       if (!nextItem) return
-      beginEdit(nextItem, key)
+      const titleCol = columns.value.find((c) => c.isTitle)
+      if (titleCol) beginEdit(nextItem, titleCol)
       scrollRowIntoView(pos + 1)
       return
     }
 
-    const ci = EDITABLE_COLUMNS.indexOf(key)
+    const editable = editableColumnKeys.value
+    const ci = editable.indexOf(key)
     if (ci < 0) return
-    const nextKey = EDITABLE_COLUMNS[direction === 'next' ? ci + 1 : ci - 1]
-    if (!nextKey || nextKey === 'status' || nextKey === 'date') return
-    beginEdit(item, nextKey)
+    const nextKey = editable[direction === 'next' ? ci + 1 : ci - 1]
+    if (!nextKey) return
+    const nextCol = columns.value.find((c) => c.key === nextKey)
+    if (nextCol) beginEdit(item, nextCol)
   }
 
-  const onEditKeydown = (event: KeyboardEvent, item: Entity, key: ColumnKey) => {
+  const onEditKeydown = (event: KeyboardEvent, item: Entity, column: SpreadsheetColumn) => {
     if (event.key === 'Enter') {
       event.preventDefault()
-      if (commitEdit(item, key)) focusNext(item, key, 'down')
+      if (commitEdit(item, column)) focusNext(item, column.key, 'down')
     } else if (event.key === 'Tab') {
       event.preventDefault()
-      if (commitEdit(item, key)) focusNext(item, key, event.shiftKey ? 'prev' : 'next')
+      if (commitEdit(item, column)) focusNext(item, column.key, event.shiftKey ? 'prev' : 'next')
     } else if (event.key === 'Escape') {
       event.preventDefault()
       clearEdit()
     }
   }
 
-  const onFieldEditorUpdate = (item: Entity, key: ColumnKey, value: unknown) => {
-    emit('cell-update', item, key, value)
+  const onFieldEditorUpdate = (item: Entity, columnKey: string, value: unknown) => {
+    emit('cell-update', item, columnKey, value)
   }
 
   const onDateUpdate = (
     item: Entity,
     patch: { startDate: string; startTime?: string; allDay?: boolean },
   ) => {
-    emit('cell-update', item, 'date', patch)
+    emit('cell-update', item, 'startDate', patch)
   }
 </script>
 
@@ -216,7 +259,7 @@
             #
           </div>
           <div
-            v-for="column in COLUMNS"
+            v-for="column in columns"
             :key="column.key"
             class="relative flex items-center overflow-hidden border-r border-border/40 px-2">
             <span class="truncate">{{ column.label }}</span>
@@ -257,32 +300,32 @@
             </div>
 
             <div
-              v-for="column in COLUMNS"
+              v-for="column in columns"
               :key="column.key"
               class="relative flex min-w-0 items-center overflow-hidden border-r border-border/40"
-              :class="column.key === 'title' ? 'gap-2 px-2' : 'px-1 text-xs'"
+              :class="column.isTitle ? 'gap-2 px-2' : 'px-1 text-xs'"
               @click.stop>
-              <!-- Title: inline text -->
-              <template v-if="column.key === 'title'">
+              <!-- Title -->
+              <template v-if="column.isTitle">
                 <Icon
                   :name="getEntityTypeConfig(item.type as EntityType)?.icon ?? 'lucide:file'"
                   class="h-4 w-4 shrink-0 text-muted-foreground" />
-                <template v-if="isEditing(item, 'title')">
+                <template v-if="isEditing(item, column.key)">
                   <input
                     :ref="(el) => (editInput = el as HTMLInputElement | null)"
                     v-model="draft"
                     type="text"
                     class="h-full min-w-0 flex-1 bg-background text-sm outline-none ring-1 ring-inset ring-primary"
-                    @keydown="(e) => onEditKeydown(e, item, 'title')"
-                    @blur="commitEdit(item, 'title')" />
+                    @keydown="(e) => onEditKeydown(e, item, column)"
+                    @blur="commitEdit(item, column)" />
                 </template>
                 <button
                   v-else
                   type="button"
                   class="flex min-w-0 flex-1 items-center gap-2 text-left"
-                  @click="beginEdit(item, 'title')">
+                  @click="beginEdit(item, column)">
                   <span class="truncate font-medium" :class="!item.title ? 'text-muted-foreground/50' : ''">
-                    {{ cellValue(item, 'title') }}
+                    {{ cellDisplay(item, column) }}
                   </span>
                   <Icon
                     v-if="(item as any).pinned"
@@ -291,26 +334,32 @@
                 </button>
               </template>
 
-              <!-- Type: read-only -->
+              <!-- All-types fallback: type label -->
               <span v-else-if="column.key === 'type'" class="truncate px-1 text-muted-foreground">
-                {{ cellValue(item, 'type') }}
+                {{ cellDisplay(item, column) }}
               </span>
 
-              <!-- Status: field editor -->
+              <!-- Schedule date -->
+              <BrowseSpreadsheetDateCell
+                v-else-if="column.key === 'startDate'"
+                :item="item"
+                @update="(patch) => onDateUpdate(item, patch)" />
+
+              <!-- Registry-backed property editors -->
               <EntityFieldEditor
-                v-else-if="column.key === 'status'"
-                field-id="status"
+                v-else-if="propertyFieldId(column.key)"
+                :field-id="propertyFieldId(column.key)!"
                 display="badge"
                 compact
                 :entity-type="item.type as EntityType"
-                :model-value="getStatusValue(item)"
+                :model-value="(item as any)[column.key]"
                 class="w-full min-w-0"
-                @update:model-value="(v) => onFieldEditorUpdate(item, 'status', v)" />
+                @update:model-value="(v) => onFieldEditorUpdate(item, column.key, v)" />
 
-              <BrowseSpreadsheetDateCell
-                v-else-if="column.key === 'date'"
-                :item="item"
-                @update="(patch) => onDateUpdate(item, patch)" />
+              <!-- Plain formatted values -->
+              <span v-else class="truncate px-1 text-muted-foreground">
+                {{ cellDisplay(item, column) }}
+              </span>
             </div>
 
             <!-- Open detail -->

@@ -18,6 +18,7 @@
 
 import type { IntegrationConnection } from '~/types/database'
 import { entityId as toEntityId } from '~/lib/tql-namespace'
+import { startIntegrationOAuth } from '~/lib/integration-oauth'
 
 // ── Public shapes (consumed by pages/mail/index.vue) ──────────────────
 
@@ -353,13 +354,12 @@ export function useGmail() {
   // ── Connect / disconnect ─────────────────────────────────────────
 
   function connect(opts?: { email?: string; returnTo?: string }): void {
-    const params = new URLSearchParams()
-    const userId = user.value?.id
-    if (userId) params.set('userId', userId)
-    if (opts?.email) params.set('email', opts.email)
-    if (opts?.returnTo) params.set('returnTo', opts.returnTo)
-    const qs = params.toString()
-    window.location.href = `/api/integrations/gmail/auth${qs ? `?${qs}` : ''}`
+    const route = useRoute()
+    startIntegrationOAuth('gmail', {
+      userId: user.value?.id,
+      email: opts?.email,
+      returnTo: opts?.returnTo ?? route.fullPath,
+    })
   }
 
   async function disconnect(connectionId?: string): Promise<void> {

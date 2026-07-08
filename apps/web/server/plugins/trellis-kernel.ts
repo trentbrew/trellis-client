@@ -132,6 +132,16 @@ export default defineNitroPlugin(async (nitro) => {
   _workspaceConfig = workspaceConfig
   await kernel.boot(workspaceConfig)
 
+  // Expose kernel immediately after boot so API routes don't 503 while
+  // idempotent seeding / backfill runs (HMR and cold-start race).
+  _kernel = kernel
+
+  nitro.hooks.hook('close', () => {
+    kernel.close()
+    _kernel = null
+    console.log('[tql] Kernel closed')
+  })
+
   const seedStats = await seedAppConfigFromModules(kernel)
   console.log(
     `[trellis-kernel] Seeded app config entities: ${seedStats.routes} routes, `
@@ -391,16 +401,6 @@ export default defineNitroPlugin(async (nitro) => {
   // Fire-and-forget; a slow DB shouldn't block the plugin from finishing.
   backfillEntityZones(kernel).catch((err) => {
     console.warn('[campus-migration] unexpected error:', err)
-  })
-
-  // Store in module singleton
-  _kernel = kernel
-
-  // Clean up on shutdown
-  nitro.hooks.hook('close', () => {
-    kernel.close()
-    _kernel = null
-    console.log('[tql] Kernel closed')
   })
 
   console.log('[tql] TrellisKernel ready')

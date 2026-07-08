@@ -1,0 +1,751 @@
+
+> @trellis/web@ lint /Users/trentbrew/TURTLE/Projects/Packages/trellis-client/apps/web
+> eslint . --ignore-pattern '.archive/**' --ignore-pattern '.backups/**' --ignore-pattern '.gemini/**'
+
+
+/Users/trentbrew/TURTLE/Projects/Packages/trellis-client/apps/web/app/components/Prose/ProseTabs.vue
+  4:9  warning  'props' is assigned a value but never used. Allowed unused vars must match /^_/u  no-unused-vars
+  4:9  warning  'props' is assigned a value but never used. Allowed unused vars must match /^_/u  @typescript-eslint/no-unused-vars
+
+/Users/trentbrew/TURTLE/Projects/Packages/trellis-client/apps/web/app/components/Ui/AnimatedBeam.vue
+  3:20  warning  'ShallowRef' is defined but never used. Allowed unused vars must match /^_/u  no-unused-vars
+  3:20  warning  'ShallowRef' is defined but never used. Allowed unused vars must match /^_/u  @typescript-eslint/no-unused-vars
+
+/Users/trentbrew/TURTLE/Projects/Packages/trellis-client/apps/web/app/components/Ui/Apexchart.client.vue
+  139:19  warning  'options' is defined but never used. Allowed unused args must match /^_/u             no-unused-vars
+  139:33  warning  'redrawPaths' is defined but never used. Allowed unused args must match /^_/u         no-unused-vars
+  139:56  warning  'animate' is defined but never used. Allowed unused args must match /^_/u             no-unused-vars
+  139:75  warning  'updateSyncedCharts' is defined but never used. Allowed unused args must match /^_/u  no-unused-vars
+  140:18  warning  'newSeries' is defined but never used. Allowed unused args must match /^_/u           no-unused-vars
+  140:34  warning  'animate' is defined but never used. Allowed unused args must match /^_/u             no-unused-vars
+  141:18  warning  'seriesName' is defined but never used. Allowed unused args must match /^_/u          no-unused-vars
+  142:21  warning  'seriesName' is defined but never used. Allowed unused args must match /^_/u          no-unused-vars
+  143:16  warning  'seriesName' is defined but never used. Allowed unused args must match /^_/u          no-unused-vars
+  144:16  warning  'seriesName' is defined but never used. Allowed unused args must match /^_/u          no-unused-vars
+  146:11  warning  'min' is defined but never used. Allowed unused args must match /^_/u                 no-unused-vars
+  146:24  warning  'max' is defined but never used. Allowed unused args must match /^_/u                 no-unused-vars
+  147:30  warning  'seriesIndex' is defined but never used. Allowed unused args must match /^_/u         no-unused-vars
+  147:51  warning  'dataPointIndex' is defined but never used. Allowed unused args must match /^_/u      no-unused-vars
+  148:16  warning  'newData' is defined but never used. Allowed unused args must match /^_/u             no-unused-vars
+  149:18  warning  'newSeries' is defined but never used. Allowed unused args must match /^_/u           no-unused-vars
+  149:34  warning  'animate' is defined but never used. Allowed unused args must match /^_/u             no-unused-vars
+  150:24  warning  'options' is defined but never used. Allowed unused args must match /^_/u             no-unused-vars
+  150:38  warning  'pushToMemory' is defined but never used. Allowed unused args must match /^_/u        no-unused-vars
+  150:62  warning  'context' is defined but never used. Allowed unused args must match /^_/u             no-unused-vars
+  151:24  warning  'options' is defined but never used. Allowed unused args must match /^_/u             no-unused-vars
+  151:38  warning  'pushToMemory' is defined but never used. Allowed unused args must match /^_/u        no-unused-vars
+  151:62  warning  'context' is defined but never used. Allowed unused args must match /^_/u             no-unused-vars
+  152:24  warning  'options' is defined but never used. Allowed unused args must match /^_/u             no-unused-vars
+  152:38  warning  'pushToMemory' is defined but never used. Allowed unused args must match /^_/u        no-unused-vars
+  152:62  warning  'context' is defined but never used. Allowed unused args must match /^_/u             no-unused-vars
+  153:22  warning  'id' is defined but never used. Allowed unused args must match /^_/u                  no-unused-vars
+  153:34  warning  'options' is defined but never used. Allowed unused args must match /^_/u             no-unused-vars
+  155:13  warning  'options' is defined but never used. Allowed unused args must match /^_/u             no-unused-vars
+
+/Users/trentbrew/TURTLE/Projects/Packages/trellis-client/apps/web/app/components/Ui/Draggable.vue
+  189:25  warning  'element' is defined but never used. Allowed unused args must match /^_/u        no-unused-vars
+  189:47  warning  'sortable' is defined but never used. Allowed unused args must match /^_/u       no-unused-vars
+  400:10  warning  'props' is defined but never used. Allowed unused args must match /^_/u          no-unused-vars
+  458:9   warning  'sortable' is defined but never used. Allowed unused args must match /^_/u       no-unused-vars
+  472:9   warning  'sortable' is defined but never used. Allowed unused args must match /^_/u       no-unused-vars
+  562:16  warning  'item' is defined but never used. Allowed unused args must match /^_/u           no-unused-vars
+  593:14  warning  'original' is defined but never used. Allowed unused args must match /^_/u       no-unused-vars
+  669:13  warning  'event' is defined but never used. Allowed unused args must match /^_/u          no-unused-vars
+  669:34  warning  'originalEvent' is defined but never used. Allowed unused args must match /^_/u  no-unused-vars
+  866:6   warning  'e' is defined but never used. Allowed unused args must match /^_/u              no-unused-vars
+  866:78  warning  'event' is defined but never used. Allowed unused args must match /^_/u          no-unused-vars
+  869:6   warning  'e' is defined but never used. Allowed unused args must match /^_/u              no-unused-vars
+  869:19  warning  'event' is defined but never used. Allowed unused args must match /^_/u          no-unused-vars
+  872:6   warning  'e' is defined but never used. Allowed unused args must match /^_/u              no-unused-vars
+  872:19  warning  'event' is defined but never used. Allowed unused args must match /^_/u          no-unused-vars
+  875:6   warning  'e' is defined but never used. Allowed unused args must match /^_/u              no-unused-vars
+  875:18  warning  'event' is defined but never used. Allowed unused args must match /^_/u          no-unused-vars
+  884:6   warning  'e' is defined but never used. Allowed unused args must match /^_/u              no-unused-vars
+  884:19  warning  'event' is defined but never used. Allowed unused args must match /^_/u          no-unused-vars
+  887:6   warning  'e' is defined but never used. Allowed unused args must match /^_/u              no-unused-vars
+  887:30  warning  'newValue' is defined but never used. Allowed unused args must match /^_/u       no-unused-vars
+
+/Users/trentbrew/TURTLE/Projects/Packages/trellis-client/apps/web/app/components/Ui/Nav/Provider.vue
+  21:21  warning  'open' is defined but never used. Allowed unused args must match /^_/u  no-unused-vars
+
+/Users/trentbrew/TURTLE/Projects/Packages/trellis-client/apps/web/app/components/Ui/Nav/Trigger.vue
+  19:18  warning  'event' is defined but never used. Allowed unused args must match /^_/u  no-unused-vars
+
+/Users/trentbrew/TURTLE/Projects/Packages/trellis-client/apps/web/app/components/Ui/Rating.vue
+  61:23  warning  'rating' is defined but never used. Allowed unused args must match /^_/u  no-unused-vars
+
+/Users/trentbrew/TURTLE/Projects/Packages/trellis-client/apps/web/app/components/Ui/Scrollspy.vue
+  22:19  warning  'id' is defined but never used. Allowed unused args must match /^_/u  no-unused-vars
+  37:31  warning  'e' is defined but never used. Allowed unused args must match /^_/u   no-unused-vars
+  37:44  warning  'id' is defined but never used. Allowed unused args must match /^_/u  no-unused-vars
+
+/Users/trentbrew/TURTLE/Projects/Packages/trellis-client/apps/web/app/components/Ui/SlashCommandMenu.vue
+  6:15  warning  'item' is defined but never used. Allowed unused args must match /^_/u  no-unused-vars
+
+/Users/trentbrew/TURTLE/Projects/Packages/trellis-client/apps/web/app/components/Ui/Vee/MultiSelect.vue
+   25:12  warning  'option' is defined but never used. Allowed unused args must match /^_/u    no-unused-vars
+   30:14  warning  'option' is defined but never used. Allowed unused args must match /^_/u    no-unused-vars
+   35:12  warning  'option' is defined but never used. Allowed unused args must match /^_/u    no-unused-vars
+   56:20  warning  'callback' is defined but never used. Allowed unused args must match /^_/u  no-unused-vars
+   61:16  warning  'option' is defined but never used. Allowed unused args must match /^_/u    no-unused-vars
+   85:19  warning  'props' is defined but never used. Allowed unused args must match /^_/u     no-unused-vars
+  106:16  warning  'props' is defined but never used. Allowed unused args must match /^_/u     no-unused-vars
+  106:49  warning  'option' is defined but never used. Allowed unused args must match /^_/u    no-unused-vars
+  106:87  warning  'option' is defined but never used. Allowed unused args must match /^_/u    no-unused-vars
+  116:12  warning  'props' is defined but never used. Allowed unused args must match /^_/u     no-unused-vars
+  118:19  warning  'option' is defined but never used. Allowed unused args must match /^_/u    no-unused-vars
+  119:20  warning  'option' is defined but never used. Allowed unused args must match /^_/u    no-unused-vars
+  127:17  warning  'props' is defined but never used. Allowed unused args must match /^_/u     no-unused-vars
+  136:9   warning  'props' is defined but never used. Allowed unused args must match /^_/u     no-unused-vars
+  144:11  warning  'props' is defined but never used. Allowed unused args must match /^_/u     no-unused-vars
+  151:11  warning  'props' is defined but never used. Allowed unused args must match /^_/u     no-unused-vars
+  537:17  warning  'option' is defined but never used. Allowed unused args must match /^_/u    no-unused-vars
+  537:30  warning  'select$' is defined but never used. Allowed unused args must match /^_/u   no-unused-vars
+  608:11  warning  'query' is defined but never used. Allowed unused args must match /^_/u     no-unused-vars
+  608:27  warning  'select$' is defined but never used. Allowed unused args must match /^_/u   no-unused-vars
+  758:22  warning  'value' is defined but never used. Allowed unused args must match /^_/u     no-unused-vars
+  758:44  warning  'select$' is defined but never used. Allowed unused args must match /^_/u   no-unused-vars
+  883:21  warning  'option' is defined but never used. Allowed unused args must match /^_/u    no-unused-vars
+  883:41  warning  'query' is defined but never used. Allowed unused args must match /^_/u     no-unused-vars
+  883:56  warning  'select$' is defined but never used. Allowed unused args must match /^_/u   no-unused-vars
+
+/Users/trentbrew/TURTLE/Projects/Packages/trellis-client/apps/web/app/components/Ui/Vee/VueFormSlider.vue
+  125:37  warning  'value' is defined but never used. Allowed unused args must match /^_/u  no-unused-vars
+
+/Users/trentbrew/TURTLE/Projects/Packages/trellis-client/apps/web/app/components/app/AppUserAvatar.vue
+  10:9  warning  'isAuthenticated' is assigned a value but never used. Allowed unused vars must match /^_/u  no-unused-vars
+  10:9  warning  'isAuthenticated' is assigned a value but never used. Allowed unused vars must match /^_/u  @typescript-eslint/no-unused-vars
+
+/Users/trentbrew/TURTLE/Projects/Packages/trellis-client/apps/web/app/components/app/VoiceCapturePanel.vue
+  22:24  warning  'durationMs' is assigned a value but never used. Allowed unused vars must match /^_/u  no-unused-vars
+  22:24  warning  'durationMs' is assigned a value but never used. Allowed unused vars must match /^_/u  @typescript-eslint/no-unused-vars
+
+/Users/trentbrew/TURTLE/Projects/Packages/trellis-client/apps/web/app/components/dashboard/DashboardScheduleCard.vue
+  12:18  warning  't' is defined but never used. Allowed unused args must match /^_/u  no-unused-vars
+
+/Users/trentbrew/TURTLE/Projects/Packages/trellis-client/apps/web/app/components/data/CellRenderer.vue
+   9:22  warning  'value' is defined but never used. Allowed unused args must match /^_/u  no-unused-vars
+   9:34  warning  'key' is defined but never used. Allowed unused args must match /^_/u    no-unused-vars
+  10:23  warning  'value' is defined but never used. Allowed unused args must match /^_/u  no-unused-vars
+  10:35  warning  'type' is defined but never used. Allowed unused args must match /^_/u   no-unused-vars
+
+/Users/trentbrew/TURTLE/Projects/Packages/trellis-client/apps/web/app/components/data/DataTable/DataTable.vue
+  19:17  warning  'rowId' is defined but never used. Allowed unused args must match /^_/u    no-unused-vars
+  19:32  warning  'fieldId' is defined but never used. Allowed unused args must match /^_/u  no-unused-vars
+  19:49  warning  'value' is defined but never used. Allowed unused args must match /^_/u    no-unused-vars
+  20:17  warning  'rowId' is defined but never used. Allowed unused args must match /^_/u    no-unused-vars
+
+/Users/trentbrew/TURTLE/Projects/Packages/trellis-client/apps/web/app/components/data/DataTable/EditableCell.vue
+  16:6   warning  'e' is defined but never used. Allowed unused args must match /^_/u      no-unused-vars
+  16:19  warning  'value' is defined but never used. Allowed unused args must match /^_/u  no-unused-vars
+
+/Users/trentbrew/TURTLE/Projects/Packages/trellis-client/apps/web/app/components/data/Gantt/ContextMenu.vue
+  12:46  warning  There is more than one component in this file  vue/one-component-per-file
+  19:53  warning  There is more than one component in this file  vue/one-component-per-file
+  26:53  warning  There is more than one component in this file  vue/one-component-per-file
+  45:50  warning  There is more than one component in this file  vue/one-component-per-file
+  62:18  warning  There is more than one component in this file  vue/one-component-per-file
+
+/Users/trentbrew/TURTLE/Projects/Packages/trellis-client/apps/web/app/components/data/Gantt/Gantt.vue
+    2:36  warning  'inject' is defined but never used. Allowed unused vars must match /^_/u                           no-unused-vars
+    2:36  warning  'inject' is defined but never used. Allowed unused vars must match /^_/u                           @typescript-eslint/no-unused-vars
+    3:12  warning  'Card' is defined but never used. Allowed unused vars must match /^_/u                             no-unused-vars
+    3:12  warning  'Card' is defined but never used. Allowed unused vars must match /^_/u                             @typescript-eslint/no-unused-vars
+    4:12  warning  'ContextMenu' is defined but never used. Allowed unused vars must match /^_/u                      no-unused-vars
+    4:12  warning  'ContextMenu' is defined but never used. Allowed unused vars must match /^_/u                      @typescript-eslint/no-unused-vars
+    4:25  warning  'ContextMenuContent' is defined but never used. Allowed unused vars must match /^_/u               no-unused-vars
+    4:25  warning  'ContextMenuContent' is defined but never used. Allowed unused vars must match /^_/u               @typescript-eslint/no-unused-vars
+    4:45  warning  'ContextMenuItem' is defined but never used. Allowed unused vars must match /^_/u                  no-unused-vars
+    4:45  warning  'ContextMenuItem' is defined but never used. Allowed unused vars must match /^_/u                  @typescript-eslint/no-unused-vars
+    4:62  warning  'ContextMenuTrigger' is defined but never used. Allowed unused vars must match /^_/u               no-unused-vars
+    4:62  warning  'ContextMenuTrigger' is defined but never used. Allowed unused vars must match /^_/u               @typescript-eslint/no-unused-vars
+    6:12  warning  'DndContext' is defined but never used. Allowed unused vars must match /^_/u                       no-unused-vars
+    6:12  warning  'DndContext' is defined but never used. Allowed unused vars must match /^_/u                       @typescript-eslint/no-unused-vars
+    6:24  warning  'MouseSensor' is defined but never used. Allowed unused vars must match /^_/u                      no-unused-vars
+    6:24  warning  'MouseSensor' is defined but never used. Allowed unused vars must match /^_/u                      @typescript-eslint/no-unused-vars
+    6:37  warning  'useDraggable' is defined but never used. Allowed unused vars must match /^_/u                     no-unused-vars
+    6:37  warning  'useDraggable' is defined but never used. Allowed unused vars must match /^_/u                     @typescript-eslint/no-unused-vars
+    6:51  warning  'useSensor' is defined but never used. Allowed unused vars must match /^_/u                        no-unused-vars
+    6:51  warning  'useSensor' is defined but never used. Allowed unused vars must match /^_/u                        @typescript-eslint/no-unused-vars
+    6:62  warning  'useSensors' is defined but never used. Allowed unused vars must match /^_/u                       no-unused-vars
+    6:62  warning  'useSensors' is defined but never used. Allowed unused vars must match /^_/u                       @typescript-eslint/no-unused-vars
+    7:12  warning  'restrictToHorizontalAxis' is defined but never used. Allowed unused vars must match /^_/u         no-unused-vars
+    7:12  warning  'restrictToHorizontalAxis' is defined but never used. Allowed unused vars must match /^_/u         @typescript-eslint/no-unused-vars
+    9:5   warning  'formatDate' is defined but never used. Allowed unused vars must match /^_/u                       no-unused-vars
+    9:5   warning  'formatDate' is defined but never used. Allowed unused vars must match /^_/u                       @typescript-eslint/no-unused-vars
+   10:5   warning  'formatDistance' is defined but never used. Allowed unused vars must match /^_/u                   no-unused-vars
+   10:5   warning  'formatDistance' is defined but never used. Allowed unused vars must match /^_/u                   @typescript-eslint/no-unused-vars
+   12:5   warning  'format' is defined but never used. Allowed unused vars must match /^_/u                           no-unused-vars
+   12:5   warning  'format' is defined but never used. Allowed unused vars must match /^_/u                           @typescript-eslint/no-unused-vars
+   25:12  warning  'PlusIcon' is defined but never used. Allowed unused vars must match /^_/u                         no-unused-vars
+   25:12  warning  'PlusIcon' is defined but never used. Allowed unused vars must match /^_/u                         @typescript-eslint/no-unused-vars
+   25:22  warning  'TrashIcon' is defined but never used. Allowed unused vars must match /^_/u                        no-unused-vars
+   25:22  warning  'TrashIcon' is defined but never used. Allowed unused vars must match /^_/u                        @typescript-eslint/no-unused-vars
+   66:18  warning  'date' is defined but never used. Allowed unused args must match /^_/u                             no-unused-vars
+  122:9   warning  'getDateByMousePosition' is assigned a value but never used. Allowed unused vars must match /^_/u  no-unused-vars
+  122:9   warning  'getDateByMousePosition' is assigned a value but never used. Allowed unused vars must match /^_/u  @typescript-eslint/no-unused-vars
+  156:9   warning  'getOffset' is assigned a value but never used. Allowed unused vars must match /^_/u               no-unused-vars
+  156:9   warning  'getOffset' is assigned a value but never used. Allowed unused vars must match /^_/u               @typescript-eslint/no-unused-vars
+  173:9   warning  'getWidth' is assigned a value but never used. Allowed unused vars must match /^_/u                no-unused-vars
+  173:9   warning  'getWidth' is assigned a value but never used. Allowed unused vars must match /^_/u                @typescript-eslint/no-unused-vars
+  214:9   warning  'calculateInnerOffset' is assigned a value but never used. Allowed unused vars must match /^_/u    no-unused-vars
+  214:9   warning  'calculateInnerOffset' is assigned a value but never used. Allowed unused vars must match /^_/u    @typescript-eslint/no-unused-vars
+  237:9   warning  'dragging' is assigned a value but never used. Allowed unused vars must match /^_/u                no-unused-vars
+  237:9   warning  'dragging' is assigned a value but never used. Allowed unused vars must match /^_/u                @typescript-eslint/no-unused-vars
+  251:9   warning  'cssVariables' is assigned a value but never used. Allowed unused vars must match /^_/u            no-unused-vars
+  251:9   warning  'cssVariables' is assigned a value but never used. Allowed unused vars must match /^_/u            @typescript-eslint/no-unused-vars
+
+/Users/trentbrew/TURTLE/Projects/Packages/trellis-client/apps/web/app/components/data/Gantt/GanttCreateMarkerTrigger.vue
+  9:22  warning  'date' is defined but never used. Allowed unused args must match /^_/u  no-unused-vars
+
+/Users/trentbrew/TURTLE/Projects/Packages/trellis-client/apps/web/app/components/data/Gantt/GanttFeatureItem.vue
+  14:15  warning  'id' is defined but never used. Allowed unused args must match /^_/u         no-unused-vars
+  14:27  warning  'startDate' is defined but never used. Allowed unused args must match /^_/u  no-unused-vars
+  14:44  warning  'endDate' is defined but never used. Allowed unused args must match /^_/u    no-unused-vars
+  23:6   warning  'e' is defined but never used. Allowed unused args must match /^_/u          no-unused-vars
+  23:33  warning  'payload' is defined but never used. Allowed unused args must match /^_/u    no-unused-vars
+
+/Users/trentbrew/TURTLE/Projects/Packages/trellis-client/apps/web/app/components/data/Gantt/GanttFeatureListGroup.vue
+  2:12  warning  'cn' is defined but never used. Allowed unused vars must match /^_/u  no-unused-vars
+  2:12  warning  'cn' is defined but never used. Allowed unused vars must match /^_/u  @typescript-eslint/no-unused-vars
+
+/Users/trentbrew/TURTLE/Projects/Packages/trellis-client/apps/web/app/components/data/Gantt/GanttMarker.vue
+  12:17  warning  'id' is defined but never used. Allowed unused args must match /^_/u  no-unused-vars
+
+/Users/trentbrew/TURTLE/Projects/Packages/trellis-client/apps/web/app/components/data/Gantt/GanttProvider.vue
+  43:18  warning  'date' is defined but never used. Allowed unused args must match /^_/u  no-unused-vars
+  56:6   warning  'e' is defined but never used. Allowed unused args must match /^_/u     no-unused-vars
+  56:24  warning  'zoom' is defined but never used. Allowed unused args must match /^_/u  no-unused-vars
+  57:6   warning  'e' is defined but never used. Allowed unused args must match /^_/u     no-unused-vars
+  57:24  warning  'mode' is defined but never used. Allowed unused args must match /^_/u  no-unused-vars
+
+/Users/trentbrew/TURTLE/Projects/Packages/trellis-client/apps/web/app/components/data/Gantt/GanttSidebarGroup.vue
+  2:12  warning  'cn' is defined but never used. Allowed unused vars must match /^_/u  no-unused-vars
+  2:12  warning  'cn' is defined but never used. Allowed unused vars must match /^_/u  @typescript-eslint/no-unused-vars
+
+/Users/trentbrew/TURTLE/Projects/Packages/trellis-client/apps/web/app/components/data/Gantt/GanttSidebarItem.vue
+  9:21  warning  'id' is defined but never used. Allowed unused args must match /^_/u  no-unused-vars
+
+/Users/trentbrew/TURTLE/Projects/Packages/trellis-client/apps/web/app/components/data/Gantt/ganttContext.ts
+  55:16  warning  'date' is defined but never used. Allowed unused args must match /^_/u     no-unused-vars
+  56:14  warning  'zoom' is defined but never used. Allowed unused args must match /^_/u     no-unused-vars
+  57:14  warning  'mode' is defined but never used. Allowed unused args must match /^_/u     no-unused-vars
+  58:19  warning  'date' is defined but never used. Allowed unused args must match /^_/u     no-unused-vars
+  58:31  warning  'options' is defined but never used. Allowed unused args must match /^_/u  no-unused-vars
+
+/Users/trentbrew/TURTLE/Projects/Packages/trellis-client/apps/web/app/components/data/StatusChip.vue
+  3:9  warning  'props' is assigned a value but never used. Allowed unused vars must match /^_/u  no-unused-vars
+  3:9  warning  'props' is assigned a value but never used. Allowed unused vars must match /^_/u  @typescript-eslint/no-unused-vars
+
+/Users/trentbrew/TURTLE/Projects/Packages/trellis-client/apps/web/app/components/deck/DeckSorterShell.vue
+  25:5  warning  'sseConnected' is assigned a value but never used. Allowed unused vars must match /^_/u  no-unused-vars
+  25:5  warning  'sseConnected' is assigned a value but never used. Allowed unused vars must match /^_/u  @typescript-eslint/no-unused-vars
+
+/Users/trentbrew/TURTLE/Projects/Packages/trellis-client/apps/web/app/components/deck/LayoutPicker.vue
+  5:9  warning  'props' is assigned a value but never used. Allowed unused vars must match /^_/u  no-unused-vars
+  5:9  warning  'props' is assigned a value but never used. Allowed unused vars must match /^_/u  @typescript-eslint/no-unused-vars
+
+/Users/trentbrew/TURTLE/Projects/Packages/trellis-client/apps/web/app/components/dialogs/EntityDialogShell.vue
+  99:11  warning  'peerList' is assigned a value but never used. Allowed unused vars must match /^_/u   no-unused-vars
+  99:11  warning  'peerList' is assigned a value but never used. Allowed unused vars must match /^_/u   @typescript-eslint/no-unused-vars
+  99:21  warning  'peerCount' is assigned a value but never used. Allowed unused vars must match /^_/u  no-unused-vars
+  99:21  warning  'peerCount' is assigned a value but never used. Allowed unused vars must match /^_/u  @typescript-eslint/no-unused-vars
+
+/Users/trentbrew/TURTLE/Projects/Packages/trellis-client/apps/web/app/components/dialogs/MemberInviteDialog.vue
+  260:9  warning  'closeDialog' is assigned a value but never used. Allowed unused vars must match /^_/u  no-unused-vars
+  260:9  warning  'closeDialog' is assigned a value but never used. Allowed unused vars must match /^_/u  @typescript-eslint/no-unused-vars
+
+/Users/trentbrew/TURTLE/Projects/Packages/trellis-client/apps/web/app/components/editors/PlainTextEditor.vue
+  9:6   warning  'e' is defined but never used. Allowed unused args must match /^_/u      no-unused-vars
+  9:41  warning  'value' is defined but never used. Allowed unused args must match /^_/u  no-unused-vars
+
+/Users/trentbrew/TURTLE/Projects/Packages/trellis-client/apps/web/app/components/entity/BookmarkPropertiesTab.vue
+  10:9  warning  'props' is assigned a value but never used. Allowed unused vars must match /^_/u  no-unused-vars
+  10:9  warning  'props' is assigned a value but never used. Allowed unused vars must match /^_/u  @typescript-eslint/no-unused-vars
+
+/Users/trentbrew/TURTLE/Projects/Packages/trellis-client/apps/web/app/components/entity/DocumentPropertiesTab.vue
+  8:9  warning  'props' is assigned a value but never used. Allowed unused vars must match /^_/u  no-unused-vars
+  8:9  warning  'props' is assigned a value but never used. Allowed unused vars must match /^_/u  @typescript-eslint/no-unused-vars
+
+/Users/trentbrew/TURTLE/Projects/Packages/trellis-client/apps/web/app/components/entity/cards/EntityCard.vue
+  282:9  warning  'emit' is assigned a value but never used. Allowed unused vars must match /^_/u  no-unused-vars
+  282:9  warning  'emit' is assigned a value but never used. Allowed unused vars must match /^_/u  @typescript-eslint/no-unused-vars
+
+/Users/trentbrew/TURTLE/Projects/Packages/trellis-client/apps/web/app/components/entity/panels/document/FileContent.vue
+   11:1   error    Import in body of module; reorder to top    import/first
+   12:1   error    Import in body of module; reorder to top    import/first
+   13:1   error    Import in body of module; reorder to top    import/first
+   14:1   error    Import in body of module; reorder to top    import/first
+   15:1   error    Import in body of module; reorder to top    import/first
+   34:1   error    Import in body of module; reorder to top    import/first
+  191:10  warning  Expected a linebreak before this attribute  vue/first-attribute-linebreak
+  210:12  warning  Expected a linebreak before this attribute  vue/first-attribute-linebreak
+  288:21  warning  Expected a linebreak before this attribute  vue/first-attribute-linebreak
+  382:21  warning  Expected a linebreak before this attribute  vue/first-attribute-linebreak
+
+/Users/trentbrew/TURTLE/Projects/Packages/trellis-client/apps/web/app/components/entity/panels/document/YoutubeVideoPanel.vue
+  169:7  warning  Unused eslint-disable directive (no problems were reported from 'no-console')
+
+/Users/trentbrew/TURTLE/Projects/Packages/trellis-client/apps/web/app/components/entity/panels/shared/EntityReferencePicker.vue
+  64:62  warning  Attribute "class" should go before "@update:open"  vue/attributes-order
+
+/Users/trentbrew/TURTLE/Projects/Packages/trellis-client/apps/web/app/components/gantt/ContextMenu.vue
+  12:46  warning  There is more than one component in this file  vue/one-component-per-file
+  19:53  warning  There is more than one component in this file  vue/one-component-per-file
+  26:53  warning  There is more than one component in this file  vue/one-component-per-file
+  45:50  warning  There is more than one component in this file  vue/one-component-per-file
+  62:18  warning  There is more than one component in this file  vue/one-component-per-file
+
+/Users/trentbrew/TURTLE/Projects/Packages/trellis-client/apps/web/app/components/gantt/Gantt.vue
+  70:18  warning  'date' is defined but never used. Allowed unused args must match /^_/u  no-unused-vars
+
+/Users/trentbrew/TURTLE/Projects/Packages/trellis-client/apps/web/app/components/gantt/GanttCreateMarkerTrigger.vue
+  9:22  warning  'date' is defined but never used. Allowed unused args must match /^_/u  no-unused-vars
+
+/Users/trentbrew/TURTLE/Projects/Packages/trellis-client/apps/web/app/components/gantt/GanttFeatureItem.vue
+  14:15  warning  'id' is defined but never used. Allowed unused args must match /^_/u         no-unused-vars
+  14:27  warning  'startDate' is defined but never used. Allowed unused args must match /^_/u  no-unused-vars
+  14:44  warning  'endDate' is defined but never used. Allowed unused args must match /^_/u    no-unused-vars
+  23:6   warning  'e' is defined but never used. Allowed unused args must match /^_/u          no-unused-vars
+  23:33  warning  'payload' is defined but never used. Allowed unused args must match /^_/u    no-unused-vars
+
+/Users/trentbrew/TURTLE/Projects/Packages/trellis-client/apps/web/app/components/gantt/GanttMarker.vue
+  12:17  warning  'id' is defined but never used. Allowed unused args must match /^_/u  no-unused-vars
+
+/Users/trentbrew/TURTLE/Projects/Packages/trellis-client/apps/web/app/components/gantt/GanttProvider.vue
+  43:18  warning  'date' is defined but never used. Allowed unused args must match /^_/u  no-unused-vars
+  60:6   warning  'e' is defined but never used. Allowed unused args must match /^_/u     no-unused-vars
+  60:24  warning  'zoom' is defined but never used. Allowed unused args must match /^_/u  no-unused-vars
+  61:6   warning  'e' is defined but never used. Allowed unused args must match /^_/u     no-unused-vars
+  61:24  warning  'mode' is defined but never used. Allowed unused args must match /^_/u  no-unused-vars
+
+/Users/trentbrew/TURTLE/Projects/Packages/trellis-client/apps/web/app/components/gantt/GanttSidebarItem.vue
+  9:21  warning  'id' is defined but never used. Allowed unused args must match /^_/u  no-unused-vars
+
+/Users/trentbrew/TURTLE/Projects/Packages/trellis-client/apps/web/app/components/gantt/ganttContext.ts
+  56:16  warning  'date' is defined but never used. Allowed unused args must match /^_/u       no-unused-vars
+  57:14  warning  'zoom' is defined but never used. Allowed unused args must match /^_/u       no-unused-vars
+  58:14  warning  'mode' is defined but never used. Allowed unused args must match /^_/u       no-unused-vars
+  59:19  warning  'date' is defined but never used. Allowed unused args must match /^_/u       no-unused-vars
+  59:31  warning  'options' is defined but never used. Allowed unused args must match /^_/u    no-unused-vars
+  63:24  warning  'offscreen' is defined but never used. Allowed unused args must match /^_/u  no-unused-vars
+  63:44  warning  'direction' is defined but never used. Allowed unused args must match /^_/u  no-unused-vars
+
+/Users/trentbrew/TURTLE/Projects/Packages/trellis-client/apps/web/app/components/grid/GridEditor.vue
+  19:19  warning  'viewId' is defined but never used. Allowed unused args must match /^_/u  no-unused-vars
+  19:35  warning  'col' is defined but never used. Allowed unused args must match /^_/u     no-unused-vars
+  19:48  warning  'row' is defined but never used. Allowed unused args must match /^_/u     no-unused-vars
+
+/Users/trentbrew/TURTLE/Projects/Packages/trellis-client/apps/web/app/components/layout/Page.vue
+  331:9   warning  'router' is assigned a value but never used. Allowed unused vars must match /^_/u  no-unused-vars
+  331:9   warning  'router' is assigned a value but never used. Allowed unused vars must match /^_/u  @typescript-eslint/no-unused-vars
+  441:63  warning  'name' is defined but never used. Allowed unused args must match /^_/u             no-unused-vars
+  441:77  warning  'props' is defined but never used. Allowed unused args must match /^_/u            no-unused-vars
+
+/Users/trentbrew/TURTLE/Projects/Packages/trellis-client/apps/web/app/components/layout/PageActionButtons.vue
+   7:19  warning  'action' is defined but never used. Allowed unused args must match /^_/u  no-unused-vars
+  19:15  warning  Expected a linebreak before this attribute                                vue/first-attribute-linebreak
+
+/Users/trentbrew/TURTLE/Projects/Packages/trellis-client/apps/web/app/components/notifications/NotificationItem.vue
+  92:1  error  '<script setup lang=ts>' should be above '<template>' on line 1  vue/block-order
+
+/Users/trentbrew/TURTLE/Projects/Packages/trellis-client/apps/web/app/components/sheet/RelationCellEditor.vue
+  9:20  warning  'id' is defined but never used. Allowed unused args must match /^_/u  no-unused-vars
+
+/Users/trentbrew/TURTLE/Projects/Packages/trellis-client/apps/web/app/components/sheet/SheetCell.vue
+  18:7   warning  'entityId' is defined but never used. Allowed unused args must match /^_/u      no-unused-vars
+  19:7   warning  'attribute' is defined but never used. Allowed unused args must match /^_/u     no-unused-vars
+  20:7   warning  'personId' is defined but never used. Allowed unused args must match /^_/u      no-unused-vars
+  21:7   warning  'relationType' is defined but never used. Allowed unused args must match /^_/u  no-unused-vars
+  24:26  warning  'id' is defined but never used. Allowed unused args must match /^_/u            no-unused-vars
+
+/Users/trentbrew/TURTLE/Projects/Packages/trellis-client/apps/web/app/components/sheet/SheetGrid.vue
+  22:20  warning  'entityId' is defined but never used. Allowed unused args must match /^_/u      no-unused-vars
+  22:38  warning  'column' is defined but never used. Allowed unused args must match /^_/u        no-unused-vars
+  22:59  warning  'rowIndex' is defined but never used. Allowed unused args must match /^_/u      no-unused-vars
+  27:26  warning  'id' is defined but never used. Allowed unused args must match /^_/u            no-unused-vars
+  28:26  warning  'ordered' is defined but never used. Allowed unused args must match /^_/u       no-unused-vars
+  29:18  warning  'entityId' is defined but never used. Allowed unused args must match /^_/u      no-unused-vars
+  29:36  warning  'attribute' is defined but never used. Allowed unused args must match /^_/u     no-unused-vars
+  29:55  warning  'value' is defined but never used. Allowed unused args must match /^_/u         no-unused-vars
+  31:7   warning  'entityId' is defined but never used. Allowed unused args must match /^_/u      no-unused-vars
+  32:7   warning  'attribute' is defined but never used. Allowed unused args must match /^_/u     no-unused-vars
+  33:7   warning  'personId' is defined but never used. Allowed unused args must match /^_/u      no-unused-vars
+  34:7   warning  'relationType' is defined but never used. Allowed unused args must match /^_/u  no-unused-vars
+
+/Users/trentbrew/TURTLE/Projects/Packages/trellis-client/apps/web/app/components/sheet/SheetProjectionFrame.vue
+  104:11  error  'row' is never reassigned. Use 'const' instead  prefer-const
+  104:16  error  'col' is never reassigned. Use 'const' instead  prefer-const
+
+/Users/trentbrew/TURTLE/Projects/Packages/trellis-client/apps/web/app/components/vcs/VcsIssueBoard.vue
+  9:23  warning  'epicId' is defined but never used. Allowed unused args must match /^_/u  no-unused-vars
+
+/Users/trentbrew/TURTLE/Projects/Packages/trellis-client/apps/web/app/components/vcs/VcsIssueSwimlane.vue
+  2:17  warning  'VcsIssueStatus' is defined but never used. Allowed unused vars must match /^_/u  no-unused-vars
+  2:17  warning  'VcsIssueStatus' is defined but never used. Allowed unused vars must match /^_/u  @typescript-eslint/no-unused-vars
+
+/Users/trentbrew/TURTLE/Projects/Packages/trellis-client/apps/web/app/components/views/CalendarView.vue
+   815:13  error    Empty block statement                                                                   no-empty
+   836:15  error    Empty block statement                                                                   no-empty
+  1476:9   warning  'headerTitle' is assigned a value but never used. Allowed unused vars must match /^_/u  no-unused-vars
+  1476:9   warning  'headerTitle' is assigned a value but never used. Allowed unused vars must match /^_/u  @typescript-eslint/no-unused-vars
+
+/Users/trentbrew/TURTLE/Projects/Packages/trellis-client/apps/web/app/components/views/GraphView.vue
+   21:47  warning  'ZoomTransform' is defined but never used. Allowed unused vars must match /^_/u  no-unused-vars
+   21:47  warning  'ZoomTransform' is defined but never used. Allowed unused vars must match /^_/u  @typescript-eslint/no-unused-vars
+  113:48  warning  'id' is defined but never used. Allowed unused args must match /^_/u             no-unused-vars
+  113:91  warning  'id' is defined but never used. Allowed unused args must match /^_/u             no-unused-vars
+
+/Users/trentbrew/TURTLE/Projects/Packages/trellis-client/apps/web/app/components/views/graph-webgl.ts
+   36:15  warning  'n' is defined but never used. Allowed unused args must match /^_/u         no-unused-vars
+   37:14  warning  'n' is defined but never used. Allowed unused args must match /^_/u         no-unused-vars
+   39:19  warning  'iconName' is defined but never used. Allowed unused args must match /^_/u  no-unused-vars
+   39:37  warning  'color' is defined but never used. Allowed unused args must match /^_/u     no-unused-vars
+   39:52  warning  'sizePx' is defined but never used. Allowed unused args must match /^_/u    no-unused-vars
+   45:11  warning  'id' is defined but never used. Allowed unused args must match /^_/u        no-unused-vars
+   46:18  warning  'id' is defined but never used. Allowed unused args must match /^_/u        no-unused-vars
+  264:15  error    Empty block statement                                                       no-empty
+
+/Users/trentbrew/TURTLE/Projects/Packages/trellis-client/apps/web/app/composables/useActiveVideoPlayer.ts
+  20:29  warning  'seconds' is defined but never used. Allowed unused args must match /^_/u  no-unused-vars
+  28:38  warning  'seconds' is defined but never used. Allowed unused args must match /^_/u  no-unused-vars
+
+/Users/trentbrew/TURTLE/Projects/Packages/trellis-client/apps/web/app/composables/useBrowse.ts
+  45:15  warning  'value' is defined but never used. Allowed unused args must match /^_/u  no-unused-vars
+  50:20  warning  'value' is defined but never used. Allowed unused args must match /^_/u  no-unused-vars
+  55:13  warning  'value' is defined but never used. Allowed unused args must match /^_/u  no-unused-vars
+  58:17  warning  'mode' is defined but never used. Allowed unused args must match /^_/u   no-unused-vars
+  75:10  warning  'item' is defined but never used. Allowed unused args must match /^_/u   no-unused-vars
+  75:19  warning  'value' is defined but never used. Allowed unused args must match /^_/u  no-unused-vars
+
+/Users/trentbrew/TURTLE/Projects/Packages/trellis-client/apps/web/app/composables/useCarousel.ts
+  31:4   warning  'e' is defined but never used. Allowed unused args must match /^_/u        no-unused-vars
+  31:19  warning  'payload' is defined but never used. Allowed unused args must match /^_/u  no-unused-vars
+
+/Users/trentbrew/TURTLE/Projects/Packages/trellis-client/apps/web/app/composables/useCollectionFormulas.test.ts
+  5:31  warning  'formula' is defined but never used. Allowed unused args must match /^_/u     no-unused-vars
+  5:48  warning  'sampleData' is defined but never used. Allowed unused args must match /^_/u  no-unused-vars
+  5:66  warning  'allRecords' is defined but never used. Allowed unused args must match /^_/u  no-unused-vars
+  5:86  warning  'edges' is defined but never used. Allowed unused args must match /^_/u       no-unused-vars
+
+/Users/trentbrew/TURTLE/Projects/Packages/trellis-client/apps/web/app/composables/useCollectionFormulas.ts
+  389:29  warning  'r' is defined but never used. Allowed unused args must match /^_/u     no-unused-vars
+  390:27  warning  'r' is defined but never used. Allowed unused args must match /^_/u     no-unused-vars
+  391:31  warning  'item' is defined but never used. Allowed unused args must match /^_/u  no-unused-vars
+  392:34  warning  'acc' is defined but never used. Allowed unused args must match /^_/u   no-unused-vars
+  392:44  warning  'item' is defined but never used. Allowed unused args must match /^_/u  no-unused-vars
+
+/Users/trentbrew/TURTLE/Projects/Packages/trellis-client/apps/web/app/composables/useColumnReorder.ts
+  18:13  warning  'ordered' is defined but never used. Allowed unused args must match /^_/u  no-unused-vars
+
+/Users/trentbrew/TURTLE/Projects/Packages/trellis-client/apps/web/app/composables/useDeckKeyboardReorder.ts
+  6:15  warning  'orderedIds' is defined but never used. Allowed unused args must match /^_/u  no-unused-vars
+
+/Users/trentbrew/TURTLE/Projects/Packages/trellis-client/apps/web/app/composables/useDetailDialog.ts
+  35:18  warning  'value' is defined but never used. Allowed unused args must match /^_/u  no-unused-vars
+  35:30  warning  'item' is defined but never used. Allowed unused args must match /^_/u   no-unused-vars
+  36:17  warning  'value' is defined but never used. Allowed unused args must match /^_/u  no-unused-vars
+  43:21  warning  'item' is defined but never used. Allowed unused args must match /^_/u   no-unused-vars
+  43:37  warning  'mode' is defined but never used. Allowed unused args must match /^_/u   no-unused-vars
+  44:28  warning  'item' is defined but never used. Allowed unused args must match /^_/u   no-unused-vars
+  44:44  warning  'mode' is defined but never used. Allowed unused args must match /^_/u   no-unused-vars
+  47:13  warning  'item' is defined but never used. Allowed unused args must match /^_/u   no-unused-vars
+  47:22  warning  'mode' is defined but never used. Allowed unused args must match /^_/u   no-unused-vars
+  48:15  warning  'item' is defined but never used. Allowed unused args must match /^_/u   no-unused-vars
+  61:10  warning  'item' is defined but never used. Allowed unused args must match /^_/u   no-unused-vars
+  61:27  warning  'mode' is defined but never used. Allowed unused args must match /^_/u   no-unused-vars
+  63:13  warning  'mode' is defined but never used. Allowed unused args must match /^_/u   no-unused-vars
+  66:17  warning  'key' is defined but never used. Allowed unused args must match /^_/u    no-unused-vars
+  66:40  warning  'value' is defined but never used. Allowed unused args must match /^_/u  no-unused-vars
+  73:15  warning  'item' is defined but never used. Allowed unused args must match /^_/u   no-unused-vars
+  73:31  warning  'mode' is defined but never used. Allowed unused args must match /^_/u   no-unused-vars
+
+/Users/trentbrew/TURTLE/Projects/Packages/trellis-client/apps/web/app/composables/useDialogStack.ts
+  45:49  warning  'entityId' is defined but never used. Allowed unused args must match /^_/u  no-unused-vars
+
+/Users/trentbrew/TURTLE/Projects/Packages/trellis-client/apps/web/app/composables/useEditorLease.ts
+   6:41  warning  'cellKey' is defined but never used. Allowed unused args must match /^_/u      no-unused-vars
+   6:58  warning  'html' is defined but never used. Allowed unused args must match /^_/u         no-unused-vars
+  12:13  warning  'cellKey' is defined but never used. Allowed unused args must match /^_/u      no-unused-vars
+  12:30  warning  'mountEl' is defined but never used. Allowed unused args must match /^_/u      no-unused-vars
+  12:59  warning  'initialHtml' is defined but never used. Allowed unused args must match /^_/u  no-unused-vars
+  15:16  warning  'html' is defined but never used. Allowed unused args must match /^_/u         no-unused-vars
+  16:14  warning  'cellKey' is defined but never used. Allowed unused args must match /^_/u      no-unused-vars
+
+/Users/trentbrew/TURTLE/Projects/Packages/trellis-client/apps/web/app/composables/useFileEnrichment.ts
+  15:25  warning  'FileCategory' is defined but never used. Allowed unused vars must match /^_/u  no-unused-vars
+  15:25  warning  'FileCategory' is defined but never used. Allowed unused vars must match /^_/u  @typescript-eslint/no-unused-vars
+
+/Users/trentbrew/TURTLE/Projects/Packages/trellis-client/apps/web/app/composables/useFileUpload.test.ts
+  15:32  warning  'vi' is defined but never used. Allowed unused vars must match /^_/u          no-unused-vars
+  15:32  warning  'vi' is defined but never used. Allowed unused vars must match /^_/u          @typescript-eslint/no-unused-vars
+  15:36  warning  'beforeEach' is defined but never used. Allowed unused vars must match /^_/u  no-unused-vars
+  15:36  warning  'beforeEach' is defined but never used. Allowed unused vars must match /^_/u  @typescript-eslint/no-unused-vars
+  15:48  warning  'afterEach' is defined but never used. Allowed unused vars must match /^_/u   no-unused-vars
+  15:48  warning  'afterEach' is defined but never used. Allowed unused vars must match /^_/u   @typescript-eslint/no-unused-vars
+
+/Users/trentbrew/TURTLE/Projects/Packages/trellis-client/apps/web/app/composables/useGlobalDetailSheet.ts
+  43:10  warning  'node' is defined but never used. Allowed unused args must match /^_/u     no-unused-vars
+  43:28  warning  'options' is defined but never used. Allowed unused args must match /^_/u  no-unused-vars
+  45:13  warning  'mode' is defined but never used. Allowed unused args must match /^_/u     no-unused-vars
+  46:16  warning  'variant' is defined but never used. Allowed unused args must match /^_/u  no-unused-vars
+  49:17  warning  'key' is defined but never used. Allowed unused args must match /^_/u      no-unused-vars
+  49:30  warning  'value' is defined but never used. Allowed unused args must match /^_/u    no-unused-vars
+
+/Users/trentbrew/TURTLE/Projects/Packages/trellis-client/apps/web/app/composables/useGlobalDropZone.ts
+  103:9   warning  'timeStr' is assigned a value but never used. Allowed unused vars must match /^_/u  no-unused-vars
+  103:9   warning  'timeStr' is assigned a value but never used. Allowed unused vars must match /^_/u  @typescript-eslint/no-unused-vars
+  124:7   error    Unexpected lexical declaration in case block                                        no-case-declarations
+  132:13  warning  'result' is defined but never used. Allowed unused args must match /^_/u            no-unused-vars
+  244:22  warning  'entityId' is defined but never used. Allowed unused args must match /^_/u          no-unused-vars
+  244:40  warning  'type' is defined but never used. Allowed unused args must match /^_/u              no-unused-vars
+
+/Users/trentbrew/TURTLE/Projects/Packages/trellis-client/apps/web/app/composables/useGraphTypesSidebar.ts
+  106:13  error  Empty block statement  no-empty
+
+/Users/trentbrew/TURTLE/Projects/Packages/trellis-client/apps/web/app/composables/useGridDraggable.ts
+  24:12  warning  'viewId' is defined but never used. Allowed unused args must match /^_/u  no-unused-vars
+  24:28  warning  'col' is defined but never used. Allowed unused args must match /^_/u     no-unused-vars
+  24:41  warning  'row' is defined but never used. Allowed unused args must match /^_/u     no-unused-vars
+  26:17  warning  'viewId' is defined but never used. Allowed unused args must match /^_/u  no-unused-vars
+  26:33  warning  'col' is defined but never used. Allowed unused args must match /^_/u     no-unused-vars
+  26:46  warning  'row' is defined but never used. Allowed unused args must match /^_/u     no-unused-vars
+
+/Users/trentbrew/TURTLE/Projects/Packages/trellis-client/apps/web/app/composables/useGridDraw.ts
+  28:12  warning  'col' is defined but never used. Allowed unused args must match /^_/u      no-unused-vars
+  28:25  warning  'row' is defined but never used. Allowed unused args must match /^_/u      no-unused-vars
+  28:38  warning  'colSpan' is defined but never used. Allowed unused args must match /^_/u  no-unused-vars
+  28:55  warning  'rowSpan' is defined but never used. Allowed unused args must match /^_/u  no-unused-vars
+
+/Users/trentbrew/TURTLE/Projects/Packages/trellis-client/apps/web/app/composables/useImageUpload.ts
+  44:12  warning  'buildStoragePath' is defined but never used. Allowed unused vars must match /^_/u  no-unused-vars
+  44:12  warning  'buildStoragePath' is defined but never used. Allowed unused vars must match /^_/u  @typescript-eslint/no-unused-vars
+
+/Users/trentbrew/TURTLE/Projects/Packages/trellis-client/apps/web/app/composables/useKeyboardShortcuts.ts
+  124:40  error  void is not valid as a constituent in a union type  @typescript-eslint/no-invalid-void-type
+
+/Users/trentbrew/TURTLE/Projects/Packages/trellis-client/apps/web/app/composables/useOntologyRegistry.ts
+  24:8  warning  'OntologySchemaField' is defined but never used. Allowed unused vars must match /^_/u  no-unused-vars
+  24:8  warning  'OntologySchemaField' is defined but never used. Allowed unused vars must match /^_/u  @typescript-eslint/no-unused-vars
+
+/Users/trentbrew/TURTLE/Projects/Packages/trellis-client/apps/web/app/composables/useScrollspy.ts
+  25:15  warning  'id' is defined but never used. Allowed unused args must match /^_/u  no-unused-vars
+
+/Users/trentbrew/TURTLE/Projects/Packages/trellis-client/apps/web/app/composables/useSheetClipboard.ts
+  12:18  warning  'entityId' is defined but never used. Allowed unused args must match /^_/u   no-unused-vars
+  12:36  warning  'column' is defined but never used. Allowed unused args must match /^_/u     no-unused-vars
+  12:57  warning  'rowIndex' is defined but never used. Allowed unused args must match /^_/u   no-unused-vars
+  35:16  warning  'entityId' is defined but never used. Allowed unused args must match /^_/u   no-unused-vars
+  35:34  warning  'attribute' is defined but never used. Allowed unused args must match /^_/u  no-unused-vars
+  35:53  warning  'value' is defined but never used. Allowed unused args must match /^_/u      no-unused-vars
+
+/Users/trentbrew/TURTLE/Projects/Packages/trellis-client/apps/web/app/composables/useSheetFill.ts
+  12:18  warning  'entityId' is defined but never used. Allowed unused args must match /^_/u   no-unused-vars
+  12:36  warning  'column' is defined but never used. Allowed unused args must match /^_/u     no-unused-vars
+  12:57  warning  'rowIndex' is defined but never used. Allowed unused args must match /^_/u   no-unused-vars
+  13:16  warning  'entityId' is defined but never used. Allowed unused args must match /^_/u   no-unused-vars
+  13:34  warning  'attribute' is defined but never used. Allowed unused args must match /^_/u  no-unused-vars
+  13:53  warning  'value' is defined but never used. Allowed unused args must match /^_/u      no-unused-vars
+  39:18  warning  'entityId' is defined but never used. Allowed unused args must match /^_/u   no-unused-vars
+  39:36  warning  'column' is defined but never used. Allowed unused args must match /^_/u     no-unused-vars
+  39:57  warning  'rowIndex' is defined but never used. Allowed unused args must match /^_/u   no-unused-vars
+  40:16  warning  'entityId' is defined but never used. Allowed unused args must match /^_/u   no-unused-vars
+  40:34  warning  'attribute' is defined but never used. Allowed unused args must match /^_/u  no-unused-vars
+  40:53  warning  'value' is defined but never used. Allowed unused args must match /^_/u      no-unused-vars
+
+/Users/trentbrew/TURTLE/Projects/Packages/trellis-client/apps/web/app/composables/useSlideThumbReorder.ts
+  7:15  warning  'ids' is defined but never used. Allowed unused args must match /^_/u    no-unused-vars
+  8:19  warning  'index' is defined but never used. Allowed unused args must match /^_/u  no-unused-vars
+
+/Users/trentbrew/TURTLE/Projects/Packages/trellis-client/apps/web/app/composables/useSystemStats.ts
+  18:80  warning  'cmd' is defined but never used. Allowed unused args must match /^_/u  no-unused-vars
+
+/Users/trentbrew/TURTLE/Projects/Packages/trellis-client/apps/web/app/composables/useTrellisNotifications.ts
+  33:5  error  '_audioCache' is never reassigned. Use 'const' instead  prefer-const
+
+/Users/trentbrew/TURTLE/Projects/Packages/trellis-client/apps/web/app/composables/useWeather.ts
+  10:7  warning  'WMO_ICONS' is assigned a value but never used. Allowed unused vars must match /^_/u  no-unused-vars
+  10:7  warning  'WMO_ICONS' is assigned a value but never used. Allowed unused vars must match /^_/u  @typescript-eslint/no-unused-vars
+
+/Users/trentbrew/TURTLE/Projects/Packages/trellis-client/apps/web/app/lib/app-config-live/sse-teardown.test.ts
+  3:1  error  All imports in the declaration are only used as types. Use `import type`  @typescript-eslint/consistent-type-imports
+
+/Users/trentbrew/TURTLE/Projects/Packages/trellis-client/apps/web/app/lib/bootstrapDefaultWorkspace.ts
+   5:3   warning  'entityType' is defined but never used. Allowed unused args must match /^_/u  no-unused-vars
+   6:3   warning  'entityId' is defined but never used. Allowed unused args must match /^_/u    no-unused-vars
+   7:3   warning  'key' is defined but never used. Allowed unused args must match /^_/u         no-unused-vars
+   8:3   warning  'value' is defined but never used. Allowed unused args must match /^_/u       no-unused-vars
+  27:12  warning  'args' is defined but never used. Allowed unused args must match /^_/u        no-unused-vars
+
+/Users/trentbrew/TURTLE/Projects/Packages/trellis-client/apps/web/app/lib/callout-extension.ts
+  23:23  warning  'attrs' is defined but never used. Allowed unused args must match /^_/u  no-unused-vars
+
+/Users/trentbrew/TURTLE/Projects/Packages/trellis-client/apps/web/app/lib/detailSchema.ts
+  301:15  warning  'item' is defined but never used. Allowed unused args must match /^_/u  no-unused-vars
+  301:26  warning  'mode' is defined but never used. Allowed unused args must match /^_/u  no-unused-vars
+  302:17  warning  'item' is defined but never used. Allowed unused args must match /^_/u  no-unused-vars
+
+/Users/trentbrew/TURTLE/Projects/Packages/trellis-client/apps/web/app/lib/ontology-form-spec.ts
+  19:14  warning  'value' is defined but never used. Allowed unused args must match /^_/u    no-unused-vars
+  83:76  warning  'value' is defined but never used. Allowed unused args must match /^_/u    no-unused-vars
+  97:9   warning  Unused eslint-disable directive (no problems were reported from 'no-new')
+
+/Users/trentbrew/TURTLE/Projects/Packages/trellis-client/apps/web/app/lib/presence/zone-presence.test.ts
+  10:16  warning  'event' is defined but never used. Allowed unused args must match /^_/u  no-unused-vars
+  11:32  warning  'event' is defined but never used. Allowed unused args must match /^_/u  no-unused-vars
+  21:48  warning  'event' is defined but never used. Allowed unused args must match /^_/u  no-unused-vars
+
+/Users/trentbrew/TURTLE/Projects/Packages/trellis-client/apps/web/app/lib/sheet-a1.test.ts
+  5:3  warning  'columnLetterToIndex' is defined but never used. Allowed unused vars must match /^_/u  no-unused-vars
+  5:3  warning  'columnLetterToIndex' is defined but never used. Allowed unused vars must match /^_/u  @typescript-eslint/no-unused-vars
+
+/Users/trentbrew/TURTLE/Projects/Packages/trellis-client/apps/web/app/lib/sheet-range-extension.ts
+  62:54  warning  'c' is defined but never used. Allowed unused args must match /^_/u  no-unused-vars
+
+/Users/trentbrew/TURTLE/Projects/Packages/trellis-client/apps/web/app/lib/slash-command-extension.ts
+  257:20  warning  'editor' is defined but never used. Allowed unused args must match /^_/u  no-unused-vars
+  258:19  warning  'editor' is defined but never used. Allowed unused args must match /^_/u  no-unused-vars
+  259:21  warning  'editor' is defined but never used. Allowed unused args must match /^_/u  no-unused-vars
+  260:19  warning  'editor' is defined but never used. Allowed unused args must match /^_/u  no-unused-vars
+  261:17  warning  'editor' is defined but never used. Allowed unused args must match /^_/u  no-unused-vars
+  262:22  warning  'editor' is defined but never used. Allowed unused args must match /^_/u  no-unused-vars
+  263:21  warning  'editor' is defined but never used. Allowed unused args must match /^_/u  no-unused-vars
+  264:21  warning  'editor' is defined but never used. Allowed unused args must match /^_/u  no-unused-vars
+  265:24  warning  'editor' is defined but never used. Allowed unused args must match /^_/u  no-unused-vars
+
+/Users/trentbrew/TURTLE/Projects/Packages/trellis-client/apps/web/app/lib/table/table-handle-plugin.ts
+   68:18  warning  'state' is defined but never used. Allowed unused args must match /^_/u  no-unused-vars
+  479:16  warning  'state' is defined but never used. Allowed unused args must match /^_/u  no-unused-vars
+
+/Users/trentbrew/TURTLE/Projects/Packages/trellis-client/apps/web/app/lib/table/utils.ts
+  482:29  warning  'attrs' is defined but never used. Allowed unused args must match /^_/u    no-unused-vars
+  483:29  warning  'name' is defined but never used. Allowed unused args must match /^_/u     no-unused-vars
+  483:43  warning  'value' is defined but never used. Allowed unused args must match /^_/u    no-unused-vars
+  582:15  warning  'tr' is defined but never used. Allowed unused args must match /^_/u       no-unused-vars
+  699:3   warning  'options' is defined but never used. Allowed unused args must match /^_/u  no-unused-vars
+  699:3   warning  'options' is defined but never used. Allowed unused args must match /^_/u  @typescript-eslint/no-unused-vars
+
+/Users/trentbrew/TURTLE/Projects/Packages/trellis-client/apps/web/app/lib/trellis-kernel-bridge/http-proxy.ts
+  8:12  warning  'method' is defined but never used. Allowed unused args must match /^_/u  no-unused-vars
+  8:28  warning  'path' is defined but never used. Allowed unused args must match /^_/u    no-unused-vars
+  8:42  warning  'body' is defined but never used. Allowed unused args must match /^_/u    no-unused-vars
+
+/Users/trentbrew/TURTLE/Projects/Packages/trellis-client/apps/web/app/lib/trellis-kernel-bridge/sse-realtime.test.ts
+   8:31  warning  'event' is defined but never used. Allowed unused args must match /^_/u  no-unused-vars
+  11:47  warning  'event' is defined but never used. Allowed unused args must match /^_/u  no-unused-vars
+
+/Users/trentbrew/TURTLE/Projects/Packages/trellis-client/apps/web/app/lib/trellis-projection-registry/browse-view-mode.ts
+  2:1  error  TypeScript will only remove the inline type specifiers which will leave behind a side effect import at runtime. Convert this to a top-level type qualifier to properly remove the entire import  @typescript-eslint/no-import-type-side-effects
+
+/Users/trentbrew/TURTLE/Projects/Packages/trellis-client/apps/web/app/lib/trellis-sidecar/http-proxy.ts
+  8:12  warning  'method' is defined but never used. Allowed unused args must match /^_/u  no-unused-vars
+  8:28  warning  'path' is defined but never used. Allowed unused args must match /^_/u    no-unused-vars
+  8:42  warning  'body' is defined but never used. Allowed unused args must match /^_/u    no-unused-vars
+
+/Users/trentbrew/TURTLE/Projects/Packages/trellis-client/apps/web/app/lib/trellis-sidecar/offline-realtime.ts
+   22:5   warning  'eql' is defined but never used. Allowed unused args must match /^_/u       no-unused-vars
+   23:5   warning  'callback' is defined but never used. Allowed unused args must match /^_/u  no-unused-vars
+   24:5   warning  'opts' is defined but never used. Allowed unused args must match /^_/u      no-unused-vars
+  105:49  warning  'this' is defined but never used. Allowed unused args must match /^_/u      no-unused-vars
+
+/Users/trentbrew/TURTLE/Projects/Packages/trellis-client/apps/web/app/lib/trellis/migrations.ts
+  7:13  warning  'data' is defined but never used. Allowed unused args must match /^_/u  no-unused-vars
+
+/Users/trentbrew/TURTLE/Projects/Packages/trellis-client/apps/web/app/lib/trellis/validate.ts
+  17:12  warning  'issues' is defined but never used. Allowed unused args must match /^_/u  no-unused-vars
+
+/Users/trentbrew/TURTLE/Projects/Packages/trellis-client/apps/web/app/pages/activity.vue
+  76:1  error  '<script setup lang=ts>' should be above '<template>' on line 1  vue/block-order
+
+/Users/trentbrew/TURTLE/Projects/Packages/trellis-client/apps/web/app/pages/graph/visualization.vue
+   141:13  error    Empty block statement                                                 no-empty
+   322:22  warning  'id' is defined but never used. Allowed unused args must match /^_/u  no-unused-vars
+   467:13  error    Empty block statement                                                 no-empty
+   801:17  error    Empty block statement                                                 no-empty
+   809:17  error    Empty block statement                                                 no-empty
+  1351:13  warning  Attribute "class" should go before "@click"                           vue/attributes-order
+  1352:13  warning  Attribute ":class" should go before "@click"                          vue/attributes-order
+  1361:13  warning  Attribute "class" should go before "@click"                           vue/attributes-order
+  1362:13  warning  Attribute ":class" should go before "@click"                          vue/attributes-order
+
+/Users/trentbrew/TURTLE/Projects/Packages/trellis-client/apps/web/app/pages/index.vue
+  10:9  warning  'heroGridCells' is assigned a value but never used. Allowed unused vars must match /^_/u  no-unused-vars
+  10:9  warning  'heroGridCells' is assigned a value but never used. Allowed unused vars must match /^_/u  @typescript-eslint/no-unused-vars
+  32:9  warning  'heroDemos' is assigned a value but never used. Allowed unused vars must match /^_/u      no-unused-vars
+  32:9  warning  'heroDemos' is assigned a value but never used. Allowed unused vars must match /^_/u      @typescript-eslint/no-unused-vars
+
+/Users/trentbrew/TURTLE/Projects/Packages/trellis-client/apps/web/app/pages/pages/[id].vue
+  242:40  warning  'm' is defined but never used. Allowed unused args must match /^_/u  no-unused-vars
+  261:40  warning  'm' is defined but never used. Allowed unused args must match /^_/u  no-unused-vars
+  285:43  warning  'm' is defined but never used. Allowed unused args must match /^_/u  no-unused-vars
+
+/Users/trentbrew/TURTLE/Projects/Packages/trellis-client/apps/web/app/pages/playground/sheet-range.vue
+  15:49  warning  'v' is defined but never used. Allowed unused args must match /^_/u  no-unused-vars
+
+/Users/trentbrew/TURTLE/Projects/Packages/trellis-client/apps/web/app/pages/workspace/browse/index.vue
+  338:9   warning  Expected a linebreak before this attribute    vue/first-attribute-linebreak
+  344:45  warning  Attribute "v-if" should go before "class"     vue/attributes-order
+  363:31  warning  Expected a linebreak before this attribute    vue/first-attribute-linebreak
+  438:23  warning  Expected a linebreak before this attribute    vue/first-attribute-linebreak
+  445:23  warning  Expected a linebreak before this attribute    vue/first-attribute-linebreak
+  451:12  warning  Expected a linebreak before this attribute    vue/first-attribute-linebreak
+  459:22  error    Unexpected useless directive on `<template>`  vue/no-useless-template-attributes
+  465:21  warning  Expected a linebreak before this attribute    vue/first-attribute-linebreak
+  468:14  warning  Expected a linebreak before this attribute    vue/first-attribute-linebreak
+  472:21  warning  Expected a linebreak before this attribute    vue/first-attribute-linebreak
+  482:21  warning  Expected a linebreak before this attribute    vue/first-attribute-linebreak
+  492:21  warning  Expected a linebreak before this attribute    vue/first-attribute-linebreak
+  495:14  warning  Expected a linebreak before this attribute    vue/first-attribute-linebreak
+  542:25  warning  Expected a linebreak before this attribute    vue/first-attribute-linebreak
+  546:19  warning  Expected a linebreak before this attribute    vue/first-attribute-linebreak
+
+/Users/trentbrew/TURTLE/Projects/Packages/trellis-client/apps/web/app/pages/workspace/today.vue
+  46:18  warning  'quickCapture' is defined but never used. Allowed unused vars must match /^_/u      no-unused-vars
+  46:18  warning  'quickCapture' is defined but never used. Allowed unused vars must match /^_/u      @typescript-eslint/no-unused-vars
+  54:12  warning  'captureTypeIcon' is defined but never used. Allowed unused vars must match /^_/u   no-unused-vars
+  54:12  warning  'captureTypeIcon' is defined but never used. Allowed unused vars must match /^_/u   @typescript-eslint/no-unused-vars
+  58:12  warning  'captureTypeLabel' is defined but never used. Allowed unused vars must match /^_/u  no-unused-vars
+  58:12  warning  'captureTypeLabel' is defined but never used. Allowed unused vars must match /^_/u  @typescript-eslint/no-unused-vars
+  94:18  warning  'handleNewItem' is defined but never used. Allowed unused vars must match /^_/u     no-unused-vars
+  94:18  warning  'handleNewItem' is defined but never used. Allowed unused vars must match /^_/u     @typescript-eslint/no-unused-vars
+
+/Users/trentbrew/TURTLE/Projects/Packages/trellis-client/apps/web/app/utils/sidebar.ts
+  37:13  warning  'value' is defined but never used. Allowed unused args must match /^_/u  no-unused-vars
+  40:19  warning  'value' is defined but never used. Allowed unused args must match /^_/u  no-unused-vars
+
+/Users/trentbrew/TURTLE/Projects/Packages/trellis-client/apps/web/server/lib/trellis-kernel-adapter/npm-sqlite-backend.ts
+  15:10  warning  'op' is defined but never used. Allowed unused args must match /^_/u            no-unused-vars
+  17:13  warning  'hash' is defined but never used. Allowed unused args must match /^_/u          no-unused-vars
+  18:13  warning  'hash' is defined but never used. Allowed unused args must match /^_/u          no-unused-vars
+  19:22  warning  'isoTimestamp' is defined but never used. Allowed unused args must match /^_/u  no-unused-vars
+  22:16  warning  'hash' is defined but never used. Allowed unused args must match /^_/u          no-unused-vars
+  23:16  warning  'lastOpHash' is defined but never used. Allowed unused args must match /^_/u    no-unused-vars
+  23:36  warning  'data' is defined but never used. Allowed unused args must match /^_/u          no-unused-vars
+  46:32  warning  'inner' is defined but never used. Allowed unused args must match /^_/u         no-unused-vars
+
+/Users/trentbrew/TURTLE/Projects/Packages/trellis-client/apps/web/server/utils/fileEnrichment.test.ts
+  15:32  warning  'vi' is defined but never used. Allowed unused vars must match /^_/u          no-unused-vars
+  15:32  warning  'vi' is defined but never used. Allowed unused vars must match /^_/u          @typescript-eslint/no-unused-vars
+  15:36  warning  'beforeEach' is defined but never used. Allowed unused vars must match /^_/u  no-unused-vars
+  15:36  warning  'beforeEach' is defined but never used. Allowed unused vars must match /^_/u  @typescript-eslint/no-unused-vars
+
+/Users/trentbrew/TURTLE/Projects/Packages/trellis-client/apps/web/server/utils/localStorageRoutes.test.ts
+  17:32  warning  'beforeEach' is defined but never used. Allowed unused vars must match /^_/u  no-unused-vars
+  17:32  warning  'beforeEach' is defined but never used. Allowed unused vars must match /^_/u  @typescript-eslint/no-unused-vars
+  17:44  warning  'afterEach' is defined but never used. Allowed unused vars must match /^_/u   no-unused-vars
+  17:44  warning  'afterEach' is defined but never used. Allowed unused vars must match /^_/u   @typescript-eslint/no-unused-vars
+  17:55  warning  'vi' is defined but never used. Allowed unused vars must match /^_/u          no-unused-vars
+  17:55  warning  'vi' is defined but never used. Allowed unused vars must match /^_/u          @typescript-eslint/no-unused-vars
+
+/Users/trentbrew/TURTLE/Projects/Packages/trellis-client/apps/web/tests/e2e/quick-capture-voice.spec.ts
+   9:28  warning  'e' is defined but never used. Allowed unused args must match /^_/u  no-unused-vars
+  12:9   error    Useless constructor                                                  @typescript-eslint/no-useless-constructor
+  31:61  warning  't' is defined but never used. Allowed unused args must match /^_/u  no-unused-vars
+
+/Users/trentbrew/TURTLE/Projects/Packages/trellis-client/apps/web/tests/e2e/sheet-range-block.spec.ts
+  29:49  warning  'v' is defined but never used. Allowed unused args must match /^_/u  no-unused-vars
+
+✖ 506 problems (25 errors, 481 warnings)
+  8 errors and 26 warnings potentially fixable with the `--fix` option.
+
+ ELIFECYCLE  Command failed with exit code 1.

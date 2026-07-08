@@ -1,12 +1,5 @@
 import imageCompression from 'browser-image-compression'
-
-export interface UploadResult {
-  url: string
-  path: string
-  filename: string
-  contentType: string
-  size: number
-}
+import type { UploadResult } from '~/types/upload'
 
 /**
  * Composable for uploading images to storage (local filesystem or base64 fallback).

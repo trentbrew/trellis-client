@@ -45,20 +45,43 @@ type MutatePayload =
 
 const API_BASE = '/api/graph'
 
+function isKernelStartingError(err: unknown): boolean {
+  const status = (err as { statusCode?: number; response?: { status?: number } })?.statusCode
+    ?? (err as { response?: { status?: number } })?.response?.status
+  if (status === 503) return true
+  const message = err instanceof Error ? err.message : String(err)
+  return message.includes('503') || message.includes('TQL kernel not initialized')
+}
+
 async function graphFetch<T>(
   path: string,
   opts?: { method?: string; body?: Record<string, any>; headers?: Record<string, string> },
+  attempt = 0,
 ): Promise<T> {
-  const res = await $fetch<T>(`${API_BASE}/${path}`, {
-    method: (opts?.method as any) || 'GET',
-    body: opts?.body,
-    headers: opts?.headers,
-  })
-  return res as T
+  try {
+    const res = await $fetch<T>(`${API_BASE}/${path}`, {
+      method: (opts?.method as any) || 'GET',
+      body: opts?.body,
+      headers: opts?.headers,
+    })
+    return res as T
+  } catch (err) {
+    // Kernel plugin seeds after boot — brief 503 window on HMR/cold start.
+    if (attempt < 4 && isKernelStartingError(err)) {
+      await new Promise((resolve) => setTimeout(resolve, 250 * (attempt + 1)))
+      return graphFetch<T>(path, opts, attempt + 1)
+    }
+    throw err
+  }
 }
 
 // Version counter — bumped on every mutation so reactive queries re-fetch
 const _graphVersion = ref(0)
+
+/** Force reactive queries to re-fetch (e.g. after insertRow before SSE round-trip). */
+export function bumpGraphVersion() {
+  _graphVersion.value++
+}
 
 // ── SSE connection (centralized, singleton) ─────────────────────────────
 let _sseInitialized = false
@@ -131,7 +154,7 @@ export function useTrellisGraph() {
     // Watch both query string and graph version for reactivity
     watch([eqlsValue, _graphVersion], () => fetchData(), { immediate: true })
 
-    return { data, loading, error }
+    return { data, loading, error, refresh: fetchData }
   }
 
   /**
@@ -180,7 +203,7 @@ export function useTrellisGraph() {
    * Fetch a single node by entity ID.
    */
   async function fetchNode(entityId: string): Promise<GraphNodeResult> {
-    return graphFetch<GraphNodeResult>(`node/${entityId}`)
+    return graphFetch<GraphNodeResult>(`node/${encodeURIComponent(entityId)}`)
   }
 
   /**

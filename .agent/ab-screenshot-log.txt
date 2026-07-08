@@ -1,0 +1,427 @@
+⚠ invalid config file agent-browser.json: invalid type: string "localhost,127.0.0.1", expected a sequence at line 3 column 41
+✓ Screenshot saved to /Users/trentbrew/TURTLE/Projects/Packages/trellis-client/.agent/ab-campus-dock.png
+   [2] @e2 main "Main content"
+   [3] @e3 navigation "Navigation rail"
+   [4] @e4 navigation "Facility sky"
+   [5] @e5 link
+   [6] @e6 link
+   [7] @e7 link "Collections"
+   [8] @e8 link
+   [9] @e9 link
+   [10] @e10 link
+   [11] @e11 link
+   [12] @e12 link
+   [13] @e13 link
+   [14] @e14 link
+   [15] @e15 link
+   [16] @e16 link
+   [17] @e17 button "Data mode: Local"
+   [18] @e18 button "Lobby notifications, 3 action required"
+   [19] @e19 button "Resident menu"
+   [20] @e20 button "Quick create"
+   [21] @e21 button "Quick capture"
+   [22] @e22 navigation "breadcrumb"
+   [23] @e23 button "Facility vitals: 2382 entities"
+   [24] @e24 button "Current time: Mon · Jul 6, 6:04 AM"
+   [25] @e25 button "Go anywhere (Omnibox)"
+   [26] @e26 generic
+   [27] @e27 generic
+   [28] @e28 generic
+   [29] @e29 generic
+   [30] @e30 generic
+   [31] @e31 generic
+   [32] @e32 generic
+   [33] @e33 generic
+   [34] @e34 generic
+   [35] @e35 generic
+   [36] @e36 generic
+   [37] @e37 generic
+   [38] @e38 generic
+   [39] @e39 generic
+   [40] @e40 generic
+   [41] @e41 generic
+   [42] @e42 generic
+   [43] @e43 generic
+   [44] @e44 generic
+   [45] @e45 generic
+   [46] @e46 generic
+   [47] @e47 generic
+   [48] @e48 generic
+   [49] @e49 generic
+   [50] @e50 generic
+   [51] @e51 generic
+   [52] @e52 generic
+   [53] @e53 generic
+   [54] @e54 generic
+   [55] @e55 generic
+   [56] @e56 generic
+   [57] @e57 generic
+   [58] @e58 generic
+   [59] @e59 generic
+   [60] @e60 generic
+   [61] @e61 generic
+   [62] @e62 generic
+   [63] @e63 generic
+   [64] @e64 generic
+   [65] @e65 generic
+   [66] @e66 generic
+   [67] @e67 generic
+   [68] @e68 generic
+   [69] @e69 generic
+   [70] @e70 generic
+   [71] @e71 generic
+   [72] @e72 generic
+   [73] @e73 generic
+   [74] @e74 button "Zone: Lab. Choose a room."
+   [75] @e75 button "Collapse sidebar"
+   [76] @e76 button "Grid view"
+   [77] @e77 button "Table view"
+   [78] @e78 link "View schema"
+   [79] @e79 button "Properties"
+   [80] @e80 button "Last Updated"
+   [81] @e81 button "New Note"
+   [82] @e82 button
+   [83] @e83 heading "Phase 1.3 memory-write"
+   [84] @e84 button
+   [85] @e85 heading "Phase 1.3 memory-write"
+   [86] @e86 button
+   [87] @e87 heading "Quick Note — Apr 22, 1:46 PM"
+   [88] @e88 button
+   [89] @e89 heading "4"
+   [90] @e90 button
+   [91] @e91 heading "Tool test note"
+   [92] @e92 button
+   [93] @e93 heading "Tool test note"
+   [94] @e94 button
+   [95] @e95 heading "Untitled"
+   [96] @e96 button
+   [97] @e97 heading "Untitled"
+   [98] @e98 button
+   [99] @e99 heading "Untitled"
+   [100] @e100 button
+   [101] @e101 heading "From Idea to Capital: Navigating Pre-seed Fundraising"
+   [102] @e102 button
+   [103] @e103 heading "Untitled"
+   [104] @e104 button
+   [105] @e105 heading "From Idea to Capital: Navigating Pre-seed Fundraising"
+   [106] @e106 button
+   [107] @e107 heading "/Users/trentbrew/TURTLE/Projects/Pa"
+   [108] @e108 button
+   [109] @e109 heading "Build Bronzeville"
+   [110] @e110 button
+   [111] @e111 heading "Quick Note — Apr 22, 1:37 PM"
+   [112] @e112 button
+   [113] @e113 heading "Untitled"
+   [114] @e114 button
+   [115] @e115 heading "Tool test note from workflow"
+   [116] @e116 button
+   [117] @e117 heading "Quick Note — Apr 14, 10:42 PM"
+   [118] @e118 button
+   [119] @e119 heading "IPFS Test Note v2"
+   [120] @e120 button
+   [121] @e121 heading "Tool test note from workflow"
+   [122] @e122 button
+   [123] @e123 heading "Untitled"
+   [124] @e124 button
+   [125] @e125 heading "Untitled"
+   [126] @e126 button
+   [127] @e127 heading "IPFS and Decentralized Protocols"
+   [128] @e128 button
+   [129] @e129 heading "Trellis Platform Dist"
+   [130] @e130 button
+   [131] @e131 heading "Year View: Quarter-Column Layout"
+   [132] @e132 button
+   [133] @e133 heading "entity:e3dca0df-4132-4d44-9ba3-9fb5cd2fea7e"
+   [134] @e134 button
+   [135] @e135 heading "The Architecture of Attention: What Industrial Disasters Teach Us About Interface Design"
+   [136] @e136 button
+   [137] @e137 heading "Document Chrome E2E Note"
+   [138] @e138 button
+   [139] @e139 heading "Document Chrome E2E Note"
+   [140] @e140 button
+   [141] @e141 heading "Quick Note — Apr 18, 8:23 AM"
+   [142] @e142 button
+   [143] @e143 heading "Quick Note — Apr 22, 1:37 PM"
+   [144] @e144 button
+   [145] @e145 heading "WU-REMOTE-MCP-000: Expose the Trellis graph to Claude web & ChatGPT"
+   [146] @e146 button
+   [147] @e147 heading "Thoughts on @/Users/trentbrew/TURTLE/Projects/Packages/skills"
+   [148] @e148 button
+   [149] @e149 heading "Document Chrome E2E Note"
+   [150] @e150 button
+   [151] @e151 heading "Untitled"
+   [152] @e152 button
+   [153] @e153 heading "Document Chrome E2E Note"
+   [154] @e154 button
+   [155] @e155 heading "Probe"
+   [156] @e156 button
+   [157] @e157 heading "Document Chrome E2E Note"
+   [158] @e158 button
+   [159] @e159 heading "Document Chrome E2E Note"
+   [160] @e160 button
+   [161] @e161 heading "Document Chrome E2E Note"
+   [162] @e162 button
+   [163] @e163 heading "Document Chrome E2E Note"
+   [164] @e164 button
+   [165] @e165 heading "Document Chrome E2E Note"
+   [166] @e166 button
+   [167] @e167 heading "Document Chrome E2E Note"
+   [168] @e168 button
+   [169] @e169 heading "Document Chrome E2E Note"
+   [170] @e170 button
+   [171] @e171 heading "Document Chrome E2E Note"
+   [172] @e172 button
+   [173] @e173 heading "Document Chrome E2E Note"
+   [174] @e174 button
+   [175] @e175 heading "Document Chrome E2E Note"
+   [176] @e176 button
+   [177] @e177 heading "Document Chrome E2E Note"
+   [178] @e178 textbox "Search..."
+   [179] @e179 button "Add page"
+   [180] @e180 heading "Notes"
+   [181] @e181 textbox "Search everything..."
+   [182] @e182 button "View schema"
+   [183] @e183 button "Fewer columns"
+   [184] @e184 button "More columns"
+   [185] @e185 heading "General"
+   [186] @e186 heading "Research Questions"
+   [187] @e187 heading "The thesis in one line"
+   [188] @e188 heading "Implication 1: Respect compression → your hybrid is the hedge"
+   [189] @e189 heading "Implication 2: Optionality → commitment is the product problem"
+   [190] @e190 heading "Implication 3: Middle class dies → Trellis should be aggregator or protocol, not mid-tier SaaS"
+   [191] @e191 heading "Implication 4: Sell services/outcomes → Raster is the proof, Trellis is the bet"
+   [192] @e192 heading "What I’d take seriously (and what I’d push back on)"
+   [193] @e193 heading "One sentence for you"
+   [194] @e194 heading "Distribution: `npx trellis web` shape"
+   [195] @e195 heading "Coupling: how tight is core in client?"
+   [196] @e196 heading "Obsidian vs PocketBase framing"
+   [197] @e197 heading "Concrete next moves"
+   [198] @e198 heading "Findings"
+   [199] @e199 heading "Changes (single file: `CalendarView.vue`)"
+   [200] @e200 heading "1. Type + Tab — remove `quarter`"
+   [201] @e201 heading "2. Add `yearQuarters` computed"
+   [202] @e202 heading "3. Redesign Year View template"
+   [203] @e203 heading "What stays the same"
+   [204] @e204 heading "Scope"
+   [205] @e205 heading "Introduction"
+   [206] @e206 heading "The Birth of Alarm Discipline: EEMUA 191"
+   [207] @e207 heading "A Vocabulary of System Failure"
+   [208] @e208 heading "Historical Precedents and the \"Missing Middle\""
+   [209] @e209 heading "The Computer Science Perspective: Attention as a Budget"
+   [210] @e210 heading "The Rise of Calm Technology vs. The Smartphone Duopoly"
+   [211] @e211 heading "Retrospective Remediations and Structural Obstacles"
+   [212] @e212 heading "Conclusion: Toward an Alarm Philosophy"
+   [213] @e213 heading "1. Goal"
+   [214] @e214 heading "2. Topology"
+   [215] @e215 heading "3. Connector flow"
+   [216] @e216 heading "4. Decisions requiring sign-off"
+   [217] @e217 heading "5. Milestones"
+   [218] @e218 heading "M0 — Deploy + smoke (½ day)"
+   [219] @e219 heading "M1 — Connect both heads, read-only (½–1 day)"
+   [220] @e220 heading "M2 — Curated publish + attributed writes (1–2 days)"
+   [221] @e221 heading "M3 — deferred; tracked by ADR-002 P3, not this WU."
+   [222] @e222 heading "6. Security posture"
+   [223] @e223 heading "7. Risks"
+   [224] @e224 heading "8. Open questions (non-blocking)"
+   [225] @e225 heading "What's strong"
+   [226] @e226 heading "What overlaps with what you already have"
+   [227] @e227 heading "What's not useful for turtleOS"
+   [228] @e228 heading "The deeper observation"
+   [229] @e229 heading "Concrete recommendations"
+   [230] @e230 heading "Bottom line"
+   [231] @e231 button "All 1741"
+   [232] @e232 button "Unpin"
+   [233] @e233 button "Tasks 46"
+   [234] @e234 button "Pin"
+   [235] @e235 button "Events 257"
+   [236] @e236 button "Pin"
+   [237] @e237 button "Trips 2"
+   [238] @e238 button "Pin"
+   [239] @e239 button "Deadlines 3"
+   [240] @e240 button "Pin"
+   [241] @e241 button "Milestones 9"
+   [242] @e242 button "Pin"
+   [243] @e243 button "Budgets 1"
+   [244] @e244 button "Pin"
+   [245] @e245 button "Notes 58"
+   [246] @e246 button "Pin"
+   [247] @e247 button "Files 12"
+   [248] @e248 button "Pin"
+   [249] @e249 button "Pages 26"
+   [250] @e250 button "Pin"
+   [251] @e251 button "Slide Decks 1"
+   [252] @e252 button "Pin"
+   [253] @e253 button "Sheets 1"
+   [254] @e254 button "Pin"
+   [255] @e255 button "Bookmarks 18"
+   [256] @e256 button "Pin"
+   [257] @e257 button "Emails 826"
+   [258] @e258 button "Pin"
+   [259] @e259 button "People 136"
+   [260] @e260 button "Pin"
+   [261] @e261 button "Organizations 15"
+   [262] @e262 button "Pin"
+   [263] @e263 button "Projects 4"
+   [264] @e264 button "Pin"
+   [265] @e265 button "Goals 1"
+   [266] @e266 button "Pin"
+   [267] @e267 button "Owner"
+   [268] @e268 button "General"
+   [269] @e269 button "Owner"
+   [270] @e270 button "General"
+   [271] @e271 button "Owner"
+   [272] @e272 button "General"
+   [273] @e273 button "Owner"
+   [274] @e274 button "General"
+   [275] @e275 link "Build Bronzeville"
+   [276] @e276 link "@Trent Brew"
+   [277] @e277 link "@Lawan"
+   [278] @e278 button "Owner"
+   [279] @e279 button "General"
+   [280] @e280 button "Owner"
+   [281] @e281 button "General"
+   [282] @e282 button "Owner"
+   [283] @e283 link "Tereza Tizkova’s “Software is becoming marketing”"
+   [284] @e284 link "Raster.tv"
+   [285] @e285 link "VISION.md"
+   [286] @e286 button "Owner"
+   [287] @e287 button "General"
+   [288] @e288 button "Owner"
+   [289] @e289 button "General"
+   [290] @e290 checkbox
+   [291] @e291 checkbox
+   [292] @e292 checkbox
+   [293] @e293 checkbox
+   [294] @e294 columnheader "Commitment lever"
+   [295] @e295 columnheader "Trellis expression"
+   [296] @e296 cell "Data gravity"
+   [297] @e297 cell "Local op-log, `.trellis` config, years of entities"
+   [298] @e298 cell "Switching cost that feels virtuous"
+   [299] @e299 cell "Not lock-in — portability with depth (JSON-LD export, semantic links)"
+   [300] @e300 cell "Identity layer"
+   [301] @e301 cell "Campus, zones, agent lanes — “where work lives”"
+   [302] @e302 cell "Network of heads"
+   [303] @e303 cell "Remote MCP: claude.ai, ChatGPT, local Claude Code all on one room graph"
+   [304] @e304 columnheader "Layer"
+   [305] @e305 columnheader "Coupling"
+   [306] @e306 columnheader "Notes"
+   [307] @e307 cell "TQL kernel"
+   [308] @e308 cell "loose"
+   [309] @e309 cell "Clean package, runs anywhere Node/Bun runs"
+   [310] @e310 cell "Nitro server routes"
+   [311] @e311 cell "tight"
+   [312] @e312 cell "`useTqlKernel` plugin boots kernel in-Nitro-process. Mixed w/ auth + OAuth + Resend"
+   [313] @e313 cell "Vue frontend"
+   [314] @e314 cell "loose"
+   [315] @e315 cell "Talks to `/api/graph/*` REST + SSE. Doesn't import kernel. Already a generic graph client"
+   [316] @e316 columnheader "Trait"
+   [317] @e317 columnheader "Obsidian"
+   [318] @e318 columnheader "PocketBase"
+   [319] @e319 columnheader "Trellis today"
+   [320] @e320 cell "Truth source"
+   [321] @e321 cell "filesystem (.md)"
+   [322] @e322 cell "embedded SQLite"
+   [323] @e323 cell "EAV graph (JSONL/SQLite)"
+   [324] @e324 cell "Server"
+   [325] @e325 cell "none"
+   [326] @e326 cell "one binary"
+   [327] @e327 cell "Nitro server"
+   [328] @e328 cell "External agents"
+   [329] @e329 cell "plugin-only"
+   [330] @e330 cell "first-class via REST"
+   [331] @e331 cell "first-class via MCP+REST"
+   [332] @e332 cell "Multi-client"
+   [333] @e333 cell "no"
+   [334] @e334 cell "yes (SDKs)"
+   [335] @e335 cell "yes (CLI+MCP+web)"
+   [336] @e336 cell "Federation story"
+   [337] @e337 cell "weak"
+   [338] @e338 cell "possible"
+   [339] @e339 cell "core thesis (PLATFORM.md)"
+   [340] @e340 columnheader "Interruption Modality"
+   [341] @e341 columnheader "Operational Behavior"
+   [342] @e342 cell "Immediate"
+   [343] @e343 cell "Interrupts the user instantly, demanding immediate attention."
+   [344] @e344 cell "Negotiated"
+   [345] @e345 cell "Announces the existence of an alert but allows the user to choose when to engage."
+   [346] @e346 cell "Mediated"
+   [347] @e347 cell "Routes the alert through an automated agent that determines its relevance."
+   [348] @e348 cell "Scheduled"
+   [349] @e349 cell "Delays alerts and delivers them in accumulated batches at designated intervals."
+   [350] @e350 columnheader "#"
+   [351] @e351 columnheader "Decision"
+   [352] @e352 columnheader "Recommendation"
+   [353] @e353 columnheader "Rationale"
+   [354] @e354 cell "D1"
+   [355] @e355 cell "Dedicated room vs reuse existing sprite"
+   [356] @e356 cell "Dedicated room (working name: `campus-commons`)"
+   [357] @e357 cell "Blast radius: connector keys, experiments, and demo data stay isolated from playground/threlte rooms; key rotation doesn't break other heads"
+   [358] @e358 cell "D2"
+   [359] @e359 cell "Auth mode per client"
+   [360] @e360 cell "claude.ai → OAuth (well-knowns exist for exactly this); ChatGPT → OAuth, bearer only if its connector UI fights us"
+   [361] @e361 cell "Never unauthenticated while write tools are exposed"
+   [362] @e362 cell "D3"
+   [363] @e363 cell "Data policy — what lives in the room"
+   [364] @e364 cell "Curated public slice only: artifacts, published pages/notes, public project info. Never mail, calendar, finance, contacts"
+   [365] @e365 cell "The room is the Showroom/Lobby made literal (CAMPUS.md); publicRead zones only. Personal graph stays on the laptop until P3"
+   [366] @e366 cell "D4"
+   [367] @e367 cell "Write policy"
+   [368] @e368 cell "M1 read-only (connector approval defaults deny writes); M2 enables writes with mandatory lane attribution (`agent:claude-web`, `agent:chatgpt`) and zone stamping"
+   [369] @e369 cell "Matches ADR-002 D8: agent output earns residence, attributed and auditable"
+   [370] @e370 cell "D5"
+   [371] @e371 cell "Seed shape"
+   [372] @e372 cell "Seed the Campus schema into the room (facility + lobby/showroom zones) before content"
+   [373] @e373 cell "Zone guard doctrine applies remotely; queries and grants use the same vocabulary as the local graph, so M2 publish is a copy, not a translation"
+   [374] @e374 columnheader "Risk"
+   [375] @e375 columnheader "Likelihood"
+   [376] @e376 columnheader "Mitigation"
+   [377] @e377 cell "ChatGPT connector UX friction (dev-mode gating, OAuth quirks)"
+   [378] @e378 cell "Medium"
+   [379] @e379 cell "Bearer fallback; worst case ChatGPT ships in read-only until its connector matures"
+   [380] @e380 cell "Room/local schema drift (ontology changes locally, room seeded once)"
+   [381] @e381 cell "Medium"
+   [382] @e382 cell "Publish script re-asserts schema on every run (idempotent ontology upsert)"
+   [383] @e383 cell "Scope creep toward \"sync everything\""
+   [384] @e384 cell "High (it's tempting)"
+   [385] @e385 cell "M3 is explicitly deferred to P3; publish script refuses entities outside allowed zones"
+   [386] @e386 cell "Sprite cold-start latency on first connector call"
+   [387] @e387 cell "Low"
+   [388] @e388 cell "Acceptable for M1/M2; revisit keep-warm only if it annoys in practice"
+   [389] @e389 link "Build Bronzeville"
+   [390] @e390 link "PLATFORM.md"
+   [391] @e391 link "PLATFORM.md"
+   [392] @e392 checkbox
+   [393] @e393 checkbox
+   [394] @e394 checkbox
+   [395] @e395 checkbox
+   [396] @e396 link "claude.ai"
+   [397] @e397 link "PLATFORM.md"
+   [398] @e398 link "The Forum"
+   [399] @e399 link "Boxville"
+   [400] @e400 link "The Forum Cafe"
+   [401] @e401 link "Engage Bronzeville"
+   [402] @e402 checkbox
+   [403] @e403 checkbox
+   [404] @e404 checkbox
+   [405] @e405 checkbox
+   [406] @e406 checkbox
+   [407] @e407 checkbox
+   [408] @e408 checkbox
+   [409] @e409 checkbox
+   [410] @e410 checkbox
+   [411] @e411 checkbox
+   [412] @e412 checkbox
+   [413] @e413 checkbox
+   [414] @e414 checkbox
+   [415] @e415 checkbox
+   [416] @e416 checkbox
+   [417] @e417 checkbox
+   [418] @e418 checkbox
+   [419] @e419 checkbox
+   [420] @e420 checkbox
+   [421] @e421 checkbox
+   [422] @e422 checkbox
+⚠ invalid config file agent-browser.json: invalid type: string "localhost,127.0.0.1", expected a sequence at line 3 column 41
+http://localhost:1414/workspace/browse?type=note&testAuthBypass=true
+⚠ invalid config file agent-browser.json: invalid type: string "localhost,127.0.0.1", expected a sequence at line 3 column 41
+✓ Browser closed

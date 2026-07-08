@@ -117,6 +117,9 @@
     @navigate-prev="emit('navigatePrev')"
     @navigate-next="emit('navigateNext')"
     @regenerate-summary="regenerateSummary">
+    <template v-if="!isCreateMode && hasSheetId" #header-actions>
+      <RightSidebarToggle v-model:collapsed="rightSidebarCollapsed" />
+    </template>
     <template #properties>
       <div
         v-if="hasSheetId"

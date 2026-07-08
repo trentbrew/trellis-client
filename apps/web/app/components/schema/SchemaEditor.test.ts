@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeEach } from 'vitest'
 import { mount } from '@vue/test-utils'
-import SchemaEditor from '~/components/data/DataTable/SchemaEditor.vue'
+import DataTableSchemaEditor from '~/components/data/DataTable/DataTableSchemaEditor.vue'
 import type { DatabaseSchema } from '~/types/database'
 
 describe('SchemaEditor', () => {
@@ -32,7 +32,7 @@ describe('SchemaEditor', () => {
       updatedAt: Date.now(),
     }
 
-    wrapper = mount(SchemaEditor, {
+    wrapper = mount(DataTableSchemaEditor, {
       props: {
         schema: mockSchema,
       },
@@ -73,7 +73,7 @@ describe('SchemaEditor', () => {
         order: 2,
       })
 
-      wrapper = mount(SchemaEditor, {
+      wrapper = mount(DataTableSchemaEditor, {
         props: {
           schema: mockSchema,
         },
@@ -197,7 +197,7 @@ describe('SchemaEditor', () => {
         fields: [],
       }
 
-      wrapper = mount(SchemaEditor, {
+      wrapper = mount(DataTableSchemaEditor, {
         props: {
           schema: emptySchema,
         },

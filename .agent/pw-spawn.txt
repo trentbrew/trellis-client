@@ -1,0 +1,37 @@
+
+Running 2 tests using 1 worker
+
+
+
+
+
+[1A[2K[1/2] [chromium] › tests/e2e/document-chrome.spec.ts:22:3 › Document chrome (document-chrome) › note dialog uses seamless title and properties summary
+[1A[2K  1) [chromium] › tests/e2e/document-chrome.spec.ts:22:3 › Document chrome (document-chrome) › note dialog uses seamless title and properties summary 
+
+    Error: Dialog for doc-chrome-note-1783341386883 did not open within 45000ms
+
+       at helpers/graph-entity.ts:107
+
+      105 |   }
+      106 |
+    > 107 |   throw new Error(`Dialog for ${clientId} did not open within ${timeoutMs}ms`)
+          |         ^
+      108 | }
+      109 |
+      110 | /** Assert mocked summarize-entity-llm produced summary text in the UI. */
+        at openBrowseEntityDialog (/Users/trentbrew/TURTLE/Projects/Packages/trellis-client/apps/web/tests/e2e/helpers/graph-entity.ts:107:9)
+        at /Users/trentbrew/TURTLE/Projects/Packages/trellis-client/apps/web/tests/e2e/document-chrome.spec.ts:44:20
+
+    Error Context: test-results/document-chrome-Document-c-295a1-itle-and-properties-summary-chromium/error-context.md
+
+
+[1A[2K[2/2] [chromium] › tests/e2e/document-chrome.spec.ts:47:3 › Document chrome (document-chrome) › page route uses document title in scroll column without description editor
+[1A[2K  1 failed
+    [chromium] › tests/e2e/document-chrome.spec.ts:22:3 › Document chrome (document-chrome) › note dialog uses seamless title and properties summary 
+  1 did not run
+[1A[2K(node:1865) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+[1A[2K(node:1865) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+
+EXIT:1

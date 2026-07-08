@@ -44,7 +44,7 @@ export type TemporalEntityType =
   | 'sprint'
   | 'budget'
 
-export type DocumentEntityType = 'note' | 'file' | 'page' | 'template' | 'slide_deck' | 'bookmark' | 'diagram' | 'email'
+export type DocumentEntityType = 'note' | 'file' | 'page' | 'template' | 'slide_deck' | 'sheet' | 'canvas' | 'bookmark' | 'diagram' | 'email'
 
 export type ActorEntityType = 'person' | 'contact' | 'organization' | 'vendor'
 
@@ -289,6 +289,10 @@ export interface EntityItemBase {
   dependsOn?: string[]
   createdAt?: string
   updatedAt?: string
+  /** AI-generated summary (source field varies by type). */
+  summary?: string
+  summaryGeneratedAt?: string
+  summarySourceHash?: string
 }
 
 // ============================================================================
@@ -598,6 +602,7 @@ export interface DiagramItem extends EntityItemBase {
 
 export interface PersonItem extends EntityItemBase {
   type: 'person'
+  content?: string
   email?: string
   phone?: string
   jobTitle?: string
@@ -612,6 +617,7 @@ export interface PersonItem extends EntityItemBase {
 
 export interface ContactItem extends EntityItemBase {
   type: 'contact'
+  content?: string
   email?: string
   phone?: string
   avatar?: string
@@ -621,6 +627,7 @@ export interface ContactItem extends EntityItemBase {
 
 export interface OrganizationItem extends EntityItemBase {
   type: 'organization'
+  content?: string
   website?: string
   industry?: string
   memberCount?: number
@@ -634,6 +641,7 @@ export interface OrganizationItem extends EntityItemBase {
 
 export interface VendorItem extends EntityItemBase {
   type: 'vendor'
+  content?: string
   email?: string
   phone?: string
   avatar?: string
@@ -739,6 +747,8 @@ const DOCUMENT_TYPES: Set<string> = new Set<DocumentEntityType>([
   'page',
   'template',
   'slide_deck',
+  'sheet',
+  'canvas',
   'bookmark',
   'email',
 ])
@@ -1071,6 +1081,8 @@ export const ENTITY_TYPE_OPTIONS: { value: EntityType; label: string; icon: stri
   { value: 'page', label: 'Page', icon: 'lucide:book-open' },
   { value: 'template', label: 'Template', icon: 'lucide:copy' },
   { value: 'slide_deck', label: 'Slide Deck', icon: 'lucide:presentation' },
+  { value: 'sheet', label: 'Sheet', icon: 'lucide:table-2' },
+  { value: 'canvas', label: 'Canvas', icon: 'lucide:layout-dashboard' },
   { value: 'bookmark', label: 'Bookmark', icon: 'lucide:bookmark' },
   { value: 'person', label: 'Person', icon: 'lucide:user' },
   { value: 'organization', label: 'Organization', icon: 'lucide:building-2' },
@@ -1465,6 +1477,8 @@ export interface EntityTypeConfig {
   propertyFields: PropertyFieldConfig[]
   defaultSortField: string
   searchFields: string[]
+  /** When true, omitted from workspace browse sidebar and type pickers. Ontology remains for existing entities. */
+  browseHidden?: boolean
 }
 
 /** Class-level config (shared by all types in a class) */

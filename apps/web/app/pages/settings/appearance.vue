@@ -15,6 +15,15 @@
     setEnterKeyBehavior,
     resetLayoutPreferences,
   } = useLayoutPreferences()
+  const {
+    showClock: menubarShowClock,
+    showWeather: menubarShowWeather,
+    showHostStats: menubarShowHostStats,
+    setShowClock: setMenubarShowClock,
+    setShowWeather: setMenubarShowWeather,
+    setShowHostStats: setMenubarShowHostStats,
+    resetMenubarPreferences,
+  } = useMenubarPreferences()
   const go = (to: string) => navigateTo(to)
   const showResetConfirm = ref(false)
 
@@ -22,6 +31,7 @@
     colorMode.preference = 'light'
     resetAnimationSettings()
     resetLayoutPreferences()
+    resetMenubarPreferences()
     showResetConfirm.value = false
     $toast?.success('All settings reset to defaults')
   }
@@ -57,6 +67,21 @@
   const enterKeySend = computed({
     get: () => enterKeyBehavior.value === 'send',
     set: (checked) => setEnterKeyBehavior(checked ? 'send' : 'newline'),
+  })
+
+  const menubarClockOn = computed({
+    get: () => menubarShowClock.value,
+    set: (checked) => setMenubarShowClock(checked),
+  })
+
+  const menubarWeatherOn = computed({
+    get: () => menubarShowWeather.value,
+    set: (checked) => setMenubarShowWeather(checked),
+  })
+
+  const menubarHostOn = computed({
+    get: () => menubarShowHostStats.value,
+    set: (checked) => setMenubarShowHostStats(checked),
   })
 </script>
 
@@ -490,6 +515,41 @@
             </UiCardContent>
           </UiCard>
         </template>
+      </ClientOnly>
+
+      <!-- Menubar sky widgets -->
+      <ClientOnly>
+        <UiCard>
+          <UiCardHeader>
+            <UiCardTitle>Menubar</UiCardTitle>
+            <UiCardDescription>
+              Ambient sky strip in the header — vitals, time, weather, and Omnibox search.
+            </UiCardDescription>
+          </UiCardHeader>
+          <UiCardContent class="space-y-3">
+            <div class="border-border bg-card flex items-center justify-between rounded-xl border px-4 py-3">
+              <div>
+                <p class="text-foreground text-sm font-semibold">Clock</p>
+                <p class="text-muted-foreground text-xs">Local time in your profile timezone</p>
+              </div>
+              <UiSwitch v-model="menubarClockOn" />
+            </div>
+            <div class="border-border bg-card flex items-center justify-between rounded-xl border px-4 py-3">
+              <div>
+                <p class="text-foreground text-sm font-semibold">Weather</p>
+                <p class="text-muted-foreground text-xs">Field conditions from your location</p>
+              </div>
+              <UiSwitch v-model="menubarWeatherOn" />
+            </div>
+            <div class="border-border bg-card flex items-center justify-between rounded-xl border px-4 py-3">
+              <div>
+                <p class="text-foreground text-sm font-semibold">Host stats</p>
+                <p class="text-muted-foreground text-xs">CPU and memory in Trellis Desktop (Tauri)</p>
+              </div>
+              <UiSwitch v-model="menubarHostOn" />
+            </div>
+          </UiCardContent>
+        </UiCard>
       </ClientOnly>
 
       <!-- Reset to Defaults -->

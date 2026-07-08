@@ -741,6 +741,7 @@ const ENTITY_TYPES: Record<EntityType, EntityTypeConfig> = {
     projections: ['list', 'table'],
     defaultProjection: 'list',
     dialogShell: 'temporal',
+    browseHidden: true,
     panels: {
       properties: 'BudgetProperties',
       content: 'BudgetContent',
@@ -852,6 +853,48 @@ const ENTITY_TYPES: Record<EntityType, EntityTypeConfig> = {
       properties: 'SlideDeckProperties',
       content: 'SlideDeckContent',
       footerActions: ['present', 'duplicate', 'delete'],
+    },
+    propertyFields: fields('type', 'pin', 'category', 'owner', 'tags'),
+    defaultSortField: 'updatedAt',
+    searchFields: ['title', 'description'],
+  },
+
+  sheet: {
+    type: 'sheet',
+    class: 'document',
+    label: 'Sheet',
+    labelPlural: 'Sheets',
+    description: 'Live TQL projection — rows are entities, columns are attributes, formulas derive in place.',
+    icon: 'lucide:table-2',
+    color: 'emerald',
+    projections: ['table', 'list'],
+    defaultProjection: 'table',
+    dialogShell: 'document',
+    panels: {
+      properties: 'SheetProperties',
+      content: 'SheetContent',
+      footerActions: ['duplicate', 'delete'],
+    },
+    propertyFields: fields('type', 'category', 'owner', 'tags'),
+    defaultSortField: 'title',
+    searchFields: ['title', 'description'],
+  },
+
+  canvas: {
+    type: 'canvas',
+    class: 'document',
+    label: 'Canvas',
+    labelPlural: 'Canvases',
+    description: 'Spatial board — arrange entity references and sticky notes on an infinite canvas.',
+    icon: 'lucide:layout-dashboard',
+    color: 'cyan',
+    projections: ['canvas', 'list', 'table'],
+    defaultProjection: 'canvas',
+    dialogShell: 'document',
+    panels: {
+      properties: 'DocumentPropertiesTab',
+      content: 'CanvasContent',
+      footerActions: ['duplicate', 'delete'],
     },
     propertyFields: fields('type', 'pin', 'category', 'owner', 'tags'),
     defaultSortField: 'updatedAt',
@@ -1144,6 +1187,11 @@ export function getDialogShellForType(type: EntityType): string {
 /** Get all registered entity types */
 export function getAllEntityTypes(): EntityTypeConfig[] {
   return Object.values(ENTITY_TYPES)
+}
+
+/** Entity types visible in workspace browse and creation pickers. */
+export function getBrowseEntityTypes(): EntityTypeConfig[] {
+  return Object.values(ENTITY_TYPES).filter((t) => !t.browseHidden)
 }
 
 /** Get all registered entity types as a flat list of type strings */

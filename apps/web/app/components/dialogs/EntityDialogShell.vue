@@ -40,7 +40,7 @@
       /**
        * Presentation variant.
        * - 'dialog': portal overlay modal (default)
-       * - 'inset': narrow (420px) right-anchored panel with tabbed layout
+       * - 'inset': resizable right-anchored panel with tabbed layout
        * - 'inline': fills its parent container; same 3-column layout as 'dialog'
        *   but rendered inline without the UiDialog portal, resize handles, or
        *   stack-aware chrome. Use this when embedding the entity UI inside a
@@ -54,6 +54,8 @@
        * ignored in this mode; properties live in the right sidebar tab.
        */
       headerInBody?: boolean
+      /** Tags slot on the same row as type badge (dialog variant only). */
+      inlineHeaderTags?: boolean
     }>(),
     {
       mode: 'edit',
@@ -64,6 +66,7 @@
       itemType: undefined,
       variant: 'dialog',
       headerInBody: false,
+      inlineHeaderTags: false,
     },
   )
 
@@ -122,6 +125,67 @@
     if (!isStacked.value && !isInset.value && !isInline.value) setOriginatingDialogOpen(false)
   })
 
+  const closeOriginSignal = useState<number>('navigation:closeOriginDialog', () => 0)
+  watch(closeOriginSignal, () => {
+    if (props.open && !isStacked.value && !isInset.value && !isInline.value) closeDialog()
+  })
+
+  // ── Inset panel width (resizable, persisted) ───────────────────────────
+  const INSET_DEFAULT_W = 520
+  const INSET_MIN_W = 380
+  const INSET_MAX_W = computed(() => Math.min(720, window.innerWidth - 48))
+  const insetPanelW = ref(INSET_DEFAULT_W)
+  const isInsetResizing = ref(false)
+
+  function loadInsetWidth(): number {
+    if (!import.meta.client) return INSET_DEFAULT_W
+    try {
+      const raw = window.localStorage.getItem('entity:inset-panel-width')
+      const n = raw ? Number(raw) : INSET_DEFAULT_W
+      return Number.isFinite(n) ? n : INSET_DEFAULT_W
+    } catch {
+      return INSET_DEFAULT_W
+    }
+  }
+
+  function persistInsetWidth() {
+    if (!import.meta.client) return
+    try {
+      window.localStorage.setItem('entity:inset-panel-width', String(insetPanelW.value))
+    } catch {
+      // ignore quota / private mode
+    }
+  }
+
+  onMounted(() => {
+    insetPanelW.value = Math.max(INSET_MIN_W, Math.min(INSET_MAX_W.value, loadInsetWidth()))
+  })
+
+  function startInsetResize(e: PointerEvent) {
+    e.preventDefault()
+    e.stopPropagation()
+    const el = e.currentTarget as HTMLElement
+    el.setPointerCapture(e.pointerId)
+    isInsetResizing.value = true
+    const startX = e.clientX
+    const startW = insetPanelW.value
+    document.body.style.cursor = 'ew-resize'
+    const onMove = (ev: PointerEvent) => {
+      const dx = startX - ev.clientX
+      insetPanelW.value = Math.max(INSET_MIN_W, Math.min(INSET_MAX_W.value, startW + dx))
+    }
+    const onUp = () => {
+      isInsetResizing.value = false
+      document.body.style.cursor = ''
+      persistInsetWidth()
+      el.releasePointerCapture(e.pointerId)
+      el.removeEventListener('pointermove', onMove)
+      el.removeEventListener('pointerup', onUp)
+    }
+    el.addEventListener('pointermove', onMove)
+    el.addEventListener('pointerup', onUp)
+  }
+
   // ── Resize logic ──────────────────────────────────────────────────────
   const MIN_W = 640
   const MIN_H = 480
@@ -157,7 +221,8 @@
     (val) => {
       if (val) {
         dialogW.value = Math.min(DEFAULT_W.value, MAX_W.value)
-        dialogH.value = Math.min(DEFAULT_H.value, MAX_H.value)
+        dialogH.value =
+          props.itemType === 'file' ? MAX_H.value : Math.min(DEFAULT_H.value, MAX_H.value)
       }
     },
   )
@@ -268,6 +333,8 @@
                 <Icon name="lucide:chevron-down" class="h-4 w-4" />
               </UiButton>
             </template>
+            <span v-if="!isCreateMode" class="mx-0.5 h-4 w-px shrink-0 bg-border/60" aria-hidden="true" />
+            <slot name="header-actions" />
             <UiButton variant="ghost" size="icon" class="h-7 w-7" title="Close" @click="closeDialog">
               <Icon name="lucide:x" class="h-4 w-4" />
             </UiButton>
@@ -277,15 +344,17 @@
           <slot name="header-tags" />
         </div>
         <template v-if="!headerInBody">
-          <input
+          <textarea
             v-if="!isViewMode"
             :value="title"
-            type="text"
+            rows="1"
             :placeholder="titlePlaceholder || 'Item name...'"
             spellcheck="false"
-            class="w-full text-xl font-semibold bg-transparent border border-transparent outline-none placeholder:text-muted-foreground/50 focus:ring-0 hover:border-border hover:bg-muted/20 focus:border-border focus:bg-muted/20 rounded-md px-2 py-0 -mx-1 transition-all mt-3"
-            @input="emit('update:title', ($event.target as HTMLInputElement).value)" />
-          <h2 v-else class="text-xl font-semibold px-1 mt-3">{{ title }}</h2>
+            class="w-full min-h-0 mt-3 resize-none overflow-hidden field-sizing-content text-xl font-semibold bg-transparent border border-transparent outline-none placeholder:text-muted-foreground/50 focus:ring-0 hover:border-border hover:bg-muted/20 focus:border-border focus:bg-muted/20 rounded-md px-2 py-0.5 -mx-1 transition-all break-words whitespace-pre-wrap leading-snug"
+            @input="emit('update:title', ($event.target as HTMLTextAreaElement).value)" />
+          <h2 v-else class="text-xl font-semibold px-1 mt-3 break-words whitespace-pre-wrap leading-snug">
+            {{ title }}
+          </h2>
           <div class="mt-1 px-1">
             <EntityDescriptionBlock
               :description="description"
@@ -331,11 +400,17 @@
     </div>
   </div>
 
-  <!-- ═══ Inset variant — narrow right panel with tabbed layout ═══ -->
+  <!-- ═══ Inset variant — resizable right panel with tabbed layout ═══ -->
   <div
     v-else-if="isInset"
     v-show="open"
-    class="absolute top-3 bottom-3 right-3 w-[420px] z-20 flex flex-col rounded-xl border border-border bg-card/95 backdrop-blur-xl shadow-2xl overflow-hidden">
+    class="absolute top-3 bottom-3 right-3 z-20 flex flex-col rounded-xl border border-border bg-card/95 backdrop-blur-xl shadow-2xl overflow-hidden"
+    :class="isInsetResizing ? 'select-none' : ''"
+    :style="{ width: `${insetPanelW}px` }">
+    <div
+      class="absolute inset-y-3 left-0 z-30 w-1.5 -translate-x-1/2 cursor-ew-resize rounded-full hover:bg-primary/25 active:bg-primary/35 transition-colors"
+      aria-label="Resize detail panel"
+      @pointerdown="startInsetResize" />
     <h2 class="sr-only">{{ dialogTitle || title || 'Item' }}</h2>
     <p class="sr-only">{{ dialogDescription || 'Item details.' }}</p>
 
@@ -362,15 +437,17 @@
           <slot name="header-tags" />
         </div>
         <template v-if="!headerInBody">
-          <input
+          <textarea
             v-if="!isViewMode"
             :value="title"
-            type="text"
+            rows="1"
             :placeholder="titlePlaceholder || 'Item name...'"
             spellcheck="false"
-            class="w-full text-xl font-semibold bg-transparent border border-transparent outline-none placeholder:text-muted-foreground/50 focus:ring-0 hover:border-border hover:bg-muted/20 focus:border-border focus:bg-muted/20 rounded-md px-2 py-0 -mx-1 transition-all mt-3"
-            @input="emit('update:title', ($event.target as HTMLInputElement).value)" />
-          <h2 v-else class="text-xl font-semibold px-1 mt-3">{{ title }}</h2>
+            class="w-full min-h-0 mt-3 resize-none overflow-hidden field-sizing-content text-xl font-semibold bg-transparent border border-transparent outline-none placeholder:text-muted-foreground/50 focus:ring-0 hover:border-border hover:bg-muted/20 focus:border-border focus:bg-muted/20 rounded-md px-2 py-0.5 -mx-1 transition-all break-words whitespace-pre-wrap leading-snug"
+            @input="emit('update:title', ($event.target as HTMLTextAreaElement).value)" />
+          <h2 v-else class="text-xl font-semibold px-1 mt-3 break-words whitespace-pre-wrap leading-snug">
+            {{ title }}
+          </h2>
           <div class="mt-1 px-1">
             <EntityDescriptionBlock
               :description="description"
@@ -452,16 +529,21 @@
             <span class="truncate max-w-[240px]">{{ parentTitle }}</span>
           </button>
         </div>
-        <div :class="isStacked && parentTitle ? 'px-4 pt-2 pb-3' : 'px-4 pt-4 pb-3'">
+        <div :class="isStacked && parentTitle ? 'p-3' : 'p-3'">
           <div class="flex items-center justify-between gap-3 mb-0">
-            <div class="flex items-center gap-2 min-w-0 flex-wrap">
+            <div class="flex items-center gap-2 min-w-0 flex-1 overflow-hidden">
               <span
                 v-if="typeBadge"
-                class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-medium bg-primary/10 text-primary">
+                class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-medium bg-primary/10 text-primary shrink-0">
                 <Icon :name="typeBadge.icon" class="h-3 w-3" />
                 {{ typeBadge.label }}
               </span>
               <slot name="header-badges" />
+              <div
+                v-if="inlineHeaderTags && $slots['header-tags']"
+                class="flex items-center min-w-0 flex-1 overflow-hidden pl-1">
+                <slot name="header-tags" />
+              </div>
             </div>
             <div class="flex items-center gap-1 shrink-0">
               <template v-if="!isCreateMode && !hideNavigation">
@@ -482,24 +564,31 @@
                   <Icon name="lucide:chevron-down" class="h-4 w-4" />
                 </UiButton>
               </template>
+              <span
+                v-if="!isCreateMode && !hideNavigation"
+                class="mx-0.5 h-4 w-px shrink-0 bg-border/60"
+                aria-hidden="true" />
+              <slot name="header-actions" />
               <UiButton v-if="!isStacked" variant="ghost" size="icon" class="h-7 w-7" @click="closeDialog">
                 <Icon name="lucide:x" class="h-4 w-4" />
               </UiButton>
             </div>
           </div>
-          <div v-if="$slots['header-tags']" class="mt-2">
+          <div v-if="!inlineHeaderTags && $slots['header-tags']" class="mt-2">
             <slot name="header-tags" />
           </div>
           <template v-if="!headerInBody">
-            <input
+            <textarea
               v-if="!isViewMode"
               :value="title"
-              type="text"
+              rows="1"
               :placeholder="titlePlaceholder || 'Item name...'"
               spellcheck="false"
-              class="w-full text-xl font-semibold bg-transparent border border-transparent outline-none placeholder:text-muted-foreground/50 focus:ring-0 hover:border-border hover:bg-muted/20 focus:border-border focus:bg-muted/20 rounded-md px-2 py-0 -mx-1 transition-all mt-3"
-              @input="emit('update:title', ($event.target as HTMLInputElement).value)" />
-            <h2 v-else class="text-xl font-semibold px-1 mt-3">{{ title }}</h2>
+              class="w-full min-h-0 mt-3 resize-none overflow-hidden field-sizing-content text-xl font-semibold bg-transparent border border-transparent outline-none placeholder:text-muted-foreground/50 focus:ring-0 hover:border-border hover:bg-muted/20 focus:border-border focus:bg-muted/20 rounded-md px-2 py-0.5 -mx-1 transition-all break-words whitespace-pre-wrap leading-snug"
+              @input="emit('update:title', ($event.target as HTMLTextAreaElement).value)" />
+            <h2 v-else class="text-xl font-semibold px-1 mt-3 break-words whitespace-pre-wrap leading-snug">
+              {{ title }}
+            </h2>
             <div class="mt-1 px-1">
               <EntityDescriptionBlock
                 :description="description"

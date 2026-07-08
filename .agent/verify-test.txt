@@ -1,0 +1,29 @@
+bun test v1.3.11 (af24e281)
+
+src/lib/projections/projection-route.test.ts:
+(pass) resolveProjectionRoute > unknown when def missing
+(pass) resolveProjectionRoute > routes cms by query.kind [0.02ms]
+(pass) resolveProjectionRoute > routes assets by query.kind
+(pass) resolveProjectionRoute > routes browse by projection id [0.10ms]
+(pass) resolveProjectionRoute > routes stub cms registry entries to coming-soon
+(pass) resolveProjectionRoute > routes calendar by layout and trellis query [0.01ms]
+(pass) resolveProjectionRoute > routes whiteboards by canvas layout and files query [0.03ms]
+(pass) resolveProjectionRoute > routes notes by cards layout and store query [0.04ms]
+(pass) resolveProjectionRoute > routes clock and cron by utility layout and store type [0.07ms]
+(pass) resolveProjectionRoute > routes journal by lens id fallback [0.03ms]
+(pass) resolveProjectionRoute > stub projections render coming-soon [0.01ms]
+
+src/lib/projections/browse-state.test.ts:
+(pass) browse-state > parseBrowseScope defaults to all [0.05ms]
+(pass) browse-state > parseBrowseScope collection key [0.02ms]
+(pass) browse-state > parseBrowseMode defaults to table
+(pass) browse-state > parseBrowseMode graph [0.05ms]
+(pass) browse-state > parseBrowseParams round trip [0.03ms]
+(pass) browse-state > browseGraphRedirectParams
+(pass) browse-state > shouldShowGraphCapBanner
+
+ 18 pass
+ 0 fail
+ 31 expect() calls
+Ran 18 tests across 2 files. [100.00ms]
+TEST_EXIT=0

@@ -1,0 +1,5 @@
+{
+  "$schema": "https://agent-browser.dev/schema.json",
+  "allowedDomains": ["localhost", "127.0.0.1"],
+  "hideScrollbars": false
+}

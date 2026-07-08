@@ -1,0 +1,564 @@
+[scan] entityKind=channel count=106
+[scan] entityKind=message count=5
+{
+  "manifest": [
+    {
+      "entityId": "entity:3a1b3778-fa4c-429c-83ea-4c55968fce9b",
+      "entityKind": "channel",
+      "status": "dry-run"
+    },
+    {
+      "entityId": "entity:087e0402-db46-495a-8bfb-863e1487d55a",
+      "entityKind": "channel",
+      "status": "dry-run"
+    },
+    {
+      "entityId": "entity:368aca1f-a925-48d0-a791-57154eed15fb",
+      "entityKind": "channel",
+      "status": "dry-run"
+    },
+    {
+      "entityId": "entity:3cba085e-2d5b-4cef-b989-a3d62b62c9f4",
+      "entityKind": "channel",
+      "status": "dry-run"
+    },
+    {
+      "entityId": "entity:fdc3ff0b-29fb-4894-9d3c-d05ce853c493",
+      "entityKind": "channel",
+      "status": "dry-run"
+    },
+    {
+      "entityId": "entity:d9969b17-0f77-45d6-8768-aa0f0f29f3e5",
+      "entityKind": "channel",
+      "status": "dry-run"
+    },
+    {
+      "entityId": "entity:6d9d7f6e-f895-41cb-b7e6-d0c770fd2bbe",
+      "entityKind": "channel",
+      "status": "dry-run"
+    },
+    {
+      "entityId": "entity:973347e9-76b5-44d4-bcfe-c71c2bcbfc19",
+      "entityKind": "channel",
+      "status": "dry-run"
+    },
+    {
+      "entityId": "entity:f4898bcf-131f-4d11-8824-3c7267d9f570",
+      "entityKind": "channel",
+      "status": "dry-run"
+    },
+    {
+      "entityId": "entity:b34bde5a-0f93-4b3b-9920-62134433bffe",
+      "entityKind": "channel",
+      "status": "dry-run"
+    },
+    {
+      "entityId": "entity:02222d1d-afc1-4119-80e3-dcd36705d944",
+      "entityKind": "channel",
+      "status": "dry-run"
+    },
+    {
+      "entityId": "entity:5693cf45-40da-4b0e-b813-0d2158187968",
+      "entityKind": "channel",
+      "status": "dry-run"
+    },
+    {
+      "entityId": "entity:73c33c0a-880a-4e3d-97c0-e8506472c80f",
+      "entityKind": "channel",
+      "status": "dry-run"
+    },
+    {
+      "entityId": "entity:c3909107-3ba4-4cdf-ab6d-d501b766e4d4",
+      "entityKind": "channel",
+      "status": "dry-run"
+    },
+    {
+      "entityId": "entity:bea7ccfb-83da-4fc3-96e3-974ba6ba0b80",
+      "entityKind": "channel",
+      "status": "dry-run"
+    },
+    {
+      "entityId": "entity:b09c8cc1-1c2d-4af2-85b5-adb2fb1b72dd",
+      "entityKind": "channel",
+      "status": "dry-run"
+    },
+    {
+      "entityId": "entity:fe153d44-4d38-4fc8-820f-a658435c6c57",
+      "entityKind": "channel",
+      "status": "dry-run"
+    },
+    {
+      "entityId": "entity:d0c0737a-43a1-42ed-8de9-8ff16a5ab4c5",
+      "entityKind": "channel",
+      "status": "dry-run"
+    },
+    {
+      "entityId": "entity:d39f0566-8a19-4abe-8560-34c65e27726a",
+      "entityKind": "channel",
+      "status": "dry-run"
+    },
+    {
+      "entityId": "entity:2b29847a-3ccc-4af5-97a3-99f1b25665a0",
+      "entityKind": "channel",
+      "status": "dry-run"
+    },
+    {
+      "entityId": "entity:4054d19f-5ceb-420d-8c6c-ccca98b9c21a",
+      "entityKind": "channel",
+      "status": "dry-run"
+    },
+    {
+      "entityId": "entity:bea1abd3-0fb7-4f6d-a2f7-883a0a7482a1",
+      "entityKind": "channel",
+      "status": "dry-run"
+    },
+    {
+      "entityId": "entity:cfcc9347-1f23-49f6-a405-2818eb929915",
+      "entityKind": "channel",
+      "status": "dry-run"
+    },
+    {
+      "entityId": "entity:6d18219b-91f5-4477-9002-49af3593a97c",
+      "entityKind": "channel",
+      "status": "dry-run"
+    },
+    {
+      "entityId": "entity:8e53d2a0-193c-4e48-b0a4-2d6b95dbbe11",
+      "entityKind": "channel",
+      "status": "dry-run"
+    },
+    {
+      "entityId": "entity:9a78cbe7-d161-46d4-80ff-80ccdaaee195",
+      "entityKind": "channel",
+      "status": "dry-run"
+    },
+    {
+      "entityId": "entity:76b6deeb-1b95-4417-aee3-f4e5e4b5277a",
+      "entityKind": "channel",
+      "status": "dry-run"
+    },
+    {
+      "entityId": "entity:d98d7380-f218-43a8-ac2e-1508d3ce5a8b",
+      "entityKind": "channel",
+      "status": "dry-run"
+    },
+    {
+      "entityId": "entity:3b3b55b7-2ccf-4b8f-a9fc-134bfae67a43",
+      "entityKind": "channel",
+      "status": "dry-run"
+    },
+    {
+      "entityId": "entity:57af5fc0-ebb7-4d11-a047-0dbe41657648",
+      "entityKind": "channel",
+      "status": "dry-run"
+    },
+    {
+      "entityId": "entity:fbb5889c-de4b-4a1e-a4a3-1acbab67a1fc",
+      "entityKind": "channel",
+      "status": "dry-run"
+    },
+    {
+      "entityId": "entity:9514eb74-0cf5-4dcb-a2d9-647ca157bd55",
+      "entityKind": "channel",
+      "status": "dry-run"
+    },
+    {
+      "entityId": "entity:6708c409-efdb-4f0d-ad8c-2a281a2ea5ee",
+      "entityKind": "channel",
+      "status": "dry-run"
+    },
+    {
+      "entityId": "entity:db6e5c7f-3442-4cfb-9b46-06edacb7cd75",
+      "entityKind": "channel",
+      "status": "dry-run"
+    },
+    {
+      "entityId": "entity:360601ee-e068-491c-bf17-c897c05253c6",
+      "entityKind": "channel",
+      "status": "dry-run"
+    },
+    {
+      "entityId": "entity:933090fb-ea98-4d75-95af-945f347fc39e",
+      "entityKind": "channel",
+      "status": "dry-run"
+    },
+    {
+      "entityId": "entity:649367d9-e9ed-4a3f-8183-8c0810d82862",
+      "entityKind": "channel",
+      "status": "dry-run"
+    },
+    {
+      "entityId": "entity:8d3d7ec2-729b-4c3e-9dbf-7463e4911e5f",
+      "entityKind": "channel",
+      "status": "dry-run"
+    },
+    {
+      "entityId": "entity:fed670d6-bc9f-4a96-9675-ad5eeedfd2f6",
+      "entityKind": "channel",
+      "status": "dry-run"
+    },
+    {
+      "entityId": "entity:32e6f83f-7ea9-4082-9584-b1f625544374",
+      "entityKind": "channel",
+      "status": "dry-run"
+    },
+    {
+      "entityId": "entity:89ddcbe0-4262-4fa4-8da4-609e992fc889",
+      "entityKind": "channel",
+      "status": "dry-run"
+    },
+    {
+      "entityId": "entity:c0bdf7a8-8517-4c4a-a03c-b6a6d166e306",
+      "entityKind": "channel",
+      "status": "dry-run"
+    },
+    {
+      "entityId": "entity:329e2347-b2b9-4f0d-a8c0-58d76ffecb5a",
+      "entityKind": "channel",
+      "status": "dry-run"
+    },
+    {
+      "entityId": "entity:251f0557-0d0d-4704-9b7d-58c2288dcb42",
+      "entityKind": "channel",
+      "status": "dry-run"
+    },
+    {
+      "entityId": "entity:19ae7cc3-5c07-4273-a416-7534a5521c0d",
+      "entityKind": "channel",
+      "status": "dry-run"
+    },
+    {
+      "entityId": "entity:f5df4e88-42bd-4086-b13b-d27689f1b976",
+      "entityKind": "channel",
+      "status": "dry-run"
+    },
+    {
+      "entityId": "entity:c52f9d54-d0a5-4337-9e0c-b9583b80828f",
+      "entityKind": "channel",
+      "status": "dry-run"
+    },
+    {
+      "entityId": "entity:3705d791-d94e-45aa-af65-7ad4e2d79692",
+      "entityKind": "channel",
+      "status": "dry-run"
+    },
+    {
+      "entityId": "entity:f663bc2e-abe0-43e2-8c3d-8e17f75ab30b",
+      "entityKind": "channel",
+      "status": "dry-run"
+    },
+    {
+      "entityId": "entity:60ba637f-f433-48dd-bbb4-b4128809e19d",
+      "entityKind": "channel",
+      "status": "dry-run"
+    },
+    {
+      "entityId": "entity:91b74ac0-030d-4582-b336-9c8c732d94b5",
+      "entityKind": "channel",
+      "status": "dry-run"
+    },
+    {
+      "entityId": "entity:dc128caa-9510-442d-96ae-8d904dae2a32",
+      "entityKind": "channel",
+      "status": "dry-run"
+    },
+    {
+      "entityId": "entity:05bebe98-1aba-494d-b4e4-b8d4bb03f5f9",
+      "entityKind": "channel",
+      "status": "dry-run"
+    },
+    {
+      "entityId": "entity:4a636403-9cb1-4ae3-addb-1a257d34bbc3",
+      "entityKind": "channel",
+      "status": "dry-run"
+    },
+    {
+      "entityId": "entity:f0eb9150-f344-4d7a-8acf-e78af68bd4b2",
+      "entityKind": "channel",
+      "status": "dry-run"
+    },
+    {
+      "entityId": "entity:4f6be942-2a83-4153-9dba-06dd1f61f522",
+      "entityKind": "channel",
+      "status": "dry-run"
+    },
+    {
+      "entityId": "entity:1413ef0f-0bd0-4987-b766-995afe48a8cc",
+      "entityKind": "channel",
+      "status": "dry-run"
+    },
+    {
+      "entityId": "entity:2742175c-8458-4e8d-b42b-b88788a66e50",
+      "entityKind": "channel",
+      "status": "dry-run"
+    },
+    {
+      "entityId": "entity:3f3e528b-1ad1-4148-80bc-80d75524f7aa",
+      "entityKind": "channel",
+      "status": "dry-run"
+    },
+    {
+      "entityId": "entity:6683d453-8cda-440b-915f-02a1f44c6837",
+      "entityKind": "channel",
+      "status": "dry-run"
+    },
+    {
+      "entityId": "entity:230a5899-25c5-44db-a87e-b698c10a6d5b",
+      "entityKind": "channel",
+      "status": "dry-run"
+    },
+    {
+      "entityId": "entity:513ca94b-5aac-4dbb-8605-aca261253c04",
+      "entityKind": "channel",
+      "status": "dry-run"
+    },
+    {
+      "entityId": "entity:651dcf9d-48bb-40f2-a5d7-66566d217022",
+      "entityKind": "channel",
+      "status": "dry-run"
+    },
+    {
+      "entityId": "entity:b93ae642-6299-42e6-af3d-3cd523f35c35",
+      "entityKind": "channel",
+      "status": "dry-run"
+    },
+    {
+      "entityId": "entity:f1c49164-f1cb-4154-958f-f534cc9919c8",
+      "entityKind": "channel",
+      "status": "dry-run"
+    },
+    {
+      "entityId": "entity:30d87fe5-a91e-48f4-9a62-b3d5cb8769ab",
+      "entityKind": "channel",
+      "status": "dry-run"
+    },
+    {
+      "entityId": "entity:b117f7f2-1b95-497e-ab82-73113a7ada05",
+      "entityKind": "channel",
+      "status": "dry-run"
+    },
+    {
+      "entityId": "entity:db93973c-b61e-4626-ab1b-f49a22d723a2",
+      "entityKind": "channel",
+      "status": "dry-run"
+    },
+    {
+      "entityId": "entity:c81c567b-c27a-4cdc-92a2-61c4105e9b9f",
+      "entityKind": "channel",
+      "status": "dry-run"
+    },
+    {
+      "entityId": "entity:306114b5-4682-4989-8ef5-2672eaf001f1",
+      "entityKind": "channel",
+      "status": "dry-run"
+    },
+    {
+      "entityId": "entity:ef31f998-812a-4139-8118-f5cf29f2ccea",
+      "entityKind": "channel",
+      "status": "dry-run"
+    },
+    {
+      "entityId": "entity:3e54af4d-8a16-470f-9e90-341666234d4b",
+      "entityKind": "channel",
+      "status": "dry-run"
+    },
+    {
+      "entityId": "entity:3a35f30c-8291-459c-a83b-dfbaac33f4c5",
+      "entityKind": "channel",
+      "status": "dry-run"
+    },
+    {
+      "entityId": "entity:3799cff3-ccc5-4265-bcd0-757ac81a0b40",
+      "entityKind": "channel",
+      "status": "dry-run"
+    },
+    {
+      "entityId": "entity:9a12056c-cb1b-474e-b086-79800cb544d6",
+      "entityKind": "channel",
+      "status": "dry-run"
+    },
+    {
+      "entityId": "entity:fac9390b-578f-43df-9c82-ec76f617de35",
+      "entityKind": "channel",
+      "status": "dry-run"
+    },
+    {
+      "entityId": "entity:bb87e200-c192-4747-9070-d7c6ccf40cee",
+      "entityKind": "channel",
+      "status": "dry-run"
+    },
+    {
+      "entityId": "entity:7e0628a8-9548-4364-bced-fe9a824d6fa3",
+      "entityKind": "channel",
+      "status": "dry-run"
+    },
+    {
+      "entityId": "entity:3eefe2c5-647b-4c71-b360-f6f4c99cbdc9",
+      "entityKind": "channel",
+      "status": "dry-run"
+    },
+    {
+      "entityId": "entity:8bd4b84d-5fbb-4617-a273-14b804397e67",
+      "entityKind": "channel",
+      "status": "dry-run"
+    },
+    {
+      "entityId": "entity:a2a3f9be-2fc0-485f-bf66-5bbc2d515d40",
+      "entityKind": "channel",
+      "status": "dry-run"
+    },
+    {
+      "entityId": "entity:c65ff67c-38c3-4911-9115-e73b8291ed2d",
+      "entityKind": "channel",
+      "status": "dry-run"
+    },
+    {
+      "entityId": "entity:8da81bf7-a07b-420e-890b-dcd6ade1ea79",
+      "entityKind": "channel",
+      "status": "dry-run"
+    },
+    {
+      "entityId": "entity:d2e6a2fc-d1be-41cf-b618-36ec0ca1e22f",
+      "entityKind": "channel",
+      "status": "dry-run"
+    },
+    {
+      "entityId": "entity:a2638613-5915-4c5f-907c-01a13bbc1761",
+      "entityKind": "channel",
+      "status": "dry-run"
+    },
+    {
+      "entityId": "entity:3c0bb9cd-b46c-4b28-b15a-44cb8430df9b",
+      "entityKind": "channel",
+      "status": "dry-run"
+    },
+    {
+      "entityId": "entity:eec36077-cefc-4540-b0fe-edc136576e4c",
+      "entityKind": "channel",
+      "status": "dry-run"
+    },
+    {
+      "entityId": "entity:e92cef73-2227-4810-8302-9e05d6f0b00d",
+      "entityKind": "channel",
+      "status": "dry-run"
+    },
+    {
+      "entityId": "entity:9c3560f5-8d3d-4570-a08d-b54d009e662b",
+      "entityKind": "channel",
+      "status": "dry-run"
+    },
+    {
+      "entityId": "entity:d97df0b2-f245-4c8b-a996-7cdda5532033",
+      "entityKind": "channel",
+      "status": "dry-run"
+    },
+    {
+      "entityId": "entity:6a5b2c41-9caf-42b3-a539-072a72805d72",
+      "entityKind": "channel",
+      "status": "dry-run"
+    },
+    {
+      "entityId": "entity:6eaf1d5f-f0a1-4e01-a3c2-4bac0a123d1e",
+      "entityKind": "channel",
+      "status": "dry-run"
+    },
+    {
+      "entityId": "entity:f414120d-9fd9-4835-a59c-c19935a36881",
+      "entityKind": "channel",
+      "status": "dry-run"
+    },
+    {
+      "entityId": "entity:5481d374-b75b-483b-9b16-ee5fdd2fcbc5",
+      "entityKind": "channel",
+      "status": "dry-run"
+    },
+    {
+      "entityId": "entity:c19570da-548a-4ee7-9993-c22c71c92c67",
+      "entityKind": "channel",
+      "status": "dry-run"
+    },
+    {
+      "entityId": "entity:636af83e-b6f7-4105-9861-1721e65be264",
+      "entityKind": "channel",
+      "status": "dry-run"
+    },
+    {
+      "entityId": "entity:b8653cdc-899d-497d-bfa1-947a1fbef9c3",
+      "entityKind": "channel",
+      "status": "dry-run"
+    },
+    {
+      "entityId": "entity:3ad395f9-e6cc-4b38-ae02-5153b0cc68c5",
+      "entityKind": "channel",
+      "status": "dry-run"
+    },
+    {
+      "entityId": "entity:23e3ab4c-37a8-4983-928a-8e75dfba7371",
+      "entityKind": "channel",
+      "status": "dry-run"
+    },
+    {
+      "entityId": "entity:1f24b0b6-6b91-490f-9dc6-3916e4127cf5",
+      "entityKind": "channel",
+      "status": "dry-run"
+    },
+    {
+      "entityId": "entity:2e882163-f8ac-4571-bcf1-84e20ab69514",
+      "entityKind": "channel",
+      "status": "dry-run"
+    },
+    {
+      "entityId": "entity:369a3c45-3d3c-4d10-962b-c82bb96967a2",
+      "entityKind": "channel",
+      "status": "dry-run"
+    },
+    {
+      "entityId": "entity:7a332fad-ec9e-4b9b-83b0-140c2e51e100",
+      "entityKind": "channel",
+      "status": "dry-run"
+    },
+    {
+      "entityId": "entity:c06cc704-a679-408e-9fe3-62b54aa46bd6",
+      "entityKind": "channel",
+      "status": "dry-run"
+    },
+    {
+      "entityId": "entity:26a2fae5-e26d-43d2-9d96-631a1f3a9383",
+      "entityKind": "channel",
+      "status": "dry-run"
+    },
+    {
+      "entityId": "entity:252af959-6bbf-4272-a8b6-69d82678752e",
+      "entityKind": "channel",
+      "status": "dry-run"
+    },
+    {
+      "entityId": "entity:739d0a47-784e-45d0-b535-806f38e79a10",
+      "entityKind": "message",
+      "status": "dry-run"
+    },
+    {
+      "entityId": "entity:af99d58f-c2f7-46bf-8318-727443c4db89",
+      "entityKind": "message",
+      "status": "dry-run"
+    },
+    {
+      "entityId": "entity:dbc5d41e-9070-479d-851a-e864a54e1822",
+      "entityKind": "message",
+      "status": "dry-run"
+    },
+    {
+      "entityId": "entity:83ea8488-f4bd-4a07-bb4c-7cf706fc94c5",
+      "entityKind": "message",
+      "status": "dry-run"
+    },
+    {
+      "entityId": "entity:fe952ff4-a9f3-4388-89bc-425bf4cea050",
+      "entityKind": "message",
+      "status": "dry-run"
+    }
+  ],
+  "summary": {
+    "dry-run": 111
+  }
+}

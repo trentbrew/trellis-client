@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import type { IntegrationDefinition, IntegrationCategory, IntegrationConnectionStatus } from '~/types/database'
+import { startIntegrationOAuth } from '~/lib/integration-oauth'
 
 const _props = defineProps<{
   open: boolean
@@ -8,6 +9,9 @@ const _props = defineProps<{
 const emit = defineEmits<{
   'update:open': [open: boolean]
 }>()
+
+const route = useRoute()
+const { user } = useInstantAuth()
 
 const {
   definitionsByCategory,
@@ -33,7 +37,10 @@ function getConnectionStatus(integrationId: string): IntegrationConnectionStatus
 function handleConfigure(def: IntegrationDefinition) {
   if (def.authType === 'oauth') {
     const slug = def.id.replace('integration-def-', '')
-    window.location.href = `/api/integrations/${slug}/auth`
+    startIntegrationOAuth(slug, {
+      userId: user.value?.id,
+      returnTo: route.fullPath,
+    })
     return
   }
   configuringDef.value = def
@@ -53,7 +60,10 @@ function handleCancelConfig() {
 function handleStartOAuth() {
   if (!configuringDef.value) return
   const slug = configuringDef.value.id.replace('integration-def-', '')
-  window.location.href = `/api/integrations/${slug}/auth`
+  startIntegrationOAuth(slug, {
+    userId: user.value?.id,
+    returnTo: route.fullPath,
+  })
 }
 </script>
 

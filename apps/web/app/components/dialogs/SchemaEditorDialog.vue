@@ -1,7 +1,7 @@
 <script setup lang="ts">
   import type { DatabaseSchema } from '~/types/database'
   import { createDefaultDatabaseSchema, normalizeDatabaseSchema } from '~/lib/normalizeDatabaseSchema'
-  import DataTableSchemaEditor from '~/components/data/DataTable/SchemaEditor.vue'
+  import DataTableSchemaEditor from '~/components/data/DataTable/DataTableSchemaEditor.vue'
 
   const props = defineProps<{
     open: boolean
