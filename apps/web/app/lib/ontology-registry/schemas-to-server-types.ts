@@ -9,8 +9,17 @@ import type {
 import type { ProjectionType } from '~/types/database'
 import type { ServerSchemaDefinition } from '~/lib/app-config/types'
 import { ENTITY_CLASSES } from '~/config/entityRegistry'
+import {
+  getRoutedSurface,
+  withDefaultBrowseConfig,
+} from '~/lib/ontology-capabilities'
 
 export type OntologyTier = 'core' | 'system' | 'user'
+
+export interface OntologyBrowseConfig {
+  enabled: boolean
+  defaultProjection?: string
+}
 
 export interface OntologySchemaField {
   name: string
@@ -51,6 +60,12 @@ export interface OntologySchemaDefinition {
   propertyFieldIds?: string[]
   defaultSortField?: string
   searchFields?: string[]
+  /** Generated form presentation mode (stacked, survey, wizard, entity-dialog). */
+  formPresentation?: 'entity-dialog' | 'stacked' | 'survey' | 'wizard'
+  /** When false, type is excluded from unified workspace browse (default derived from tier). */
+  browse?: { enabled?: boolean; defaultProjection?: string }
+  /** Dedicated route surface (e.g. /messages) — excludes from browse when set. */
+  routed?: string
 }
 
 export interface DynamicEntityTypeConfig extends Omit<EntityTypeConfig, 'type' | 'dialogShell'> {
@@ -61,6 +76,9 @@ export interface DynamicEntityTypeConfig extends Omit<EntityTypeConfig, 'type' |
   schemaId: string
   schemaVersion: string
   fields: OntologySchemaField[]
+  formPresentation?: 'entity-dialog' | 'stacked' | 'survey' | 'wizard'
+  browse: OntologyBrowseConfig
+  routed?: string
 }
 
 /** Storage-level schemas — not entity types for the UI registry. */
@@ -165,6 +183,9 @@ export function schemaToEntityTypeConfig(schema: OntologySchemaDefinition): Dyna
     schemaId: schema['@id'],
     schemaVersion: schema.version,
     fields: schema.fields,
+    formPresentation: schema.formPresentation,
+    browse: withDefaultBrowseConfig(slug, schema),
+    routed: getRoutedSurface(slug, schema),
   }
 }
 

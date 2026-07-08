@@ -367,6 +367,59 @@ INSTANT_APP_ID=<your-app-id>     # required for cloud mode
 
 The TQL kernel **always runs** in both modes — it serves core/system ontologies, graph queries, CLI, and MCP tools.
 
+## Entity types vs collections vs browse (UI vocabulary)
+
+Three overlapping concepts — keep them distinct when wiring UI or docs:
+
+| Layer | What it is | Where |
+| ----- | ---------- | ----- |
+| **TQL ontologies** | Graph entity types (`task`, `note`, user-tier `invoice`, …) | `/ontologies`, `/workspace/browse/:type` |
+| **InstantDB collections** | Notion-style spreadsheet databases (separate from graph type slugs) | `/collections/[slug]` |
+| **CustomType settings** (deprecated) | Legacy app settings stored in InstantDB | `/types/*` redirects to `/ontologies` |
+
+**Three capability axes on each ontology** (orthogonal):
+
+| Axis | Meaning | Example |
+| ---- | ------- | ------- |
+| **Tier** | Who owns the schema | `core` / `system` / `user` |
+| **Browse** | Appears in unified workspace browse | `browse.enabled: true` on user types |
+| **Presentation** | How records open | `DynamicEntityDialog`, custom shell, or `routed: '/messages'` |
+
+**Canonical URLs:**
+
+- All types aggregate: `/workspace/browse`
+- Single type records: `/workspace/browse/:type` (preferred over `?type=` on index)
+- Schema editor: `/ontologies/:type`
+- Spreadsheet DB: `/collections/:slug` (InstantDB wins if slug collides with an ontology type)
+
+**Host resolver:** `apps/web/app/lib/collection-host-resolver.ts` + `useCollectionHost()` — single policy for `/collections/:slug` vs `/workspace/browse/:type`. When both InstantDB and a browsable ontology share a slug, InstantDB wins; sidebar hides the duplicate ontology link (`collision: true` in dev logs).
+
+Capability helpers: `apps/web/app/lib/ontology-capabilities.ts`, `ontology-reserved-keys.ts`.
+
+**Migrate legacy CustomTypes:** `bun apps/web/scripts/migrate-custom-types-to-ontologies.ts --app-id <id> --dry-run`
+
+**Collection create dual-write (Phase 3c):** `database` collections auto-provision a user-tier ontology via `provisionCollectionOntology()` in `collection-schema-to-ontology.ts` (called from `useInstantData.createCollection`). Reserved slugs skip silently; duplicates are no-ops.
+
+## Sidebar affordances (UI agents)
+
+When adding a new projection or tool surface, wire AppSidebar using one of three patterns:
+
+| Pattern | When | Key files |
+| ------- | ---- | --------- |
+| **Route-owned panel** | Full custom nav while on `/decks`, `/pages`, etc. | `trellis-shell-routes.ts`, `components/*/*Sidebar.vue`, `AppSidebar.vue` |
+| **Workspace `specialItems`** | Dynamic entity list under `/workspace` (WORKSHOP) | `sidebarSeeds.ts`, `useRoutes.ts`, `lib/sidebar-affordances.ts` |
+| **Static `sidebarSections`** | Mail labels, settings tabs | `trellis-shell-routes.ts` only |
+
+**Start here:** `docs/getting-started/AFFORDANCE_SIDEBAR_GUIDE.md` (checklist + decks reference impl). Registry: `apps/web/app/lib/sidebar-affordances.ts`. Runtime matrix: `docs/architecture/SIDEBAR_BEHAVIOR.md`.
+
+**Decks** use Pattern A — do not set `meta.sidebarSectionPath: '/workspace'` on deck routes; `/decks` owns its sidebar section.
+
+## Shell chrome (UI agents)
+
+**`AccountRailCluster`** (Local badge optional, bell, avatar, quick create, capture) mounts in **`AppHeader.vue` top-right** after `AppMenubar` with `placement="header"`. **Never** mount on `IconRail` — the bottom dock is navigation only.
+
+Guard: `apps/web/app/components/layout/shell-chrome-placement.test.ts` · E2E: `tests/e2e/campus-dock-resident.spec.ts`
+
 ## Further Reading
 
 - `packages/trellis-mcp/SKILL.md` — Full domain knowledge (entity fields, examples, best practices)

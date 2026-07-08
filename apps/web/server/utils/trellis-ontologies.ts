@@ -445,6 +445,35 @@ const budgetOntology: SchemaDefinition = {
   ],
 }
 
+const expenseOntology: SchemaDefinition = {
+  '@id': 'trellis:schema/expense',
+  '@type': 'trellis:Schema',
+  version: '1.0.0',
+  tier: 'system',
+  entityClass: 'temporal',
+  label: 'Expense',
+  labelPlural: 'Expenses',
+  icon: 'lucide:receipt',
+  color: 'amber',
+  projections: ['table', 'list'],
+  defaultProjection: 'table',
+  dialogShell: 'temporal',
+  panels: { properties: 'ExpenseProperties', content: 'ExpenseContent', footerActions: ['archive', 'delete'] },
+  propertyFieldIds: ['type', 'category', 'owner', 'tags'],
+  defaultSortField: 'title',
+  searchFields: ['title', 'category'],
+  fields: [
+    ...baseFields(),
+    ...temporalFields(),
+    f('category', 'select', {
+      selectOptions: ['Infra', 'Travel', 'Tools', 'GTM'],
+    }),
+    f('budgeted', 'number'),
+    f('spent', 'number'),
+    f('quarter', 'rich_text'),
+  ],
+}
+
 const githubIssueOntology: SchemaDefinition = {
   '@id': 'trellis:schema/github_issue',
   '@type': 'trellis:Schema',
@@ -728,6 +757,62 @@ const slideDeckOntology: SchemaDefinition = {
   fields: [...baseFields(), ...documentFields()],
 }
 
+const sheetOntology: SchemaDefinition = {
+  '@id': 'trellis:schema/sheet',
+  '@type': 'trellis:Schema',
+  version: '1.0.0',
+  tier: 'system',
+  entityClass: 'document',
+  label: 'Sheet',
+  labelPlural: 'Sheets',
+  icon: 'lucide:table-2',
+  color: 'emerald',
+  projections: ['table', 'list'],
+  defaultProjection: 'table',
+  dialogShell: 'document',
+  panels: {
+    properties: 'SheetProperties',
+    content: 'SheetContent',
+    footerActions: ['duplicate', 'delete'],
+  },
+  propertyFieldIds: ['type', 'category', 'owner', 'tags'],
+  defaultSortField: 'title',
+  searchFields: ['title', 'description'],
+  fields: [
+    ...baseFields(),
+    ...documentFields(),
+    f('query', 'rich_text', { required: true }),
+    f('columns', 'rich_text', { required: true }),
+    f('formulas', 'rich_text'),
+    f('zoneId', 'rich_text'),
+    f('facilityId', 'rich_text'),
+  ],
+}
+
+const canvasOntology: SchemaDefinition = {
+  '@id': 'trellis:schema/canvas',
+  '@type': 'trellis:Schema',
+  version: '1.0.0',
+  tier: 'system',
+  entityClass: 'document',
+  label: 'Canvas',
+  labelPlural: 'Canvases',
+  icon: 'lucide:layout-dashboard',
+  color: 'cyan',
+  projections: ['canvas', 'list', 'table'],
+  defaultProjection: 'canvas',
+  dialogShell: 'document',
+  panels: {
+    properties: 'DocumentPropertiesTab',
+    content: 'CanvasContent',
+    footerActions: ['duplicate', 'delete'],
+  },
+  propertyFieldIds: ['type', 'pin', 'category', 'owner', 'tags'],
+  defaultSortField: 'updatedAt',
+  searchFields: ['title', 'description'],
+  fields: [...baseFields(), ...documentFields(), f('layout', 'rich_text')],
+}
+
 const diagramOntology: SchemaDefinition = {
   '@id': 'trellis:schema/diagram',
   '@type': 'trellis:Schema',
@@ -855,8 +940,8 @@ const personOntology: SchemaDefinition = {
   panels: { properties: 'PersonProperties', content: 'PersonContent', footerActions: ['message', 'archive', 'delete'] },
   propertyFieldIds: ['type', 'category', 'owner', 'tags'],
   defaultSortField: 'title',
-  searchFields: ['title', 'email', 'jobTitle', 'organization'],
-  fields: [...baseFields(), ...actorFields(), f('organization', 'rich_text'), f('jobTitle', 'rich_text')],
+  searchFields: ['title', 'email', 'jobTitle', 'organization', 'content'],
+  fields: [...baseFields(), ...actorFields(), f('content', 'rich_text'), f('organization', 'rich_text'), f('jobTitle', 'rich_text')],
 }
 
 const contactOntology: SchemaDefinition = {
@@ -879,10 +964,11 @@ const contactOntology: SchemaDefinition = {
   },
   propertyFieldIds: ['type', 'category', 'owner', 'tags'],
   defaultSortField: 'title',
-  searchFields: ['title', 'email', 'company', 'phone'],
+  searchFields: ['title', 'email', 'company', 'phone', 'content'],
   fields: [
     ...baseFields(),
     ...actorFields(),
+    f('content', 'rich_text'),
     f('company', 'rich_text'),
     f('address', 'rich_text'),
     f('notes', 'rich_text'),
@@ -909,10 +995,11 @@ const organizationOntology: SchemaDefinition = {
   },
   propertyFieldIds: ['type', 'category', 'owner', 'tags'],
   defaultSortField: 'title',
-  searchFields: ['title', 'website', 'industry'],
+  searchFields: ['title', 'website', 'industry', 'content'],
   fields: [
     ...baseFields(),
     ...actorFields(),
+    f('content', 'rich_text'),
     f('website', 'url'),
     f('industry', 'rich_text'),
     f('memberCount', 'number'),
@@ -935,10 +1022,11 @@ const vendorOntology: SchemaDefinition = {
   panels: { properties: 'VendorProperties', content: 'VendorContent', footerActions: ['archive', 'delete'] },
   propertyFieldIds: ['type', 'category', 'owner', 'tags'],
   defaultSortField: 'title',
-  searchFields: ['title', 'email', 'services'],
+  searchFields: ['title', 'email', 'services', 'content'],
   fields: [
     ...baseFields(),
     ...actorFields(),
+    f('content', 'rich_text'),
     f('services', 'multi_select'),
     f('contractEnd', 'date'),
     f('rating', 'number'),
@@ -1542,12 +1630,15 @@ const entityOntology: SchemaDefinition = {
         'milestone',
         'sprint',
         'budget',
+        'expense',
         'bookmark',
         'email',
         'file',
         'page',
         'template',
         'slide_deck',
+        'sheet',
+        'canvas',
         'diagram',
         'person',
         'contact',
@@ -1828,6 +1919,42 @@ const notificationOntology: SchemaDefinition = {
 }
 
 // ============================================================================
+// User-tier demo ontology — browse Form view e2e
+// ============================================================================
+
+const feedbackOntology = {
+  '@id': 'trellis:schema/feedback',
+  '@type': 'trellis:Schema',
+  version: '1.0.0',
+  tier: 'user',
+  entityClass: 'document',
+  label: 'Feedback',
+  labelPlural: 'Feedback',
+  icon: 'lucide:message-square',
+  color: 'violet',
+  formPresentation: 'stacked',
+  projections: ['list', 'table', 'card-grid'],
+  defaultProjection: 'table',
+  dialogShell: 'document',
+  panels: { properties: 'DynamicProperties', content: 'DynamicContent', footerActions: ['archive', 'delete'] },
+  defaultSortField: 'title',
+  searchFields: ['title', 'comments'],
+  fields: [
+    f('title', 'title', { required: true }),
+    f('rating', 'select', {
+      required: true,
+      selectOptions: ['Good', 'Neutral', 'Bad'],
+      icon: 'lucide:star',
+      group: 'feedback',
+      display: 'popover',
+      editable: true,
+    }),
+    f('comments', 'rich_text', { icon: 'lucide:message-square', group: 'feedback', display: 'inline-input', editable: true }),
+    ...documentFields(),
+  ],
+} as SchemaDefinition
+
+// ============================================================================
 // All entity type ontologies — keyed by schema ID
 // ============================================================================
 
@@ -1842,6 +1969,7 @@ const entityTypeOntologies: Record<string, SchemaDefinition> = {
   'trellis:schema/milestone': milestoneOntology,
   'trellis:schema/sprint': sprintOntology,
   'trellis:schema/budget': budgetOntology,
+  'trellis:schema/expense': expenseOntology,
   'trellis:schema/github_issue': githubIssueOntology,
   'trellis:schema/pull_request': pullRequestOntology,
   'trellis:schema/note': noteOntology,
@@ -1849,6 +1977,8 @@ const entityTypeOntologies: Record<string, SchemaDefinition> = {
   'trellis:schema/page': pageOntology,
   'trellis:schema/template': templateOntology,
   'trellis:schema/slide_deck': slideDeckOntology,
+  'trellis:schema/sheet': sheetOntology,
+  'trellis:schema/canvas': canvasOntology,
   'trellis:schema/diagram': diagramOntology,
   'trellis:schema/bookmark': bookmarkOntology,
   'trellis:schema/email': emailOntology,
@@ -1868,6 +1998,7 @@ const entityTypeOntologies: Record<string, SchemaDefinition> = {
   'trellis:schema/wallet': walletOntology,
   'trellis:schema/decision': decisionOntology,
   'trellis:schema/artifact': artifactOntology,
+  'trellis:schema/feedback': feedbackOntology,
 }
 
 // ============================================================================
@@ -1986,6 +2117,8 @@ const channelOntology: SchemaDefinition = {
   projections: ['list'],
   defaultProjection: 'list',
   searchFields: ['title', 'description'],
+  browse: { enabled: false },
+  routed: '/messages',
   fields: [
     f('title', 'title', { required: true }),
     f('slug', 'rich_text', { icon: 'lucide:hash', group: 'classification', display: 'inline-input', editable: true }),
@@ -2020,6 +2153,8 @@ const messageOntology: SchemaDefinition = {
   projections: ['list'],
   defaultProjection: 'list',
   searchFields: ['content', 'authorName'],
+  browse: { enabled: false },
+  routed: '/messages',
   fields: [
     f('content', 'rich_text', { required: true }),
     f('channelId', 'rich_text'),
@@ -2136,11 +2271,11 @@ export {
   pullRequestOntology,
   integrationDefinitionOntology,
   integrationConnectionOntology,
-  // Campus Substrate (Phase 0)
   facilityOntology,
   zoneOntology,
   agentOntology,
   walletOntology,
   decisionOntology,
   artifactOntology,
+  feedbackOntology,
 }

@@ -3,7 +3,7 @@
    * /ontologies/[type] — schema editor for a single entity type.
    *
    * Focuses on the *definition* (fields, meta, icon), not the records.
-   * Records live at /collections/[type] or workspace pages.
+   * Records live at `/workspace/browse/:type`.
    */
   import { useOntologyRegistry, type DynamicEntityTypeConfig } from '~/composables/useOntologyRegistry'
   import SchemaEditor from '~/components/ontology/SchemaEditor.vue'

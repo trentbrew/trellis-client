@@ -14,7 +14,7 @@ import { useTrellisConfig } from './useTrellisConfig'
  */
 
 import type { EntityType, EntityTypeConfig } from '~/types/entity'
-import { getEntityTypeConfig, getAllEntityTypeIds } from '~/config/entityRegistry'
+import { getEntityTypeConfig, getAllEntityTypeIds, getBrowseEntityTypes } from '~/config/entityRegistry'
 import {
   ONTOLOGY_SYSTEM_SCHEMA_IDS,
   schemasRecordToServerTypes,
@@ -24,6 +24,13 @@ import {
   type OntologySchemaField,
   type OntologyTier,
 } from '~/lib/ontology-registry/schemas-to-server-types'
+import {
+  getRoutedSurface as resolveRoutedSurface,
+  resolveBrowseEnabled,
+  resolveStaticBrowseEnabled,
+} from '~/lib/ontology-capabilities'
+import { TABLE_SKIP_FIELD_NAMES } from '~/lib/ontology-sidebar-fields'
+import { buildStaticBrowseTableColumns, generateTableColumns } from '~/utils/fieldFormatters'
 
 export type { DynamicEntityTypeConfig, OntologyTier }
 
@@ -242,6 +249,52 @@ export function useOntologyRegistry() {
     return all.filter((t) => allowed.has(t.type))
   })
 
+  /** Types that appear in workspace browse (all-mode aggregate + sidebar pins). */
+  const browseableTypes = computed(() => {
+    const seen = new Set<string>()
+    const out: DynamicEntityTypeConfig[] = []
+
+    for (const serverType of _serverTypes.value.values()) {
+      if (!resolveBrowseEnabled(serverType.type, serverType)) continue
+      seen.add(serverType.type)
+      out.push(serverType)
+    }
+
+    for (const staticType of getBrowseEntityTypes()) {
+      if (seen.has(staticType.type)) continue
+      if (_serverTypes.value.has(staticType.type)) continue
+      if (!resolveStaticBrowseEnabled(staticType.type, staticType.browseHidden)) continue
+      out.push({
+        ...staticType,
+        dynamic: true,
+        dialogShell: staticType.dialogShell,
+        schemaId: `trellis:schema/${staticType.type}`,
+        schemaVersion: '0.0.0',
+        fields: [],
+        browse: { enabled: true },
+      } as DynamicEntityTypeConfig)
+    }
+
+    return out.sort((a, b) => a.label.localeCompare(b.label))
+  })
+
+  function isBrowsableType(type: string): boolean {
+    const serverType = _serverTypes.value.get(type)
+    if (serverType) return resolveBrowseEnabled(type, serverType)
+    try {
+      const staticCfg = getEntityTypeConfig(type as EntityType)
+      return resolveStaticBrowseEnabled(type, staticCfg.browseHidden)
+    } catch {
+      return false
+    }
+  }
+
+  function getRoutedSurface(type: string): string | undefined {
+    const serverType = _serverTypes.value.get(type)
+    if (serverType) return resolveRoutedSurface(type, serverType)
+    return resolveRoutedSurface(type)
+  }
+
   const allTypeIds = computed<string[]>(() => {
     const staticIds = getAllEntityTypeIds() as string[]
     const serverIds = Array.from(_serverTypes.value.keys())
@@ -344,20 +397,14 @@ export function useOntologyRegistry() {
   function getBrowseConfig(type: string) {
     const config = _serverTypes.value.get(type)
     if (!config || !config.fields?.length) {
+      const staticColumns = buildStaticBrowseTableColumns(type)
       return {
         sortOptions: [
           { value: 'title', label: 'Title' },
           { value: 'createdAt', label: 'Created' },
         ] as { value: string; label: string }[],
         searchFields: ['title', 'description'],
-        tableColumns: [] as {
-          key: string
-          label: string
-          valueType: string
-          align: 'left' | 'right'
-          isTitle: boolean
-          sortable: boolean
-        }[],
+        tableColumns: staticColumns,
       }
     }
 
@@ -378,16 +425,9 @@ export function useOntologyRegistry() {
     if (!baseSearchFields.includes('description')) baseSearchFields.push('description')
     const searchFields = baseSearchFields
 
-    const tableColumns = config.fields
-      .filter((f) => f.valueType !== 'rich_text' && f.valueType !== 'files')
-      .map((f) => ({
-        key: f.name,
-        label: _titleCase(f.name),
-        valueType: f.valueType,
-        align: (f.valueType === 'number' ? 'right' : 'left') as 'left' | 'right',
-        isTitle: f.valueType === 'title',
-        sortable: SORTABLE.has(f.valueType),
-      }))
+    const tableColumns = generateTableColumns(
+      config.fields.filter((f) => !TABLE_SKIP_FIELD_NAMES.has(f.name)),
+    )
 
     return { sortOptions, searchFields, tableColumns }
   }
@@ -585,6 +625,7 @@ export function useOntologyRegistry() {
     serverTypes,
     dynamicTypes,
     filteredDynamicTypes,
+    browseableTypes,
     allTypeIds,
     loading: computed(() => _loading.value),
     error: computed(() => _error.value),
@@ -594,6 +635,8 @@ export function useOntologyRegistry() {
     getDynamicEntityTypeConfig,
     getBrowseConfig,
     hasType,
+    isBrowsableType,
+    getRoutedSurface,
     waitForType,
     isServerType,
     isDynamicType,

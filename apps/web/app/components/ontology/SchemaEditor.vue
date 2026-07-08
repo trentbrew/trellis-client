@@ -47,6 +47,13 @@
   const { addFieldToType, removeFieldFromType, updateFieldOnType, replaceFieldsOnType, updateTypeMeta, refresh } =
     useOntologyRegistry()
 
+  /** Show link to unified browse when this type is browsable (not routed/core-hidden). */
+  const showBrowseRecordsLink = computed(() => {
+    if (props.config.routed) return false
+    if (props.config.browse?.enabled === false) return false
+    return true
+  })
+
   // ── Draft state ─────────────────────────────────────────────────────
 
   const label = ref(props.config.label)
@@ -453,6 +460,7 @@
 
         <!-- Record count link → dedicated /workspace/browse/:entityType page -->
         <NuxtLink
+          v-if="showBrowseRecordsLink"
           :to="wp(`/workspace/browse/${config.type}`)"
           class="shrink-0 inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-muted/40 hover:bg-muted text-xs text-muted-foreground hover:text-foreground transition-colors"
           title="View records">

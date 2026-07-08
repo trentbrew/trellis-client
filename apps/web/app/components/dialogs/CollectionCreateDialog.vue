@@ -219,17 +219,20 @@
 
     isCreating.value = true
     try {
-      const collectionId = await createCollection({
-        appId: currentApp.value.id,
-        title: form.value.title,
-        description: form.value.description,
-        icon: form.value.icon,
-        type: form.value.type,
-        slug,
-        order: collections.value.length,
-        isPublished: form.value.isPublished,
-        createdBy: 'current-user',
-      })
+      const collectionId = await createCollection(
+        {
+          appId: currentApp.value.id,
+          title: form.value.title,
+          description: form.value.description,
+          icon: form.value.icon,
+          type: form.value.type,
+          slug,
+          order: collections.value.length,
+          isPublished: form.value.isPublished,
+          createdBy: 'current-user',
+        },
+        { schemaFields: selectedSchema.value?.fields },
+      )
 
       // Find the newly created collection from reactive data
       const collection = collections.value.find((c) => c.id === collectionId)

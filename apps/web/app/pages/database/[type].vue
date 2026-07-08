@@ -3,7 +3,7 @@
    * Legacy redirect: /database/[type] → /ontologies/[type]
    *
    * This used to be the record browser. Record browsing now lives in
-   * /collections/[type] and the per-type workspace pages; the slug route
+   * /workspace/browse/:type and the per-type workspace pages; the slug route
    * under /ontologies focuses exclusively on schema editing.
    */
   definePageMeta({ title: 'Schema Editor', icon: 'lucide:shapes', middleware: ['auth'] })

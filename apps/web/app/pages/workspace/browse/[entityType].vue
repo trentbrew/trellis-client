@@ -1,20 +1,84 @@
 <script setup lang="ts">
   import type { PageStat } from '~/components/layout/Page.vue'
+  import type { DynamicEntityTypeConfig } from '~/composables/useOntologyRegistry'
   import { useBrowsePage } from '~/composables/useBrowsePage'
+  import { useBrowseAdvancedFilters } from '~/composables/useBrowseAdvancedFilters'
   import { useBrowseSelection } from '~/composables/useBrowseSelection'
   import DynamicEntityDialog from '~/components/dialogs/DynamicEntityDialog.vue'
   import GraphView from '~/components/views/GraphView.vue'
   import EntityCard from '~/components/entity/cards/EntityCard.vue'
+  import BrowseSpreadsheetView from '~/components/views/BrowseSpreadsheetView.vue'
+  import BrowseKanbanView from '~/components/views/BrowseKanbanView.vue'
+  import BrowseFormView from '~/components/browse/BrowseFormView.vue'
+  import BrowseImportExportActions from '~/components/browse/BrowseImportExportActions.vue'
+  import { ontologyToFormSpec } from '~/lib/ontology-form-spec'
+  import { schemaFieldToPropertyFieldId } from '~/lib/ontology-sidebar-fields'
 
   definePageMeta({ layout: 'default' })
 
   const route = useRoute()
+  const { wp } = useWorkspacePath()
   const entityType = computed(() => route.params.entityType as string)
 
-  const { getEntityConfig, getBrowseConfig } = useOntologyRegistry()
+  const { getEntityConfig, getBrowseConfig, getRoutedSurface, initialized } = useOntologyRegistry()
+
+  watch(
+    [entityType, initialized],
+    ([type, ready]) => {
+      if (!import.meta.client || !ready || !type) return
+      const routed = getRoutedSurface(type)
+      if (routed) {
+        void navigateTo(wp(routed), { replace: true })
+      }
+    },
+    { immediate: true },
+  )
 
   const typeConfig = computed(() => getEntityConfig(entityType.value))
   const browseConfig = computed(() => getBrowseConfig(entityType.value))
+
+  const dynamicTypeConfig = computed((): DynamicEntityTypeConfig | null => {
+    const cfg = typeConfig.value
+    if (cfg && 'dynamic' in cfg && cfg.dynamic) return cfg as DynamicEntityTypeConfig
+    return null
+  })
+
+  const formPresentation = computed(() => dynamicTypeConfig.value?.formPresentation)
+
+  const showFormTab = computed(() => {
+    const cfg = dynamicTypeConfig.value
+    if (!cfg) return false
+    const spec = ontologyToFormSpec(
+      {
+        '@id': cfg.schemaId,
+        label: cfg.label,
+        fields: cfg.fields,
+        formPresentation: cfg.formPresentation,
+      },
+      { includeTitle: true },
+    )
+    return spec.fields.length > 0
+  })
+
+  const supportsKanban = computed(() =>
+    dynamicTypeConfig.value?.fields?.some(
+      (field) => field.valueType === 'select' || field.valueType === 'status',
+    ),
+  )
+
+  const viewModeOptions = computed(() => {
+    const options = [
+      { mode: 'table' as const, label: 'Table', icon: 'lucide:table' },
+      { mode: 'grid' as const, label: 'Grid', icon: 'lucide:grid-3x3' },
+    ]
+    if (supportsKanban.value) {
+      options.splice(1, 0, { mode: 'kanban', label: 'Kanban', icon: 'lucide:square-kanban' })
+    }
+    if (showFormTab.value) {
+      options.push({ mode: 'form', label: 'Form', icon: 'lucide:clipboard-list' })
+    }
+    return options
+  })
 
   const pageTitle = computed(
     () => (typeConfig.value as any)?.labelPlural || (typeConfig.value as any)?.label || entityType.value,
@@ -30,7 +94,7 @@
 
   const {
     items,
-    filteredItems,
+    filteredItems: browseFilteredItems,
     browseState,
     viewMode,
     viewOpen,
@@ -48,7 +112,26 @@
     searchFields: computed(() => browseConfig.value.searchFields).value,
     defaultViewMode: 'list',
     sortOptions: computed(() => browseConfig.value.sortOptions).value,
+    formPresentation,
   })
+
+  const browseEntityTypes = computed(() => [entityType.value])
+
+  const { advancedFilters, applyAdvancedFilters } = useBrowseAdvancedFilters({
+    entityTypes: browseEntityTypes,
+  })
+
+  const displayItems = computed(() => applyAdvancedFilters(browseFilteredItems.value))
+
+  onMounted(() => {
+    if (route.query.view === 'form' && showFormTab.value) {
+      browseState.setViewMode('form')
+    }
+  })
+
+  function handleViewResponses() {
+    browseState.setViewMode('table')
+  }
 
   // ---------------------------------------------------------------------------
   // Multi-select + batch operations
@@ -60,9 +143,45 @@
     clearSelection,
     selectedItems,
     selectionCount,
+    handleFieldUpdate,
     handleBatchDelete,
     handleBatchDuplicate,
-  } = useBrowseSelection(filteredItems)
+  } = useBrowseSelection(displayItems)
+
+  const { update: updateEntity } = useEntities()
+
+  const handleSpreadsheetCellUpdate = async (item: any, column: string, value: unknown) => {
+    if (column === 'title') {
+      await updateEntity({ ...item, title: String(value ?? '').trim() || 'Untitled' })
+      return
+    }
+    if (column === 'startDate') {
+      const patch = value as { startDate: string; startTime?: string; allDay?: boolean }
+      await updateEntity({
+        ...item,
+        startDate: patch.startDate || null,
+        ...(patch.allDay !== undefined ? { allDay: patch.allDay } : {}),
+        ...(patch.startTime !== undefined ? { startTime: patch.startTime } : {}),
+      })
+      return
+    }
+    const propertyFieldId = schemaFieldToPropertyFieldId(column)
+    if (propertyFieldId) {
+      await handleFieldUpdate(item, propertyFieldId, value)
+      return
+    }
+    await updateEntity({ ...item, [column]: value })
+  }
+
+  const toggleSelectAll = () => {
+    const all = displayItems.value.length > 0 && displayItems.value.every((item) => isSelected(item.id))
+    if (all) clearSelection()
+    else {
+      for (const item of displayItems.value) {
+        if (!isSelected(item.id)) toggleSelection(item.id)
+      }
+    }
+  }
 
   // ---------------------------------------------------------------------------
   // Stats
@@ -75,14 +194,6 @@
   // ---------------------------------------------------------------------------
 
   const tableColumns = computed(() => browseConfig.value.tableColumns)
-
-  function cellValue(item: any, key: string): string {
-    const val = item[key]
-    if (val === null || val === undefined) return '—'
-    if (typeof val === 'boolean') return val ? 'Yes' : 'No'
-    if (typeof val === 'object') return JSON.stringify(val)
-    return String(val)
-  }
 
   /** Build the fields prop for EntityCard from non-title table columns */
   function cardFields(item: any) {
@@ -105,25 +216,27 @@
     :stats="stats"
     :show-view-switcher="true"
     :fill-height="true"
+    :hide-search="viewMode === 'form'"
     :browse="browseState"
-    :view-mode-options="[
-      { mode: 'list', label: 'List', icon: 'lucide:list' },
-      { mode: 'table', label: 'Table', icon: 'lucide:table' },
-      { mode: 'grid', label: 'Grid', icon: 'lucide:grid-3x3' },
-      { mode: 'graph', label: 'Graph', icon: 'lucide:git-fork' },
-    ]">
-    <!-- Toolbar Actions -->
+    :advanced-filters="advancedFilters ?? undefined"
+    :view-mode-options="viewModeOptions">
     <template #toolbarActions>
-      <UiButton @click="handleNewItem()">
+      <BrowseImportExportActions
+        v-if="viewMode !== 'form'"
+        :items="displayItems"
+        :selected-items="selectedItems"
+        :filename-slug="`browse-${entityType}`" />
+
+      <UiButton v-if="viewMode !== 'form'" @click="handleNewItem()">
         <Icon name="lucide:plus" class="mr-2 h-4 w-4" />
-        New {{ (typeConfig as any)?.label || entityType }}
+        New
       </UiButton>
     </template>
 
     <!-- ================= LIST VIEW ================= -->
     <div v-if="viewMode === 'list'" class="flex flex-col gap-2">
       <EntityCard
-        v-for="item in filteredItems"
+        v-for="item in displayItems"
         :key="item.id"
         :item="item as any"
         layout="list"
@@ -132,13 +245,13 @@
         @click="openDetail(item)"
         @select="toggleSelection(item.id, $event)" />
       <div
-        v-if="!filteredItems.length"
+        v-if="!displayItems.length"
         class="flex flex-col items-center justify-center h-48 text-muted-foreground gap-3">
         <Icon :name="pageIcon" class="h-8 w-8 text-muted-foreground/30" />
         <p class="text-sm">No {{ pageTitle.toLowerCase() }} yet</p>
         <UiButton size="sm" variant="outline" @click="handleNewItem()">
           <Icon name="lucide:plus" class="mr-2 h-3.5 w-3.5" />
-          New {{ (typeConfig as any)?.label || entityType }}
+          New
         </UiButton>
       </div>
     </div>
@@ -146,7 +259,7 @@
     <!-- ================= GRID VIEW ================= -->
     <div v-else-if="viewMode === 'grid'" class="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
       <EntityCard
-        v-for="item in filteredItems"
+        v-for="item in displayItems"
         :key="item.id"
         :item="item as any"
         layout="grid"
@@ -155,88 +268,63 @@
         @click="openDetail(item)"
         @select="toggleSelection(item.id, $event)" />
       <div
-        v-if="!filteredItems.length"
+        v-if="!displayItems.length"
         class="col-span-full flex flex-col items-center justify-center h-48 text-muted-foreground gap-3">
         <Icon :name="pageIcon" class="h-8 w-8 text-muted-foreground/30" />
         <p class="text-sm">No {{ pageTitle.toLowerCase() }} yet</p>
         <UiButton size="sm" variant="outline" @click="handleNewItem()">
           <Icon name="lucide:plus" class="mr-2 h-3.5 w-3.5" />
-          New {{ (typeConfig as any)?.label || entityType }}
+          New
         </UiButton>
       </div>
     </div>
 
+    <!-- ================= KANBAN VIEW ================= -->
+    <div v-else-if="viewMode === 'kanban'" class="flex h-full min-h-0 flex-1 flex-col">
+      <BrowseKanbanView
+        class="min-h-0 flex-1"
+        :items="displayItems"
+        :entity-type="entityType"
+        @open-detail="openDetail"
+        @field-update="handleFieldUpdate" />
+    </div>
+
     <!-- ================= TABLE VIEW ================= -->
-    <div v-else-if="viewMode === 'table'" class="overflow-x-auto">
-      <table class="w-full text-sm">
-        <thead>
-          <tr class="border-b border-border">
-            <th class="w-8 py-2 px-3"></th>
-            <th
-              v-for="col in tableColumns"
-              :key="col.key"
-              class="py-2 px-3 text-xs font-medium text-muted-foreground whitespace-nowrap"
-              :class="col.align === 'right' ? 'text-right' : 'text-left'">
-              {{ col.label }}
-            </th>
-            <th class="py-2 px-3 text-xs font-medium text-muted-foreground text-right">Updated</th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr
-            v-for="item in filteredItems"
-            :key="item.id"
-            class="border-b border-border/50 hover:bg-muted/30 cursor-pointer transition-colors"
-            @click="openDetail(item)">
-            <td class="py-2 px-3">
-              <input
-                type="checkbox"
-                class="h-4 w-4 rounded border-border"
-                :checked="isSelected(item.id)"
-                @click.stop="toggleSelection(item.id)" />
-            </td>
-            <td
-              v-for="col in tableColumns"
-              :key="col.key"
-              class="py-2 px-3"
-              :class="col.align === 'right' ? 'text-right tabular-nums' : ''">
-              <span v-if="col.isTitle" class="font-medium">{{ item.title || 'Untitled' }}</span>
-              <span v-else class="text-muted-foreground">{{ cellValue(item, col.key) }}</span>
-            </td>
-            <td class="py-2 px-3 text-right text-muted-foreground text-xs whitespace-nowrap">
-              {{
-                item.updatedAt
-                  ? new Date(item.updatedAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
-                  : '—'
-              }}
-            </td>
-          </tr>
-        </tbody>
-      </table>
-      <div
-        v-if="!filteredItems.length"
-        class="flex flex-col items-center justify-center h-48 text-muted-foreground gap-3">
-        <Icon :name="pageIcon" class="h-8 w-8 text-muted-foreground/30" />
-        <p class="text-sm">No {{ pageTitle.toLowerCase() }} yet</p>
-        <UiButton size="sm" variant="outline" @click="handleNewItem()">
-          <Icon name="lucide:plus" class="mr-2 h-3.5 w-3.5" />
-          New {{ (typeConfig as any)?.label || entityType }}
-        </UiButton>
-      </div>
+    <div v-else-if="viewMode === 'table'" class="flex min-h-0 flex-1 flex-col">
+      <BrowseSpreadsheetView
+        class="min-h-0 flex-1"
+        :items="displayItems"
+        :is-selected="isSelected"
+        :entity-type="entityType"
+        :storage-key="`browse:table:${entityType}`"
+        @toggle-select="toggleSelection"
+        @toggle-select-all="toggleSelectAll"
+        @open-detail="openDetail"
+        @cell-update="handleSpreadsheetCellUpdate" />
     </div>
 
     <!-- ================= GRAPH VIEW ================= -->
     <div
       v-else-if="viewMode === 'graph'"
       class="h-[calc(100vh-200px)] -mx-4 -mb-4 rounded-lg border border-border/50 bg-card/30 overflow-hidden">
-      <GraphView :entities="filteredItems" @open-entity="openDetail" />
+      <GraphView :entities="displayItems" @open-entity="openDetail" />
+    </div>
+
+    <!-- ================= FORM VIEW ================= -->
+    <div v-else-if="viewMode === 'form' && dynamicTypeConfig" class="py-6">
+      <BrowseFormView
+        :type-config="dynamicTypeConfig"
+        :response-count="items.length"
+        @view-responses="handleViewResponses" />
     </div>
 
     <!-- Results count -->
-    <div v-if="viewMode !== 'graph'" class="text-xs text-muted-foreground mt-4 pt-4 border-t border-border pb-10">
-      Showing {{ filteredItems.length }}
+    <div
+      v-if="viewMode !== 'graph' && viewMode !== 'form' && viewMode !== 'kanban'"
+      class="text-xs text-muted-foreground mt-4 pt-4 border-t border-border pb-10">
+      Showing {{ displayItems.length }}
       {{
-        filteredItems.length === 1
+        displayItems.length === 1
           ? (typeConfig as any)?.label || entityType
           : (typeConfig as any)?.labelPlural || pageTitle.toLowerCase()
       }}
@@ -244,6 +332,7 @@
 
     <!-- Selection Bar -->
     <EntitySelectionBar
+      v-if="viewMode !== 'form'"
       :selected-items="selectedItems"
       :selection-count="selectionCount"
       @batch-delete="handleBatchDelete"

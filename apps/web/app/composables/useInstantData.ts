@@ -6,11 +6,13 @@ import type {
   Workflow,
   WorkflowGraph,
   DatabaseSchema,
+  DatabaseField,
 } from '~/types/database'
 import { pickOrgAndApp } from '~/lib/pickOrgAndApp'
 import { SKIP_ONBOARDING } from '~/lib/onboarding'
 import { createCollectionGraph, serializeTrellisDocument } from '~/lib/trellis'
 import { createDefaultProjections } from '~/lib/projections'
+import { provisionCollectionOntology } from '~/lib/collection-schema-to-ontology'
 
 /**
  * Default JSON-LD boilerplate for new database collections
@@ -164,8 +166,17 @@ export function useInstantData() {
   const collectionsLoading = useState<boolean>('instantData:collectionsLoading', () => false)
 
   // Custom Types - app-scoped, stored in settings
+  /** @deprecated Use user-tier TQL ontologies via OntologyCreateDialog or CLI/MCP instead. */
   const customTypes = useState<CustomType[]>('instantData:customTypes', () => [])
   const customTypesLoading = useState<boolean>('instantData:customTypesLoading', () => false)
+
+  function warnDeprecatedCustomTypes(op: string) {
+    if (import.meta.dev) {
+      console.warn(
+        `[useInstantData] customTypes.${op} is deprecated — create user-tier ontologies at /ontologies instead.`,
+      )
+    }
+  }
 
   // Workflows - app-scoped, stored in settings
   const workflows = useState<Workflow[]>('instantData:workflows', () => [])
@@ -814,7 +825,10 @@ export function useInstantData() {
     await db.transact([tx.applications[id].delete()])
   }
 
-  const createCollection = async (data: Omit<Collection, 'id' | 'createdAt' | 'updatedAt'>) => {
+  const createCollection = async (
+    data: Omit<Collection, 'id' | 'createdAt' | 'updatedAt'>,
+    options?: { schemaFields?: DatabaseField[] },
+  ) => {
     if (!user.value) throw new Error('User not authenticated')
 
     const id = crypto.randomUUID()
@@ -826,7 +840,17 @@ export function useInstantData() {
     const description = String((data as Record<string, any>).description || '')
 
     const isDatabase = data.type === 'database'
-    const seedSchema = isDatabase ? createSeedSchema(id) : null
+    let seedSchema = isDatabase ? createSeedSchema(id) : null
+    if (isDatabase && seedSchema && options?.schemaFields?.length) {
+      seedSchema = {
+        ...seedSchema,
+        fields: options.schemaFields.map((field, index) => ({
+          ...field,
+          id: field.id || crypto.randomUUID(),
+          order: field.order ?? index,
+        })),
+      }
+    }
     const initialContent = isDatabase
       ? import.meta.dev
         ? getSeededDatabaseContent({ id, name, description, ownerId, schema: seedSchema! })
@@ -877,6 +901,24 @@ export function useInstantData() {
     }
 
     await db.transact(txs)
+
+    if (isDatabase && data.slug) {
+      try {
+        const provision = await provisionCollectionOntology({
+          slug: String(data.slug),
+          title: name,
+          description,
+          icon: data.icon,
+          schema: seedSchema,
+          agentId: 'browser',
+        })
+        if (import.meta.dev && provision.skipped) {
+          console.info(`[createCollection] ontology provision skipped for "${data.slug}": ${provision.skipped}`)
+        }
+      } catch (err) {
+        console.warn('[createCollection] ontology provision failed (collection still created):', err)
+      }
+    }
 
     return id
   }
@@ -941,7 +983,9 @@ export function useInstantData() {
     ])
   }
 
+  /** @deprecated Use POST /api/graph/ontology or OntologyCreateDialog instead. */
   const createCustomType = async (data: Omit<CustomType, 'id' | 'appId' | 'createdAt' | 'updatedAt'>) => {
+    warnDeprecatedCustomTypes('createCustomType')
     const appId = currentApp.value?.id
     if (!appId) throw new Error('No application selected')
 
@@ -963,7 +1007,9 @@ export function useInstantData() {
     return next.id
   }
 
+  /** @deprecated Use useOntologyRegistry.updateTypeMeta instead. */
   const updateCustomType = async (id: string, patch: Partial<CustomType>) => {
+    warnDeprecatedCustomTypes('updateCustomType')
     const appId = currentApp.value?.id
     if (!appId) throw new Error('No application selected')
 
@@ -986,7 +1032,9 @@ export function useInstantData() {
     await upsertAppSetting(appId, 'customTypes', items)
   }
 
+  /** @deprecated Use useOntologyRegistry.deleteType instead. */
   const deleteCustomType = async (id: string) => {
+    warnDeprecatedCustomTypes('deleteCustomType')
     const appId = currentApp.value?.id
     if (!appId) throw new Error('No application selected')
 

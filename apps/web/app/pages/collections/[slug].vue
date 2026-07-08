@@ -5,7 +5,7 @@
   import { CodeEditor } from '~/components/editors/CodeEditor'
   import { JsonLdBlocksEditor } from '~/components/JsonLdBlocks'
   import TrellisBlocksProjection from '~/components/data/TrellisBlocksProjection.vue'
-  import DataTableSchemaEditor from '~/components/data/DataTable/SchemaEditor.vue'
+  import DataTableSchemaEditor from '~/components/data/DataTable/DataTableSchemaEditor.vue'
   import CollectionTemplates from '~/components/data/CollectionTemplates.vue'
   import type { CollectionTemplate } from '~/components/data/CollectionTemplates.vue'
   import { createDefaultDatabaseSchema, normalizeDatabaseSchema } from '~/lib/normalizeDatabaseSchema'
@@ -24,12 +24,39 @@
   })
 
   const route = useRoute()
+  const { wp } = useWorkspacePath()
   const {
     currentApp,
     collectionsLoading,
     updateCollection: updateCollectionData,
     getCollectionBySlug,
   } = useInstantData()
+  const { resolveSlug } = useCollectionHost()
+
+  const collectionSlug = computed(() => String(route.params.slug || ''))
+
+  watch(
+    [collectionSlug, collectionsLoading, () => currentApp.value?.id],
+    ([slug, loading]) => {
+      if (!slug || loading) return
+      if (!currentApp.value?.id) return
+
+      const host = resolveSlug(slug)
+      if (host.collision && import.meta.dev) {
+        console.warn(
+          `[collections] slug collision: InstantDB and ontology both match "${slug}" — InstantDB wins`,
+        )
+      }
+      if (host.kind === 'ontology-browse' && host.path) {
+        if (import.meta.dev) {
+          console.warn(`[collections] slug "${slug}" matches ontology type — redirecting to browse`)
+        }
+        void navigateTo(wp(host.path), { replace: true })
+      }
+    },
+    { immediate: true },
+  )
+
   const instant = useInstantDb()
   const tx = instant.tx as any
 

@@ -2,7 +2,8 @@
   import { AnimatePresence, motion } from 'motion-v'
   import Sortable from 'sortablejs'
   import { SYSTEM_TYPES } from '~/lib/systemTypes'
-  import { getAllEntityTypes } from '~/config/entityRegistry'
+  import { useOntologyRegistry } from '~/composables/useOntologyRegistry'
+  import { getCleanPath } from '~/config/routes'
   import type { ContextMenuEvent } from '~/types/contextMenu'
   import { CONTEXT_ACTIONS } from '~/types/contextMenu'
   import type { SidebarTreeNode } from '~/composables/useSidebarTree'
@@ -15,6 +16,7 @@
     treeNodeSectionMenu,
     treeNodeItemMenu,
   } from '~/composables/useContextMenu'
+  import { resolveSidebarEntityId, startCanvasEntityDrag } from '~/lib/canvas-dnd'
 
   defineProps<{
     headerAbove?: boolean
@@ -54,19 +56,6 @@
   // ── Sidebar filter ─────────────────────────────────────────
   const sidebarFilter = ref('')
   const sidebarFilterInputRef = ref<HTMLInputElement | null>(null)
-  const menuIconRef = ref<{ startAnimation: () => void; stopAnimation: () => void } | null>(null)
-
-  watch(
-    () => sidebarCollapse.isCollapsed.value,
-    (collapsed) => {
-      if (collapsed) {
-        menuIconRef.value?.stopAnimation()
-      } else {
-        menuIconRef.value?.startAnimation()
-      }
-    },
-  )
-
   const matchesFilter = (label: string) => {
     if (!sidebarFilter.value) return true
     return label.toLowerCase().includes(sidebarFilter.value.toLowerCase())
@@ -126,6 +115,7 @@
   })
 
   const { customTypes } = useInstantData()
+  const { browseableTypes, deleteType, getEntityConfig: getOntologyEntityConfig } = useOntologyRegistry()
 
   const { state: graphTypesState } = useGraphTypesSidebar()
 
@@ -661,12 +651,47 @@
 
   const isWorkspaceRoute = computed(() => routes.currentSidebarSection.value?.path === '/workspace')
   const isOntologiesRoute = computed(() => routes.currentSidebarSection.value?.path === '/ontologies')
+  const isHomeRoute = computed(() => {
+    const clean = getCleanPath(route.path)
+    return clean === '/home' || clean.startsWith('/home/')
+  })
   const isChatRoute = computed(
     () => route.path.startsWith('/messages') || routes.currentSidebarSection.value?.path === '/messages',
   )
   const isPagesRoute = computed(
     () => route.path.startsWith('/pages') || routes.currentSidebarSection.value?.path === '/pages',
   )
+  const isCanvasesRoute = computed(() => {
+    const clean = getCleanPath(route.path)
+    return clean === '/canvases' || clean.startsWith('/canvases/')
+  })
+
+  function sidebarEntityDragStart(event: DragEvent, item: { path?: string; meta?: { entityId?: string } }) {
+    startCanvasEntityDrag(event, resolveSidebarEntityId(item))
+  }
+
+  function sidebarItemDraggable(item: { path?: string; meta?: { entityId?: string } }) {
+    return isCanvasesRoute.value && !!resolveSidebarEntityId(item)
+  }
+
+  /** Dedicated sidebar panels — skip AnimatePresence to avoid motion layout teardown on null. */
+  const isRouteOwnedSidebar = computed(
+    () =>
+      isCalendarRoute.value ||
+      isLocationsRoute.value ||
+      isHomeRoute.value ||
+      isChatRoute.value ||
+      isPagesRoute.value ||
+      isCanvasesRoute.value ||
+      isBrowseRoute.value,
+  )
+
+  const sidebarPanelShellClass = computed(() =>
+    isRouteSidebarPanel.value
+      ? 'flex min-h-0 flex-1 flex-col overflow-hidden'
+      : 'flex min-h-0 flex-col p-3 pl-2 pt-0 pb-6',
+  )
+
   const isCalendarRoute = computed(
     () =>
       route.path === '/calendar' ||
@@ -698,13 +723,11 @@
   const browseAllPinned = computed(() => pageSidebar.isPinned('all'))
 
   const browsePinnedTypes = computed(() => {
-    const allTypes = getAllEntityTypes()
-    return allTypes.filter((t) => pageSidebar.isPinned(t.type))
+    return browseableTypes.value.filter((t) => pageSidebar.isPinned(t.type))
   })
 
   const browseUnpinnedTypes = computed(() => {
-    const allTypes = getAllEntityTypes()
-    return allTypes.filter(
+    return browseableTypes.value.filter(
       (t) =>
         !pageSidebar.isPinned(t.type) &&
         ((pageSidebar.state.typeCounts[t.type] ?? 0) > 0 || t.type === pageSidebar.state.activeTypeId),
@@ -893,7 +916,12 @@
 
   const handleDeleteType = async (typeId: string) => {
     try {
-      await deleteCustomType(typeId)
+      const config = getOntologyEntityConfig(typeId)
+      if (config && 'schemaId' in config && config.tier === 'user') {
+        await deleteType(config.schemaId)
+      } else {
+        await deleteCustomType(typeId)
+      }
       ;(nuxtApp as any).$toast?.success('Type deleted')
     } catch (e) {
       const message = e instanceof Error ? e.message : 'Failed to delete type'
@@ -976,7 +1004,7 @@
   <!-- Sidebar: Content frame (matches page header) -->
   <aside
     data-slot="app-sidebar"
-    class="border-sidebar-border/75 rounded-xl! text-sidebar-foreground hidden flex-col border-r-none px-0 pb-0 lg:flex relative"
+    class="border-sidebar-border/75 rounded-xl! text-sidebar-foreground hidden min-h-0 shrink-0 flex-col border-r-none px-0 pb-0 lg:flex relative self-stretch"
     :style="{
       width: sidebarCollapse.isCollapsed.value ? '0px' : `${sidebarWidth}px`,
       transition: transitionsDisabled ? 'none' : 'width 0.3s ease',
@@ -996,25 +1024,11 @@
       }"
       @mousedown="startResize" />
 
-    <!-- Sidebar toggle: always rendered, sits at search-row position -->
-    <!-- <ClientOnly>
-      <UiTooltip v-if="!sidebarCollapse.isForcedCollapsed.value">
-        <UiTooltipTrigger as-child>
-          <button
-            type="button"
-            :aria-label="sidebarCollapse.isCollapsed.value ? 'Expand sidebar' : 'Collapse sidebar'"
-            :class="sidebarCollapse.isCollapsed.value ? 'border-none!' : 'bg-foreground/3'"
-            class="absolute z-20 flex h-[32px] w-[32px] shrink-0 items-center justify-center rounded-full border border-border bg-card text-muted-foreground shadow-sm transition-all hover:text-foreground hover:bg-muted mr-2"
-            :style="{ left: '10px', top: '10px' }"
-            @click="sidebarCollapse.toggle()">
-            <AnimatedIconsMenu ref="menuIconRef" :size="14" />
-          </button>
-        </UiTooltipTrigger>
-        <UiTooltipContent side="bottom" :side-offset="6">
-          {{ sidebarCollapse.isCollapsed.value ? 'Expand sidebar' : 'Collapse sidebar' }}
-        </UiTooltipContent>
-      </UiTooltip>
-    </ClientOnly> -->
+    <!-- Collapsed: seam affordance straddles sidebar/content boundary -->
+    <SidebarCollapseTrigger
+      v-if="sidebarCollapse.isCollapsed.value"
+      variant="edge"
+    />
 
     <!-- Builder Controls (Edit Mode) -->
     <div v-if="showBuilderUI && canCreatePages" class="px-4 py-0 border-b border-sidebar-border/10">
@@ -1039,8 +1053,7 @@
               <!-- <div class="sticky top-0 z-10 px-2.5 pt-2.5 pb-2.5" style="background: linear-gradient(to bottom, var(--card) 0%, transparent 100%)"> -->
               <div v-if="!isRouteSidebarPanel" class="sticky top-0 z-10 px-2.5 pt-2.5 pb-2.5">
                 <div class="flex items-center gap-1.5">
-                  <!-- Toggle placeholder: reserves space equal to the toggle button -->
-                  <!-- <div v-if="!sidebarCollapse.isForcedCollapsed.value" class="shrink-0 h-[30px] w-[30px]" /> -->
+                  <SidebarCollapseTrigger variant="inline" />
                   <!-- Search input -->
                   <div class="relative flex-1 flex items-center">
                     <Icon
@@ -1073,41 +1086,15 @@
                   </div>
                 </div>
               </div>
-              <AnimatePresence mode="wait">
-                <motion.div
-                  :key="sidebarSectionKey"
-                  :initial="{ opacity: 0, x: -8 }"
-                  :animate="{ opacity: 1, x: 0 }"
-                  :exit="{ opacity: 0, x: -8 }"
-                  :transition="transitionsDisabled ? { duration: 0 } : { duration: 0.22, ease: 'easeOut' }"
-                  :class="
-                    isRouteSidebarPanel
-                      ? 'flex min-h-0 flex-1 flex-col overflow-hidden'
-                      : 'flex min-h-0 flex-1 flex-col p-3 pl-2 pt-0 pb-24'
-                  ">
-                  <!-- Calendar Sidebar Panel (calendar route) -->
-                  <template v-if="isCalendarRoute">
-                    <CalendarSidebarPanel />
-                  </template>
+              <div v-if="isRouteOwnedSidebar" :class="sidebarPanelShellClass">
+                <CalendarSidebarPanel v-if="isCalendarRoute" />
+                <LocationsSidebarPanel v-else-if="isLocationsRoute" />
+                <AgentConversationList v-else-if="isHomeRoute" class="flex min-h-0 flex-1 flex-col pt-2" />
+                <ChatSidebar v-else-if="isChatRoute" class="pt-2" />
+                <PagesSidebar v-else-if="isPagesRoute" class="pt-2" />
+                <CanvasesSidebar v-else-if="isCanvasesRoute" class="flex min-h-0 flex-1 flex-col" />
+                <div v-else-if="isBrowseRoute" class="py-4">
 
-                  <!-- Locations Sidebar (locations route) -->
-                  <template v-else-if="isLocationsRoute">
-                    <LocationsSidebarPanel />
-                  </template>
-
-                  <!-- Chat Sidebar (messages route) -->
-                  <template v-else-if="isChatRoute">
-                    <ChatSidebar class="pt-2" />
-                  </template>
-
-                  <!-- Pages Sidebar (pages route) -->
-                  <template v-else-if="isPagesRoute">
-                    <PagesSidebar class="pt-2" />
-                  </template>
-
-                  <!-- Browse type filter sidebar -->
-                  <template v-else-if="isBrowseRoute">
-                    <div class="py-4">
                       <template v-if="pageSidebar.state.isActive">
                         <div class="relative px-2 space-y-4">
                           <!-- Pinned section -->
@@ -1290,11 +1277,14 @@
                           <div v-for="n in 6" :key="n" class="h-8 rounded-xl bg-muted/30 animate-pulse" />
                         </div>
                       </template>
-                    </div>
-                  </template>
-
+                </div>
+              </div>
+              <div
+                v-else
+                :key="sidebarSectionKey"
+                :class="sidebarPanelShellClass">
                   <!-- Dynamic Sidebar Sections (if configured in route) -->
-                  <template v-else-if="filteredDynamicSidebarSections">
+                  <template v-if="filteredDynamicSidebarSections">
                     <div ref="sectionsContainerRef" class="py-4">
                       <!-- Settings: Pinned section -->
                       <div v-if="isSettingsSection && pinnedSettingsItems.length > 0" class="mb-6">
@@ -1470,7 +1460,10 @@
                                     "
                                     @action="handleContextAction">
                                     <template #trigger>
-                                      <div class="group relative elbow-connector">
+                                      <div
+                                        class="group relative elbow-connector"
+                                        :draggable="!isTypesSection && sidebarItemDraggable(item)"
+                                        @dragstart="sidebarEntityDragStart($event, item)">
                                         <AppNavLink
                                           v-if="item?.path"
                                           :to="item.path"
@@ -2308,8 +2301,7 @@
                       </AnimatePresence>
                     </div>
                   </div>
-                </motion.div>
-              </AnimatePresence>
+                </div>
             </div>
           </template>
         </AppContextMenu>
