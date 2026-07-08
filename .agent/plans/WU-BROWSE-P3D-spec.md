@@ -1,7 +1,7 @@
 # Spec: Browse Convergence Phase 3d — Collection record ETL + graph cutover
 
 **Parent:** `.agent/plans/WU-BROWSE-P3-spec.md` · **Requires:** 3b-1 + 3c shipped  
-**Status:** queued — **human ack required** before cutover
+**Status:** 3d-1 script shipped — **human ack required** before cutover
 
 ---
 

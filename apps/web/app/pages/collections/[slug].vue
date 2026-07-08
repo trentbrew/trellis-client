@@ -11,6 +11,7 @@
   import { createDefaultDatabaseSchema, normalizeDatabaseSchema } from '~/lib/normalizeDatabaseSchema'
   import { createDefaultProjections, normalizeProjections, buildProjectionTypeOptions, suggestProjections } from '~/lib/projections'
   import { createDefaultTrellisContext, createCollectionGraph, serializeTrellisDocument } from '~/lib/trellis'
+  import { collectionMigratedSettingKey } from '~/lib/collection-graph-migration'
   import BoardView from '~/components/views/BoardView.vue'
   import CalendarView from '~/components/views/CalendarView.vue'
   import GraphView from '~/components/views/GraphView.vue'
@@ -1261,12 +1262,47 @@
   }
 
   const isProjectionMenuOpen = ref(false)
+
+  const migratedToGraph = ref(false)
+
+  const loadMigratedFlag = async () => {
+    if (!collection.value) return
+    migratedToGraph.value = false
+    const settingKey = collectionMigratedSettingKey(collection.value.id)
+    const resp = await instant.queryOnce({
+      settings: {
+        $: {
+          where: { settingKey },
+        },
+      },
+    })
+    const existing = (resp.data as any)?.settings?.[0]
+    migratedToGraph.value = existing?.value === true
+  }
+
+  watch(
+    () => collection.value?.id,
+    (id) => {
+      if (id) void loadMigratedFlag()
+    },
+    { immediate: true },
+  )
 </script>
 
 <template>
   <Page variant="canvas" :fill-height="true">
     <template #header>
       <div v-if="collection" class="space-y-3">
+        <UiAlert v-if="migratedToGraph" variant="default" class="border-amber-500/40 bg-amber-500/10">
+          <Icon name="lucide:database-backup" class="h-4 w-4" />
+          <UiAlertTitle>Records served from graph</UiAlertTitle>
+          <UiAlertDescription>
+            This collection was migrated to TQL entities. JSON-LD content here is read-only archive — edit records at
+            <NuxtLink :to="wp(`/workspace/browse/${collection.slug}`)" class="font-medium underline">
+              workspace browse
+            </NuxtLink>.
+          </UiAlertDescription>
+        </UiAlert>
         <div class="flex items-center justify-between">
           <div class="flex items-center gap-2">
             <button

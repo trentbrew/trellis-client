@@ -197,7 +197,7 @@ export function useChat(
         action: 'createNode',
         entityId: toEntityId(msgId),
         type: 'entity',
-        data: { ...data, entityKind: 'message' },
+        data: { ...data, type: 'message', entityKind: 'message' },
       })
     }
 
