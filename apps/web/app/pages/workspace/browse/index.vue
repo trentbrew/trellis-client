@@ -1,14 +1,30 @@
 <script setup lang="ts">
 import type { PageStat } from '~/components/layout/Page.vue'
-import type { Entity, EntityType, PropertyFieldId } from '~/types/entity'
-import type { BrowseViewMode } from '~/composables/useBrowse'
-import { getAllEntityTypes, getEntityTypeConfig } from '~/config/entityRegistry'
+import type { Entity, EntityType } from '~/types/entity'
+import { getEntityTypeConfig } from '~/config/entityRegistry'
+import { useOntologyRegistry, type DynamicEntityTypeConfig } from '~/composables/useOntologyRegistry'
 import { useBrowsePage } from '~/composables/useBrowsePage'
+import { useBrowseAdvancedFilters } from '~/composables/useBrowseAdvancedFilters'
 import { useBrowseSelection } from '~/composables/useBrowseSelection'
-import EntityDialog from '~/components/dialogs/EntityDialog.vue'
-import GraphView from '~/components/views/GraphView.vue'
-import BrowseSpreadsheetView from '~/components/views/BrowseSpreadsheetView.vue'
+import ResolvedEntityDialog from '~/components/dialogs/ResolvedEntityDialog.vue'
+import ProjectionOutlet from '~/components/views/ProjectionOutlet.vue'
+import EntityCardCollection from '~/components/views/EntityCardCollection.vue'
+import BrowseImportExportActions from '~/components/browse/BrowseImportExportActions.vue'
+import CardPropertiesPopover from '~/components/browse/CardPropertiesPopover.vue'
+import FileCategoryPills from '~/components/browse/FileCategoryPills.vue'
+import { useViewFields } from '~/composables/useViewFields'
+import {
+  countFilesByCategory,
+  fileMatchesBrowseCategory,
+  getFileBrowseFacet,
+  parseFileCategoryParam,
+  shouldStripFileCategoryParam,
+  type FileBrowseCategory,
+} from '~/lib/file-browse-categories'
+import { normalizeBrowseViewMode } from '~/lib/trellis-projection-registry/browse-view-mode'
 import { deduplicateRecurringEntities } from '~/utils/recurrence'
+import { createDefaultItem } from '~/types/entity'
+import { schemaFieldToPropertyFieldId } from '~/lib/ontology-sidebar-fields'
 
 definePageMeta({ layout: 'default' })
 useHead({ title: 'Browse | Workspace' })
@@ -17,21 +33,57 @@ useHead({ title: 'Browse | Workspace' })
 
 const route = useRoute()
 const router = useRouter()
+const { wp } = useWorkspacePath()
 
 const activeTypeParam = computed(() => (route.query.type as string) || 'all')
 const isAllMode = computed(() => activeTypeParam.value === 'all')
+const isFileBrowse = computed(() => activeTypeParam.value === 'file')
+const { getEntityConfig, browseableTypes } = useOntologyRegistry()
 
-// All static entity type configs for pill bar
-const allEntityTypes = getAllEntityTypes()
-const ALL_TYPE_IDS = allEntityTypes.map((t) => t.type) as EntityType[]
+const rawCategoryParam = computed(() => {
+  const c = route.query.category
+  return typeof c === 'string' ? c : undefined
+})
+
+const activeFileCategory = computed<FileBrowseCategory>(() => {
+  if (!isFileBrowse.value) return 'all'
+  return parseFileCategoryParam(rawCategoryParam.value)
+})
+
+// Browse-visible types (static registry + live user ontologies)
+const browseEntityTypes = computed(() => browseableTypes.value)
+const ALL_TYPE_IDS = computed(() => browseEntityTypes.value.map((t) => t.type) as EntityType[])
 
 // The type(s) fed into useBrowsePage
-const activeTypes = computed<string[]>(() => (isAllMode.value ? ALL_TYPE_IDS : [activeTypeParam.value]))
+const activeTypes = computed<string[]>(() => (isAllMode.value ? ALL_TYPE_IDS.value : [activeTypeParam.value]))
+
+const fileCategoryFilterKey = computed(
+  () => `${activeTypeParam.value}:${activeFileCategory.value}`,
+)
 
 function selectType(type: string) {
   const q = type === 'all' ? {} : { type }
   router.replace({ query: q })
 }
+
+function selectFileCategory(category: FileBrowseCategory) {
+  if (!isFileBrowse.value) return
+  const query: Record<string, string> = { type: 'file' }
+  if (category !== 'all') query.category = category
+  router.replace({ query })
+}
+
+watch([activeTypeParam, rawCategoryParam], ([type, rawCat]) => {
+  if (type === 'budget') {
+    router.replace(wp('/sheets'))
+    return
+  }
+  if (shouldStripFileCategoryParam(type, rawCat)) {
+    const next = { ...route.query }
+    delete next.category
+    router.replace({ query: next })
+  }
+})
 
 // ── Browse data ───────────────────────────────────────────────────────────
 
@@ -61,7 +113,20 @@ const {
     { value: 'title', label: 'Title' },
     { value: 'type', label: 'Type' },
   ],
+  itemFilterKey: fileCategoryFilterKey,
+  itemFilter: (item) => {
+    if (activeTypeParam.value !== 'file') return true
+    return fileMatchesBrowseCategory(item as unknown as Record<string, unknown>, activeFileCategory.value)
+  },
 })
+
+// ── Advanced filters ────────────────────────────────────────────────────
+
+const { advancedFilters, applyAdvancedFilters } = useBrowseAdvancedFilters({
+  entityTypes: activeTypes,
+})
+
+const displayItems = computed(() => applyAdvancedFilters(filteredItems.value))
 
 // ── Multi-select ─────────────────────────────────────────────────────────
 
@@ -75,34 +140,52 @@ const {
   handleFieldUpdate,
   handleBatchDelete,
   handleBatchDuplicate,
-} = useBrowseSelection(filteredItems)
+} = useBrowseSelection(displayItems)
 
-const { update: updateEntity } = useEntities()
+const gridColsKey = computed(() => activeTypeParam.value)
+const { columns: gridColumns, gridStyle, increment: incrementGridColumns, decrement: decrementGridColumns, minCols, maxCols } =
+  useBrowseGridColumns(gridColsKey)
 
-type SpreadsheetColumn = 'title' | 'type' | 'status' | 'date'
+const cardPropsKey = computed(() => activeTypeParam.value)
+const {
+  catalog: viewFieldCatalog,
+  popoverFields: cardPopoverFields,
+  visibleFields,
+  showEmptyProperties,
+  hiddenCount: hiddenCardPropertyCount,
+  setVisible: setCardPropertyVisible,
+  move: moveCardProperty,
+  setShowEmpty: setCardShowEmpty,
+  reset: resetCardProperties,
+} = useViewFields(cardPropsKey, activeTypeParam)
 
-const handleSpreadsheetCellUpdate = async (item: Entity, column: SpreadsheetColumn, value: unknown) => {
+const { update: updateEntity, create: createEntity } = useEntities()
+
+const handleSpreadsheetCellUpdate = async (item: Entity, column: string, value: unknown) => {
   if (column === 'title') {
     await updateEntity({ ...item, title: String(value ?? '').trim() || 'Untitled' })
     return
   }
-  if (column === 'status') {
-    await handleFieldUpdate(item, 'status', value)
-    return
-  }
-  if (column === 'date') {
+  if (column === 'startDate') {
     const patch = value as { startDate: string; startTime?: string; allDay?: boolean }
     await updateEntity({
       ...item,
-      startDate: patch.startDate || null,
+      startDate: (patch.startDate || null) as Entity['startDate'],
       ...(patch.allDay !== undefined ? { allDay: patch.allDay } : {}),
       ...(patch.startTime !== undefined ? { startTime: patch.startTime } : {}),
     })
+    return
   }
+  const propertyFieldId = schemaFieldToPropertyFieldId(column)
+  if (propertyFieldId) {
+    await handleFieldUpdate(item, propertyFieldId, value)
+    return
+  }
+  await updateEntity({ ...item, [column]: value })
 }
 
 const toggleSelectAll = () => {
-  const all = filteredItems.value.length > 0 && filteredItems.value.every((item) => isSelected(item.id))
+  const all = displayItems.value.length > 0 && displayItems.value.every((item) => isSelected(item.id))
   if (all) clearSelection()
   else selectAll()
 }
@@ -123,6 +206,11 @@ const typeCounts = computed(() => {
 
 const totalCount = computed(() => deduplicatedAll.value.length)
 
+const fileItemsForCounts = computed(() =>
+  deduplicatedAll.value.filter((item) => item.type === 'file'),
+)
+const fileCategoryCounts = computed(() => countFilesByCategory(fileItemsForCounts.value))
+
 // ── Grouping ──────────────────────────────────────────────────────────────
 
 const groupByClass = ref(false)
@@ -139,7 +227,7 @@ const classOrder = ['temporal', 'document', 'actor', 'container']
 const groupedItems = computed(() => {
   if (!groupByClass.value || !isAllMode.value) return null
   const groups: Record<string, Entity[]> = {}
-  for (const item of filteredItems.value) {
+  for (const item of displayItems.value) {
     const cls = (getEntityTypeConfig(item.type as EntityType) as any)?.class ?? 'temporal'
     if (!groups[cls]) groups[cls] = []
     groups[cls].push(item)
@@ -155,7 +243,7 @@ const PAGE_SIZE = 48
 const displayLimit = ref(PAGE_SIZE)
 const sentinelRef = ref<HTMLElement | null>(null)
 
-const visibleItems = computed(() => filteredItems.value.slice(0, displayLimit.value))
+const visibleItems = computed(() => displayItems.value.slice(0, displayLimit.value))
 
 const visibleGroupedItems = computed(() => {
   if (!groupedItems.value) return null
@@ -168,11 +256,21 @@ const visibleGroupedItems = computed(() => {
   })
 })
 
-const hasMore = computed(() => displayLimit.value < filteredItems.value.length)
+const hasMore = computed(() => displayLimit.value < displayItems.value.length)
 
-watch([() => browseState.searchQuery.value, activeTypeParam, viewMode, groupByClass], () => {
-  displayLimit.value = PAGE_SIZE
-})
+watch(
+  [
+    () => browseState.searchQuery.value,
+    activeTypeParam,
+    activeFileCategory,
+    viewMode,
+    groupByClass,
+    () => advancedFilters.value?.activeRuleCount.value,
+  ],
+  () => {
+    displayLimit.value = PAGE_SIZE
+  },
+)
 
 function findScrollParent(el: HTMLElement | null): HTMLElement | null {
   let cur = el?.parentElement || null
@@ -211,27 +309,67 @@ onUnmounted(() => {
 
 // ── Adaptive view modes ───────────────────────────────────────────────────
 
-const viewModeOptions = computed(() => {
-  const base: { mode: BrowseViewMode; label: string; icon: string }[] = [
-    { mode: 'grid', label: 'Grid', icon: 'lucide:grid-3x3' },
-    { mode: 'table', label: 'Table', icon: 'lucide:table' },
-    // { mode: 'list', label: 'List', icon: 'lucide:list' },
-    // { mode: 'graph', label: 'Graph', icon: 'lucide:git-fork' },
-  ]
-  if (isAllMode.value) return base
-  const cfg = getEntityTypeConfig(activeTypeParam.value as EntityType)
-  if (!cfg) return base
-  const extra: { mode: BrowseViewMode; label: string; icon: string }[] = []
-  // Kanban / timeline are wired on collections; browse slots not implemented yet — omit to avoid grid fallback.
-  if (cfg.projections.includes('moodboard'))
-    extra.push({ mode: 'moodboard', label: 'Moodboard', icon: 'lucide:layout-masonry' })
-  return [...base, ...extra]
+const activeProjectionTypeConfig = computed(() =>
+  isAllMode.value ? null : getEntityConfig(activeTypeParam.value),
+)
+
+const activeProjectionSchemaFields = computed(() => {
+  const cfg = activeProjectionTypeConfig.value
+  if (!cfg) return undefined
+  if ('fields' in cfg) return cfg.fields
+  return cfg.propertyFields
 })
+
+const HIDDEN_BROWSE_PROJECTIONS = new Set(['list', 'graph', 'timeline'])
+
+const { projectionOptions: rawProjectionOptions, defaultViewMode } = useProjectionOptions({
+  activeType: activeTypeParam,
+  activeTypeConfig: activeProjectionTypeConfig,
+  schemaFields: activeProjectionSchemaFields,
+})
+
+const viewModeOptions = computed(() =>
+  rawProjectionOptions.value.filter((option) => !HIDDEN_BROWSE_PROJECTIONS.has(option.projectionType)),
+)
+
+watch([viewModeOptions, defaultViewMode], () => {
+  const currentOption = viewModeOptions.value.find((option) => option.mode === viewMode.value)
+  if (!currentOption || currentOption.disabled) browseState.setViewMode(defaultViewMode.value)
+}, { immediate: true })
 
 // Legacy: spreadsheet mode merged into table
 watch(viewMode, (mode) => {
   if (mode === 'spreadsheet') browseState.setViewMode('table')
 }, { immediate: true })
+
+// ── Projection dispatch ─────────────────────────────────────────────────────
+// Normalize the legacy view mode to the canonical ProjectionType (+ sub-mode)
+// that ProjectionOutlet renders. See docs/artifacts/view_projections_design.md.
+const projection = computed(() => normalizeBrowseViewMode(viewMode.value))
+const CARD_PROJECTIONS = ['card-grid', 'list', 'moodboard']
+const isCardProjection = computed(() => CARD_PROJECTIONS.includes(projection.value.type))
+// Card layouts paginate via displayLimit; table/graph render the full set.
+const outletItems = computed(() => (isCardProjection.value ? visibleItems.value : displayItems.value))
+const isTableProjection = computed(
+  () => projection.value.type === 'table' || projection.value.type === 'spreadsheet',
+)
+const isKanbanProjection = computed(() => projection.value.type === 'kanban')
+const isCalendarProjection = computed(
+  () => projection.value.type === 'calendar' || projection.value.type === 'timeline',
+)
+const emptyMessage = computed(() => {
+  if (advancedFilters.value?.hasActiveFilters.value) return 'No results match your filters'
+  if (browseState.searchQuery.value) return 'No results for your search'
+  if (isFileBrowse.value && activeFileCategory.value !== 'all') {
+    const facet = getFileBrowseFacet(activeFileCategory.value)
+    return `No ${facet?.labelPlural.toLowerCase() ?? 'files'} yet`
+  }
+  return 'Nothing here yet'
+})
+// Card layout for the class-grouped path (grouping is orthogonal to layout).
+const groupedCardLayout = computed<'card-grid' | 'list' | 'moodboard'>(() =>
+  isCardProjection.value ? (projection.value.type as 'card-grid' | 'list' | 'moodboard') : 'card-grid',
+)
 
 // ── Stats ─────────────────────────────────────────────────────────────────
 
@@ -251,12 +389,40 @@ const stats = computed<PageStat[]>(() => {
     ]
   }
   const cfg = getEntityTypeConfig(activeTypeParam.value as EntityType)
+  if (isFileBrowse.value && activeFileCategory.value !== 'all') {
+    const facet = getFileBrowseFacet(activeFileCategory.value)
+    return [
+      {
+        label: facet?.labelPlural ?? 'Files',
+        value: displayItems.value.length,
+        icon: facet?.icon ?? cfg?.icon ?? 'lucide:file',
+      },
+    ]
+  }
   return [{ label: cfg?.labelPlural ?? 'Items', value: items.value.length, icon: cfg?.icon ?? 'lucide:layers' }]
 })
 
 // ── New item picker ───────────────────────────────────────────────────────
 
 const newPickerOpen = ref(false)
+
+async function handleCalendarCreate(date: Date) {
+  if (isAllMode.value) return
+  const type = activeTypeParam.value as EntityType
+  const defaults = createDefaultItem(type)
+  const newId = await createEntity({
+    ...defaults,
+    type,
+    title: '',
+    startDate: date.toISOString().slice(0, 10),
+  } as Entity)
+  const created = items.value.find((item) => item.id === newId)
+  if (created) openDetail(created)
+}
+
+async function handleCalendarReschedule(item: Entity, patch: Partial<Entity>) {
+  await updateEntity({ ...item, ...patch } as Entity)
+}
 
 async function handleNewFromPill(typeId: string) {
   newPickerOpen.value = false
@@ -267,6 +433,9 @@ async function handleNewFromPill(typeId: string) {
 
 const pageTitle = computed(() => {
   if (isAllMode.value) return 'Browse'
+  if (isFileBrowse.value && activeFileCategory.value !== 'all') {
+    return getFileBrowseFacet(activeFileCategory.value)?.labelPlural ?? 'Files'
+  }
   const cfg = getEntityTypeConfig(activeTypeParam.value as EntityType)
   return cfg?.labelPlural ?? activeTypeParam.value
 })
@@ -287,6 +456,22 @@ const pageIconClass = computed(() => {
 
 const activeTypeCfg = computed(() =>
   isAllMode.value ? null : getEntityTypeConfig(activeTypeParam.value as EntityType),
+)
+
+/** Server-backed ontology for the active type — drives schema deep-link. */
+const activeTypeSchema = computed((): DynamicEntityTypeConfig | null => {
+  if (isAllMode.value) return null
+  const cfg = getEntityConfig(activeTypeParam.value)
+  if (cfg && 'schemaId' in cfg) return cfg as DynamicEntityTypeConfig
+  return null
+})
+
+const schemaEditorPath = computed(() =>
+  activeTypeSchema.value ? `/ontologies/${activeTypeParam.value}` : null,
+)
+
+const schemaEditorLabel = computed(() =>
+  activeTypeSchema.value?.tier === 'user' ? 'Configure fields' : 'View schema',
 )
 
 const pageDescription = computed(() => {
@@ -312,13 +497,39 @@ onUnmounted(() => {
 <template>
   <Page variant="browse" :title="pageTitle" subtitle="Workspace" :icon="pageIcon" :icon-class="pageIconClass"
     search-placeholder="Search everything..." :description="pageDescription" :hide-header="false" :stats="stats"
-    :show-view-switcher="true" :fill-height="true" :browse="browseState" :view-mode-options="viewModeOptions">
+    :show-view-switcher="true" :fill-height="true" :browse="browseState" :advanced-filters="advancedFilters ?? undefined"
+    :view-mode-options="viewModeOptions">
+    <template #titleActions>
+      <NuxtLink
+        v-if="schemaEditorPath"
+        :to="schemaEditorPath"
+        class="shrink-0"
+        :title="schemaEditorLabel">
+        <UiButton variant="ghost" size="icon" class="h-8 w-8 text-muted-foreground hover:text-foreground">
+          <Icon name="lucide:settings" class="h-4 w-4" />
+          <span class="sr-only">{{ schemaEditorLabel }}</span>
+        </UiButton>
+      </NuxtLink>
+    </template>
+
+    <FileCategoryPills
+      v-if="isFileBrowse"
+      class="mb-3 shrink-0"
+      :active="activeFileCategory"
+      :counts="fileCategoryCounts"
+      @select="selectFileCategory" />
+
     <!-- ── Toolbar: New button + Group toggle ── -->
     <template #toolbarActions>
+      <BrowseImportExportActions
+        :items="displayItems"
+        :selected-items="selectedItems"
+        :filename-slug="`browse-${activeTypeParam}`" />
+
       <!-- Single type: simple New button -->
       <UiButton size="sm" class="font-bold" v-if="!isAllMode && activeTypeCfg" @click="handleNewItem(activeTypeParam)">
         <Icon name="lucide:plus" class="mr-2 h-4 w-4" />
-        New {{ activeTypeCfg.label }}
+        New
       </UiButton>
 
       <!-- All mode: New with type picker dropdown -->
@@ -335,7 +546,7 @@ onUnmounted(() => {
             Create new…
           </UiDropdownMenuLabel>
           <UiDropdownMenuSeparator />
-          <UiDropdownMenuItem v-for="t in allEntityTypes" :key="t.type" class="gap-2"
+          <UiDropdownMenuItem v-for="t in browseEntityTypes" :key="t.type" class="gap-2"
             @click="handleNewFromPill(t.type)">
             <Icon :name="t.icon" :class="`h-4 w-4 text-${t.color}-400 shrink-0`" />
             <span>{{ t.label }}</span>
@@ -344,17 +555,57 @@ onUnmounted(() => {
       </UiDropdownMenu>
     </template>
 
-    <!-- ── Content: graph / grouped / flat ── -->
-
-    <!-- Graph view — takes precedence over grouping since a graph is one canvas -->
-    <template v-if="viewMode === 'graph'">
-      <div class="h-[calc(100vh-200px)] -mx-4 -mb-4 rounded-lg border border-border/50 bg-card/30 overflow-hidden">
-        <GraphView :entities="filteredItems" @open-entity="openDetail" />
+    <!-- Grid column count (grid view only) -->
+    <template #beforeSearch>
+      <div
+        v-if="viewMode === 'grid'"
+        class="flex items-center rounded-lg border border-border bg-card/0 backdrop-blur-lg shrink-0"
+        title="Grid columns">
+        <button
+          type="button"
+          class="flex h-8 w-8 items-center justify-center rounded-l-md text-muted-foreground transition-colors hover:text-foreground disabled:opacity-40"
+          :disabled="gridColumns <= minCols"
+          aria-label="Fewer columns"
+          @click="decrementGridColumns">
+          <Icon name="lucide:minus" class="h-3.5 w-3.5" />
+        </button>
+        <div
+          class="flex h-8 items-center gap-1.5 border-x border-border px-2.5 text-xs font-medium tabular-nums text-foreground">
+          <Icon name="lucide:columns-3" class="h-3.5 w-3.5 text-muted-foreground" />
+          {{ gridColumns }}
+        </div>
+        <button
+          type="button"
+          class="flex h-8 w-8 items-center justify-center rounded-r-md text-muted-foreground transition-colors hover:text-foreground disabled:opacity-40"
+          :disabled="gridColumns >= maxCols"
+          aria-label="More columns"
+          @click="incrementGridColumns">
+          <Icon name="lucide:plus" class="h-3.5 w-3.5" />
+        </button>
       </div>
     </template>
 
-    <!-- Grouped by class view -->
-    <template v-else-if="groupByClass && visibleGroupedItems">
+    <!-- Card properties -->
+    <template #filters>
+      <CardPropertiesPopover
+        v-if="isCardProjection"
+        :fields="cardPopoverFields"
+        :visible="visibleFields"
+        :show-empty="showEmptyProperties"
+        :hidden-count="hiddenCardPropertyCount"
+        @update:visible="setCardPropertyVisible"
+        @move="moveCardProperty"
+        @update:show-empty="setCardShowEmpty"
+        @reset="resetCardProperties" />
+
+
+    </template>
+
+    <!-- ── Content: grouped / flat, dispatched by projection ── -->
+
+    <!-- Grouped by class (card layouts only) — grouping is orthogonal to layout.
+         Graph/table fall through to the flat outlet. -->
+    <template v-if="groupByClass && visibleGroupedItems && isCardProjection">
       <div v-for="group in visibleGroupedItems" :key="group.class" class="mb-8">
         <!-- Group header -->
         <div class="flex items-center gap-2 mb-3">
@@ -364,88 +615,66 @@ onUnmounted(() => {
           <div class="flex-1 h-px bg-border/50 ml-2" />
         </div>
 
-        <!-- Grid view for group -->
-        <div v-if="viewMode === 'grid' || !['grid', 'list', 'table'].includes(viewMode)"
-          class="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-          <EntityCard v-for="item in group.items" :key="item.id" :item="item" layout="grid" editable
-            :selected="isSelected(item.id)" @click="openDetail(item)" @select="toggleSelection(item.id, $event)"
-            @field-update="(fieldId: PropertyFieldId, value: unknown) => handleFieldUpdate(item, fieldId, value)" />
-        </div>
-
-        <!-- List view for group -->
-        <div v-else-if="viewMode === 'list'" class="flex flex-col gap-2">
-          <EntityCard v-for="item in group.items" :key="item.id" :item="item" layout="list" editable
-            :selected="isSelected(item.id)" @click="openDetail(item)" @select="toggleSelection(item.id, $event)"
-            @field-update="(fieldId: PropertyFieldId, value: unknown) => handleFieldUpdate(item, fieldId, value)" />
-        </div>
+        <EntityCardCollection
+          :items="group.items"
+          :layout="groupedCardLayout"
+          :is-selected="isSelected"
+          :grid-style="gridStyle"
+          :visible-fields="visibleFields"
+          :field-catalog="viewFieldCatalog"
+          :show-empty-properties="showEmptyProperties"
+          @open-detail="openDetail"
+          @toggle-select="toggleSelection"
+          @field-update="handleFieldUpdate"
+          @column-update="handleSpreadsheetCellUpdate" />
       </div>
 
-      <div v-if="filteredItems.length === 0"
+      <div v-if="displayItems.length === 0"
         class="flex flex-col items-center justify-center h-48 text-muted-foreground gap-3">
         <Icon name="lucide:search-x" class="h-8 w-8 text-muted-foreground/30" />
         <p class="text-sm">No results</p>
       </div>
     </template>
 
-    <!-- Flat views (no grouping, or single type selected) -->
-    <template v-else :class="viewMode === 'table' ? 'flex min-h-0 flex-1 flex-col' : ''">
-      <!-- Grid -->
-      <div v-if="viewMode === 'grid' || !['grid', 'list', 'table', 'moodboard'].includes(viewMode)"
-        class="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-        <EntityCard v-for="item in visibleItems" :key="item.id" :item="item" layout="grid" editable
-          :selected="isSelected(item.id)" @click="openDetail(item)" @select="toggleSelection(item.id, $event)"
-          @field-update="(fieldId: PropertyFieldId, value: unknown) => handleFieldUpdate(item, fieldId, value)" />
-        <div v-if="!filteredItems.length"
-          class="col-span-full flex flex-col items-center justify-center h-48 text-muted-foreground gap-3">
-          <Icon name="lucide:search-x" class="h-6 w-6 text-muted-foreground/30" />
-          <p class="text-sm">{{ browseState.searchQuery.value ? 'No results for your search' : 'Nothing here yet' }}</p>
-          <UiButton v-if="!isAllMode && activeTypeCfg" size="sm" variant="outline"
-            @click="handleNewItem(activeTypeParam)">
-            <Icon name="lucide:plus" class="mr-1.5 h-3.5 w-3.5" />
-            New {{ activeTypeCfg.label }}
-          </UiButton>
-        </div>
-      </div>
-
-      <!-- Moodboard -->
-      <div v-else-if="viewMode === 'moodboard'" class="columns-2 sm:columns-3 lg:columns-4 xl:columns-5 gap-4">
-        <EntityCard v-for="item in visibleItems" :key="item.id" :item="item" layout="moodboard" editable
-          :selected="isSelected(item.id)" @click="openDetail(item)" @select="toggleSelection(item.id, $event)"
-          @field-update="(fieldId: PropertyFieldId, value: unknown) => handleFieldUpdate(item, fieldId, value)" />
-        <div v-if="!filteredItems.length" class="flex items-center justify-center h-40 text-sm text-muted-foreground">
-          Nothing here yet
-        </div>
-      </div>
-
-      <!-- List -->
-      <div v-else-if="viewMode === 'list'" class="flex flex-col gap-2">
-        <EntityCard v-for="item in visibleItems" :key="item.id" :item="item" layout="list" editable
-          :selected="isSelected(item.id)" @click="openDetail(item)" @select="toggleSelection(item.id, $event)"
-          @field-update="(fieldId: PropertyFieldId, value: unknown) => handleFieldUpdate(item, fieldId, value)" />
-        <div v-if="!filteredItems.length"
-          class="flex flex-col items-center justify-center h-48 text-muted-foreground gap-3">
-          <Icon name="lucide:search-x" class="h-6 w-6 text-muted-foreground/30" />
-          <p class="text-sm">{{ browseState.searchQuery.value ? 'No results for your search' : 'Nothing here yet' }}</p>
-        </div>
-      </div>
-
-      <!-- Table (virtualized grid) -->
-      <div v-else-if="viewMode === 'table'" class="flex min-h-0 flex-1 flex-col">
-        <BrowseSpreadsheetView
-          class="min-h-0 flex-1"
-          :items="filteredItems"
+    <!-- Flat views — dispatched to the matching projection renderer -->
+    <template v-else>
+      <div :class="isTableProjection || isKanbanProjection || isCalendarProjection ? 'flex min-h-0 flex-1 flex-col' : ''">
+        <ProjectionOutlet
+          :type="projection.type"
+          :sub="projection.sub"
+          :items="outletItems"
+          :entity-type="isAllMode ? undefined : activeTypeParam"
           :is-selected="isSelected"
+          :grid-style="gridStyle"
           :storage-key="`browse:table:${activeTypeParam}`"
+          :empty-message="emptyMessage"
+          :visible-fields="visibleFields"
+          :field-catalog="viewFieldCatalog"
+          :show-empty-properties="showEmptyProperties"
+          @open-detail="openDetail"
           @toggle-select="toggleSelection"
           @toggle-select-all="toggleSelectAll"
-          @open-detail="openDetail"
-          @cell-update="handleSpreadsheetCellUpdate" />
+          @field-update="handleFieldUpdate"
+          @column-update="handleSpreadsheetCellUpdate"
+          @cell-update="handleSpreadsheetCellUpdate"
+          @calendar-create="handleCalendarCreate"
+          @calendar-reschedule="handleCalendarReschedule">
+          <template #empty>
+            <Icon name="lucide:search-x" class="h-6 w-6 text-muted-foreground/30" />
+            <p class="text-sm">{{ emptyMessage }}</p>
+            <UiButton v-if="!isAllMode && activeTypeCfg" size="sm" variant="outline"
+              @click="handleNewItem(activeTypeParam)">
+              <Icon name="lucide:plus" class="mr-1.5 h-3.5 w-3.5" />
+              New
+            </UiButton>
+          </template>
+        </ProjectionOutlet>
       </div>
     </template>
 
     <!-- Infinite-scroll sentinel — loads next page when it enters the viewport -->
     <div
-      v-if="viewMode !== 'graph' && viewMode !== 'table' && hasMore"
+      v-if="isCardProjection && hasMore"
       ref="sentinelRef"
       class="flex items-center justify-center py-6 text-xs text-muted-foreground gap-2">
       <Icon name="lucide:loader-2" class="h-3.5 w-3.5 animate-spin opacity-60" />
@@ -454,17 +683,18 @@ onUnmounted(() => {
 
     <!-- Results count (hidden in graph mode since the graph has its own stats badge) -->
     <div
-      v-if="viewMode !== 'graph'"
+      v-if="projection.type !== 'graph'"
       class="text-xs text-muted-foreground shrink-0 border-t border-border"
-      :class="viewMode === 'table' ? 'px-4 py-2' : 'mt-4 pt-4 pb-10'">
-      <template v-if="viewMode === 'table'">
-        {{ filteredItems.length }} {{ filteredItems.length === 1 ? 'item' : 'items' }}
+      :class="isTableProjection ? 'px-4 py-2' : 'mt-4 pt-4 pb-10'">
+      <template v-if="isTableProjection">
+        {{ displayItems.length }} {{ displayItems.length === 1 ? 'item' : 'items' }}
       </template>
       <template v-else>
-        Showing {{ Math.min(displayLimit, filteredItems.length) }} of {{ filteredItems.length }}
-        {{ filteredItems.length === 1 ? 'item' : 'items' }}
+        Showing {{ Math.min(displayLimit, displayItems.length) }} of {{ displayItems.length }}
+        {{ displayItems.length === 1 ? 'item' : 'items' }}
       </template>
       <span v-if="browseState.searchQuery.value">for "{{ browseState.searchQuery.value }}"</span>
+      <span v-if="advancedFilters?.hasActiveFilters.value"> · filtered</span>
     </div>
 
     <!-- Selection Bar -->
@@ -472,7 +702,7 @@ onUnmounted(() => {
       @batch-delete="handleBatchDelete" @batch-duplicate="handleBatchDuplicate" @clear-selection="clearSelection" />
 
     <!-- View / Edit Dialog -->
-    <EntityDialog v-model:open="viewOpen" mode="edit" :item="viewingItem" :can-navigate-prev="canPrev"
+    <ResolvedEntityDialog v-model:open="viewOpen" mode="edit" :item="viewingItem" :can-navigate-prev="canPrev"
       :can-navigate-next="canNext" @navigate-prev="navPrev" @navigate-next="navNext" @save="handleUpdate"
       @delete="handleDelete" @close="viewOpen = false" />
   </Page>

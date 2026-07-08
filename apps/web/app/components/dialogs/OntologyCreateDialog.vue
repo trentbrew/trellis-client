@@ -6,6 +6,8 @@
    * On submit: POST /api/graph/ontology → SSE → sidebar auto-updates.
    */
 
+  import { validateOntologySlug } from '~/lib/ontology-reserved-keys'
+
   const ONTOLOGY_VALUE_TYPES = [
     { value: 'title', label: 'Title', icon: 'lucide:type', description: 'Primary name field' },
     { value: 'rich_text', label: 'Rich Text', icon: 'lucide:align-left', description: 'Formatted text content' },
@@ -153,8 +155,19 @@
 
   const hasTitleField = computed(() => fields.value.some((f) => f.valueType === 'title'))
 
+  const slugError = computed(() => {
+    if (!title.value.trim()) return ''
+    return validateOntologySlug(title.value) ?? ''
+  })
+
   const canCreate = computed(() => {
-    return title.value.trim().length > 0 && slug.value.length > 0 && hasTitleField.value && fields.value.length > 0
+    return (
+      title.value.trim().length > 0 &&
+      slug.value.length > 0 &&
+      !slugError.value &&
+      hasTitleField.value &&
+      fields.value.length > 0
+    )
   })
 
   // ── Template handling ───────────────────────────────────────────────
@@ -239,6 +252,7 @@
         description: description.value.trim() || undefined,
         icon: icon.value,
         tier: 'user',
+        browse: { enabled: true },
         fields: fields.value
           .filter((f) => f.name.trim())
           .map((f) => ({
@@ -366,7 +380,8 @@
         <div class="space-y-2">
           <label class="text-sm font-medium">Name</label>
           <UiInput v-model="title" placeholder="e.g. Invoice, Recipe, Habit..." />
-          <p v-if="slug" class="text-xs text-muted-foreground">
+          <p v-if="slugError" class="text-xs text-destructive">{{ slugError }}</p>
+          <p v-else-if="slug" class="text-xs text-muted-foreground">
             ID:
             <code class="bg-muted/50 px-1 py-0.5 rounded text-[11px]">{{ schemaId }}</code>
           </p>

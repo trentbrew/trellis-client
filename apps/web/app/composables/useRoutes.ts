@@ -69,6 +69,7 @@ export const useRoutes = () => {
 
   // Get collections reactively from InstantDB
   const { collections: instantCollections, customTypes, workflows } = useInstantData()
+  const { instantDbOwnsSlug } = useCollectionHost()
 
   // Get user-created pages
   const { pages } = usePages()
@@ -98,6 +99,7 @@ export const useRoutes = () => {
         meta: {
           title: s.title,
           subtitle: 'Sheet projection',
+          entityId: s.id,
         },
       }))
       .sort((a, b) => a.label.localeCompare(b.label))
@@ -114,6 +116,7 @@ export const useRoutes = () => {
         meta: {
           title: d.title,
           subtitle: 'Deck projection',
+          entityId: d.id,
         },
       }))
       .sort((a, b) => a.label.localeCompare(b.label))
@@ -158,9 +161,10 @@ export const useRoutes = () => {
   const entityTypesChildren = computed<RouteConfig[]>(() => {
     return serverOntologyTypes.value
       .filter((t) => t.tier === 'system' && !isDynamicType(t.type) && !platformTypeIds.has(t.type.toLowerCase()))
+      .filter((t) => !instantDbOwnsSlug(t.type))
       .sort((a, b) => a.label.localeCompare(b.label))
       .map((t) => ({
-        path: `/workspace/browse?type=${t.type}`,
+        path: `/workspace/browse/${t.type}`,
         label: t.label,
         icon: t.icon || 'lucide:box',
         tint: `text-${t.color}-300`,
@@ -206,7 +210,7 @@ export const useRoutes = () => {
    * Dynamic children from ontology-derived entity types.
    * These are types created at runtime via CLI or MCP that auto-appear in the sidebar.
    */
-  const { serverTypes: serverOntologyTypes, filteredDynamicTypes: ontologyTypes, isDynamicType } = useOntologyRegistry()
+  const { serverTypes: serverOntologyTypes, filteredDynamicTypes: ontologyTypes, isDynamicType, isBrowsableType } = useOntologyRegistry()
 
   // ── App-scoped sidebar filtering ──────────────────────────────────────
   // Maps sidebar route paths to the entity type slugs they depend on.
@@ -235,16 +239,22 @@ export const useRoutes = () => {
   }
 
   const ontologyTypeChildren = computed<RouteConfig[]>(() => {
-    return (ontologyTypes.value || []).map((t) => ({
-      path: `/workspace/browse?type=${t.type}`,
-      label: t.label,
-      icon: t.icon || 'lucide:database',
-      tint: `text-${t.color}-300`,
-      meta: {
-        title: t.label,
-        subtitle: 'Custom',
-      },
-    }))
+    return (ontologyTypes.value || [])
+      .filter((t) => isBrowsableType(t.type))
+      .filter((t) => !instantDbOwnsSlug(t.type))
+      .map((t) => ({
+        path: `/workspace/browse/${t.type}`,
+        label: t.label,
+        icon: t.icon || 'lucide:database',
+        tint: `text-${t.color}-300`,
+        id: t.type,
+        meta: {
+          title: t.label,
+          subtitle: 'Custom',
+          typeSlug: t.type,
+          schemaId: t.schemaId,
+        },
+      }))
   })
 
   const railRoutesByPath = computed(() => {
@@ -578,7 +588,6 @@ export const useRoutes = () => {
         dynamicChildren = [
           ...systemTypesChildren.value,
           ...collectionsChildren.value,
-          ...typesChildren.value,
           ...ontologyTypeChildren.value,
         ]
         break
@@ -690,10 +699,17 @@ export const useRoutes = () => {
   })
 
   /**
-   * Find a route by path
+   * Find a route by path (exact or dynamic segment match).
    */
   const findRoute = (path: string): RouteConfig | undefined => {
-    return allRoutes.value.find((r) => r.path === path)
+    const clean = getCleanPath(path)
+    const exact = allRoutes.value.find((r) => r.path === clean)
+    if (exact) return exact
+    return allRoutes.value.find((r) => {
+      if (!r.path.includes(':')) return false
+      const pattern = r.path.replace(/:[^/]+/g, '[^/]+').replace(/\//g, '\\/')
+      return new RegExp(`^${pattern}$`).test(clean)
+    })
   }
 
   /**
@@ -907,7 +923,7 @@ export const useRoutes = () => {
         items = [...platformTypesChildren.value]
       } else if (isDatabase && sectionDef.key === 'database-custom') {
         // CUSTOM section gets collections + custom types + ontology types
-        items = [...collectionsChildren.value, ...typesChildren.value, ...ontologyTypeChildren.value]
+        items = [...collectionsChildren.value, ...ontologyTypeChildren.value]
       } else if (isDatabase && sectionDef.key === 'database-tools') {
         // TOOLS section uses static items from route config (explorer, query, ontology, activity)
         items = Array.isArray(sectionDef.items) ? [...sectionDef.items] : []

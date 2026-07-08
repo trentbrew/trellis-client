@@ -2,7 +2,7 @@
   /**
    * Legacy redirect: /database → /ontologies.
    * The Database umbrella was renamed to Ontologies to match the TQL vocabulary
-   * (CLI/MCP/API all use "ontology"). Record browsing lives in /collections.
+   * (CLI/MCP/API all use "ontology"). Record browsing lives in /workspace/browse.
    */
   definePageMeta({
     title: 'Ontologies',

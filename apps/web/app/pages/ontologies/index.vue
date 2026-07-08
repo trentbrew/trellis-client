@@ -4,7 +4,7 @@
    *
    * Groups schemas by tier: Custom (editable) / System (built-in) / Core
    * (kernel-managed). Each card links to `/ontologies/[type]` for the
-   * schema editor. Record browsing lives in `/collections/[type]`.
+   * schema editor. Record browsing lives in `/workspace/browse` or `/workspace/browse/:type`.
    */
   import { useOntologyRegistry } from '~/composables/useOntologyRegistry'
   import { ENTITY_CLASSES } from '~/config/entityRegistry'
