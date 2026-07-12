@@ -227,9 +227,9 @@
         :selected-items="selectedItems"
         :filename-slug="`browse-${entityType}`" />
 
-      <UiButton v-if="viewMode !== 'form'" @click="handleNewItem()">
-        <Icon name="lucide:plus" class="mr-2 h-4 w-4" />
-        New
+      <UiButton v-if="viewMode !== 'form'" size="sm" @click="handleNewItem()">
+        <Icon name="lucide:plus" class="h-4 w-4 sm:mr-2" />
+        <span class="hidden sm:inline">New</span>
       </UiButton>
     </template>
 
@@ -321,7 +321,7 @@
     <!-- Results count -->
     <div
       v-if="viewMode !== 'graph' && viewMode !== 'form' && viewMode !== 'kanban'"
-      class="text-xs text-muted-foreground mt-4 pt-4 border-t border-border pb-10">
+      class="text-xs text-muted-foreground mt-4 border-t border-border pt-4 pb-20 sm:pb-10">
       Showing {{ displayItems.length }}
       {{
         displayItems.length === 1

@@ -1,6 +1,6 @@
 // @vitest-environment node
 import { describe, expect, it, vi } from 'vitest'
-import { resolveAppConfigTransportMode } from '~/lib/app-config-live/mode'
+import type { resolveAppConfigTransportMode } from '~/lib/app-config-live/mode'
 
 /** Mirrors useTrellisConfig watchEffect SSE side-effects for unit testing. */
 function applyTransportSSESideEffects(

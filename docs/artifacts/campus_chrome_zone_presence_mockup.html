@@ -1,0 +1,270 @@
+<!DOCTYPE html>
+<html lang="en" data-campus-zone="lab">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Trellis — Campus chrome + zone presence (TRL-53 design mock)</title>
+  <style>
+    /* Tokens mirror docs/artifacts/campus_chrome_zone_presence_design.md */
+    :root {
+      --background: #0a0a0c;
+      --surface: #141418;
+      --card: #1a1a20;
+      --surface-1: #0e0e11;
+      --surface-2: #121216;
+      --text: #e8e8ec;
+      --text-muted: #888894;
+      --primary: #6366f1;
+      --border: #2a2a32;
+      --zone-lab: #6366f1;
+      --zone-lobby: #f59e0b;
+      --zone-workshop: #10b981;
+      --zone-showroom: #8b5cf6;
+      --zone-vault: #f43f5e;
+      --presence-self: #8b5cf6;
+      --presence-remote: #f59e0b;
+      --presence-away: #3a3a44;
+      --logo-ghost: rgba(232, 232, 236, 0.45);
+      --radius-sm: 6px;
+      --radius-md: 10px;
+      --radius-lg: 12px;
+      --radius-pill: 9999px;
+      --font: "IBM Plex Sans", system-ui, -apple-system, sans-serif;
+      --campus-zone-accent: var(--zone-lab);
+      --header-h: 56px;
+      --dock-h: 48px;
+    }
+    [data-campus-zone="lab"] { --campus-zone-accent: var(--zone-lab); }
+    [data-campus-zone="lobby"] { --campus-zone-accent: var(--zone-lobby); }
+    [data-campus-zone="workshop"] { --campus-zone-accent: var(--zone-workshop); }
+    [data-campus-zone="showroom"] { --campus-zone-accent: var(--zone-showroom); }
+    [data-campus-zone="vault"] { --campus-zone-accent: var(--zone-vault); }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: var(--font);
+      font-size: 13px;
+      background: var(--background);
+      color: var(--text);
+      min-height: 100dvh;
+      display: flex;
+      flex-direction: column;
+    }
+    @media (prefers-reduced-motion: reduce) {
+      * { transition: none !important; }
+    }
+
+    .legend {
+      position: fixed; top: 8px; left: 50%; transform: translateX(-50%);
+      z-index: 50; display: flex; gap: 8px; align-items: center;
+      padding: 4px 12px; border-radius: var(--radius-pill);
+      background: rgba(0,0,0,0.85); border: 1px dashed var(--zone-workshop);
+      font-size: 10px; color: var(--text-muted);
+    }
+    .legend button {
+      pointer-events: auto; cursor: pointer;
+      background: var(--surface); color: var(--text);
+      border: 1px solid var(--border); border-radius: 4px;
+      padding: 2px 8px; font-size: 10px;
+    }
+
+    .shell {
+      flex: 1; margin: 10px; margin-top: 40px;
+      display: flex; flex-direction: column;
+      border-radius: var(--radius-lg);
+      background: var(--surface-1);
+      border: 1px solid var(--border); overflow: hidden;
+    }
+
+    /* Header */
+    .header {
+      height: var(--header-h); display: flex; align-items: center;
+      gap: 12px; padding: 0 16px; flex-shrink: 0;
+    }
+    .ghost-logo {
+      width: 32px; height: 32px; display: grid; place-items: center;
+      background: transparent; border: none; color: var(--logo-ghost);
+      cursor: pointer; border-radius: var(--radius-sm);
+      transition: color 0.15s ease;
+    }
+    .ghost-logo:hover { color: var(--text); }
+    .ghost-logo svg { width: 18px; height: 18px; }
+    .breadcrumb {
+      display: flex; align-items: center; gap: 6px;
+      height: 28px; padding: 0 10px; border-radius: var(--radius-pill);
+      border: 1px solid color-mix(in oklch, var(--campus-zone-accent) 40%, transparent);
+      font-size: 12px; font-weight: 600; color: var(--text);
+    }
+    .breadcrumb .dot {
+      width: 6px; height: 6px; border-radius: 9999px;
+      background: var(--campus-zone-accent);
+    }
+    .omnibox {
+      flex: 1; height: 28px; max-width: 420px; margin: 0 auto;
+      border-radius: var(--radius-pill); border: 1px solid var(--border);
+      background: var(--surface-2);
+      color: var(--text-muted); display: flex; align-items: center;
+      padding: 0 12px; font-size: 12px;
+    }
+    .header-right {
+      display: flex; align-items: center; gap: 10px; margin-left: auto;
+    }
+    .menubar-chip {
+      height: 28px; padding: 0 10px; border-radius: var(--radius-pill);
+      color: var(--text-muted); font-size: 11px; display: grid; place-items: center;
+      border: 1px solid transparent;
+    }
+    .presence {
+      display: flex; align-items: center;
+    }
+    .presence .av {
+      width: 24px; height: 24px; border-radius: 9999px;
+      display: grid; place-items: center; font-size: 10px; font-weight: 600;
+      color: #fff; border: 2px solid var(--background);
+      margin-left: -6px;
+    }
+    .presence .av:first-child { margin-left: 0; }
+    .presence .av.self { background: var(--presence-self); }
+    .presence .av.peer { background: var(--presence-remote); }
+    .presence .av.away { background: var(--presence-away); color: var(--text-muted); }
+    .presence .av.more {
+      background: var(--surface); color: var(--text-muted); font-size: 9px;
+    }
+    .icon-btn {
+      width: 32px; height: 32px; border-radius: 9999px;
+      border: none; background: transparent; color: var(--text-muted);
+      display: grid; place-items: center; cursor: pointer;
+    }
+    .icon-btn:hover { background: color-mix(in oklch, var(--text) 8%, transparent); color: var(--text); }
+
+    /* Main */
+    .main {
+      flex: 1; margin: 0 10px;
+      background: var(--surface-2);
+      border-radius: var(--radius-md);
+      display: grid; place-items: center; color: var(--text-muted);
+      border: 1px solid transparent;
+    }
+    .main strong { color: var(--text); display: block; margin-bottom: 6px; }
+
+    /* Dock */
+    .dock {
+      height: var(--dock-h); margin: 8px 10px 10px;
+      display: flex; align-items: center; gap: 8px;
+      padding: 0 8px; border-radius: var(--radius-lg);
+    }
+    .dock-start, .dock-end { flex-shrink: 0; display: flex; align-items: center; }
+    .dock-center {
+      flex: 1; display: flex; justify-content: center; gap: 6px; min-width: 0;
+    }
+    .dock-pill {
+      width: 36px; height: 36px; border-radius: var(--radius-pill);
+      border: none; background: transparent; color: var(--text-muted);
+      display: grid; place-items: center; cursor: pointer; font-size: 14px;
+    }
+    .dock-pill:hover { background: color-mix(in oklch, var(--text) 8%, transparent); color: var(--text); }
+    .dock-pill.active {
+      background: var(--card);
+      color: var(--text);
+      border: none;
+    }
+    .dock-avatar, .dock-plus, .dock-local {
+      width: 32px; height: 32px; border-radius: 9999px;
+      border: none; cursor: pointer; display: grid; place-items: center;
+      font-size: 12px; font-weight: 600;
+    }
+    .dock-local {
+      width: auto; height: 22px; padding: 0 8px; margin-right: 4px;
+      font-size: 9px; letter-spacing: 0.06em; text-transform: uppercase;
+      background: color-mix(in oklch, #34d399 20%, transparent); color: #34d399;
+      border: 1px solid color-mix(in oklch, #34d399 35%, transparent);
+    }
+    .dock-avatar {
+      background: var(--presence-self); color: #fff;
+    }
+    .dock-plus {
+      background: var(--primary); color: #fff; font-size: 18px; line-height: 1;
+    }
+
+    .zone-sep {
+      width: 1px; height: 20px; margin: 0 4px;
+      background: color-mix(in oklch, var(--campus-zone-accent) 40%, var(--border));
+    }
+
+    .callout {
+      position: absolute; font-size: 10px; color: var(--zone-workshop);
+      border: 1px dashed var(--zone-workshop); padding: 2px 6px;
+      border-radius: 4px; background: rgba(0,0,0,0.6); pointer-events: none;
+    }
+  </style>
+</head>
+<body>
+  <div class="legend">
+    <span>TRL-51 mock</span>
+    <button type="button" data-zone="lab">Lab</button>
+    <button type="button" data-zone="workshop">Workshop</button>
+    <button type="button" data-zone="vault">Vault</button>
+    <span>zone accent ≠ dock active</span>
+  </div>
+
+  <div class="shell" style="position:relative">
+    <header class="header" data-design-note="Header: ghost logo · breadcrumb · menubar · presence · bell · capture">
+      <button class="ghost-logo" type="button" title="Trellis" aria-label="Trellis home" data-design-note="Ghost logo — no chip">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2L3 7v10l9 5 9-5V7l-9-5z"/><path d="M12 22V12"/><path d="M3 7l9 5 9-5"/></svg>
+      </button>
+      <div class="breadcrumb" data-design-note="Keep CampusContextBreadcrumb"><span class="dot" aria-hidden="true"></span> Lab</div>
+      <div class="omnibox">Search campus…</div>
+      <div class="header-right">
+        <div class="menubar-chip">12:04</div>
+        <div class="presence" aria-label="People in this zone" data-design-note="Zone presence — always show self; not tab stops">
+          <span class="av self" title="You" aria-hidden="true">TB</span>
+          <span class="av peer" title="Ada" aria-hidden="true">AD</span>
+          <span class="av peer away" title="Kai · away" aria-hidden="true">KA</span>
+          <span class="av peer" title="Mo" aria-hidden="true">MO</span>
+          <span class="av more" title="Rio, Sam" aria-hidden="true">+2</span>
+        </div>
+        <button class="icon-btn" type="button" title="Notifications" aria-label="Notifications">🔔</button>
+        <button class="icon-btn" type="button" title="Capture" aria-label="Quick capture">⌨</button>
+      </div>
+    </header>
+
+    <main class="main">
+      <div style="text-align:center">
+        <strong>Projection host</strong>
+        Presence keyed by <code>zone:&lt;id&gt;</code> · active dock uses <code>bg-card</code>
+      </div>
+    </main>
+
+    <nav class="dock" aria-label="Navigation rail" data-design-note="Dock: avatar start · nav · plus end">
+      <div class="dock-start">
+        <span class="dock-local" aria-label="Local mode">Local</span>
+        <button class="dock-avatar" type="button" title="Account" aria-label="User account" data-design-note="Avatar bottom-left">TB</button>
+      </div>
+      <div class="dock-center">
+        <button class="dock-pill" type="button" title="Chat">💬</button>
+        <button class="dock-pill active" type="button" title="Graph" data-design-note="Active: bg-card, no border">◈</button>
+        <span class="zone-sep" aria-hidden="true"></span>
+        <button class="dock-pill" type="button" title="Browse">▦</button>
+        <button class="dock-pill" type="button" title="Pages">☰</button>
+      </div>
+      <div class="dock-end">
+        <button class="dock-plus" type="button" title="Quick create" aria-label="Quick create" data-design-note="Plus bottom-right">+</button>
+      </div>
+    </nav>
+  </div>
+
+  <script>
+    document.querySelectorAll('[data-zone]').forEach((btn) => {
+      btn.addEventListener('click', () => {
+        document.documentElement.dataset.campusZone = btn.dataset.zone;
+      });
+    });
+    document.querySelectorAll('.dock-center .dock-pill').forEach((pill) => {
+      pill.addEventListener('click', () => {
+        document.querySelectorAll('.dock-center .dock-pill').forEach((p) => p.classList.remove('active'));
+        pill.classList.add('active');
+      });
+    });
+  </script>
+</body>
+</html>

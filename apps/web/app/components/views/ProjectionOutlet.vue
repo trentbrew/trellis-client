@@ -32,6 +32,8 @@ const props = withDefaults(
     isSelected?: (_id: string) => boolean
     /** Inline grid-template style for the card-grid layout. */
     gridStyle?: StyleValue
+    /** Enable pinch / ctrl+wheel density on card-grid. */
+    pinchZoom?: boolean
     storageKey?: string
     /** Message shown when there are no items and no `#empty` slot is supplied. */
     emptyMessage?: string
@@ -39,7 +41,7 @@ const props = withDefaults(
     fieldCatalog?: ViewFieldDefinition[]
     showEmptyProperties?: boolean
   }>(),
-  { isSelected: () => () => false, emptyMessage: 'Nothing here yet', showEmptyProperties: false },
+  { isSelected: () => () => false, emptyMessage: 'Nothing here yet', showEmptyProperties: false, pinchZoom: false },
 )
 
 const emit = defineEmits<{
@@ -51,6 +53,10 @@ const emit = defineEmits<{
   columnUpdate: [item: Entity, column: string, value: unknown]
   calendarCreate: [date: Date]
   calendarReschedule: [item: Entity, patch: Partial<Entity>]
+  gridDensityWheel: [event: WheelEvent]
+  gridDensityTouchStart: [event: TouchEvent]
+  gridDensityTouchMove: [event: TouchEvent]
+  gridDensityTouchEnd: [event: TouchEvent]
 }>()
 
 const CARD_LAYOUTS = new Set<ProjectionType>(['card-grid', 'list', 'moodboard'])
@@ -98,13 +104,18 @@ const cardLayout = computed(() => props.type as 'card-grid' | 'list' | 'moodboar
     :layout="cardLayout"
     :is-selected="isSelected"
     :grid-style="gridStyle"
+    :pinch-zoom="pinchZoom && type === 'card-grid'"
     :visible-fields="visibleFields"
     :field-catalog="fieldCatalog"
     :show-empty-properties="showEmptyProperties"
     @open-detail="emit('openDetail', $event)"
     @toggle-select="(id: string, event?: MouseEvent) => emit('toggleSelect', id, event)"
     @field-update="(item: Entity, fieldId: PropertyFieldId, value: unknown) => emit('fieldUpdate', item, fieldId, value)"
-    @column-update="(item: Entity, column: string, value: unknown) => emit('columnUpdate', item, column, value)" />
+    @column-update="(item: Entity, column: string, value: unknown) => emit('columnUpdate', item, column, value)"
+    @grid-density-wheel="emit('gridDensityWheel', $event)"
+    @grid-density-touch-start="emit('gridDensityTouchStart', $event)"
+    @grid-density-touch-move="emit('gridDensityTouchMove', $event)"
+    @grid-density-touch-end="emit('gridDensityTouchEnd', $event)" />
 
   <!-- Calendar projection -->
   <div v-else-if="shape === 'calendar'" class="flex h-full min-h-0 flex-1 flex-col">

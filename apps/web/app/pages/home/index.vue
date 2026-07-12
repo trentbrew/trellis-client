@@ -59,9 +59,10 @@
     if (hasMessages.value) scrollToBottom()
   })
 
-  const handleSend = (raw: string) => {
-    const plain = raw.replace(/<[^>]+>/g, '').trim()
-    if (plain) sendMessage(plain)
+  const handleSend = (payload: { text: string; attachments: import('~/types/agent').AgentAttachment[] }) => {
+    if (payload.text.trim() || payload.attachments.length) {
+      sendMessage(payload.text, payload.attachments)
+    }
   }
 
   const handleSuggestion = (prompt: string) => {

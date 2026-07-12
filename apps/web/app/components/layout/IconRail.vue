@@ -10,6 +10,7 @@
 
   const routes = useRoutes()
   const { isCloud } = useAdapterStatus()
+  const { user } = useInstantAuth()
 
   const tooltipSide = computed(() => (isBottom.value ? 'top' : 'right'))
 
@@ -88,6 +89,12 @@
 
 <template>
   <nav data-slot="icon-rail" :class="railShellClass" aria-label="Navigation rail">
+    <!-- Start: Local badge + account avatar (bottom-left when dock) -->
+    <div :class="sectionClass('start')">
+      <AdapterModeBadge :rail-position="props.position" />
+      <UserAccountMenu v-if="user" placement="rail" :rail-position="props.position" />
+    </div>
+
     <!-- Center: Chat + Graph + zone-grouped primary icons -->
     <div :class="sectionClass('center')">
       <div :class="centerScrollClass">
@@ -208,7 +215,7 @@
                 class="group flex h-9 w-9 items-center justify-center rounded-xl transition"
                 :class="[
                   routes.isRouteActive(route.path)
-                    ? 'bg-rail-foreground/10 text-foreground'
+                    ? 'bg-card text-foreground'
                     : 'text-rail-foreground/70 hover:bg-rail-foreground/10 hover:text-rail-foreground',
                 ]">
                 <Icon :name="route.icon" class="h-4.5 w-4.5 opacity-60" />
@@ -228,7 +235,12 @@
       </div>
     </div>
 
-    <!-- LOCKED: AccountRailCluster → AppHeader only (.cursor/rules/trellis-shell-chrome.mdc) -->
+    <!-- End: Quick create (bottom-right when dock) -->
+    <div :class="sectionClass('end')">
+      <ClientOnly>
+        <QuickCreateButton placement="rail" :rail-position="props.position" variant="primary" />
+      </ClientOnly>
+    </div>
   </nav>
 </template>
 

@@ -54,6 +54,7 @@
   const { isInEditMode, canManageMembers } = useAdminUI()
   const { members: workspaceMembers, isUserOnline } = usePresence()
   const { isCloud } = useAdapterStatus()
+  const { peers: zonePeers, enabled: zonePresenceEnabled } = useZonePresence()
 
   const { user } = useInstantAuth()
 
@@ -116,7 +117,10 @@
 
   // Invite dialog
   const inviteDialogOpen = ref(false)
-  const showCloudCollaborationControls = computed(() => isCloud.value && !props.hidePresenceControls)
+  // D5: InstantDB member strip only when cloud and zone presence layer is off
+  const showCloudCollaborationControls = computed(
+    () => isCloud.value && !props.hidePresenceControls && !zonePresenceEnabled.value,
+  )
 
   // Reactive collection based on current route — accept both the canonical
   // /collections/:slug and the legacy /database/collections/:slug shim so the
@@ -211,7 +215,7 @@
     class="bg-card/0 backdrop-blur-sm border-b-none flex h-14 shrink-0 items-center gap-0 p-0 overflow-hidden sticky top-0"
     :class="{ 'app-region-drag': isTauri }">
     <!-- Left: traffic lights + logo + (conditional) org/app pickers -->
-    <nav class="flex shrink-0 items-center gap-0.5 text-xs px-4 bg-transparent" data-tauri-drag-region>
+    <nav class="flex shrink-0 items-center gap-0.5 text-xs pl-4 pr-2 bg-transparent" data-tauri-drag-region>
       <!-- macOS custom traffic lights -->
       <div v-if="isTauri && isMacOS" class="flex items-center gap-2 shrink-0 app-region-no-drag">
         <button
@@ -227,23 +231,12 @@
           title="Fullscreen"
           @click="toggleFullscreen" />
       </div>
-      <!-- Logo / Home -->
-      <CampusNavigationControls />
-      <div class="flex h-16 w-12 items-center justify-center shrink-0 border-b bg-transparent app-region-no-drag">
+      <div class="flex h-10 w-10 items-center justify-center shrink-0 app-region-no-drag">
         <div
-          class="flex h-9 w-9 items-center justify-center rounded-lg transition bg-transparent hover:bg-transparent"
-          :class="
-            isInEditMode
-              ? 'bg-accent-foreground/10 hover:bg-accent-foreground/20'
-              : 'bg-rail-foreground/10 hover:bg-rail-foreground/20'
-          ">
-          <AppLogo class="scale-75" :brand-mark="logoMarkForMode" />
+          class="flex h-8 w-8 items-center justify-center transition text-muted-foreground/50 hover:text-muted-foreground/80">
+          <AppLogo class="scale-[0.65]" :brand-mark="logoMarkForMode" />
         </div>
       </div>
-
-      <CampusChromeDivider class="app-region-no-drag" />
-
-      <CampusContextBreadcrumb />
 
       <!-- Organization Picker — hidden in single-org accounts (vault UX) -->
       <template v-if="showOrgPicker">
@@ -260,16 +253,21 @@
           <AppPicker />
         </ClientOnly>
       </template>
-
-      <!-- Campus context (Local / Zone) precedes org/app when present. -->
     </nav>
 
-    <div class="flex-1 min-w-0" data-tauri-drag-region />
+    <!-- Center: browser-style omnibar (nav + location + search) -->
+    <AppOmnibox variant="center" class="flex-1 min-w-0" />
 
-    <!-- Right: sky menubar + contextual collection/cloud chrome -->
+    <!-- Right: ambient + account + contextual chrome -->
     <div class="flex shrink-0 items-center mr-4 gap-3 app-region-no-drag">
       <ClientOnly>
         <AppMenubar />
+      </ClientOnly>
+
+      <ClientOnly>
+        <ZonePresenceAvatars
+          v-if="zonePresenceEnabled && !hidePresenceControls"
+          :peers="zonePeers" />
       </ClientOnly>
 
       <AccountRailCluster v-if="user" placement="header" />
@@ -319,7 +317,7 @@
         </UiSheetContent>
       </UiSheet>
 
-      <!-- Omnibox overlay mounted from AppMenubar (menubar variant). ⌘K via app.vue shortcut. -->
+      <!-- Omnibox overlay mounted from AppOmnibox (center variant). ⌘K via app.vue shortcut. -->
 
       <!-- Workspace Members & Presence -->
       <div v-if="showCloudCollaborationControls && workspaceUsers.length > 0" class="flex items-center ml-2 mr-1">

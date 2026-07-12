@@ -15,6 +15,7 @@
   }
 
   const currentUserRole = computed(() => (user.value as any)?.role || 'admin')
+  const isDev = import.meta.dev
 
   const roleIcons: Record<string, string> = {
     owner: 'lucide:shield',
@@ -120,8 +121,8 @@
           </UiDropdownMenuItem>
         </template>
 
-        <UiDropdownMenuSeparator v-if="import.meta.dev" />
-        <template v-if="import.meta.dev">
+        <UiDropdownMenuSeparator v-if="isDev" />
+        <template v-if="isDev">
           <UiDropdownMenuLabel class="text-muted-foreground/75 text-xs flex items-center gap-1.5">
             <Icon name="lucide:users" class="h-3 w-3" />
             Switch Demo User
@@ -140,7 +141,7 @@
             <Icon v-if="currentUserRole === demoUser.role" name="lucide:check" class="h-4 w-4 text-primary shrink-0" />
           </UiDropdownMenuItem>
         </template>
-        <UiDropdownMenuSeparator v-if="import.meta.dev" />
+        <UiDropdownMenuSeparator v-if="isDev" />
         <UiDropdownMenuItem @click="handleLogout">
           <Icon name="lucide:log-out" class="h-4 w-4" />
           Logout

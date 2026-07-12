@@ -30,7 +30,7 @@ const _loading = ref(true)
 const _initialized = ref(false)
 const _lastSeenIds = new Set<string>()
 let _subscribedSSE = false
-let _audioCache: Partial<Record<NotificationSound, HTMLAudioElement>> = {}
+const _audioCache: Partial<Record<NotificationSound, HTMLAudioElement>> = {}
 
 // ── Parsing ─────────────────────────────────────────────────────────────────
 

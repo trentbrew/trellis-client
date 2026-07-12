@@ -14,13 +14,7 @@ export const SILENT_MUTATION_AGENTS = new Set([
   'campus-migration',
 ])
 
-const GRAPH_ENTITY_ACTIONS = new Set([
-  'createNode',
-  'updateNode',
-  'deleteNode',
-  'link',
-  'unlink',
-])
+const GRAPH_ENTITY_ACTIONS = new Set(['createNode', 'updateNode', 'deleteNode', 'link', 'unlink'])
 
 const ONTOLOGY_ACTIONS = new Set(['createOntology', 'updateOntology', 'deleteOntology'])
 
@@ -56,9 +50,7 @@ export function shouldToastMutation(payload: MutationToastPayload): boolean {
 
 export function formatAgentLabel(agentId: string): string {
   if (AGENT_LABELS[agentId]) return AGENT_LABELS[agentId]
-  return agentId
-    .replace(/[-_]/g, ' ')
-    .replace(/\b\w/g, (c) => c.toUpperCase())
+  return agentId.replace(/[-_]/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase())
 }
 
 function actionVerb(action: string): string {
@@ -94,9 +86,7 @@ function entityLabel(payload: MutationToastPayload): string {
     (payload.type && payload.type !== 'entity' ? payload.type : undefined)
 
   if (payload.entityId) {
-    const shortId = payload.entityId.includes(':')
-      ? payload.entityId.split(':').pop()!
-      : payload.entityId
+    const shortId = payload.entityId.includes(':') ? payload.entityId.split(':').pop()! : payload.entityId
     return entityType ? `${entityType} · ${shortId}` : shortId
   }
 
@@ -111,6 +101,7 @@ export function formatMutationToast(payload: MutationToastPayload): {
   title: string
   description?: string
   kind: 'success' | 'info' | 'warning'
+  entityId?: string
 } {
   const agent = formatAgentLabel(payload.agentId || 'agent')
   const verb = actionVerb(payload.action || 'mutated')
@@ -127,5 +118,6 @@ export function formatMutationToast(payload: MutationToastPayload): {
     title: `${agent} ${verb}`,
     description: target,
     kind,
+    entityId: payload.entityId,
   }
 }

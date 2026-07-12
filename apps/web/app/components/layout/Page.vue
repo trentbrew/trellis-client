@@ -271,7 +271,13 @@
       showToolbar: false,
     },
     sidebar: { showHeader: false, showTabs: false, contentPadding: 'p-0', maxWidth: '', showToolbar: false },
-    browse: { showHeader: true, showTabs: false, contentPadding: 'px-4 py-4 pt-0', maxWidth: '', showToolbar: true },
+    browse: {
+      showHeader: true,
+      showTabs: false,
+      contentPadding: 'px-3 py-3 pt-0 sm:px-4 sm:py-4',
+      maxWidth: '',
+      showToolbar: true,
+    },
     filesystem: { showHeader: false, showTabs: false, contentPadding: 'p-0', maxWidth: '', showToolbar: false },
     folders: { showHeader: true, showTabs: false, contentPadding: 'p-0', maxWidth: '', showToolbar: false },
     calendar: { showHeader: false, showTabs: false, contentPadding: 'p-0', maxWidth: '', showToolbar: false },
@@ -613,8 +619,10 @@
       <div class="h-full" :class="[contentWrapperClass, transparent ? 'bg-transparent' : '']">
         <!-- Header Section (Non-sticky) -->
         <div v-if="showHeader || $slots.header" class="shrink-0 space-y-0 pb-0" :class="isFeed ? 'p-4' : 'p-0'">
-          <div class="px-8 py-8 relative border-b border-border/60" :class="variantConfig.maxWidth">
-            <div class="relative flex items-stretch gap-6">
+          <div
+            class="relative border-b border-border/60 px-3 py-3 sm:px-6 sm:py-6 lg:px-8 lg:py-8"
+            :class="variantConfig.maxWidth">
+            <div class="relative flex flex-col gap-4 sm:gap-6 lg:flex-row lg:items-stretch">
               <!-- Header Icon -->
               <div v-if="headerIcon || $slots.headerIcon" class="shrink-0">
                 <slot name="headerIcon">
@@ -650,15 +658,17 @@
                 </div>
 
                 <!-- Title -->
-                <div v-if="title || $slots.title" class="flex items-center gap-2 my-2">
-                  <h1 class="text-foreground text-3xl font-semibold">
+                <div v-if="title || $slots.title" class="my-1.5 flex items-center gap-2 sm:my-2">
+                  <h1 class="text-foreground text-2xl font-semibold sm:text-3xl">
                     <slot name="title">{{ title }}</slot>
                   </h1>
                   <slot name="titleActions" />
                 </div>
 
                 <!-- Description -->
-                <p v-if="description || $slots.description" class="max-w-2xl text-sm text-muted-foreground">
+                <p
+                  v-if="description || $slots.description"
+                  class="hidden max-w-2xl text-sm text-muted-foreground sm:block">
                   <slot name="description">{{ description }}</slot>
                 </p>
 
@@ -685,22 +695,22 @@
                 </div>
               </div>
 
-              <!-- Stats Section (right-aligned) -->
+              <!-- Stats Section -->
               <div
                 v-if="(stats && stats.length > 0) || $slots.stats"
-                class="shrink-0 w-fit max-w-[75%] self-stretch flex gap-4">
+                class="grid w-full grid-cols-2 gap-2 sm:flex sm:gap-3 sm:overflow-x-auto sm:pb-0.5 sm:scrollbar-none lg:w-fit lg:max-w-[75%] lg:shrink-0 lg:self-stretch lg:overflow-visible">
                 <slot name="stats">
                   <div
                     v-for="stat in stats"
                     :key="stat.label"
-                    class="flex flex-col justify-between gap-1 rounded-lg border border-border bg-card/20 backdrop-blur-sm px-5 py-3 h-[92px] min-w-36">
+                    class="flex min-h-16 min-w-0 flex-col justify-between gap-1 rounded-lg border border-border bg-card/20 px-3 py-2.5 backdrop-blur-sm sm:min-h-20 sm:min-w-32 sm:shrink-0 sm:snap-start sm:px-4 sm:py-3 lg:h-[92px] lg:min-w-36 lg:px-5">
                     <div
-                      class="flex items-center gap-1.5 text-[10px] font-medium text-muted-foreground uppercase tracking-wider">
+                      class="flex min-w-0 items-center gap-1.5 text-[10px] font-medium uppercase tracking-wider text-muted-foreground">
                       <Icon
                         v-if="stat.icon"
                         :name="stat.icon"
-                        :class="['size-3', stat.color || 'text-muted-foreground/70']" />
-                      {{ stat.label }}
+                        :class="['size-3 shrink-0', stat.color || 'text-muted-foreground/70']" />
+                      <span class="truncate">{{ stat.label }}</span>
                     </div>
                     <!-- Progress bar for health stat -->
                     <div v-if="stat.progress !== undefined" class="space-y-1">
@@ -730,7 +740,7 @@
                     </div>
                     <!-- Standard stat without progress -->
                     <div v-else class="flex items-baseline gap-1.5">
-                      <span class="text-xl font-bold text-foreground tracking-tight">{{ stat.value }}</span>
+                      <span class="text-lg font-bold tracking-tight text-foreground sm:text-xl">{{ stat.value }}</span>
                       <span
                         v-if="stat.change"
                         :class="[
@@ -805,18 +815,19 @@
         <div
           v-if="variantConfig.showToolbar"
           ref="stickyRef"
-          class="sticky -top-px z-40 transition-all duration-50 bg-transparent backdrop-blur-2xl"
+          class="sticky -top-px z-40 transition-all duration-50"
           :class="[
             !isSpreadsheetBrowseView && 'rounded-t-lg',
-            isStuck && 'border-b border-border/60 bg-card/50',
-            transparent ? 'bg-transparent backdrop-blur-none' : '',
+            transparent ? 'bg-transparent' : 'bg-surface-2',
+            isStuck && !transparent && 'border-b border-border/60',
           ]">
-          <div :class="isFeed ? 'mx-4' : 'mx-4'" class="py-4">
-            <div class="flex justify-between items-center gap-3 w-full">
-              <!-- View Mode Switcher (hidden for feed variant) -->
+          <div :class="isFeed ? 'mx-3 sm:mx-4' : 'mx-3 sm:mx-4'" class="py-3 sm:py-4">
+            <div
+              class="grid w-full gap-2.5 [grid-template-columns:minmax(0,1fr)_auto] sm:flex sm:flex-wrap sm:items-center sm:gap-3">
+              <!-- View Mode Switcher -->
               <div
                 v-if="showViewSwitcher && !isFeed"
-                class="flex items-center rounded-lg border border-border bg-card/0 backdrop-blur-lg p-0.5 shrink-0">
+                class="col-start-1 row-start-1 flex min-w-0 items-center overflow-x-auto rounded-lg border border-border bg-muted/30 p-0.5 scrollbar-none sm:shrink-0">
                 <slot name="viewSwitcher">
                   <button
                     v-for="option in effectiveViewModeOptions"
@@ -841,10 +852,14 @@
               </div>
 
               <!-- Optional controls immediately before search (e.g. grid column count) -->
-              <slot name="beforeSearch" />
+              <div class="hidden shrink-0 sm:block">
+                <slot name="beforeSearch" />
+              </div>
 
-              <!-- Search Input -->
-              <div v-if="!hideSearch" class="relative flex-1 w-full rounded-lg bg-card/0 backdrop-blur-xl">
+              <!-- Search -->
+              <div
+                v-if="!hideSearch"
+                class="relative col-span-2 row-start-2 min-w-0 w-full rounded-lg sm:col-span-1 sm:row-start-1 sm:flex-1">
                 <Icon
                   name="lucide:search"
                   class="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground pointer-events-none" />
@@ -854,41 +869,48 @@
                     v-model="searchQuery"
                     type="text"
                     :placeholder="effectiveSearchPlaceholder"
-                    class="w-full rounded-lg border border-border bg-card/50 py-2 pl-10 pr-4 text-sm placeholder:text-muted-foreground focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary" />
+                    class="w-full rounded-lg border border-border bg-card py-2 pl-10 pr-4 text-sm placeholder:text-muted-foreground focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary" />
                   <input
                     v-else
                     type="text"
                     :placeholder="effectiveSearchPlaceholder"
-                    class="w-full rounded-lg border border-border bg-card/50 py-2 pl-10 pr-4 text-sm placeholder:text-muted-foreground focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary" />
+                    class="w-full rounded-lg border border-border bg-card py-2 pl-10 pr-4 text-sm placeholder:text-muted-foreground focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary" />
                 </slot>
               </div>
 
-              <!-- Filters -->
-              <div class="flex items-center gap-2 shrink-0">
+              <!-- Filters + sort + toolbar actions -->
+              <div
+                class="col-start-2 row-start-1 flex shrink-0 items-center gap-1 justify-self-end sm:col-auto sm:row-auto sm:gap-2">
                 <!-- Advanced Filters (outside slot so pages can extend #filters without losing this) -->
                 <UiPopover v-if="advancedFilters">
                   <UiPopoverTrigger as-child>
                     <UiButton
                       variant="outline"
                       size="sm"
-                      class="bg-card/0 backdrop-blur max-w-[480px]"
+                      class="max-w-[40vw] bg-card sm:max-w-[480px]"
                       :class="[
-                        advancedFilters.hasActiveFilters.value ? 'gap-1.5 border-primary/50 text-primary' : 'px-2',
+                        advancedFilters.hasActiveFilters.value
+                          ? 'gap-1 border-primary/50 text-primary sm:gap-1.5'
+                          : 'px-2',
                       ]"
                       aria-label="Filter"
                       :title="advancedFilters.hasActiveFilters.value ? undefined : 'Filter'">
                       <Icon name="lucide:filter" class="h-4 w-4 shrink-0" />
                       <template v-if="advancedFilters.hasActiveFilters.value">
                         <span
+                          class="inline-flex min-w-5 items-center justify-center rounded-sm bg-primary/15 px-1.5 py-0.5 text-[11px] font-semibold leading-none text-primary sm:hidden">
+                          {{ advancedFilters.activeFilterSummary.value.length }}
+                        </span>
+                        <span
                           v-for="(pill, pIdx) in advancedFilters.activeFilterSummary.value.slice(0, 3)"
                           :key="pIdx"
-                          class="inline-flex items-center gap-1 rounded-sm bg-primary/10 px-1.5 py-0.5 text-[11px] font-medium leading-none whitespace-nowrap">
+                          class="hidden items-center gap-1 rounded-sm bg-primary/10 px-1.5 py-0.5 text-[11px] font-medium leading-none whitespace-nowrap sm:inline-flex">
                           <span class="text-primary/70">{{ pill.fieldLabel }}</span>
                           <span v-if="pill.displayValue" class="text-primary">{{ pill.displayValue }}</span>
                         </span>
                         <span
                           v-if="advancedFilters.activeFilterSummary.value.length > 3"
-                          class="text-[11px] text-primary/60 whitespace-nowrap">
+                          class="hidden text-[11px] text-primary/60 whitespace-nowrap sm:inline">
                           +{{ advancedFilters.activeFilterSummary.value.length - 3 }}
                         </span>
                       </template>
@@ -907,7 +929,7 @@
                         <UiButton
                           variant="outline"
                           size="sm"
-                          class="bg-card/0"
+                          class="bg-card"
                           :class="
                             filter.currentValue.value !== filter.options[0]?.value ? 'gap-2' : 'px-2'
                           "
@@ -949,8 +971,8 @@
                         :title="hasCustomSort ? undefined : 'Sort'">
                         <Icon name="lucide:arrow-up-down" class="h-4 w-4" />
                         <template v-if="hasCustomSort">
-                          <span>{{ browse.currentSortLabel.value }}</span>
-                          <Icon name="lucide:chevron-down" class="h-3 w-3 opacity-50" />
+                          <span class="hidden sm:inline">{{ browse.currentSortLabel.value }}</span>
+                          <Icon name="lucide:chevron-down" class="hidden h-3 w-3 opacity-50 sm:inline" />
                         </template>
                       </UiButton>
                     </UiDropdownMenuTrigger>
@@ -975,18 +997,18 @@
                     </UiDropdownMenuContent>
                   </UiDropdownMenu>
                 </template>
-              </div>
 
-              <!-- Actions -->
-              <div
-                v-if="$slots.toolbarActions || primaryAction || secondaryAction || tertiaryAction"
-                class="flex items-center gap-2 shrink-0">
-                <slot name="toolbarActions">
-                  <PageActionButtons
-                    :actions="[tertiaryAction, secondaryAction, primaryAction]"
-                    size="sm"
-                    :on-action-click="handleActionClick" />
-                </slot>
+                <!-- Toolbar actions -->
+                <div
+                  v-if="$slots.toolbarActions || primaryAction || secondaryAction || tertiaryAction"
+                  class="flex shrink-0 items-center gap-1.5 sm:gap-2">
+                  <slot name="toolbarActions">
+                    <PageActionButtons
+                      :actions="[tertiaryAction, secondaryAction, primaryAction]"
+                      size="sm"
+                      :on-action-click="handleActionClick" />
+                  </slot>
+                </div>
               </div>
             </div>
           </div>

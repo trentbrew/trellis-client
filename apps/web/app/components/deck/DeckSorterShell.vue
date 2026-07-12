@@ -3,7 +3,7 @@
   import SlideCanvas from './SlideCanvas.vue'
   import DeckInspector from './DeckInspector.vue'
   import SpeakerNotesStrip from './SpeakerNotesStrip.vue'
-  import PresenceAvatarStack from './PresenceAvatarStack.vue'
+  import PresenceAvatarStack from '~/components/presence/PresenceAvatarStack.vue'
   import { useDeckProjection } from '~/composables/useDeckProjection'
   import { useEditorLease } from '~/composables/useEditorLease'
   import { useDeckKeyboardReorder } from '~/composables/useDeckKeyboardReorder'

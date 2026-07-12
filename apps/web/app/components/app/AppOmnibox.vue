@@ -16,6 +16,10 @@
 
   const isMenubar = computed(() => props.variant === 'menubar')
 
+  const { locationLabel, locationSuffix } = useCampusLocationLabel()
+  const { canGoBack, canGoForward } = useProjectionNavigation()
+  const showNavDivider = computed(() => canGoBack.value || canGoForward.value)
+
   const commandDialog = useCommandDialog()
   const routes = useRoutes()
   const appNavigate = useAppNavigate()
@@ -154,23 +158,34 @@
 </script>
 
 <template>
-  <!-- Center header trigger -->
-  <div v-if="!isMenubar" v-bind="$attrs" class="flex flex-1 justify-center min-w-0 app-region-no-drag">
-    <button
-      type="button"
-      aria-label="Search or ask the agent"
-      :aria-expanded="commandDialog.isOpen.value"
-      class="relative w-full max-w-[500px] min-w-0 h-8 pl-9 pr-14 rounded-full bg-muted/30 hover:bg-muted/60 hover:border-border/40 text-xs text-left text-muted-foreground/70 outline-none transition-colors flex items-center border border-border"
-      @click="openTrigger">
-      <Icon
-        name="lucide:search"
-        class="h-4 w-4 text-muted-foreground/70 absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
-      <span>Search or ask anything…</span>
+  <!-- Center header — browser-style omnibar -->
+  <div v-if="!isMenubar" v-bind="$attrs" class="flex flex-1 justify-center min-w-0 px-3 app-region-no-drag">
+    <div
+      data-slot="omnibar-shell"
+      class="relative flex w-full max-w-[560px] min-w-0 h-9 items-center rounded-full border border-border/60 bg-muted/30 hover:bg-muted/50 hover:border-border transition-colors">
+      <CampusNavigationControls embedded />
+
+      <div v-if="showNavDivider" class="w-px h-4 bg-border/50 shrink-0 mx-0.5" />
+
+      <button
+        type="button"
+        :aria-label="`Location: ${locationLabel}. Search or ask the agent.`"
+        :aria-expanded="commandDialog.isOpen.value"
+        class="flex flex-1 min-w-0 h-full items-center gap-1 px-2 text-xs text-left outline-none rounded-full"
+        @click="openTrigger">
+        <CampusZonePicker embedded />
+        <template v-if="locationSuffix">
+          <span class="text-muted-foreground/40 shrink-0">›</span>
+          <span class="truncate text-foreground/85 font-normal">{{ locationSuffix }}</span>
+        </template>
+        <span v-else class="truncate text-muted-foreground/60 ml-0.5">Search or ask anything…</span>
+      </button>
+
       <UiKbd
-        class="absolute right-2 top-1/2 -translate-y-1/2 bg-muted/60 border-none text-[10px] h-5 px-1.5 pointer-events-none">
+        class="mr-2.5 bg-muted/60 border-none text-[10px] h-5 px-1.5 pointer-events-none shrink-0">
         ⌘K
       </UiKbd>
-    </button>
+    </div>
   </div>
 
   <!-- Menubar compact trigger -->

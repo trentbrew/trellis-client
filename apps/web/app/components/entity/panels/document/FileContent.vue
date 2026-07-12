@@ -1,4 +1,12 @@
 <script lang="ts" setup>
+import * as XLSX from 'xlsx'
+import CodeEditor from '~/components/editors/CodeEditor/CodeEditor.vue'
+import { markdownToHtml } from '~/utils/markdown'
+import { useFileUpload } from '~/composables/useFileUpload'
+import { useFileEnrichment } from '~/composables/useFileEnrichment'
+
+import { classifyFile, getFileExtension, getFileCategoryMeta, type FileCategory } from '~/utils/fileClassification'
+
 const props = defineProps<{
   modelValue: any
   mode: 'view' | 'create' | 'edit'
@@ -7,12 +15,6 @@ const props = defineProps<{
 const emit = defineEmits<{
   'update:modelValue': [value: any]
 }>()
-
-import * as XLSX from 'xlsx'
-import CodeEditor from '~/components/editors/CodeEditor/CodeEditor.vue'
-import { markdownToHtml } from '~/utils/markdown'
-import { useFileUpload } from '~/composables/useFileUpload'
-import { useFileEnrichment } from '~/composables/useFileEnrichment'
 
 const item = computed({
   get: () => props.modelValue,
@@ -29,8 +31,6 @@ const formatFileSize = (bytes?: number): string => {
   if (bytes < 1024 * 1024 * 1024) return `${(bytes / (1024 * 1024)).toFixed(1)} MB`
   return `${(bytes / (1024 * 1024 * 1024)).toFixed(1)} GB`
 }
-
-import { classifyFile, getFileExtension, getFileCategoryMeta, type FileCategory } from '~/utils/fileClassification'
 
 const fileMeta = computed(() => {
   const cat = (item.value.fileCategory as FileCategory) || 'other'

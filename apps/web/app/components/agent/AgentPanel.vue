@@ -27,9 +27,10 @@
     }
   })
 
-  const handleSend = (message: string) => {
-    const plain = message.replace(/<[^>]+>/g, '').trim()
-    if (plain) sendMessage(plain)
+  const handleSend = (payload: { text: string; attachments: import('~/types/agent').AgentAttachment[] }) => {
+    if (payload.text.trim() || payload.attachments.length) {
+      sendMessage(payload.text, payload.attachments)
+    }
   }
 
   function handleNewThread() {

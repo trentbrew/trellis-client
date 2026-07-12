@@ -1,31 +1,52 @@
 ---
-description: Campus shell chrome invariants — resident cluster placement (always apply for UI work)
+description: Campus shell chrome invariants — split resident placement (always apply for UI work)
 alwaysApply: true
 ---
 
 # Shell chrome — locked decisions
 
-## AccountRailCluster placement (human decision 2026-07-06)
+## Split resident placement (human decision 2026-07-11)
 
-**`AccountRailCluster`** (bell, avatar, quick create, capture) mounts in **`AppHeader.vue` top-right** only:
+Resident controls are **split** — do **not** remount the full
+`AccountRailCluster` on `IconRail`.
+
+### Header (`AppHeader.vue`)
+
+1. Ghost logo (no fill chip) + breadcrumb/org chrome
+2. Menubar (ambient only)
+3. Zone presence avatars (`data-testid="zone-presence-avatars"`)
+4. Slim `AccountRailCluster placement="header"` — **bell + capture only**
 
 ```vue
 <AccountRailCluster v-if="user" placement="header" />
 ```
 
-**Never** mount `<AccountRailCluster>` on **`IconRail.vue`** — not on the dock end zone, not on left rail.
+### Dock (`IconRail.vue`)
 
-### Why agents keep reverting this
+1. **Start:** `AdapterModeBadge` + `UserAccountMenu placement="rail"`
+2. **Center:** nav icons (active = `bg-card`, no border)
+3. **End:** `QuickCreateButton placement="rail"`
 
-`docs/artifacts/campus_shell_chrome_p0b_spec.md` originally said "move cluster to dock". That goal is **cancelled**. Do not implement dock placement even if the spec body still mentions it.
+### Forbidden
+
+- Mounting `<AccountRailCluster>` on `IconRail` (whole cluster)
+- Putting presence avatars on the dock
+- Zone-tint + border on active dock items (use `bg-card`, no border)
+
+### Why agents regress
+
+Older p0b specs cancelled dock-mount of the **full** cluster, then 2026-07-11
+**split** avatar/`+` onto dock corners. Do not restore header-only avatar/+ or
+remount the full cluster on the rail.
 
 ### Verification
 
 - Unit: `apps/web/app/components/layout/shell-chrome-placement.test.ts`
-- E2E: `apps/web/tests/e2e/campus-dock-resident.spec.ts` (bell/avatar in **header**, not rail)
-- `AGENTS.md` § Shell chrome
+- E2E: `apps/web/tests/e2e/campus-dock-resident.spec.ts`
+- Spec: `docs/artifacts/campus_chrome_zone_presence_spec.md`
 
 ### Menubar vs resident
 
-- **`AppMenubar`**: vitals, weather, clock, omnibox — ambient sky layer only
-- **`AccountRailCluster`**: bell, avatar, +, capture — header right, after menubar
+- **`AppMenubar`**: vitals, weather, clock — ambient sky only
+- **Header resident**: bell + capture (+ zone presence)
+- **Dock corners**: Local badge, avatar, quick create

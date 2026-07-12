@@ -1,0 +1,78 @@
+{
+  "findings": [
+    {
+      "severity": "warning",
+      "path": "components.presenceAvatarStack",
+      "message": "textColor (#ffffff) on backgroundColor (#f59e0b) has contrast ratio 2.15:1, below WCAG AA minimum of 4.5:1."
+    },
+    {
+      "severity": "warning",
+      "path": "colors.surface-1",
+      "message": "'surface-1' is defined but never referenced by any component."
+    },
+    {
+      "severity": "warning",
+      "path": "colors.surface-2",
+      "message": "'surface-2' is defined but never referenced by any component."
+    },
+    {
+      "severity": "warning",
+      "path": "colors.text",
+      "message": "'text' is defined but never referenced by any component."
+    },
+    {
+      "severity": "warning",
+      "path": "colors.text-muted",
+      "message": "'text-muted' is defined but never referenced by any component."
+    },
+    {
+      "severity": "warning",
+      "path": "colors.border",
+      "message": "'border' is defined but never referenced by any component."
+    },
+    {
+      "severity": "warning",
+      "path": "colors.zone-lab",
+      "message": "'zone-lab' is defined but never referenced by any component."
+    },
+    {
+      "severity": "warning",
+      "path": "colors.zone-lobby",
+      "message": "'zone-lobby' is defined but never referenced by any component."
+    },
+    {
+      "severity": "warning",
+      "path": "colors.zone-workshop",
+      "message": "'zone-workshop' is defined but never referenced by any component."
+    },
+    {
+      "severity": "warning",
+      "path": "colors.zone-showroom",
+      "message": "'zone-showroom' is defined but never referenced by any component."
+    },
+    {
+      "severity": "warning",
+      "path": "colors.zone-vault",
+      "message": "'zone-vault' is defined but never referenced by any component."
+    },
+    {
+      "severity": "warning",
+      "path": "colors.presence-self",
+      "message": "'presence-self' is defined but never referenced by any component."
+    },
+    {
+      "severity": "warning",
+      "path": "colors.presence-away",
+      "message": "'presence-away' is defined but never referenced by any component."
+    },
+    {
+      "severity": "info",
+      "message": "Design system defines 18 colors, 3 typography scales, 4 rounding levels, 4 spacing tokens, 6 components."
+    }
+  ],
+  "summary": {
+    "errors": 0,
+    "warnings": 13,
+    "infos": 1
+  }
+}

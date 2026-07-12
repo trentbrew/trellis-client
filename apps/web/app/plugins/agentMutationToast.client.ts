@@ -4,11 +4,7 @@
  */
 import { toast } from 'vue-sonner'
 import { useSSESubscribe } from '~/composables/useTrellisSSE'
-import {
-  formatMutationToast,
-  shouldToastMutation,
-  type MutationToastPayload,
-} from '~/lib/agent-mutation-toast'
+import { formatMutationToast, shouldToastMutation, type MutationToastPayload } from '~/lib/agent-mutation-toast'
 
 const FLUSH_MS = 900
 
@@ -20,6 +16,13 @@ interface BurstState {
 
 const bursts = new Map<string, BurstState>()
 
+let $router: ReturnType<typeof useRouter> | null = null
+
+function openEntityDialog(entityId: string) {
+  if (!$router) return
+  $router.push({ path: '/workspace/browse', hash: `#${entityId}` })
+}
+
 function flushBurst(agentId: string) {
   const state = bursts.get(agentId)
   if (!state) return
@@ -30,10 +33,11 @@ function flushBurst(agentId: string) {
   if (events.length === 0) return
 
   if (events.length === 1) {
-    const { title, description, kind } = formatMutationToast(events[0]!)
-    if (kind === 'success') toast.success(title, { description })
-    else if (kind === 'warning') toast.warning(title, { description })
-    else toast.info(title, { description })
+    const { title, description, kind, entityId } = formatMutationToast(events[0]!)
+    const action = entityId ? { label: 'Open', onClick: () => openEntityDialog(entityId) } : undefined
+    if (kind === 'success') toast.success(title, { description, action })
+    else if (kind === 'warning') toast.warning(title, { description, action })
+    else toast.info(title, { description, action })
     return
   }
 
@@ -56,7 +60,9 @@ function queueMutation(payload: MutationToastPayload) {
   state.timer = setTimeout(() => flushBurst(agentId), FLUSH_MS)
 }
 
-export default defineNuxtPlugin(() => {
+export default defineNuxtPlugin((nuxtApp) => {
+  $router = nuxtApp.$router as ReturnType<typeof useRouter>
+
   useSSESubscribe('mutation', (event) => {
     try {
       const payload = JSON.parse(event.data || '{}') as MutationToastPayload

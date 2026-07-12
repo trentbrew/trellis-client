@@ -101,7 +101,7 @@
   }
 
   function onTabFocus(direction: 1 | -1) {
-    let { row, col } = selection.value.focus
+    const { row, col } = selection.value.focus
     let c = col + direction
     while (c >= 0 && c < columns.value.length) {
       if (isEditableColumn(columns.value[c]!)) {

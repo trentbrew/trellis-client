@@ -13,89 +13,113 @@
  * Zod version compatibility issues across the pnpm workspace.
  */
 
-import { Server } from '@modelcontextprotocol/sdk/server/index.js'
-import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js'
+import { Server } from '@modelcontextprotocol/sdk/server/index.js';
+import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js';
 import {
   ListToolsRequestSchema,
   CallToolRequestSchema,
   ListResourcesRequestSchema,
   ReadResourceRequestSchema,
-} from '@modelcontextprotocol/sdk/types.js'
+} from '@modelcontextprotocol/sdk/types.js';
 
 // ── Config ──────────────────────────────────────────────────────────────────
 
-const defaultApiUrl = `http://localhost:${process.env.TRELLIS_PORT || '1414'}`
-const BASE_URL = (process.env.TRELLIS_API_URL || defaultApiUrl).replace(/\/$/, '')
-const AGENT_ID = process.env.TRELLIS_AGENT_ID || 'mcp'
-const API = `${BASE_URL}/api/graph`
-const PLATFORM_API = `${BASE_URL}/api/platform`
+const defaultApiUrl = `http://localhost:${process.env.TRELLIS_PORT || '1414'}`;
+const BASE_URL = (process.env.TRELLIS_API_URL || defaultApiUrl).replace(
+  /\/$/,
+  '',
+);
+const AGENT_ID = process.env.TRELLIS_AGENT_ID || 'mcp';
+const API = `${BASE_URL}/api/graph`;
+const PLATFORM_API = `${BASE_URL}/api/platform`;
 
 // ── HTTP helpers ────────────────────────────────────────────────────────────
 
 async function request(path, options) {
-  const url = `${API}/${path}`
+  const url = `${API}/${path}`;
   const res = await fetch(url, {
     method: options?.method || 'GET',
     headers: options?.body ? { 'Content-Type': 'application/json' } : undefined,
     body: options?.body ? JSON.stringify(options.body) : undefined,
-  })
+  });
 
   if (!res.ok) {
-    let message
+    let message;
     try {
-      const err = await res.json()
-      message = err.message || err.statusMessage || res.statusText
+      const err = await res.json();
+      message = err.message || err.statusMessage || res.statusText;
     } catch {
-      message = res.statusText
+      message = res.statusText;
     }
-    throw new Error(`[${res.status}] ${message}`)
+    throw new Error(`[${res.status}] ${message}`);
   }
 
-  return res.json()
+  return res.json();
 }
 
 async function platformRequest(path, options) {
-  let url = `${PLATFORM_API}/${path}`
+  let url = `${PLATFORM_API}/${path}`;
   if (options?.query) {
-    const params = new URLSearchParams(options.query)
-    url += `?${params.toString()}`
+    const params = new URLSearchParams(options.query);
+    url += `?${params.toString()}`;
   }
   const res = await fetch(url, {
     method: options?.method || 'GET',
     headers: options?.body ? { 'Content-Type': 'application/json' } : undefined,
     body: options?.body ? JSON.stringify(options.body) : undefined,
-  })
+  });
 
   if (!res.ok) {
-    let message
+    let message;
     try {
-      const err = await res.json()
-      message = err.message || err.statusMessage || res.statusText
+      const err = await res.json();
+      message = err.message || err.statusMessage || res.statusText;
     } catch {
-      message = res.statusText
+      message = res.statusText;
     }
-    throw new Error(`[${res.status}] ${message}`)
+    throw new Error(`[${res.status}] ${message}`);
   }
 
-  return res.json()
+  return res.json();
 }
 
 function ok(data) {
-  return { content: [{ type: 'text', text: JSON.stringify(data, null, 2) }] }
+  return { content: [{ type: 'text', text: JSON.stringify(data, null, 2) }] };
 }
 
 function err(message) {
-  return { content: [{ type: 'text', text: `Error: ${message}` }], isError: true }
+  return {
+    content: [{ type: 'text', text: `Error: ${message}` }],
+    isError: true,
+  };
 }
 
 // ── Entity type reference ───────────────────────────────────────────────────
 
 const ENTITY_TYPES = [
-  'task', 'event', 'trip', 'payment', 'appointment', 'reminder', 'deadline', 'milestone',
-  'note', 'file', 'page', 'template', 'slide_deck', 'bookmark',
-  'person', 'contact', 'organization', 'vendor',
-  'project', 'folder', 'collection', 'goal',
-]
+  'task',
+  'event',
+  'trip',
+  'payment',
+  'appointment',
+  'reminder',
+  'deadline',
+  'milestone',
+  'note',
+  'file',
+  'page',
+  'template',
+  'slide_deck',
+  'bookmark',
+  'person',
+  'contact',
+  'organization',
+  'vendor',
+  'project',
+  'folder',
+  'collection',
+  'goal',
+];
 
 // ── Entity type schema resource ─────────────────────────────────────────────
 
@@ -103,7 +127,16 @@ const ENTITY_SCHEMA = {
   classes: {
     temporal: {
       description: 'Has date/time span, lives on a calendar',
-      types: ['task', 'event', 'trip', 'payment', 'appointment', 'reminder', 'deadline', 'milestone'],
+      types: [
+        'task',
+        'event',
+        'trip',
+        'payment',
+        'appointment',
+        'reminder',
+        'deadline',
+        'milestone',
+      ],
       baseProjections: ['calendar', 'list', 'table', 'kanban', 'timeline'],
     },
     document: {
@@ -123,8 +156,30 @@ const ENTITY_SCHEMA = {
     },
   },
   commonFields: {
-    all: ['id', 'type', 'title', 'description', 'tags', 'owner', 'involved', 'category', 'references', 'createdAt', 'updatedAt'],
-    temporal: ['startDate', 'endDate', 'allDay', 'startTime', 'endTime', 'priority', 'urgency', 'reminders', 'recurrence'],
+    all: [
+      'id',
+      'type',
+      'title',
+      'description',
+      'tags',
+      'owner',
+      'involved',
+      'category',
+      'references',
+      'createdAt',
+      'updatedAt',
+    ],
+    temporal: [
+      'startDate',
+      'endDate',
+      'allDay',
+      'startTime',
+      'endTime',
+      'priority',
+      'urgency',
+      'reminders',
+      'recurrence',
+    ],
     document: ['content', 'pinned', 'wordCount'],
     actor: ['email', 'phone', 'avatar', 'role', 'relationships'],
     container: ['children', 'progress', 'status', 'parentId'],
@@ -132,30 +187,53 @@ const ENTITY_SCHEMA = {
   enums: {
     priority: ['critical', 'high', 'medium', 'low'],
     urgency: ['urgent', 'not-urgent'],
-    taskStatus: ['pending', 'in-progress', 'on-track', 'due-soon', 'overdue', 'completed'],
+    taskStatus: [
+      'pending',
+      'in-progress',
+      'on-track',
+      'due-soon',
+      'overdue',
+      'completed',
+    ],
     containerStatus: ['active', 'archived', 'completed', 'on-hold'],
   },
-  relations: ['assignedTo', 'belongsTo', 'references', 'dependsOn', 'parentOf', 'childOf'],
-}
+  relations: [
+    'assignedTo',
+    'belongsTo',
+    'references',
+    'dependsOn',
+    'parentOf',
+    'childOf',
+  ],
+};
 
 // ── Tool definitions (JSON Schema) ──────────────────────────────────────────
 
 const TOOLS = [
   {
     name: 'query_graph',
-    description: 'Execute an EQL-S query against the Trellis knowledge graph. Example: FIND tasks AS t WHERE t.priority = "high" RETURN t.title, t.startDate',
+    description:
+      'Execute an EQL-S query against the Trellis knowledge graph. Example: FIND entity AS ?t WHERE ?t.type = "task" AND ?t.priority = "high" RETURN ?t.title, ?t.startDate, ?t.taskStatus',
     inputSchema: {
       type: 'object',
-      properties: { query: { type: 'string', description: 'EQL-S query string' } },
+      properties: {
+        query: { type: 'string', description: 'EQL-S query string' },
+      },
       required: ['query'],
     },
   },
   {
     name: 'get_node',
-    description: 'Fetch a single entity by its ID, including its properties and links (outgoing/incoming references).',
+    description:
+      'Fetch a single entity by its ID, including its properties and links (outgoing/incoming references).',
     inputSchema: {
       type: 'object',
-      properties: { entityId: { type: 'string', description: 'The entity ID to fetch (e.g. "task-1")' } },
+      properties: {
+        entityId: {
+          type: 'string',
+          description: 'The entity ID to fetch (e.g. "task-1")',
+        },
+      },
       required: ['entityId'],
     },
   },
@@ -164,7 +242,13 @@ const TOOLS = [
     description: 'Batch fetch multiple entities by their IDs.',
     inputSchema: {
       type: 'object',
-      properties: { ids: { type: 'array', items: { type: 'string' }, description: 'Array of entity IDs' } },
+      properties: {
+        ids: {
+          type: 'array',
+          items: { type: 'string' },
+          description: 'Array of entity IDs',
+        },
+      },
       required: ['ids'],
     },
   },
@@ -174,22 +258,40 @@ const TOOLS = [
     inputSchema: {
       type: 'object',
       properties: {
-        entityId: { type: 'string', description: 'Unique ID for the new entity (e.g. "task-abc123")' },
-        type: { type: 'string', description: `Entity type`, enum: ENTITY_TYPES },
-        data: { type: 'object', description: 'Entity properties (title, description, startDate, priority, etc.)' },
+        entityId: {
+          type: 'string',
+          description: 'Unique ID for the new entity (e.g. "task-abc123")',
+        },
+        type: {
+          type: 'string',
+          description: `Entity type`,
+          enum: ENTITY_TYPES,
+        },
+        data: {
+          type: 'object',
+          description:
+            'Entity properties (title, description, startDate, priority, etc.)',
+        },
       },
       required: ['entityId', 'type'],
     },
   },
   {
     name: 'update_node',
-    description: 'Update an existing entity. Provide only the fields you want to change.',
+    description:
+      'Update an existing entity. Provide only the fields you want to change.',
     inputSchema: {
       type: 'object',
       properties: {
         entityId: { type: 'string', description: 'ID of the entity to update' },
-        type: { type: 'string', description: 'Entity type (must match existing)' },
-        data: { type: 'object', description: 'Properties to update (merged with existing)' },
+        type: {
+          type: 'string',
+          description: 'Entity type (must match existing)',
+        },
+        data: {
+          type: 'object',
+          description: 'Properties to update (merged with existing)',
+        },
       },
       required: ['entityId', 'type', 'data'],
     },
@@ -199,18 +301,25 @@ const TOOLS = [
     description: 'Delete an entity from the Trellis graph. Permanent.',
     inputSchema: {
       type: 'object',
-      properties: { entityId: { type: 'string', description: 'ID of the entity to delete' } },
+      properties: {
+        entityId: { type: 'string', description: 'ID of the entity to delete' },
+      },
       required: ['entityId'],
     },
   },
   {
     name: 'link_nodes',
-    description: 'Create a semantic link between two entities (e.g. assignedTo, belongsTo, references, dependsOn).',
+    description:
+      'Create a semantic link between two entities (e.g. assignedTo, belongsTo, references, dependsOn).',
     inputSchema: {
       type: 'object',
       properties: {
         e1: { type: 'string', description: 'Source entity ID' },
-        relation: { type: 'string', description: 'Relation name (assignedTo, belongsTo, references, dependsOn, parentOf, childOf)' },
+        relation: {
+          type: 'string',
+          description:
+            'Relation name (assignedTo, belongsTo, references, dependsOn, parentOf, childOf)',
+        },
         e2: { type: 'string', description: 'Target entity ID' },
       },
       required: ['e1', 'relation', 'e2'],
@@ -218,17 +327,22 @@ const TOOLS = [
   },
   {
     name: 'get_graph_summary',
-    description: 'Get a compact graph overview in a single call — replaces graph_health + get_schema + get_catalog for agent orientation. Returns: health stats, entity type counts, ontology names by tier, top attributes, link relations, and recent mutations. Call this FIRST before any other operation to understand the current graph state.',
+    description:
+      'Get a compact graph overview in a single call — replaces graph_health + get_schema + get_catalog for agent orientation. Returns: health stats, entity type counts, ontology names by tier, top attributes, link relations, and recent mutations. Call this FIRST before any other operation to understand the current graph state.',
     inputSchema: {
       type: 'object',
       properties: {
-        limit: { type: 'number', description: 'Max items per section (default: 10)' },
+        limit: {
+          type: 'number',
+          description: 'Max items per section (default: 10)',
+        },
       },
     },
   },
   {
     name: 'graph_health',
-    description: 'Check graph health — returns fact count, link count, and status.',
+    description:
+      'Check graph health — returns fact count, link count, and status.',
     inputSchema: { type: 'object', properties: {} },
   },
   {
@@ -238,12 +352,14 @@ const TOOLS = [
   },
   {
     name: 'get_catalog',
-    description: 'Get the auto-generated EAV catalog showing all attributes and their value distributions.',
+    description:
+      'Get the auto-generated EAV catalog showing all attributes and their value distributions.',
     inputSchema: { type: 'object', properties: {} },
   },
   {
     name: 'get_mutation_log',
-    description: 'Get the recent mutation log showing what changes have been made to the graph.',
+    description:
+      'Get the recent mutation log showing what changes have been made to the graph.',
     inputSchema: { type: 'object', properties: {} },
   },
   {
@@ -251,21 +367,34 @@ const TOOLS = [
     description: 'Get a single ontology (type schema) by ID.',
     inputSchema: {
       type: 'object',
-      properties: { id: { type: 'string', description: 'Ontology ID (e.g. "trellis:schema/invoice")' } },
+      properties: {
+        id: {
+          type: 'string',
+          description: 'Ontology ID (e.g. "trellis:schema/invoice")',
+        },
+      },
       required: ['id'],
     },
   },
   {
     name: 'create_ontology',
-    description: 'Create a new ontology (type schema). The new type will auto-appear in the Trellis UI sidebar. Fields use Notion-compatible value types: title, rich_text, number, select, multi_select, status, date, people, files, checkbox, url, email, phone_number, relation, rollup, formula.',
+    description:
+      'Create a new ontology (type schema). The new type will auto-appear in the Trellis UI sidebar. Fields use Notion-compatible value types: title, rich_text, number, select, multi_select, status, date, people, files, checkbox, url, email, phone_number, relation, rollup, formula.',
     inputSchema: {
       type: 'object',
       properties: {
-        id: { type: 'string', description: 'Ontology ID (e.g. "trellis:schema/invoice")' },
-        version: { type: 'string', description: 'Schema version (default: "1.0.0")' },
+        id: {
+          type: 'string',
+          description: 'Ontology ID (e.g. "trellis:schema/invoice")',
+        },
+        version: {
+          type: 'string',
+          description: 'Schema version (default: "1.0.0")',
+        },
         fields: {
           type: 'array',
-          description: 'Array of field definitions: { name, valueType, required?, description?, selectOptions? }',
+          description:
+            'Array of field definitions: { name, valueType, required?, description?, selectOptions? }',
           items: { type: 'object' },
         },
       },
@@ -274,23 +403,31 @@ const TOOLS = [
   },
   {
     name: 'update_ontology',
-    description: 'Update an existing ontology (full replace of fields and version).',
+    description:
+      'Update an existing ontology (full replace of fields and version).',
     inputSchema: {
       type: 'object',
       properties: {
         id: { type: 'string', description: 'Ontology ID to update' },
         version: { type: 'string', description: 'New version string' },
-        fields: { type: 'array', description: 'New field definitions (replaces all existing)', items: { type: 'object' } },
+        fields: {
+          type: 'array',
+          description: 'New field definitions (replaces all existing)',
+          items: { type: 'object' },
+        },
       },
       required: ['id', 'fields'],
     },
   },
   {
     name: 'delete_ontology',
-    description: 'Delete an ontology. Removes the type schema — existing entities of that type remain but the type disappears from the UI.',
+    description:
+      'Delete an ontology. Removes the type schema — existing entities of that type remain but the type disappears from the UI.',
     inputSchema: {
       type: 'object',
-      properties: { id: { type: 'string', description: 'Ontology ID to delete' } },
+      properties: {
+        id: { type: 'string', description: 'Ontology ID to delete' },
+      },
       required: ['id'],
     },
   },
@@ -309,7 +446,10 @@ const TOOLS = [
       type: 'object',
       properties: {
         name: { type: 'string', description: 'Organization name' },
-        slug: { type: 'string', description: 'URL-safe slug (auto-generated from name if omitted)' },
+        slug: {
+          type: 'string',
+          description: 'URL-safe slug (auto-generated from name if omitted)',
+        },
         description: { type: 'string', description: 'Optional description' },
       },
       required: ['name'],
@@ -320,7 +460,9 @@ const TOOLS = [
     description: 'Get an organization by slug.',
     inputSchema: {
       type: 'object',
-      properties: { slug: { type: 'string', description: 'Organization slug' } },
+      properties: {
+        slug: { type: 'string', description: 'Organization slug' },
+      },
       required: ['slug'],
     },
   },
@@ -329,7 +471,9 @@ const TOOLS = [
     description: 'List apps/worlds, optionally scoped to an organization.',
     inputSchema: {
       type: 'object',
-      properties: { orgId: { type: 'string', description: 'Optional org ID to filter by' } },
+      properties: {
+        orgId: { type: 'string', description: 'Optional org ID to filter by' },
+      },
     },
   },
   {
@@ -341,9 +485,16 @@ const TOOLS = [
         name: { type: 'string', description: 'App name' },
         slug: { type: 'string', description: 'URL-safe slug' },
         orgId: { type: 'string', description: 'Parent organization ID' },
-        icon: { type: 'string', description: 'Lucide icon name (e.g. "lucide:video")' },
+        icon: {
+          type: 'string',
+          description: 'Lucide icon name (e.g. "lucide:video")',
+        },
         color: { type: 'string', description: 'Hex color (e.g. "#8b5cf6")' },
-        ontologies: { type: 'array', items: { type: 'string' }, description: 'Ontology IDs to enable' },
+        ontologies: {
+          type: 'array',
+          items: { type: 'string' },
+          description: 'Ontology IDs to enable',
+        },
       },
       required: ['name'],
     },
@@ -355,7 +506,10 @@ const TOOLS = [
       type: 'object',
       properties: {
         slug: { type: 'string', description: 'App slug to update' },
-        data: { type: 'object', description: 'Fields to update (name, icon, color, ontologies, etc.)' },
+        data: {
+          type: 'object',
+          description: 'Fields to update (name, icon, color, ontologies, etc.)',
+        },
       },
       required: ['slug', 'data'],
     },
@@ -365,7 +519,9 @@ const TOOLS = [
     description: 'Delete an app/world.',
     inputSchema: {
       type: 'object',
-      properties: { slug: { type: 'string', description: 'App slug to delete' } },
+      properties: {
+        slug: { type: 'string', description: 'App slug to delete' },
+      },
       required: ['slug'],
     },
   },
@@ -388,7 +544,9 @@ const TOOLS = [
     description: 'List database collections, optionally scoped to an app.',
     inputSchema: {
       type: 'object',
-      properties: { appId: { type: 'string', description: 'Optional app ID to filter by' } },
+      properties: {
+        appId: { type: 'string', description: 'Optional app ID to filter by' },
+      },
     },
   },
   {
@@ -400,7 +558,10 @@ const TOOLS = [
         name: { type: 'string', description: 'Collection name' },
         slug: { type: 'string', description: 'URL-safe slug' },
         appId: { type: 'string', description: 'Parent app ID' },
-        type: { type: 'string', description: 'Collection type (default: "database")' },
+        type: {
+          type: 'string',
+          description: 'Collection type (default: "database")',
+        },
         schema: { type: 'object', description: 'Optional schema definition' },
       },
       required: ['name'],
@@ -432,7 +593,9 @@ const TOOLS = [
     description: 'List custom dashboard pages, optionally scoped to an app.',
     inputSchema: {
       type: 'object',
-      properties: { appId: { type: 'string', description: 'Optional app ID to filter by' } },
+      properties: {
+        appId: { type: 'string', description: 'Optional app ID to filter by' },
+      },
     },
   },
   {
@@ -443,9 +606,19 @@ const TOOLS = [
       properties: {
         title: { type: 'string', description: 'Page title' },
         appId: { type: 'string', description: 'Parent app ID' },
-        dataSource: { type: 'string', description: 'Entity type slug for data source (e.g. "task")' },
-        layout: { type: 'string', enum: ['grid', 'fullscreen'], description: 'Page layout mode' },
-        defaultProjection: { type: 'string', description: 'Default view (table, kanban, calendar, etc.)' },
+        dataSource: {
+          type: 'string',
+          description: 'Entity type slug for data source (e.g. "task")',
+        },
+        layout: {
+          type: 'string',
+          enum: ['grid', 'fullscreen'],
+          description: 'Page layout mode',
+        },
+        defaultProjection: {
+          type: 'string',
+          description: 'Default view (table, kanban, calendar, etc.)',
+        },
       },
       required: ['title'],
     },
@@ -479,7 +652,12 @@ const TOOLS = [
     description: 'List comments/activity on an entity.',
     inputSchema: {
       type: 'object',
-      properties: { entityId: { type: 'string', description: 'Entity ID to list comments for' } },
+      properties: {
+        entityId: {
+          type: 'string',
+          description: 'Entity ID to list comments for',
+        },
+      },
       required: ['entityId'],
     },
   },
@@ -491,7 +669,11 @@ const TOOLS = [
       properties: {
         entityId: { type: 'string', description: 'Entity ID to comment on' },
         content: { type: 'string', description: 'Comment text' },
-        commentType: { type: 'string', enum: ['comment', 'status_change', 'attachment'], description: 'Comment type (default: comment)' },
+        commentType: {
+          type: 'string',
+          enum: ['comment', 'status_change', 'attachment'],
+          description: 'Comment type (default: comment)',
+        },
       },
       required: ['entityId', 'content'],
     },
@@ -508,19 +690,27 @@ const TOOLS = [
       type: 'object',
       properties: {
         name: { type: 'string', description: 'Tag name' },
-        color: { type: 'string', description: 'CSS color class (e.g. "bg-red-500")' },
+        color: {
+          type: 'string',
+          description: 'CSS color class (e.g. "bg-red-500")',
+        },
       },
       required: ['name'],
     },
   },
   {
     name: 'assign_tags',
-    description: 'Assign one or more tags to an entity. Auto-creates tags that don\'t exist.',
+    description:
+      "Assign one or more tags to an entity. Auto-creates tags that don't exist.",
     inputSchema: {
       type: 'object',
       properties: {
         entityId: { type: 'string', description: 'Entity ID to tag' },
-        tags: { type: 'array', items: { type: 'string' }, description: 'Tag names to assign' },
+        tags: {
+          type: 'array',
+          items: { type: 'string' },
+          description: 'Tag names to assign',
+        },
       },
       required: ['entityId', 'tags'],
     },
@@ -534,8 +724,14 @@ const TOOLS = [
     inputSchema: {
       type: 'object',
       properties: {
-        query: { type: 'string', description: 'EQL-S query to select entities' },
-        data: { type: 'object', description: 'Fields to set on all matching entities' },
+        query: {
+          type: 'string',
+          description: 'EQL-S query to select entities',
+        },
+        data: {
+          type: 'object',
+          description: 'Fields to set on all matching entities',
+        },
       },
       required: ['query', 'data'],
     },
@@ -546,7 +742,10 @@ const TOOLS = [
     inputSchema: {
       type: 'object',
       properties: {
-        query: { type: 'string', description: 'EQL-S query to select entities for deletion' },
+        query: {
+          type: 'string',
+          description: 'EQL-S query to select entities for deletion',
+        },
       },
       required: ['query'],
     },
@@ -556,7 +755,9 @@ const TOOLS = [
     description: 'List agent workflow graphs, optionally scoped to an app.',
     inputSchema: {
       type: 'object',
-      properties: { appId: { type: 'string', description: 'Optional app ID to filter by' } },
+      properties: {
+        appId: { type: 'string', description: 'Optional app ID to filter by' },
+      },
     },
   },
   {
@@ -567,8 +768,15 @@ const TOOLS = [
       properties: {
         name: { type: 'string', description: 'Workflow name' },
         appId: { type: 'string', description: 'Parent app ID' },
-        trigger: { type: 'object', description: 'Trigger configuration (e.g. {"type":"onCreate","entityType":"task"})' },
-        graph: { type: 'object', description: 'Workflow graph definition (nodes + edges)' },
+        trigger: {
+          type: 'object',
+          description:
+            'Trigger configuration (e.g. {"type":"onCreate","entityType":"task"})',
+        },
+        graph: {
+          type: 'object',
+          description: 'Workflow graph definition (nodes + edges)',
+        },
       },
       required: ['name'],
     },
@@ -604,7 +812,11 @@ const TOOLS = [
       type: 'object',
       properties: {
         key: { type: 'string', description: 'Setting key' },
-        scope: { type: 'string', enum: ['app', 'user'], description: 'Setting scope (default: app)' },
+        scope: {
+          type: 'string',
+          enum: ['app', 'user'],
+          description: 'Setting scope (default: app)',
+        },
       },
       required: ['key'],
     },
@@ -617,7 +829,11 @@ const TOOLS = [
       properties: {
         key: { type: 'string', description: 'Setting key' },
         value: { description: 'Setting value (any JSON type)' },
-        scope: { type: 'string', enum: ['app', 'user'], description: 'Setting scope (default: app)' },
+        scope: {
+          type: 'string',
+          enum: ['app', 'user'],
+          description: 'Setting scope (default: app)',
+        },
       },
       required: ['key', 'value'],
     },
@@ -628,7 +844,11 @@ const TOOLS = [
     inputSchema: {
       type: 'object',
       properties: {
-        scope: { type: 'string', enum: ['app', 'user'], description: 'Setting scope to list (default: app)' },
+        scope: {
+          type: 'string',
+          enum: ['app', 'user'],
+          description: 'Setting scope to list (default: app)',
+        },
       },
     },
   },
@@ -639,335 +859,416 @@ const TOOLS = [
       type: 'object',
       properties: {
         email: { type: 'string', description: 'Email address to invite' },
-        role: { type: 'string', enum: ['member', 'admin', 'guest'], description: 'Role to assign (default: member)' },
+        role: {
+          type: 'string',
+          enum: ['member', 'admin', 'guest'],
+          description: 'Role to assign (default: member)',
+        },
         orgId: { type: 'string', description: 'Organization ID' },
       },
       required: ['email'],
     },
   },
-]
+];
 
 // ── Tool handlers ───────────────────────────────────────────────────────────
 
 const HANDLERS = {
   async query_graph({ query }) {
-    return ok(await request('query', { method: 'POST', body: { query } }))
+    return ok(await request('query', { method: 'POST', body: { query } }));
   },
 
   async get_node({ entityId }) {
-    return ok(await request(`node/${entityId}`))
+    return ok(await request(`node/${entityId}`));
   },
 
   async get_nodes({ ids }) {
-    return ok(await request('nodes', { method: 'POST', body: { ids } }))
+    return ok(await request('nodes', { method: 'POST', body: { ids } }));
   },
 
   async create_node({ entityId, type, data }) {
-    return ok(await request('mutate', {
-      method: 'POST',
-      body: { action: 'createNode', entityId, type, data: data || {}, agentId: AGENT_ID },
-    }))
+    return ok(
+      await request('mutate', {
+        method: 'POST',
+        body: {
+          action: 'createNode',
+          entityId,
+          type,
+          data: data || {},
+          agentId: AGENT_ID,
+        },
+      }),
+    );
   },
 
   async update_node({ entityId, type, data }) {
-    return ok(await request('mutate', {
-      method: 'POST',
-      body: { action: 'updateNode', entityId, type, data, agentId: AGENT_ID },
-    }))
+    return ok(
+      await request('mutate', {
+        method: 'POST',
+        body: { action: 'updateNode', entityId, type, data, agentId: AGENT_ID },
+      }),
+    );
   },
 
   async delete_node({ entityId }) {
-    return ok(await request('mutate', {
-      method: 'POST',
-      body: { action: 'deleteNode', entityId, agentId: AGENT_ID },
-    }))
+    return ok(
+      await request('mutate', {
+        method: 'POST',
+        body: { action: 'deleteNode', entityId, agentId: AGENT_ID },
+      }),
+    );
   },
 
   async link_nodes({ e1, relation, e2 }) {
-    return ok(await request('mutate', {
-      method: 'POST',
-      body: { action: 'link', e1, relation, e2, agentId: AGENT_ID },
-    }))
+    return ok(
+      await request('mutate', {
+        method: 'POST',
+        body: { action: 'link', e1, relation, e2, agentId: AGENT_ID },
+      }),
+    );
   },
 
   async get_graph_summary({ limit } = {}) {
-    const path = limit ? `summary?limit=${limit}` : 'summary'
-    return ok(await request(path))
+    const path = limit ? `summary?limit=${limit}` : 'summary';
+    return ok(await request(path));
   },
 
   async graph_health() {
-    return ok(await request('health'))
+    return ok(await request('health'));
   },
 
   async get_schema() {
-    return ok(await request('ontologies'))
+    return ok(await request('ontologies'));
   },
 
   async get_catalog() {
-    return ok(await request('catalog'))
+    return ok(await request('catalog'));
   },
 
   async get_mutation_log() {
-    return ok(await request('log'))
+    return ok(await request('log'));
   },
 
   async get_ontology({ id }) {
-    return ok(await request(`ontology/${id}`))
+    return ok(await request(`ontology/${id}`));
   },
 
   async create_ontology({ id, version, fields }) {
-    const schema = { '@id': id, '@type': 'trellis:Schema', version: version || '1.0.0', fields }
-    return ok(await request('ontology', {
-      method: 'POST',
-      body: { schema, agentId: AGENT_ID },
-    }))
+    const schema = {
+      '@id': id,
+      '@type': 'trellis:Schema',
+      version: version || '1.0.0',
+      fields,
+    };
+    return ok(
+      await request('ontology', {
+        method: 'POST',
+        body: { schema, agentId: AGENT_ID },
+      }),
+    );
   },
 
   async update_ontology({ id, version, fields }) {
-    const schema = { '@id': id, '@type': 'trellis:Schema', version: version || '1.0.0', fields }
-    return ok(await request(`ontology/${id}`, {
-      method: 'PUT',
-      body: { schema, agentId: AGENT_ID },
-    }))
+    const schema = {
+      '@id': id,
+      '@type': 'trellis:Schema',
+      version: version || '1.0.0',
+      fields,
+    };
+    return ok(
+      await request(`ontology/${id}`, {
+        method: 'PUT',
+        body: { schema, agentId: AGENT_ID },
+      }),
+    );
   },
 
   async delete_ontology({ id }) {
-    return ok(await request(`ontology/${id}`, {
-      method: 'DELETE',
-      body: { agentId: AGENT_ID },
-    }))
+    return ok(
+      await request(`ontology/${id}`, {
+        method: 'DELETE',
+        body: { agentId: AGENT_ID },
+      }),
+    );
   },
 
   // ── Phase 1: Workspace Context ──────────────────────────────────────────
 
   async list_orgs() {
-    return ok(await platformRequest('org/list'))
+    return ok(await platformRequest('org/list'));
   },
 
   async create_org({ name, slug, description }) {
-    return ok(await platformRequest('org/create', {
-      method: 'POST',
-      body: { name, slug, description, agentId: AGENT_ID },
-    }))
+    return ok(
+      await platformRequest('org/create', {
+        method: 'POST',
+        body: { name, slug, description, agentId: AGENT_ID },
+      }),
+    );
   },
 
   async get_org({ slug }) {
-    return ok(await platformRequest(`org/${slug}`))
+    return ok(await platformRequest(`org/${slug}`));
   },
 
   async list_apps({ orgId } = {}) {
-    const query = orgId ? { orgId } : undefined
-    return ok(await platformRequest('app/list', { query }))
+    const query = orgId ? { orgId } : undefined;
+    return ok(await platformRequest('app/list', { query }));
   },
 
   async create_app({ name, slug, orgId, icon, color, ontologies }) {
-    return ok(await platformRequest('app/create', {
-      method: 'POST',
-      body: { name, slug, orgId, icon, color, ontologies, agentId: AGENT_ID },
-    }))
+    return ok(
+      await platformRequest('app/create', {
+        method: 'POST',
+        body: { name, slug, orgId, icon, color, ontologies, agentId: AGENT_ID },
+      }),
+    );
   },
 
   async update_app({ slug, data }) {
-    return ok(await platformRequest(`app/${slug}`, {
-      method: 'PUT',
-      body: { data, agentId: AGENT_ID },
-    }))
+    return ok(
+      await platformRequest(`app/${slug}`, {
+        method: 'PUT',
+        body: { data, agentId: AGENT_ID },
+      }),
+    );
   },
 
   async delete_app({ slug }) {
-    return ok(await platformRequest(`app/${slug}`, {
-      method: 'DELETE',
-      body: { agentId: AGENT_ID },
-    }))
+    return ok(
+      await platformRequest(`app/${slug}`, {
+        method: 'DELETE',
+        body: { agentId: AGENT_ID },
+      }),
+    );
   },
 
   async get_context({ orgId, appId } = {}) {
-    const query = {}
-    if (orgId) query.orgId = orgId
-    if (appId) query.appId = appId
-    return ok(await platformRequest('context', { query }))
+    const query = {};
+    if (orgId) query.orgId = orgId;
+    if (appId) query.appId = appId;
+    return ok(await platformRequest('context', { query }));
   },
 
   // ── Phase 2: Collections & Pages ────────────────────────────────────────
 
   async list_collections({ appId } = {}) {
-    const query = appId ? { appId } : undefined
-    return ok(await platformRequest('collection/list', { query }))
+    const query = appId ? { appId } : undefined;
+    return ok(await platformRequest('collection/list', { query }));
   },
 
   async create_collection({ name, slug, appId, type, schema }) {
-    return ok(await platformRequest('collection/create', {
-      method: 'POST',
-      body: { name, slug, appId, type, schema, agentId: AGENT_ID },
-    }))
+    return ok(
+      await platformRequest('collection/create', {
+        method: 'POST',
+        body: { name, slug, appId, type, schema, agentId: AGENT_ID },
+      }),
+    );
   },
 
   async update_collection({ slug, data }) {
-    return ok(await platformRequest(`collection/${slug}`, {
-      method: 'PUT',
-      body: { data, agentId: AGENT_ID },
-    }))
+    return ok(
+      await platformRequest(`collection/${slug}`, {
+        method: 'PUT',
+        body: { data, agentId: AGENT_ID },
+      }),
+    );
   },
 
   async delete_collection({ slug }) {
-    return ok(await platformRequest(`collection/${slug}`, {
-      method: 'DELETE',
-      body: { agentId: AGENT_ID },
-    }))
+    return ok(
+      await platformRequest(`collection/${slug}`, {
+        method: 'DELETE',
+        body: { agentId: AGENT_ID },
+      }),
+    );
   },
 
   async list_pages({ appId } = {}) {
-    const query = appId ? { appId } : undefined
-    return ok(await platformRequest('page/list', { query }))
+    const query = appId ? { appId } : undefined;
+    return ok(await platformRequest('page/list', { query }));
   },
 
   async create_page({ title, appId, dataSource, layout, defaultProjection }) {
-    return ok(await platformRequest('page/create', {
-      method: 'POST',
-      body: { title, appId, dataSource, layout, defaultProjection, agentId: AGENT_ID },
-    }))
+    return ok(
+      await platformRequest('page/create', {
+        method: 'POST',
+        body: {
+          title,
+          appId,
+          dataSource,
+          layout,
+          defaultProjection,
+          agentId: AGENT_ID,
+        },
+      }),
+    );
   },
 
   async update_page({ id, data }) {
-    return ok(await platformRequest(`page/${id}`, {
-      method: 'PUT',
-      body: { data, agentId: AGENT_ID },
-    }))
+    return ok(
+      await platformRequest(`page/${id}`, {
+        method: 'PUT',
+        body: { data, agentId: AGENT_ID },
+      }),
+    );
   },
 
   async delete_page({ id }) {
-    return ok(await platformRequest(`page/${id}`, {
-      method: 'DELETE',
-      body: { agentId: AGENT_ID },
-    }))
+    return ok(
+      await platformRequest(`page/${id}`, {
+        method: 'DELETE',
+        body: { agentId: AGENT_ID },
+      }),
+    );
   },
 
   // ── Phase 3: Entity Enrichment ──────────────────────────────────────────
 
   async list_comments({ entityId }) {
-    return ok(await platformRequest(`comment/list/${entityId}`))
+    return ok(await platformRequest(`comment/list/${entityId}`));
   },
 
   async add_comment({ entityId, content, commentType }) {
-    return ok(await platformRequest('comment/add', {
-      method: 'POST',
-      body: { entityId, content, commentType, agentId: AGENT_ID },
-    }))
+    return ok(
+      await platformRequest('comment/add', {
+        method: 'POST',
+        body: { entityId, content, commentType, agentId: AGENT_ID },
+      }),
+    );
   },
 
   async list_tags() {
-    return ok(await platformRequest('tag/list'))
+    return ok(await platformRequest('tag/list'));
   },
 
   async create_tag({ name, color }) {
-    return ok(await platformRequest('tag/create', {
-      method: 'POST',
-      body: { name, color, agentId: AGENT_ID },
-    }))
+    return ok(
+      await platformRequest('tag/create', {
+        method: 'POST',
+        body: { name, color, agentId: AGENT_ID },
+      }),
+    );
   },
 
   async assign_tags({ entityId, tags }) {
-    return ok(await platformRequest('tag/assign', {
-      method: 'POST',
-      body: { entityId, tags, agentId: AGENT_ID },
-    }))
+    return ok(
+      await platformRequest('tag/assign', {
+        method: 'POST',
+        body: { entityId, tags, agentId: AGENT_ID },
+      }),
+    );
   },
 
   // ── Phase 4: Bulk & Workflows ───────────────────────────────────────────
 
   async bulk_update({ query, data }) {
-    return ok(await platformRequest('bulk/update', {
-      method: 'POST',
-      body: { query, data, agentId: AGENT_ID },
-    }))
+    return ok(
+      await platformRequest('bulk/update', {
+        method: 'POST',
+        body: { query, data, agentId: AGENT_ID },
+      }),
+    );
   },
 
   async bulk_delete({ query }) {
-    return ok(await platformRequest('bulk/delete', {
-      method: 'POST',
-      body: { query, agentId: AGENT_ID },
-    }))
+    return ok(
+      await platformRequest('bulk/delete', {
+        method: 'POST',
+        body: { query, agentId: AGENT_ID },
+      }),
+    );
   },
 
   async list_workflows({ appId } = {}) {
-    const query = appId ? { appId } : undefined
-    return ok(await platformRequest('workflow/list', { query }))
+    const query = appId ? { appId } : undefined;
+    return ok(await platformRequest('workflow/list', { query }));
   },
 
   async create_workflow({ name, appId, trigger, graph }) {
-    return ok(await platformRequest('workflow/create', {
-      method: 'POST',
-      body: { name, appId, trigger, graph, agentId: AGENT_ID },
-    }))
+    return ok(
+      await platformRequest('workflow/create', {
+        method: 'POST',
+        body: { name, appId, trigger, graph, agentId: AGENT_ID },
+      }),
+    );
   },
 
   async update_workflow({ id, data }) {
-    return ok(await platformRequest(`workflow/${id}`, {
-      method: 'PUT',
-      body: { data, agentId: AGENT_ID },
-    }))
+    return ok(
+      await platformRequest(`workflow/${id}`, {
+        method: 'PUT',
+        body: { data, agentId: AGENT_ID },
+      }),
+    );
   },
 
   async delete_workflow({ id }) {
-    return ok(await platformRequest(`workflow/${id}`, {
-      method: 'DELETE',
-      body: { agentId: AGENT_ID },
-    }))
+    return ok(
+      await platformRequest(`workflow/${id}`, {
+        method: 'DELETE',
+        body: { agentId: AGENT_ID },
+      }),
+    );
   },
 
   // ── Phase 5: Settings & Invites ─────────────────────────────────────────
 
   async get_setting({ key, scope }) {
-    const query = { key }
-    if (scope) query.scope = scope
-    return ok(await platformRequest('setting/get', { query }))
+    const query = { key };
+    if (scope) query.scope = scope;
+    return ok(await platformRequest('setting/get', { query }));
   },
 
   async set_setting({ key, value, scope }) {
-    return ok(await platformRequest('setting/set', {
-      method: 'POST',
-      body: { key, value, scope, agentId: AGENT_ID },
-    }))
+    return ok(
+      await platformRequest('setting/set', {
+        method: 'POST',
+        body: { key, value, scope, agentId: AGENT_ID },
+      }),
+    );
   },
 
   async list_settings({ scope } = {}) {
-    const query = scope ? { scope } : undefined
-    return ok(await platformRequest('setting/list', { query }))
+    const query = scope ? { scope } : undefined;
+    return ok(await platformRequest('setting/list', { query }));
   },
 
   async send_invite({ email, role, orgId }) {
-    return ok(await platformRequest('invite/send', {
-      method: 'POST',
-      body: { email, role, orgId, agentId: AGENT_ID },
-    }))
+    return ok(
+      await platformRequest('invite/send', {
+        method: 'POST',
+        body: { email, role, orgId, agentId: AGENT_ID },
+      }),
+    );
   },
-}
+};
 
 // ── MCP Server (low-level) ──────────────────────────────────────────────────
 
 const server = new Server(
   { name: 'trellis-graph', version: '0.2.0' },
   { capabilities: { tools: {}, resources: {} } },
-)
+);
 
 // List tools
 server.setRequestHandler(ListToolsRequestSchema, async () => {
-  return { tools: TOOLS }
-})
+  return { tools: TOOLS };
+});
 
 // Call tool
 server.setRequestHandler(CallToolRequestSchema, async (req) => {
-  const { name, arguments: args } = req.params
-  const handler = HANDLERS[name]
+  const { name, arguments: args } = req.params;
+  const handler = HANDLERS[name];
   if (!handler) {
-    return err(`Unknown tool: ${name}`)
+    return err(`Unknown tool: ${name}`);
   }
   try {
-    return await handler(args || {})
+    return await handler(args || {});
   } catch (e) {
-    return err(e.message)
+    return err(e.message);
   }
-})
+});
 
 // List resources
 server.setRequestHandler(ListResourcesRequestSchema, async () => {
@@ -976,7 +1277,8 @@ server.setRequestHandler(ListResourcesRequestSchema, async () => {
       {
         uri: 'trellis://schema/entity-types',
         name: 'Entity Type Registry',
-        description: 'Complete entity type registry — classes, types, fields, and projections',
+        description:
+          'Complete entity type registry — classes, types, fields, and projections',
         mimeType: 'application/json',
       },
       {
@@ -986,27 +1288,39 @@ server.setRequestHandler(ListResourcesRequestSchema, async () => {
         mimeType: 'application/json',
       },
     ],
-  }
-})
+  };
+});
 
 // Read resource
 server.setRequestHandler(ReadResourceRequestSchema, async (req) => {
-  const { uri } = req.params
+  const { uri } = req.params;
   if (uri === 'trellis://schema/entity-types') {
     return {
-      contents: [{ uri, text: JSON.stringify(ENTITY_SCHEMA, null, 2), mimeType: 'application/json' }],
-    }
+      contents: [
+        {
+          uri,
+          text: JSON.stringify(ENTITY_SCHEMA, null, 2),
+          mimeType: 'application/json',
+        },
+      ],
+    };
   }
   if (uri === 'trellis://context') {
-    const ctx = await platformRequest('context').catch(() => ({ ok: false }))
+    const ctx = await platformRequest('context').catch(() => ({ ok: false }));
     return {
-      contents: [{ uri, text: JSON.stringify(ctx, null, 2), mimeType: 'application/json' }],
-    }
+      contents: [
+        {
+          uri,
+          text: JSON.stringify(ctx, null, 2),
+          mimeType: 'application/json',
+        },
+      ],
+    };
   }
-  throw new Error(`Unknown resource: ${uri}`)
-})
+  throw new Error(`Unknown resource: ${uri}`);
+});
 
 // ── Start ───────────────────────────────────────────────────────────────────
 
-const transport = new StdioServerTransport()
-await server.connect(transport)
+const transport = new StdioServerTransport();
+await server.connect(transport);

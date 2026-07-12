@@ -119,6 +119,11 @@
   --color-rail-foreground: var(--rail-foreground);
   --color-rail-border: var(--rail-border);
 
+  /* Inset hierarchy — opaque surfaces derived from card + background (see :root --surface-*) */
+  --color-surface-1: var(--surface-1);
+  --color-surface-2: var(--surface-2);
+  --color-surface-3: var(--surface-3);
+
   --color-gradient-lime: var(--gradient-lime);
   --color-gradient-ocean: var(--gradient-ocean);
   --color-gradient-wine: var(--gradient-wine);
@@ -160,7 +165,8 @@
 }
 
 /* NOTE: These :root and .dark defaults must stay in sync with the "graphite"
-   preset in /theme-presets.ts. If you change a value here, update it there too. */
+   preset in /theme-presets.ts. If you change a value here, update it there too.
+   Surface tokens (--surface-*) are derived from card + background below. */
 :root {
   --background: oklch(1 0 0);
   --foreground: oklch(0.2101 0.0318 264.6645);
@@ -287,25 +293,19 @@
   --shadow-2xl: 0px 1px 4px 0px hsl(0 0% 0% / 0.13);
 }
 
+/* Inset depth hierarchy — opaque mixes of card on background.
+ * Recomputed automatically when theme presets override --card / --background.
+ *   surface-1 — outer inset frame (was card/25 over bg)
+ *   surface-2 — main content + sticky chrome (was card/50 over bg)
+ *   surface-3 — cards / panels (same as --card) */
+:root {
+  --surface-1: color-mix(in oklch, var(--card) 25%, var(--background));
+  --surface-2: color-mix(in oklch, var(--card) 50%, var(--background));
+  --surface-3: var(--card);
+}
+
 @layer utilities {
-  /* Surface depth hierarchy - semantic opacity variations of card color
-   * Creates visual layering: background → surface-1 → surface-2 → surface-3
-   * Usage:
-   *   bg-surface-1 - Sidebar (subtle lift from background)
-   *   bg-surface-2 - Main content area (medium lift)
-   *   bg-surface-3 - Cards/panels (full card color, lightest before foreground)
-   */
-  .bg-surface-1 {
-    background-color: color-mix(in oklch, var(--card) 25%, transparent);
-  }
-
-  .bg-surface-2 {
-    background-color: color-mix(in oklch, var(--card) 50%, transparent);
-  }
-
-  .bg-surface-3 {
-    background-color: var(--card);
-  }
+  /* Surface tokens: use bg-surface-1 | bg-surface-2 | bg-surface-3 (Tailwind @theme colors) */
 
   .font-data {
     font-family: var(--font-data);
@@ -658,10 +658,24 @@ body.is-resizing * {
 }
 
 .rail-nav-active-zone {
-  background: color-mix(in oklch, var(--campus-zone-accent, var(--muted)) 12%, transparent);
-  border: 1px solid color-mix(in oklch, var(--campus-zone-accent, var(--border)) 24%, transparent);
+  background: var(--card);
+  border: none;
 }
 
 .rail-resident-btn {
   @apply h-8 shrink-0;
+}
+
+/* Browse card grid — responsive column reflow */
+.browse-card-grid {
+  grid-template-columns: repeat(
+    auto-fill,
+    minmax(calc(var(--browse-base-min, 240px) * var(--browse-density, 1)), 1fr)
+  );
+}
+
+@media (max-width: 767px) {
+  .browse-card-grid {
+    grid-template-columns: 1fr;
+  }
 }

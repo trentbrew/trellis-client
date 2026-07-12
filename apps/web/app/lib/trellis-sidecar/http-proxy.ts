@@ -29,11 +29,11 @@ export function installHttpProxy(db: FetchableTrellisDb): void {
       }
     }
     if (!res.ok) {
-      throw new FetchError(
-        res.status,
-        (data as { message?: string })?.message ?? res.statusText,
-        data,
-      )
+      // 404 on GET is a normal "entity not found" — return null instead of
+      // throwing so callers (e.g. SDK read()) get a clean null without
+      // triggering console error noise from error propagation chains.
+      if (res.status === 404 && method === 'GET') return null
+      throw new FetchError(res.status, (data as { message?: string })?.message ?? res.statusText, data)
     }
     return data
   }

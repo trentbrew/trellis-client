@@ -59,6 +59,7 @@ export default defineEventHandler(async (event) => {
 
     return {
       url: `/api/storage/local-file?path=${encodedPath}`,
+      path: relativePath,
       localPath: absolutePath,
       filename,
       contentType,

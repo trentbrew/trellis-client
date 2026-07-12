@@ -23,7 +23,7 @@ export const MODEL_FAST = 'claude-haiku-4-5'
 export const MODEL_BALANCED = 'anthropic/claude-sonnet-4.5'
 export const MODEL_DEEP = 'anthropic/claude-opus-4.7'
 
-export type TaskClass = 'lookup' | 'synthesis' | 'reasoning' | 'creative' | 'override'
+export type TaskClass = 'lookup' | 'synthesis' | 'reasoning' | 'creative' | 'vision' | 'override'
 
 export interface RoutingDecision {
   model: string
@@ -110,7 +110,11 @@ export function classifyRequest(message: string): RoutingDecision {
  * Resolve the final routing decision honoring the explicit `TOKENROUTER_MODEL`
  * env override. Pure helper — caller passes both the message and the env value.
  */
-export function resolveRoutingDecision(message: string, explicitModel: string | undefined): RoutingDecision {
+export function resolveRoutingDecision(
+  message: string,
+  explicitModel: string | undefined,
+  opts?: { hasImages?: boolean },
+): RoutingDecision {
   const trimmed = explicitModel?.trim()
   if (trimmed) {
     return {
@@ -119,5 +123,14 @@ export function resolveRoutingDecision(message: string, explicitModel: string | 
       rationale: `Explicit model pinned via TOKENROUTER_MODEL env (${trimmed}).`,
     }
   }
+
+  if (opts?.hasImages) {
+    return {
+      model: MODEL_BALANCED,
+      taskClass: 'vision',
+      rationale: 'Image attachment detected. Routed to Sonnet for vision.',
+    }
+  }
+
   return classifyRequest(message)
 }

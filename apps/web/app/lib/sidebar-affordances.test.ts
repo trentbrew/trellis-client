@@ -19,6 +19,6 @@ describe('sidebar-affordances', () => {
     )
     expect(items[0]?.path).toBe(WORKSHOP_BROWSE_LINKS[0]?.path)
     expect(items[1]?.path).toBe(WORKSHOP_BROWSE_LINKS[1]?.path)
-    expect(items).toHaveLength(4)
+    expect(items).toHaveLength(WORKSHOP_BROWSE_LINKS.length + 2)
   })
 })

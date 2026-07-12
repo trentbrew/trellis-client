@@ -6,6 +6,15 @@ import type {
 } from 'openai/resources/chat/completions'
 import { useTrellisKernel, pushMutationLog } from '../../plugins/trellis-kernel'
 import { emitMutation } from '../../utils/trellis-events'
+import { appendLatestUserMessage } from '../../lib/agent-attachment-content'
+import { buildAgentChatMessagesFromHistory } from '../../lib/agent-chat-history'
+import {
+  accumulateStreamedToolCalls,
+  appendAssistantToolTurn,
+  appendToolResultMessage,
+  normalizeMessagesForTokenRouter,
+  type AccumulatedToolCall,
+} from '../../lib/agent-chat-tools'
 import { resolveRoutingDecision, type RoutingDecision } from '../../utils/agent-routing'
 
 const GRAPH_SYSTEM_PROMPT_TEMPLATE = `You are a graph-aware AI agent embedded in the Trellis personal knowledge graph.
@@ -48,6 +57,9 @@ Be proactive: suggest connections, identify patterns, offer to create entities.
 - Do not wrap entity IDs in backticks when the entity should be clickable.
 - If you are listing entities, start each row with the clickable entity token.
 - When querying entities you intend to mention, return the entity itself so you have its ID.
+
+When users attach images, describe and reason about what you see in those images.
+When users attach text files, their contents are inlined in the message.
 
 ## Available Tools
 
@@ -224,14 +236,23 @@ async function executeToolCall(toolName: string, args: any): Promise<any> {
 }
 
 const DEFAULT_TOKENROUTER_BASE_URL = 'https://api.tokenrouter.com/v1'
-const MAX_TOOL_ROUNDS = 6
+const MAX_TOOL_ROUNDS = 15
+
+const completionParams = {
+  tools,
+  parallel_tool_calls: false as const,
+}
 
 export default defineEventHandler(async (event) => {
   const body = await readBody(event)
-  const { message, conversationId: _conversationId, userId, path } = body
+  const { message, attachments, history, conversationId: _conversationId, userId, path } = body
 
-  if (!message || !userId) {
-    throw createError({ statusCode: 400, message: 'Missing message or userId' })
+  if ((!message || !String(message).trim()) && (!Array.isArray(attachments) || attachments.length === 0)) {
+    throw createError({ statusCode: 400, message: 'Missing message or attachments' })
+  }
+
+  if (!userId) {
+    throw createError({ statusCode: 400, message: 'Missing userId' })
   }
 
   const apiKey = process.env.TOKENROUTER_API_KEY
@@ -247,8 +268,15 @@ export default defineEventHandler(async (event) => {
   const rawBaseURL = (process.env.TOKENROUTER_BASE_URL || DEFAULT_TOKENROUTER_BASE_URL).replace(/\/+$/, '')
   const baseURL = rawBaseURL.endsWith('/v1') ? rawBaseURL : `${rawBaseURL}/v1`
 
+  const hasImages = Array.isArray(attachments)
+    && attachments.some((a) => a?.kind === 'image' || String(a?.contentType || '').startsWith('image/'))
+
   // Routing: TOKENROUTER_MODEL env overrides classifier; else classify per-request.
-  const routingDecision: RoutingDecision = resolveRoutingDecision(message, process.env.TOKENROUTER_MODEL)
+  const routingDecision: RoutingDecision = resolveRoutingDecision(
+    String(message || ''),
+    process.env.TOKENROUTER_MODEL,
+    { hasImages },
+  )
   const model = routingDecision.model
 
   const systemInstruction = GRAPH_SYSTEM_PROMPT_TEMPLATE.replace('{{CURRENT_PATH}}', path || 'Unknown')
@@ -257,11 +285,12 @@ export default defineEventHandler(async (event) => {
   // as a thin client by overriding baseURL.
   const client = new OpenAI({ apiKey, baseURL })
 
-  // Conversation history accumulates across tool-call rounds.
-  const messages: ChatCompletionMessageParam[] = [
-    { role: 'system', content: systemInstruction },
-    { role: 'user', content: message },
-  ]
+  // Prior thread turns (client) + tool rounds within this request.
+  const messages: ChatCompletionMessageParam[] = buildAgentChatMessagesFromHistory(
+    systemInstruction,
+    history,
+  )
+  await appendLatestUserMessage(messages, String(message || ''), attachments)
 
   setResponseHeaders(event, {
     'Content-Type': 'text/event-stream',
@@ -289,19 +318,57 @@ export default defineEventHandler(async (event) => {
           rationale: routingDecision.rationale,
         })
 
-        // Multi-round tool-calling loop. Each round streams the model's response;
-        // if it requests tools, we execute them, append the results, and loop.
+        // Multi-round tool loop. Round 0 streams to the client; follow-up rounds use
+        // non-streaming completions so Anthropic/TokenRouter get complete tool_use blocks.
+        // parallel_tool_calls: false keeps one tool_use ↔ tool_result pair per round.
         for (let round = 0; round < MAX_TOOL_ROUNDS; round++) {
-          let completionStream: AsyncIterable<ChatCompletionChunk>
+          let assistantContent = ''
+          let toolCalls: AccumulatedToolCall[] = []
+          const providerMessages = normalizeMessagesForTokenRouter(messages)
+
           try {
-            completionStream = (await client.chat.completions.create({
-              model,
-              messages,
-              tools,
-              stream: true,
-            })) as unknown as AsyncIterable<ChatCompletionChunk>
+            if (round === 0) {
+              const completionStream = (await client.chat.completions.create({
+                model,
+                messages: providerMessages,
+                stream: true,
+                ...completionParams,
+              })) as unknown as AsyncIterable<ChatCompletionChunk>
+
+              async function* streamWithClientEvents() {
+                for await (const chunk of completionStream) {
+                  const delta = chunk.choices?.[0]?.delta
+                  if (delta?.content) {
+                    enqueue({ type: 'text', content: delta.content })
+                  }
+                  yield chunk
+                }
+              }
+
+              const accumulated = await accumulateStreamedToolCalls(streamWithClientEvents())
+              assistantContent = accumulated.content
+              toolCalls = accumulated.toolCalls
+            } else {
+              const response = await client.chat.completions.create({
+                model,
+                messages: providerMessages,
+                stream: false,
+                ...completionParams,
+              })
+
+              const choice = response.choices?.[0]
+              assistantContent = typeof choice?.message?.content === 'string' ? choice.message.content : ''
+              if (assistantContent) enqueue({ type: 'text', content: assistantContent })
+
+              toolCalls = (choice?.message?.tool_calls ?? [])
+                .filter((tc) => tc.type === 'function' && tc.id && tc.function?.name)
+                .map((tc) => ({
+                  id: tc.id,
+                  name: tc.function!.name,
+                  arguments: tc.function!.arguments || '{}',
+                }))
+            }
           } catch (err: any) {
-            // Surface upstream error body cleanly (TokenRouter returns OpenAI-shaped errors).
             const apiErr = err?.error ?? err?.response?.data?.error
             const surfaced = apiErr?.message || err?.message || 'Upstream request failed'
             const code = apiErr?.code || err?.status || ''
@@ -312,51 +379,10 @@ export default defineEventHandler(async (event) => {
             break
           }
 
-          // Accumulate streamed text + tool-call deltas. OpenAI streams tool calls
-          // piecewise (id/name/arguments arrive in fragments by index).
-          let assistantContent = ''
-          const toolCallsAcc: Record<number, { id: string; name: string; arguments: string }> = {}
-
-          for await (const chunk of completionStream) {
-            const choice = chunk.choices?.[0]
-            if (!choice) continue
-            const delta = choice.delta
-
-            if (delta?.content) {
-              assistantContent += delta.content
-              enqueue({ type: 'text', content: delta.content })
-            }
-
-            if (delta?.tool_calls) {
-              for (const tc of delta.tool_calls) {
-                const idx = tc.index ?? 0
-                if (!toolCallsAcc[idx]) {
-                  toolCallsAcc[idx] = { id: '', name: '', arguments: '' }
-                }
-                if (tc.id) toolCallsAcc[idx]!.id = tc.id
-                if (tc.function?.name) toolCallsAcc[idx]!.name = tc.function.name
-                if (tc.function?.arguments) toolCallsAcc[idx]!.arguments += tc.function.arguments
-              }
-            }
-          }
-
-          const toolCalls = Object.values(toolCallsAcc).filter((tc) => tc.id && tc.name)
-
-          // No tool calls this round → conversation complete.
           if (toolCalls.length === 0) break
 
-          // Append assistant turn (with tool_calls) before executing.
-          messages.push({
-            role: 'assistant',
-            content: assistantContent || null,
-            tool_calls: toolCalls.map((tc) => ({
-              id: tc.id,
-              type: 'function' as const,
-              function: { name: tc.name, arguments: tc.arguments || '{}' },
-            })),
-          })
+          appendAssistantToolTurn(messages, assistantContent, toolCalls)
 
-          // Execute each tool, stream result to client, append tool response message.
           for (const tc of toolCalls) {
             let parsedArgs: Record<string, unknown> = {}
             try {
@@ -364,11 +390,7 @@ export default defineEventHandler(async (event) => {
             } catch (parseErr) {
               const m = (parseErr as Error).message
               enqueue({ type: 'error', message: `Failed to parse args for ${tc.name}: ${m}` })
-              messages.push({
-                role: 'tool',
-                tool_call_id: tc.id,
-                content: JSON.stringify({ error: 'invalid_arguments', raw: tc.arguments }),
-              })
+              appendToolResultMessage(messages, tc.id, { error: 'invalid_arguments', raw: tc.arguments })
               continue
             }
 
@@ -380,22 +402,13 @@ export default defineEventHandler(async (event) => {
                 args: parsedArgs,
                 result: toolResult,
               })
-              messages.push({
-                role: 'tool',
-                tool_call_id: tc.id,
-                content: JSON.stringify(toolResult),
-              })
+              appendToolResultMessage(messages, tc.id, toolResult)
             } catch (toolErr: any) {
               const errMsg = toolErr?.message || 'Tool execution failed'
               enqueue({ type: 'error', message: `${tc.name} failed: ${errMsg}` })
-              messages.push({
-                role: 'tool',
-                tool_call_id: tc.id,
-                content: JSON.stringify({ error: errMsg }),
-              })
+              appendToolResultMessage(messages, tc.id, { error: errMsg })
             }
           }
-          // Loop continues — next iteration streams the model's synthesis of tool results.
         }
 
         enqueue({ type: 'done' })

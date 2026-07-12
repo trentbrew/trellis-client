@@ -812,7 +812,7 @@
     const handle = e.currentTarget as HTMLElement
     try {
       handle.setPointerCapture(e.pointerId)
-    } catch {}
+    } catch { /* ignore */ }
     document.body.style.cursor = 'ew-resize'
     document.body.style.userSelect = 'none'
 
@@ -833,7 +833,7 @@
       document.body.style.userSelect = ''
       try {
         handle.releasePointerCapture(ev.pointerId)
-      } catch {}
+      } catch { /* ignore */ }
       document.removeEventListener('pointermove', onMove)
       document.removeEventListener('pointerup', onUp)
       document.removeEventListener('pointercancel', onUp)

@@ -200,6 +200,18 @@ The theming system works seamlessly with Tailwind CSS v4 by setting CSS custom p
 
 The CSS variables follow the naming convention: `--{property-name}` (e.g., `--background`, `--primary`, etc.)
 
+### Inset surface tokens (`surface-1` / `surface-2` / `surface-3`)
+
+Campus shell and sticky chrome use **opaque derived surfaces** (`bg-surface-*`), not `bg-card/50`. These are a **substrate layer** for containment and color matching — separate from fractal vantage presentation.
+
+- `bg-surface-1` — outer inset frame
+- `bg-surface-2` — main scroll area + matching sticky toolbars
+- `bg-surface-3` — same as `bg-card` (elevated panels)
+
+Surfaces are not stored in theme presets; they derive from `card` + `background`.
+
+**Full spec:** [Inset surface hierarchy](../architecture/INSET_SURFACES.md) — substrate vs fractal positioning, usage, migration.
+
 ## Storage
 
 - **Current Preset**: Stored in `localStorage` as `theme-preset-id`

@@ -13,12 +13,14 @@ const props = withDefaults(
     layout?: 'card-grid' | 'list' | 'moodboard'
     isSelected?: (id: string) => boolean
     gridStyle?: StyleValue
+    /** Opt-in pinch / ctrl+wheel density on card-grid layout. */
+    pinchZoom?: boolean
     editable?: boolean
     visibleFields?: string[] | null
     fieldCatalog?: ViewFieldDefinition[]
     showEmptyProperties?: boolean
   }>(),
-  { layout: 'card-grid', editable: true, isSelected: () => () => false, showEmptyProperties: false },
+  { layout: 'card-grid', editable: true, isSelected: () => () => false, showEmptyProperties: false, pinchZoom: false },
 )
 
 const emit = defineEmits<{
@@ -26,7 +28,31 @@ const emit = defineEmits<{
   toggleSelect: [id: string, event?: MouseEvent]
   fieldUpdate: [item: Entity, fieldId: PropertyFieldId, value: unknown]
   columnUpdate: [item: Entity, column: string, value: unknown]
+  gridDensityWheel: [event: WheelEvent]
+  gridDensityTouchStart: [event: TouchEvent]
+  gridDensityTouchMove: [event: TouchEvent]
+  gridDensityTouchEnd: [event: TouchEvent]
 }>()
+
+function onGridWheel(event: WheelEvent) {
+  if (!props.pinchZoom || props.layout !== 'card-grid') return
+  emit('gridDensityWheel', event)
+}
+
+function onGridTouchStart(event: TouchEvent) {
+  if (!props.pinchZoom || props.layout !== 'card-grid') return
+  emit('gridDensityTouchStart', event)
+}
+
+function onGridTouchMove(event: TouchEvent) {
+  if (!props.pinchZoom || props.layout !== 'card-grid') return
+  emit('gridDensityTouchMove', event)
+}
+
+function onGridTouchEnd(event: TouchEvent) {
+  if (!props.pinchZoom || props.layout !== 'card-grid') return
+  emit('gridDensityTouchEnd', event)
+}
 
 const cardLayout = computed<'grid' | 'list' | 'moodboard'>(() =>
   props.layout === 'card-grid' ? 'grid' : props.layout,
@@ -40,13 +66,20 @@ const containerClass = computed(() => {
       return 'columns-2 sm:columns-3 lg:columns-4 xl:columns-5 gap-4'
     case 'card-grid':
     default:
-      return 'grid gap-4'
+      return 'browse-card-grid grid gap-3 sm:gap-4'
   }
 })
 </script>
 
 <template>
-  <div :class="containerClass" :style="layout === 'card-grid' ? gridStyle : undefined">
+  <div
+    :class="[containerClass, layout === 'card-grid' ? '@container/browse-grid' : '']"
+    :style="layout === 'card-grid' ? gridStyle : undefined"
+    @wheel="onGridWheel"
+    @touchstart.passive="onGridTouchStart"
+    @touchmove="onGridTouchMove"
+    @touchend.passive="onGridTouchEnd"
+    @touchcancel.passive="onGridTouchEnd">
     <EntityCard
       v-for="item in items"
       :key="item.id"

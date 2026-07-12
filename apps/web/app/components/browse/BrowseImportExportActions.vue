@@ -23,14 +23,51 @@
 </script>
 
 <template>
-  <div class="flex items-center gap-2 shrink-0">
+  <!-- Mobile: single overflow menu -->
+  <UiDropdownMenu>
+    <UiDropdownMenuTrigger as-child>
+      <UiButton
+        variant="outline"
+        size="sm"
+        class="h-8 bg-card px-2 sm:hidden"
+        aria-label="Import and export">
+        <Icon name="lucide:ellipsis" class="h-4 w-4" />
+      </UiButton>
+    </UiDropdownMenuTrigger>
+    <UiDropdownMenuContent align="end" :side-offset="4" class="w-44">
+      <UiDropdownMenuItem @click="importOpen = true">
+        <Icon name="lucide:upload" class="mr-2 h-4 w-4" />
+        Import
+      </UiDropdownMenuItem>
+      <UiDropdownMenuSeparator />
+      <UiDropdownMenuItem :disabled="!canExport" @click="handleExport('csv')">
+        <Icon name="lucide:file-spreadsheet" class="mr-2 h-4 w-4" />
+        Export CSV
+      </UiDropdownMenuItem>
+      <UiDropdownMenuItem :disabled="!canExport" @click="handleExport('json')">
+        <Icon name="lucide:braces" class="mr-2 h-4 w-4" />
+        Export JSON
+      </UiDropdownMenuItem>
+      <UiDropdownMenuItem :disabled="!canExport" @click="handleExport('jsonld')">
+        <Icon name="lucide:link" class="mr-2 h-4 w-4" />
+        Export JSON-LD
+      </UiDropdownMenuItem>
+      <UiDropdownMenuItem :disabled="!canExport" @click="handleExport('xlsx')">
+        <Icon name="lucide:table" class="mr-2 h-4 w-4" />
+        Export Excel
+      </UiDropdownMenuItem>
+    </UiDropdownMenuContent>
+  </UiDropdownMenu>
+
+  <!-- Desktop: separate buttons -->
+  <div class="hidden items-center gap-2 shrink-0 sm:flex">
     <UiButton
       variant="outline"
       size="sm"
-      class="h-8 gap-1.5 bg-card/0 backdrop-blur-lg text-xs border-primary text-primary"
+      class="h-8 gap-1.5 bg-card text-xs border-primary text-primary"
       @click="importOpen = true">
       <Icon name="lucide:upload" class="h-3.5 w-3.5" />
-      <span class="hidden sm:inline">Import</span>
+      <span>Import</span>
     </UiButton>
 
     <UiDropdownMenu>
@@ -38,10 +75,10 @@
         <UiButton
           variant="outline"
           size="sm"
-          class="h-8 gap-1.5 bg-card/0 backdrop-blur-lg text-xs border-primary text-primary"
+          class="h-8 gap-1.5 bg-card text-xs border-primary text-primary"
           :disabled="!canExport">
           <Icon name="lucide:download" class="h-3.5 w-3.5" />
-          <span class="hidden sm:inline">Export</span>
+          <span>Export</span>
         </UiButton>
       </UiDropdownMenuTrigger>
       <UiDropdownMenuContent align="end" :side-offset="4" class="w-44">
@@ -63,7 +100,7 @@
         </UiDropdownMenuItem>
       </UiDropdownMenuContent>
     </UiDropdownMenu>
-
-    <BrowseEntityImportDialog v-model:open="importOpen" />
   </div>
+
+  <BrowseEntityImportDialog v-model:open="importOpen" />
 </template>

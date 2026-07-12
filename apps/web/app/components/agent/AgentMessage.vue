@@ -243,8 +243,15 @@
       </div>
 
       <!-- Content -->
-      <div v-if="message.content && isUser" class="whitespace-pre-wrap">
-        {{ message.content }}
+      <div v-if="isUser && (message.content || message.attachments?.length)" class="space-y-2">
+        <div v-if="message.content" class="whitespace-pre-wrap">{{ message.content }}</div>
+        <div v-if="message.attachments?.length" class="flex flex-wrap gap-2">
+          <AgentAttachmentChip
+            v-for="attachment in message.attachments"
+            :key="attachment.id"
+            :attachment="attachment"
+            variant="message" />
+        </div>
       </div>
       <div
         v-else-if="message.content"

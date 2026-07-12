@@ -123,7 +123,7 @@ export function useKeyboardShortcuts() {
    */
   function register(
     id: string,
-    action: () => string | undefined | void,
+    action: () => string | undefined,
     overrideDef?: Partial<ShortcutDefinition>,
   ): () => void {
     // Find the definition (default or custom)

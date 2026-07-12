@@ -5,6 +5,9 @@ import type { ThemePresets } from '~/types/theme'
  * "graphite" is the default and MUST stay in sync with the CSS variables
  * in app/assets/css/tailwind.css (:root + .dark). If you change a value
  * here, update it there too (and vice-versa).
+ *
+ * Surface tokens (--surface-1/2/3) are derived in CSS from card + background —
+ * they are not stored per-preset.
  * Add additional presets here — they will appear in Settings → Theme.
  */
 export const defaultPresets: ThemePresets = {

@@ -173,7 +173,7 @@
             <div v-if="showIconRail && !railAtBottom" class="pr-2.5 shrink-0 flex self-stretch">
               <IconRail position="left" />
             </div>
-            <div class="flex flex-1 min-h-0 overflow-hidden rounded-xl border bg-card/50">
+            <div class="flex flex-1 min-h-0 overflow-hidden rounded-xl border bg-surface-1">
               <div class="bg-transparent flex flex-1 min-w-0 overflow-hidden rounded-md! flex-col">
                 <div class="flex flex-1 min-h-0 overflow-hidden">
                   <AppSidebar v-if="showSidebar" :header-above="true" class="bg-transparent rounded-xl" />
@@ -182,7 +182,7 @@
                     :class="showSidebar ? 'pl-0' : 'pl-2.5'">
                     <main
                       ref="pageEl"
-                      class="page-transition-wrapper bg-card/50 rounded-md flex-1 overflow-y-auto p-0 border relative"
+                      class="page-transition-wrapper bg-surface-2 rounded-md flex-1 overflow-y-auto p-0 border relative"
                       aria-label="Main content">
                       <slot />
                     </main>

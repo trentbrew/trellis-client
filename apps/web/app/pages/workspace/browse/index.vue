@@ -143,8 +143,19 @@ const {
 } = useBrowseSelection(displayItems)
 
 const gridColsKey = computed(() => activeTypeParam.value)
-const { columns: gridColumns, gridStyle, increment: incrementGridColumns, decrement: decrementGridColumns, minCols, maxCols } =
-  useBrowseGridColumns(gridColsKey)
+const {
+  density: gridDensity,
+  densityLabel: gridDensityLabel,
+  gridStyle,
+  zoomIn: zoomInGrid,
+  zoomOut: zoomOutGrid,
+  minDensity: minGridDensity,
+  maxDensity: maxGridDensity,
+  onGridDensityWheel,
+  onGridDensityTouchStart,
+  onGridDensityTouchMove,
+  onGridDensityTouchEnd,
+} = useBrowseGridDensity(gridColsKey)
 
 const cardPropsKey = computed(() => activeTypeParam.value)
 const {
@@ -521,24 +532,23 @@ onUnmounted(() => {
 
     <!-- ── Toolbar: New button + Group toggle ── -->
     <template #toolbarActions>
-      <BrowseImportExportActions
-        :items="displayItems"
-        :selected-items="selectedItems"
-        :filename-slug="`browse-${activeTypeParam}`" />
-
       <!-- Single type: simple New button -->
-      <UiButton size="sm" class="font-bold" v-if="!isAllMode && activeTypeCfg" @click="handleNewItem(activeTypeParam)">
-        <Icon name="lucide:plus" class="mr-2 h-4 w-4" />
-        New
+      <UiButton
+        v-if="!isAllMode && activeTypeCfg"
+        size="sm"
+        class="font-bold"
+        @click="handleNewItem(activeTypeParam)">
+        <Icon name="lucide:plus" class="h-4 w-4 sm:mr-2" />
+        <span class="hidden sm:inline">New</span>
       </UiButton>
 
       <!-- All mode: New with type picker dropdown -->
       <UiDropdownMenu v-else-if="isAllMode" v-model:open="newPickerOpen">
         <UiDropdownMenuTrigger as-child>
-          <UiButton>
-            <Icon name="lucide:plus" class="mr-2 h-4 w-4" />
-            New
-            <Icon name="lucide:chevron-down" class="ml-1 h-3.5 w-3.5 opacity-70" />
+          <UiButton size="sm">
+            <Icon name="lucide:plus" class="h-4 w-4 sm:mr-2" />
+            <span class="hidden sm:inline">New</span>
+            <Icon name="lucide:chevron-down" class="ml-1 hidden h-3.5 w-3.5 opacity-70 sm:inline" />
           </UiButton>
         </UiDropdownMenuTrigger>
         <UiDropdownMenuContent align="end" class="w-56 max-h-80 overflow-y-auto">
@@ -553,33 +563,38 @@ onUnmounted(() => {
           </UiDropdownMenuItem>
         </UiDropdownMenuContent>
       </UiDropdownMenu>
+
+      <BrowseImportExportActions
+        :items="displayItems"
+        :selected-items="selectedItems"
+        :filename-slug="`browse-${activeTypeParam}`" />
     </template>
 
-    <!-- Grid column count (grid view only) -->
+    <!-- Grid density (grid view only) — desktop only; mobile uses pinch -->
     <template #beforeSearch>
       <div
         v-if="viewMode === 'grid'"
-        class="flex items-center rounded-lg border border-border bg-card/0 backdrop-blur-lg shrink-0"
-        title="Grid columns">
+        class="hidden items-center rounded-lg border border-border bg-muted/30 shrink-0 sm:flex"
+        title="Card zoom — pinch or Ctrl+scroll to adjust">
         <button
           type="button"
           class="flex h-8 w-8 items-center justify-center rounded-l-md text-muted-foreground transition-colors hover:text-foreground disabled:opacity-40"
-          :disabled="gridColumns <= minCols"
-          aria-label="Fewer columns"
-          @click="decrementGridColumns">
+          :disabled="gridDensity <= minGridDensity"
+          aria-label="Zoom out cards"
+          @click="zoomOutGrid">
           <Icon name="lucide:minus" class="h-3.5 w-3.5" />
         </button>
         <div
           class="flex h-8 items-center gap-1.5 border-x border-border px-2.5 text-xs font-medium tabular-nums text-foreground">
-          <Icon name="lucide:columns-3" class="h-3.5 w-3.5 text-muted-foreground" />
-          {{ gridColumns }}
+          <Icon name="lucide:scan" class="h-3.5 w-3.5 text-muted-foreground" />
+          {{ gridDensityLabel }}
         </div>
         <button
           type="button"
           class="flex h-8 w-8 items-center justify-center rounded-r-md text-muted-foreground transition-colors hover:text-foreground disabled:opacity-40"
-          :disabled="gridColumns >= maxCols"
-          aria-label="More columns"
-          @click="incrementGridColumns">
+          :disabled="gridDensity >= maxGridDensity"
+          aria-label="Zoom in cards"
+          @click="zoomInGrid">
           <Icon name="lucide:plus" class="h-3.5 w-3.5" />
         </button>
       </div>
@@ -620,13 +635,18 @@ onUnmounted(() => {
           :layout="groupedCardLayout"
           :is-selected="isSelected"
           :grid-style="gridStyle"
+          :pinch-zoom="groupedCardLayout === 'card-grid'"
           :visible-fields="visibleFields"
           :field-catalog="viewFieldCatalog"
           :show-empty-properties="showEmptyProperties"
           @open-detail="openDetail"
           @toggle-select="toggleSelection"
           @field-update="handleFieldUpdate"
-          @column-update="handleSpreadsheetCellUpdate" />
+          @column-update="handleSpreadsheetCellUpdate"
+          @grid-density-wheel="onGridDensityWheel"
+          @grid-density-touch-start="onGridDensityTouchStart"
+          @grid-density-touch-move="onGridDensityTouchMove"
+          @grid-density-touch-end="onGridDensityTouchEnd" />
       </div>
 
       <div v-if="displayItems.length === 0"
@@ -646,6 +666,7 @@ onUnmounted(() => {
           :entity-type="isAllMode ? undefined : activeTypeParam"
           :is-selected="isSelected"
           :grid-style="gridStyle"
+          :pinch-zoom="viewMode === 'grid'"
           :storage-key="`browse:table:${activeTypeParam}`"
           :empty-message="emptyMessage"
           :visible-fields="visibleFields"
@@ -658,7 +679,11 @@ onUnmounted(() => {
           @column-update="handleSpreadsheetCellUpdate"
           @cell-update="handleSpreadsheetCellUpdate"
           @calendar-create="handleCalendarCreate"
-          @calendar-reschedule="handleCalendarReschedule">
+          @calendar-reschedule="handleCalendarReschedule"
+          @grid-density-wheel="onGridDensityWheel"
+          @grid-density-touch-start="onGridDensityTouchStart"
+          @grid-density-touch-move="onGridDensityTouchMove"
+          @grid-density-touch-end="onGridDensityTouchEnd">
           <template #empty>
             <Icon name="lucide:search-x" class="h-6 w-6 text-muted-foreground/30" />
             <p class="text-sm">{{ emptyMessage }}</p>
@@ -685,7 +710,7 @@ onUnmounted(() => {
     <div
       v-if="projection.type !== 'graph'"
       class="text-xs text-muted-foreground shrink-0 border-t border-border"
-      :class="isTableProjection ? 'px-4 py-2' : 'mt-4 pt-4 pb-10'">
+      :class="isTableProjection ? 'px-3 py-2 sm:px-4' : 'mt-4 pt-4 pb-20 sm:pb-10'">
       <template v-if="isTableProjection">
         {{ displayItems.length }} {{ displayItems.length === 1 ? 'item' : 'items' }}
       </template>

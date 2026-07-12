@@ -120,10 +120,11 @@ function _generateEntityTitle(result: DropResult, index = 0): string {
       } catch {
         return result.url!.slice(0, 50)
       }
-    case 'text':
+    case 'text': {
       const text = result.text!.trim()
       if (text.length <= 50) return text
       return text.slice(0, 47) + '...'
+    }
   }
 }
 

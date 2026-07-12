@@ -1,37 +1,21 @@
 <script lang="ts" setup>
   import type { BreadcrumbItem } from '~/components/Ui/Breadcrumbs.vue'
   import { getCleanPath } from '~/config/routes'
-  import { CAMPUS_ZONE_LIST, campusZoneMeta } from '~/lib/campus-zones'
   import { getFileBrowseFacet, parseFileCategoryParam } from '~/lib/file-browse-categories'
 
   const route = useRoute()
   const { user } = useInstantAuth()
   const { mode: adapterMode, entityBackend, ontologyBackend, isCloud } = useAdapterStatus()
-  const { zoneId } = useZoneContext()
   const { breadcrumbs } = useRoutes()
-  const { wp } = useWorkspacePath()
+  const workspacePath = useWorkspacePath()
   const { getEntityConfig } = useOntologyRegistry()
 
-  const runtimeLabel = computed(() => (isCloud.value ? 'InstantDB' : 'Local'))
+  const { zone, rootLabel, runtimeLabel, showRoot } = useCampusLocationLabel()
 
-  const rootLabel = computed(() => {
-    const u = user.value as { name?: string; email?: string } | null
-    const name = u?.name?.trim()
-    if (name) return name
-    const email = u?.email?.trim()
-    if (email) {
-      const prefix = email.includes('@') ? email.split('@')[0]! : email
-      if (prefix) return prefix.charAt(0).toUpperCase() + prefix.slice(1)
-    }
-    return runtimeLabel.value
-  })
+  const rootIcon = computed(() =>
+    user.value ? 'lucide:circle-user' : isCloud.value ? 'lucide:cloud' : 'lucide:hard-drive',
+  )
 
-  const rootIcon = computed(() => (user.value ? 'lucide:circle-user' : isCloud.value ? 'lucide:cloud' : 'lucide:hard-drive'))
-
-  const zone = computed(() => campusZoneMeta(zoneId.value))
-  const zoneMenuOpen = ref(false)
-
-  /** Active browse type filter — e.g. `note` on `/workspace/browse?type=note`. */
   const browseTypeParam = computed(() => {
     const cleanPath = getCleanPath(route.path)
     if (!cleanPath.startsWith('/workspace/browse')) return null
@@ -58,31 +42,37 @@
     return facet ? { label: facet.labelPlural, icon: facet.icon } : null
   })
 
-  /** Deepest route segment — projection label for this page. */
   const projection = computed(() => {
     const crumbs = breadcrumbs.value
     if (!crumbs.length) return null
     const last = crumbs[crumbs.length - 1]
     if (!last?.label?.trim()) return null
-
-    // Browse + type filter: "Browse" stays linkable; type is appended separately.
     if (browseTypeCrumb.value && last.label.toLowerCase() === 'browse') {
-      return { label: last.label, path: wp('/workspace/browse') }
+      return { label: last.label, path: workspacePath.wp('/workspace/browse') }
     }
+    return { label: last.label, path: last.path ? workspacePath.wp(last.path) : undefined }
+  })
 
-    return { label: last.label, path: last.path ? wp(last.path) : undefined }
+  const isBrowseHome = computed(() => {
+    const cleanPath = getCleanPath(route.path)
+    return cleanPath === '/workspace/browse' || cleanPath === '/workspace/browse/'
   })
 
   const showProjection = computed(() => {
     if (!projection.value) return false
-    return projection.value.label.toLowerCase() !== zone.value.label.toLowerCase()
+    if (projection.value.label.toLowerCase() === zone.value.label.toLowerCase()) return false
+    const label = projection.value.label.toLowerCase()
+    if (isBrowseHome.value && !browseTypeParam.value && label === 'browse') return false
+    if (browseTypeCrumb.value && label === 'browse') return false
+    return true
   })
 
   const breadcrumbItems = computed<BreadcrumbItem[]>(() => {
-    const items: BreadcrumbItem[] = [
-      { label: rootLabel.value, icon: rootIcon.value, slot: 'root' },
-      { slot: 'zone' },
-    ]
+    const items: BreadcrumbItem[] = []
+    if (showRoot.value) {
+      items.push({ label: rootLabel.value, icon: rootIcon.value, slot: 'root' })
+    }
+    items.push({ slot: 'zone' })
     if (showProjection.value && projection.value) {
       items.push({
         label: projection.value.label,
@@ -95,7 +85,7 @@
         label: browseTypeCrumb.value.label,
         icon: browseTypeCrumb.value.icon,
         disabled: !browseFileCategoryParam.value,
-        link: browseFileCategoryParam.value ? wp('/workspace/browse?type=file') : undefined,
+        link: browseFileCategoryParam.value ? workspacePath.wp('/workspace/browse?type=file') : undefined,
       })
     }
     if (browseFileCategoryParam.value) {
@@ -107,32 +97,12 @@
     }
     return items
   })
-
-  function goToZone(meta: (typeof CAMPUS_ZONE_LIST)[number]) {
-    zoneMenuOpen.value = false
-    void navigateTo(wp(meta.homePath))
-  }
-
-  watch(
-    zone,
-    (z) => {
-      if (!import.meta.client) return
-      document.documentElement.dataset.campusZone = z.kind
-    },
-    { immediate: true },
-  )
-
-  onUnmounted(() => {
-    if (!import.meta.client) return
-    delete document.documentElement.dataset.campusZone
-  })
 </script>
 
 <template>
   <UiBreadcrumbs
     :items="breadcrumbItems"
     class="campus-context-breadcrumb shrink-0 w-auto text-xs text-muted-foreground app-region-no-drag gap-2.5 sm:gap-3">
-    <!-- Root: runtime (local-first) -->
     <template #root>
       <UiTooltip>
         <UiTooltipTrigger as-child>
@@ -154,48 +124,10 @@
       </UiTooltip>
     </template>
 
-    <!-- Zone: room picker (icon dropdown pattern) -->
     <template #zone>
-      <UiDropdownMenu v-model:open="zoneMenuOpen">
-        <UiDropdownMenuTrigger
-          class="text-muted-foreground hover:text-foreground inline-flex items-center gap-1 rounded-sm px-0.5 -mx-0.5 transition-colors outline-none focus-visible:ring-1 focus-visible:ring-ring data-[state=open]:text-foreground"
-          :title="`${zone.label} — walk to another room`"
-          :aria-label="`Zone: ${zone.label}. Choose a room.`">
-          <Icon
-            :name="zoneMenuOpen ? 'lucide:folder-open-dot' : zone.icon"
-            class="size-3.5 shrink-0" />
-          <span>{{ zone.label }}</span>
-          <Icon
-            name="lucide:chevron-down"
-            class="h-3 w-3 shrink-0 opacity-60 transition-transform duration-150"
-            :class="zoneMenuOpen ? 'rotate-180 opacity-80' : ''" />
-          <span class="sr-only">Toggle zone menu</span>
-        </UiDropdownMenuTrigger>
-
-        <UiDropdownMenuContent align="start" :side-offset="6" class="w-52 z-200">
-          <div class="px-2 py-1.5 text-[10px] uppercase tracking-wider font-bold text-muted-foreground">
-            Walk to room
-          </div>
-          <p class="px-2 pb-1.5 text-[10px] text-muted-foreground leading-snug">
-            Navigate to a zone home. Mutations still tag the zone of the page you're on.
-          </p>
-          <UiDropdownMenuItem
-            v-for="z in CAMPUS_ZONE_LIST"
-            :key="z.kind"
-            class="flex items-center gap-2 cursor-pointer"
-            @click="goToZone(z)">
-            <Icon :name="z.icon" class="h-3.5 w-3.5 shrink-0" />
-            <span class="flex-1">{{ z.label }}</span>
-            <Icon
-              v-if="z.kind === zone.kind"
-              name="lucide:check"
-              class="h-3.5 w-3.5 text-muted-foreground shrink-0" />
-          </UiDropdownMenuItem>
-        </UiDropdownMenuContent>
-      </UiDropdownMenu>
+      <CampusZonePicker />
     </template>
 
-    <!-- Projection crumb: campus-muted styling -->
     <template #link="{ item, isNotLastItem, index }">
       <NuxtLink
         v-if="item.label && item.link && !item.disabled"

@@ -20,11 +20,24 @@ export interface AgentRoutingInfo {
   baseURL?: string
 }
 
+export interface AgentAttachment {
+  id: string
+  url: string
+  path?: string
+  filename: string
+  contentType: string
+  size: number
+  kind: 'image' | 'file'
+  /** Graph file entity created when the attachment was added. */
+  entityId?: string
+}
+
 export interface AgentMessage {
   id: string
   conversationId: string
   role: AgentMessageRole
   content: string
+  attachments?: readonly AgentAttachment[]
   toolCalls?: readonly ToolCall[]
   routing?: AgentRoutingInfo
   timestamp: number
@@ -44,10 +57,19 @@ export interface ToolCall {
   result?: any
 }
 
+export interface AgentChatHistoryTurn {
+  role: 'user' | 'assistant'
+  content: string
+}
+
 export interface AgentChatRequest {
   message: string
+  attachments?: AgentAttachment[]
+  /** Prior turns in the active thread (client-local); server window-truncates. */
+  history?: AgentChatHistoryTurn[]
   conversationId?: string
   userId: string
+  path?: string
 }
 
 export interface AgentAction {

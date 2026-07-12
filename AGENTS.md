@@ -1,12 +1,21 @@
 # Trellis Agent Instructions
 
-You are working inside the **Trellis** monorepo — a personal knowledge graph platform. Everything in this system is an entity with typed properties and semantic links. The graph powers a Nuxt web app running on `localhost:$TRELLIS_PORT` with realtime sync.
+You are working inside the **Trellis** monorepo — a personal knowledge graph
+platform. Everything in this system is an entity with typed properties and
+semantic links. The graph powers a Nuxt web app running on
+`localhost:$TRELLIS_PORT` with realtime sync.
 
-**You are a Trellis-aware agent.** You can read, write, query, and manage the graph directly — either through the REST API, the CLI, or MCP tools. Any mutations you make appear instantly in the browser UI via SSE.
+**You are a Trellis-aware agent.** You can read, write, query, and manage the
+graph directly — either through the REST API, the CLI, or MCP tools. Any
+mutations you make appear instantly in the browser UI via SSE.
 
-> **MCP-first rule:** If you have MCP tools available (48 total), **always use them** instead of `curl`, `fetch`, or raw HTTP requests. The MCP tools handle errors, serialization, and agent ID tracking automatically. See `packages/trellis-mcp/SKILL.md` for the full tool reference and mapping table.
+> **MCP-first rule:** If you have MCP tools available (48 total), **always use
+> them** instead of `curl`, `fetch`, or raw HTTP requests. The MCP tools handle
+> errors, serialization, and agent ID tracking automatically. See
+> `packages/trellis-mcp/SKILL.md` for the full tool reference and mapping table.
 
-> Read `packages/trellis-mcp/SKILL.md` for the full domain knowledge reference (entity types, fields, linking, querying, ontology CRUD).
+> Read `packages/trellis-mcp/SKILL.md` for the full domain knowledge reference
+> (entity types, fields, linking, querying, ontology CRUD).
 
 ---
 
@@ -25,7 +34,8 @@ hooks/                 Git/agent lifecycle hooks
 
 ## Entity Architecture
 
-Every entity has an **entity class** (structural shape) and an **entity type** (specific kind):
+Every entity has an **entity class** (structural shape) and an **entity type**
+(specific kind):
 
 | Class         | Description                      | Example Types                           |
 | ------------- | -------------------------------- | --------------------------------------- |
@@ -34,13 +44,19 @@ Every entity has an **entity class** (structural shape) and an **entity type** (
 | **actor**     | Represents a person/entity       | person, contact, organization           |
 | **container** | Groups/organizes entities        | project, folder, collection, goal       |
 
-Entity IDs use the format `entity:<slug>`, e.g. `entity:task-1`, `entity:note-meeting`.
+Entity IDs use the format `entity:<slug>`, e.g. `entity:task-1`,
+`entity:note-meeting`.
 
-> **Namespace note:** All entities share the `entity` TQL storage namespace for historical reasons. In application code, use the `entityId()` / `entityQuery()` helpers from `app/lib/tql-namespace.ts` instead of hardcoding the prefix.
+> **Namespace note:** All entities share the `entity` TQL storage namespace for
+> historical reasons. In application code, use the `entityId()` /
+> `entityQuery()` helpers from `app/lib/tql-namespace.ts` instead of hardcoding
+> the prefix.
 
 ## Campus Substrate (Phase 0)
 
-Every entity now lives in a **Zone** inside a **Facility** — the spatial ontology inherited from turtleOS. The substrate is **advisory** in Phase 0: the zone guard logs allow/deny decisions but does **not** reject mutations.
+Every entity now lives in a **Zone** inside a **Facility** — the spatial
+ontology inherited from turtleOS. The substrate is **advisory** in Phase 0: the
+zone guard logs allow/deny decisions but does **not** reject mutations.
 
 ### Primitive types
 
@@ -65,13 +81,15 @@ Every entity now lives in a **Zone** inside a **Facility** — the spatial ontol
 
 ### Tagging mutations with a zone
 
-Every SSE mutation event carries `zoneId` and `facilityId`. The server derives them from (in priority order):
+Every SSE mutation event carries `zoneId` and `facilityId`. The server derives
+them from (in priority order):
 
 1. `X-Trellis-Zone` + `X-Trellis-Facility` headers (explicit override)
 2. The `Referer` path (mapped via `zone-router.ts`)
 3. Fallback: the founder's Lab
 
-New entities are also auto-stamped with `data.zoneId` + `data.facilityId` at creation so zone-aware queries work without op-log replay.
+New entities are also auto-stamped with `data.zoneId` + `data.facilityId` at
+creation so zone-aware queries work without op-log replay.
 
 ```bash
 # Header-based override (CLI / external agents)
@@ -98,7 +116,8 @@ On every mutation you'll see one of:
 [zone-guard] DENY (advisory) agent=my-agent action=createNode zone=vault reason="..."
 ```
 
-Both are advisory — the mutation still commits. Treat `DENY` lines as warnings to audit before Phase 1 flips strict enforcement on.
+Both are advisory — the mutation still commits. Treat `DENY` lines as warnings
+to audit before Phase 1 flips strict enforcement on.
 
 ### Querying by zone
 
@@ -109,7 +128,8 @@ FIND entity AS ?a WHERE ?a.type = "artifact" AND ?a.publishedInZone = "entity:fo
 
 ### Lab projection UI
 
-Navigate to `/agent` in the web app to see a live op-log filtered by zone with tabs for all five zones.
+Navigate to `/agent` in the web app to see a live op-log filtered by zone with
+tabs for all five zones.
 
 ## TQL Graph API
 
@@ -140,7 +160,8 @@ Base URL: `http://localhost:$TRELLIS_PORT/api/graph`
 { "action": "link", "e1": "entity:task-1", "relation": "assignedTo", "e2": "entity:person-1", "agentId": "my-agent" }
 ```
 
-> In app code, use `toEntityId('my-task')` and `ENTITY_NAMESPACE` from `~/lib/tql-namespace` instead of hardcoding `entity:`.
+> In app code, use `toEntityId('my-task')` and `ENTITY_NAMESPACE` from
+> `~/lib/tql-namespace` instead of hardcoding `entity:`.
 
 ### EQL-S Query Examples
 
@@ -151,7 +172,8 @@ FIND entity AS ?n WHERE ?n.type = "note" RETURN ?n.title ORDER BY ?n.updatedAt D
 
 ## CLI
 
-The CLI is available via `just trellis` or `node packages/trellis-cli/bin/trellis.mjs`:
+The CLI is available via `just trellis` or
+`node packages/trellis-cli/bin/trellis.mjs`:
 
 ```bash
 just trellis health --pretty
@@ -178,17 +200,22 @@ just trellis ontology remove-field 'trellis:schema/invoice' --field notes
 just trellis ontology delete 'trellis:schema/invoice'
 ```
 
-Creating an ontology auto-scaffolds it in the UI — sidebar item, browse page, dialog support — with zero code changes.
+Creating an ontology auto-scaffolds it in the UI — sidebar item, browse page,
+dialog support — with zero code changes.
 
-**Tier classification** (`--tier`): Controls where the type appears in the database sidebar.
+**Tier classification** (`--tier`): Controls where the type appears in the
+database sidebar.
 
-- `system` — Built-in entity type, appears under ENTITIES section (e.g. task, note, person)
+- `system` — Built-in entity type, appears under ENTITIES section (e.g. task,
+  note, person)
 - `user` (or omitted) — User-created custom type, appears under CUSTOM section
-- `core` — Kernel structural types (immutable, code-only — never create these via CLI)
+- `core` — Kernel structural types (immutable, code-only — never create these
+  via CLI)
 
 ### Platform CRUD via CLI
 
-Platform resources (orgs, apps, collections, pages, tags, workflows, settings) are managed via `/api/platform/*` routes backed by the TQL kernel.
+Platform resources (orgs, apps, collections, pages, tags, workflows, settings)
+are managed via `/api/platform/*` routes backed by the TQL kernel.
 
 ```bash
 # Workspace context
@@ -226,7 +253,8 @@ just trellis setting list --pretty
 just trellis create --type entity --id entity:meeting-notes --data '{"type":"note","title":"Notes"}' --body '# Agenda\n- Review goals'
 ```
 
-Context persistence: `~/.trellis/context.json` stores the current org + app. Use `--org` / `--app` flags to override per-command.
+Context persistence: `~/.trellis/context.json` stores the current org + app. Use
+`--org` / `--app` flags to override per-command.
 
 ## SDK
 
@@ -243,11 +271,18 @@ await client.createOntology({ '@id': 'trellis:schema/invoice', '@type': 'trellis
 
 ## MCP Server
 
-The MCP server (`packages/trellis-mcp/`) exposes 49 tools (16 graph + 33 platform):
+The MCP server (`packages/trellis-mcp/`) exposes 49 tools (16 graph + 33
+platform):
 
-`get_graph_summary`, `query_graph`, `get_node`, `get_nodes`, `create_node`, `update_node`, `delete_node`, `link_nodes`, `graph_health`, `get_schema`, `get_catalog`, `get_mutation_log`, `get_ontology`, `create_ontology`, `update_ontology`, `delete_ontology`
+`get_graph_summary`, `query_graph`, `get_node`, `get_nodes`, `create_node`,
+`update_node`, `delete_node`, `link_nodes`, `graph_health`, `get_schema`,
+`get_catalog`, `get_mutation_log`, `get_ontology`, `create_ontology`,
+`update_ontology`, `delete_ontology`
 
-> **Start with `get_graph_summary`** — returns health, entity type counts, ontology names, top attributes, link relations, and recent mutations in a single call. Replaces `graph_health` + `get_schema` + `get_catalog` for agent orientation.
+> **Start with `get_graph_summary`** — returns health, entity type counts,
+> ontology names, top attributes, link relations, and recent mutations in a
+> single call. Replaces `graph_health` + `get_schema` + `get_catalog` for agent
+> orientation.
 
 ### Connect to the MCP Server
 
@@ -283,7 +318,9 @@ The MCP server (`packages/trellis-mcp/`) exposes 49 tools (16 graph + 33 platfor
 
 When creating ontology fields, use these Notion-compatible value types:
 
-`title`, `rich_text`, `number`, `select`, `multi_select`, `status`, `date`, `people`, `files`, `checkbox`, `url`, `email`, `phone_number`, `relation`, `rollup`, `formula`
+`title`, `rich_text`, `number`, `select`, `multi_select`, `status`, `date`,
+`people`, `files`, `checkbox`, `url`, `email`, `phone_number`, `relation`,
+`rollup`, `formula`
 
 ## Linking Conventions
 
@@ -297,9 +334,11 @@ When creating ontology fields, use these Notion-compatible value types:
 
 ## CLI Purity Rules
 
-**NEVER pipe CLI output through `node -e`, `python -c`, `jq`, `awk`, or any inline script.**
+**NEVER pipe CLI output through `node -e`, `python -c`, `jq`, `awk`, or any
+inline script.**
 
-The CLI has built-in flags for every common need. If you need programmatic access to query results, use MCP tools instead of piping CLI output.
+The CLI has built-in flags for every common need. If you need programmatic
+access to query results, use MCP tools instead of piping CLI output.
 
 ```bash
 # Orientation — call this FIRST
@@ -321,12 +360,16 @@ just trellis get entity:task-1 --pretty
 - ❌ `just trellis query '...' 2>&1 | node -e "..."`
 - ❌ Any command that pipes `just trellis` output into another program
 
-**Instead:** Use MCP tools (`query_graph`, `get_node`, `get_graph_summary`) for programmatic access. They return structured JSON directly — no shell piping needed.
+**Instead:** Use MCP tools (`query_graph`, `get_node`, `get_graph_summary`) for
+programmatic access. They return structured JSON directly — no shell piping
+needed.
 
 ## Key Conventions
 
-- **Dev server**: Always running on `localhost:$TRELLIS_PORT` — never start it yourself
-- **Agent ID**: Pass `--agent-id <name>` (or set `TRELLIS_AGENT_ID`) to track who made a mutation
+- **Dev server**: Always running on `localhost:$TRELLIS_PORT` — never start it
+  yourself
+- **Agent ID**: Pass `--agent-id <name>` (or set `TRELLIS_AGENT_ID`) to track
+  who made a mutation
 - **Entity IDs**: Use descriptive slugs — `"task-deploy-v2"` not `"abc123"`
 - **Dates**: ISO 8601 — `"2026-02-10"` for dates, `"14:30"` for times
 - **Mutations are realtime**: The browser UI updates instantly via SSE
@@ -365,65 +408,109 @@ INSTANT_APP_ID=<your-app-id>     # required for cloud mode
 - `system` — code-defined, loaded at boot
 - `user` — stored in database (TQL or InstantDB depending on mode), shareable
 
-The TQL kernel **always runs** in both modes — it serves core/system ontologies, graph queries, CLI, and MCP tools.
+The TQL kernel **always runs** in both modes — it serves core/system ontologies,
+graph queries, CLI, and MCP tools.
 
 ## Entity types vs collections vs browse (UI vocabulary)
 
 Three overlapping concepts — keep them distinct when wiring UI or docs:
 
-| Layer | What it is | Where |
-| ----- | ---------- | ----- |
-| **TQL ontologies** | Graph entity types (`task`, `note`, user-tier `invoice`, …) | `/ontologies`, `/workspace/browse/:type` |
-| **InstantDB collections** | Notion-style spreadsheet databases (separate from graph type slugs) | `/collections/[slug]` |
-| **CustomType settings** (deprecated) | Legacy app settings stored in InstantDB | `/types/*` redirects to `/ontologies` |
+| Layer                                | What it is                                                          | Where                                    |
+| ------------------------------------ | ------------------------------------------------------------------- | ---------------------------------------- |
+| **TQL ontologies**                   | Graph entity types (`task`, `note`, user-tier `invoice`, …)         | `/ontologies`, `/workspace/browse/:type` |
+| **InstantDB collections**            | Notion-style spreadsheet databases (separate from graph type slugs) | `/collections/[slug]`                    |
+| **CustomType settings** (deprecated) | Legacy app settings stored in InstantDB                             | `/types/*` redirects to `/ontologies`    |
 
 **Three capability axes on each ontology** (orthogonal):
 
-| Axis | Meaning | Example |
-| ---- | ------- | ------- |
-| **Tier** | Who owns the schema | `core` / `system` / `user` |
-| **Browse** | Appears in unified workspace browse | `browse.enabled: true` on user types |
-| **Presentation** | How records open | `DynamicEntityDialog`, custom shell, or `routed: '/messages'` |
+| Axis             | Meaning                             | Example                                                       |
+| ---------------- | ----------------------------------- | ------------------------------------------------------------- |
+| **Tier**         | Who owns the schema                 | `core` / `system` / `user`                                    |
+| **Browse**       | Appears in unified workspace browse | `browse.enabled: true` on user types                          |
+| **Presentation** | How records open                    | `DynamicEntityDialog`, custom shell, or `routed: '/messages'` |
 
 **Canonical URLs:**
 
 - All types aggregate: `/workspace/browse`
-- Single type records: `/workspace/browse/:type` (preferred over `?type=` on index)
+- Single type records: `/workspace/browse/:type` (preferred over `?type=` on
+  index)
 - Schema editor: `/ontologies/:type`
-- Spreadsheet DB: `/collections/:slug` (InstantDB wins if slug collides with an ontology type)
+- Spreadsheet DB: `/collections/:slug` (InstantDB wins if slug collides with an
+  ontology type)
 
-**Host resolver:** `apps/web/app/lib/collection-host-resolver.ts` + `useCollectionHost()` — single policy for `/collections/:slug` vs `/workspace/browse/:type`. When both InstantDB and a browsable ontology share a slug, InstantDB wins; sidebar hides the duplicate ontology link (`collision: true` in dev logs).
+**Host resolver:** `apps/web/app/lib/collection-host-resolver.ts` +
+`useCollectionHost()` — single policy for `/collections/:slug` vs
+`/workspace/browse/:type`. When both InstantDB and a browsable ontology share a
+slug, InstantDB wins; sidebar hides the duplicate ontology link
+(`collision: true` in dev logs).
 
-Capability helpers: `apps/web/app/lib/ontology-capabilities.ts`, `ontology-reserved-keys.ts`.
+Capability helpers: `apps/web/app/lib/ontology-capabilities.ts`,
+`ontology-reserved-keys.ts`.
 
-**Migrate legacy CustomTypes:** `bun apps/web/scripts/migrate-custom-types-to-ontologies.ts --app-id <id> --dry-run`
+**Migrate legacy CustomTypes:**
+`bun apps/web/scripts/migrate-custom-types-to-ontologies.ts --app-id <id> --dry-run`
 
-**Collection create dual-write (Phase 3c):** `database` collections auto-provision a user-tier ontology via `provisionCollectionOntology()` in `collection-schema-to-ontology.ts` (called from `useInstantData.createCollection`). Reserved slugs skip silently; duplicates are no-ops.
+**Collection create dual-write (Phase 3c):** `database` collections
+auto-provision a user-tier ontology via `provisionCollectionOntology()` in
+`collection-schema-to-ontology.ts` (called from
+`useInstantData.createCollection`). Reserved slugs skip silently; duplicates are
+no-ops.
 
 ## Sidebar affordances (UI agents)
 
-When adding a new projection or tool surface, wire AppSidebar using one of three patterns:
+When adding a new projection or tool surface, wire AppSidebar using one of three
+patterns:
 
-| Pattern | When | Key files |
-| ------- | ---- | --------- |
-| **Route-owned panel** | Full custom nav while on `/decks`, `/pages`, etc. | `trellis-shell-routes.ts`, `components/*/*Sidebar.vue`, `AppSidebar.vue` |
-| **Workspace `specialItems`** | Dynamic entity list under `/workspace` (WORKSHOP) | `sidebarSeeds.ts`, `useRoutes.ts`, `lib/sidebar-affordances.ts` |
-| **Static `sidebarSections`** | Mail labels, settings tabs | `trellis-shell-routes.ts` only |
+| Pattern                      | When                                              | Key files                                                                |
+| ---------------------------- | ------------------------------------------------- | ------------------------------------------------------------------------ |
+| **Route-owned panel**        | Full custom nav while on `/decks`, `/pages`, etc. | `trellis-shell-routes.ts`, `components/*/*Sidebar.vue`, `AppSidebar.vue` |
+| **Workspace `specialItems`** | Dynamic entity list under `/workspace` (WORKSHOP) | `sidebarSeeds.ts`, `useRoutes.ts`, `lib/sidebar-affordances.ts`          |
+| **Static `sidebarSections`** | Mail labels, settings tabs                        | `trellis-shell-routes.ts` only                                           |
 
-**Start here:** `docs/getting-started/AFFORDANCE_SIDEBAR_GUIDE.md` (checklist + decks reference impl). Registry: `apps/web/app/lib/sidebar-affordances.ts`. Runtime matrix: `docs/architecture/SIDEBAR_BEHAVIOR.md`.
+**Start here:** `docs/getting-started/AFFORDANCE_SIDEBAR_GUIDE.md` (checklist +
+decks reference impl). Registry: `apps/web/app/lib/sidebar-affordances.ts`.
+Runtime matrix: `docs/architecture/SIDEBAR_BEHAVIOR.md`.
 
-**Decks** use Pattern A — do not set `meta.sidebarSectionPath: '/workspace'` on deck routes; `/decks` owns its sidebar section.
+**Decks** use Pattern A — do not set `meta.sidebarSectionPath: '/workspace'` on
+deck routes; `/decks` owns its sidebar section.
 
 ## Shell chrome (UI agents)
 
-**`AccountRailCluster`** (Local badge optional, bell, avatar, quick create, capture) mounts in **`AppHeader.vue` top-right** after `AppMenubar` with `placement="header"`. **Never** mount on `IconRail` — the bottom dock is navigation only.
+Resident controls are **split** (human decision 2026-07-11):
 
-Guard: `apps/web/app/components/layout/shell-chrome-placement.test.ts` · E2E: `tests/e2e/campus-dock-resident.spec.ts`
+- **Header:** ghost logo, menubar, zone presence avatars, slim
+  `AccountRailCluster` (**bell + capture only**)
+- **Dock start:** `AdapterModeBadge` + `UserAccountMenu`
+- **Dock end:** `QuickCreateButton`
+- **Forbidden:** mounting full `<AccountRailCluster>` on `IconRail`; active dock
+  uses `bg-card` (no border)
+
+Guard: `apps/web/app/components/layout/shell-chrome-placement.test.ts` · E2E:
+`tests/e2e/campus-dock-resident.spec.ts` · Spec:
+`docs/artifacts/campus_chrome_zone_presence_spec.md`
+
+### Inset surfaces (campus substrate — not fractal)
+
+Structural chrome and scroll containers use **`bg-surface-*`** — opaque
+theme-derived steps for the campus shell. This is the **substrate layer**; it
+does not morph with vantage and is not the fractal presentation model.
+
+| Token                      | Use                                                      |
+| -------------------------- | -------------------------------------------------------- |
+| `bg-surface-1`             | Outer inset frame (`default.vue` mode A shell)           |
+| `bg-surface-2`             | `<main>`, browse toolbar (`Page.vue`), database toolbars |
+| `bg-surface-3` / `bg-card` | Cards, panels, elevated controls                         |
+
+Fractal vantage (`--vantage`, crossfade, field disclosure) applies inside
+**projection hosts** (decks, sheets) — see deck/sheets artifacts. Spec:
+`docs/architecture/INSET_SURFACES.md`
 
 ## Further Reading
 
-- `packages/trellis-mcp/SKILL.md` — Full domain knowledge (entity fields, examples, best practices)
+- `packages/trellis-mcp/SKILL.md` — Full domain knowledge (entity fields,
+  examples, best practices)
 - `.windsurf/workflows/trellis-cli.md` — Step-by-step CLI workflow
 - `docs/architecture/` — App architecture documentation
 - `docs/data/` — Data layer and seeding guides
-- `.windsurf/plans/unified-data-layer-fd57dd.md` — Full data adapter implementation plan
+- `.windsurf/plans/unified-data-layer-fd57dd.md` — Full data adapter
+  implementation plan

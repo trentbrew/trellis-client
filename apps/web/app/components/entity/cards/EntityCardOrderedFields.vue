@@ -391,9 +391,9 @@ function shouldShowCompactBadge(fieldKey: string): boolean {
     </div>
 
     <!-- Title -->
-    <div class="flex items-center gap-2" :class="layout === 'list' ? 'mb-0.5' : ''">
+    <div class="flex min-w-0 items-start gap-2" :class="layout === 'list' ? 'mb-0.5' : ''">
       <h3
-        class="text-sm font-medium"
+        class="min-w-0 flex-1 text-sm font-medium"
         :class="[
           layout === 'list' ? 'truncate' : 'leading-snug line-clamp-2 group-hover:text-primary transition-colors',
           isCompleted ? 'line-through text-muted-foreground' : '',
@@ -425,9 +425,9 @@ function shouldShowCompactBadge(fieldKey: string): boolean {
       </p>
 
       <template v-else-if="fieldKey === 'description' && isEmail">
-        <p class="text-xs text-muted-foreground flex items-center gap-1 truncate">
+        <p class="flex min-w-0 items-center gap-1 text-xs text-muted-foreground">
           <Icon name="lucide:user-circle" class="h-3 w-3 shrink-0 opacity-50" />
-          <span class="truncate">{{ i.from || 'Unknown sender' }}</span>
+          <span class="min-w-0 truncate">{{ i.from || 'Unknown sender' }}</span>
         </p>
         <p v-if="i.date" class="text-[10px] text-muted-foreground/50 flex items-center gap-1">
           <Icon name="lucide:clock" class="h-3 w-3 shrink-0 opacity-50" />

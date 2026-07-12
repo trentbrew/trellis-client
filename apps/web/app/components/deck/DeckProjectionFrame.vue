@@ -4,7 +4,7 @@
   import DeckStageViewport from './DeckStageViewport.vue'
   import DeckObjectInspector from './DeckObjectInspector.vue'
   import SpeakerNotesStrip from './SpeakerNotesStrip.vue'
-  import PresenceAvatarStack from './PresenceAvatarStack.vue'
+  import PresenceAvatarStack from '~/components/presence/PresenceAvatarStack.vue'
   import { useDeckProjection } from '~/composables/useDeckProjection'
   import { useDeckKeyboardReorder } from '~/composables/useDeckKeyboardReorder'
   import { useDeckPresence } from '~/composables/useDeckPresence'

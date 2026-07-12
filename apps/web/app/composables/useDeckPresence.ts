@@ -1,3 +1,6 @@
+import { initialsForName } from '~/lib/presence/identity'
+import { useZonePresence } from '~/composables/useZonePresence'
+
 export type DeckViewer = {
   id: string
   label: string
@@ -10,9 +13,20 @@ export type RemoteCursor = {
   label: string
 }
 
-/** Lightweight presence stub — local viewer only until realtime presence ships. */
+/** Zone-keyed presence for decks (ADR-002 D3) — same room as shell/header. */
 export function useDeckPresence(_deckId: MaybeRef<string>) {
-  const viewers = ref<DeckViewer[]>([{ id: 'local', label: 'TB', self: true }])
+  const { peers, enabled } = useZonePresence()
+
+  const viewers = computed<DeckViewer[]>(() => {
+    if (!enabled.value) {
+      return [{ id: 'local', label: 'TB', self: true }]
+    }
+    return peers.value.map((p) => ({
+      id: p.id,
+      label: p.initials || initialsForName(p.name),
+      self: p.self,
+    }))
+  })
 
   return { viewers }
 }

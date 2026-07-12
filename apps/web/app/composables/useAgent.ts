@@ -1,4 +1,5 @@
-import type { AgentMessage, AgentConversation } from '~/types/agent'
+import type { AgentAttachment, AgentChatHistoryTurn, AgentMessage, AgentConversation } from '~/types/agent'
+import { formatAgentMessageForHistory } from '~/lib/agent-attachments'
 
 interface ThreadStore {
   activeThreadId: string | null
@@ -113,7 +114,19 @@ export function useAgent() {
     }
   }
 
-  async function sendMessage(content: string) {
+  function buildHistoryPayload(): AgentChatHistoryTurn[] {
+    return messages.value
+      .filter((m): m is AgentMessage & { role: 'user' | 'assistant' } =>
+        m.role === 'user' || m.role === 'assistant',
+      )
+      .map((m) => ({
+        role: m.role,
+        content: formatAgentMessageForHistory(m.content, m.attachments),
+      }))
+      .filter((turn) => turn.content.trim().length > 0)
+  }
+
+  async function sendMessage(content: string, attachments: AgentAttachment[] = []) {
     const userId = user.value?.id || 'guest'
 
     // Ensure there's an active thread
@@ -122,12 +135,16 @@ export function useAgent() {
     }
 
     const threadId = activeThreadId.value!
+    const history = buildHistoryPayload()
+    const trimmed = content.trim()
+    if (!trimmed && attachments.length === 0) return
 
     const userMessage: AgentMessage = {
       id: `msg-${Date.now()}`,
       conversationId: threadId,
       role: 'user',
-      content,
+      content: trimmed,
+      attachments: attachments.length ? attachments : undefined,
       timestamp: Date.now(),
     }
     messages.value.push(userMessage)
@@ -150,7 +167,9 @@ export function useAgent() {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          message: content,
+          message: trimmed,
+          attachments,
+          history,
           conversationId: threadId,
           userId,
           path: useRoute().path,

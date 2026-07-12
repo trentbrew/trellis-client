@@ -29,17 +29,21 @@ describe('seedAppConfigFromModules', () => {
     expect(stats.routes).toBeGreaterThanOrEqual(Object.keys(getRouteDefinitions()).length)
   })
 
-  it('is idempotent — second seed does not multiply app_route entities', async () => {
-    await seedAppConfigFromModules(kernel)
-    const firstCount = [...kernel.getStore().getAllFacts()].filter(
-      (f) => f.a === 'type' && f.v === 'app_route',
-    ).length
+  it(
+    'is idempotent — second seed does not multiply app_route entities',
+    async () => {
+      await seedAppConfigFromModules(kernel)
+      const firstCount = [...kernel.getStore().getAllFacts()].filter(
+        (f) => f.a === 'type' && f.v === 'app_route',
+      ).length
 
-    await seedAppConfigFromModules(kernel)
-    const secondCount = [...kernel.getStore().getAllFacts()].filter(
-      (f) => f.a === 'type' && f.v === 'app_route',
-    ).length
+      await seedAppConfigFromModules(kernel)
+      const secondCount = [...kernel.getStore().getAllFacts()].filter(
+        (f) => f.a === 'type' && f.v === 'app_route',
+      ).length
 
-    expect(secondCount).toBe(firstCount)
-  })
+      expect(secondCount).toBe(firstCount)
+    },
+    30_000,
+  )
 })

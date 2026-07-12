@@ -9,7 +9,6 @@ test.describe('Quick capture voice memo', () => {
         ondataavailable: ((e: { data: Blob }) => void) | null = null
         onstop: (() => void) | null = null
 
-        constructor(_stream: MediaStream, _opts?: MediaRecorderOptions) {}
 
         start() {
           this.state = 'recording'

@@ -17,11 +17,45 @@ export interface EmailLike {
 // 1x1 transparent gif — used to neutralise unresolvable cid: image references.
 const BLANK_PIXEL = 'data:image/gif;base64,R0lGODlhAQABAAAAACH5BAEKAAEALAAAAAABAAEAAAICTAEAOw=='
 
+/** Open/click tracking pixels — often broken TLS or blocked by Tracking Prevention. */
+const TRACKING_PIXEL_HOST_PATTERNS = [
+  /^links\d*\.airtable\.com$/i,
+  /\.list-manage\.com$/i,
+  /\.mailtrack\.io$/i,
+  /\.sendgrid\.net$/i,
+  /^click\./i,
+  /^track\./i,
+  /^open\./i,
+  /^email\./i,
+]
+
+export function isEmailTrackingPixelUrl(url: string): boolean {
+  const trimmed = url.trim()
+  if (!/^https?:\/\//i.test(trimmed))
+    return false
+  try {
+    const host = new URL(trimmed).hostname
+    return TRACKING_PIXEL_HOST_PATTERNS.some((pattern) => pattern.test(host))
+  } catch {
+    return false
+  }
+}
+
+function neutralizeRemoteSrc(attr: string, quote: string, url: string): string {
+  if (/^cid:/i.test(url) || isEmailTrackingPixelUrl(url))
+    return `${attr}=${quote}${BLANK_PIXEL}${quote}`
+  return `${attr}=${quote}${url}${quote}`
+}
+
 /** Remove unsafe + expensive bits. Keep <style>, inline styles, colours, tables, layout. */
 export function sanitizeEmailHtml(html: string): string {
   return (
     html
       .replace(/<script[\s\S]*?<\/script>/gi, '')
+      .replace(/<script\b[^>]*>/gi, '')
+      .replace(/<object\b[\s\S]*?<\/object>/gi, '')
+      .replace(/<embed\b[^>]*\/?>/gi, '')
+      .replace(/<applet\b[\s\S]*?<\/applet>/gi, '')
       // External stylesheets: they tend to 404 or serve wrong MIME and block render.
       // Inline <style> blocks remain — those carry the email's own design.
       .replace(/<link\b[^>]*>/gi, '')
@@ -33,9 +67,9 @@ export function sanitizeEmailHtml(html: string): string {
       .replace(/\son[a-z]+\s*=\s*(?:"[^"]*"|'[^']*'|[^\s>]+)/gi, '')
       // Neutralise javascript: hrefs/srcs.
       .replace(/(href|src|action)\s*=\s*(["'])\s*javascript:[^"']*\2/gi, '$1="#"')
-      // cid: images never resolve in a browser iframe — swap for a blank pixel
-      // so layout height is preserved without the noisy network failure.
-      .replace(/(src)\s*=\s*(["'])\s*cid:[^"']*\2/gi, `$1=$2${BLANK_PIXEL}$2`)
+      // cid: + tracking pixels never resolve cleanly in a sandboxed iframe.
+      .replace(/(src)\s*=\s*(["'])([^"']+)\2/gi, (_match, attr, quote, url) =>
+        neutralizeRemoteSrc(attr, quote, url))
   )
 }
 
@@ -90,6 +124,7 @@ export function buildEmailSrcdoc(email: EmailLike, opts: BuildSrcdocOptions = {}
 <html>
 <head>
 <meta charset="utf-8">
+<meta http-equiv="Content-Security-Policy" content="script-src 'none';">
 <base target="_blank">
 <style>${BASE_STYLES}${extra}</style>
 </head>

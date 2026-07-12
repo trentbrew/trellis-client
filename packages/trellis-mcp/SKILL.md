@@ -268,15 +268,15 @@ Use `link_nodes` with semantic relation names:
 Use `query_graph` with EQL-S syntax:
 
 ```
-FIND tasks AS t WHERE t.priority = "high" RETURN t.title, t.startDate, t.taskStatus
+FIND entity AS ?t WHERE ?t.type = "task" AND ?t.priority = "high" RETURN ?t.title, ?t.startDate, ?t.taskStatus
 ```
 
 ```
-FIND notes AS n RETURN n.title, n.updatedAt ORDER BY n.updatedAt DESC LIMIT 10
+FIND entity AS ?n WHERE ?n.type = "note" RETURN ?n.title, ?n.updatedAt ORDER BY ?n.updatedAt DESC LIMIT 10
 ```
 
 ```
-FIND projects AS p WHERE p.status = "active" RETURN p.title, p.progress
+FIND entity AS ?p WHERE ?p.type = "project" AND ?p.status = "active" RETURN ?p.title, ?p.progress
 ```
 
 ## Introspection

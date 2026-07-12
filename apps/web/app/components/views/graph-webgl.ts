@@ -645,7 +645,7 @@ export function mountGraphWebGL(
     for (const d of disposables) {
       try {
         d.dispose()
-      } catch {}
+      } catch { /* ignore */ }
     }
     disposables.length = 0
     meshById.clear()

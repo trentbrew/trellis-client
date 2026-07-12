@@ -20,7 +20,7 @@
  *   - `apps/web/server/utils/zone-router.ts` (ROUTE_ZONE_RULES)
  */
 
-import { computed, inject, provide } from 'vue'
+import { computed, getCurrentInstance, inject, provide } from 'vue'
 import type { InjectionKey, Ref } from 'vue'
 
 // ── Canonical zone IDs (mirror of server/utils/tql-events.ts) ─────────────
@@ -117,7 +117,11 @@ export interface ZoneHeadersOptions {
 }
 
 export function useZoneContext() {
-  const override = inject(ZONE_OVERRIDE_KEY, null) as Ref<string | null> | null
+  // Guard inject() — it requires an active component instance (setup context).
+  // When called from detached effectScopes (e.g. useTrellisEntities singleton
+  // init), getCurrentInstance() returns null and inject() would warn.
+  const instance = getCurrentInstance()
+  const override = instance ? (inject(ZONE_OVERRIDE_KEY, null) as Ref<string | null> | null) : null
 
   // `useRoute()` is Nuxt-auto-imported. In contexts without a router (e.g.
   // very early plugin bootstrapping) it can throw — guard so the composable

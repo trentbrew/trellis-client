@@ -46,7 +46,7 @@ const hasCustomProperties = computed(() => props.hiddenCount > 0 || props.showEm
       <UiButton
         variant="outline"
         size="sm"
-        class="h-8 bg-card/0 backdrop-blur-lg text-xs shrink-0"
+        class="h-8 bg-card text-xs shrink-0"
         :class="[hasCustomProperties ? 'gap-1.5 border-primary/40' : 'px-2']"
         aria-label="Card properties"
         :title="hasCustomProperties ? undefined : 'Card properties'">

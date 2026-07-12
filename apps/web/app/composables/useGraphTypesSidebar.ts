@@ -103,7 +103,7 @@ export function useGraphTypesSidebar() {
     try {
       const cfg = getEntityTypeConfig(type as EntityType)
       if (cfg) return { icon: cfg.icon, color: cfg.color, label: cfg.label }
-    } catch {}
+    } catch { /* ignore */ }
     return { icon: 'lucide:circle', color: 'muted', label: type }
   }
 

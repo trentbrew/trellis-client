@@ -394,7 +394,7 @@
   const visibleNodes = computed(() => {
     if (props.hideTypeLegend && graphTypesSidebar) {
       // Subscribe to sidebar visibility toggles.
-      graphTypesSidebar.state.value.visibility
+      const _sidebarVisibility = graphTypesSidebar.state.value.visibility
     }
     return recordNodes.value.filter((n) => isTypeVisible(getNodeType(n)))
   })

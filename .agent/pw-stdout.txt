@@ -1,0 +1,23 @@
+
+Running 1 test using 1 worker
+
+
+
+
+
+[1A[2K[1/1] [chromium] › tests/e2e/browse-projection-outlet.spec.ts:12:3 › Browse projection outlet shell cohesion (TRL-28) › renders and switches projections without crashing
+[1A[2K  1) [chromium] › tests/e2e/browse-projection-outlet.spec.ts:12:3 › Browse projection outlet shell cohesion (TRL-28) › renders and switches projections without crashing 
+
+    Error: browserType.launch: Executable doesn't exist at /Users/trentbrew/Library/Caches/ms-playwright/chromium_headless_shell-1200/chrome-headless-shell-mac-arm64/chrome-headless-shell
+    ╔═════════════════════════════════════════════════════════════════════════╗
+    ║ Looks like Playwright Test or Playwright was just installed or updated. ║
+    ║ Please run the following command to download new browsers:              ║
+    ║                                                                         ║
+    ║     npx playwright install                                              ║
+    ║                                                                         ║
+    ║ <3 Playwright Team                                                      ║
+    ╚═════════════════════════════════════════════════════════════════════════╝
+
+
+[1A[2K  1 failed
+    [chromium] › tests/e2e/browse-projection-outlet.spec.ts:12:3 › Browse projection outlet shell cohesion (TRL-28) › renders and switches projections without crashing 

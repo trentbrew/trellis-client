@@ -2,6 +2,7 @@ import { defineStore } from 'pinia'
 import type { ThemePreset, ThemePresetId, ThemePresets } from '~/types/theme'
 import { defaultPresets } from '~/config/presets'
 import { applyThemePreset } from '~/utils/theme'
+import { persistCustomThemePresets, persistThemePreference } from '~/utils/theme-preference'
 
 const DEFAULT_PRESET_ID = 'graphite'
 
@@ -51,6 +52,7 @@ export const useThemeStore = defineStore('theme', {
 
       if (import.meta.client) {
         localStorage.setItem('theme-preset-id', presetId)
+        void persistThemePreference(presetId, mode)
       }
     },
 
@@ -100,6 +102,7 @@ export const useThemeStore = defineStore('theme', {
       if (!import.meta.client) return
       try {
         localStorage.setItem('theme-custom-presets', JSON.stringify(this.customPresets))
+        void persistCustomThemePresets(this.customPresets)
       } catch (error) {
         console.error('Failed to save custom presets:', error)
       }
@@ -121,6 +124,8 @@ export const useThemeStore = defineStore('theme', {
       if (!import.meta.client) return
 
       this.loadCustomPresets()
+      if (Object.keys(this.customPresets).length > 0)
+        void persistCustomThemePresets(this.customPresets)
 
       const colorMode = localStorage.getItem('platform-sandbox-color-mode') || 'dark'
       const mode = colorMode as 'light' | 'dark'

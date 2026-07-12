@@ -1,4 +1,5 @@
 <script setup lang="ts">
+  /* eslint-disable vue/no-mutating-props -- rule is a mutable draft object from parent */
   import type { FilterRule, FilterFieldDef, FilterOperator } from '~/composables/useAdvancedFilters'
   import { operatorsByType } from '~/composables/useAdvancedFilters'
 

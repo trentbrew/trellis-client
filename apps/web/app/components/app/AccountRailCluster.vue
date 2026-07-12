@@ -6,7 +6,7 @@
       placement?: 'header' | 'rail'
       railPosition?: IconRailPosition
     }>(),
-    { placement: 'rail', railPosition: 'bottom' },
+    { placement: 'header', railPosition: 'bottom' },
   )
 
   const isHeader = computed(() => props.placement === 'header')
@@ -14,15 +14,11 @@
 </script>
 
 <template>
+  <!-- Header-only slim cluster: bell + capture (avatar/+ live on IconRail corners) -->
   <div
     class="flex shrink-0 gap-1.5 app-region-no-drag"
     :class="isHeader ? 'flex-row items-center' : isBottom ? 'flex-row items-center' : 'flex-col items-center'">
-    <AdapterModeBadge v-if="!isHeader" :rail-position="props.railPosition" />
     <NotificationBell :placement="placement" :rail-position="props.railPosition" />
-    <UserAccountMenu :placement="placement" :rail-position="props.railPosition" />
-    <ClientOnly>
-      <QuickCreateButton :placement="placement" :rail-position="props.railPosition" variant="primary" />
-    </ClientOnly>
     <QuickCapturePopover :variant="isHeader ? 'menubar' : 'rail'" :position="props.railPosition" />
   </div>
 </template>
