@@ -10,10 +10,24 @@ See [`VISION.md`](./VISION.md) for the thesis.
 
 ## Quick start
 
+Requires **Node 22+** and [pnpm](https://pnpm.io). The repo is a pnpm workspace
+(`workspace:` protocol) — `npm install` will not work.
+
 ```bash
+corepack enable         # installs the pinned pnpm version (see packageManager)
 pnpm install
-just dev                       # → http://localhost:1414
-just trellis health --pretty   # sanity check
+just dev                # → http://localhost:1414
+just trellis health --pretty
+```
+
+`just` is the task runner — [install](https://github.com/casey/just#installation)
+it once:
+
+```bash
+# macOS
+brew install just
+# other platforms
+curl --proto '=https' --tlsv1.2 -sSf https://just.systems/install.sh | bash -s -- --to ~/.local/bin
 ```
 
 Or, in one go for desktop:
@@ -33,10 +47,10 @@ via the running dev server, so you can explore a populated app without setting
 up your own data:
 
 ```bash
-just dev                                    # terminal 1 — start the app
-bun apps/web/scripts/seed-deck-demo.mjs     # terminal 2 — YC S26 demo deck + slides
-bun apps/web/scripts/seed-sheet-demo.mjs    # Q3 runway spreadsheet demo
-bun apps/web/scripts/seed-deck-vcs-demo.mjs # TrellisVCS explainer deck
+just dev                                 # terminal 1 — start the app
+pnpm --filter ./apps/web seed:deck       # terminal 2 — YC S26 demo deck + slides
+pnpm --filter ./apps/web seed:sheet      # Q3 runway spreadsheet demo
+pnpm --filter ./apps/web seed:deck:vcs   # TrellisVCS explainer deck
 ```
 
 Each seeder hits `http://localhost:$TRELLIS_PORT/api/graph` and can be re-run
