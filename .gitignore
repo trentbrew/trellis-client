@@ -88,3 +88,13 @@ logs/hook-activity.log
 # Desktop build artifacts
 apps/desktop/src-tauri/target/
 .trellis-db.json
+
+# Private / agent-scratch data (never public)
+.trellis-deploy/
+.tql/
+.agent/
+.code-hq/
+.data/
+.notes/
+.rug/
+.sprite

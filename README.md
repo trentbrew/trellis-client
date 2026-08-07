@@ -26,6 +26,25 @@ just desktop                   # auto-starts web + Tauri shell
 
 ---
 
+## Demo data
+
+The repo ships with seed scripts that write demo entities into your local graph
+via the running dev server, so you can explore a populated app without setting
+up your own data:
+
+```bash
+just dev                                    # terminal 1 — start the app
+bun apps/web/scripts/seed-deck-demo.mjs     # terminal 2 — YC S26 demo deck + slides
+bun apps/web/scripts/seed-sheet-demo.mjs    # Q3 runway spreadsheet demo
+bun apps/web/scripts/seed-deck-vcs-demo.mjs # TrellisVCS explainer deck
+```
+
+Each seeder hits `http://localhost:$TRELLIS_PORT/api/graph` and can be re-run
+safely. Your own data is never touched by these scripts — they only add demo
+entities.
+
+---
+
 ## Repository map
 
 ```
@@ -51,20 +70,20 @@ just desktop                   # auto-starts web + Tauri shell
 
 Pick the entry point that matches your intent:
 
-| If you want to…                                      | Read                                                           |
-|------------------------------------------------------|----------------------------------------------------------------|
-| Understand **what Trellis is** and why              | [`VISION.md`](./VISION.md), [`PRINCIPLES.md`](./PRINCIPLES.md) |
-| Get the **system architecture overview**             | [`ARCHITECTURE.md`](./ARCHITECTURE.md)                         |
-| Know the **conventions across the repo**             | [`CONVENTIONS.md`](./CONVENTIONS.md)                           |
-| Be an **AI agent operating in this repo**            | [`AGENTS.md`](./AGENTS.md)                                     |
-| Use the **MCP tools as an AI agent**                 | [`packages/trellis-mcp/SKILL.md`](./packages/trellis-mcp/SKILL.md) |
-| Work inside **`apps/web/app/`** (the Nuxt frontend)  | [`apps/web/app/CONVENTIONS.md`](./apps/web/app/CONVENTIONS.md) |
-| Set up **MCP for a coding assistant**                | [`docs/getting-started/SETUP.md`](./docs/getting-started/SETUP.md) |
-| Verify a working install                             | [`docs/getting-started/VERIFICATION.md`](./docs/getting-started/VERIFICATION.md) |
-| Deploy the web app                                   | [`docs/getting-started/deployment.md`](./docs/getting-started/deployment.md) |
-| See the **demo / pitch story**                       | [`docs/pitch/PITCH.md`](./docs/pitch/PITCH.md), [`docs/pitch/LIVE.md`](./docs/pitch/LIVE.md) |
-| Browse **architecture deep-dives**                   | [`docs/architecture/`](./docs/architecture)                    |
-| Browse **research notes** (the Filegraph paper)      | [`docs/research/`](./docs/research)                            |
+| If you want to…                                     | Read                                                                                         |
+| --------------------------------------------------- | -------------------------------------------------------------------------------------------- |
+| Understand **what Trellis is** and why              | [`VISION.md`](./VISION.md), [`PRINCIPLES.md`](./PRINCIPLES.md)                               |
+| Get the **system architecture overview**            | [`ARCHITECTURE.md`](./ARCHITECTURE.md)                                                       |
+| Know the **conventions across the repo**            | [`CONVENTIONS.md`](./CONVENTIONS.md)                                                         |
+| Be an **AI agent operating in this repo**           | [`AGENTS.md`](./AGENTS.md)                                                                   |
+| Use the **MCP tools as an AI agent**                | [`packages/trellis-mcp/SKILL.md`](./packages/trellis-mcp/SKILL.md)                           |
+| Work inside **`apps/web/app/`** (the Nuxt frontend) | [`apps/web/app/CONVENTIONS.md`](./apps/web/app/CONVENTIONS.md)                               |
+| Set up **MCP for a coding assistant**               | [`docs/getting-started/SETUP.md`](./docs/getting-started/SETUP.md)                           |
+| Verify a working install                            | [`docs/getting-started/VERIFICATION.md`](./docs/getting-started/VERIFICATION.md)             |
+| Deploy the web app                                  | [`docs/getting-started/deployment.md`](./docs/getting-started/deployment.md)                 |
+| See the **demo / pitch story**                      | [`docs/pitch/PITCH.md`](./docs/pitch/PITCH.md), [`docs/pitch/LIVE.md`](./docs/pitch/LIVE.md) |
+| Browse **architecture deep-dives**                  | [`docs/architecture/`](./docs/architecture)                                                  |
+| Browse **research notes** (the Filegraph paper)     | [`docs/research/`](./docs/research)                                                          |
 
 ---
 
@@ -103,10 +122,10 @@ Full CLI reference: [`AGENTS.md`](./AGENTS.md) and [`.windsurf/workflows/trellis
 
 Trellis runs in two modes (toggled via `TRELLIS_DATA_MODE`):
 
-| Mode    | Entity storage           | Platform data        | Default? |
-|---------|--------------------------|----------------------|----------|
-| `local` | TQL kernel (SQLite)      | instant-local (LS)   | yes      |
-| `cloud` | InstantDB                | InstantDB            | opt-in   |
+| Mode    | Entity storage      | Platform data      | Default? |
+| ------- | ------------------- | ------------------ | -------- |
+| `local` | TQL kernel (SQLite) | instant-local (LS) | yes      |
+| `cloud` | InstantDB           | InstantDB          | opt-in   |
 
 Local-first by default. Cloud is additive, not foundational. See [`PRINCIPLES.md`](./PRINCIPLES.md).
 
@@ -114,4 +133,4 @@ Local-first by default. Cloud is additive, not foundational. See [`PRINCIPLES.md
 
 ## License
 
-See [`docs/LICENSE.md`](./docs/LICENSE.md).
+MIT — see [`LICENSE`](./LICENSE).
