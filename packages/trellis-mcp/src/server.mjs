@@ -83,8 +83,123 @@ async function platformRequest(path, options) {
   return res.json();
 }
 
-function ok(data) {
-  return { content: [{ type: 'text', text: JSON.stringify(data, null, 2) }] };
+/** Max entity open-URLs appended to a single tool response. */
+const MAX_OPEN_URLS = 10;
+
+/**
+ * Normalize to a hash-ready entity id (`entity:…`).
+ * Leaves other namespaces (e.g. `platform:`) untouched.
+ */
+function normalizeEntityId(id) {
+  if (!id || typeof id !== 'string') return null;
+  const trimmed = id.trim();
+  if (!trimmed) return null;
+  if (trimmed.includes(':')) return trimmed;
+  return `entity:${trimmed}`;
+}
+
+/** Deep-link that opens the entity dialog in the Trellis web UI. */
+function entityOpenUrl(id) {
+  const normalized = normalizeEntityId(id);
+  if (!normalized) return null;
+  // Hash deep-link — same pattern as agentMutationToast / useDialogUrl
+  return `${BASE_URL}/workspace/browse#${normalized}`;
+}
+
+/**
+ * Collect entity ids from tool args or response payloads.
+ * Prefers explicit ids / `@id` / query bindings — skips zone/facility stamps.
+ */
+function collectEntityIds(...sources) {
+  const found = [];
+  const seen = new Set();
+  const SKIP_KEYS = new Set([
+    'zoneId',
+    'facilityId',
+    'publishedInZone',
+    'createdByAgent',
+    'byAgent',
+    'inZone',
+    'memberAgents',
+    'homeFacility',
+    'homeZone',
+    'walletId',
+  ]);
+
+  const push = (raw) => {
+    const id = normalizeEntityId(raw);
+    if (!id || seen.has(id)) return;
+    // Only graph entities get browse deep-links (skip platform:/trellis: etc.)
+    if (!/^(entity|calendaritem):/.test(id)) return;
+    seen.add(id);
+    found.push(id);
+  };
+
+  const walk = (value, key) => {
+    if (found.length >= MAX_OPEN_URLS) return;
+    if (value == null) return;
+    if (typeof value === 'string') {
+      // Accept: explicit entity strings, query bindings (?e), @id/entityId/id keys
+      const keyOk =
+        !key ||
+        key === '@id' ||
+        key === 'entityId' ||
+        key === 'id' ||
+        key === 'e1' ||
+        key === 'e2' ||
+        key.startsWith('?');
+      if (keyOk && /^(entity|calendaritem):[^\s"'\\]+$/.test(value)) {
+        push(value);
+      }
+      return;
+    }
+    if (Array.isArray(value)) {
+      for (const item of value) walk(item, key);
+      return;
+    }
+    if (typeof value === 'object') {
+      for (const [k, v] of Object.entries(value)) {
+        if (SKIP_KEYS.has(k)) continue;
+        walk(v, k);
+      }
+    }
+  };
+
+  for (const source of sources) {
+    if (typeof source === 'string') push(source);
+    else if (Array.isArray(source) && source.every((s) => typeof s === 'string')) {
+      for (const s of source) push(s);
+    } else {
+      walk(source, null);
+    }
+  }
+
+  return found.slice(0, MAX_OPEN_URLS);
+}
+
+function formatOpenUrlsFooter(entityIds) {
+  if (!entityIds?.length) return '';
+  const lines = entityIds.map((id) => {
+    const url = entityOpenUrl(id);
+    return url ? `${id}\n  ${url}` : null;
+  }).filter(Boolean);
+  if (!lines.length) return '';
+  return `\n\n---\nOpen in Trellis:\n${lines.join('\n')}`;
+}
+
+/**
+ * @param {unknown} data
+ * @param {{ entities?: string | string[] }} [opts] — entity ids to deep-link
+ *   (also auto-extracted from `data` when omitted / merged when provided)
+ */
+function ok(data, opts) {
+  const fromOpts = opts?.entities
+    ? collectEntityIds(opts.entities)
+    : [];
+  // Prefer explicit ids; fall back to scanning the payload
+  const entityIds = fromOpts.length ? fromOpts : collectEntityIds(data);
+  const body = JSON.stringify(data, null, 2) + formatOpenUrlsFooter(entityIds);
+  return { content: [{ type: 'text', text: body }] };
 }
 
 function err(message) {
@@ -213,7 +328,7 @@ const TOOLS = [
   {
     name: 'query_graph',
     description:
-      'Execute an EQL-S query against the Trellis knowledge graph. Example: FIND entity AS ?t WHERE ?t.type = "task" AND ?t.priority = "high" RETURN ?t.title, ?t.startDate, ?t.taskStatus',
+      'Execute an EQL-S query against the Trellis knowledge graph. Example: FIND entity AS ?t WHERE ?t.type = "task" AND ?t.priority = "high" RETURN ?t.title, ?t.startDate, ?t.taskStatus. Response ends with "Open in Trellis" URLs for entities in the result (up to 10).',
     inputSchema: {
       type: 'object',
       properties: {
@@ -225,13 +340,13 @@ const TOOLS = [
   {
     name: 'get_node',
     description:
-      'Fetch a single entity by its ID, including its properties and links (outgoing/incoming references).',
+      'Fetch a single entity by its ID, including its properties and links (outgoing/incoming references). Response ends with an "Open in Trellis" URL deep-link.',
     inputSchema: {
       type: 'object',
       properties: {
         entityId: {
           type: 'string',
-          description: 'The entity ID to fetch (e.g. "task-1")',
+          description: 'The entity ID to fetch (e.g. "task-1" or "entity:task-1")',
         },
       },
       required: ['entityId'],
@@ -239,7 +354,8 @@ const TOOLS = [
   },
   {
     name: 'get_nodes',
-    description: 'Batch fetch multiple entities by their IDs.',
+    description:
+      'Batch fetch multiple entities by their IDs. Response ends with "Open in Trellis" URLs for each entity.',
     inputSchema: {
       type: 'object',
       properties: {
@@ -254,7 +370,7 @@ const TOOLS = [
   },
   {
     name: 'create_node',
-    description: `Create a new entity in the Trellis graph. Appears in the UI in realtime via SSE. Valid types: ${ENTITY_TYPES.join(', ')}`,
+    description: `Create a new entity in the Trellis graph. Appears in the UI in realtime via SSE. Response ends with an "Open in Trellis" URL. Valid types: ${ENTITY_TYPES.join(', ')}`,
     inputSchema: {
       type: 'object',
       properties: {
@@ -279,7 +395,7 @@ const TOOLS = [
   {
     name: 'update_node',
     description:
-      'Update an existing entity. Provide only the fields you want to change.',
+      'Update an existing entity. Provide only the fields you want to change. Response ends with an "Open in Trellis" URL.',
     inputSchema: {
       type: 'object',
       properties: {
@@ -298,7 +414,8 @@ const TOOLS = [
   },
   {
     name: 'delete_node',
-    description: 'Delete an entity from the Trellis graph. Permanent.',
+    description:
+      'Delete an entity from the Trellis graph. Permanent. Response ends with the former "Open in Trellis" URL for reference.',
     inputSchema: {
       type: 'object',
       properties: {
@@ -310,7 +427,7 @@ const TOOLS = [
   {
     name: 'link_nodes',
     description:
-      'Create a semantic link between two entities (e.g. assignedTo, belongsTo, references, dependsOn).',
+      'Create a semantic link between two entities (e.g. assignedTo, belongsTo, references, dependsOn). Response ends with "Open in Trellis" URLs for both entities.',
     inputSchema: {
       type: 'object',
       properties: {
@@ -875,15 +992,18 @@ const TOOLS = [
 
 const HANDLERS = {
   async query_graph({ query }) {
+    // Entity ids are extracted from result bindings automatically
     return ok(await request('query', { method: 'POST', body: { query } }));
   },
 
   async get_node({ entityId }) {
-    return ok(await request(`node/${entityId}`));
+    return ok(await request(`node/${entityId}`), { entities: entityId });
   },
 
   async get_nodes({ ids }) {
-    return ok(await request('nodes', { method: 'POST', body: { ids } }));
+    return ok(await request('nodes', { method: 'POST', body: { ids } }), {
+      entities: ids,
+    });
   },
 
   async create_node({ entityId, type, data }) {
@@ -898,6 +1018,7 @@ const HANDLERS = {
           agentId: AGENT_ID,
         },
       }),
+      { entities: entityId },
     );
   },
 
@@ -907,6 +1028,7 @@ const HANDLERS = {
         method: 'POST',
         body: { action: 'updateNode', entityId, type, data, agentId: AGENT_ID },
       }),
+      { entities: entityId },
     );
   },
 
@@ -916,6 +1038,7 @@ const HANDLERS = {
         method: 'POST',
         body: { action: 'deleteNode', entityId, agentId: AGENT_ID },
       }),
+      { entities: entityId },
     );
   },
 
@@ -925,6 +1048,7 @@ const HANDLERS = {
         method: 'POST',
         body: { action: 'link', e1, relation, e2, agentId: AGENT_ID },
       }),
+      { entities: [e1, e2] },
     );
   },
 
@@ -1126,7 +1250,9 @@ const HANDLERS = {
   // ── Phase 3: Entity Enrichment ──────────────────────────────────────────
 
   async list_comments({ entityId }) {
-    return ok(await platformRequest(`comment/list/${entityId}`));
+    return ok(await platformRequest(`comment/list/${entityId}`), {
+      entities: entityId,
+    });
   },
 
   async add_comment({ entityId, content, commentType }) {
@@ -1135,6 +1261,7 @@ const HANDLERS = {
         method: 'POST',
         body: { entityId, content, commentType, agentId: AGENT_ID },
       }),
+      { entities: entityId },
     );
   },
 
@@ -1157,6 +1284,7 @@ const HANDLERS = {
         method: 'POST',
         body: { entityId, tags, agentId: AGENT_ID },
       }),
+      { entities: entityId },
     );
   },
 

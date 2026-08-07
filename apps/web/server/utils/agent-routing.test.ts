@@ -2,10 +2,10 @@
 /**
  * Unit tests for the agent-routing classifier.
  *
- * The classifier is the heart of the "smart routing" demo: it picks
- * the right Claude model variant per request based on simple heuristics.
+ * The classifier is the heart of the "smart routing" surface: it picks
+ * a task class per request and routes to the local Ollama Gemma model.
  * These tests lock in the routing decisions so we don't accidentally
- * break the demo by tweaking regex patterns.
+ * break the surface by tweaking regex patterns.
  */
 
 import { describe, it, expect } from 'vitest'
@@ -38,12 +38,12 @@ describe('classifyRequest', () => {
       const decision = classifyRequest(msg)
       expect(decision.taskClass).toBe('lookup')
       expect(decision.model).toBe(MODEL_FAST)
-      expect(decision.rationale).toContain('Haiku')
+      expect(decision.rationale).toContain('Gemma')
     })
 
-    it('routes lookups to Haiku for cost efficiency', () => {
+    it('routes lookups to Gemma for cost efficiency', () => {
       const decision = classifyRequest('show me my tasks')
-      expect(decision.model).toMatch(/haiku/i)
+      expect(decision.model).toMatch(/gemma/i)
     })
   })
 
@@ -64,7 +64,7 @@ describe('classifyRequest', () => {
       const decision = classifyRequest(msg)
       expect(decision.taskClass).toBe('reasoning')
       expect(decision.model).toBe(MODEL_DEEP)
-      expect(decision.rationale).toContain('Sonnet')
+      expect(decision.rationale).toContain('Gemma')
     })
 
     it('classifies very long prompts as reasoning even without keywords', () => {
@@ -170,11 +170,11 @@ describe('classifyRequest', () => {
 })
 
 describe('resolveRoutingDecision', () => {
-  it('respects explicit TOKENROUTER_MODEL override', () => {
-    const decision = resolveRoutingDecision('show me my tasks', 'openai:gpt-4o')
+  it('respects explicit OLLAMA_MODEL override', () => {
+    const decision = resolveRoutingDecision('show me my tasks', 'gemma4:e4b')
     expect(decision.taskClass).toBe('override')
-    expect(decision.model).toBe('openai:gpt-4o')
-    expect(decision.rationale).toContain('TOKENROUTER_MODEL')
+    expect(decision.model).toBe('gemma4:e4b')
+    expect(decision.rationale).toContain('OLLAMA_MODEL')
   })
 
   it('falls back to classifier when env is undefined', () => {
@@ -224,25 +224,22 @@ describe('routing model identifiers', () => {
     expect(MODEL_DEEP.length).toBeGreaterThan(0)
   })
 
-  it('MODEL_FAST is a Haiku variant (cheapest tier)', () => {
-    expect(MODEL_FAST).toMatch(/haiku/i)
+  it('MODEL_FAST is the local Gemma model (Ollama)', () => {
+    expect(MODEL_FAST).toMatch(/gemma/i)
   })
 
-  it('MODEL_BALANCED is a Sonnet variant', () => {
-    expect(MODEL_BALANCED).toMatch(/sonnet/i)
+  it('MODEL_BALANCED is the local Gemma model (Ollama)', () => {
+    expect(MODEL_BALANCED).toMatch(/gemma/i)
   })
 
-  it('MODEL_DEEP is at least as capable as Sonnet (Sonnet or Opus)', () => {
-    expect(MODEL_DEEP).toMatch(/sonnet|opus/i)
+  it('MODEL_DEEP is the local Gemma model (Ollama)', () => {
+    expect(MODEL_DEEP).toMatch(/gemma/i)
   })
 
-  it('default models do NOT use the colon-separator format (TokenRouter rejects `provider:model`)', () => {
-    // TokenRouter uses bare names like `claude-haiku-4-5` or slash-separated
-    // like `anthropic/claude-sonnet-4.5`. The colon form `provider:model` is a
-    // code-smell that previously caused 404s upstream.
-    const looksColonPrefixed = (m: string) => /^[a-z]+:[a-z]/.test(m)
-    expect(looksColonPrefixed(MODEL_FAST)).toBe(false)
-    expect(looksColonPrefixed(MODEL_BALANCED)).toBe(false)
-    expect(looksColonPrefixed(MODEL_DEEP)).toBe(false)
+  it('default models use the `model:tag` format (Ollama)', () => {
+    const looksTagged = (m: string) => /^[a-z0-9._-]+:[a-z0-9._-]+$/i.test(m)
+    expect(looksTagged(MODEL_FAST)).toBe(true)
+    expect(looksTagged(MODEL_BALANCED)).toBe(true)
+    expect(looksTagged(MODEL_DEEP)).toBe(true)
   })
 })

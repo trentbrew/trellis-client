@@ -14,33 +14,22 @@
 
   const tooltipSide = computed(() => (isBottom.value ? 'top' : 'right'))
 
-  const { isRightSidebarOpen: _isRightSidebarOpen, toggleRightSidebar: _toggleRightSidebar } = useRightSidebarWidth()
+  const { isRightSidebarOpen, toggleRightSidebar } = useRightSidebarWidth()
 
   const cloudGraphRoute = { path: '/graph', label: 'Graph', icon: 'lucide:brain' }
-  const cloudChatRoute = { path: '/home', label: 'Chat', icon: 'lucide:bot' }
-
-  const isGraphRoute = (route: { path?: string; label?: string }) => route.label?.toLowerCase() === 'graph'
-  const isChatRoute = (route: { path?: string; label?: string }) =>
-    route.path === '/home' || ['home', 'chat'].includes(route.label?.toLowerCase() ?? '')
 
   const graphRoute = computed(() => {
-    const route = routes.primaryRailRoutes.value?.find(isGraphRoute)
+    const route = routes.primaryRailRoutes.value?.find((r) => r.label?.toLowerCase() === 'graph')
     return route || (isCloud.value ? cloudGraphRoute : undefined)
   })
 
-  const chatRoute = computed(() => {
-    const route = routes.primaryRailRoutes.value?.find(isChatRoute)
-    return route || cloudChatRoute
-  })
-
   const otherPrimaryRoutes = computed(() =>
-    routes.primaryRailRoutes.value?.filter((r) => !isGraphRoute(r) && !isChatRoute(r)),
+    routes.primaryRailRoutes.value?.filter((r) => r.label?.toLowerCase() !== 'graph'),
   )
 
   const groupedPrimaryRoutes = computed(() => groupRailRoutesByZone(otherPrimaryRoutes.value ?? []))
 
   const graphBadge = useRouteBadge(() => graphRoute.value?.path || '')
-  const chatBadge = useRouteBadge(() => chatRoute.value?.path || '')
 
   function railLinkActiveClass(isActive: boolean) {
     if (!isActive) {
@@ -98,47 +87,6 @@
     <!-- Center: Chat + Graph + zone-grouped primary icons -->
     <div :class="sectionClass('center')">
       <div :class="centerScrollClass">
-        <div v-if="chatRoute" :class="iconRowClass">
-          <UiTooltip>
-            <UiTooltipTrigger as-child>
-              <AppNavLink
-                :to="chatRoute.path"
-                class="group relative flex items-center justify-center rounded-full transition-all duration-200 ease-out overflow-visible"
-                :class="[
-                  isBottom && routes.isRouteActive(chatRoute.path) ? 'h-9 px-4 gap-2' : 'h-9 w-9',
-                  railLinkActiveClass(routes.isRouteActive(chatRoute.path)),
-                ]"
-                :data-campus-zone="
-                  routes.isRouteActive(chatRoute.path) ? 'workshop' : undefined
-                ">
-                <Icon :name="chatRoute.icon" class="h-4.5 w-4.5 opacity-60 shrink-0" />
-                <Transition
-                  enter-active-class="transition-all duration-200 ease-out"
-                  enter-from-class="opacity-0 max-w-0"
-                  enter-to-class="opacity-100 max-w-24"
-                  leave-active-class="transition-all duration-150 ease-in"
-                  leave-from-class="opacity-100 max-w-24"
-                  leave-to-class="opacity-0 max-w-0">
-                  <span
-                    v-if="isBottom && routes.isRouteActive(chatRoute.path)"
-                    class="text-xs font-bold tracking-tight whitespace-nowrap overflow-hidden">
-                    {{ chatRoute.label }}
-                  </span>
-                </Transition>
-                <RailBadge :badge="chatBadge" />
-              </AppNavLink>
-            </UiTooltipTrigger>
-            <UiTooltipContent
-              :side="tooltipSide"
-              :side-offset="8"
-              align="center"
-              :align-offset="0"
-              :avoid-collisions="false">
-              {{ chatRoute.label }}
-            </UiTooltipContent>
-          </UiTooltip>
-        </div>
-
         <div v-if="graphRoute" :class="iconRowClass">
         <UiTooltip>
           <UiTooltipTrigger as-child>
@@ -235,11 +183,48 @@
       </div>
     </div>
 
-    <!-- End: Quick create (bottom-right when dock) -->
+    <!-- End: Quick create + Agent sidebar (bottom-right when dock) -->
     <div :class="sectionClass('end')">
       <ClientOnly>
         <QuickCreateButton placement="rail" :rail-position="props.position" variant="primary" />
       </ClientOnly>
+      <UiTooltip>
+        <UiTooltipTrigger as-child>
+          <button
+            class="group flex h-9 w-9 items-center justify-center rounded-xl transition-colors"
+            :class="[
+              isRightSidebarOpen.value
+                ? 'bg-card text-foreground'
+                : 'text-rail-foreground/70 hover:bg-rail-foreground/10 hover:text-rail-foreground',
+              isBottom.value && isRightSidebarOpen.value ? 'h-9 px-4 gap-2' : 'h-9 w-9',
+            ]"
+            data-campus-zone="workshop"
+            aria-label="Toggle agent sidebar"
+            @click="toggleRightSidebar"
+          >
+            <Icon name="lucide:robot" class="h-4.5 w-4.5 opacity-60" />
+            <Transition
+              enter-active-class="transition-all duration-200 ease-out"
+              enter-from-class="opacity-0 max-w-0"
+              enter-to-class="opacity-100 max-w-24"
+              leave-active-class="transition-all duration-150 ease-in"
+              leave-from-class="opacity-100 max-w-24"
+              leave-to-class="opacity-0 max-w-0">
+              <span v-if="isBottom.value && isRightSidebarOpen.value" class="text-xs font-bold tracking-tight whitespace-nowrap overflow-hidden">
+                Agent
+              </span>
+            </Transition>
+          </button>
+        </UiTooltipTrigger>
+        <UiTooltipContent
+          :side="tooltipSide"
+          :side-offset="8"
+          align="center"
+          :align-offset="0"
+          :avoid-collisions="false">
+          Agent sidebar
+        </UiTooltipContent>
+      </UiTooltip>
     </div>
   </nav>
 </template>

@@ -12,7 +12,7 @@ import {
   accumulateStreamedToolCalls,
   appendAssistantToolTurn,
   appendToolResultMessage,
-  normalizeMessagesForTokenRouter,
+  normalizeMessagesForProvider,
   type AccumulatedToolCall,
 } from '../../lib/agent-chat-tools'
 import { resolveRoutingDecision, type RoutingDecision } from '../../utils/agent-routing'
@@ -235,7 +235,7 @@ async function executeToolCall(toolName: string, args: any): Promise<any> {
   }
 }
 
-const DEFAULT_TOKENROUTER_BASE_URL = 'https://api.tokenrouter.com/v1'
+const DEFAULT_OLLAMA_BASE_URL = 'http://localhost:11434/v1'
 const MAX_TOOL_ROUNDS = 15
 
 const completionParams = {
@@ -255,35 +255,27 @@ export default defineEventHandler(async (event) => {
     throw createError({ statusCode: 400, message: 'Missing userId' })
   }
 
-  const apiKey = process.env.TOKENROUTER_API_KEY
-  if (!apiKey) {
-    throw createError({
-      statusCode: 500,
-      message: 'TOKENROUTER_API_KEY not configured. Set it in your .env file.',
-    })
-  }
-
-  // Normalize base URL: TokenRouter expects the OpenAI-compatible endpoints under /v1.
-  // Accept either `https://api.tokenrouter.com` or `https://api.tokenrouter.com/v1`.
-  const rawBaseURL = (process.env.TOKENROUTER_BASE_URL || DEFAULT_TOKENROUTER_BASE_URL).replace(/\/+$/, '')
+  // Normalize base URL: Ollama exposes an OpenAI-compatible endpoint under /v1.
+  // Accept either `http://localhost:11434` or `http://localhost:11434/v1`.
+  const rawBaseURL = (process.env.OLLAMA_BASE_URL || DEFAULT_OLLAMA_BASE_URL).replace(/\/+$/, '')
   const baseURL = rawBaseURL.endsWith('/v1') ? rawBaseURL : `${rawBaseURL}/v1`
 
   const hasImages = Array.isArray(attachments)
     && attachments.some((a) => a?.kind === 'image' || String(a?.contentType || '').startsWith('image/'))
 
-  // Routing: TOKENROUTER_MODEL env overrides classifier; else classify per-request.
+  // Routing: OLLAMA_MODEL env overrides classifier; else classify per-request.
   const routingDecision: RoutingDecision = resolveRoutingDecision(
     String(message || ''),
-    process.env.TOKENROUTER_MODEL,
+    process.env.OLLAMA_MODEL,
     { hasImages },
   )
   const model = routingDecision.model
 
   const systemInstruction = GRAPH_SYSTEM_PROMPT_TEMPLATE.replace('{{CURRENT_PATH}}', path || 'Unknown')
 
-  // TokenRouter is OpenAI-compatible at /v1/chat/completions. Use the openai SDK
-  // as a thin client by overriding baseURL.
-  const client = new OpenAI({ apiKey, baseURL })
+  // Ollama is OpenAI-compatible at /v1/chat/completions. Use the openai SDK
+  // as a thin client by overriding baseURL. Ollama ignores the apiKey value.
+  const client = new OpenAI({ apiKey: 'ollama', baseURL })
 
   // Prior thread turns (client) + tool rounds within this request.
   const messages: ChatCompletionMessageParam[] = buildAgentChatMessagesFromHistory(
@@ -312,19 +304,20 @@ export default defineEventHandler(async (event) => {
         enqueue({
           type: 'meta',
           model,
-          router: 'tokenrouter',
+          router: 'ollama',
+          provider: 'ollama',
           baseURL: baseURL.replace(/^https?:\/\//, ''),
           taskClass: routingDecision.taskClass,
           rationale: routingDecision.rationale,
         })
 
         // Multi-round tool loop. Round 0 streams to the client; follow-up rounds use
-        // non-streaming completions so Anthropic/TokenRouter get complete tool_use blocks.
+        // non-streaming completions so Ollama gets complete tool_calls blocks.
         // parallel_tool_calls: false keeps one tool_use ↔ tool_result pair per round.
         for (let round = 0; round < MAX_TOOL_ROUNDS; round++) {
           let assistantContent = ''
           let toolCalls: AccumulatedToolCall[] = []
-          const providerMessages = normalizeMessagesForTokenRouter(messages)
+          const providerMessages = normalizeMessagesForProvider(messages)
 
           try {
             if (round === 0) {
@@ -374,7 +367,7 @@ export default defineEventHandler(async (event) => {
             const code = apiErr?.code || err?.status || ''
             enqueue({
               type: 'error',
-              message: code ? `TokenRouter ${code}: ${surfaced}` : `TokenRouter: ${surfaced}`,
+              message: code ? `Ollama ${code}: ${surfaced}` : `Ollama: ${surfaced}`,
             })
             break
           }

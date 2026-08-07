@@ -8,6 +8,17 @@ See [`VISION.md`](./VISION.md) for the thesis.
 
 ---
 
+## Demo
+
+<iframe
+  src="https://player.mux.com/lZKxBYF1FvPCTpZMoEjkl01XyYa1TmWwdlR8yA1zH8Kk?metadata-video-title=nodebook2&video-title=nodebook2"
+  style="width: 100%; border: none; aspect-ratio: 16/9;"
+  allow="accelerometer; gyroscope; autoplay; encrypted-media; picture-in-picture;"
+  allowfullscreen
+></iframe>
+
+---
+
 ## Quick start
 
 ```bash

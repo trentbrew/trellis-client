@@ -1,7 +1,10 @@
 <script setup lang="ts">
 import type { NotificationAction, NotificationDelivery, TrellisNotification } from '~/types/notification'
 import { resolveNotificationDelivery } from '~/types/notification'
-import { useTrellisNotifications } from '~/composables/useTrellisNotifications'
+import {
+  resolveNotificationOpenTarget,
+  useTrellisNotifications,
+} from '~/composables/useTrellisNotifications'
 
 const props = withDefaults(
   defineProps<{
@@ -11,11 +14,23 @@ const props = withDefaults(
   { deliveryVariant: 'auto' },
 )
 
-const { markAsRead, snooze, archive, dismiss, runAction, resolveNotificationVisual, timeAgo } =
-  useTrellisNotifications()
+const {
+  markAsRead,
+  snooze,
+  archive,
+  dismiss,
+  runAction,
+  openNotificationEntity,
+  resolveNotificationVisual,
+  timeAgo,
+} = useTrellisNotifications()
+
+const sheetOpen = useState('activity-sheet:open', () => false)
 
 const isUnread = computed(() => props.notification.status === 'unread')
 const visual = computed(() => resolveNotificationVisual(props.notification))
+
+const openTargetId = computed(() => resolveNotificationOpenTarget(props.notification))
 
 const resolvedDelivery = computed<NotificationDelivery>(() => {
   if (props.deliveryVariant === 'auto') return resolveNotificationDelivery(props.notification)
@@ -76,46 +91,52 @@ const iconStyle = computed(() => {
   }
 })
 
+async function openEntity() {
+  const opened = await openNotificationEntity(props.notification)
+  if (opened) sheetOpen.value = false
+}
+
 async function handleRowClick() {
+  if (openTargetId.value) {
+    await openEntity()
+    return
+  }
   if (isUnread.value) await markAsRead(props.notification.id)
   if (props.notification.url) {
     if (/^https?:\/\//.test(props.notification.url)) {
       window.open(props.notification.url, '_blank', 'noopener')
+    } else if (props.notification.url.includes('entity:')) {
+      await openNotificationEntity(props.notification)
+      sheetOpen.value = false
     } else {
       await navigateTo(props.notification.url)
     }
-  } else if (props.notification.entityId) {
-    await navigateTo(`#${props.notification.entityId}`)
   }
 }
 
 async function run(a: NotificationAction) {
   await runAction(props.notification, a)
+  if (a.kind === 'link' && a.target?.includes('entity:')) {
+    sheetOpen.value = false
+  }
 }
 </script>
 
 <template>
-  <div
-    class="relative flex cursor-pointer gap-3 border-b p-3 transition-all duration-200 group last:border-0"
-    :class="rowClass"
-    :data-delivery="resolvedDelivery"
-    :data-notification-title="notification.title"
-    @click="handleRowClick">
+  <div class="relative flex cursor-pointer gap-3 border-b p-3 transition-all duration-200 group last:border-0"
+    :class="rowClass" :data-delivery="resolvedDelivery" :data-notification-title="notification.title"
+    :data-entity-id="openTargetId || undefined" @click="handleRowClick">
     <!-- Interrupt accent bar -->
-    <div
-      v-if="isInterrupt && isUnread"
+    <div v-if="isInterrupt && isUnread"
       class="absolute left-0 top-2 bottom-2 w-[3px] rounded-r-full bg-destructive transition-all duration-200 group-hover:w-1" />
 
     <!-- Unread indicator (non-interrupt legacy) -->
-    <div
-      v-else-if="isUnread && !isInterrupt"
+    <div v-else-if="isUnread && !isInterrupt"
       class="absolute left-0 top-2 bottom-2 w-1 rounded-r-full bg-primary/60 transition-all duration-200 group-hover:w-1.5" />
 
     <!-- Icon -->
-    <div
-      class="flex shrink-0 items-center justify-center ring-1 transition-all duration-200 group-hover:scale-105"
-      :class="iconClass"
-      :style="iconStyle">
+    <div class="flex shrink-0 items-center justify-center ring-1 transition-all duration-200 group-hover:scale-105"
+      :class="iconClass" :style="iconStyle">
       <Icon :name="visual.icon" class="h-4.5 w-4.5" />
     </div>
 
@@ -130,9 +151,7 @@ async function run(a: NotificationAction) {
         </span>
       </div>
 
-      <p
-        v-if="notification.body"
-        class="line-clamp-2 text-xs leading-relaxed text-muted-foreground">
+      <p v-if="notification.body" class="line-clamp-2 text-xs leading-relaxed text-muted-foreground">
         {{ notification.body }}
       </p>
 
@@ -141,54 +160,44 @@ async function run(a: NotificationAction) {
           class="rounded-md bg-muted/40 px-1.5 py-0.5 text-[9px] font-black uppercase tracking-[0.1em] text-muted-foreground ring-1 ring-border/40">
           {{ notification.source }}
         </span>
-        <span
-          class="rounded-md px-1.5 py-0.5 text-[9px] font-black uppercase tracking-[0.1em] ring-1"
+        <span class="rounded-md px-1.5 py-0.5 text-[9px] font-black uppercase tracking-[0.1em] ring-1"
           :class="deliveryChipClass">
           {{ isInterrupt ? 'Action' : 'Status' }}
         </span>
-        <span
-          v-if="notification.priority && notification.priority !== 'normal'"
+        <span v-if="notification.priority && notification.priority !== 'normal'"
           class="rounded-md bg-destructive/10 px-1.5 py-0.5 text-[9px] font-black uppercase tracking-[0.1em] text-destructive ring-1 ring-destructive/30">
           {{ notification.priority }}
         </span>
 
         <div class="flex-1" />
 
-        <div class="flex items-center gap-1 opacity-0 transition-opacity group-hover:opacity-100">
-          <UiButton
-            v-for="a in (notification.actions || []).slice(0, 3)"
-            :key="a.id"
-            variant="ghost"
-            size="xs"
-            class="h-6 px-2 text-[10px] font-bold uppercase tracking-wider"
-            @click.stop="run(a)">
-            <Icon v-if="a.icon" :name="a.icon" class="mr-1 h-3 w-3" />
-            {{ a.label }}
+        <div class="flex items-center gap-1">
+          <UiButton v-if="openTargetId" variant="secondary" size="xs"
+            class="h-6 px-2 text-[10px] font-bold uppercase tracking-wider" data-testid="notification-open-entity"
+            @click.stop="openEntity">
+            <Icon name="lucide:external-link" class="mr-1 h-3 w-3" />
+            Open
           </UiButton>
-          <UiButton
-            variant="ghost"
-            size="xs"
-            class="h-6 w-6 p-0"
-            title="Snooze 1h"
-            @click.stop="snooze(notification.id, 60)">
-            <Icon name="lucide:clock" class="h-3.5 w-3.5" />
-          </UiButton>
-          <UiButton
-            variant="ghost"
-            size="xs"
-            class="h-6 w-6 p-0"
-            title="Archive"
-            @click.stop="archive(notification.id)">
-            <Icon name="lucide:archive" class="h-3.5 w-3.5" />
-          </UiButton>
-          <UiButton
-            variant="ghost"
-            size="xs"
-            class="h-6 w-6 p-0 hover:text-destructive"
-            title="Dismiss"
-            @click.stop="dismiss(notification.id)">
-            <Icon name="lucide:x" class="h-3.5 w-3.5" />
-          </UiButton>
+          <div class="flex items-center gap-1 opacity-0 transition-opacity group-hover:opacity-100">
+            <UiButton v-for="a in (notification.actions || []).filter((a) => a.id !== 'open').slice(0, 2)" :key="a.id"
+              variant="ghost" size="xs" class="h-6 px-2 text-[10px] font-bold uppercase tracking-wider"
+              @click.stop="run(a)">
+              <Icon v-if="a.icon" :name="a.icon" class="mr-1 h-3 w-3" />
+              {{ a.label }}
+            </UiButton>
+            <UiButton variant="ghost" size="xs" class="h-6 w-6 p-0" title="Snooze 1h"
+              @click.stop="snooze(notification.id, 60)">
+              <Icon name="lucide:clock" class="h-3.5 w-3.5" />
+            </UiButton>
+            <UiButton variant="ghost" size="xs" class="h-6 w-6 p-0" title="Archive"
+              @click.stop="archive(notification.id)">
+              <Icon name="lucide:archive" class="h-3.5 w-3.5" />
+            </UiButton>
+            <UiButton variant="ghost" size="xs" class="h-6 w-6 p-0 hover:text-destructive" title="Dismiss"
+              @click.stop="dismiss(notification.id)">
+              <Icon name="lucide:x" class="h-3.5 w-3.5" />
+            </UiButton>
+          </div>
         </div>
       </div>
     </div>

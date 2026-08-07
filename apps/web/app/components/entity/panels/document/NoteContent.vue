@@ -9,6 +9,7 @@
 
   const emit = defineEmits<{
     'update:modelValue': [value: any]
+    'extracted-h1': [title: string]
   }>()
 
   const item = computed({
@@ -35,6 +36,10 @@
     return null
   })
 
+  function onExtractedH1(title: string) {
+    emit('extracted-h1', title)
+  }
+
   const renderedContent = computed(() => {
     if (!item.value?.content) return '<span class="text-muted-foreground/50 italic">Empty note.</span>'
     return markdownToHtml(item.value.content)
@@ -43,9 +48,7 @@
 
 <template>
   <div class="min-h-full w-full min-w-0">
-    <div
-      v-if="linkedAudioUrl"
-      class="mb-4 pb-0 pt-4">
+    <div v-if="linkedAudioUrl" class="mb-4 pb-0 pt-4">
       <div class="mb-2 flex items-center gap-2">
         <Icon name="lucide:mic" class="h-3.5 w-3.5 text-muted-foreground" />
         <span class="text-[11px] font-medium uppercase tracking-wide text-muted-foreground">Voice recording</span>
@@ -65,7 +68,8 @@
         tables
         mathematics
         collaborative
-        :entity-id="item.id" />
+        :entity-id="item.id"
+        @extracted-h1="onExtractedH1" />
     </div>
     <div v-else class="prose prose-sm max-w-none w-full min-w-0 text-sm text-foreground" v-html="renderedContent" />
   </div>

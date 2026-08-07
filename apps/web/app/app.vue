@@ -112,7 +112,7 @@
 </script>
 
 <template>
-  <div>
+  <div class="h-full w-full rounded-xl overflow-hidden">
     <NuxtRouteAnnouncer />
     <UiSonner />
     <NuxtLayout>

@@ -1,6 +1,8 @@
 # @turtle.tech/trellis-mcp
 
-MCP (Model Context Protocol) server that exposes the Trellis knowledge graph API as tools for AI agents. Works with **OpenCode**, **Claude Code**, **Gemini CLI**, and any MCP-compatible client.
+MCP (Model Context Protocol) server that exposes the Trellis knowledge graph API
+as tools for AI agents. Works with **OpenCode**, **Claude Code**, **Gemini
+CLI**, and any MCP-compatible client.
 
 ## Architecture
 
@@ -29,6 +31,10 @@ Browser UI (realtime updates)
 | `get_schema`       | List registered ontologies              |
 | `get_catalog`      | EAV attribute catalog                   |
 | `get_mutation_log` | Recent mutation history                 |
+
+Entity-touching tools append an **Open in Trellis** footer with deep-links
+(`$TRELLIS_API_URL/workspace/browse#entity:…`) so agents can surface clickable
+URLs to the user without searching tool history.
 
 ## Resources
 
@@ -100,7 +106,8 @@ pnpm install
 
 ### 3. Install the Skill (Claude Code only)
 
-The `SKILL.md` file teaches agents about the Trellis entity architecture. For Claude Code:
+The `SKILL.md` file teaches agents about the Trellis entity architecture. For
+Claude Code:
 
 ```bash
 # Copy skill to Claude's skill directory
@@ -125,4 +132,5 @@ Or reference it in Claude Code's plugin system.
 4. SSE event bus broadcasts to all connected clients
 5. Browser UI updates in realtime
 
-All mutations include the `agentId` so you can see in the mutation log who made each change.
+All mutations include the `agentId` so you can see in the mutation log who made
+each change.

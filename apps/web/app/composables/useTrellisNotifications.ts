@@ -19,6 +19,8 @@ import type {
   TrellisNotification,
 } from '~/types/notification'
 import { NOTIFICATION_KIND_VISUALS, NOTIFICATION_SOUND_FILES, resolveNotificationDelivery, resolveNotificationVisual } from '~/types/notification'
+import type { Entity, EntityType } from '~/types/entity'
+import { stripNamespace, entityId as toEntityId } from '~/lib/tql-namespace'
 import { useSSESubscribe } from '~/composables/useTrellisSSE'
 import { useTrellisGraph } from '~/composables/useTrellisGraph'
 
@@ -122,20 +124,53 @@ function playSound(sound: NotificationSound | undefined) {
 
 // ── Composable ──────────────────────────────────────────────────────────────
 
+/** Resolve the primary entity id to open from a notification row (if any). */
+export function resolveNotificationOpenTarget(n: TrellisNotification): string | null {
+  if (n.entityId) return n.entityId
+  const link = (n.actions || []).find(
+    (a) => a.kind === 'link' && typeof a.target === 'string' && a.target.includes('entity:'),
+  )
+  if (link?.target) {
+    const m = link.target.match(/#?(entity:[^\s+#/]+)/)
+    if (m?.[1]) return m[1]
+  }
+  const ids = n.metadata?.entityIds
+  if (Array.isArray(ids) && ids[0]) return String(ids[0])
+  return null
+}
+
 export function useTrellisNotifications() {
-  const { queryOnce, mutate } = useTrellisGraph()
+  const { queryOnce, fetchNodes, fetchNode, mutate } = useTrellisGraph()
   const { $toast } = useNuxtApp() as any
 
   async function refresh() {
     try {
-      // EQL-S RETURN has inner-join semantics — attrs missing on a node
-      // drop the row. P0+ notifications always persist `delivery`; legacy
-      // rows without it may disappear from results (resolveNotificationDelivery
-      // still defaults missing → interrupt when a row is returned).
+      // Include `?n` so we get entity ids. Optional attrs (entityId, body, …)
+      // are hydrated via fetchNodes — RETURN-ing them would inner-join-drop rows.
       const result = await queryOnce(
-        `FIND ${NOTIFICATION_TYPE} AS ?n RETURN ?n.title, ?n.kind, ?n.source, ?n.priority, ?n.status, ?n.delivery, ?n.requiredAction, ?n.createdAt, ?n.updatedAt ORDER BY ?n.createdAt DESC LIMIT 100`,
+        `FIND ${NOTIFICATION_TYPE} AS ?n RETURN ?n, ?n.title, ?n.kind, ?n.source, ?n.priority, ?n.status, ?n.delivery, ?n.requiredAction, ?n.createdAt, ?n.updatedAt ORDER BY ?n.createdAt DESC LIMIT 100`,
       )
-      const next = (result.data || []).map(rowToNotification)
+      const ids = (result.data || [])
+        .map((row: Record<string, any>) =>
+          String(row['?n'] || row['n'] || row['@id'] || row.id || ''),
+        )
+        .filter(Boolean)
+
+      let next: TrellisNotification[]
+      if (ids.length > 0) {
+        const nodes = await fetchNodes(ids)
+        const byId = new Map(nodes.map((node) => [String(node['@id'] || node.id), node]))
+        // Preserve query order; fall back to sparse row if a node failed to hydrate
+        next = ids.map((id, i) => {
+          const node = byId.get(id)
+          if (node) return rowToNotification({ ...node, '?n': node['@id'] || id })
+          return rowToNotification((result.data || [])[i] as Record<string, any>)
+        })
+      } else {
+        // Fallback: map sparse RETURN rows (should be rare if `?n` is selected)
+        next = (result.data || []).map((row) => rowToNotification(row as Record<string, any>))
+      }
+
       const incoming = next.filter(
         (n) =>
           !_lastSeenIds.has(n.id) &&
@@ -161,6 +196,56 @@ export function useTrellisNotifications() {
     } finally {
       _loading.value = false
     }
+  }
+
+  /** Open the related entity dialog (global DialogStackHost). */
+  async function openNotificationEntity(n: TrellisNotification): Promise<boolean> {
+    const rawId = resolveNotificationOpenTarget(n)
+    if (!rawId) return false
+
+    await markAsRead(n.id)
+
+    const dialogStack = useDialogStack()
+    const { items } = useEntities()
+    const stripped = stripNamespace(rawId)
+    const fullId = rawId.includes(':') ? rawId : toEntityId(rawId)
+
+    let item = items.value.find((e) => e.id === stripped || e.id === rawId || e.id === fullId) as
+      | Entity
+      | undefined
+
+    if (!item) {
+      try {
+        const result = await fetchNode(fullId)
+        const data = result?.node
+        if (data) {
+          const { '@id': _a, '@type': _t, ...rest } = data
+          item = {
+            id: stripped,
+            type: (data.type || data['@type'] || n.entityType || 'note') as EntityType,
+            title: (data.title as string) || n.title || 'Untitled',
+            ...rest,
+          } as Entity
+        }
+      } catch {
+        // fall through to minimal stub
+      }
+    }
+
+    if (!item) {
+      item = {
+        id: stripped,
+        type: (n.entityType || 'note') as EntityType,
+        title: n.title || 'Untitled',
+      } as Entity
+    }
+
+    const entityType = (item.type || n.entityType || 'note') as EntityType
+    if (dialogStack.size.value === 0) {
+      dialogStack.setOriginTitle(item.title || n.title, stripped)
+    }
+    dialogStack.push(stripped, entityType, item)
+    return true
   }
 
   // Subscribe to SSE once per client
@@ -254,11 +339,25 @@ export function useTrellisNotifications() {
         if (action.target) {
           if (/^https?:\/\//.test(action.target)) {
             window.open(action.target, '_blank', 'noopener')
+            await markAsRead(n.id)
+          } else if (action.target.includes('entity:')) {
+            // Prefer dialog stack over bare hash navigation (no page dialog host)
+            const opened = await openNotificationEntity({
+              ...n,
+              entityId: n.entityId || action.target.replace(/^#/, ''),
+              url: action.target,
+            })
+            if (!opened) {
+              await navigateTo(action.target)
+              await markAsRead(n.id)
+            }
           } else {
             await navigateTo(action.target)
+            await markAsRead(n.id)
           }
+        } else {
+          await markAsRead(n.id)
         }
-        await markAsRead(n.id)
         break
       case 'dismiss':
         await dismiss(n.id)
@@ -340,6 +439,8 @@ export function useTrellisNotifications() {
     snooze,
     dismiss,
     runAction,
+    openNotificationEntity,
+    resolveNotificationOpenTarget,
 
     timeAgo,
     NOTIFICATION_KIND_VISUALS,

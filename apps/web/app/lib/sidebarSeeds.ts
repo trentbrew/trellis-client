@@ -124,4 +124,14 @@ export const DEFAULT_WORKSPACE_SIDEBAR: SidebarNodeSeed[] = [
       },
     ],
   },
+  {
+    id: 'ws-expand',
+    label: 'Expand',
+    icon: 'lucide:expand',
+    routePath: '/home',
+    scope: 'workspace',
+    nodeType: 'item',
+    locked: true,
+    order: 50,
+  },
 ]

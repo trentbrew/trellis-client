@@ -8,6 +8,8 @@
  * with sandbox="allow-same-origin allow-popups allow-popups-to-escape-sandbox".
  */
 
+import { stripRemoteFonts } from '../utils/stripRemoteFonts'
+
 export interface EmailLike {
   bodyHtml?: string | null
   bodyText?: string | null
@@ -49,7 +51,7 @@ function neutralizeRemoteSrc(attr: string, quote: string, url: string): string {
 
 /** Remove unsafe + expensive bits. Keep <style>, inline styles, colours, tables, layout. */
 export function sanitizeEmailHtml(html: string): string {
-  return (
+  return stripRemoteFonts(
     html
       .replace(/<script[\s\S]*?<\/script>/gi, '')
       .replace(/<script\b[^>]*>/gi, '')

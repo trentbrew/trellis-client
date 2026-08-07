@@ -823,6 +823,12 @@
         // Markdown copied from editors often includes text/html as <pre><code> — convert to rich text.
         if (shouldPasteMarkdownAsRichText(html, text)) {
           event.preventDefault()
+          // Extract first H1 from markdown before conversion
+          const h1Match = text?.match(/^#\s+(.+)$/m)
+          if (h1Match) {
+            const h1Title = h1Match[1].trim()
+            if (h1Title) emit('extracted-h1', h1Title)
+          }
           editor.value?.commands.insertContent(markdownToHtml(text))
           return true
         }
@@ -839,6 +845,12 @@
 
         if (html) return false // already has HTML — let TipTap handle it
         if (!text) return false
+        // Extract first H1 from plain text markdown
+        const h1Match = text.match(/^#\s+(.+)$/m)
+        if (h1Match) {
+          const h1Title = h1Match[1].trim()
+          if (h1Title) emit('extracted-h1', h1Title)
+        }
         const converted = markdownToHtml(text)
         if (converted === text) return false // no conversion happened
         editor.value?.commands.insertContent(converted)
@@ -2058,7 +2070,8 @@
           </div>
           <div v-else class="space-y-3">
             <p class="text-xs text-muted-foreground">
-              Sheet: <span class="font-medium text-foreground">{{ sheetRangePickerTitle }}</span>
+              Sheet:
+              <span class="font-medium text-foreground">{{ sheetRangePickerTitle }}</span>
             </p>
             <div class="space-y-1">
               <label class="text-xs font-medium text-muted-foreground">A1 range</label>

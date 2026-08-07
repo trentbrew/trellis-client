@@ -582,6 +582,7 @@ export const KNOWN_TOP_LEVEL_ROUTE_SEGMENTS = [
   'mail',
   'home',
   'agent',
+  'explorer',
   'query',
   'notifications',
   'activity',

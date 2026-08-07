@@ -64,7 +64,7 @@ export function appendAssistantToolTurn(
   const trimmed = content.trim()
   messages.push({
     role: 'assistant',
-    // Anthropic/TokenRouter reject empty text blocks alongside tool_use.
+    // OpenAI-compatible endpoints reject empty text blocks alongside tool_calls.
     content: trimmed || null,
     tool_calls: toolCalls.map((tc) => ({
       id: tc.id,
@@ -74,8 +74,8 @@ export function appendAssistantToolTurn(
   })
 }
 
-/** TokenRouter → Anthropic rejects assistant messages with empty text + tool_calls. */
-export function normalizeMessagesForTokenRouter(
+/** OpenAI-compatible endpoints reject assistant messages with empty text + tool_calls. */
+export function normalizeMessagesForProvider(
   messages: ChatCompletionMessageParam[],
 ): ChatCompletionMessageParam[] {
   return messages.map((msg) => {

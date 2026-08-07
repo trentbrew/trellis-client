@@ -30,12 +30,12 @@ test.describe('Campus shell chrome placement', () => {
     await expect(menubar.getByRole('button', { name: 'Quick capture' })).toHaveCount(0)
   })
 
-  test('bell opens notification dropdown from header', async ({ page }) => {
+  test('bell opens activity sheet from header', async ({ page }) => {
     const header = page.locator('[data-slot="app-header"]')
     await header.getByRole('button', { name: /Lobby — notifications/i }).click()
-    await expect(page.getByText(/Action required|All caught up/)).toBeVisible({
-      timeout: 5_000,
-    })
+    const sheet = page.getByTestId('activity-sheet')
+    await expect(sheet).toBeVisible({ timeout: 5_000 })
+    await expect(sheet.getByRole('heading', { name: 'Activity' })).toBeVisible()
   })
 
   test('avatar opens resident menu from rail', async ({ page }) => {

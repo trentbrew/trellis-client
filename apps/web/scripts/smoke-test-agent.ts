@@ -16,7 +16,7 @@
  *   pnpm tsx scripts/smoke-test-agent.ts --skip-network    # validate only the routing decisions
  *
  * Exits with code 0 on success, 1 on any failure. Designed to be safe to
- * include in CI once we have a TokenRouter test key in env.
+ * include in CI once we have a local Ollama runtime with the Gemma model pulled.
  */
 
 import { resolveRoutingDecision } from '../server/utils/agent-routing'
@@ -33,25 +33,25 @@ const CASES: SmokeCase[] = [
     label: 'lookup-tasks',
     message: 'Show me my tasks',
     expectedTaskClass: 'lookup',
-    expectedModelMatch: /haiku/i,
+    expectedModelMatch: /gemma/i,
   },
   {
     label: 'reasoning-plan',
     message: 'Plan my Q3 roadmap and recommend the top three priorities',
     expectedTaskClass: 'reasoning',
-    expectedModelMatch: /opus|sonnet/i,
+    expectedModelMatch: /gemma/i,
   },
   {
     label: 'creative-draft',
     message: 'Draft a standup update summarizing this week',
     expectedTaskClass: 'creative',
-    expectedModelMatch: /sonnet/i,
+    expectedModelMatch: /gemma/i,
   },
   {
     label: 'synthesis-default',
     message: 'tell me about Trellis',
     expectedTaskClass: 'synthesis',
-    expectedModelMatch: /sonnet/i,
+    expectedModelMatch: /gemma/i,
   },
 ]
 
@@ -220,11 +220,11 @@ async function assertLiveTurn(c: SmokeCase): Promise<boolean> {
     allOk = false
   } else {
     const m = stream.meta as Record<string, unknown>
-    if (m.router !== 'tokenrouter') {
-      fail(`[${c.label}] meta.router=${m.router}, expected tokenrouter`)
+    if (m.router !== 'ollama') {
+      fail(`[${c.label}] meta.router=${m.router}, expected ollama`)
       allOk = false
     } else {
-      pass(`[${c.label}] meta.router=tokenrouter`)
+      pass(`[${c.label}] meta.router=ollama`)
     }
     if (m.taskClass !== c.expectedTaskClass) {
       fail(`[${c.label}] meta.taskClass=${m.taskClass}, expected ${c.expectedTaskClass}`)
@@ -267,7 +267,7 @@ async function assertLiveTurn(c: SmokeCase): Promise<boolean> {
 async function main() {
   console.log(`${colors.cyan}🔬 Trellis Agent Smoke Test${colors.reset}`)
   console.log(`${colors.dim}  Target: ${BASE}${colors.reset}`)
-  console.log(`${colors.dim}  Mode:   ${SKIP_NETWORK ? 'pure (no network)' : 'live (TokenRouter)'}${colors.reset}\n`)
+  console.log(`${colors.dim}  Mode:   ${SKIP_NETWORK ? 'pure (no network)' : 'live (Ollama)'}${colors.reset}\n`)
 
   let total = 0
   let passed = 0
@@ -279,7 +279,7 @@ async function main() {
   }
 
   if (!SKIP_NETWORK) {
-    console.log(`\n${colors.yellow}── Phase 2: Live TokenRouter round-trip ──${colors.reset}`)
+    console.log(`\n${colors.yellow}── Phase 2: Live Ollama round-trip ──${colors.reset}`)
 
     // Health probe first.
     try {

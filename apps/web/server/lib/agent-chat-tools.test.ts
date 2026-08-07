@@ -3,7 +3,7 @@ import type { ChatCompletionChunk, ChatCompletionMessageParam } from 'openai/res
 import {
   accumulateStreamedToolCalls,
   appendAssistantToolTurn,
-  normalizeMessagesForTokenRouter,
+  normalizeMessagesForProvider,
 } from './agent-chat-tools'
 
 async function* chunksFrom(parts: ChatCompletionChunk[]) {
@@ -75,7 +75,7 @@ describe('appendAssistantToolTurn', () => {
   })
 })
 
-describe('normalizeMessagesForTokenRouter', () => {
+describe('normalizeMessagesForProvider', () => {
   it('normalizes empty assistant text before follow-up requests', () => {
     const messages: ChatCompletionMessageParam[] = [
       {
@@ -85,7 +85,7 @@ describe('normalizeMessagesForTokenRouter', () => {
       },
       { role: 'tool', tool_call_id: 'toolu_x', content: '{"created":true}' },
     ]
-    const normalized = normalizeMessagesForTokenRouter(messages)
+    const normalized = normalizeMessagesForProvider(messages)
     expect(normalized[0]).toMatchObject({ content: null })
   })
 })

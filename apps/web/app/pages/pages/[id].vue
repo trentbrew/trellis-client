@@ -4,11 +4,7 @@
   import { isDocumentChromeType } from '~/lib/document-chrome'
   import { entityId as toEntityId } from '~/lib/tql-namespace'
   import { stripHtml } from '~/utils/stripHtml'
-  import {
-    MIN_SUMMARY_SOURCE_LENGTH,
-    resolveSummaryText,
-    useEntitySummary,
-  } from '~/composables/useEntitySummary'
+  import { MIN_SUMMARY_SOURCE_LENGTH, resolveSummaryText, useEntitySummary } from '~/composables/useEntitySummary'
 
   definePageMeta({
     layout: 'default',
@@ -320,14 +316,6 @@
   let _titleLogTimer: ReturnType<typeof setTimeout> | null = null
   let _contentLogTimer: ReturnType<typeof setTimeout> | null = null
 
-  // ── Page icon ─────────────────────────────────────────────────────
-  const localIcon = ref('')
-  const iconPickerOpen = ref(false)
-
-  function handleIconChange(icon: string) {
-    localIcon.value = icon
-  }
-
   // ── Page status ─────────────────────────────────────────────────
   const PAGE_STATUS_OPTIONS: { value: PageStatus; label: string; icon: string; color: string }[] = [
     { value: 'draft', label: 'Draft', icon: 'lucide:pencil', color: 'text-muted-foreground' },
@@ -397,7 +385,6 @@
   function _seedFromPage(page: PageItem) {
     localTitle.value = page.title ?? ''
     localContent.value = page.content ?? ''
-    localIcon.value = page.icon || ''
     const s = page.status
     localStatus.value = s && PAGE_STATUS_OPTIONS.some((o) => o.value === s) ? s : 'draft'
     localTags.value = Array.isArray(page.tags) ? [...page.tags] : []
@@ -444,12 +431,6 @@
     },
     set content(v: string) {
       localContent.value = v
-    },
-    get icon() {
-      return localIcon.value
-    },
-    set icon(v: string) {
-      localIcon.value = v
     },
     get status() {
       return localStatus.value
@@ -543,7 +524,9 @@
       </UiAlertDialogContent>
     </UiAlertDialog>
 
-    <div v-if="!currentPage && pageLoading" class="flex flex-col items-center justify-center h-full gap-4 text-muted-foreground">
+    <div
+      v-if="!currentPage && pageLoading"
+      class="flex flex-col items-center justify-center h-full gap-4 text-muted-foreground">
       <Icon name="lucide:loader-2" class="h-8 w-8 animate-spin opacity-30" />
     </div>
 
@@ -803,26 +786,15 @@
           <!-- Scrollable document column: title + editor -->
           <div class="flex-1 min-h-0 overflow-y-auto">
             <div :class="documentColumnClass">
-              <div class="flex items-start gap-0 pt-12 pb-4">
-                <button
-                  type="button"
-                  class="shrink-0 h-9 w-9 mt-1 flex items-center justify-center rounded-lg hover:bg-muted/50 transition-colors text-muted-foreground/60 hover:text-muted-foreground group"
-                  title="Change page icon"
-                  @click="iconPickerOpen = true">
-                  <Icon
-                    :name="localIcon || 'lucide:file-text'"
-                    class="h-5 w-5 group-hover:scale-110 transition-transform" />
-                </button>
-                <div class="relative flex-1 min-w-0">
-                  <DocumentTitleField
-                    :title="displayTitle"
-                    mode="edit"
-                    placeholder="Untitled"
-                    :peers="titlePeers"
-                    @update:title="onTitleUpdate"
-                    @focus="onTitleFocus"
-                    @blur="onTitleBlur" />
-                </div>
+              <div class="flex-1 min-w-0">
+                <DocumentTitleField
+                  :title="displayTitle"
+                  mode="edit"
+                  placeholder="Untitled"
+                  :peers="titlePeers"
+                  @update:title="onTitleUpdate"
+                  @focus="onTitleFocus"
+                  @blur="onTitleBlur" />
               </div>
 
               <div class="min-h-[50vh] flex flex-col" @focusin="onContentFocus" @focusout="onContentBlur">
@@ -999,9 +971,6 @@
       :filter-type="entityPickerFilterType"
       @select="handleAddEntityRef"
       @created="handleCreatedEntityRef" />
-
-    <!-- Page icon picker -->
-    <IconPicker v-model:open="iconPickerOpen" :model-value="localIcon" @update:model-value="handleIconChange" />
   </div>
 </template>
 

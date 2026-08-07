@@ -12,14 +12,14 @@ description: >
 
 Trellis is a personal knowledge graph where everything is an entity with typed
 properties and semantic links. The graph powers a Nuxt web app running on
-`localhost:$TRELLIS_PORT` with realtime sync — any mutations you make via MCP tools
-appear instantly in the browser UI.
+`localhost:$TRELLIS_PORT` with realtime sync — any mutations you make via MCP
+tools appear instantly in the browser UI.
 
 ## IMPORTANT: Always Use MCP Tools
 
-**Never use `curl`, `fetch`, or raw HTTP requests to interact with the Trellis API.**
-You have 48 MCP tools available — use them directly. They handle authentication,
-error formatting, and JSON serialization automatically.
+**Never use `curl`, `fetch`, or raw HTTP requests to interact with the Trellis
+API.** You have 48 MCP tools available — use them directly. They handle
+authentication, error formatting, and JSON serialization automatically.
 
 | Instead of...                     | Use this MCP tool                                                    |
 | --------------------------------- | -------------------------------------------------------------------- |
@@ -41,7 +41,8 @@ may break, miss error handling, or hit undocumented routes.
 
 ### Two-Axis Type System
 
-Every entity has an **entity class** (structural shape) and an **entity type** (specific kind):
+Every entity has an **entity class** (structural shape) and an **entity type**
+(specific kind):
 
 | Class         | Description                              | Types                                                                  |
 | ------------- | ---------------------------------------- | ---------------------------------------------------------------------- |
@@ -62,8 +63,10 @@ Every entity has an **entity class** (structural shape) and an **entity type** (
 - `category` — Optional classification string
 - `references` — Array of `FileReference | EntityReference` objects
 - `createdAt` / `updatedAt` — ISO 8601 timestamps
-- `zoneId` — Campus Zone this entity lives in (e.g. `"entity:founder-facility-lab"`) — see below
-- `facilityId` — Campus Facility containing the zone (Phase 0: always `"entity:founder-facility"`)
+- `zoneId` — Campus Zone this entity lives in (e.g.
+  `"entity:founder-facility-lab"`) — see below
+- `facilityId` — Campus Facility containing the zone (Phase 0: always
+  `"entity:founder-facility"`)
 
 ### Temporal Fields (temporal class only)
 
@@ -73,7 +76,9 @@ Every entity has an **entity class** (structural shape) and an **entity type** (
 - `startTime` / `endTime` — `HH:mm` (when not all-day)
 - `priority` — `critical | high | medium | low`
 - `urgency` — `urgent | not-urgent`
-- `taskStatus` — `pending | in-progress | on-track | due-soon | overdue | completed` (tasks only)
+- `taskStatus` —
+  `pending | in-progress | on-track | due-soon | overdue | completed` (tasks
+  only)
 - `reminders` — Array of `{ id, timing, method }`
 - `recurrence` — `{ frequency, interval?, weekdays?, endDate?, occurrences? }`
 
@@ -99,7 +104,8 @@ Every entity has an **entity class** (structural shape) and an **entity type** (
 
 ## Campus Substrate (Phase 0)
 
-The graph is organized by a spatial ontology: every entity lives in a **Zone** inside a **Facility**. Six substrate types define the authority model:
+The graph is organized by a spatial ontology: every entity lives in a **Zone**
+inside a **Facility**. Six substrate types define the authority model:
 
 | Type       | Class     | Role                                                                                                    |
 | ---------- | --------- | ------------------------------------------------------------------------------------------------------- |
@@ -120,7 +126,9 @@ The graph is organized by a spatial ontology: every entity lives in a **Zone** i
 
 ### Tagging mutations with a zone
 
-Include `data.zoneId` and `data.facilityId` in `create_node` (or `update_node`) to publish into a specific zone. If you omit them, the server stamps the founder's Lab by default.
+Include `data.zoneId` and `data.facilityId` in `create_node` (or `update_node`)
+to publish into a specific zone. If you omit them, the server stamps the
+founder's Lab by default.
 
 **Publish an artifact to the Showroom:**
 
@@ -169,7 +177,8 @@ Every mutation is evaluated against the target zone's grants and logged:
 [zone-guard] DENY (advisory) agent=my-agent action=createNode zone=vault reason="…"
 ```
 
-Both outcomes let the mutation commit in Phase 0. If you see `DENY`, audit the intent before Phase 1 flips on strict enforcement.
+Both outcomes let the mutation commit in Phase 0. If you see `DENY`, audit the
+intent before Phase 1 flips on strict enforcement.
 
 ### Querying by zone
 
@@ -184,7 +193,8 @@ See `/agent` in the web app for a live op-log projection filtered by zone.
 
 Always use `create_node` with:
 
-1. A descriptive, unique `entityId` (e.g. `"task-weekly-review"`, `"note-meeting-notes-feb10"`)
+1. A descriptive, unique `entityId` (e.g. `"task-weekly-review"`,
+   `"note-meeting-notes-feb10"`)
 2. The correct `type` from the list above
 3. A `data` object with at minimum `{ title: "..." }`
 
@@ -281,7 +291,9 @@ FIND entity AS ?p WHERE ?p.type = "project" AND ?p.status = "active" RETURN ?p.t
 
 ## Introspection
 
-**Start here:** Call `get_graph_summary` first. It replaces `graph_health` + `get_schema` + `get_catalog` in a single round trip and gives you everything needed to orient yourself in the graph.
+**Start here:** Call `get_graph_summary` first. It replaces `graph_health` +
+`get_schema` + `get_catalog` in a single round trip and gives you everything
+needed to orient yourself in the graph.
 
 | Tool                | When to use                                                                                                       |
 | ------------------- | ----------------------------------------------------------------------------------------------------------------- |
@@ -328,14 +340,15 @@ Optional `limit` parameter caps list lengths (default: 10).
 
 ## Ontology CRUD (Runtime Type Creation)
 
-You can create new entity types at runtime using the ontology tools. When you create
-an ontology, the new type **automatically appears** in the Trellis UI sidebar, browse
-pages, and dialogs — zero code changes needed.
+You can create new entity types at runtime using the ontology tools. When you
+create an ontology, the new type **automatically appears** in the Trellis UI
+sidebar, browse pages, and dialogs — zero code changes needed.
 
 ### Field Value Types (Notion-compatible)
 
-`title`, `rich_text`, `number`, `select`, `multi_select`, `status`, `date`, `people`,
-`files`, `checkbox`, `url`, `email`, `phone_number`, `relation`, `rollup`, `formula`
+`title`, `rich_text`, `number`, `select`, `multi_select`, `status`, `date`,
+`people`, `files`, `checkbox`, `url`, `email`, `phone_number`, `relation`,
+`rollup`, `formula`
 
 ### Create an Ontology
 
@@ -372,14 +385,14 @@ Use `update_ontology` with the full field list (replaces all existing fields).
 
 ### Delete an Ontology
 
-Use `delete_ontology` — removes the type schema. Existing entities of that type remain
-in the graph but the type disappears from the UI.
+Use `delete_ontology` — removes the type schema. Existing entities of that type
+remain in the graph but the type disappears from the UI.
 
 ## Platform Tools
 
 Beyond graph CRUD, the MCP server exposes 33 platform tools for managing
-workspace resources. All platform data is stored in the TQL kernel and
-persists across restarts.
+workspace resources. All platform data is stored in the TQL kernel and persists
+across restarts.
 
 ### Workspace Context
 
@@ -394,7 +407,8 @@ persists across restarts.
 
 ### Collections & Pages
 
-- `list_collections` / `create_collection` / `update_collection` / `delete_collection`
+- `list_collections` / `create_collection` / `update_collection` /
+  `delete_collection`
 - `list_pages` / `create_page` / `update_page` / `delete_page`
 
 ### Entity Enrichment
@@ -412,7 +426,8 @@ persists across restarts.
 
 ### Settings & Invites
 
-- `get_setting` / `set_setting` / `list_settings` — Key-value settings (app or user scoped)
+- `get_setting` / `set_setting` / `list_settings` — Key-value settings (app or
+  user scoped)
 - `send_invite` — Send workspace invitation
 
 ### Platform ID Conventions
@@ -437,5 +452,12 @@ persists across restarts.
 5. **Check before creating** — Use `query_graph` to avoid duplicates
 6. **Use tags liberally** — Tags are the primary cross-cutting classification
 7. **Mutations are realtime** — The browser UI updates instantly via SSE
-8. **Creates are idempotent** — `create_org`, `create_app`, `create_tag`, `create_collection` return existing if slug matches
-9. **Use context** — Set org/app context once, then all scoped commands use it automatically
+8. **Creates are idempotent** — `create_org`, `create_app`, `create_tag`,
+   `create_collection` return existing if slug matches
+9. **Use context** — Set org/app context once, then all scoped commands use it
+   automatically
+10. **Surface Open URLs** — Entity tool responses end with an `Open in Trellis:`
+    footer containing deep-links
+    (`http://localhost:$TRELLIS_PORT/workspace/browse#entity:…`). When you
+    create, update, fetch, or query entities, **include those URLs in your reply
+    to the user** so they can open the entity without digging through tool logs.

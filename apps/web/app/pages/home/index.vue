@@ -6,8 +6,6 @@
 
   const { messages, isStreaming, error, sendMessage, createThread, clearConversation } = useAgent()
 
-  const messageContainer = ref<HTMLElement | null>(null)
-
   const hasMessages = computed(() => messages.value.length > 0)
 
   // Curated starter prompts shown in the empty state.
@@ -38,27 +36,9 @@
     },
   ]
 
-  const scrollToBottom = () => {
-    nextTick(() => {
-      if (messageContainer.value) {
-        messageContainer.value.scrollTop = messageContainer.value.scrollHeight
-      }
-    })
-  }
-
-  const scrollFingerprint = computed(() => {
-    const msgs = messages.value
-    const last = msgs[msgs.length - 1]
-    if (!last) return String(msgs.length)
-    return `${msgs.length}:${last.content.length}:${last.toolCalls?.length ?? 0}:${isStreaming.value ? 1 : 0}`
-  })
-
-  watch(scrollFingerprint, scrollToBottom)
-
-  onMounted(() => {
-    if (hasMessages.value) scrollToBottom()
-  })
-
+  // Message Scroller drives anchoring + auto-scroll. `scrollAnchor` marks each
+  // user message as the start of a turn so the viewport keeps a peek of the
+  // previous reply above it. `autoScroll` follows the live edge while streaming.
   const handleSend = (payload: { text: string; attachments: import('~/types/agent').AgentAttachment[] }) => {
     if (payload.text.trim() || payload.attachments.length) {
       sendMessage(payload.text, payload.attachments)
@@ -168,37 +148,56 @@
         </div>
       </section>
 
-      <!-- Active chat: message list on top, sticky composer at bottom -->
+      <!-- Active chat: message scroller on top, sticky composer at bottom -->
       <section v-else class="flex-1 min-h-0 flex flex-col">
-        <div ref="messageContainer" class="flex-1 min-h-0 overflow-y-auto">
-          <div class="mx-auto flex w-full max-w-2xl flex-col gap-4 px-6 py-8">
-            <AgentMessage v-for="msg in messages" :key="msg.id" :message="msg" />
+        <UiMessageScrollerProvider
+          :auto-scroll="true"
+          default-scroll-position="last-anchor"
+          :scroll-previous-item-peek="48">
+          <UiMessageScroller class="flex-1 min-h-0">
+            <UiMessageScrollerViewport class="h-full">
+              <UiMessageScrollerContent class="mx-auto w-full max-w-2xl gap-4 px-6 py-8">
+                <UiMessageScrollerItem
+                  v-for="msg in messages"
+                  :key="msg.id"
+                  :message-id="msg.id"
+                  :scroll-anchor="msg.role === 'user'">
+                  <div :class="['ms-anim-slide-up', msg.role === 'user' ? 'ms-anim-slide-side' : '']">
+                    <AgentMessage :message="msg" />
+                  </div>
+                </UiMessageScrollerItem>
 
-            <!-- Streaming indicator -->
-            <div v-if="isStreaming" class="flex gap-2 items-start">
-              <div class="shrink-0 mt-1">
-                <div class="h-6 w-6 rounded-full bg-primary/10 flex items-center justify-center">
-                  <Icon name="lucide:bot" class="h-3.5 w-3.5 text-primary" />
-                </div>
-              </div>
-              <div class="flex gap-1 mt-2">
-                <div class="w-2 h-2 rounded-full bg-primary animate-bounce" />
-                <div class="w-2 h-2 rounded-full bg-primary animate-bounce" style="animation-delay: 0.2s" />
-                <div class="w-2 h-2 rounded-full bg-primary animate-bounce" style="animation-delay: 0.4s" />
-              </div>
-            </div>
+                <!-- Streaming indicator -->
+                <UiMessageScrollerItem v-if="isStreaming" :message-id="'streaming'" class="ms-anim-fade">
+                  <div class="flex gap-2 items-start">
+                    <div class="shrink-0 mt-1">
+                      <div class="h-6 w-6 rounded-full bg-primary/10 flex items-center justify-center">
+                        <Icon name="lucide:bot" class="h-3.5 w-3.5 text-primary" />
+                      </div>
+                    </div>
+                    <div class="flex gap-1 mt-2">
+                      <div class="w-2 h-2 rounded-full bg-primary animate-bounce" />
+                      <div class="w-2 h-2 rounded-full bg-primary animate-bounce" style="animation-delay: 0.2s" />
+                      <div class="w-2 h-2 rounded-full bg-primary animate-bounce" style="animation-delay: 0.4s" />
+                    </div>
+                  </div>
+                </UiMessageScrollerItem>
 
-            <!-- Error -->
-            <div
-              v-if="error"
-              class="p-3 rounded-lg bg-destructive/10 border border-destructive/20 text-destructive text-sm">
-              <div class="flex items-start gap-2">
-                <Icon name="lucide:alert-circle" class="h-4 w-4 mt-0.5 shrink-0" />
-                <div>{{ error }}</div>
-              </div>
-            </div>
-          </div>
-        </div>
+                <!-- Error -->
+                <UiMessageScrollerItem v-if="error" :message-id="'error'" class="ms-anim-scale-fade">
+                  <div
+                    class="p-3 rounded-lg bg-destructive/10 border border-destructive/20 text-destructive text-sm">
+                    <div class="flex items-start gap-2">
+                      <Icon name="lucide:alert-circle" class="h-4 w-4 mt-0.5 shrink-0" />
+                      <div>{{ error }}</div>
+                    </div>
+                  </div>
+                </UiMessageScrollerItem>
+              </UiMessageScrollerContent>
+            </UiMessageScrollerViewport>
+            <UiMessageScrollerButton direction="end" />
+          </UiMessageScroller>
+        </UiMessageScrollerProvider>
 
         <div class="shrink-0 border-t border-border/40 bg-background/80 backdrop-blur-sm">
           <div class="mx-auto w-full max-w-2xl">

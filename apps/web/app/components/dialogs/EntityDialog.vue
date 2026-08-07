@@ -6,8 +6,6 @@
   import { useComments } from '~/composables/useComments'
   import { extractYmd, parseYmdLocal, todayYmdLocal } from '~/utils/date'
   import { isDocumentChromeType } from '~/lib/document-chrome'
-  import { entityId as toEntityId } from '~/lib/tql-namespace'
-  import { resolveSummaryText, MIN_SUMMARY_SOURCE_LENGTH } from '~/composables/useEntitySummary'
 
   const colorMode = useColorMode()
   const isDark = computed(() => colorMode.value === 'dark')
@@ -55,6 +53,13 @@
     navigateNext: []
   }>()
 
+  function onExtractedH1(title: string) {
+    // Only set title if current title is empty or 'Untitled'
+    if (!editableItem.title || editableItem.title === 'Untitled') {
+      editableItem.title = title
+    }
+  }
+
   const { applyFormulas } = useEntityFormulas()
 
   const mode = computed(() => props.mode)
@@ -100,12 +105,7 @@
 
   // Sync AI summary fields from the live store without clobbering in-progress edits.
   watch(
-    () =>
-      [
-        props.item?.summary,
-        props.item?.summaryGeneratedAt,
-        props.item?.summarySourceHash,
-      ] as const,
+    () => [props.item?.summary, props.item?.summaryGeneratedAt, props.item?.summarySourceHash] as const,
     ([summary, generatedAt, sourceHash]) => {
       if (!props.item?.id || props.item.id !== _loadedItemId.value) return
       if (summary !== undefined) editableItem.summary = summary
@@ -131,52 +131,10 @@
   // (stored on the entity as `summary`). Shown in the dialog header under
   // the title, with a toggle to view the original. Works for any entity
   // type that has a `description` field.
-  const {
-    ensure: ensureSummary,
-    regenerate: regenerateSummaryFn,
-    isGenerating: isSummaryGenerating,
-  } = useEntitySummary()
-  const { fetchNode } = useTrellisGraph()
-
-  async function hydrateDocumentContentForSummary(): Promise<string> {
-    const mergedContent = editableItem.content || props.item?.content || ''
-    if (!isDocumentChromeType(editableItem.type) || !editableItem.id) return mergedContent
-    if (resolveSummaryText({ ...editableItem, content: mergedContent }).length >= MIN_SUMMARY_SOURCE_LENGTH) {
-      return mergedContent
-    }
-
-    try {
-      const { node } = await fetchNode(toEntityId(editableItem.id))
-      const content = (node?.content as string) || ''
-      if (content) editableItem.content = content
-      return content || mergedContent
-    } catch {
-      return mergedContent
-    }
-  }
-
-  watch(
-    () =>
-      [
-        editableItem.id,
-        editableItem.type,
-        editableItem.description,
-        editableItem.content,
-        props.item?.content,
-      ] as const,
-    () => {
-      if (isCreateMode.value) return
-      if (!editableItem.id) return
-      void (async () => {
-        const content = await hydrateDocumentContentForSummary()
-        const entity = { ...editableItem, content }
-        const source = resolveSummaryText(entity)
-        if (source.length < MIN_SUMMARY_SOURCE_LENGTH) return
-        void ensureSummary(entity)
-      })()
-    },
-    { immediate: true },
-  )
+  // AI summary is user-triggered only (see Regenerate button). We deliberately
+  // do NOT passively re-fetch the node on every content keystroke — that write-back
+  // raced the 800ms auto-save and clobbered in-progress typing for short content.
+  const { regenerate: regenerateSummaryFn, isGenerating: isSummaryGenerating } = useEntitySummary()
 
   const entitySummary = computed(() => (editableItem.summary || '').trim())
   const generatingSummary = computed(() => !!editableItem.id && isSummaryGenerating(editableItem.id))
@@ -680,12 +638,15 @@
       <TagsSection v-model="editableItem.tags" :readonly="isViewMode" inline />
     </template>
 
-    <div v-if="!isInset" :class="['flex-1 flex flex-col min-w-0 min-h-0', isPreviewFirst ? 'overflow-hidden' : 'overflow-y-auto']">
+    <div
+      v-if="!isInset"
+      :class="['flex-1 flex flex-col min-w-0 min-h-0', isPreviewFirst ? 'overflow-hidden' : 'overflow-y-auto']">
       <EntityContentPanel
         v-if="isPreviewFirst"
         v-model="editableItem"
         :mode="mode"
-        class="flex-1 min-h-0 flex flex-col h-full" />
+        class="flex-1 min-h-0 flex flex-col h-full"
+        @extracted-h1="onExtractedH1" />
       <div v-else :class="isDocumentChrome ? documentColumnClass : ''">
         <EntityBodyHeader
           :variant="isDocumentChrome ? 'document' : 'default'"
@@ -701,72 +662,69 @@
           @update:description="editableItem.description = $event"
           @regenerate-summary="handleRegenerateSummary">
           <template v-if="editableItem.type === 'email'" #below>
-          <div class="flex flex-wrap items-center gap-1.5 mt-3 text-xs">
-            <span
-              v-if="emailFromName"
-              class="inline-flex items-center gap-1.5 px-2 py-1 rounded-lg bg-muted/50 max-w-[220px]"
-              :title="emailFromAddress">
-              <Icon name="lucide:user" class="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
-              <span class="truncate">{{ emailFromName }}</span>
-            </span>
-            <span
-              v-if="editableItem.to"
-              class="inline-flex items-center gap-1.5 px-2 py-1 rounded-lg bg-muted/50 max-w-[260px]"
-              :title="editableItem.to">
-              <Icon name="lucide:send" class="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
-              <span class="truncate">to {{ editableItem.to }}</span>
-            </span>
-            <span
-              v-if="editableItem.cc"
-              class="inline-flex items-center gap-1.5 px-2 py-1 rounded-lg bg-muted/50 max-w-[220px]"
-              :title="editableItem.cc">
-              <Icon name="lucide:users" class="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
-              <span class="truncate">cc {{ editableItem.cc }}</span>
-            </span>
-            <span v-if="emailDate" class="inline-flex items-center gap-1.5 px-2 py-1 rounded-lg bg-muted/50">
-              <Icon name="lucide:calendar" class="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
-              <span class="whitespace-nowrap">{{ emailDate }}</span>
-            </span>
-            <button
-              class="inline-flex items-center gap-1.5 px-2 py-1 rounded-lg transition-colors"
-              :class="
-                editableItem.isStarred
-                  ? 'bg-amber-500/10 text-amber-600'
-                  : 'bg-muted/50 hover:bg-muted text-muted-foreground'
-              "
-              :disabled="isViewMode"
-              :title="editableItem.isStarred ? 'Starred' : 'Star email'"
-              @click="!isViewMode && (editableItem.isStarred = !editableItem.isStarred)">
-              <Icon :name="editableItem.isStarred ? 'lucide:star' : 'lucide:star-off'" class="h-3.5 w-3.5 shrink-0" />
-              {{ editableItem.isStarred ? 'Starred' : 'Star' }}
-            </button>
-            <button
-              class="inline-flex items-center gap-1.5 px-2 py-1 rounded-lg transition-colors"
-              :class="
-                editableItem.isRead
-                  ? 'bg-muted/50 text-muted-foreground hover:bg-muted'
-                  : 'bg-primary/10 text-primary'
-              "
-              :disabled="isViewMode"
-              :title="editableItem.isRead ? 'Mark as unread' : 'Mark as read'"
-              @click="!isViewMode && (editableItem.isRead = !editableItem.isRead)">
-              <Icon :name="editableItem.isRead ? 'lucide:mail-open' : 'lucide:mail'" class="h-3.5 w-3.5 shrink-0" />
-              {{ editableItem.isRead ? 'Read' : 'Unread' }}
-            </button>
-          </div>
-        </template>
+            <div class="flex flex-wrap items-center gap-1.5 mt-3 text-xs">
+              <span
+                v-if="emailFromName"
+                class="inline-flex items-center gap-1.5 px-2 py-1 rounded-lg bg-muted/50 max-w-[220px]"
+                :title="emailFromAddress">
+                <Icon name="lucide:user" class="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
+                <span class="truncate">{{ emailFromName }}</span>
+              </span>
+              <span
+                v-if="editableItem.to"
+                class="inline-flex items-center gap-1.5 px-2 py-1 rounded-lg bg-muted/50 max-w-[260px]"
+                :title="editableItem.to">
+                <Icon name="lucide:send" class="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
+                <span class="truncate">to {{ editableItem.to }}</span>
+              </span>
+              <span
+                v-if="editableItem.cc"
+                class="inline-flex items-center gap-1.5 px-2 py-1 rounded-lg bg-muted/50 max-w-[220px]"
+                :title="editableItem.cc">
+                <Icon name="lucide:users" class="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
+                <span class="truncate">cc {{ editableItem.cc }}</span>
+              </span>
+              <span v-if="emailDate" class="inline-flex items-center gap-1.5 px-2 py-1 rounded-lg bg-muted/50">
+                <Icon name="lucide:calendar" class="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
+                <span class="whitespace-nowrap">{{ emailDate }}</span>
+              </span>
+              <button
+                class="inline-flex items-center gap-1.5 px-2 py-1 rounded-lg transition-colors"
+                :class="
+                  editableItem.isStarred
+                    ? 'bg-amber-500/10 text-amber-600'
+                    : 'bg-muted/50 hover:bg-muted text-muted-foreground'
+                "
+                :disabled="isViewMode"
+                :title="editableItem.isStarred ? 'Starred' : 'Star email'"
+                @click="!isViewMode && (editableItem.isStarred = !editableItem.isStarred)">
+                <Icon :name="editableItem.isStarred ? 'lucide:star' : 'lucide:star-off'" class="h-3.5 w-3.5 shrink-0" />
+                {{ editableItem.isStarred ? 'Starred' : 'Star' }}
+              </button>
+              <button
+                class="inline-flex items-center gap-1.5 px-2 py-1 rounded-lg transition-colors"
+                :class="
+                  editableItem.isRead
+                    ? 'bg-muted/50 text-muted-foreground hover:bg-muted'
+                    : 'bg-primary/10 text-primary'
+                "
+                :disabled="isViewMode"
+                :title="editableItem.isRead ? 'Mark as unread' : 'Mark as read'"
+                @click="!isViewMode && (editableItem.isRead = !editableItem.isRead)">
+                <Icon :name="editableItem.isRead ? 'lucide:mail-open' : 'lucide:mail'" class="h-3.5 w-3.5 shrink-0" />
+                {{ editableItem.isRead ? 'Read' : 'Unread' }}
+              </button>
+            </div>
+          </template>
         </EntityBodyHeader>
         <div :class="isDocumentChrome ? 'pb-6' : 'px-6 pb-6'">
-          <EntityContentPanel v-model="editableItem" :mode="mode" />
+          <EntityContentPanel v-model="editableItem" :mode="mode" @extracted-h1="onExtractedH1" />
         </div>
       </div>
     </div>
 
     <!-- Right sidebar: tabbed references + activity (non-inset) -->
-    <ResizableRightPanel
-      v-if="!isInset"
-      v-model:collapsed="rightSidebarCollapsed"
-      v-model:width="rightSidebarW">
+    <ResizableRightPanel v-if="!isInset" v-model:collapsed="rightSidebarCollapsed" v-model:width="rightSidebarW">
       <EntityRightSidebar
         v-model:collapsed="rightSidebarCollapsed"
         :references="editableItem.references"
@@ -902,7 +860,11 @@
             @update:description="editableItem.description = $event"
             @regenerate-summary="handleRegenerateSummary" />
           <div :class="['flex-1 min-h-0 flex flex-col', isPreviewFirst ? '' : 'px-4 pt-2 pb-6']">
-            <EntityContentPanel v-model="editableItem" :mode="mode" class="flex-1 min-h-0" />
+            <EntityContentPanel
+              v-model="editableItem"
+              :mode="mode"
+              class="flex-1 min-h-0"
+              @extracted-h1="onExtractedH1" />
           </div>
         </div>
 

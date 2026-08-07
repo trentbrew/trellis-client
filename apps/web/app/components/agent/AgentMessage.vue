@@ -133,7 +133,7 @@
   })
 
   /**
-   * Routing badge derived from TokenRouter metadata.
+   * Routing badge derived from Ollama metadata.
    * Strips the provider prefix for readability and picks a concise task label.
    */
   const routingBadge = computed(() => {
@@ -160,7 +160,7 @@
     if (model.startsWith('anthropic:') || model.includes('claude')) return 'anthropic'
     if (model.startsWith('openai:') || model.includes('gpt')) return 'openai'
     if (model.startsWith('gemini:') || model.includes('gemini')) return 'google'
-    if (model.startsWith('auto:')) return 'auto'
+    if (model.startsWith('gemma') || model.includes('gemma')) return 'ollama'
     return undefined
   }
 </script>
@@ -180,7 +180,7 @@
         'max-w-[85%] rounded-lg px-3 py-2 text-sm',
         isUser ? 'bg-primary text-primary-foreground' : 'bg-muted text-foreground',
       ]">
-      <!-- Routing badge: shows which model TokenRouter picked and why -->
+      <!-- Routing badge: shows which model Ollama used and why -->
       <UiTooltip v-if="!isUser && routingBadge">
         <UiTooltipTrigger as-child>
           <div

@@ -1,16 +1,16 @@
 export type AgentMessageRole = 'user' | 'assistant' | 'function'
 
 /**
- * Routing metadata surfaced by the TokenRouter-backed agent endpoint.
+ * Routing metadata surfaced by the Ollama-backed agent endpoint.
  * Populated from `{ type: 'meta' }` SSE events so the UI can show
  * which model handled the turn and why it was selected.
  */
 export interface AgentRoutingInfo {
-  /** Model identifier passed to TokenRouter (e.g. `anthropic:claude-3-5-sonnet-20241022`, `auto:quality`). */
+  /** Model identifier passed to Ollama (e.g. `gemma4:e4b`). */
   model?: string
-  /** Routing provider name (e.g. `tokenrouter`). */
+  /** Routing provider name (e.g. `ollama`). */
   router?: string
-  /** Resolved upstream provider if reported by the router (e.g. `anthropic`, `openai`). */
+  /** Resolved upstream provider if reported by the router (e.g. `ollama`). */
   provider?: string
   /** Short classification label for the request (e.g. `lookup`, `synthesis`, `creative`). */
   taskClass?: string

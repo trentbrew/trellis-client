@@ -5,6 +5,7 @@
     htmlEmbedIframeTitle,
     htmlSourceContainsScript,
   } from '~/lib/block-registry/html-embed'
+  import { stripRemoteFonts } from '~/utils/stripRemoteFonts'
 
   const props = withDefaults(
     defineProps<{
@@ -27,6 +28,12 @@
 
   const sourceDraft = ref(props.config.source)
   const showSource = ref(props.editable && !props.config.source.trim())
+
+  // Remote webfonts referenced by embedded HTML trigger CORS errors inside the
+  // sandboxed `srcdoc` iframe (cross-origin CDNs don't send ACAO headers).
+  // Strip them so the embed falls back to local/system fonts instead of erroring.
+  // The stored source is left untouched — only the rendered srcdoc is sanitized.
+  const sanitizedSrcdoc = computed(() => stripRemoteFonts(sourceDraft.value))
 
   const containsScript = computed(() => htmlSourceContainsScript(sourceDraft.value))
   const iframeTitle = computed(() => htmlEmbedIframeTitle(props.config))
@@ -52,23 +59,20 @@
       surface === 'deck' ? 'h-full' : 'my-4',
     ]"
     role="group"
-    aria-label="HTML embed block"
-  >
+    aria-label="HTML embed block">
     <header class="flex items-center gap-2 border-b border-border bg-orange-500/10 px-3 py-2 text-xs">
       <span class="font-mono text-[10px] font-semibold uppercase tracking-wider text-orange-300">HTML</span>
       <span class="min-w-0 flex-1 truncate font-medium">{{ config.title || 'HTML embed' }}</span>
       <span
         class="rounded-full border px-2 py-0.5 font-mono text-[9px] uppercase tracking-wide"
-        :class="containsScript ? 'border-amber-400/50 text-amber-300' : 'border-emerald-400/40 text-emerald-300'"
-      >
+        :class="containsScript ? 'border-amber-400/50 text-amber-300' : 'border-emerald-400/40 text-emerald-300'">
         {{ containsScript ? 'scripts disabled' : 'sandboxed' }}
       </span>
       <button
         v-if="editable"
         type="button"
         class="rounded px-1.5 py-0.5 text-muted-foreground hover:bg-background hover:text-foreground"
-        @click.stop="showSource = !showSource"
-      >
+        @click.stop="showSource = !showSource">
         {{ showSource ? 'Preview' : 'Source' }}
       </button>
       <button
@@ -76,8 +80,7 @@
         type="button"
         class="rounded px-1.5 py-0.5 text-muted-foreground hover:bg-background hover:text-foreground"
         aria-label="Remove HTML embed"
-        @click.stop="emit('remove')"
-      >
+        @click.stop="emit('remove')">
         ×
       </button>
     </header>
@@ -91,8 +94,7 @@
         v-model="sourceDraft"
         class="min-h-40 w-full resize-y rounded-md border border-border bg-background px-3 py-2 font-mono text-xs leading-relaxed outline-none focus:border-orange-400"
         spellcheck="false"
-        @blur="updateSource"
-      />
+        @blur="updateSource" />
       <p class="text-[11px] leading-relaxed text-muted-foreground">
         Rendered in a sandboxed iframe. Scripts, forms, popups, and same-origin access are disabled.
       </p>
@@ -102,11 +104,10 @@
       <iframe
         class="block w-full bg-background"
         :style="{ height: iframeHeight }"
-        :srcdoc="sourceDraft"
+        :srcdoc="sanitizedSrcdoc"
         :sandbox="htmlEmbedIframeSandbox()"
         referrerpolicy="no-referrer"
-        :title="iframeTitle"
-      />
+        :title="iframeTitle" />
     </div>
   </section>
 </template>

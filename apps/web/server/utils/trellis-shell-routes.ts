@@ -477,6 +477,53 @@ const canvasesRoute: RouteDefinition = {
 }
 
 // ============================================================================
+// Scratch Route — /scratch (blank dock route; simple square icon)
+// ============================================================================
+
+const scratchRoute: RouteDefinition = {
+  '@id': 'route:scratch',
+  '@type': 'trellis:Route',
+  routePath: '/scratch',
+  label: 'Scratch',
+  icon: 'lucide:square',
+  order: 28,
+  inRail: true,
+  railPosition: 'primary',
+  inCommandPalette: true,
+  requiresAuth: true,
+  meta: {
+    title: 'Scratch',
+    description: 'A blank page',
+    hideSidebar: false,
+  },
+}
+
+// ============================================================================
+// Explorer Route — /explorer (Finder-like local file browser)
+// ============================================================================
+
+const explorerRoute: RouteDefinition = {
+  '@id': 'route:explorer',
+  '@type': 'trellis:Route',
+  routePath: '/explorer',
+  label: 'Explorer',
+  icon: 'lucide:folder',
+  order: 13,
+  inRail: true,
+  railPosition: 'primary',
+  inCommandPalette: true,
+  requiresAuth: true,
+  collapseSidebar: false,
+  searchKeywords: ['explorer', 'files', 'folder', 'finder', 'browse'],
+  meta: {
+    title: 'Explorer',
+    description: 'Browse your local files like Finder',
+    fullWidth: true,
+    hideSidebar: false,
+  },
+}
+
+// ============================================================================
 // Calendar Route — /calendar (top-level icon rail, auto-cloned to /w/:orgSlug/calendar)
 // ============================================================================
 
@@ -841,6 +888,8 @@ export function getRouteDefinitions(): Record<string, RouteDefinition> {
     'route:sheets': sheetsRoute,
     'route:decks': decksRoute,
     'route:canvases': canvasesRoute,
+    'route:scratch': scratchRoute,
+    'route:explorer': explorerRoute,
     'route:settings': settingsRoute,
   }
 }
@@ -861,5 +910,7 @@ export {
   sheetsRoute,
   decksRoute,
   canvasesRoute,
+  scratchRoute,
+  explorerRoute,
   settingsRoute,
 }

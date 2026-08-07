@@ -19,6 +19,7 @@
 
   defineEmits<{
     'update:modelValue': [value: any]
+    'extracted-h1': [title: string]
   }>()
 
   const entityType = computed(() => props.modelValue?.type as EntityType | undefined)
@@ -60,5 +61,6 @@
     v-if="currentPanel"
     :model-value="modelValue"
     :mode="mode"
-    @update:model-value="$emit('update:modelValue', $event)" />
+    @update:model-value="$emit('update:modelValue', $event)"
+    @extracted-h1="$emit('extracted-h1', $event)" />
 </template>

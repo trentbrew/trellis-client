@@ -1,6 +1,7 @@
 /**
  * Agent routing — classifies an incoming user message into a task class
- * and picks the appropriate model for TokenRouter to dispatch to.
+ * and picks the appropriate model to dispatch to via the local Ollama
+ * runtime (OpenAI-compatible endpoint at `http://localhost:11434/v1`).
  *
  * Pure module (no side effects, no IO) so it's trivially testable.
  *
@@ -10,18 +11,15 @@
  */
 
 /**
- * Default model identifiers. These are passed verbatim to TokenRouter
- * (api.tokenrouter.com/v1/chat/completions). IDs come from the catalog at
- * `GET /v1/models` and may use either:
- *   - Bare names (e.g. `claude-haiku-4-5`)
- *   - `<provider>/<model>` (e.g. `anthropic/claude-sonnet-4.5`, `openai/gpt-5.2`)
+ * Default model identifiers. These are passed verbatim to Ollama's
+ * OpenAI-compatible endpoint (http://localhost:11434/v1/chat/completions).
  *
- * Override any of these via the `TOKENROUTER_MODEL` env var (the override
+ * Override any of these via the `OLLAMA_MODEL` env var (the override
  * always bypasses the classifier).
  */
-export const MODEL_FAST = 'claude-haiku-4-5'
-export const MODEL_BALANCED = 'anthropic/claude-sonnet-4.5'
-export const MODEL_DEEP = 'anthropic/claude-opus-4.7'
+export const MODEL_FAST = 'gemma4:e4b'
+export const MODEL_BALANCED = 'gemma4:e4b'
+export const MODEL_DEEP = 'gemma4:e4b'
 
 export type TaskClass = 'lookup' | 'synthesis' | 'reasoning' | 'creative' | 'vision' | 'override'
 
@@ -75,8 +73,8 @@ export function classifyRequest(message: string): RoutingDecision {
       taskClass: 'reasoning',
       rationale:
         wordCount > ROUTING_THRESHOLDS.reasoningWordCount
-          ? `Long prompt (${wordCount} words). Routed to Sonnet for deeper reasoning.`
-          : 'Multi-step reasoning detected. Routed to Sonnet for depth.',
+          ? `Long prompt (${wordCount} words). Routed to Gemma for deeper reasoning.`
+          : 'Multi-step reasoning detected. Routed to Gemma for depth.',
     }
   }
 
@@ -85,7 +83,7 @@ export function classifyRequest(message: string): RoutingDecision {
     return {
       model: MODEL_BALANCED,
       taskClass: 'creative',
-      rationale: 'Generation/composition task. Routed to Sonnet for quality.',
+      rationale: 'Generation/composition task. Routed to Gemma for quality.',
     }
   }
 
@@ -94,7 +92,7 @@ export function classifyRequest(message: string): RoutingDecision {
     return {
       model: MODEL_FAST,
       taskClass: 'lookup',
-      rationale: `Short factual query (${wordCount} words). Routed to Haiku for speed & cost.`,
+      rationale: `Short factual query (${wordCount} words). Routed to Gemma for speed & cost.`,
     }
   }
 
@@ -102,12 +100,12 @@ export function classifyRequest(message: string): RoutingDecision {
   return {
     model: MODEL_BALANCED,
     taskClass: 'synthesis',
-    rationale: 'General synthesis task. Routed to Sonnet (balanced default).',
+    rationale: 'General synthesis task. Routed to Gemma (balanced default).',
   }
 }
 
 /**
- * Resolve the final routing decision honoring the explicit `TOKENROUTER_MODEL`
+ * Resolve the final routing decision honoring the explicit `OLLAMA_MODEL`
  * env override. Pure helper — caller passes both the message and the env value.
  */
 export function resolveRoutingDecision(
@@ -120,7 +118,7 @@ export function resolveRoutingDecision(
     return {
       model: trimmed,
       taskClass: 'override',
-      rationale: `Explicit model pinned via TOKENROUTER_MODEL env (${trimmed}).`,
+      rationale: `Explicit model pinned via OLLAMA_MODEL env (${trimmed}).`,
     }
   }
 
@@ -128,7 +126,7 @@ export function resolveRoutingDecision(
     return {
       model: MODEL_BALANCED,
       taskClass: 'vision',
-      rationale: 'Image attachment detected. Routed to Sonnet for vision.',
+      rationale: 'Image attachment detected. Routed to Gemma for vision.',
     }
   }
 
