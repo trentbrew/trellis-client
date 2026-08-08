@@ -37,6 +37,7 @@
   import { createDefaultItem } from '~/types/entity'
   import { useImageUpload } from '~/composables/useImageUpload'
   import { markdownToHtml, shouldPasteMarkdownAsRichText } from '~/utils/markdown'
+  import { editorLog, summarizeHtml } from '~/utils/editorDebug'
   import { BUILTIN_TEMPLATES } from '~/lib/noteTemplates'
 
   const lowlight = createLowlight(common)
@@ -781,6 +782,12 @@
     input.value = '' // reset so the same file can be re-selected
   }
 
+  // Tracks the last HTML this editor emitted upward. When the parent echoes the
+  // same value back (or an older one produced from that echo), re-applying it via
+  // setContent resets the ProseMirror selection to the document start, which reads
+  // as "typed characters appear then immediately disappear".
+  let lastEmittedHtml: string | null = null
+
   const editor = useEditor({
     extensions: buildExtensions(),
     content: markdownToHtml(props.modelValue || ''),
@@ -929,10 +936,22 @@
       },
     },
     onUpdate: ({ editor: e }) => {
+      const html = e.getHTML()
       // In collaborative mode, suppress emissions until Y.doc has been seeded
       // to prevent the empty Y.doc from overwriting persisted content.
-      if (collabEnabled.value && !collabSeeded) return
-      emit('update:modelValue', e.getHTML())
+      if (collabEnabled.value && !collabSeeded) {
+        editorLog('RichTextEditor', 'onUpdate suppressed (collab not seeded)', {
+          entityId: props.entityId,
+          html: summarizeHtml(html),
+        })
+        return
+      }
+      lastEmittedHtml = html
+      editorLog('RichTextEditor', 'onUpdate emit', {
+        entityId: props.entityId,
+        html: summarizeHtml(html),
+      })
+      emit('update:modelValue', html)
     },
   })
 
@@ -964,9 +983,54 @@
   watch(
     () => props.modelValue,
     (val) => {
-      if (collabEnabled.value) return // Y.js doc is authoritative in collab mode
-      if (editor.value && val !== editor.value.getHTML()) {
-        editor.value.commands.setContent(markdownToHtml(val || ''))
+      if (collabEnabled.value) {
+        editorLog('RichTextEditor', 'modelValue sync skipped (collab authoritative)', {
+          entityId: props.entityId,
+          incoming: summarizeHtml(val),
+        })
+        return
+      }
+      const e = editor.value
+      if (!e) return
+
+      const currentHtml = e.getHTML()
+      if (val === currentHtml) return
+
+      // Ignore round-trips of our own emission.
+      if (val === lastEmittedHtml) {
+        editorLog('RichTextEditor', 'modelValue sync skipped (echo of own emit)', {
+          entityId: props.entityId,
+          incoming: summarizeHtml(val),
+        })
+        return
+      }
+
+      const nextHtml = markdownToHtml(val || '')
+      if (nextHtml === currentHtml) return
+
+      // Never let an external update clobber the editor while the user is typing
+      // into it. The focused editor is the source of truth for its own document.
+      if (e.isFocused) {
+        editorLog('RichTextEditor', 'modelValue sync BLOCKED (editor focused)', {
+          entityId: props.entityId,
+          incoming: summarizeHtml(val),
+          current: summarizeHtml(currentHtml),
+        })
+        return
+      }
+
+      editorLog('RichTextEditor', 'modelValue sync applied (setContent)', {
+        entityId: props.entityId,
+        incoming: summarizeHtml(val),
+        current: summarizeHtml(currentHtml),
+      })
+      const { from, to } = e.state.selection
+      e.commands.setContent(nextHtml, { emitUpdate: false } as any)
+      try {
+        const size = e.state.doc.content.size
+        e.commands.setTextSelection({ from: Math.min(from, size), to: Math.min(to, size) })
+      } catch {
+        /* selection restore is best-effort */
       }
     },
   )
@@ -2058,7 +2122,8 @@
           </div>
           <div v-else class="space-y-3">
             <p class="text-xs text-muted-foreground">
-              Sheet: <span class="font-medium text-foreground">{{ sheetRangePickerTitle }}</span>
+              Sheet:
+              <span class="font-medium text-foreground">{{ sheetRangePickerTitle }}</span>
             </p>
             <div class="space-y-1">
               <label class="text-xs font-medium text-muted-foreground">A1 range</label>

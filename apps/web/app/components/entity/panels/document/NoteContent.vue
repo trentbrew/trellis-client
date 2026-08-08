@@ -1,6 +1,7 @@
 <script lang="ts" setup>
   import { markdownToHtml } from '~/utils/markdown'
   import { isEntityReference } from '~/types/entity'
+  import { editorLog, summarizeHtml } from '~/utils/editorDebug'
 
   const props = defineProps<{
     modelValue: any
@@ -15,6 +16,27 @@
     get: () => props.modelValue,
     set: (v) => emit('update:modelValue', v),
   })
+
+  const noteContent = computed({
+    get: () => item.value?.content ?? '',
+    set: (v: string) => {
+      const target = item.value
+      if (!target) return
+      editorLog('NoteContent', 'content write', { entityId: target.id, value: summarizeHtml(v) })
+      target.content = v
+    },
+  })
+
+  watch(
+    () => item.value?.content,
+    (next, prev) => {
+      editorLog('NoteContent', 'content prop changed', {
+        entityId: item.value?.id,
+        prev: summarizeHtml(prev),
+        next: summarizeHtml(next),
+      })
+    },
+  )
 
   const isViewMode = computed(() => props.mode === 'view')
   const { items } = useTrellisEntities()
@@ -43,9 +65,7 @@
 
 <template>
   <div class="min-h-full w-full min-w-0">
-    <div
-      v-if="linkedAudioUrl"
-      class="mb-4 pb-0 pt-4">
+    <div v-if="linkedAudioUrl" class="mb-4 pb-0 pt-4">
       <div class="mb-2 flex items-center gap-2">
         <Icon name="lucide:mic" class="h-3.5 w-3.5 text-muted-foreground" />
         <span class="text-[11px] font-medium uppercase tracking-wide text-muted-foreground">Voice recording</span>
@@ -55,7 +75,7 @@
 
     <div v-if="!isViewMode" data-testid="note-body-editor" class="w-full min-w-0">
       <UiRichTextEditor
-        v-model="item.content"
+        v-model="noteContent"
         placeholder="Type something..."
         class="w-full min-w-0 overflow-x-auto border-none! rounded-none!"
         mentions
