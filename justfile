@@ -10,6 +10,10 @@ run:
 default:
     @just --list
 
+# One-command bootstrap for new contributors (installs just/bun/pnpm if missing, then pnpm install)
+setup:
+    ./scripts/bootstrap.sh
+
 # Install all dependencies
 install:
     pnpm install

@@ -1,4 +1,4 @@
-# Trellis
+# Nodebook
 
 > _The semantic web was right. Just at the wrong scale._
 
@@ -10,18 +10,22 @@ See [`VISION.md`](./VISION.md) for the thesis.
 
 ## Quick start
 
-Requires **Node 22+** and [pnpm](https://pnpm.io). The repo is a pnpm workspace
-(`workspace:` protocol) — `npm install` will not work.
+Requires **Node 20+** and a `bash` shell. One command installs everything else
+(`just`, `bun`, the pinned `pnpm` via corepack) and runs `pnpm install`:
 
 ```bash
-corepack enable         # installs the pinned pnpm version (see packageManager)
-pnpm install
-just dev                # → http://localhost:1414
+just setup               # one-command bootstrap (installs just/bun/pnpm, then pnpm install)
+just dev                 # → http://localhost:1414
 just trellis health --pretty
 ```
 
+> Running `./scripts/bootstrap.sh` from a fresh clone does the same as `just setup` — no
+> need to install `just` first. The repo is a **pnpm workspace** (`workspace:`
+> protocol) — `npm install` will not work (the pinned version comes from
+> `packageManager` in `package.json`).
+
 `just` is the task runner — [install](https://github.com/casey/just#installation)
-it once:
+it once if you prefer to install it manually:
 
 ```bash
 # macOS
@@ -50,7 +54,7 @@ up your own data:
 just dev                                 # terminal 1 — start the app
 pnpm --filter ./apps/web seed:deck       # terminal 2 — YC S26 demo deck + slides
 pnpm --filter ./apps/web seed:sheet      # Q3 runway spreadsheet demo
-pnpm --filter ./apps/web seed:deck:vcs   # TrellisVCS explainer deck
+pnpm --filter ./apps/web seed:deck:vcs   # NodebookVCS explainer deck
 ```
 
 Each seeder hits `http://localhost:$TRELLIS_PORT/api/graph` and can be re-run
@@ -86,7 +90,7 @@ Pick the entry point that matches your intent:
 
 | If you want to…                                     | Read                                                                                         |
 | --------------------------------------------------- | -------------------------------------------------------------------------------------------- |
-| Understand **what Trellis is** and why              | [`VISION.md`](./VISION.md), [`PRINCIPLES.md`](./PRINCIPLES.md)                               |
+| Understand **what Nodebook is** and why              | [`VISION.md`](./VISION.md), [`PRINCIPLES.md`](./PRINCIPLES.md)                               |
 | Get the **system architecture overview**            | [`ARCHITECTURE.md`](./ARCHITECTURE.md)                                                       |
 | Know the **conventions across the repo**            | [`CONVENTIONS.md`](./CONVENTIONS.md)                                                         |
 | Be an **AI agent operating in this repo**           | [`AGENTS.md`](./AGENTS.md)                                                                   |
@@ -103,7 +107,7 @@ Pick the entry point that matches your intent:
 
 ## MCP setup for AI assistants
 
-Connect Claude / Windsurf / Cursor / Continue to Trellis in one command:
+Connect Claude / Windsurf / Cursor / Continue to Nodebook in one command:
 
 ```bash
 pnpm setup:mcp claude    # or: windsurf, cursor, continue
@@ -117,6 +121,7 @@ Detailed flow: [`docs/getting-started/SETUP.md`](./docs/getting-started/SETUP.md
 ## Common commands
 
 ```bash
+just setup               # one-command bootstrap (installs just/bun/pnpm, then pnpm install)
 just dev                # start the web app on $TRELLIS_PORT (1414 default)
 just desktop            # start web + Tauri desktop shell
 just build              # build all workspace packages
@@ -134,7 +139,7 @@ Full CLI reference: [`AGENTS.md`](./AGENTS.md) and [`.windsurf/workflows/trellis
 
 ## Data modes
 
-Trellis runs in two modes (toggled via `TRELLIS_DATA_MODE`):
+Nodebook runs in two modes (toggled via `TRELLIS_DATA_MODE`):
 
 | Mode    | Entity storage      | Platform data      | Default? |
 | ------- | ------------------- | ------------------ | -------- |
