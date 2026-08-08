@@ -47,6 +47,7 @@
   const entityConfig: Record<EntityDetailVariant, { title: string; icon: string; description?: string }> = {
     task: { title: 'Task', icon: 'lucide:check-square', description: 'Task details and status' },
     event: { title: 'Event', icon: 'lucide:calendar-days', description: 'Event information' },
+    email: { title: 'Email', icon: 'lucide:mail', description: 'Email details' },
     payment: { title: 'Payment', icon: 'lucide:credit-card', description: 'Payment details' },
     deadline: { title: 'Deadline', icon: 'lucide:alarm-clock', description: 'Deadline information' },
     reminder: { title: 'Reminder', icon: 'lucide:bell', description: 'Reminder details' },

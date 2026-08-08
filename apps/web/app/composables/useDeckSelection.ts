@@ -15,7 +15,7 @@ export function deckObjectLabel(objectId: DeckObjectKind, slide?: SlideDefinitio
     const object = slide?.regions.objects?.find((item) => item.id === objectIdValue)
     return object?.block.title || 'HTML embed'
   }
-  return OBJECT_LABELS[objectId]
+  return OBJECT_LABELS[objectId as DeckFixedObjectKind]
 }
 
 export function useDeckSelection(activeSlide: Ref<SlideDefinition | null>) {

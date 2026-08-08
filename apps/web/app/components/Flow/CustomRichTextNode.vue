@@ -39,7 +39,7 @@ console.log('Hello, Tiptap!');</code></pre>
     class="py-12"
     :style="{ borderColor: 'var(--chart-3)', backgroundColor: 'color-mix(in srgb, var(--chart-3) 10%, transparent)' }"
   >
-    <Handle type="target" :position="Position.Left" :style="{ backgroundColor: nodeColor }" />
+    <Handle type="target" :position="Position.Left" :style="{ backgroundColor: 'var(--chart-3)' }" />
     <div class="mx-auto max-w-3xl space-y-4">
       <div class="space-y-2 text-center">
         <h2 class="text-2xl font-bold tracking-tight">Rich Text Editor</h2>

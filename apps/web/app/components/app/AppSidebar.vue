@@ -1426,7 +1426,7 @@
                                   :transition="
                                     transitionsDisabled
                                       ? { duration: 0 }
-                                      : { duration: 0.28, ease: 'easeOut', delay: i * 0.035 }
+                                      : { duration: 0.28, ease: 'easeOut', delay: Number(i) * 0.035 }
                                   "
                                   :layout="!transitionsDisabled">
                                   <!-- Group node: render via recursive SidebarTreeItem -->

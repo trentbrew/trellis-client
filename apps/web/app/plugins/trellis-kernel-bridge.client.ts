@@ -1,26 +1,26 @@
+import type { TrellisDb } from 'trellis/browser'
 import { createKernelBridgeClient } from '~/lib/trellis-kernel-bridge/create-client'
+
+type KernelBridgeHandle = { enabled: false; client: null } | { enabled: true; client: TrellisDb }
 
 export default defineNuxtPlugin(() => {
   const config = useRuntimeConfig()
   const sidecarEnabled = Boolean(config.public.trellisSidecar)
 
-  if (sidecarEnabled) {
-    return {
-      provide: {
-        trellisKernelBridge: { enabled: false as const, client: null },
-      },
+  let handle: KernelBridgeHandle = { enabled: false, client: null }
+
+  if (!sidecarEnabled) {
+    const client = createKernelBridgeClient()
+    handle = { enabled: true, client }
+
+    if (import.meta.dev) {
+      console.info('[trellis-kernel-bridge] enabled — HTTP /api/graph/kernel-bridge, SSE /api/graph/events')
     }
-  }
-
-  const client = createKernelBridgeClient()
-
-  if (import.meta.dev) {
-    console.info('[trellis-kernel-bridge] enabled — HTTP /api/graph/kernel-bridge, SSE /api/graph/events')
   }
 
   return {
     provide: {
-      trellisKernelBridge: { enabled: true as const, client },
+      trellisKernelBridge: handle,
     },
   }
 })

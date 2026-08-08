@@ -106,10 +106,11 @@ function _inferMimeType(src: string): string {
     const m = src.match(/^data:([^;,]+)/)
     return m?.[1] || 'image/png'
   }
-  const ext = (src.split('?')[0].split('.').pop() ?? '').toLowerCase()
+  const ext = ((src.split('?')[0] ?? '').split('.').pop() ?? '').toLowerCase()
   const map: Record<string, string> = {
     jpg: 'image/jpeg', jpeg: 'image/jpeg', png: 'image/png',
     gif: 'image/gif', webp: 'image/webp', svg: 'image/svg+xml',
   }
   return map[ext] || 'image/png'
 }
+

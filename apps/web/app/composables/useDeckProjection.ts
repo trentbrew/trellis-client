@@ -39,10 +39,11 @@ function parseDeckObjects(raw: unknown): DeckSlideObject[] | undefined {
       const frame = item.frame && typeof item.frame === 'object' && !Array.isArray(item.frame)
         ? item.frame as Record<string, unknown>
         : {}
+      const id = typeof item.id === 'string' ? item.id : String(item.id ?? '')
       return createDeckHtmlObject({
-        id: item.id,
+        id,
         block: {
-          id: item.id,
+          id,
           title: typeof block.title === 'string' ? block.title : 'HTML embed',
           source: typeof block.source === 'string' ? block.source : undefined,
           height: typeof block.height === 'number' ? block.height : undefined,

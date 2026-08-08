@@ -27,7 +27,7 @@ function isScalarExportValue(value: unknown): boolean {
 export function defaultEntityExportKeys(entities: Entity[]): string[] {
   const keys = new Set<string>()
   for (const entity of entities) {
-    for (const [key, value] of Object.entries(entity as Record<string, unknown>)) {
+    for (const [key, value] of Object.entries(entity as unknown as Record<string, unknown>)) {
       if (CSV_SKIP_KEYS.has(key)) continue
       if (isScalarExportValue(value) || Array.isArray(value)) keys.add(key)
     }
@@ -53,7 +53,7 @@ export function entitiesToExportRows(
 ): Record<string, unknown>[] {
   const keys = columnKeys ?? defaultEntityExportKeys(entities)
   return entities.map((entity) => {
-    const record = entity as Record<string, unknown>
+    const record = entity as unknown as Record<string, unknown>
     const out: Record<string, unknown> = {}
     for (const key of keys) {
       if (CSV_SKIP_KEYS.has(key)) continue
@@ -222,9 +222,9 @@ export function parseEntityImportJson(parsed: unknown): EntityImportPayload[] {
     const { id: _id, createdAt: _c, updatedAt: _u, ...rest } = row
 
     return {
-      ...(rest as Partial<Entity>),
+      ...(rest as unknown as Partial<Entity>),
       type: type as EntityType,
       title,
-    }
+    } as EntityImportPayload
   })
 }

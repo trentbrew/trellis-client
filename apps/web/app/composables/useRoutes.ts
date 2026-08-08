@@ -90,7 +90,7 @@ export const useRoutes = () => {
 
   const sheetsChildren = computed<RouteConfig[]>(() => {
     return (allEntityItems.value || [])
-      .filter((e) => e.type === 'sheet')
+      .filter((e) => (e.type as string) === 'sheet')
       .map((s) => ({
         path: sheetPathFromEntityId(s.id),
         label: s.title || s.id,

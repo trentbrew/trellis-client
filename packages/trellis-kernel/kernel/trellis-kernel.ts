@@ -742,7 +742,7 @@ export class TrellisKernel {
 
     // Projections can be EQL-S strings or Datalog Query objects (though defined as string in schema)
     // For now, we treat them as EQL-S.
-    return this.query(projection.query, ctx);
+    return this.query(projection.query ?? '', ctx);
   }
 
   private async appendFacts(

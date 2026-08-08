@@ -429,10 +429,11 @@
                 <UiInput
                   :model-value="String(schemaFieldValue ?? '')"
                   class="h-8 bg-background/50 font-mono"
-                  :class="{
-                    'text-primary underline decoration-primary/40 underline-offset-2 cursor-pointer':
-                      schemaField.type === 'relation' && isTurtleCollectionLink,
-                  }"
+                  :class="
+                    schemaField.type === 'relation' && isTurtleCollectionLink
+                      ? 'text-primary underline decoration-primary/40 underline-offset-2 cursor-pointer'
+                      : ''
+                  "
                   :title="
                     schemaField.type === 'relation' && isTurtleCollectionLink
                       ? 'Cmd/Ctrl+Click to open relation'
@@ -449,10 +450,11 @@
                 v-if="props.type !== 'boolean'"
                 :model-value="scalarString"
                 class="h-8 bg-background/50 font-mono"
-                :class="{
-                  'text-primary underline decoration-primary/40 underline-offset-2 cursor-pointer':
-                    isTurtleCollectionLink,
-                }"
+                :class="
+                  isTurtleCollectionLink
+                    ? 'text-primary underline decoration-primary/40 underline-offset-2 cursor-pointer'
+                    : ''
+                "
                 :title="isTurtleCollectionLink ? 'Cmd/Ctrl+Click to open relation' : undefined"
                 @click="onScalarLinkClick"
                 @dblclick="onScalarLinkDblClick"

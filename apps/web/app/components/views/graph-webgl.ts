@@ -376,7 +376,7 @@ export function mountGraphWebGL(
   labelRenderer.domElement.style.zIndex = "2"
   container.appendChild(labelRenderer.domElement)
 
-  const fg = ForceGraph3D({ controlType: "orbit" })(container)
+  const fg = new ForceGraph3D(container, { controlType: "orbit" })
     .backgroundColor("rgba(0,0,0,0)")
     .showNavInfo(false)
     .nodeRelSize(1)

@@ -40,7 +40,6 @@ const DIALOG_OVERRIDES: Partial<Record<EntityType, Component>> = {
 
   // Slide deck — graph-native metadata + editor shortcuts
   slide_deck: DeckDialog,
-  deck: DeckDialog,
 
   // Live TQL sheet — metadata + editor shortcut
   sheet: SheetDialog,

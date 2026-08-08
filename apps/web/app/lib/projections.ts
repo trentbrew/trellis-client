@@ -51,6 +51,8 @@ const projectionIcons: Record<ProjectionType, string> = {
   'slide-deck': 'lucide:presentation',
   canvas: 'lucide:layout-dashboard',
   moodboard: 'lucide:layout-dashboard',
+  form: 'lucide:clipboard-list',
+  'entity-detail': 'lucide:panel-right',
 }
 
 const projectionLabels: Record<ProjectionType, string> = {
@@ -71,6 +73,8 @@ const projectionLabels: Record<ProjectionType, string> = {
   'slide-deck': 'Slide Deck',
   canvas: 'Canvas',
   moodboard: 'Moodboard',
+  form: 'Form',
+  'entity-detail': 'Entity Detail',
 }
 
 const requiredPrimaryProjectionTypes: Array<

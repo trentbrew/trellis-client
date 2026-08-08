@@ -59,7 +59,7 @@ export const SheetRange = Node.create({
     return {
       insertSheetRange:
         (attrs: { sheetId: string; range: string; title?: string }) =>
-        ({ chain }: { chain: () => { insertContent: (c: unknown) => { run: () => boolean } } }) => {
+        ({ chain }) => {
           return chain()
             .insertContent({
               type: this.name,

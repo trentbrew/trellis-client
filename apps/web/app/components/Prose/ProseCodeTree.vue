@@ -1,5 +1,5 @@
 <script lang="ts" setup>
-  import { ref, computed } from 'vue'
+  import { ref, computed, useSlots } from 'vue'
 
   const props = withDefaults(
     defineProps<{
@@ -12,15 +12,21 @@
     },
   )
 
+  const $slots = useSlots()
+
   const activeFile = ref(props.defaultValue)
   const files = computed(() => {
     const slots = Object.keys($slots).filter((key) => !isNaN(Number(key)))
-    return slots.map((key) => ({
-      name: key,
-      label: ($slots[key]?.[0] as any)?.props?.label || key,
-      icon: ($slots[key]?.[0] as any)?.props?.icon,
-      code: ($slots[key]?.[0] as any)?.children?.[0]?.children || '',
-    }))
+    return slots.map((key) => {
+      const slotVNodes = ($slots[key] ?? []) as any[]
+      const slotContent = slotVNodes[0] as any
+      return {
+        name: key,
+        label: slotContent?.props?.label || key,
+        icon: slotContent?.props?.icon,
+        code: slotContent?.children?.[0]?.children || '',
+      }
+    })
   })
 </script>
 

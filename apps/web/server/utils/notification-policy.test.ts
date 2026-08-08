@@ -85,7 +85,7 @@ describe('earned interrupt downgrade', () => {
   beforeEach(() => resetNotificationPolicyState())
 
   it('bans source after enough dismissals', () => {
-    const source = 'noisy-source'
+    const source = 'noisy-source' as 'graph'
     for (let i = 0; i < 5; i++) {
       admitNotification({
         ...base,

@@ -76,7 +76,7 @@ const hasCustomProperties = computed(() => props.hiddenCount > 0 || props.showEm
             <label class="flex flex-1 cursor-pointer items-center gap-2 px-1 py-1 text-xs">
               <UiCheckbox
                 :model-value="isChecked(option.key)"
-                @update:model-value="(on: boolean) => emit('update:visible', option.key, on)" />
+                @update:model-value="(on: boolean | 'indeterminate') => emit('update:visible', option.key, on === true)" />
               <span>{{ option.label }}</span>
             </label>
             <div class="flex shrink-0 items-center">
@@ -103,7 +103,7 @@ const hasCustomProperties = computed(() => props.hiddenCount > 0 || props.showEm
 
       <div class="border-t border-border px-3 py-2 space-y-2">
         <label class="flex cursor-pointer items-center gap-2 text-xs text-muted-foreground">
-          <UiCheckbox :model-value="showEmpty" @update:model-value="(on: boolean) => emit('update:showEmpty', on)" />
+          <UiCheckbox :model-value="showEmpty" @update:model-value="(on: boolean | 'indeterminate') => emit('update:showEmpty', on === true)" />
           Show empty properties
         </label>
         <button

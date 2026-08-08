@@ -122,7 +122,7 @@ export const TableNode = Table.extend<TableOptions>({
           this.dom = this.blockContainer
         }
 
-        ignoreMutation(mutation: ViewMutationRecord): boolean {
+        override ignoreMutation(mutation: ViewMutationRecord): boolean {
           const target = mutation.target as HTMLElement
           const isInsideTable = target.closest('.table-container')
 

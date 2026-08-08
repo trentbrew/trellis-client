@@ -78,14 +78,15 @@
     emit('update', { description: value })
   }
 
-  function onValueTypeChange(value: string) {
+  function onValueTypeChange(value: unknown) {
+    const v = String(value ?? '')
     // Reset type-specific metadata if the shape changed incompatibly.
-    const patch: Partial<EditableField> = { valueType: value }
+    const patch: Partial<EditableField> = { valueType: v }
     const current = props.field.valueType
-    const nextIsSelect = value === 'select' || value === 'multi_select'
+    const nextIsSelect = v === 'select' || v === 'multi_select'
     const wasSelect = current === 'select' || current === 'multi_select'
     if (wasSelect && !nextIsSelect) patch.selectOptions = undefined
-    const nextIsRelation = value === 'relation'
+    const nextIsRelation = v === 'relation'
     const wasRelation = current === 'relation'
     if (wasRelation && !nextIsRelation) patch.relation = undefined
     patch.defaultValue = undefined

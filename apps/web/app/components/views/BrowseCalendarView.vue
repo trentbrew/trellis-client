@@ -21,10 +21,10 @@ const calendarNodes = computed(() =>
     'user:dueDate': item.endDate ? { start: item.startDate, end: item.endDate } : item.startDate,
     'user:recurrence': item.recurrence,
     'user:status':
-      (item as Record<string, unknown>).taskStatus ||
-      (item as Record<string, unknown>).tripStatus ||
-      (item as Record<string, unknown>).paymentStatus ||
-      (item as Record<string, unknown>).eventType ||
+      (item as unknown as Record<string, unknown>).taskStatus ||
+      (item as unknown as Record<string, unknown>).tripStatus ||
+      (item as unknown as Record<string, unknown>).paymentStatus ||
+      (item as unknown as Record<string, unknown>).eventType ||
       'note',
     'user:priority': item.priority,
     'user:urgency': item.urgency,

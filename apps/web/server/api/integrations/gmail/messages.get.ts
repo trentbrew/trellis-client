@@ -47,7 +47,11 @@ export default defineEventHandler(async (event) => {
   }
 
   try {
-    listResponse = await $fetch(
+    listResponse = await $fetch<{
+      threads?: Array<{ id: string; snippet?: string }>
+      nextPageToken?: string
+      resultSizeEstimate?: number
+    }>(
       `https://gmail.googleapis.com/gmail/v1/users/me/threads?${listParams.toString()}`,
       { headers: authHeaders },
     )

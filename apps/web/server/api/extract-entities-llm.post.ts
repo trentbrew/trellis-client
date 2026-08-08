@@ -367,7 +367,7 @@ function parseResponse(raw: string, existingTypes: string[], existingTypeLabels:
     const codeBlockMatch = raw.match(/```(?:json)?\s*([\s\S]*?)```/)
     if (codeBlockMatch) {
       try {
-        parsed = JSON.parse(codeBlockMatch[1].trim())
+        parsed = JSON.parse(codeBlockMatch[1]!.trim())
       } catch {
         return empty
       }

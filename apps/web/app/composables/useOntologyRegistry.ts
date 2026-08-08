@@ -548,7 +548,7 @@ export function useOntologyRegistry() {
     originalName: string,
     patch: Partial<
       Pick<
-        SchemaField,
+        OntologySchemaField,
         'name' | 'valueType' | 'required' | 'description' | 'selectOptions' | 'relation' | 'defaultValue' | 'icon'
       >
     >,
@@ -567,7 +567,7 @@ export function useOntologyRegistry() {
     }
 
     const updatedFields = [...currentSchema.fields]
-    updatedFields[index] = { ...updatedFields[index]!, ...patch } as SchemaField
+    updatedFields[index] = { ...updatedFields[index]!, ...patch } as OntologySchemaField
 
     await _putSchema(schemaId, { ...currentSchema, fields: updatedFields })
   }
@@ -577,7 +577,7 @@ export function useOntologyRegistry() {
    * has reordered or bulk-edited fields client-side and needs to flush the
    * final state in one request.
    */
-  async function replaceFieldsOnType(schemaId: string, fields: SchemaField[]): Promise<void> {
+  async function replaceFieldsOnType(schemaId: string, fields: OntologySchemaField[]): Promise<void> {
     assertMutable(schemaId)
     const currentSchema = await _fetchSchema(schemaId)
     await _putSchema(schemaId, { ...currentSchema, fields })

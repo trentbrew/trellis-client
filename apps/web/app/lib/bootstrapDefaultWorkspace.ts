@@ -39,7 +39,7 @@ export async function bootstrapDefaultWorkspace(
   const members = ((resp.data as any)?.members || []) as any[]
 
   if (orgs.length > 0) {
-    const org = orgs[0]
+    const org = orgs[0]!
     const orgApps = apps.filter((a) => a.orgId === org.id)
     await upsertSetting('user', user.id, 'onboardingComplete', true)
     await upsertSetting('user', user.id, 'lastOrgId', org.id)

@@ -66,7 +66,7 @@ describe('useChat — @mention notifications', () => {
 
     const notifyCalls = mockFetch.mock.calls.filter((c: any[]) => c[0] === '/api/notify')
     expect(notifyCalls).toHaveLength(1)
-    expect(notifyCalls[0][1].body).toMatchObject({
+    expect(notifyCalls[0]![1].body).toMatchObject({
       recipientId: 'user-bob',
       orgId: 'org-1',
       type: 'mention',
@@ -89,7 +89,7 @@ describe('useChat — @mention notifications', () => {
 
     const notifyMsgCalls = mockFetch.mock.calls.filter((c: any[]) => c[0] === '/api/chat/notify-message')
     expect(notifyMsgCalls).toHaveLength(1)
-    expect(notifyMsgCalls[0][1].body.skipUserIds).toEqual(
+    expect(notifyMsgCalls[0]![1].body.skipUserIds).toEqual(
       expect.arrayContaining(['user-bob', 'user-carol']),
     )
   })

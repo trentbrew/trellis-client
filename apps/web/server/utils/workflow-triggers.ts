@@ -20,7 +20,7 @@
 import { randomUUID } from 'node:crypto'
 import { useTrellisKernel, pushMutationLog } from '../plugins/trellis-kernel'
 import { emitMutation } from './trellis-events'
-import type { WorkflowGraph } from './workflow-executor'
+import type { WorkflowGraph } from '~/types/database'
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 

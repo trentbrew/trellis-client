@@ -30,7 +30,7 @@
 
   const entity = computed<Entity | null>(() => {
     if (props.entity && typeof props.entity === 'object') {
-      const e = props.entity as Record<string, unknown>
+      const e = props.entity as unknown as Record<string, unknown>
       const id = String(e.id || e['@id'] || props.entityId || '')
       if (!id) return null
       return {
@@ -46,7 +46,7 @@
         createdAt: e.createdAt as string | number | undefined,
         taskStatus: e.taskStatus as string | undefined,
         tripStatus: e.tripStatus as string | undefined,
-      } as Entity
+      } as unknown as Entity
     }
     if (!props.entityId) return null
     return items.value.find((e: Entity) => e.id === props.entityId) ?? null

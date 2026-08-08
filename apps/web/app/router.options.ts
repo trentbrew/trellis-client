@@ -79,7 +79,7 @@ export default <RouterConfig>{
     const clones: any[] = []
 
     for (const route of _routes) {
-      const firstSegment = route.path.replace(/^\//, '').split('/')[0]
+      const firstSegment = route.path.replace(/^\//, '').split('/')[0]!
       if (WORKSPACE_SCOPED.has(firstSegment)) {
         clones.push(cloneRoute(route))
       }

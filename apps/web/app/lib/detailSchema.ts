@@ -234,6 +234,13 @@ const entityFieldDefaults: Record<EntityDetailVariant, DetailField<any>[]> = {
     { key: 'fileType', label: 'File Type', variant: 'readonly', icon: 'lucide:file' },
     { key: 'createdAt', label: 'Created', variant: 'readonly', icon: 'lucide:clock' },
   ],
+  email: [
+    { key: 'title', label: 'Subject', variant: 'text', required: true, icon: 'lucide:mail', colSpan: 2 },
+    { key: 'description', label: 'Body', variant: 'textarea', icon: 'lucide:align-left', colSpan: 2 },
+    { key: 'from', label: 'From', variant: 'text', icon: 'lucide:user' },
+    { key: 'to', label: 'To', variant: 'text', icon: 'lucide:users' },
+    { key: 'receivedAt', label: 'Received', variant: 'readonly', icon: 'lucide:clock' },
+  ],
   default: [
     { key: 'title', label: 'Title', variant: 'text', icon: 'lucide:type', colSpan: 2 },
     { key: 'description', label: 'Description', variant: 'textarea', icon: 'lucide:align-left', colSpan: 2 },
@@ -252,6 +259,7 @@ const entityConfig: Record<EntityDetailVariant, { title: string; icon: string; d
   permit: { title: 'Permit', icon: 'lucide:file-badge', description: 'Permit information' },
   folder: { title: 'Folder', icon: 'lucide:folder', description: 'Folder details' },
   document: { title: 'Document', icon: 'lucide:file-text', description: 'Document information' },
+  email: { title: 'Email', icon: 'lucide:mail', description: 'Email details' },
   default: { title: 'Item', icon: 'lucide:box', description: 'Item details' },
 }
 

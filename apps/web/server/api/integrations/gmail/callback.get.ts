@@ -50,7 +50,12 @@ export default defineEventHandler(async (event) => {
   }
 
   try {
-    tokenData = await $fetch('https://oauth2.googleapis.com/token', {
+    tokenData = await $fetch<{
+      access_token: string
+      refresh_token?: string
+      expires_in: number
+      scope?: string
+    }>('https://oauth2.googleapis.com/token', {
       method: 'POST',
       body: {
         code,

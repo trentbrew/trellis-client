@@ -48,7 +48,9 @@
 
   function handleAvatarDrop(event: DragEvent) {
     event.preventDefault()
-    const file = event.dataTransfer?.files[0] || event.target?.files?.[0]
+    const file =
+      event.dataTransfer?.files[0] ||
+      (event.target as HTMLInputElement | null)?.files?.[0]
     if (file && file.type.startsWith('image/')) {
       const reader = new FileReader()
       reader.onload = (e) => {

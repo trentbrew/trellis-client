@@ -183,9 +183,9 @@
         </Panel>
 
         <!-- Edge labels -->
-        <template #edge-label="{ edge }">
-          <div v-if="edge.label" class="rounded border border-border bg-card px-2 py-0.5 text-[10px] font-mono text-muted-foreground">
-            {{ edge.label }}
+        <template #edge-label="{ label }">
+          <div v-if="label" class="rounded border border-border bg-card px-2 py-0.5 text-[10px] font-mono text-muted-foreground">
+            {{ label }}
           </div>
         </template>
       </VueFlow>

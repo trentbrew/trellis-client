@@ -85,18 +85,18 @@ export default defineEventHandler(async (event) => {
         for (const prefix of [property, `og:${property}`, `twitter:${property}`]) {
           const re = new RegExp(`<meta[^>]+${attr}=["']${prefix}["'][^>]+content=["']([^"']+)["']`, 'i')
           const match = html.match(re)
-          if (match) return match[1]
+          if (match) return match[1]!
           // Also check reversed attribute order: content before property
           const re2 = new RegExp(`<meta[^>]+content=["']([^"']+)["'][^>]+${attr}=["']${prefix}["']`, 'i')
           const match2 = html.match(re2)
-          if (match2) return match2[1]
+          if (match2) return match2[1]!
         }
       }
       return ''
     }
 
     const titleMatch = html.match(/<title[^>]*>([^<]+)<\/title>/i)
-    const htmlTitle = titleMatch ? titleMatch[1].trim() : ''
+    const htmlTitle = titleMatch ? titleMatch[1]!.trim() : ''
 
     const title = getMeta('title') || htmlTitle || parsed.hostname
     const description = getMeta('description')
@@ -117,7 +117,7 @@ export default defineEventHandler(async (event) => {
     const faviconMatch = html.match(/<link[^>]+rel=["'][^"']*icon[^"']*["'][^>]+href=["']([^"']+)["']/i)
       || html.match(/<link[^>]+href=["']([^"']+)["'][^>]+rel=["'][^"']*icon[^"']*["']/i)
     const favicon = faviconMatch
-      ? resolveUrl(faviconMatch[1])
+      ? resolveUrl(faviconMatch[1]!)
       : `https://www.google.com/s2/favicons?domain=${parsed.hostname}&sz=64`
 
     return {

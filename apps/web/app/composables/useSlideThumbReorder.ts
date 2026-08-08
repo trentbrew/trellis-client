@@ -38,7 +38,7 @@ export function useSlideThumbReorder(
 
     const ids = slides.value.map((s) => s.entityId)
     const [moved] = ids.splice(from, 1)
-    ids.splice(toIndex, 0, moved)
+    ids.splice(toIndex, 0, moved!)
     emit.reorder(ids)
     emit.activeIndex(toIndex)
   }

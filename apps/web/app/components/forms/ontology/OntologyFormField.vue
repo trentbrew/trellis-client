@@ -199,7 +199,7 @@
       :model-value="(modelValue as string) || ''"
       :placeholder="label"
       :disabled="readonly"
-      rows="4"
+      :rows="4"
       @update:model-value="emitValue($event)" />
 
     <UiInput

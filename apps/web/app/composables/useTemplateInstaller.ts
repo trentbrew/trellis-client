@@ -199,7 +199,7 @@ export function useTemplateInstaller() {
         }
 
         const slugify = (s: string) => s.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '')
-        const ontologySlugs = template.entityTypes.map((et) => et.slug)
+        const ontologySlugs = template.entityTypes.map((et) => et.id)
 
         worldId = await createApplication({
           orgId: currentOrg.value.id,

@@ -48,7 +48,7 @@ export async function createFormResponse(
     type: entityType,
     title,
     submittedVia: 'form',
-  } as Entity
+  } as unknown as Entity
 
   return createItem(payload)
 }

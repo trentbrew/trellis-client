@@ -3,6 +3,7 @@
   import { canvasPathFromEntityId, canvasSlugFromEntityId } from '~/lib/canvas-routes'
   import { startCanvasEntityDrag } from '~/lib/canvas-dnd'
   import { getEntityTypeConfig } from '~/config/entityRegistry'
+  import type { EntityType } from '~/types/entity'
 
   const { wp } = useWorkspacePath()
   const route = useRoute()
@@ -20,7 +21,7 @@
 
   const dragEntities = computed(() =>
     (items.value || [])
-      .filter((e) => e.type !== 'canvas' && e.title)
+      .filter((e) => (e as { type?: string }).type !== 'canvas' && e.title)
       .sort((a, b) => (a.title || '').localeCompare(b.title || ''))
       .slice(0, 24),
   )
@@ -35,7 +36,7 @@
   }
 
   function entityIcon(type: string) {
-    return getEntityTypeConfig(type)?.icon ?? 'lucide:circle'
+    return getEntityTypeConfig(type as EntityType)?.icon ?? 'lucide:circle'
   }
 
   function onEntityDragStart(event: DragEvent, entityId: string) {

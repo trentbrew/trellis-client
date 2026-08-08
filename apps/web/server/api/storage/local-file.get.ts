@@ -74,7 +74,7 @@ export default defineEventHandler(async (event) => {
     const mime = mimeFromExt(extname(absolutePath))
 
     setResponseHeader(event, 'Content-Type', mime)
-    setResponseHeader(event, 'Content-Length', String(data.length))
+    setResponseHeader(event, 'Content-Length', data.length)
     // 1 hour browser cache for local files
     setResponseHeader(event, 'Cache-Control', 'public, max-age=3600')
 

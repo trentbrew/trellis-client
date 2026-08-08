@@ -29,8 +29,8 @@ describe('geocode-server', () => {
       }),
     })
 
-    const first = await geocodeQuery('San Francisco', fetchFn)
-    const second = await geocodeQuery('san francisco', fetchFn)
+    const first = await geocodeQuery('San Francisco', fetchFn as unknown as typeof fetch)
+    const second = await geocodeQuery('san francisco', fetchFn as unknown as typeof fetch)
 
     expect(first).toEqual({
       lat: 37.77,
@@ -51,6 +51,6 @@ describe('geocode-server', () => {
       ok: true,
       json: async () => ({ features: [] }),
     })
-    expect(await geocodeQuery('Nowhereville', fetchFn)).toBeNull()
+    expect(await geocodeQuery('Nowhereville', fetchFn as unknown as typeof fetch)).toBeNull()
   })
 })

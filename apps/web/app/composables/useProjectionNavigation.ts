@@ -41,7 +41,12 @@ let routeWatchInitialized = false
 function snapshotRoute(route: ReturnType<typeof useRoute>): ProjectionFrame {
   return {
     path: getCleanPath(route.path),
-    query: { ...route.query },
+    query: Object.fromEntries(
+      Object.entries(route.query).map(([key, value]) => [
+        key,
+        Array.isArray(value) ? value.map((v) => v ?? '') : (value ?? undefined),
+      ]),
+    ) as ProjectionFrame['query'],
     hash: route.hash || '',
   }
 }

@@ -113,7 +113,7 @@ function extractFromJsonLd(html: string): EntitySuggestion[] {
 
   while ((match = re.exec(html)) !== null) {
     try {
-      const data = JSON.parse(match[1])
+      const data = JSON.parse(match[1]!)
       processJsonLdNode(data, results)
     } catch {
       // malformed JSON-LD, skip
@@ -241,8 +241,8 @@ function extractFromMetaTags(html: string): EntitySuggestion[] {
     const re1 = new RegExp(`<meta[^>]+(?:property|name)=["']([^"']+)["'][^>]+content=["']([^"']+)["']`, 'gi')
     let m: RegExpExecArray | null
     while ((m = re1.exec(html)) !== null) {
-      if (pattern.test(m[1])) {
-        const name = decodeHTMLEntities(m[2]).trim()
+      if (pattern.test(m[1]!)) {
+        const name = decodeHTMLEntities(m[2]!).trim()
         if (name && !looksLikeUrl(name)) {
           results.push({ name, type: 'person', confidence: 'medium', source: 'meta-tag' })
         }
@@ -251,8 +251,8 @@ function extractFromMetaTags(html: string): EntitySuggestion[] {
     // Reversed: content="..." property/name="..."
     const re2 = new RegExp(`<meta[^>]+content=["']([^"']+)["'][^>]+(?:property|name)=["']([^"']+)["']`, 'gi')
     while ((m = re2.exec(html)) !== null) {
-      if (pattern.test(m[2])) {
-        const name = decodeHTMLEntities(m[1]).trim()
+      if (pattern.test(m[2]!)) {
+        const name = decodeHTMLEntities(m[1]!).trim()
         if (name && !looksLikeUrl(name)) {
           results.push({ name, type: 'person', confidence: 'medium', source: 'meta-tag' })
         }
@@ -266,8 +266,8 @@ function extractFromMetaTags(html: string): EntitySuggestion[] {
     const re1 = new RegExp(`<meta[^>]+(?:property|name)=["']([^"']+)["'][^>]+content=["']([^"']+)["']`, 'gi')
     let m: RegExpExecArray | null
     while ((m = re1.exec(html)) !== null) {
-      if (pattern.test(m[1])) {
-        const name = decodeHTMLEntities(m[2]).trim()
+      if (pattern.test(m[1]!)) {
+        const name = decodeHTMLEntities(m[2]!).trim()
         if (name && !looksLikeUrl(name)) {
           results.push({ name, type: 'organization', confidence: 'medium', source: 'meta-tag' })
         }
@@ -275,8 +275,8 @@ function extractFromMetaTags(html: string): EntitySuggestion[] {
     }
     const re2 = new RegExp(`<meta[^>]+content=["']([^"']+)["'][^>]+(?:property|name)=["']([^"']+)["']`, 'gi')
     while ((m = re2.exec(html)) !== null) {
-      if (pattern.test(m[2])) {
-        const name = decodeHTMLEntities(m[1]).trim()
+      if (pattern.test(m[2]!)) {
+        const name = decodeHTMLEntities(m[1]!).trim()
         if (name && !looksLikeUrl(name)) {
           results.push({ name, type: 'organization', confidence: 'medium', source: 'meta-tag' })
         }
@@ -298,7 +298,7 @@ function extractFromBylines(html: string): EntitySuggestion[] {
   const authorClassRe = /<[a-z][a-z0-9]*[^>]+class=["'][^"']*\bauthor\b[^"']*["'][^>]*>([^<]{2,80})</ig
   let m: RegExpExecArray | null
   while ((m = authorClassRe.exec(html)) !== null) {
-    const name = stripTags(decodeHTMLEntities(m[1])).trim()
+    const name = stripTags(decodeHTMLEntities(m[1]!)).trim()
     if (name && name.length > 1 && name.length < 80 && !looksLikeUrl(name) && !looksLikeMarkup(name)) {
       results.push({ name, type: 'person', confidence: 'low', source: 'byline' })
     }
@@ -307,7 +307,7 @@ function extractFromBylines(html: string): EntitySuggestion[] {
   // <a rel="author">text</a>
   const relAuthorRe = /<a[^>]+rel=["']author["'][^>]*>([^<]{2,80})<\/a>/gi
   while ((m = relAuthorRe.exec(html)) !== null) {
-    const name = stripTags(decodeHTMLEntities(m[1])).trim()
+    const name = stripTags(decodeHTMLEntities(m[1]!)).trim()
     if (name && name.length > 1 && !looksLikeUrl(name) && !looksLikeMarkup(name)) {
       results.push({ name, type: 'person', confidence: 'low', source: 'byline' })
     }
@@ -327,15 +327,15 @@ function extractTags(html: string): string[] {
   const tagRe1 = /<meta[^>]+(?:property|name)=["']article:tag["'][^>]+content=["']([^"']+)["']/gi
   const tagRe2 = /<meta[^>]+content=["']([^"']+)["'][^>]+(?:property|name)=["']article:tag["']/gi
   let m: RegExpExecArray | null
-  while ((m = tagRe1.exec(html)) !== null) tags.push(decodeHTMLEntities(m[1]).trim())
-  while ((m = tagRe2.exec(html)) !== null) tags.push(decodeHTMLEntities(m[1]).trim())
+  while ((m = tagRe1.exec(html)) !== null) tags.push(decodeHTMLEntities(m[1]!).trim())
+  while ((m = tagRe2.exec(html)) !== null) tags.push(decodeHTMLEntities(m[1]!).trim())
 
   // keywords meta tag (comma-separated)
   const kwRe1 = /<meta[^>]+name=["']keywords["'][^>]+content=["']([^"']+)["']/i
   const kwRe2 = /<meta[^>]+content=["']([^"']+)["'][^>]+name=["']keywords["']/i
   const kwMatch = html.match(kwRe1) || html.match(kwRe2)
   if (kwMatch) {
-    const keywords = kwMatch[1].split(',').map((k) => k.trim()).filter(Boolean)
+    const keywords = kwMatch[1]!.split(',').map((k) => k.trim()).filter(Boolean)
     tags.push(...keywords)
   }
 

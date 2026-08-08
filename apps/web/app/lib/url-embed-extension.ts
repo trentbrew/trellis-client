@@ -3,10 +3,12 @@ import { Plugin, PluginKey } from 'prosemirror-state'
 import { VueNodeViewRenderer } from '@tiptap/vue-3'
 import UrlEmbedView from '~/components/editor-blocks/UrlEmbedView.vue'
 
+export type UrlEmbedMode = 'embed' | 'image' | 'youtube' | 'spotify'
+
 declare module '@tiptap/core' {
   interface Commands<ReturnType> {
     urlEmbed: {
-      insertUrlEmbed: (_attrs?: { src?: string; title?: string; mode?: 'embed' | 'image'; height?: number }) => ReturnType
+      insertUrlEmbed: (_attrs?: { src?: string; title?: string; mode?: UrlEmbedMode; height?: number }) => ReturnType
     }
   }
 }
@@ -46,7 +48,7 @@ export const UrlEmbed = Node.create({
       },
       mode: {
         default: 'embed',
-        parseHTML: (el: HTMLElement) => (el.getAttribute('data-mode') as 'embed' | 'image') || 'embed',
+        parseHTML: (el: HTMLElement) => (el.getAttribute('data-mode') as UrlEmbedMode) || 'embed',
         renderHTML: (attrs: Record<string, any>) => ({ 'data-mode': attrs.mode || 'embed' }),
       },
       height: {
@@ -68,7 +70,7 @@ export const UrlEmbed = Node.create({
   addCommands() {
     return {
       insertUrlEmbed:
-        (attrs?: { src?: string; title?: string; mode?: 'embed' | 'image'; height?: number }) =>
+        (attrs?: { src?: string; title?: string; mode?: UrlEmbedMode; height?: number }) =>
         ({ chain }: any) => {
           return chain()
             .insertContent({

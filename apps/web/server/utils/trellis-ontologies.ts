@@ -13,7 +13,13 @@
  * compat with TQL queries (FIND <ENTITY_NAMESPACE> AS ?t WHERE ?t.type = "task").
  */
 
-import type { SchemaDefinition, PropertyValueSpecification, WorkspaceConfig } from '@turtle.tech/trellis-kernel'
+import type { SchemaDefinition as KernelSchemaDefinition, PropertyValueSpecification, WorkspaceConfig } from '@turtle.tech/trellis-kernel'
+
+/** SchemaDefinition extended with app-level UI capability flags used by the workspace registry. */
+export type SchemaDefinition = KernelSchemaDefinition & {
+  browse?: { enabled?: boolean; defaultProjection?: string }
+  routed?: string
+}
 import { getRouteDefinitions } from './trellis-shell-routes'
 import { ENTITY_NAMESPACE, entityQuery } from '../../app/lib/entity-namespace'
 

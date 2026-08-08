@@ -12,7 +12,7 @@ export function mapSidecarToPageItem(page: SidecarPage): PageItem {
     isPublished: false,
     pinned: false,
     sortOrder: page.sortOrder,
-  }
+  } as PageItem
 }
 
 export function mapPageItemToSidecar(partial: Partial<PageItem>): Record<string, unknown> {

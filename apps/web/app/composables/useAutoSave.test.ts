@@ -100,7 +100,7 @@ describe('useAutoSave', () => {
 
     await save()
 
-    const payload = mockUpdate.mock.calls[0][0]
+    const payload = mockUpdate.mock.calls[0]![0]
     expect(payload.references).toHaveLength(1)
     expect(payload.tags).toEqual(['important'])
   })

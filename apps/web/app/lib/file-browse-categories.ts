@@ -83,7 +83,7 @@ export function countFilesByCategory(
   for (const item of items) {
     if (item.type !== 'file') continue
     counts.all = (counts.all ?? 0) + 1
-    const cat = resolveFileCategory(item as Record<string, unknown>)
+    const cat = resolveFileCategory(item as unknown as Record<string, unknown>)
     counts[cat] = (counts[cat] ?? 0) + 1
   }
   return counts

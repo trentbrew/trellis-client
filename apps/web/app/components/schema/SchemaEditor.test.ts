@@ -122,7 +122,7 @@ describe('SchemaEditor', () => {
 
       const updatedSchema = updateEvent[0][0] as DatabaseSchema
       expect(updatedSchema.fields.length).toBe(initialFieldCount + 1)
-      expect(updatedSchema.fields[initialFieldCount].name).toBe('New Field')
+      expect(updatedSchema.fields[initialFieldCount]!.name).toBe('New Field')
     })
 
     it('should update field properties', () => {

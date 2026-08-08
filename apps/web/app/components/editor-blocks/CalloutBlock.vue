@@ -7,7 +7,7 @@
   const variant = computed(() => (props.node.attrs.variant || 'info') as CalloutVariant)
 
   const config = computed(() => {
-    return CALLOUT_VARIANTS.find((v) => v.id === variant.value) || CALLOUT_VARIANTS[0]
+    return CALLOUT_VARIANTS.find((v) => v.id === variant.value) ?? CALLOUT_VARIANTS[0]!
   })
 
   const colorClasses = computed(() => {
@@ -22,7 +22,7 @@
   function cycleVariant() {
     const currentIdx = CALLOUT_VARIANTS.findIndex((v) => v.id === variant.value)
     const nextIdx = (currentIdx + 1) % CALLOUT_VARIANTS.length
-    props.updateAttributes({ variant: CALLOUT_VARIANTS[nextIdx].id })
+    props.updateAttributes({ variant: CALLOUT_VARIANTS[nextIdx]!.id })
   }
 </script>
 

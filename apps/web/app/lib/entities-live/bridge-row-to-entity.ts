@@ -22,5 +22,5 @@ export function bridgeRowToEntity(row: SidecarKernelBrowseRow): Entity {
     tags: Array.isArray(payload.tags) ? (payload.tags as string[]) : [],
     involved: Array.isArray(payload.involved) ? (payload.involved as string[]) : [],
     references: [],
-  } as Entity
+  } as unknown as Entity
 }

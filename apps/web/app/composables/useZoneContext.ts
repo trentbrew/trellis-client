@@ -22,6 +22,7 @@
 
 import { computed, inject, provide } from 'vue'
 import type { InjectionKey, Ref } from 'vue'
+import { useRoute } from 'vue-router'
 
 // ── Canonical zone IDs (mirror of server/utils/tql-events.ts) ─────────────
 

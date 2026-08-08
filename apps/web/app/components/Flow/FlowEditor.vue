@@ -120,7 +120,8 @@
 
   function onEdgeClick(_evt: MouseEvent | VoidFunction, edge: Edge) {
     pushHistory()
-    edges.value = edges.value.filter((e) => e.id !== edge.id)
+    const current: Edge[] = edges.value as Edge[]
+    edges.value = current.filter((e) => e.id !== edge.id) as Edge[]
     markDirty()
   }
 
@@ -134,8 +135,14 @@
   }
 
   function clearSelection() {
-    nodes.value = nodes.value.map((n) => ({ ...n, selected: false }))
-    edges.value = edges.value.map((e) => ({ ...e, selected: false }))
+    const ns: Node[] = nodes.value as Node[]
+    nodes.value = ns.map((n) => ({ ...n, selected: false })) as unknown as Node[]
+    const es: Edge[] = edges.value as Edge[]
+    const next = es.slice()
+    for (let i = 0; i < next.length; i++) {
+      next[i] = { ...next[i]!, selected: false } as unknown as Edge
+    }
+    edges.value = next
   }
 
   function duplicateSelectedNodes() {
@@ -163,7 +170,7 @@
       nodes.value = nodes.value.map((n) => ({
         ...n,
         class: states?.[n.id]
-          ? ({ running: 'flow-exec--running', completed: 'flow-exec--completed', error: 'flow-exec--errored' }[
+          ? ({ idle: undefined, running: 'flow-exec--running', completed: 'flow-exec--completed', error: 'flow-exec--errored' }[
               states[n.id]!.status
             ] ?? undefined)
           : undefined,
@@ -201,7 +208,8 @@
     if (meta && e.key === 'a') {
       if (inInput) return
       e.preventDefault()
-      nodes.value = nodes.value.map((n) => ({ ...n, selected: true }))
+      const selectAll: Node[] = nodes.value as Node[]
+      nodes.value = selectAll.map((n) => ({ ...n, selected: true })) as unknown as Node[]
     }
 
     if (meta && e.key === 'l') {
@@ -337,9 +345,9 @@
           </Panel>
 
           <!-- Edge labels -->
-          <template #edge-label="{ edge }">
-            <div v-if="edge.label" class="rounded border bg-card px-2 py-0.5 text-[11px]">
-              {{ edge.label }}
+          <template #edge-label="{ label }">
+            <div v-if="label" class="rounded border bg-card px-2 py-0.5 text-[11px]">
+              {{ label }}
             </div>
           </template>
         </VueFlow>
@@ -361,7 +369,7 @@
                 <!-- Single node config -->
                 <FlowNodeConfig
                   v-if="selectedNodes.length === 1"
-                  :node="selectedNodes[0]"
+                  :node="selectedNodes[0]!"
                   :update-node-data="updateNodeData" />
 
                 <!-- Multi-select list -->

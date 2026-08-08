@@ -54,7 +54,7 @@ export function groupRailRoutesByZone<T extends { path: string }>(routes: T[]): 
   for (const kind of RAIL_ZONE_ORDER) {
     const list = buckets.get(kind)
     if (list?.length) {
-      groups.push({ kind, routes: list as RailRouteZoneGroup['routes'] })
+      groups.push({ kind, routes: list as unknown as RailRouteZoneGroup['routes'] })
     }
   }
   return groups

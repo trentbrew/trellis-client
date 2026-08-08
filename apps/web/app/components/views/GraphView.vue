@@ -834,7 +834,7 @@
       .attr('fill-opacity', 0.12)
       .attr('stroke', (d: D3Node) => d.color)
       .attr('stroke-width', dense ? 1.5 : 2)
-      .style('filter', dense ? null : 'drop-shadow(0 1px 3px rgb(0 0 0 / 0.1))')
+      .attr('filter', dense ? null : 'drop-shadow(0 1px 3px rgb(0 0 0 / 0.1))')
 
     // Icon placeholder — skip at ultra scale (1750 nested SVGs is brutal).
     const ICON_SIZE = 22

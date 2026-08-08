@@ -89,7 +89,7 @@ export function useMentionLinks(
               .then((node: any) => {
                 const targetOwnerId = node?.ownerId
                 if (!targetOwnerId || targetOwnerId === context.authorId) return
-                return $fetch('/api/notify', {
+                return $fetch<void>('/api/notify', {
                   method: 'POST',
                   body: {
                     recipientId: targetOwnerId,

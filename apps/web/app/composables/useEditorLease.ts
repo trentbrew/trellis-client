@@ -53,7 +53,7 @@ export function createEditorLease(onCommit: EditorLeaseCommitHandler): EditorLea
 
   return {
     cellKey: readonly(cellKey),
-    mountTarget: readonly(mountTarget),
+    mountTarget: computed(() => mountTarget.value),
     pendingHtml: readonly(pendingHtml),
     acquire,
     release,

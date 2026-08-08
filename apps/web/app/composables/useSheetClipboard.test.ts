@@ -27,7 +27,7 @@ function getCellValue(entityId: string, col: SheetColumn, _rowIndex: number) {
   const row = rows.find((r) => r.entityId === entityId)
   if (!row) return undefined
   if (col.kind === 'formula') return 999
-  return row.data[col.attribute]
+  return (row.data as Record<string, unknown>)[col.attribute]
 }
 
 describe('useSheetClipboard', () => {

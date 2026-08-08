@@ -553,7 +553,7 @@ interface ParsedPath {
 }
 
 /** First path segment names for flat Trellis shell routes (also used to parse /[ws]/[app]/… URLs). */
-export const KNOWN_TOP_LEVEL_ROUTE_SEGMENTS = [
+export const KNOWN_TOP_LEVEL_ROUTE_SEGMENTS: string[] = [
   'docs',
   'settings',
   'admin',
@@ -586,7 +586,7 @@ export const KNOWN_TOP_LEVEL_ROUTE_SEGMENTS = [
   'notifications',
   'activity',
   'w',
-] as const
+]
 
 export function buildNavPath(cleanPath: string, workspace: string | null, app: string | null): string {
   if (workspace && app) {

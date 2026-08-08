@@ -81,7 +81,7 @@ watch(() => item.value?.url, async (url) => {
       const arrayBuffer = await res.arrayBuffer()
       const wb = XLSX.read(arrayBuffer, { type: 'array' })
       const wsname = wb.SheetNames[0]
-      const ws = wb.Sheets[wsname as string]
+      const ws = wb.Sheets[wsname as string]!
       const json = XLSX.utils.sheet_to_json<any[]>(ws, { header: 1 })
 
       const headers = json[0] || []

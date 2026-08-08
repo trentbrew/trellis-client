@@ -51,7 +51,7 @@ describe('file-browse-categories', () => {
   })
 
   test('category filter ignored when browse type is not file', () => {
-    const typeParam = 'note'
+    const typeParam = 'note' as string
     const rawCategory = 'image'
     expect(typeParam !== 'file').toBe(true)
     expect(shouldStripFileCategoryParam(typeParam, rawCategory)).toBe(true)

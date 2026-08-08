@@ -10,9 +10,7 @@
   <span
     class="inline-flex items-center gap-1.5 rounded-full border px-2 py-0.5 text-[11px]"
     :class="{
-      'border-border text-muted-foreground': !tone || tone === 'default',
-      'border-border text-muted-foreground': tone === 'ok',
-      'border-border text-muted-foreground': tone === 'limit',
+      'border-border text-muted-foreground': !tone || tone === 'default' || tone === 'ok' || tone === 'limit',
       'border-destructive/45 text-red-300': tone === 'over',
     }"
   >

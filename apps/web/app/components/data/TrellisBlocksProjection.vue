@@ -610,10 +610,11 @@
                         <UiInput
                           :model-value="String(getFieldValue(node, field) ?? '')"
                           class="h-9 bg-background/50 font-mono"
-                          :class="{
-                            'text-primary underline decoration-primary/40 underline-offset-2 cursor-pointer':
-                              relationTarget(getFieldValue(node, field)),
-                          }"
+                          :class="
+                            relationTarget(getFieldValue(node, field))
+                              ? 'text-primary underline decoration-primary/40 underline-offset-2 cursor-pointer'
+                              : ''
+                          "
                           @dblclick="
                             () => {
                               const target = relationTarget(getFieldValue(node, field))

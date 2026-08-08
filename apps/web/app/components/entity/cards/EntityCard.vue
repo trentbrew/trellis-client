@@ -192,7 +192,7 @@
       if (!res.ok) return
       const ab = await res.arrayBuffer()
       const wb = XLSX.read(ab, { type: 'array' })
-      const ws = wb.Sheets[wb.SheetNames[0] as string]
+      const ws = wb.Sheets[wb.SheetNames[0] as string]!
       const json = XLSX.utils.sheet_to_json<any[]>(ws, { header: 1 })
       cardTableData.value = {
         headers: (json[0] || []).map(String),
@@ -699,7 +699,7 @@
 
     <!-- ─── Content area ─── -->
     <!-- File cards: compact footer (metadata on preview + dialog sidebar) -->
-    <div v-if="isFile && layout !== 'list'" class="flex flex-col gap-1 p-3">
+    <div v-if="isFile" class="flex flex-col gap-1 p-3">
       <h3
         class="text-sm font-medium leading-snug line-clamp-2 transition-colors group-hover:text-primary"
         :class="item.title ? '' : 'italic text-muted-foreground/50'">

@@ -1,5 +1,5 @@
 <script setup lang="ts">
-  import type { EntityType } from '~/types/entity'
+  import type { EntityImportPayload } from '~/lib/entity-export'
   import { parseEntityImportJson } from '~/lib/entity-export'
 
   const props = defineProps<{
@@ -67,14 +67,13 @@
     for (let i = 0; i < payloads.length; i++) {
       const payload = payloads[i]!
       try {
-        await create({
-          tags: [],
-          involved: [],
-          references: [],
+        const item: EntityImportPayload = {
           ...payload,
-          type: payload.type as EntityType,
-          title: payload.title,
-        })
+          tags: payload.tags ?? [],
+          involved: payload.involved ?? [],
+          references: payload.references ?? [],
+        }
+        await create(item)
         created++
       } catch (err) {
         failed++

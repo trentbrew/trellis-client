@@ -7,7 +7,7 @@ export function useSheetList() {
 
   const sheets = computed(() =>
     (items.value || [])
-      .filter((e): e is Entity => e.type === 'sheet')
+      .filter((e): e is Entity => (e as { type?: string }).type === 'sheet')
       .sort((a, b) => (a.title || '').localeCompare(b.title || '')),
   )
 
@@ -16,7 +16,7 @@ export function useSheetList() {
 
 /** Navigate to the canvas sheet projection (not the entity dialog). */
 export function openSheetEntity(item: Pick<Entity, 'id' | 'type'>) {
-  if (item.type !== 'sheet') return
+  if ((item as { type?: string }).type !== 'sheet') return
   const { wpNavigate } = useWorkspacePath()
   wpNavigate(sheetPathFromEntityId(item.id))
 }

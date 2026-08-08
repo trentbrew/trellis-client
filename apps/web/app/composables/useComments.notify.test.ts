@@ -73,13 +73,13 @@ describe('useComments — comment notifications', () => {
 
     const notifyCalls = mockFetch.mock.calls.filter((c: any[]) => c[0] === '/api/notify')
     expect(notifyCalls).toHaveLength(1)
-    expect(notifyCalls[0][1].body).toMatchObject({
+    expect(notifyCalls[0]![1].body).toMatchObject({
       recipientId: 'user-owner',
       orgId: 'org-1',
       type: 'comment',
     })
-    expect(notifyCalls[0][1].body.title).toContain('My Task')
-    expect(notifyCalls[0][1].body.message).toContain('Great progress!')
+    expect(notifyCalls[0]![1].body.title).toContain('My Task')
+    expect(notifyCalls[0]![1].body.message).toContain('Great progress!')
   })
 
   it('does NOT notify when commenter is the entity owner (self-comment)', async () => {
@@ -143,6 +143,6 @@ describe('useComments — comment notifications', () => {
 
     const notifyCalls = mockFetch.mock.calls.filter((c: any[]) => c[0] === '/api/notify')
     expect(notifyCalls).toHaveLength(1)
-    expect(notifyCalls[0][1].body.message.length).toBeLessThanOrEqual(150)
+    expect(notifyCalls[0]![1].body.message.length).toBeLessThanOrEqual(150)
   })
 })

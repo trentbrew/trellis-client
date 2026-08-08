@@ -33,7 +33,7 @@ const emit = defineEmits<{
 
 const config = computed(() => getEntityTypeConfig(props.item.type as EntityType))
 const entityClass = computed(() => getEntityClass(props.item.type as EntityType))
-const i = computed(() => props.item as Record<string, unknown>)
+const i = computed(() => props.item as unknown as Record<string, unknown>)
 
 const isTemporal = computed(() => entityClass.value === 'temporal')
 const isDocument = computed(() => entityClass.value === 'document')
@@ -238,7 +238,7 @@ function shouldShowCompactBadge(fieldKey: string): boolean {
             <EntityFieldEditor
               field-id="status"
               :model-value="itemStatus"
-              :entity-type="String(i.type)"
+              :entity-type="i.type as EntityType"
               compact
               display="pill"
               @update:model-value="emit('field-update', 'status', $event)" />
@@ -259,7 +259,7 @@ function shouldShowCompactBadge(fieldKey: string): boolean {
             <EntityFieldEditor
               field-id="priority"
               :model-value="i.priority"
-              :entity-type="String(i.type)"
+              :entity-type="i.type as EntityType"
               compact
               display="pill"
               @update:model-value="emit('field-update', 'priority', $event)" />
@@ -359,7 +359,7 @@ function shouldShowCompactBadge(fieldKey: string): boolean {
             <EntityFieldEditor
               field-id="priority"
               :model-value="i.priority"
-              :entity-type="String(i.type)"
+              :entity-type="i.type as EntityType"
               compact
               display="pill"
               @update:model-value="emit('field-update', 'priority', $event)" />
@@ -373,7 +373,7 @@ function shouldShowCompactBadge(fieldKey: string): boolean {
             <EntityFieldEditor
               field-id="status"
               :model-value="itemStatus"
-              :entity-type="String(i.type)"
+              :entity-type="i.type as EntityType"
               compact
               display="pill"
               @update:model-value="emit('field-update', 'status', $event)" />

@@ -7,7 +7,7 @@
   import { extractYmd, parseYmdLocal, todayYmdLocal } from '~/utils/date'
   import { isDocumentChromeType } from '~/lib/document-chrome'
   import { entityId as toEntityId } from '~/lib/tql-namespace'
-  import { resolveSummaryText, MIN_SUMMARY_SOURCE_LENGTH } from '~/composables/useEntitySummary'
+  import { resolveSummaryText, MIN_SUMMARY_SOURCE_LENGTH, type EntityLike } from '~/composables/useEntitySummary'
 
   const colorMode = useColorMode()
   const isDark = computed(() => colorMode.value === 'dark')
@@ -139,7 +139,7 @@
   const { fetchNode } = useTrellisGraph()
 
   async function hydrateDocumentContentForSummary(): Promise<string> {
-    const mergedContent = editableItem.content || props.item?.content || ''
+    const mergedContent = editableItem.content || (props.item as EntityLike)?.content || ''
     if (!isDocumentChromeType(editableItem.type) || !editableItem.id) return mergedContent
     if (resolveSummaryText({ ...editableItem, content: mergedContent }).length >= MIN_SUMMARY_SOURCE_LENGTH) {
       return mergedContent
@@ -162,7 +162,7 @@
         editableItem.type,
         editableItem.description,
         editableItem.content,
-        props.item?.content,
+        (props.item as EntityLike)?.content,
       ] as const,
     () => {
       if (isCreateMode.value) return
@@ -217,13 +217,13 @@
 
   const isInset = computed(() => props.variant === 'inset')
   const activeInsetTab = ref<'preview' | 'properties' | 'references' | 'activity'>('preview')
-  const insetTabs = computed(() => {
-    const base = [
+  const insetTabs = computed<Array<{ id: 'preview' | 'properties' | 'references' | 'activity'; label: string }>>(() => {
+    const base: Array<{ id: 'preview' | 'properties' | 'references' | 'activity'; label: string }> = [
       { id: 'preview' as const, label: 'Preview' },
       { id: 'properties' as const, label: 'Properties' },
       { id: 'references' as const, label: 'References' },
     ]
-    if (!isCreateMode.value) base.push({ id: 'activity' as any, label: 'Activity' })
+    if (!isCreateMode.value) base.push({ id: 'activity' as const, label: 'Activity' })
     return base
   })
 

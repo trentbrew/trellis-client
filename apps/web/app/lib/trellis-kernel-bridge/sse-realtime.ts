@@ -1,4 +1,5 @@
-import type { SubscriptionCallback, SubscribeOptions, TrellisDb } from 'trellis/browser'
+import type { SubscriptionCallback, TrellisDb } from 'trellis/browser'
+import type { SubscribeOptions } from 'trellis/client/sdk'
 import { shouldRefetchAppConfigFromSSE } from '~/lib/app-config-sse'
 import { shouldRefetchBrowseEntitiesFromSSE } from '~/lib/entity-mutation-sse'
 import { useSSESubscribe } from '~/composables/useTrellisSSE'
@@ -8,7 +9,7 @@ type SubRecord = {
   opts?: SubscribeOptions
 }
 
-export type KernelBridgePatchedDb = TrellisDb & {
+export type KernelBridgePatchedDb = Omit<TrellisDb, '_subCallbacks'> & {
   _subCallbacks: Map<string, SubscriptionCallback<unknown>>
   _subQueries: Map<string, SubRecord>
   _kernelBridgeInstalled?: boolean
@@ -85,7 +86,7 @@ export function createKernelBridgeSubscribe(db: KernelBridgePatchedDb) {
         deliverRows(callback as SubscriptionCallback<unknown>, rows)
       })
       .catch(() => {
-        callback([], EMPTY_DIFF, { resolved: true })
+        callback([], EMPTY_DIFF as { added: T[]; updated: T[]; removed: T[] }, { resolved: true })
       })
 
     ensureSseListener(db)

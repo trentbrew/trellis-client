@@ -1,5 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { reactive, ref } from 'vue'
+import type { EntityReference, Reference } from '~/types/entity'
 
 // ---------------------------------------------------------------------------
 // Mocks

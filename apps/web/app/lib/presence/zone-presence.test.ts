@@ -1,7 +1,10 @@
 // @vitest-environment node
 import { afterEach, describe, expect, it } from 'vitest'
 import { joinPresence } from 'trellis/realtime'
+import type { BroadcastChannelTransport } from 'trellis/realtime'
 import { zonePresenceRoom } from './config'
+
+type BroadcastChannelCtor = ConstructorParameters<typeof BroadcastChannelTransport>[0]['BroadcastChannelImpl']
 
 /** In-process BroadcastChannel mesh (mirrors trellis-node realtime tests). */
 class MockBroadcastChannel {
@@ -62,7 +65,7 @@ describe('zone presence (ADR-002 P0)', () => {
         zoneId: SHOWROOM_ZONE,
         pageId: pageA,
       },
-      BroadcastChannelImpl: MockBroadcastChannel as unknown as typeof BroadcastChannel,
+      BroadcastChannelImpl: MockBroadcastChannel as unknown as BroadcastChannelCtor,
       heartbeatMs: 0,
     })
 
@@ -75,7 +78,7 @@ describe('zone presence (ADR-002 P0)', () => {
         zoneId: SHOWROOM_ZONE,
         pageId: pageB,
       },
-      BroadcastChannelImpl: MockBroadcastChannel as unknown as typeof BroadcastChannel,
+      BroadcastChannelImpl: MockBroadcastChannel as unknown as BroadcastChannelCtor,
       heartbeatMs: 0,
     })
 

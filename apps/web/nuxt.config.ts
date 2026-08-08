@@ -173,6 +173,14 @@ export default defineNuxtConfig({
     },
   },
 
+  typescript: {
+    tsConfig: {
+      // Ui/* components are vendored third-party components; keep them out of
+      // the app typecheck (they fail under vue-tsc strict mode).
+      exclude: ['../app/components/Ui/**'],
+    },
+  },
+
   app: {
     head: {
       titleTemplate: '%s | Trellis',

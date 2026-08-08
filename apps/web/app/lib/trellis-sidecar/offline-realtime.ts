@@ -1,9 +1,17 @@
-import type { SubscriptionCallback, SubscribeOptions } from 'trellis/browser'
+import type { SubscriptionCallback } from 'trellis/browser'
 import {
   logSidecarUnavailableOnce,
   markSidecarUnavailable,
   probeSidecarAvailable,
 } from './sidecar-probe'
+
+/** Structural match for the SDK's non-exported `SubscribeOptions`. */
+type SubscribeOptions = {
+  entityType?: string
+  resolve?: boolean | string[]
+  offset?: number
+  limit?: number
+}
 
 type SubRecord = {
   eql: string

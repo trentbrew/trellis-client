@@ -1,4 +1,4 @@
-import type { SchemaDefinition } from 'trellis/core'
+import type { SchemaDefinition } from '@turtle.tech/trellis-kernel'
 import type { InferType } from 'trellis/schema'
 
 /** trellis/schema convergence — graph rows mirror defineType SchemaDefinition output. */

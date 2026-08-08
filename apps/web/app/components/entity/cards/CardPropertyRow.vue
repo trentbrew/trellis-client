@@ -21,7 +21,7 @@ const emit = defineEmits<{
   'column-update': [key: string, value: unknown]
 }>()
 
-const record = computed(() => props.item as Record<string, unknown>)
+const record = computed(() => props.item as unknown as Record<string, unknown>)
 const rawValue = computed(() => record.value[props.field.key])
 const valueType = computed(() => props.field.valueType ?? 'rich_text')
 

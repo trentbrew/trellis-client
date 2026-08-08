@@ -55,7 +55,7 @@ export class LocalStore {
       this.set(ns, id, data)
       return
     }
-    this.getNamespace(ns).set(id, this.deepMerge(existing, data))
+    this.getNamespace(ns).set(id, this.deepMerge(existing as Record<string, any>, data) as Entity)
   }
 
   delete(ns: string, id: string): void {

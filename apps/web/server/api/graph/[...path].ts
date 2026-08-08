@@ -13,7 +13,7 @@
  */
 
 import { getHeader } from 'h3'
-import type { SchemaDefinition } from '@turtle.tech/trellis-kernel'
+import type { SchemaDefinition, TrellisKernel } from '@turtle.tech/trellis-kernel'
 import { useTrellisKernel, getMutationLog, pushMutationLog } from '../../plugins/trellis-kernel'
 import { getZoneGuardStats, getZoneGuardMode, checkMutation, recordStrictRejection } from '../../utils/zone-guard'
 import { emitMutation } from '../../utils/trellis-events'
@@ -65,7 +65,7 @@ function factsToNode(entityId: string, facts: Array<{ e: string; a: string; v: u
 }
 
 export default defineEventHandler(async (event) => {
-  let kernel
+  let kernel: TrellisKernel
   try {
     kernel = useTrellisKernel()
   } catch {
@@ -851,6 +851,7 @@ export default defineEventHandler(async (event) => {
         calendarsScanned: 0,
         eventsFetched: 0,
         ownedByOrganizer: 0,
+        error: undefined as string | undefined,
       })
       try {
         const calList = await $fetch<{ items?: Array<{ id: string; primary?: boolean }> }>(

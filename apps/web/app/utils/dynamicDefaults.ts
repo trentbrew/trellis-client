@@ -11,6 +11,7 @@
 import { getFieldDefaultValue } from '~/lib/ontology-form-spec'
 import { createDefaultBase, createDefaultItem } from '~/types/entity'
 import type { EntityType } from '~/types/entity'
+import type { OntologySchemaField as SchemaField } from '~/lib/ontology-registry/schemas-to-server-types'
 
 /**
  * Types that have dedicated factory functions in createDefaultItem.
@@ -21,14 +22,6 @@ const KNOWN_TYPES = new Set<string>([
   'file', 'bookmark', 'person', 'organization', 'project',
   'sprint', 'milestone', 'goal', 'budget',
 ])
-
-interface SchemaField {
-  name: string
-  valueType: string
-  required?: boolean
-  defaultValue?: unknown
-  selectOptions?: { name: string }[]
-}
 
 /** Default value for a field based on its valueType. */
 function defaultForValueType(field: SchemaField): unknown {

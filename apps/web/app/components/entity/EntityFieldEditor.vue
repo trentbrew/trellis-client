@@ -165,7 +165,7 @@
       pink: 'bg-pink-500', rose: 'bg-rose-500', slate: 'bg-slate-500',
       gray: 'bg-muted-foreground',
     }
-    return map[color] || map.gray
+    return map[color ?? ''] || map.gray || 'bg-muted-foreground'
   }
 
   const hasBadgeColor = (color?: string) => !!color?.includes(' ')

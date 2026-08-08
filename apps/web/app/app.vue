@@ -38,7 +38,7 @@
 
   watch(
     [entitiesLoading, allEntities, () => route.hash],
-    ([loading, items]) => {
+    async ([loading, items]) => {
       if (loading) return
       const hash = route.hash
       if (!hash) return
@@ -46,7 +46,7 @@
       // browse mounted late or the entity row hydrated after the first pass.
       if (_hashRestored.value && !_hashRestoreEntityId.value) return
 
-      const restored = restoreDialogsFromHash(
+      const restored = await restoreDialogsFromHash(
         hash,
         items as Entity[],
         (entityId: string, _item: Entity) => {

@@ -12,7 +12,7 @@ describe('entity-export', () => {
   test('defaultEntityExportKeys prioritizes core fields', () => {
     const entities = [
       { id: '1', type: 'task', title: 'A', zebra: 'z', startDate: '2026-01-01' },
-    ] as Entity[]
+    ] as unknown as Entity[]
     const keys = defaultEntityExportKeys(entities)
     expect(keys[0]).toBe('title')
     expect(keys).toContain('type')

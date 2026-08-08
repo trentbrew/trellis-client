@@ -17,15 +17,15 @@ const animateState = computed<'normal' | 'animate'>(() => (props.open ? 'animate
 const line1Variants = {
   normal: { rotate: 0, y: 0, opacity: 1 },
   animate: { rotate: 45, y: 6, opacity: 1, transition: { type: 'spring', stiffness: 260, damping: 20 } },
-}
+} as const
 const line2Variants = {
   normal: { rotate: 0, y: 0, opacity: 1 },
   animate: { rotate: 0, y: 0, opacity: 0, transition: { type: 'spring', stiffness: 260, damping: 20 } },
-}
+} as const
 const line3Variants = {
   normal: { rotate: 0, y: 0, opacity: 1 },
   animate: { rotate: -45, y: -6, opacity: 1, transition: { type: 'spring', stiffness: 260, damping: 20 } },
-}
+} as const
 
 </script>
 

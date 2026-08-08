@@ -2,6 +2,7 @@
   import type { PageStat } from '~/components/layout/Page.vue'
   import type { DynamicEntityTypeConfig } from '~/composables/useOntologyRegistry'
   import { useBrowsePage } from '~/composables/useBrowsePage'
+  import type { BrowseViewMode } from '~/composables/useBrowse'
   import { useBrowseAdvancedFilters } from '~/composables/useBrowseAdvancedFilters'
   import { useBrowseSelection } from '~/composables/useBrowseSelection'
   import DynamicEntityDialog from '~/components/dialogs/DynamicEntityDialog.vue'
@@ -67,9 +68,9 @@
   )
 
   const viewModeOptions = computed(() => {
-    const options = [
-      { mode: 'table' as const, label: 'Table', icon: 'lucide:table' },
-      { mode: 'grid' as const, label: 'Grid', icon: 'lucide:grid-3x3' },
+    const options: Array<{ mode: BrowseViewMode; label: string; icon: string }> = [
+      { mode: 'table', label: 'Table', icon: 'lucide:table' },
+      { mode: 'grid', label: 'Grid', icon: 'lucide:grid-3x3' },
     ]
     if (supportsKanban.value) {
       options.splice(1, 0, { mode: 'kanban', label: 'Kanban', icon: 'lucide:square-kanban' })

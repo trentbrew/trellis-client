@@ -47,7 +47,7 @@
     const title = quickTitle.value.trim()
     if (!title) return
     const item = createDefaultItem(quickType.value)
-    await create({ ...item, title, type: quickType.value })
+    await create({ ...item, title, type: quickType.value } as Entity)
     quickTitle.value = ''
   }
 

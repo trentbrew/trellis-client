@@ -62,16 +62,16 @@
             </UiDropdownMenuTrigger>
             <UiDropdownMenuContent align="start" class="w-48">
               <UiDropdownMenuItem
-                :class="{ 'bg-accent': !selectedOrgId }"
-                @click="selectedOrgId = null">
+                :class="!selectedOrgId ? 'bg-accent' : ''"
+                @select="selectedOrgId = null">
                 All workspaces
               </UiDropdownMenuItem>
               <UiDropdownMenuSeparator />
               <UiDropdownMenuItem
                 v-for="org in orgOptions"
                 :key="org.id"
-                :class="{ 'bg-accent': selectedOrgId === org.id }"
-                @click="selectedOrgId = org.id">
+                :class="selectedOrgId === org.id ? 'bg-accent' : ''"
+                @select="selectedOrgId = org.id">
                 {{ org.name }}
               </UiDropdownMenuItem>
             </UiDropdownMenuContent>

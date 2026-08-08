@@ -8,7 +8,7 @@ describe('useTrellisConfig fallback path (P1)', () => {
   })
 
   it('live transport skips SSE refetch when mode gate is live', () => {
-    const transportMode = 'live'
+    const transportMode = 'live' as string
     const shouldRefetch = transportMode === 'fallback'
       && shouldRefetchAppConfigFromSSE({ entityId: 'route:home', action: 'updateNode' })
     expect(shouldRefetch).toBe(false)
