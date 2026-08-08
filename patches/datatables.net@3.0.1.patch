@@ -1,0 +1,11 @@
+diff --git a/package.json b/package.json
+index 7d1df356b1c8ef3eecd1d1f63395fc536c4c2767..30509554384c05b2d725ff60d04b357684d51144 100644
+--- a/package.json
++++ b/package.json
+@@ -27,5 +27,5 @@
+         "type": "git",
+         "url": "git+https://github.com/DataTables/DataTablesSrc.git"
+     },
+-    "dependencies": null
++    "dependencies": {}
+ }

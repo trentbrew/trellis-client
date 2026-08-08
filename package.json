@@ -45,6 +45,9 @@
     ],
     "overrides": {
       "@turtle.tech/ui>vite": "npm:rolldown-vite@latest"
+    },
+    "patchedDependencies": {
+      "datatables.net@3.0.1": "patches/datatables.net@3.0.1.patch"
     }
   },
   "lint-staged": {

@@ -7,6 +7,11 @@ settings:
 overrides:
   '@turtle.tech/ui>vite': npm:rolldown-vite@latest
 
+patchedDependencies:
+  datatables.net@3.0.1:
+    hash: 76b31ac8607d3bf642aead90d92dafc1780916fcd7cdf3b3bc92fb07c97eccaf
+    path: patches/datatables.net@3.0.1.patch
+
 importers:
 
   .:
@@ -318,10 +323,10 @@ importers:
         version: 3.0.0
       datatables.net:
         specifier: ^3.0.1
-        version: 3.0.1
+        version: 3.0.1(patch_hash=76b31ac8607d3bf642aead90d92dafc1780916fcd7cdf3b3bc92fb07c97eccaf)
       datatables.net-vue3:
         specifier: ^3.0.7
-        version: 3.0.7(datatables.net@3.0.1)(vue@3.5.32(typescript@5.9.3))
+        version: 3.0.7(datatables.net@3.0.1(patch_hash=76b31ac8607d3bf642aead90d92dafc1780916fcd7cdf3b3bc92fb07c97eccaf))(vue@3.5.32(typescript@5.9.3))
       dayjs:
         specifier: 1.11.19
         version: 1.11.19
@@ -15082,12 +15087,12 @@ snapshots:
     dependencies:
       accessor-fn: 1.5.3
 
-  datatables.net-vue3@3.0.7(datatables.net@3.0.1)(vue@3.5.32(typescript@5.9.3)):
+  datatables.net-vue3@3.0.7(datatables.net@3.0.1(patch_hash=76b31ac8607d3bf642aead90d92dafc1780916fcd7cdf3b3bc92fb07c97eccaf))(vue@3.5.32(typescript@5.9.3)):
     dependencies:
-      datatables.net: 3.0.1
+      datatables.net: 3.0.1(patch_hash=76b31ac8607d3bf642aead90d92dafc1780916fcd7cdf3b3bc92fb07c97eccaf)
       vue: 3.5.32(typescript@5.9.3)
 
-  datatables.net@3.0.1: {}
+  datatables.net@3.0.1(patch_hash=76b31ac8607d3bf642aead90d92dafc1780916fcd7cdf3b3bc92fb07c97eccaf): {}
 
   date-fns-tz@2.0.1(date-fns@2.30.0):
     dependencies:
