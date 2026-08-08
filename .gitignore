@@ -46,6 +46,18 @@ playwright-report/
 # Agentize quarantine area (see .archive/2026-05-02-agentize/README.md)
 .archive/
 
+# Agent / tool scratch and log files (loose, not under .agent/)
+apps/web/.agent-*.txt
+apps/web/.agent-*.exit
+apps/web/.eslint-exit.txt
+apps/web/.eslint-out.txt
+apps/web/.vitest-*.txt
+apps/web/.vitest-*.out
+apps/web/_*.txt
+apps/web/_*.out
+apps/web/_*.exit
+apps/web/pw-exit.txt
+
 # Resumable progress log for multi-session work
 progress.txt
 # HQ (Trellis) — canonical under .trellis/hq

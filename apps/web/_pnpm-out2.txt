@@ -1,4 +1,0 @@
-Scope: all 9 workspace projects
-(node:8977) [DEP0169] DeprecationWarning: `url.parse()` behavior is not standardized and prone to errors that have security implications. Use the WHATWG URL API instead. CVEs are not issued for `url.parse()` vulnerabilities.
-(Use `node --trace-deprecation ...` to show where the warning was created)
-[?25l? The modules directory at "/Users/trentbrew/TURTLE/Projects/Packages/trellis-client/node_modules" will be removed and reinstalled from scratch. Proceed? (Y/n) › true[4D[?25h
