@@ -1,10 +1,11 @@
 <!-- eslint-disable vue/html-self-closing -->
 <script lang="ts">
   import type { HTMLAttributes, InputHTMLAttributes } from 'vue'
+  import type { ClassNameValue } from 'tailwind-merge'
 
   export type InputProps = {
     /** Additional classes to add to the input */
-    class?: HTMLAttributes['class']
+    class?: ClassNameValue
     /** The id of the input */
     id?: string
     /** The name of the input */

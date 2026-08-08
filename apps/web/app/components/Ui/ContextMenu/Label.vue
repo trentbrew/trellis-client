@@ -2,11 +2,12 @@
   import { ContextMenuLabel } from 'reka-ui'
   import type { ContextMenuLabelProps } from 'reka-ui'
   import type { HTMLAttributes } from 'vue'
+  import type { ClassNameValue } from 'tailwind-merge'
 
   const props = defineProps<
     ContextMenuLabelProps & {
       /**Custom class(es) to add to the element */
-      class?: HTMLAttributes['class']
+      class?: ClassNameValue
       /** Wether an indentation should be added to the item or not */
       inset?: boolean
       /** The label for the item */

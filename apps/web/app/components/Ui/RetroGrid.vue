@@ -2,12 +2,13 @@
   import { Primitive } from 'reka-ui'
   import type { PrimitiveProps } from 'reka-ui'
   import type { HTMLAttributes } from 'vue'
+  import type { ClassNameValue } from 'tailwind-merge'
 
   export type RetroGridProps = PrimitiveProps & {
     /**
      * Additional CSS classes to apply to the grid container
      */
-    class?: HTMLAttributes['class']
+    class?: ClassNameValue
     /**
      * Rotation angle of the grid in degrees
      * @default 65

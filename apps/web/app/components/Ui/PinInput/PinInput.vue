@@ -2,12 +2,13 @@
   import { PinInputRoot, useForwardPropsEmits } from 'reka-ui'
   import type { PinInputRootEmits, PinInputRootProps } from 'reka-ui'
   import type { HTMLAttributes } from 'vue'
+  import type { ClassNameValue } from 'tailwind-merge'
 
   const props = withDefaults(
     defineProps<
       PinInputRootProps & {
         /** Custom class(es) to apply to the parent element. */
-        class?: HTMLAttributes['class']
+        class?: ClassNameValue
         /** The number of inputs to render.  @default 4 */
         inputCount?: number
         /** The separator to render between inputs.  @default undefined */

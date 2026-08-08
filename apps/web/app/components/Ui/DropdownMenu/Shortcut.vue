@@ -2,12 +2,13 @@
   import { Primitive } from 'reka-ui'
   import type { PrimitiveProps } from 'reka-ui'
   import type { HTMLAttributes } from 'vue'
+  import type { ClassNameValue } from 'tailwind-merge'
 
   const props = withDefaults(
     defineProps<
       PrimitiveProps & {
         /** Custom class(es) to add to the parent */
-        class?: HTMLAttributes['class']
+        class?: ClassNameValue
         /**
          * The variant of the item.
          *

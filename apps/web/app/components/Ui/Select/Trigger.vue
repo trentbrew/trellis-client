@@ -2,12 +2,13 @@
   import { SelectTrigger } from 'reka-ui'
   import type { SelectTriggerProps } from 'reka-ui'
   import type { HTMLAttributes } from 'vue'
+  import type { ClassNameValue } from 'tailwind-merge'
 
   const props = withDefaults(
     defineProps<
       SelectTriggerProps & {
         /** Custom class(es) to add to the parent */
-        class?: HTMLAttributes['class']
+        class?: ClassNameValue
         /** Icon to render */
         icon?: string
         /** Placeholder text */

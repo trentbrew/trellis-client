@@ -1,10 +1,11 @@
 <script lang="ts" setup>
   import type { HTMLAttributes } from 'vue'
+  import type { ClassNameValue } from 'tailwind-merge'
 
   defineOptions({ inheritAttrs: false })
 
   const { formDescriptionId } = useFormField()
-  const props = defineProps<{ class?: HTMLAttributes['class']; description?: string }>()
+  const props = defineProps<{ class?: ClassNameValue; description?: string }>()
   const styles = tv({ base: 'text-sm text-muted-foreground' })
 </script>
 <template>

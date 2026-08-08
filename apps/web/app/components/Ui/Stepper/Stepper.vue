@@ -2,10 +2,11 @@
   import { StepperRoot, useForwardPropsEmits } from 'reka-ui'
   import type { StepperRootEmits, StepperRootProps } from 'reka-ui'
   import type { HTMLAttributes } from 'vue'
+  import type { ClassNameValue } from 'tailwind-merge'
 
   const props = defineProps<
     StepperRootProps & {
-      class?: HTMLAttributes['class']
+      class?: ClassNameValue
     }
   >()
   const emit = defineEmits<StepperRootEmits>()

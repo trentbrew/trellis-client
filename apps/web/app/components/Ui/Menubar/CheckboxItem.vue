@@ -2,11 +2,12 @@
   import { MenubarCheckboxItem, useForwardPropsEmits } from 'reka-ui'
   import type { MenubarCheckboxItemEmits, MenubarCheckboxItemProps } from 'reka-ui'
   import type { HTMLAttributes } from 'vue'
+  import type { ClassNameValue } from 'tailwind-merge'
 
   const props = defineProps<
     MenubarCheckboxItemProps & {
       icon?: string
-      class?: HTMLAttributes['class']
+      class?: ClassNameValue
       title?: string
       shortcut?: string
     }

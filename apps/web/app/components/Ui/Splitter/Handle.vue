@@ -2,13 +2,14 @@
   import { SplitterResizeHandle, useForwardPropsEmits } from 'reka-ui'
   import type { SplitterResizeHandleEmits, SplitterResizeHandleProps } from 'reka-ui'
   import type { HTMLAttributes } from 'vue'
+  import type { ClassNameValue } from 'tailwind-merge'
 
   const props = withDefaults(
     defineProps<
       SplitterResizeHandleProps & {
         direction?: 'horizontal' | 'vertical'
         /** Custom class(es) to add to parent element */
-        class?: HTMLAttributes['class']
+        class?: ClassNameValue
         withHandle?: boolean
         icon?: string
       }

@@ -3,6 +3,7 @@
   import { useForwardProps } from 'reka-ui'
   import type { RadioGroupRootProps } from 'reka-ui'
   import type { HTMLAttributes } from 'vue'
+  import type { ClassNameValue } from 'tailwind-merge'
 
   const variants = {
     initial: { opacity: 0, y: -2 },
@@ -16,7 +17,7 @@
       id?: string
       rules?: any
       validateOnMount?: boolean
-      class?: HTMLAttributes['class']
+      class?: ClassNameValue
       name: string
     }
   >()
@@ -47,7 +48,7 @@
         </span>
       </UiLabel>
     </slot>
-    <UiRadioGroup v-bind="{ ...forwarded, ...$attrs }" v-model="value">
+    <UiRadioGroup v-bind="{ ...forwarded, ...$attrs } as Record<string, any>" v-model="value">
       <slot />
     </UiRadioGroup>
     <AnimatePresence multiple as="div" mode="wait">

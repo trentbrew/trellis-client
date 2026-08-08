@@ -2,13 +2,14 @@
   import { ContextMenuContent, useForwardPropsEmits } from 'reka-ui'
   import type { ContextMenuContentEmits, ContextMenuContentProps } from 'reka-ui'
   import type { HTMLAttributes } from 'vue'
+  import type { ClassNameValue } from 'tailwind-merge'
 
   defineOptions({ inheritAttrs: false })
   const props = withDefaults(
     defineProps<
       ContextMenuContentProps & {
         /** Custom class(es) to add to the element */
-        class?: HTMLAttributes['class']
+        class?: ClassNameValue
       }
     >(),
     {

@@ -2,10 +2,11 @@
   import { Label } from 'reka-ui'
   import type { LabelProps as LP } from 'reka-ui'
   import type { HTMLAttributes } from 'vue'
+  import type { ClassNameValue } from 'tailwind-merge'
 
   export type LabelProps = LP & {
     /** Custom class(es) to add to the label */
-    class?: HTMLAttributes['class']
+    class?: ClassNameValue
     /**
      * Optional hint text to display alongside the label.
      */

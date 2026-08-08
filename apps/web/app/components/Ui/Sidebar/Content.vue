@@ -1,5 +1,6 @@
 <script lang="ts">
   import type { HTMLAttributes } from 'vue'
+  import type { ClassNameValue } from 'tailwind-merge'
 
   export const sideBarContentStyles = tv({
     base: 'flex min-h-0 flex-1 flex-col gap-2 overflow-auto group-data-[collapsible=icon]:overflow-hidden',
@@ -10,7 +11,7 @@
     /**
      * Additional classes to apply to the sidebar content.
      */
-    class?: HTMLAttributes['class']
+    class?: ClassNameValue
   }>()
 </script>
 <template>

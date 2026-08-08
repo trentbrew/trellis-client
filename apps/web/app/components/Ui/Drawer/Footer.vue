@@ -3,6 +3,7 @@
   import { Primitive, useForwardProps } from 'reka-ui'
   import type { PrimitiveProps } from 'reka-ui'
   import type { HTMLAttributes } from 'vue'
+  import type { ClassNameValue } from 'tailwind-merge'
 
   export const drawerFooterStyles = tv({
     base: 'mt-auto flex flex-col gap-2 p-4',
@@ -12,7 +13,7 @@
     /**
      * Classes to add to the parent.
      */
-    class?: HTMLAttributes['class']
+    class?: ClassNameValue
   }
 </script>
 

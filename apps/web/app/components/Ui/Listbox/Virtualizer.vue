@@ -2,8 +2,9 @@
   import { ListboxVirtualizer, useForwardProps } from 'reka-ui'
   import type { ListboxVirtualizerProps } from 'reka-ui'
   import type { HTMLAttributes } from 'vue'
+  import type { ClassNameValue } from 'tailwind-merge'
 
-  const props = defineProps<ListboxVirtualizerProps & { class?: HTMLAttributes['class'] }>()
+  const props = defineProps<ListboxVirtualizerProps & { class?: ClassNameValue }>()
   const forwarded = useForwardProps(reactiveOmit(props, 'class'))
 
   const styles = tv({

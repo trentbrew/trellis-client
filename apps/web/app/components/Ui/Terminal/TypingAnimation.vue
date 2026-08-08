@@ -2,10 +2,11 @@
   import type { MotionProps } from 'motion-v'
   import type { PrimitiveProps } from 'reka-ui'
   import type { HTMLAttributes } from 'vue'
+  import type { ClassNameValue } from 'tailwind-merge'
 
   export interface TypingAnimationProps extends Omit<MotionProps, 'as' | 'asChild'>, PrimitiveProps {
     text?: string
-    class?: HTMLAttributes['class']
+    class?: ClassNameValue
     duration?: number
     delay?: number
   }

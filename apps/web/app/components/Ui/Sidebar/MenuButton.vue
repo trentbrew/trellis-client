@@ -25,13 +25,13 @@
   const forwarded = useForwardProps(reactiveOmit(props, ['tooltip']))
 </script>
 <template>
-  <UiSidebarMenuButtonChild v-if="!tooltip" v-bind="{ ...forwarded, ...$attrs }">
+  <UiSidebarMenuButtonChild v-if="!tooltip" v-bind="{ ...forwarded, ...$attrs } as Record<string, any>">
     <slot />
   </UiSidebarMenuButtonChild>
 
   <UiTooltip v-else>
     <UiTooltipTrigger as-child>
-      <UiSidebarMenuButtonChild v-bind="{ ...forwarded, ...$attrs }">
+      <UiSidebarMenuButtonChild v-bind="{ ...forwarded, ...$attrs } as Record<string, any>">
         <slot />
       </UiSidebarMenuButtonChild>
     </UiTooltipTrigger>

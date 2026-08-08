@@ -2,6 +2,7 @@
   import { AccordionItem } from 'reka-ui'
   import type { AccordionItemProps } from 'reka-ui'
   import type { HTMLAttributes } from 'vue'
+  import type { ClassNameValue } from 'tailwind-merge'
 
   export const accordionItemStyle = tv({ base: 'border-b last:border-b-0' })
 </script>
@@ -12,7 +13,7 @@
       /**
        * Custom class to apply to the component
        */
-      class?: HTMLAttributes['class']
+      class?: ClassNameValue
     }
   >()
 

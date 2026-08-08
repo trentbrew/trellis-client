@@ -1,6 +1,7 @@
 <script lang="ts">
   import type { PrimitiveProps } from 'reka-ui'
   import type { HTMLAttributes, ModelRef } from 'vue'
+  import type { ClassNameValue } from 'tailwind-merge'
 
   export interface NavContextProps {
     open: Ref<boolean>
@@ -10,7 +11,7 @@
 
   export type NavProviderProps = PrimitiveProps & {
     /** Custom class(es) to add to the element */
-    class?: HTMLAttributes['class']
+    class?: ClassNameValue
     /**
      * The controlled open state of the nav component.
      */

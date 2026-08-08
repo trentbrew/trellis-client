@@ -1,6 +1,7 @@
 <script lang="ts">
   import type { PrimitiveProps } from 'reka-ui'
   import type { HTMLAttributes } from 'vue'
+  import type { ClassNameValue } from 'tailwind-merge'
 
   /**
    * Styles for the heading component
@@ -35,7 +36,7 @@
     /**
      * Custom class(es) to apply to the heading element.
      */
-    class?: HTMLAttributes['class']
+    class?: ClassNameValue
   }
 </script>
 

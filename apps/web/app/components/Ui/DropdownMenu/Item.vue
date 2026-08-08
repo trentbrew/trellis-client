@@ -2,11 +2,12 @@
   import { DropdownMenuItem, useForwardPropsEmits } from 'reka-ui'
   import type { DropdownMenuItemEmits, DropdownMenuItemProps } from 'reka-ui'
   import type { HTMLAttributes } from 'vue'
+  import type { ClassNameValue } from 'tailwind-merge'
 
   const props = defineProps<
     DropdownMenuItemProps & {
       /** Custom class(es) to add to the parent */
-      class?: HTMLAttributes['class']
+      class?: ClassNameValue
       /** Whether to inset the content */
       inset?: boolean
       /** The shortcut text to display */

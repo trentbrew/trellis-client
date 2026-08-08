@@ -2,6 +2,7 @@
   import type { PrimitiveProps } from 'reka-ui'
   import type { VariantProps } from 'tailwind-variants'
   import type { HTMLAttributes } from 'vue'
+  import type { ClassNameValue } from 'tailwind-merge'
 
   export const fieldStyles = tv({
     base: 'group/field flex w-full gap-3 data-[invalid=true]:text-destructive',
@@ -29,7 +30,7 @@
     /**
      * Additional classes to apply to the fieldset element.
      */
-    class?: HTMLAttributes['class']
+    class?: ClassNameValue
     /**
      * The orientation of the field, either "vertical", "horizontal", or "responsive".
      * @default "vertical"

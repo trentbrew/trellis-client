@@ -2,8 +2,9 @@
   import { TagsInputInput } from 'reka-ui'
   import type { TagsInputInputProps } from 'reka-ui'
   import type { HTMLAttributes } from 'vue'
+  import type { ClassNameValue } from 'tailwind-merge'
 
-  const props = defineProps<TagsInputInputProps & { class?: HTMLAttributes['class'] }>()
+  const props = defineProps<TagsInputInputProps & { class?: ClassNameValue }>()
   const forwarded = reactiveOmit(props, 'class')
   const styles = tv({
     base: 'min-h-6 w-full flex-1 bg-transparent px-1 text-sm focus:outline-none dark:bg-input/30',

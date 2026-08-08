@@ -3,6 +3,7 @@
   import { createContext, ListboxRoot, useFilter, useForwardPropsEmits } from 'reka-ui'
   import type { ListboxRootEmits, ListboxRootProps } from 'reka-ui'
   import type { HTMLAttributes } from 'vue'
+  import type { ClassNameValue } from 'tailwind-merge'
 
   export const [useCommand, provideCommandContext] = createContext<{
     allItems: Ref<Map<string, string>>
@@ -18,7 +19,7 @@
   }>('CommandGroup')
 </script>
 <script setup lang="ts">
-  const props = withDefaults(defineProps<ListboxRootProps & { class?: HTMLAttributes['class'] }>(), {
+  const props = withDefaults(defineProps<ListboxRootProps & { class?: ClassNameValue }>(), {
     modelValue: '',
   })
 

@@ -2,13 +2,14 @@
   import { AlertDialogContent, useForwardPropsEmits } from 'reka-ui'
   import type { AlertDialogContentEmits, AlertDialogContentProps } from 'reka-ui'
   import type { HTMLAttributes } from 'vue'
+  import type { ClassNameValue } from 'tailwind-merge'
 
   defineOptions({ inheritAttrs: false })
 
   const props = defineProps<
     AlertDialogContentProps & {
       /** Custom class(es) to add to the `AlertDialogContent` */
-      class?: HTMLAttributes['class']
+      class?: ClassNameValue
       /** The element to render the portal into */
       to?: string | HTMLElement
     }

@@ -17,8 +17,9 @@
   import 'datatables.net-colreorder-dt'
   import 'datatables.net-colreorder-dt/css/colReorder.dataTables.css'
 
-  import type { Api, Config } from 'datatables.net'
+  import type { Api, ColumnsConfig, Options as Config } from 'datatables.net'
   import type { HTMLAttributes } from 'vue'
+  import type { ClassNameValue } from 'tailwind-merge'
 
   export type DataTablesNamedSlotProps<T> = {
     /** The data to show in the cell (from the `columns.data` configuration) */
@@ -54,11 +55,11 @@
        * @default "nowrap hover order-column row-border stripe display"
        * @see https://datatables.net/manual/styling/classes
        */
-      class?: HTMLAttributes['class']
+      class?: ClassNameValue
       /**
        * The columns to display in the table
        */
-      columns?: Config['columns']
+      columns?: ColumnsConfig[]
       /**
        * Load data for the table's content from an Ajax source.
        *

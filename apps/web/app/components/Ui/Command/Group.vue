@@ -3,13 +3,14 @@
   import { ListboxGroup, ListboxGroupLabel } from 'reka-ui'
   import type { ListboxGroupProps } from 'reka-ui'
   import type { HTMLAttributes } from 'vue'
+  import type { ClassNameValue } from 'tailwind-merge'
 
   import { provideCommandGroupContext, useCommand } from './Command.vue'
 
   const props = defineProps<
     ListboxGroupProps & {
       /** Custom class(es) to add to the element */
-      class?: HTMLAttributes['class']
+      class?: ClassNameValue
       heading?: string
     }
   >()

@@ -3,6 +3,7 @@
   import type { PrimitiveProps } from 'reka-ui'
   import type { VariantProps } from 'tailwind-variants'
   import type { HTMLAttributes } from 'vue'
+  import type { ClassNameValue } from 'tailwind-merge'
 
   const inputGroupAddonVariants = tv({
     base: "flex h-auto cursor-text items-center justify-center gap-2 py-1.5 text-sm font-medium text-muted-foreground select-none group-data-[disabled=true]/input-group:opacity-50 [&>kbd]:rounded-[calc(var(--radius)-5px)] [&>svg:not([class*='size-'])]:size-4",
@@ -30,7 +31,7 @@
     /**
      * Additional classes to apply to the input group addon container.
      */
-    class?: HTMLAttributes['class']
+    class?: ClassNameValue
   }
 </script>
 

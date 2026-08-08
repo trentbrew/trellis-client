@@ -1,12 +1,13 @@
 <script lang="ts" setup>
   import type { HTMLAttributes } from 'vue'
+  import type { ClassNameValue } from 'tailwind-merge'
 
   const props = withDefaults(
     defineProps<{
       /**
        * Custom class(es) to add to the icon container.
        */
-      class?: HTMLAttributes['class']
+      class?: ClassNameValue
       /**
        * The icon to display.
        */

@@ -2,13 +2,14 @@
   import { ComboboxContent, useForwardPropsEmits } from 'reka-ui'
   import type { ComboboxContentEmits, ComboboxContentProps } from 'reka-ui'
   import type { HTMLAttributes } from 'vue'
+  import type { ClassNameValue } from 'tailwind-merge'
 
   defineOptions({ inheritAttrs: false })
   const props = withDefaults(
     defineProps<
       ComboboxContentProps & {
         /** Custom class(es) to add to the content */
-        class?: HTMLAttributes['class']
+        class?: ClassNameValue
       }
     >(),
     {

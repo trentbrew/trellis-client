@@ -1,5 +1,6 @@
 <script lang="ts">
   import type { HTMLAttributes } from 'vue'
+  import type { ClassNameValue } from 'tailwind-merge'
 
   export const fieldSeparatorStyles = tv({
     base: ['relative -my-2 h-5 text-sm group-data-[variant=outline]/field-group:-mb-2'],
@@ -10,7 +11,7 @@
     /**
      * Additional classes to apply to the element.
      */
-    class?: HTMLAttributes['class']
+    class?: ClassNameValue
   }>()
 </script>
 <template>

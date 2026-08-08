@@ -1,6 +1,7 @@
 <script lang="ts">
   import type { PrimitiveProps } from 'reka-ui'
   import type { HTMLAttributes } from 'vue'
+  import type { ClassNameValue } from 'tailwind-merge'
 
   const styles = tv({
     base: 'z-0 h-full max-h-[400px] w-full max-w-lg rounded-lg border border-border bg-background',
@@ -10,7 +11,7 @@
   const props = withDefaults(
     defineProps<
       PrimitiveProps & {
-        class?: HTMLAttributes['class']
+        class?: ClassNameValue
         buttonColors?: string[]
       }
     >(),

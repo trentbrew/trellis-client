@@ -2,6 +2,7 @@
   import { ContextMenuSubContent, useForwardPropsEmits } from 'reka-ui'
   import type { ContextMenuSubContentEmits, ContextMenuSubContentProps } from 'reka-ui'
   import type { HTMLAttributes } from 'vue'
+  import type { ClassNameValue } from 'tailwind-merge'
 
   defineOptions({ inheritAttrs: false })
 
@@ -9,7 +10,7 @@
     defineProps<
       ContextMenuSubContentProps & {
         /**Custom class(es) to add to the element */
-        class?: HTMLAttributes['class']
+        class?: ClassNameValue
       }
     >(),
     {

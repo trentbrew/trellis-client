@@ -2,8 +2,9 @@
   import { ListboxRoot, useForwardPropsEmits } from 'reka-ui'
   import type { ListboxRootEmits, ListboxRootProps } from 'reka-ui'
   import type { HTMLAttributes } from 'vue'
+  import type { ClassNameValue } from 'tailwind-merge'
 
-  const props = defineProps<ListboxRootProps & { class?: HTMLAttributes['class'] }>()
+  const props = defineProps<ListboxRootProps & { class?: ClassNameValue }>()
   const emits = defineEmits<ListboxRootEmits>()
   const forwarded = useForwardPropsEmits(reactiveOmit(props, 'class'), emits)
 

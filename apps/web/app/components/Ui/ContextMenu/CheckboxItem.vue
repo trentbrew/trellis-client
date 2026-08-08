@@ -2,11 +2,12 @@
   import { ContextMenuCheckboxItem, useForwardPropsEmits } from 'reka-ui'
   import type { ContextMenuCheckboxItemEmits, ContextMenuCheckboxItemProps } from 'reka-ui'
   import type { HTMLAttributes } from 'vue'
+  import type { ClassNameValue } from 'tailwind-merge'
 
   const props = defineProps<
     ContextMenuCheckboxItemProps & {
       /**Custom class(es) to add to the element */
-      class?: HTMLAttributes['class']
+      class?: ClassNameValue
       /**The shortcut for the item */
       shortcut?: string
       /**The title for the item */

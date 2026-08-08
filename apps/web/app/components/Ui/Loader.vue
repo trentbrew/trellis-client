@@ -4,6 +4,7 @@
   import { useBodyScrollLock } from 'reka-ui'
   import type { PrimitiveProps } from 'reka-ui'
   import type { HtmlHTMLAttributes } from 'vue'
+  import type { ClassNameValue } from 'tailwind-merge'
 
   export type LoaderProps = PrimitiveProps & {
     /**
@@ -15,11 +16,11 @@
     /**
      * The class to apply to the loader Icon
      */
-    class?: HtmlHTMLAttributes['class']
+    class?: ClassNameValue
     /**
      * The class to apply to the backdrop
      */
-    backdropClass?: HtmlHTMLAttributes['class']
+    backdropClass?: ClassNameValue
     /**
      * Whether the loader should take up the full page.
      *

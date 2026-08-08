@@ -2,9 +2,10 @@
   import { TagsInputClear } from 'reka-ui'
   import type { TagsInputClearProps } from 'reka-ui'
   import type { HtmlHTMLAttributes } from 'vue'
+  import type { ClassNameValue } from 'tailwind-merge'
 
   const props = withDefaults(
-    defineProps<TagsInputClearProps & { icon?: string; class?: HtmlHTMLAttributes['class'] }>(),
+    defineProps<TagsInputClearProps & { icon?: string; class?: ClassNameValue }>(),
     {
       icon: 'lucide:x',
     },

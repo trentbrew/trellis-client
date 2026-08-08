@@ -2,11 +2,12 @@
   import { DialogTitle } from 'reka-ui'
   import type { DialogTitleProps } from 'reka-ui'
   import type { HTMLAttributes } from 'vue'
+  import type { ClassNameValue } from 'tailwind-merge'
 
   const props = defineProps<
     DialogTitleProps & {
       /** Custom class(es) to add to the parent */
-      class?: HTMLAttributes['class']
+      class?: ClassNameValue
       /** The title text */
       title?: string
     }

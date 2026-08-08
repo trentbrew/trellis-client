@@ -1,6 +1,7 @@
 <script lang="ts">
   import { VisuallyHidden } from 'reka-ui'
   import type { HTMLAttributes } from 'vue'
+  import type { ClassNameValue } from 'tailwind-merge'
   import { SIDEBAR_WIDTH_MOBILE } from '~/utils/sidebar'
 
   export const sideBarStyles = tv({
@@ -71,7 +72,7 @@
     /**
      * Additional classes to add to the sidebar
      */
-    class?: HTMLAttributes['class']
+    class?: ClassNameValue
   }
 </script>
 

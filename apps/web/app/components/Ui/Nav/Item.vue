@@ -1,11 +1,12 @@
 <script lang="ts" setup>
   import type { NuxtLinkProps } from '#app'
   import type { HTMLAttributes } from 'vue'
+  import type { ClassNameValue } from 'tailwind-merge'
 
   const props = defineProps<
     Omit<NuxtLinkProps, 'noPrefetch'> & {
       /** custom t\class(es) to add to the link */
-      class?: HTMLAttributes['class']
+      class?: ClassNameValue
     }
   >()
 

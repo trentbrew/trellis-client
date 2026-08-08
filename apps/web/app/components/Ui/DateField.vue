@@ -3,6 +3,7 @@
   import type { DateValue } from '@internationalized/date'
   import type { DateFieldRootProps } from 'reka-ui'
   import type { HTMLAttributes } from 'vue'
+  import type { ClassNameValue } from 'tailwind-merge'
 
   const props = withDefaults(
     defineProps<
@@ -10,7 +11,7 @@
         /**
          * Any additional class that should be added to the date field
          */
-        class?: HTMLAttributes['class']
+        class?: ClassNameValue
         /**
          * The separator to use between date segments
          *

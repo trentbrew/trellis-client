@@ -2,11 +2,12 @@
   import { ContextMenuArrow } from 'reka-ui'
   import type { ContextMenuArrowProps } from 'reka-ui'
   import type { HtmlHTMLAttributes } from 'vue'
+  import type { ClassNameValue } from 'tailwind-merge'
 
   const props = defineProps<
     ContextMenuArrowProps & {
       /** Custom class(es) to add to the arrow */
-      class?: HtmlHTMLAttributes['class']
+      class?: ClassNameValue
     }
   >()
   const forwarded = reactiveOmit(props, 'class')

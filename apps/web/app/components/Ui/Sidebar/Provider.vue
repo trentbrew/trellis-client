@@ -1,5 +1,6 @@
 <script lang="ts">
   import type { HTMLAttributes, Ref } from 'vue'
+  import type { ClassNameValue } from 'tailwind-merge'
 
   export const sideBarProviderStyles = tv({
     base: 'group/sidebar-wrapper has-data-[variant=inset]:bg-sidebar flex min-h-svh w-full',
@@ -22,7 +23,7 @@
       /**
        * Additional classes to apply to the parent element.
        */
-      class?: HTMLAttributes['class']
+      class?: ClassNameValue
     }>(),
     {
       defaultOpen: true,

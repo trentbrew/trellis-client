@@ -3,6 +3,7 @@
   import { motion } from 'motion-v'
   import type { VariantProps } from 'tailwind-variants'
   import type { HTMLAttributes } from 'vue'
+  import type { ClassNameValue } from 'tailwind-merge'
 
   const variants = {
     initial: { opacity: 0, y: -2 },
@@ -63,13 +64,13 @@
 
   export type NativeCheckboxProps = {
     /** Custom class(es) to add to the element */
-    class?: HTMLAttributes['class']
+    class?: ClassNameValue
     /** Custom class(es) to add to the label element */
-    labelClass?: HTMLAttributes['class']
+    labelClass?: ClassNameValue
     /** Custom class(es) to add to the description element */
-    descriptionClass?: HTMLAttributes['class']
+    descriptionClass?: ClassNameValue
     /** Custom class(es) to add to the wrapper element */
-    wrapperClass?: HTMLAttributes['class']
+    wrapperClass?: ClassNameValue
     /** The id of the checkbox input element */
     id?: string
     /** The v-model binding for the checkbox */

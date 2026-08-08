@@ -2,6 +2,7 @@
   import { Primitive } from 'reka-ui'
   import type { PrimitiveProps } from 'reka-ui'
   import type { HTMLAttributes } from 'vue'
+  import type { ClassNameValue } from 'tailwind-merge'
 
   const props = withDefaults(
     defineProps<
@@ -9,7 +10,7 @@
         /** Content to display in the card */
         content?: string
         /** Custom class(es) to add to the element */
-        class?: HTMLAttributes['class']
+        class?: ClassNameValue
       }
     >(),
     { as: 'div' },

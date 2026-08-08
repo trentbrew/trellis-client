@@ -1,6 +1,7 @@
 <script lang="ts">
   import type { PrimitiveProps } from 'reka-ui'
   import type { HTMLAttributes } from 'vue'
+  import type { ClassNameValue } from 'tailwind-merge'
 
   export const itemContentStyles = tv({
     base: 'flex flex-1 flex-col gap-1 [&+[data-slot=item-content]]:flex-none',
@@ -10,7 +11,7 @@
     /**
      * Additional classes to apply to the parent element.
      */
-    class?: HTMLAttributes['class']
+    class?: ClassNameValue
   }
 </script>
 

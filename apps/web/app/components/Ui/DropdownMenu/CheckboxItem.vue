@@ -2,11 +2,12 @@
   import { DropdownMenuCheckboxItem, useForwardPropsEmits } from 'reka-ui'
   import type { DropdownMenuCheckboxItemEmits, DropdownMenuCheckboxItemProps } from 'reka-ui'
   import type { HTMLAttributes } from 'vue'
+  import type { ClassNameValue } from 'tailwind-merge'
 
   const props = defineProps<
     DropdownMenuCheckboxItemProps & {
       /** Custom class(es) to add to the parent */
-      class?: HTMLAttributes['class']
+      class?: ClassNameValue
       /** The shortcut text to display */
       shortcut?: string
       /** The title text to display */

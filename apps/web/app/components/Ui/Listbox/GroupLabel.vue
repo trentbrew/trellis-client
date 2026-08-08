@@ -2,8 +2,9 @@
   import { ListboxGroupLabel, useForwardProps } from 'reka-ui'
   import type { ListboxGroupLabelProps } from 'reka-ui'
   import type { HTMLAttributes } from 'vue'
+  import type { ClassNameValue } from 'tailwind-merge'
 
-  const props = defineProps<ListboxGroupLabelProps & { class?: HTMLAttributes['class'] }>()
+  const props = defineProps<ListboxGroupLabelProps & { class?: ClassNameValue }>()
   const forwarded = useForwardProps(reactiveOmit(props, 'class'))
 
   const styles = tv({

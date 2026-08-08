@@ -2,6 +2,7 @@
   import { motion } from 'motion-v'
   import type { MotionStyle, Transition } from 'motion-v'
   import type { CSSProperties, HTMLAttributes } from 'vue'
+  import type { ClassNameValue } from 'tailwind-merge'
 
   interface BorderBeamProps {
     /**
@@ -31,7 +32,7 @@
     /**
      * The class name of the border beam.
      */
-    class?: HTMLAttributes['class']
+    class?: ClassNameValue
     /**
      * The style of the border beam.
      */

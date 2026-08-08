@@ -3,11 +3,12 @@
   import { PaginationList } from 'reka-ui'
   import type { PaginationListProps } from 'reka-ui'
   import type { HTMLAttributes } from 'vue'
+  import type { ClassNameValue } from 'tailwind-merge'
 
   const props = defineProps<
     PaginationListProps & {
       /** Custom class(es) to add to the parent */
-      class?: HTMLAttributes['class']
+      class?: ClassNameValue
     }
   >()
   const forwarded = reactiveOmit(props, 'class')

@@ -2,8 +2,9 @@
   import { ListboxFilter, useForwardPropsEmits } from 'reka-ui'
   import type { ListboxFilterEmits, ListboxFilterProps } from 'reka-ui'
   import type { HTMLAttributes } from 'vue'
+  import type { ClassNameValue } from 'tailwind-merge'
 
-  const props = defineProps<ListboxFilterProps & { class?: HTMLAttributes['class']; placeholder?: string }>()
+  const props = defineProps<ListboxFilterProps & { class?: ClassNameValue; placeholder?: string }>()
   const emits = defineEmits<ListboxFilterEmits>()
   const forwarded = useForwardPropsEmits(reactiveOmit(props, 'class'), emits)
 

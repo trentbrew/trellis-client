@@ -2,6 +2,7 @@
   import { DialogContent, useForwardPropsEmits } from 'reka-ui'
   import type { DialogContentEmits, DialogContentProps } from 'reka-ui'
   import type { HTMLAttributes } from 'vue'
+  import type { ClassNameValue } from 'tailwind-merge'
 
   defineOptions({ inheritAttrs: false })
   const props = defineProps<
@@ -12,9 +13,9 @@
       title?: string
       /** Description text */
       description?: string
-      overlayClass?: HTMLAttributes['class']
+      overlayClass?: ClassNameValue
       /** Custom class(es) to add to the parent */
-      class?: HTMLAttributes['class']
+      class?: ClassNameValue
       /** Whether to hide the close button */
       hideClose?: boolean
       /** Where to render the dialog */

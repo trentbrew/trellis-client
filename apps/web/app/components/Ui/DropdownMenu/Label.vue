@@ -2,11 +2,12 @@
   import { DropdownMenuLabel } from 'reka-ui'
   import type { DropdownMenuLabelProps } from 'reka-ui'
   import type { HTMLAttributes } from 'vue'
+  import type { ClassNameValue } from 'tailwind-merge'
 
   const props = defineProps<
     DropdownMenuLabelProps & {
       /** Custom class(es) to add to the parent */
-      class?: HTMLAttributes['class']
+      class?: ClassNameValue
       /** Whether to inset the content */
       inset?: boolean
       /** The label text to display */

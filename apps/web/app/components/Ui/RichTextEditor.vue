@@ -530,7 +530,7 @@
         codeBlock: false, // replaced by CodeBlockLowlight
         blockquote: false, // replaced by CustomBlockquote (| trigger instead of >)
         // Disable history only when collaborative (Y.js provides it)
-        history: collabEnabled.value ? false : undefined,
+        undoRedo: collabEnabled.value ? false : undefined,
       }),
       CustomBlockquote,
       CodeBlockLowlight.extend({

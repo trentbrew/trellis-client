@@ -1,5 +1,6 @@
 <script lang="ts" setup>
   import type { HTMLAttributes } from 'vue'
+  import type { ClassNameValue } from 'tailwind-merge'
 
   import { navProviderKey } from './Provider.vue'
 
@@ -15,7 +16,7 @@
   const props = withDefaults(
     defineProps<{
       ariaLabel?: string
-      class?: HTMLAttributes['class']
+      class?: ClassNameValue
       onClick?: (event: MouseEvent) => void
       icon?: string
     }>(),

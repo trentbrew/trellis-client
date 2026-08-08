@@ -2,13 +2,14 @@
   import { AvatarFallback } from 'reka-ui'
   import type { AvatarFallbackProps } from 'reka-ui'
   import type { HTMLAttributes } from 'vue'
+  import type { ClassNameValue } from 'tailwind-merge'
 
   const props = defineProps<
     AvatarFallbackProps & {
       /** The text to display inside the avatar */
       fallback?: string
       /** Custom class(es) to add to the element */
-      class?: HTMLAttributes['class']
+      class?: ClassNameValue
     }
   >()
   const forwarded = reactiveOmit(props, 'class', 'fallback')

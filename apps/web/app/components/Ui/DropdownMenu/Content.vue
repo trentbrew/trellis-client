@@ -2,6 +2,7 @@
   import { DropdownMenuContent, useForwardPropsEmits } from 'reka-ui'
   import type { DropdownMenuContentEmits, DropdownMenuContentProps } from 'reka-ui'
   import type { HTMLAttributes } from 'vue'
+  import type { ClassNameValue } from 'tailwind-merge'
 
   defineOptions({ inheritAttrs: false })
 
@@ -9,7 +10,7 @@
     defineProps<
       DropdownMenuContentProps & {
         /** Custom class(es) to add to the parent */
-        class?: HTMLAttributes['class']
+        class?: ClassNameValue
       }
     >(),
     {

@@ -2,12 +2,13 @@
   import { DrawerDescription } from 'vaul-vue'
   import type { DrawerDescriptionProps } from 'vaul-vue'
   import type { HTMLAttributes } from 'vue'
+  import type { ClassNameValue } from 'tailwind-merge'
 
   interface Props extends DrawerDescriptionProps {
     /**
      * Custom class(es) to add to the parent.
      */
-    class?: HTMLAttributes['class']
+    class?: ClassNameValue
     /**
      * The text content of the description.
      */

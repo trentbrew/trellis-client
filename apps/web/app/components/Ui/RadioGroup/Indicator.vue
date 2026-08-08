@@ -2,11 +2,12 @@
   import { RadioGroupIndicator } from 'reka-ui'
   import type { RadioGroupIndicatorProps } from 'reka-ui'
   import type { HTMLAttributes } from 'vue'
+  import type { ClassNameValue } from 'tailwind-merge'
 
   const props = defineProps<
     RadioGroupIndicatorProps & {
       /** Custom class(es) to add to the parent */
-      class?: HTMLAttributes['class']
+      class?: ClassNameValue
       /** Icon to show */
       icon?: string
     }

@@ -1,8 +1,9 @@
 <script lang="ts" setup>
   import type { HTMLAttributes } from 'vue'
+  import type { ClassNameValue } from 'tailwind-merge'
 
   const props = defineProps<{
-    class?: HTMLAttributes['class']
+    class?: ClassNameValue
   }>()
 
   const styles = tv({

@@ -2,13 +2,14 @@
   import { MenubarSubContent, useForwardPropsEmits } from 'reka-ui'
   import type { MenubarSubContentEmits, MenubarSubContentProps } from 'reka-ui'
   import type { HTMLAttributes } from 'vue'
+  import type { ClassNameValue } from 'tailwind-merge'
 
   defineOptions({ inheritAttrs: false })
   const props = withDefaults(
     defineProps<
       MenubarSubContentProps & {
         /** Custom class(es) to add to the parent */
-        class?: HTMLAttributes['class']
+        class?: ClassNameValue
         /** The target element to portal the component to */
         to?: string | HTMLElement
       }

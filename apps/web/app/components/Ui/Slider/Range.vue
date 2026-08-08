@@ -2,11 +2,12 @@
   import { SliderRange } from 'reka-ui'
   import type { SliderRangeProps } from 'reka-ui'
   import type { HTMLAttributes } from 'vue'
+  import type { ClassNameValue } from 'tailwind-merge'
 
   const props = defineProps<
     SliderRangeProps & {
       /** Custom class(es) to add to parent element */
-      class?: HTMLAttributes['class']
+      class?: ClassNameValue
     }
   >()
   const forwarded = reactiveOmit(props, 'class')

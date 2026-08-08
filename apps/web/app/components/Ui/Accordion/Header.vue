@@ -2,6 +2,7 @@
   import { AccordionHeader } from 'reka-ui'
   import type { AccordionHeaderProps } from 'reka-ui'
   import type { HTMLAttributes } from 'vue'
+  import type { ClassNameValue } from 'tailwind-merge'
 
   export const accordionHeaderStyle = tv({ base: 'flex' })
 </script>
@@ -12,7 +13,7 @@
       /**
        * Custom class to apply to the component
        */
-      class?: HTMLAttributes['class']
+      class?: ClassNameValue
     }
   >()
 

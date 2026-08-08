@@ -1,11 +1,12 @@
 <script lang="ts">
   import type { HTMLAttributes } from 'vue'
+  import type { ClassNameValue } from 'tailwind-merge'
 
   export type AlertProps = {
     /** Custom class to add to the `Alert` parent */
-    class?: HTMLAttributes['class']
+    class?: ClassNameValue
     /** Classes to add to the icon */
-    iconClass?: HTMLAttributes['class']
+    iconClass?: ClassNameValue
     /** Whether the alert should have a filled/colored background */
     filled?: boolean
     /**

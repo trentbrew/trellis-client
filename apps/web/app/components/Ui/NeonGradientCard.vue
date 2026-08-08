@@ -1,6 +1,7 @@
 <script lang="ts">
   import type { PrimitiveProps } from 'reka-ui'
   import type { CSSProperties, HTMLAttributes } from 'vue'
+  import type { ClassNameValue } from 'tailwind-merge'
 
   export interface NeonColorsProps {
     firstColor: string
@@ -14,7 +15,7 @@
      * @description
      * The className of the card
      */
-    class?: HTMLAttributes['class']
+    class?: ClassNameValue
 
     /**
      * @default 5

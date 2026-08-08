@@ -2,11 +2,12 @@
   import { ComboboxItem, useForwardPropsEmits } from 'reka-ui'
   import type { ComboboxItemEmits, ComboboxItemProps } from 'reka-ui'
   import type { HTMLAttributes } from 'vue'
+  import type { ClassNameValue } from 'tailwind-merge'
 
   const props = defineProps<
     ComboboxItemProps & {
       /** Custom class(es) to add to the item */
-      class?: HTMLAttributes['class']
+      class?: ClassNameValue
       /** Icon to display in the item indicator */
       icon?: string
     }

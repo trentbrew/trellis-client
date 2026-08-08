@@ -1,10 +1,11 @@
 <script lang="ts" setup>
   import type { HTMLAttributes } from 'vue'
+  import type { ClassNameValue } from 'tailwind-merge'
 
   const props = withDefaults(
     defineProps<{
       colspan?: number
-      class?: HTMLAttributes['class']
+      class?: ClassNameValue
     }>(),
     {
       colspan: 1,

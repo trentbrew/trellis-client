@@ -2,6 +2,7 @@
   import { CheckboxIndicator } from 'reka-ui'
   import type { CheckboxCheckedState, CheckboxIndicatorProps } from 'reka-ui'
   import type { HTMLAttributes } from 'vue'
+  import type { ClassNameValue } from 'tailwind-merge'
 
   const props = withDefaults(
     defineProps<
@@ -13,7 +14,7 @@
          */
         state?: CheckboxCheckedState
         /** Custom class(es) to add to the element */
-        class?: HTMLAttributes['class']
+        class?: ClassNameValue
         /**
          * Icon to display when the checkbox is checked
          * @default lucide:check

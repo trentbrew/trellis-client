@@ -2,6 +2,7 @@
   import { SelectContent, useForwardPropsEmits } from 'reka-ui'
   import type { SelectContentEmits, SelectContentProps } from 'reka-ui'
   import type { HTMLAttributes } from 'vue'
+  import type { ClassNameValue } from 'tailwind-merge'
 
   defineOptions({ inheritAttrs: false })
 
@@ -11,7 +12,7 @@
         /** Where to render the portal */
         to?: string | HTMLElement
         /** Custom class(es) to add to the parent */
-        class?: HTMLAttributes['class']
+        class?: ClassNameValue
       }
     >(),
     {

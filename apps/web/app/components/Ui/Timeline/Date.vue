@@ -3,6 +3,7 @@
   import { Primitive, useForwardProps } from 'reka-ui'
   import type { PrimitiveProps } from 'reka-ui'
   import type { HTMLAttributes } from 'vue'
+  import type { ClassNameValue } from 'tailwind-merge'
 
   const styles = tv({
     base: 'mb-1 block text-xs font-medium text-muted-foreground group-data-[orientation=vertical]/timeline:max-sm:h-4',
@@ -10,7 +11,7 @@
   const props = withDefaults(
     defineProps<
       PrimitiveProps & {
-        class?: HTMLAttributes['class']
+        class?: ClassNameValue
       }
     >(),
     {

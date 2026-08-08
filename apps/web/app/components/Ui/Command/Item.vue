@@ -3,13 +3,14 @@
   import { ListboxItem, useForwardPropsEmits, useId } from 'reka-ui'
   import type { ListboxItemEmits, ListboxItemProps } from 'reka-ui'
   import type { HTMLAttributes } from 'vue'
+  import type { ClassNameValue } from 'tailwind-merge'
 
   import { useCommand, useCommandGroup } from './Command.vue'
 
   const props = defineProps<
     ListboxItemProps & {
       /** Custom class(es) to add to the element */
-      class?: HTMLAttributes['class']
+      class?: ClassNameValue
       /** Icon to render */
       icon?: string
       /** Text to render */

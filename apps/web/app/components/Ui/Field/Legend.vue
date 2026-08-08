@@ -2,6 +2,7 @@
   import type { PrimitiveProps } from 'reka-ui'
   import type { VariantProps } from 'tailwind-variants'
   import type { HTMLAttributes } from 'vue'
+  import type { ClassNameValue } from 'tailwind-merge'
 
   export const fieldLegendStyles = tv({
     base: ['mb-3 font-medium', 'data-[variant=legend]:text-base', 'data-[variant=label]:text-sm'],
@@ -20,7 +21,7 @@
     /**
      * Additional classes to apply to the fieldset element.
      */
-    class?: HTMLAttributes['class']
+    class?: ClassNameValue
     /**
      * The variant of the legend, either "legend" or "label".
      * @default "legend"

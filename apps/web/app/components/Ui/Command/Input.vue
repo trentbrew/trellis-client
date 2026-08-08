@@ -3,6 +3,7 @@
   import { ListboxFilter, useForwardProps } from 'reka-ui'
   import type { ListboxFilterProps } from 'reka-ui'
   import type { HTMLAttributes } from 'vue'
+  import type { ClassNameValue } from 'tailwind-merge'
 
   import { useCommand } from './Command.vue'
 
@@ -11,7 +12,7 @@
   const props = defineProps<
     ListboxFilterProps & {
       /** Custom class(es) to add to the element */
-      class?: HTMLAttributes['class']
+      class?: ClassNameValue
     }
   >()
 

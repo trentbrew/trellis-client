@@ -2,6 +2,7 @@
   import { Primitive } from 'reka-ui'
   import type { PrimitiveProps } from 'reka-ui'
   import type { HTMLAttributes } from 'vue'
+  import type { ClassNameValue } from 'tailwind-merge'
 
   const inputGroupTextStyles = tv({
     base: "flex items-center gap-2 text-sm text-muted-foreground [&_svg]:pointer-events-none [&_svg:not([class*='size-'])]:size-4",
@@ -11,7 +12,7 @@
     /**
      * Additional classes to apply to the input group addon container.
      */
-    class?: HTMLAttributes['class']
+    class?: ClassNameValue
   }
 </script>
 

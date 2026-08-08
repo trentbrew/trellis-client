@@ -2,13 +2,14 @@
   import { AlertDialogTitle } from 'reka-ui'
   import type { AlertDialogTitleProps } from 'reka-ui'
   import type { HTMLAttributes } from 'vue'
+  import type { ClassNameValue } from 'tailwind-merge'
 
   const props = defineProps<
     AlertDialogTitleProps & {
       /** Text to display in the title */
       title?: string
       /** Custom class(es) to add to the title */
-      class?: HTMLAttributes['class']
+      class?: ClassNameValue
     }
   >()
   const forwarded = reactiveOmit(props, 'class', 'title')

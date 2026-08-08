@@ -10,6 +10,7 @@
   } from '@tanstack/vue-table'
   import type { ColumnDef, SortingState, Table } from '@tanstack/vue-table'
   import type { HTMLAttributes } from 'vue'
+  import type { ClassNameValue } from 'tailwind-merge'
 
   const props = withDefaults(
     defineProps<{
@@ -44,7 +45,7 @@
       /**
        * The class(es) to apply to the table.
        */
-      tableClass?: HTMLAttributes['class']
+      tableClass?: ClassNameValue
       /**
        * The icon to display for ascending sorting.
        */
@@ -60,7 +61,7 @@
       /**
        * Custom class(es) to add to the parent element.
        */
-      class?: HTMLAttributes['class']
+      class?: ClassNameValue
       /**
        * Whether to show pagination controls.
        *

@@ -3,6 +3,7 @@
   import { useForwardProps } from 'reka-ui'
   import type { NuxtLinkProps } from '#app/components'
   import type { HtmlHTMLAttributes } from 'vue'
+  import type { ClassNameValue } from 'tailwind-merge'
 
   /**
    * Exported button styles that can be used by other components
@@ -73,7 +74,7 @@
     /** The element to render the button as */
     as?: string
     /** Custom class(es) to add to parent element */
-    class?: HtmlHTMLAttributes['class']
+    class?: ClassNameValue
     /** The variant of the button */
     variant?: ButtonVariants['variant']
     /** The size of the button */

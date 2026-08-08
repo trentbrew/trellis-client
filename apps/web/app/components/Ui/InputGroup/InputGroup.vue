@@ -2,6 +2,7 @@
   import { Primitive } from 'reka-ui'
   import type { PrimitiveProps } from 'reka-ui'
   import type { HTMLAttributes } from 'vue'
+  import type { ClassNameValue } from 'tailwind-merge'
 
   export const inputGroupStyles = tv({
     base: [
@@ -26,7 +27,7 @@
       /**
        * Additional classes to apply to the input group container.
        */
-      class?: HTMLAttributes['class']
+      class?: ClassNameValue
     }
   >()
 </script>

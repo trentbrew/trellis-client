@@ -2,10 +2,11 @@
   import { StepperTitle, useForwardProps } from 'reka-ui'
   import type { StepperTitleProps } from 'reka-ui'
   import type { HTMLAttributes } from 'vue'
+  import type { ClassNameValue } from 'tailwind-merge'
 
   const props = defineProps<
     StepperTitleProps & {
-      class?: HTMLAttributes['class']
+      class?: ClassNameValue
     }
   >()
   const forwarded = useForwardProps(reactiveOmit(props, 'class'))

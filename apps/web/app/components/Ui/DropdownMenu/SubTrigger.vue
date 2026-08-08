@@ -2,11 +2,12 @@
   import { DropdownMenuSubTrigger } from 'reka-ui'
   import type { DropdownMenuSubTriggerProps } from 'reka-ui'
   import type { HTMLAttributes } from 'vue'
+  import type { ClassNameValue } from 'tailwind-merge'
 
   const props = defineProps<
     DropdownMenuSubTriggerProps & {
       /**Custom class(es) to add to the element */
-      class?: HTMLAttributes['class']
+      class?: ClassNameValue
       /** Wether an indentation should be added to the item or not */
       inset?: boolean
       /** The icon to display */

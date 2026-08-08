@@ -2,11 +2,12 @@
   import { MenubarItem, useForwardPropsEmits } from 'reka-ui'
   import type { MenubarItemEmits, MenubarItemProps } from 'reka-ui'
   import type { HTMLAttributes } from 'vue'
+  import type { ClassNameValue } from 'tailwind-merge'
 
   const props = defineProps<
     MenubarItemProps & {
       inset?: boolean
-      class?: HTMLAttributes['class']
+      class?: ClassNameValue
       shortcut?: string
       title?: string
       icon?: string

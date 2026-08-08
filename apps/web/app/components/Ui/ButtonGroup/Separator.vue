@@ -1,5 +1,6 @@
 <script lang="ts">
   import type { HTMLAttributes } from 'vue'
+  import type { ClassNameValue } from 'tailwind-merge'
 
   export const buttonGroupSeparatorStyles = tv({
     base: 'relative !m-0 self-stretch bg-input data-[orientation=vertical]:h-auto',
@@ -13,7 +14,7 @@
     /**
      * Additional classes to apply to the button group text.
      */
-    class?: HTMLAttributes['class']
+    class?: ClassNameValue
   }
 </script>
 

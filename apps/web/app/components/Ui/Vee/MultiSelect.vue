@@ -970,7 +970,7 @@
 
   defineSlots<MultiselectSlots>()
 
-  const slots = useSlots()
+  const slots = useSlots() as unknown as MultiselectSlots
 </script>
 
 <template>

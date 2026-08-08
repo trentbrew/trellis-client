@@ -2,8 +2,9 @@
   import { StepperTrigger, useForwardProps } from 'reka-ui'
   import type { StepperTriggerProps } from 'reka-ui'
   import type { HTMLAttributes } from 'vue'
+  import type { ClassNameValue } from 'tailwind-merge'
 
-  const props = defineProps<StepperTriggerProps & { class?: HTMLAttributes['class'] }>()
+  const props = defineProps<StepperTriggerProps & { class?: ClassNameValue }>()
 
   const forwarded = useForwardProps(reactiveOmit(props, 'class'))
 

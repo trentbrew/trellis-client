@@ -2,12 +2,13 @@
   import { ContextMenuItemIndicator } from 'reka-ui'
   import type { ContextMenuItemIndicatorProps } from 'reka-ui'
   import type { HTMLAttributes } from 'vue'
+  import type { ClassNameValue } from 'tailwind-merge'
 
   const props = defineProps<
     ContextMenuItemIndicatorProps & {
       /** The icon to display */
       icon?: string
-      class?: HTMLAttributes['class']
+      class?: ClassNameValue
     }
   >()
   const forwarded = reactiveOmit(props, 'icon')

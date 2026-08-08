@@ -3,13 +3,14 @@
   import { defu } from 'defu'
   import { useCurrencyInput } from 'vue-currency-input'
   import type { HTMLAttributes } from 'vue'
+  import type { ClassNameValue } from 'tailwind-merge'
   import type { CurrencyInputOptions } from 'vue-currency-input'
 
   const props = defineProps<{
     /**
      * Custom class(es) to add to the input element
      */
-    class?: HTMLAttributes['class']
+    class?: ClassNameValue
     /**
      * The id of the input element
      */

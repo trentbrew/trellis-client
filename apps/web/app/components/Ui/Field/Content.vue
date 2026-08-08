@@ -1,6 +1,7 @@
 <script lang="ts">
   import type { PrimitiveProps } from 'reka-ui'
   import type { HTMLAttributes } from 'vue'
+  import type { ClassNameValue } from 'tailwind-merge'
 
   export const fieldContentStyles = tv({
     base: ['group/field-content flex flex-1 flex-col gap-1.5 leading-snug'],
@@ -12,7 +13,7 @@
       /**
        * Additional classes to apply to the element.
        */
-      class?: HTMLAttributes['class']
+      class?: ClassNameValue
     }
   >()
 </script>

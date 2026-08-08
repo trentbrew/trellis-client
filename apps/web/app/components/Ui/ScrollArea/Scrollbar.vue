@@ -2,12 +2,13 @@
   import { ScrollAreaScrollbar } from 'reka-ui'
   import type { ScrollAreaScrollbarProps } from 'reka-ui'
   import type { HTMLAttributes } from 'vue'
+  import type { ClassNameValue } from 'tailwind-merge'
 
   const props = withDefaults(
     defineProps<
       ScrollAreaScrollbarProps & {
         /** Class to apply to the scrollbar */
-        class?: HTMLAttributes['class']
+        class?: ClassNameValue
       }
     >(),
     {

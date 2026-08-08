@@ -1,9 +1,10 @@
 <script lang="ts">
   import type { HTMLAttributes, TextareaHTMLAttributes } from 'vue'
+  import type { ClassNameValue } from 'tailwind-merge'
 
   export type TextareaProps = {
     /** Additional classes to add to the textarea */
-    class?: HTMLAttributes['class']
+    class?: ClassNameValue
     /** The name of the textarea */
     name?: TextareaHTMLAttributes['name']
     /** The id of the textarea */

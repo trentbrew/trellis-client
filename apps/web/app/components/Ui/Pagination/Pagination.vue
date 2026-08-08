@@ -3,6 +3,7 @@
   import { PaginationRoot, useForwardPropsEmits } from 'reka-ui'
   import type { PaginationRootEmits, PaginationRootProps } from 'reka-ui'
   import type { HTMLAttributes } from 'vue'
+  import type { ClassNameValue } from 'tailwind-merge'
 
   const props = withDefaults(
     defineProps<
@@ -12,7 +13,7 @@
         lastIcon?: string
         nextIcon?: string
         prevIcon?: string
-        class?: HTMLAttributes['class']
+        class?: ClassNameValue
       }
     >(),
     {

@@ -2,13 +2,14 @@
   import { DialogOverlay } from 'reka-ui'
   import type { DialogOverlayProps } from 'reka-ui'
   import type { HTMLAttributes } from 'vue'
+  import type { ClassNameValue } from 'tailwind-merge'
   import { useSheetStack } from '~/composables/useSheetStack'
 
   const props = withDefaults(
     defineProps<
       DialogOverlayProps & {
         /** Custom class(es) to add to parent element */
-        class?: HTMLAttributes['class']
+        class?: ClassNameValue
         isBlurred?: boolean
       }
     >(),

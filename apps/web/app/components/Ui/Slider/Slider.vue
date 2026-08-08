@@ -2,12 +2,13 @@
   import { SliderRoot, useForwardPropsEmits } from 'reka-ui'
   import type { SliderRootEmits, SliderRootProps } from 'reka-ui'
   import type { HTMLAttributes } from 'vue'
+  import type { ClassNameValue } from 'tailwind-merge'
 
   const props = withDefaults(
     defineProps<
       SliderRootProps & {
         /** Custom class(es) to add to parent element */
-        class?: HTMLAttributes['class']
+        class?: ClassNameValue
         showTooltip?: boolean
       }
     >(),

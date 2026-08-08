@@ -2,13 +2,14 @@
   import { Primitive } from 'reka-ui'
   import type { PrimitiveProps } from 'reka-ui'
   import type { HTMLAttributes } from 'vue'
+  import type { ClassNameValue } from 'tailwind-merge'
   import { useSheetStack } from '~/composables/useSheetStack'
 
   const props = withDefaults(
     defineProps<
       PrimitiveProps & {
         /** Custom class(es) to add to parent element */
-        class?: HTMLAttributes['class']
+        class?: ClassNameValue
         /** Whether to show the back button (usually for nested sheets) */
         showBackButton?: boolean
       }

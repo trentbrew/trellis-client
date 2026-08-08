@@ -1,5 +1,6 @@
 <script lang="ts">
   import { useForwardPropsEmits } from 'reka-ui'
+  import type { ComputedRef } from 'vue'
   import VueApexCharts from 'vue3-apexcharts'
   import type { ApexOptions } from 'apexcharts'
 
@@ -193,7 +194,7 @@
     'brushScrolled',
   ])
 
-  const forwarded = useForwardPropsEmits(props, emits)
+  const forwarded = useForwardPropsEmits(props, emits) as ComputedRef<Record<string, any>>
 
   defineExpose({ chart })
 </script>

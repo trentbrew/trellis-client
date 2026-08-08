@@ -2,12 +2,13 @@
   import { SwitchRoot, useForwardPropsEmits } from 'reka-ui'
   import type { SwitchRootEmits, SwitchRootProps } from 'reka-ui'
   import type { HTMLAttributes } from 'vue'
+  import type { ClassNameValue } from 'tailwind-merge'
 
   const props = withDefaults(
     defineProps<
       SwitchRootProps & {
         /** Custom class(es) to add to parent element */
-        class?: HTMLAttributes['class']
+        class?: ClassNameValue
         id?: HTMLAttributes['id']
       }
     >(),

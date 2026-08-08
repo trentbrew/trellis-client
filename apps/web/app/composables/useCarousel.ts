@@ -2,7 +2,8 @@ import { createInjectionState } from '@vueuse/core'
 import emblaCarouselVue from 'embla-carousel-vue'
 import type useEmblaCarousel from 'embla-carousel-vue'
 import type { EmblaCarouselVueType } from 'embla-carousel-vue'
-import type { HTMLAttributes, UnwrapRef } from 'vue'
+import type { UnwrapRef } from 'vue'
+import type { ClassNameValue } from 'tailwind-merge'
 
 type CApi = EmblaCarouselVueType[1]
 type UseCarouselParameters = Parameters<typeof useEmblaCarousel>
@@ -36,7 +37,7 @@ export interface WithClassAsProps {
    * The class name to be applied to the root element of the component
    * @default undefined
    */
-  class?: HTMLAttributes['class']
+  class?: ClassNameValue
 }
 
 const [useProvideCarousel, useInjectCarousel] = createInjectionState(

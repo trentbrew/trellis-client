@@ -2,10 +2,11 @@
   import { NavigationMenuLink, useForwardPropsEmits } from 'reka-ui'
   import type { NavigationMenuLinkEmits, NavigationMenuLinkProps } from 'reka-ui'
   import type { HTMLAttributes } from 'vue'
+  import type { ClassNameValue } from 'tailwind-merge'
 
   const props = defineProps<
     NavigationMenuLinkProps & {
-      class?: HTMLAttributes['class']
+      class?: ClassNameValue
     }
   >()
   const emits = defineEmits<NavigationMenuLinkEmits>()

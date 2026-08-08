@@ -2,10 +2,11 @@
   import { StepperItem, useForwardProps } from 'reka-ui'
   import type { StepperItemProps } from 'reka-ui'
   import type { HTMLAttributes } from 'vue'
+  import type { ClassNameValue } from 'tailwind-merge'
 
   const props = defineProps<
     StepperItemProps & {
-      class?: HTMLAttributes['class']
+      class?: ClassNameValue
     }
   >()
 

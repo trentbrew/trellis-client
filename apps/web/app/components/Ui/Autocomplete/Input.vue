@@ -2,13 +2,14 @@
   import { ComboboxInput, useForwardPropsEmits } from 'reka-ui'
   import type { ComboboxInputEmits, ComboboxInputProps } from 'reka-ui'
   import type { HTMLAttributes } from 'vue'
+  import type { ClassNameValue } from 'tailwind-merge'
 
   const props = defineProps<
     ComboboxInputProps & {
       /** Custom placeholder text for the input */
       placeholder?: HTMLAttributes['placeholder']
       /** Custom class(es) to add to the input */
-      class?: HTMLAttributes['class']
+      class?: ClassNameValue
     }
   >()
 

@@ -1,5 +1,6 @@
 <script lang="ts">
   import type { HTMLAttributes } from 'vue'
+  import type { ClassNameValue } from 'tailwind-merge'
 
   export const ratingStyles = tv({
     slots: {
@@ -27,19 +28,19 @@
     /**
      * Additional classes to apply to the wrapper element.
      */
-    class?: HTMLAttributes['class']
+    class?: ClassNameValue
     /**
      * Class name for the value span
      */
-    valueClassName?: HTMLAttributes['class']
+    valueClassName?: ClassNameValue
     /**
      * Class name for the empty star icon
      */
-    emptyIconClassName?: HTMLAttributes['class']
+    emptyIconClassName?: ClassNameValue
     /**
      * Class name for the filled star icon
      */
-    filledIconClassName?: HTMLAttributes['class']
+    filledIconClassName?: ClassNameValue
     /**
      * Size of the rating component
      * @default "md"

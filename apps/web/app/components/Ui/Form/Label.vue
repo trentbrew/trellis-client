@@ -2,9 +2,10 @@
   import { Label } from 'reka-ui'
   import type { LabelProps } from 'reka-ui'
   import type { HTMLAttributes } from 'vue'
+  import type { ClassNameValue } from 'tailwind-merge'
 
   defineOptions({ inheritAttrs: false })
-  const props = defineProps<LabelProps & { class?: HTMLAttributes['class']; label?: string; hint?: string }>()
+  const props = defineProps<LabelProps & { class?: ClassNameValue; label?: string; hint?: string }>()
 
   const { error, formItemId } = useFormField()
 

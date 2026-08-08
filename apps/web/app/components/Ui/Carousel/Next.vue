@@ -2,6 +2,7 @@
   import type { buttonStyles } from '~/components/Ui/Button.vue'
   import type { WithClassAsProps } from '~/composables/useCarousel'
   import type { HTMLAttributes } from 'vue'
+  import type { ClassNameValue } from 'tailwind-merge'
 
   const props = withDefaults(
     defineProps<
@@ -14,7 +15,7 @@
          */
         srText?: string
         /** Custom class(es) to add to the icon */
-        iconClass?: HTMLAttributes['class']
+        iconClass?: ClassNameValue
         /** The variant of the button
          *
          * @default "outline"

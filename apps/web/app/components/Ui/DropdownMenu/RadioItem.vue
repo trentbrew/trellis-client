@@ -2,11 +2,12 @@
   import { DropdownMenuRadioItem, useForwardPropsEmits } from 'reka-ui'
   import type { DropdownMenuRadioItemEmits, DropdownMenuRadioItemProps } from 'reka-ui'
   import type { HTMLAttributes } from 'vue'
+  import type { ClassNameValue } from 'tailwind-merge'
 
   const props = defineProps<
     DropdownMenuRadioItemProps & {
       /** Custom class(es) to add to the parent */
-      class?: HTMLAttributes['class']
+      class?: ClassNameValue
       /** The icon to display */
       icon?: string
       /** The title text to display */

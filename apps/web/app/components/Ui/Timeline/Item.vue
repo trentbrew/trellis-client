@@ -4,6 +4,7 @@
   import type { TimelineData } from './Timeline.vue'
   import type { PrimitiveProps } from 'reka-ui'
   import type { HTMLAttributes } from 'vue'
+  import type { ClassNameValue } from 'tailwind-merge'
 
   import { timelineDataSymbol } from './Timeline.vue'
 
@@ -14,7 +15,7 @@
   })
   const props = defineProps<
     PrimitiveProps & {
-      class?: HTMLAttributes['class']
+      class?: ClassNameValue
       step: number
     }
   >()

@@ -2,12 +2,13 @@
   import { TabsList } from 'reka-ui'
   import type { TabsListProps } from 'reka-ui'
   import type { HTMLAttributes } from 'vue'
+  import type { ClassNameValue } from 'tailwind-merge'
 
   const props = withDefaults(
     defineProps<
       TabsListProps & {
         /** Custom class(es) to add to parent element */
-        class?: HTMLAttributes['class']
+        class?: ClassNameValue
         pill?: boolean
       }
     >(),

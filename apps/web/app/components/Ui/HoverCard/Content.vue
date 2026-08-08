@@ -2,6 +2,7 @@
   import { HoverCardContent } from 'reka-ui'
   import type { HoverCardContentProps } from 'reka-ui'
   import type { HTMLAttributes } from 'vue'
+  import type { ClassNameValue } from 'tailwind-merge'
 
   defineOptions({ inheritAttrs: false })
 
@@ -9,7 +10,7 @@
     defineProps<
       HoverCardContentProps & {
         /** Custom class(es) to add to the content */
-        class?: HTMLAttributes['class']
+        class?: ClassNameValue
         /** The element or selector the content should be positioned relative to */
         to?: string | HTMLElement
       }

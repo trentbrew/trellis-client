@@ -1,5 +1,6 @@
 <script lang="ts">
   import type { HTMLAttributes, InjectionKey } from 'vue'
+  import type { ClassNameValue } from 'tailwind-merge'
 
   export const FORM_ITEM_INJECTION_KEY = Symbol() as InjectionKey<string>
 </script>
@@ -11,7 +12,7 @@
   provide(FORM_ITEM_INJECTION_KEY, id)
 
   const props = defineProps<{
-    class?: HTMLAttributes['class']
+    class?: ClassNameValue
     label?: string
     description?: string
     hint?: string

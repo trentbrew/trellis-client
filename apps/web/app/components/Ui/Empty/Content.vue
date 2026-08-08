@@ -2,6 +2,7 @@
   import { Primitive } from 'reka-ui'
   import type { PrimitiveProps } from 'reka-ui'
   import type { HTMLAttributes } from 'vue'
+  import type { ClassNameValue } from 'tailwind-merge'
 
   export const emptyContentStyles = tv({
     base: 'flex w-full max-w-sm min-w-0 flex-col items-center gap-4 text-sm text-balance',
@@ -11,7 +12,7 @@
     /**
      * Additional classes to apply to the parent element.
      */
-    class?: HTMLAttributes['class']
+    class?: ClassNameValue
   }
 </script>
 

@@ -1,5 +1,6 @@
 <script lang="ts">
   import type { HTMLAttributes } from 'vue'
+  import type { ClassNameValue } from 'tailwind-merge'
 
   export const sideBarRailStyles = tv({
     base: [
@@ -18,7 +19,7 @@
     /**
      * Additional classes to apply to the parent element.
      */
-    class?: HTMLAttributes['class']
+    class?: ClassNameValue
   }>()
 
   const { toggleSidebar } = useSidebar()

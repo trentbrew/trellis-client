@@ -4,11 +4,12 @@
   import { AccordionContent } from 'reka-ui'
   import type { AccordionContentProps } from 'reka-ui'
   import type { HTMLAttributes } from 'vue'
+  import type { ClassNameValue } from 'tailwind-merge'
 
   const props = defineProps<
     AccordionContentProps & {
       /** Custom class(es) to add to the parent */
-      class?: HTMLAttributes['class']
+      class?: ClassNameValue
       /** The content of the accordion */
       content?: any
     }

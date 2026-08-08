@@ -3,6 +3,7 @@
   import type { PrimitiveProps } from 'reka-ui'
   import type { VariantProps } from 'tailwind-variants'
   import type { HTMLAttributes } from 'vue'
+  import type { ClassNameValue } from 'tailwind-merge'
 
   export const emptyMediaStyles = tv({
     base: 'mb-2 flex shrink-0 items-center justify-center [&_svg]:pointer-events-none [&_svg]:shrink-0',
@@ -21,7 +22,7 @@
     /**
      * Additional classes to apply to the empty media container.
      */
-    class?: HTMLAttributes['class']
+    class?: ClassNameValue
     /**
      * The variant of the empty media component.
      * @default 'default'

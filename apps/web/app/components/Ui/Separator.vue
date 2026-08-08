@@ -2,12 +2,13 @@
   import { Separator, useForwardProps } from 'reka-ui'
   import type { SeparatorProps } from 'reka-ui'
   import type { HTMLAttributes } from 'vue'
+  import type { ClassNameValue } from 'tailwind-merge'
 
   export type UiSeparatorProps = SeparatorProps & {
     /**
      * Custom class(es) to add to the separator
      */
-    class?: HTMLAttributes['class']
+    class?: ClassNameValue
   }
 </script>
 

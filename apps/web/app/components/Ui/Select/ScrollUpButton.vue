@@ -2,12 +2,13 @@
   import { SelectScrollUpButton } from 'reka-ui'
   import type { SelectScrollUpButtonProps } from 'reka-ui'
   import type { HTMLAttributes } from 'vue'
+  import type { ClassNameValue } from 'tailwind-merge'
 
   const props = defineProps<
     SelectScrollUpButtonProps & {
       /** Icon to render */
       icon?: string
-      class?: HTMLAttributes['class']
+      class?: ClassNameValue
     }
   >()
   const forwarded = reactiveOmit(props, 'icon')

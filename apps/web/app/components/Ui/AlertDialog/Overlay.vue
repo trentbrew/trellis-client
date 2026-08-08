@@ -2,11 +2,12 @@
   import { AlertDialogOverlay } from 'reka-ui'
   import type { AlertDialogOverlayProps } from 'reka-ui'
   import type { HTMLAttributes } from 'vue'
+  import type { ClassNameValue } from 'tailwind-merge'
 
   const props = defineProps<
     AlertDialogOverlayProps & {
       /** Custom class(es) to add to the overlay */
-      class?: HTMLAttributes['class']
+      class?: ClassNameValue
     }
   >()
   const forwarded = reactiveOmit(props, 'class')

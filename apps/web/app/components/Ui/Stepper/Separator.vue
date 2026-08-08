@@ -2,10 +2,11 @@
   import { StepperSeparator, useForwardProps } from 'reka-ui'
   import type { StepperSeparatorProps } from 'reka-ui'
   import type { HTMLAttributes } from 'vue'
+  import type { ClassNameValue } from 'tailwind-merge'
 
   const props = defineProps<
     StepperSeparatorProps & {
-      class?: HTMLAttributes['class']
+      class?: ClassNameValue
     }
   >()
 

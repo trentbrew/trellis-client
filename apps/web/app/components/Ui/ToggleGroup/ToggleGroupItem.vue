@@ -2,13 +2,14 @@
   import { ToggleGroupItem, useForwardProps } from 'reka-ui'
   import type { ToggleGroupItemProps } from 'reka-ui'
   import type { HTMLAttributes } from 'vue'
+  import type { ClassNameValue } from 'tailwind-merge'
 
   import { toggleStyles } from '../Toggle.vue'
 
   const props = defineProps<
     ToggleGroupItemProps & {
       /** custom class to add to the toggle */
-      class?: HTMLAttributes['class']
+      class?: ClassNameValue
       /** icon to display */
       icon?: string
       /** variant of the toggle */

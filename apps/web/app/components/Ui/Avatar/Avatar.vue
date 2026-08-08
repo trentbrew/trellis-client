@@ -2,6 +2,7 @@
   import { AvatarRoot } from 'reka-ui'
   import type { AvatarImageEmits, AvatarImageProps, AvatarRootProps } from 'reka-ui'
   import type { HTMLAttributes } from 'vue'
+  import type { ClassNameValue } from 'tailwind-merge'
 
   const props = defineProps<
     AvatarRootProps &
@@ -9,15 +10,15 @@
         /**
          * Class to add to the root element
          */
-        class?: HTMLAttributes['class']
+        class?: ClassNameValue
         /**
          * Class to pass to the image element
          */
-        imageClass?: HTMLAttributes['class']
+        imageClass?: ClassNameValue
         /**
          * Class to pass to the fallback element
          */
-        fallbackClass?: HTMLAttributes['class']
+        fallbackClass?: ClassNameValue
         /**
          * The `alt` attribute value for the image
          */

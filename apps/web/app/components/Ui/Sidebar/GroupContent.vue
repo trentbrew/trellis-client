@@ -1,5 +1,6 @@
 <script lang="ts">
   import type { HTMLAttributes } from 'vue'
+  import type { ClassNameValue } from 'tailwind-merge'
 
   export const sideBarGroupContentStyles = tv({
     base: 'w-full text-sm',
@@ -10,7 +11,7 @@
     /**
      * Additional classes to apply to the parent element.
      */
-    class?: HTMLAttributes['class']
+    class?: ClassNameValue
   }>()
 </script>
 <template>

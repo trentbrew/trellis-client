@@ -3,11 +3,12 @@
   import { ListboxContent, useForwardProps } from 'reka-ui'
   import type { ListboxContentProps } from 'reka-ui'
   import type { HTMLAttributes } from 'vue'
+  import type { ClassNameValue } from 'tailwind-merge'
 
   const props = defineProps<
     ListboxContentProps & {
       /** Custom class(es) to add to the element */
-      class?: HTMLAttributes['class']
+      class?: ClassNameValue
     }
   >()
 

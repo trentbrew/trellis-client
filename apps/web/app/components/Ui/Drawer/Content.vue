@@ -3,10 +3,11 @@
   import { DrawerContent } from 'vaul-vue'
   import type { DialogContentEmits, DialogContentProps } from 'reka-ui'
   import type { HTMLAttributes } from 'vue'
+  import type { ClassNameValue } from 'tailwind-merge'
 
   defineOptions({ inheritAttrs: false })
 
-  const props = defineProps<DialogContentProps & { class?: HTMLAttributes['class']; hideKnob?: boolean }>()
+  const props = defineProps<DialogContentProps & { class?: ClassNameValue; hideKnob?: boolean }>()
   const emits = defineEmits<DialogContentEmits>()
   const forwarded = useForwardPropsEmits(props, emits)
 

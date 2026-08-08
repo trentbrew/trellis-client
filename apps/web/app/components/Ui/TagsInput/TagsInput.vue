@@ -2,8 +2,9 @@
   import { TagsInputRoot, useForwardPropsEmits } from 'reka-ui'
   import type { TagsInputRootEmits, TagsInputRootProps } from 'reka-ui'
   import type { HTMLAttributes } from 'vue'
+  import type { ClassNameValue } from 'tailwind-merge'
 
-  const props = defineProps<TagsInputRootProps & { class?: HTMLAttributes['class'] }>()
+  const props = defineProps<TagsInputRootProps & { class?: ClassNameValue }>()
   const emits = defineEmits<TagsInputRootEmits>()
   const forwarded = useForwardPropsEmits(reactiveOmit(props, 'class'), emits)
 

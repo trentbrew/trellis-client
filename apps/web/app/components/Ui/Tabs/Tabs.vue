@@ -2,8 +2,9 @@
   import { TabsRoot, useForwardPropsEmits } from 'reka-ui'
   import type { TabsRootEmits, TabsRootProps } from 'reka-ui'
   import type { HTMLAttributes } from 'vue'
+  import type { ClassNameValue } from 'tailwind-merge'
 
-  const props = withDefaults(defineProps<TabsRootProps & { class?: HTMLAttributes['class'] }>(), {
+  const props = withDefaults(defineProps<TabsRootProps & { class?: ClassNameValue }>(), {
     orientation: 'horizontal',
     activationMode: 'automatic',
   })

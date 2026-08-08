@@ -2,12 +2,13 @@
   import { TooltipArrow, useForwardProps } from 'reka-ui'
   import type { TooltipArrowProps } from 'reka-ui'
   import type { HTMLAttributes } from 'vue'
+  import type { ClassNameValue } from 'tailwind-merge'
 
   const props = withDefaults(
     defineProps<
       TooltipArrowProps & {
         /** Additional classes for the tooltip arrow */
-        class?: HTMLAttributes['class']
+        class?: ClassNameValue
       }
     >(),
     {

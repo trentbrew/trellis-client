@@ -2,6 +2,7 @@
   import { Primitive } from 'reka-ui'
   import type { PrimitiveProps } from 'reka-ui'
   import type { HTMLAttributes } from 'vue'
+  import type { ClassNameValue } from 'tailwind-merge'
 
   export const placeHolderStyles = tv({
     slots: {
@@ -18,7 +19,7 @@
       /**
        * Additional classes to add to the parent element.
        */
-      class?: HTMLAttributes['class']
+      class?: ClassNameValue
     }
   >()
 </script>

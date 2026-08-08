@@ -3,6 +3,7 @@
   import { Primitive, useForwardProps } from 'reka-ui'
   import type { PrimitiveProps } from 'reka-ui'
   import type { HTMLAttributes } from 'vue'
+  import type { ClassNameValue } from 'tailwind-merge'
 
   export const drawerHeaderStyles = tv({
     base: 'grid gap-1.5 p-4 text-center sm:text-left',
@@ -12,7 +13,7 @@
     /**
      * Classes to add to the header.
      */
-    class?: HTMLAttributes['class']
+    class?: ClassNameValue
   }
 </script>
 

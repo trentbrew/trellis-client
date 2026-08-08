@@ -2,6 +2,7 @@
   import { MenubarContent, useForwardPropsEmits } from 'reka-ui'
   import type { MenubarContentProps, MenubarSubContentEmits } from 'reka-ui'
   import type { HTMLAttributes } from 'vue'
+  import type { ClassNameValue } from 'tailwind-merge'
 
   defineOptions({ inheritAttrs: false })
 
@@ -9,7 +10,7 @@
     defineProps<
       MenubarContentProps & {
         to?: string | HTMLElement
-        class?: HTMLAttributes['class']
+        class?: ClassNameValue
       }
     >(),
     {

@@ -2,6 +2,7 @@
 
 <script setup lang="ts">
   import type { HTMLAttributes } from 'vue'
+  import type { ClassNameValue } from 'tailwind-merge'
 
   export interface BreadcrumbItem {
     label?: string
@@ -26,7 +27,7 @@
       /**
        * Custom class(es) to add to the parent element.
        */
-      class?: HTMLAttributes['class']
+      class?: ClassNameValue
     }>(),
     {
       separator: 'lucide:chevron-right',

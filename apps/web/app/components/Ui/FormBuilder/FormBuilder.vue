@@ -1,5 +1,6 @@
 <script lang="ts">
   import type { HTMLAttributes } from 'vue'
+  import type { ClassNameValue } from 'tailwind-merge'
 
   export type FormBuilder = {
     description?: string
@@ -12,7 +13,7 @@
     type?: string
     value?: any
     rules?: any
-    class?: HTMLAttributes['class']
+    class?: ClassNameValue
     slot?: string
     wrapperClass?: HTMLAttributes['class']
     renderIf?: () => boolean

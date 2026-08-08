@@ -3,6 +3,7 @@
   import { AlertDialogAction } from 'reka-ui'
   import type { AlertDialogActionProps } from 'reka-ui'
   import type { HTMLAttributes } from 'vue'
+  import type { ClassNameValue } from 'tailwind-merge'
 
   const props = withDefaults(
     defineProps<
@@ -12,7 +13,7 @@
         /** Text to display in the button */
         text?: string
         /** Custom class(es) to add to the button */
-        class?: HTMLAttributes['class']
+        class?: ClassNameValue
         /** Whether the button is disabled */
         disabled?: boolean
         /** The button's visual variant */

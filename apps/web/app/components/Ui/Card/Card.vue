@@ -2,6 +2,7 @@
   import { Primitive } from 'reka-ui'
   import type { PrimitiveProps } from 'reka-ui'
   import type { HTMLAttributes } from 'vue'
+  import type { ClassNameValue } from 'tailwind-merge'
 
   defineOptions({ inheritAttrs: false })
 
@@ -17,7 +18,7 @@
         /** Content that should be displayed. Passed to the `CardContent` component */
         content?: string
         /** Custom class(es) to add to the element */
-        class?: HTMLAttributes['class']
+        class?: ClassNameValue
       }
     >(),
     { as: 'div' },

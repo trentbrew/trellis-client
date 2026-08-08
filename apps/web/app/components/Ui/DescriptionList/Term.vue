@@ -3,6 +3,7 @@
   import { Primitive } from 'reka-ui'
   import type { PrimitiveProps } from 'reka-ui'
   import type { HTMLAttributes } from 'vue'
+  import type { ClassNameValue } from 'tailwind-merge'
 
   export type DescriptionDetailsProps = PrimitiveProps & {
     /**
@@ -12,7 +13,7 @@
     /**
      * Custom class(es) to add to the element
      */
-    class?: HTMLAttributes['class']
+    class?: ClassNameValue
   }
 
   export const descriptionListDetailsStyles = tv({

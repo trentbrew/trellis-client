@@ -2,11 +2,12 @@
   import { NumberFieldRoot, useForwardPropsEmits } from 'reka-ui'
   import type { NumberFieldRootEmits, NumberFieldRootProps } from 'reka-ui'
   import type { HTMLAttributes } from 'vue'
+  import type { ClassNameValue } from 'tailwind-merge'
 
   const props = withDefaults(
     defineProps<
       NumberFieldRootProps & {
-        class?: HTMLAttributes['class']
+        class?: ClassNameValue
       }
     >(),
     {},

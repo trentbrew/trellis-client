@@ -2,13 +2,14 @@
   import { TabsIndicator } from 'reka-ui'
   import type { TabsIndicatorProps } from 'reka-ui'
   import type { HTMLAttributes } from 'vue'
+  import type { ClassNameValue } from 'tailwind-merge'
 
   defineOptions({ inheritAttrs: false })
 
   const props = defineProps<
     TabsIndicatorProps & {
       /** Custom class(es) to add to parent element */
-      class?: HTMLAttributes['class']
+      class?: ClassNameValue
     }
   >()
   const forwarded = reactiveOmit(props, 'class')

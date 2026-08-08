@@ -2,10 +2,11 @@
   import { MenubarLabel } from 'reka-ui'
   import type { MenubarLabelProps } from 'reka-ui'
   import type { HTMLAttributes } from 'vue'
+  import type { ClassNameValue } from 'tailwind-merge'
 
   const props = defineProps<
     MenubarLabelProps & {
-      class?: HTMLAttributes['class']
+      class?: ClassNameValue
       inset?: boolean
     }
   >()

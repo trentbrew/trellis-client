@@ -2,13 +2,14 @@
   import { MenubarItemIndicator } from 'reka-ui'
   import type { MenubarItemIndicatorProps } from 'reka-ui'
   import type { HTMLAttributes } from 'vue'
+  import type { ClassNameValue } from 'tailwind-merge'
 
   const props = defineProps<
     MenubarItemIndicatorProps & {
       /** The icon to display */
       icon?: string
       /** The class(es) to apply to the parent */
-      class?: HTMLAttributes['class']
+      class?: ClassNameValue
     }
   >()
   const forwarded = reactiveOmit(props, 'class', 'icon')

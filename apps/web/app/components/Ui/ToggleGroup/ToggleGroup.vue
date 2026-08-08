@@ -3,12 +3,13 @@
   import type { ToggleVariants } from '../Toggle.vue'
   import type { ToggleGroupRootEmits, ToggleGroupRootProps } from 'reka-ui'
   import type { HTMLAttributes } from 'vue'
+  import type { ClassNameValue } from 'tailwind-merge'
 
   const props = withDefaults(
     defineProps<
       ToggleGroupRootProps & {
         /** custom class to add to the parent */
-        class?: HTMLAttributes['class']
+        class?: ClassNameValue
         variant?: ToggleVariants['variant']
         size?: ToggleVariants['size']
       }

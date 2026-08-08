@@ -1,5 +1,6 @@
 <script setup lang="ts">
   import type { HTMLAttributes } from 'vue'
+  import type { ClassNameValue } from 'tailwind-merge'
 
   const props = withDefaults(
     defineProps<{
@@ -41,7 +42,7 @@
       /**
        * Any additional class that should be added to the dropzone.
        */
-      class?: HTMLAttributes['class']
+      class?: ClassNameValue
     }>(),
     {
       title: 'Click to upload or drag & drop files.',

@@ -1,15 +1,16 @@
 <script lang="ts">
   import type { HTMLAttributes } from 'vue'
+  import type { ClassNameValue } from 'tailwind-merge'
 
   import { navProviderKey } from './Provider.vue'
 
   export type NavbarProps = {
     /** Custom class(es) to add to the wrapper element */
-    wrapperClass?: HTMLAttributes['class']
+    wrapperClass?: ClassNameValue
     /** Custom class(es) to add to the child element */
-    childClass?: HTMLAttributes['class']
+    childClass?: ClassNameValue
     /** Custom class(es) to add to the inner element */
-    innerClass?: HTMLAttributes['class']
+    innerClass?: ClassNameValue
     intent?: 'default' | 'float' | 'inset'
     isSticky?: boolean
     side?: 'left' | 'right'

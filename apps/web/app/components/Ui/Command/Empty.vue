@@ -3,10 +3,11 @@
   import { Primitive } from 'reka-ui'
   import type { PrimitiveProps } from 'reka-ui'
   import type { HTMLAttributes } from 'vue'
+  import type { ClassNameValue } from 'tailwind-merge'
 
   import { useCommand } from './Command.vue'
 
-  const props = defineProps<PrimitiveProps & { class?: HTMLAttributes['class'] }>()
+  const props = defineProps<PrimitiveProps & { class?: ClassNameValue }>()
 
   const forwarded = reactiveOmit(props, 'class')
 

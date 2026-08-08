@@ -1,12 +1,13 @@
 <script lang="ts" setup>
   import { Primitive, Separator } from 'reka-ui'
   import type { HTMLAttributes } from 'vue'
+  import type { ClassNameValue } from 'tailwind-merge'
 
   const props = defineProps<{
     /**
      * Custom class for the divider
      */
-    class?: HTMLAttributes['class']
+    class?: ClassNameValue
     /**
      * The type of the divider
      * @default "solid"

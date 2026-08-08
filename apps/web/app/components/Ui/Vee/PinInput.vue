@@ -50,7 +50,7 @@
     <div class="relative">
       <UiPinInput
         :id="inputId"
-        v-bind="{ ...$attrs, ...forwarded }"
+        v-bind="{ ...$attrs, ...forwarded } as Record<string, any>"
         v-model="value"
         :aria-invalid="!!errorMessage"
         @complete="emits('complete', $event)"

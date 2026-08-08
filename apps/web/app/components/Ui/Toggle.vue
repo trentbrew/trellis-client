@@ -2,6 +2,7 @@
   import { Toggle as ToggleRoot, useForwardPropsEmits } from 'reka-ui'
   import type { ToggleEmits, ToggleProps } from 'reka-ui'
   import type { HTMLAttributes } from 'vue'
+  import type { ClassNameValue } from 'tailwind-merge'
 
   export const toggleStyles = tv({
     base: 'inline-flex items-center justify-center gap-2 rounded-md text-sm font-medium ring-offset-background transition-colors hover:bg-muted hover:text-muted-foreground focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:outline-none disabled:pointer-events-none disabled:opacity-50 data-[state=on]:bg-accent data-[state=on]:text-accent-foreground [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0',
@@ -30,7 +31,7 @@
   const props = defineProps<
     ToggleProps & {
       /** Additional classes for the toggle */
-      class?: HTMLAttributes['class']
+      class?: ClassNameValue
       /** Variant of the toggle */
       variant?: ToggleVariants['variant']
       /** Size of the toggle */

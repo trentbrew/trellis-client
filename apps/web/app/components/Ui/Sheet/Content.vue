@@ -2,6 +2,7 @@
   import { DialogContent, useForwardPropsEmits } from 'reka-ui'
   import type { DialogContentEmits, DialogContentProps } from 'reka-ui'
   import { type HTMLAttributes, ref, computed, onMounted, onUnmounted } from 'vue'
+  import type { ClassNameValue } from 'tailwind-merge'
   import { useSheetStack } from '~/composables/useSheetStack'
 
   defineOptions({ inheritAttrs: false })
@@ -12,7 +13,7 @@
         icon?: string
         title?: string
         description?: string
-        class?: HTMLAttributes['class']
+        class?: ClassNameValue
         side?: VariantProps<typeof styles>['side']
         to?: string | HTMLElement
         isBlurred?: boolean

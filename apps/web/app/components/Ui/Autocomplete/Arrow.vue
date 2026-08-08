@@ -2,10 +2,11 @@
   import { ComboboxArrow } from 'reka-ui'
   import type { ComboboxArrowProps } from 'reka-ui'
   import type { HTMLAttributes } from 'vue'
+  import type { ClassNameValue } from 'tailwind-merge'
 
   const props = defineProps<
     ComboboxArrowProps & {
-      class?: HTMLAttributes['class']
+      class?: ClassNameValue
     }
   >()
 

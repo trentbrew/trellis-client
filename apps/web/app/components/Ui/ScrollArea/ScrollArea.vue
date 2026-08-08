@@ -2,6 +2,7 @@
   import { ScrollAreaRoot } from 'reka-ui'
   import type { ScrollAreaRootProps } from 'reka-ui'
   import type { HTMLAttributes } from 'vue'
+  import type { ClassNameValue } from 'tailwind-merge'
 
   const props = withDefaults(
     defineProps<
@@ -9,7 +10,7 @@
         /** Orientation for scrolling */
         orientation?: 'vertical' | 'horizontal'
         /** Custom class(es) to add to the parent */
-        class?: HTMLAttributes['class']
+        class?: ClassNameValue
       }
     >(),
     {

@@ -2,12 +2,13 @@
   import { ContextMenuItem, useForwardPropsEmits } from 'reka-ui'
   import type { ContextMenuItemEmits, ContextMenuItemProps } from 'reka-ui'
   import type { HTMLAttributes } from 'vue'
+  import type { ClassNameValue } from 'tailwind-merge'
 
   const props = withDefaults(
     defineProps<
       ContextMenuItemProps & {
         /**Custom class(es) to add to the element */
-        class?: HTMLAttributes['class']
+        class?: ClassNameValue
         /** Wether an indentation should be added to the item or not */
         inset?: boolean
         /** The shortcut for the item */

@@ -2,11 +2,12 @@
   import { NumberFieldDecrement, useForwardProps } from 'reka-ui'
   import type { NumberFieldDecrementProps } from 'reka-ui'
   import type { HTMLAttributes } from 'vue'
+  import type { ClassNameValue } from 'tailwind-merge'
 
   const props = withDefaults(
     defineProps<
       NumberFieldDecrementProps & {
-        class?: HTMLAttributes['class']
+        class?: ClassNameValue
         icon?: string
       }
     >(),

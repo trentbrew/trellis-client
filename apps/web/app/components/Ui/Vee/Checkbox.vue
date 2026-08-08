@@ -1,6 +1,7 @@
 <script lang="ts" setup>
   import { AnimatePresence, motion } from 'motion-v'
   import type { HTMLAttributes } from 'vue'
+  import type { ClassNameValue } from 'tailwind-merge'
 
   const variants = {
     initial: { opacity: 0, y: -2 },
@@ -21,7 +22,7 @@
     value?: any
     required?: boolean
     disabled?: boolean
-    class?: HTMLAttributes['class']
+    class?: ClassNameValue
   }>()
   const styles = tv({
     base: 'flex gap-3',

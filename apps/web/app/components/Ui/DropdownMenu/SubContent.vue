@@ -2,13 +2,14 @@
   import { DropdownMenuSubContent, useForwardPropsEmits } from 'reka-ui'
   import type { DropdownMenuSubContentEmits, DropdownMenuSubContentProps } from 'reka-ui'
   import type { HTMLAttributes } from 'vue'
+  import type { ClassNameValue } from 'tailwind-merge'
 
   defineOptions({ inheritAttrs: false })
   const props = withDefaults(
     defineProps<
       DropdownMenuSubContentProps & {
         /** Custom class(es) to add to the parent */
-        class?: HTMLAttributes['class']
+        class?: ClassNameValue
         /** The element to render the portal into */
         to?: string | HTMLElement
       }

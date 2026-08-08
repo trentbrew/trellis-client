@@ -2,6 +2,7 @@
   import { useForwardProps } from 'reka-ui'
   import type { PrimitiveProps } from 'reka-ui'
   import type { HTMLAttributes } from 'vue'
+  import type { ClassNameValue } from 'tailwind-merge'
 
   export const sideBarGroupStyles = tv({
     base: 'relative flex w-full min-w-0 flex-col p-2',
@@ -13,7 +14,7 @@
       /**
        * Additional classes to apply to the parent element.
        */
-      class?: HTMLAttributes['class']
+      class?: ClassNameValue
     }
   >()
 

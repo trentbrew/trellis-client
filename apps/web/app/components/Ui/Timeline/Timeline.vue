@@ -3,13 +3,14 @@
   import { Primitive, useForwardProps } from 'reka-ui'
   import type { PrimitiveProps } from 'reka-ui'
   import type { HTMLAttributes, ModelRef } from 'vue'
+  import type { ClassNameValue } from 'tailwind-merge'
 
   export type TimelineData = {
     model: ModelRef<number | undefined, string, number | undefined, number | undefined>
     orientation: 'horizontal' | 'vertical'
   }
   export type TimelineProps = PrimitiveProps & {
-    class?: HTMLAttributes['class']
+    class?: ClassNameValue
     orientation?: 'horizontal' | 'vertical'
     modelValue?: number | undefined
   }

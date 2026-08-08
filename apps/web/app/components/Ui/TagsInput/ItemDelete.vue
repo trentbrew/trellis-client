@@ -2,9 +2,10 @@
   import { TagsInputItemDelete } from 'reka-ui'
   import type { TagsInputItemDeleteProps } from 'reka-ui'
   import type { HTMLAttributes } from 'vue'
+  import type { ClassNameValue } from 'tailwind-merge'
 
   const props = withDefaults(
-    defineProps<TagsInputItemDeleteProps & { icon?: string; class?: HTMLAttributes['class'] }>(),
+    defineProps<TagsInputItemDeleteProps & { icon?: string; class?: ClassNameValue }>(),
     {
       icon: 'lucide:x',
     },

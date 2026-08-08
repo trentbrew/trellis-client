@@ -1,5 +1,6 @@
 <script lang="ts">
   import type { HTMLAttributes } from 'vue'
+  import type { ClassNameValue } from 'tailwind-merge'
 
   export const sideBarSeparatorStyles = tv({
     base: 'mx-2 w-auto bg-sidebar-border',
@@ -11,7 +12,7 @@
     /**
      * Additional classes to apply to the parent element.
      */
-    class?: HTMLAttributes['class']
+    class?: ClassNameValue
   }>()
 </script>
 

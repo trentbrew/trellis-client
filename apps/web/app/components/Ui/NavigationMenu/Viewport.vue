@@ -2,12 +2,13 @@
   import { NavigationMenuViewport } from 'reka-ui'
   import type { NavigationMenuViewportProps } from 'reka-ui'
   import type { HTMLAttributes } from 'vue'
+  import type { ClassNameValue } from 'tailwind-merge'
 
   defineOptions({ inheritAttrs: false })
   const props = defineProps<
     NavigationMenuViewportProps & {
       /** Custom class(es) to add to the parent */
-      class?: HTMLAttributes['class']
+      class?: ClassNameValue
     }
   >()
   const forwarded = reactiveOmit(props, 'class')

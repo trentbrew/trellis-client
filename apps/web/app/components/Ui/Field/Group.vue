@@ -1,6 +1,7 @@
 <script lang="ts">
   import type { PrimitiveProps } from 'reka-ui'
   import type { HTMLAttributes } from 'vue'
+  import type { ClassNameValue } from 'tailwind-merge'
 
   export const fieldGroupStyles = tv({
     base: [
@@ -14,7 +15,7 @@
       /**
        * Additional classes to apply to the fieldset element.
        */
-      class?: HTMLAttributes['class']
+      class?: ClassNameValue
     }
   >()
 </script>

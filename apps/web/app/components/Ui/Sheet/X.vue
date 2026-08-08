@@ -2,12 +2,13 @@
   import { DialogClose } from 'reka-ui'
   import type { DialogCloseProps } from 'reka-ui'
   import type { HTMLAttributes } from 'vue'
+  import type { ClassNameValue } from 'tailwind-merge'
 
   const props = withDefaults(
     defineProps<
       DialogCloseProps & {
         /** Custom class(es) to add to parent element */
-        class?: HTMLAttributes['class']
+        class?: ClassNameValue
         /** Icon to display */
         icon?: string
         /** Screen reader text */

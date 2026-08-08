@@ -2,10 +2,11 @@
   import { StepperIndicator, useForwardProps } from 'reka-ui'
   import type { StepperIndicatorProps } from 'reka-ui'
   import type { HTMLAttributes } from 'vue'
+  import type { ClassNameValue } from 'tailwind-merge'
 
   const props = defineProps<
     StepperIndicatorProps & {
-      class?: HTMLAttributes['class']
+      class?: ClassNameValue
       isLoading?: boolean
     }
   >()

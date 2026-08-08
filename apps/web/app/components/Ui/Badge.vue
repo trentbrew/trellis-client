@@ -3,6 +3,7 @@
   import { useForwardProps } from 'reka-ui'
   import type { NuxtLinkProps } from '#app/components'
   import type { HTMLAttributes } from 'vue'
+  import type { ClassNameValue } from 'tailwind-merge'
 </script>
 
 <script lang="ts" setup>
@@ -45,7 +46,7 @@
   const props = defineProps<
     NuxtLinkProps & {
       /** Any additional class that should be added to the badge */
-      class?: HTMLAttributes['class']
+      class?: ClassNameValue
       /** The variant of the badge */
       variant?: BadgeProps['variant']
       /** The size of the badge */

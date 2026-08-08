@@ -2,12 +2,13 @@
   import { NavigationMenuRoot, useForwardPropsEmits } from 'reka-ui'
   import type { NavigationMenuRootEmits, NavigationMenuRootProps } from 'reka-ui'
   import type { HTMLAttributes } from 'vue'
+  import type { ClassNameValue } from 'tailwind-merge'
 
   const props = withDefaults(
     defineProps<
       NavigationMenuRootProps & {
         /** Custom class(es) to add to the parent */
-        class?: HTMLAttributes['class']
+        class?: ClassNameValue
         viewport?: boolean
       }
     >(),

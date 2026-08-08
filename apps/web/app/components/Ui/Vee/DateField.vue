@@ -45,7 +45,7 @@
         <span v-if="required" class="text-destructive">*</span>
       </span>
     </UiLabel>
-    <UiDateField v-bind="{ ...$attrs, ...props }" v-model="value" />
+    <UiDateField v-bind="{ ...$attrs, ...props } as Record<string, any>" v-model="value" />
     <AnimatePresence multiple as="div" mode="wait">
       <slot name="hint" :error-message="errorMessage" :value>
         <motion.p

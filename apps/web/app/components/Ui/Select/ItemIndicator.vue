@@ -2,13 +2,14 @@
   import { SelectItemIndicator } from 'reka-ui'
   import type { SelectItemIndicatorProps } from 'reka-ui'
   import type { HTMLAttributes } from 'vue'
+  import type { ClassNameValue } from 'tailwind-merge'
 
   const props = defineProps<
     SelectItemIndicatorProps & {
       /** Icon to render */
       icon?: string
       /** Custom class(es) to add to the parent */
-      class?: HTMLAttributes['class']
+      class?: ClassNameValue
     }
   >()
   const forwarded = reactiveOmit(props, 'class', 'icon')

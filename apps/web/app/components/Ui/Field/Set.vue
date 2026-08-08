@@ -1,6 +1,7 @@
 <script lang="ts">
   import type { PrimitiveProps } from 'reka-ui'
   import type { HTMLAttributes } from 'vue'
+  import type { ClassNameValue } from 'tailwind-merge'
 
   export const fieldSetStyles = tv({
     base: ['flex flex-col gap-6', 'has-[>[data-slot=checkbox-group]]:gap-3 has-[>[data-slot=radio-group]]:gap-3'],
@@ -13,7 +14,7 @@
         /**
          * Additional classes to apply to the fieldset element.
          */
-        class?: HTMLAttributes['class']
+        class?: ClassNameValue
       }
     >(),
     {

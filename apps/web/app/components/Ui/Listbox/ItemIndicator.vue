@@ -2,8 +2,9 @@
   import { ListboxItemIndicator, useForwardPropsEmits } from 'reka-ui'
   import type { ListboxItemIndicatorProps } from 'reka-ui'
   import type { HTMLAttributes } from 'vue'
+  import type { ClassNameValue } from 'tailwind-merge'
 
-  const props = defineProps<ListboxItemIndicatorProps & { class?: HTMLAttributes['class']; icon?: string }>()
+  const props = defineProps<ListboxItemIndicatorProps & { class?: ClassNameValue; icon?: string }>()
   const forwarded = useForwardPropsEmits(reactiveOmit(props, 'class'))
 
   const styles = tv({

@@ -2,11 +2,12 @@
   import { SelectItem } from 'reka-ui'
   import type { SelectItemProps } from 'reka-ui'
   import type { HTMLAttributes } from 'vue'
+  import type { ClassNameValue } from 'tailwind-merge'
 
   const props = defineProps<
     SelectItemProps & {
       /** Custom class(es) to add to the parent */
-      class?: HTMLAttributes['class']
+      class?: ClassNameValue
       /** Icon to show */
       icon?: string
       /** Text to show */

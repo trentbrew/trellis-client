@@ -2,10 +2,11 @@
   import { PinInputInput } from 'reka-ui'
   import type { PinInputInputProps } from 'reka-ui'
   import type { HTMLAttributes } from 'vue'
+  import type { ClassNameValue } from 'tailwind-merge'
 
   const props = defineProps<
     PinInputInputProps & {
-      class?: HTMLAttributes['class']
+      class?: ClassNameValue
     }
   >()
   const forwarded = reactiveOmit(props, 'class')

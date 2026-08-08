@@ -2,8 +2,9 @@
   import { DrawerOverlay } from 'vaul-vue'
   import type { DialogOverlayProps } from 'reka-ui'
   import type { HTMLAttributes } from 'vue'
+  import type { ClassNameValue } from 'tailwind-merge'
 
-  const props = defineProps<DialogOverlayProps & { class?: HTMLAttributes['class'] }>()
+  const props = defineProps<DialogOverlayProps & { class?: ClassNameValue }>()
 
   const styles = tv({
     base: 'fixed inset-0 z-50 bg-background/40 backdrop-blur',
