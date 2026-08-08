@@ -1,7 +1,7 @@
 <script lang="ts">
   import { reactiveOmit } from '@vueuse/core'
   import { useForwardProps } from 'reka-ui'
-  import type { NuxtLinkProps } from '#app/components'
+  import type { NuxtLinkProps } from 'nuxt/app'
   import type { HTMLAttributes } from 'vue'
   import type { ClassNameValue } from 'tailwind-merge'
 </script>
