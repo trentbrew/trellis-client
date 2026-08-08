@@ -1,0 +1,38 @@
+- generic:
+  - generic:
+    - generic:
+      - generic:
+        - alert: Notes | Trellis
+      - region "Notifications alt+T":
+        - list
+      - generic:
+        - generic:
+          - generic
+  - dialog [active] [ref=e51]:
+    - heading "My first note" [level=2] [ref=e60]
+    - paragraph [ref=e61]: View and edit note details.
+    - generic [ref=e64]:
+      - generic [ref=e65]:
+        - generic [ref=e66]: Note
+        - button "Pin" [ref=e71] [cursor=pointer]
+        - textbox "Add tag..." [ref=e78]
+      - generic [ref=e79]:
+        - button [disabled]
+        - button [disabled]
+        - button "Full width" [ref=e81] [cursor=pointer]
+        - button "Collapse sidebar" [ref=e82] [cursor=pointer]
+        - button [ref=e83] [cursor=pointer]
+    - generic [ref=e84]:
+      - generic [ref=e86]:
+        - textbox "Document title" [ref=e90]:
+          - /placeholder: Untitled
+          - text: My first note
+        - paragraph [ref=e97]: huzzah
+      - complementary [ref=e99]:
+        - generic [ref=e101]:
+          - generic [ref=e102]
+          - generic [ref=e109]
+          - paragraph [ref=e201]: Last edited · 19m ago
+    - generic [ref=e202]:
+      - generic "950827ee-1036-4054-b6b1-a34075a16769" [ref=e209]: "ID: 950827ee-1036-4054-b6b1-a34075a16769"
+      - button [ref=e211] [cursor=pointer]
