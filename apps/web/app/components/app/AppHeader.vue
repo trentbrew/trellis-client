@@ -208,7 +208,7 @@
   <header
     data-slot="app-header"
     data-tauri-drag-region
-    class="bg-card/0 backdrop-blur-sm border-b-none flex h-14 shrink-0 items-center gap-0 p-0 overflow-hidden sticky top-0"
+    class="bg-card/0 backdrop-blur-sm border-b-none flex h-[var(--app-header-height)] shrink-0 items-center gap-0 p-0 overflow-hidden sticky top-0"
     :class="{ 'app-region-drag': isTauri }">
     <!-- Left: traffic lights + logo + (conditional) org/app pickers -->
     <nav class="flex shrink-0 items-center gap-0.5 text-xs px-4 bg-transparent" data-tauri-drag-region>

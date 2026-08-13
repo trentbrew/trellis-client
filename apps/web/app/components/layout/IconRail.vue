@@ -57,7 +57,7 @@
     'bg-transparent',
     isBottom.value
       ? 'flex-row w-full h-12 px-4 py-0 items-center rounded-xl'
-      : 'flex-col w-16 min-h-0 px-2 py-3 items-center rounded-xl self-stretch',
+      : 'flex-col w-[var(--app-header-height)] min-h-0 px-1.5 pt-2 pb-3 items-center rounded-xl self-stretch',
   ])
 
   const iconRowClass = computed(() =>
@@ -72,7 +72,7 @@
     }
     return [
       'flex w-full flex-col items-center gap-1.5',
-      edge === 'center' ? 'min-h-0 flex-1 overflow-hidden justify-center' : 'shrink-0',
+      edge === 'center' ? 'min-h-0 flex-1 overflow-hidden justify-start' : 'shrink-0',
       edge === 'end' ? 'pb-0.5' : '',
     ]
       .filter(Boolean)
